@@ -1844,7 +1844,6 @@ function listMountedRoutes() {
   apiRoutes.mountApiRoutesAfterStripeOwnedBlocks(app);
   // blocs Stripe-owned montés directement dans server.js
   try { app.use('/api/shared-carts', require('../routes/shared-cart').router); } catch (_) {}
-  try { app.use('/api/admin/shared-carts', require('../routes/shared-cart-refund-admin').router); } catch (_) {}
   try { const sc = require('../routes/shared-cart'); if (sc.adminRouter) app.use('/api/admin/shared-carts', sc.adminRouter); } catch (_) {}
   const stack = (app._router || app.router).stack;
   const out = [];

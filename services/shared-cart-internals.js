@@ -7,16 +7,26 @@
  * @inputs        runtime_context
  * @outputs       config, helpers, audit
  * @depends       db.js
- * @used-by       services/shared-cart-creation.js, services/shared-cart-reads.js, services/shared-cart-contributions.js, services/shared-cart-lifecycle.js
+ * @used-by       services/shared-cart-creation.js, services/shared-cart-reads.js, services/shared-cart-lifecycle.js, services/shared-cart-items-service.js
  * @db-read       shared_cart_events
  * @db-write      shared_cart_events
  * @db-txn        none
- * @doctrine      none
+ * @doctrine      domaine_minimal_boutique_first
  * @impact-areas  participant-flow, creator-flow
- * @version       2026-06
+ * @version       2026-08
  */
 
 'use strict';
+
+/**
+ * KOMERCE — Shared cart internals (Boutique First, domaine minimal)
+ *
+ * Migration 124 : la liste partagée n'a plus de colonne financière ni de
+ * fenêtre de paiement propre (contributed_kmf, remaining_kmf,
+ * payment_window_ends_at, target_date, expires_at, awaiting_choice_*
+ * supprimés). CONFIG est réduit aux constantes encore utilisées : longueur
+ * du token public et limite de paniers actifs par créateur.
+ */
 
 const crypto = require('crypto');
 const db = require('../db');
@@ -24,14 +34,7 @@ const db = require('../db');
 // ─── Configuration ─────────────────────────────────────────────────────
 const CONFIG = {
   TOKEN_LENGTH: 16,                     // 16 caractères Base58 ≈ 95 bits
-  DEFAULT_EXPIRATION_DAYS: 30,
-  MIN_CONTRIBUTION_KMF: 2500,           // ~5 EUR
-  MAX_CONTRIBUTION_KMF: 500000,         // ~1000 EUR — au-delà, KYC requis
   MAX_ACTIVE_CARTS_PER_USER: 5,
-  PAYMENT_WINDOW_HOURS: 48,             // Fenêtre paiement CLOSED → AWAITING_CHOICE
-  PAYMENT_WINDOW_MAX_DAYS: 14,          // Plafond fenêtre « prêt à payer » (doctrine §5/§9)
-  AWAITING_CHOICE_HOURS: 72,            // Délai créateur AWAITING_CHOICE → expired
-  ARCHIVE_AFTER_DAYS: 7,               // expired → archived
 };
 
 // Base58 (sans 0/O/I/l) pour token URL-safe lisible
@@ -49,9 +52,7 @@ function generateToken() {
 // ─── Helpers ──────────────────────────────────────────────────────────
 function r(n) { return Math.round(Number(n) || 0); }
 
-// P5-N3 : délègue à la primitive partagée db.withTransaction — interface
-// conservée ici (shared-cart-contributions.js, shared-cart-creation.js et
-// shared-cart-lifecycle.js importent withTransaction depuis ce module).
+// P5-N3 : délègue à la primitive partagée db.withTransaction.
 const { withTransaction } = db;
 
 // ─── Audit ────────────────────────────────────────────────────────────

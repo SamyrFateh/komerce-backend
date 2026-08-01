@@ -6,12 +6,12 @@
  * @criticality   critical
  * @inputs        timers, database_state, rules
  * @outputs       automatic_transitions, purges, reminders
- * @depends       services/cash-reminder-service.js, services/inventory-service.js, services/shared-cart-engine.js, utils/rules.js
+ * @depends       services/cash-reminder-service.js, services/inventory-service.js, utils/rules.js
  * @db-write      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
  * @db-read      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
  * @used-by       server.js
- * @doctrine      shared_cart_state_machine_v41, idempotence_cron, retention_snapshots
- * @impact-areas  shared-cart, cash-reminders, inventory, auth-security, economic-engine
+ * @doctrine      idempotence_cron, retention_snapshots
+ * @impact-areas  cash-reminders, inventory, auth-security, economic-engine
  * @version       2026-06
  */
 
@@ -98,7 +98,6 @@ function startOperationalCrons() {
   startSnapshotRetentionCron();
   startPickupTokenCleanupCron(); // SEC-1 migration 070
   startJwtRevocationCleanupCron(); // N4 migration 072
-  startSharedCartStateMachineCron(); // V4.1 — remplace startNotHonoredCron + startExpireCartsCron
 }
 
 // D1 FIX — Rétention economic_snapshots : purge les lignes > 90 jours, toutes les 24h.
@@ -187,33 +186,6 @@ function startJwtRevocationCleanupCron() {
 }
 
 // V4.1 — Machine d'état panier partagé.
-// Remplace startNotHonoredCron (commitments supprimés) et startExpireCartsCron.
-// Gère les transitions automatiques T1–T5 déléguées à l'engine V4.1.
-// Fréquence : 1h. Idempotent.
-function startSharedCartStateMachineCron() {
-  const INTERVAL_MS = 60 * 60 * 1000; // 1h
-
-  const run = async () => {
-    try {
-      const engine = require('../services/shared-cart-engine');
-      const transitions = await engine.runSharedCartStateMachineTick();
-      if (transitions > 0) {
-        log.info({ transitions }, 'shared_cart state machine tick done');
-      } else {
-        log.debug({ transitions: 0 }, 'shared_cart state machine tick — nothing to transition');
-      }
-    } catch (err) {
-      log.error({ err }, 'shared_cart state machine cron failed');
-    }
-  };
-
-  // Première exécution 20 min après démarrage (après les migrations)
-  setTimeout(run, 20 * 60 * 1000);
-  setInterval(run, INTERVAL_MS);
-
-  log.info({ interval_h: 1 }, 'Shared cart state machine cron scheduled (V4.1)');
-}
-
 module.exports = {
   startOperationalCrons,
   startCashRelaisCron,
@@ -221,5 +193,4 @@ module.exports = {
   startSnapshotRetentionCron,
   startPickupTokenCleanupCron,
   startJwtRevocationCleanupCron,
-  startSharedCartStateMachineCron,
 };

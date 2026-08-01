@@ -5,29 +5,45 @@
  * @layer         service
  * @criticality   critical
  * @inputs        token, shared_cart_id, user_id
- * @outputs       shared_cart, items, contributions
+ * @outputs       shared_cart, items
  * @depends       db.js, services/shared-cart-internals.js
  * @used-by       routes/shared-cart.js
- * @db-read       shared_cart_contributions, shared_cart_estimations, shared_cart_items, shared_carts, users
- * @db-write      shared_carts
+ * @db-read       order_items, shared_cart_items, shared_carts
+ * @db-write      none
  * @db-txn        none
- * @doctrine      snapshot_fige
+ * @doctrine      domaine_minimal_boutique_first
  * @impact-areas  participant-flow, creator-flow
- * @version       2026-06
+ * @version       2026-08
  */
 
 'use strict';
 
+/**
+ * KOMERCE — Shared cart reads (Boutique First, domaine minimal)
+ *
+ * Migration 124 : total_kmf_snapshot n'existe plus sur shared_carts — il
+ * se calcule ici par SUM() sur shared_cart_items.line_total_kmf_snapshot.
+ *
+ * Migration 123 : le statut "réclamé" d'un article de liste n'est jamais
+ * stocké — il se déduit par LEFT JOIN sur order_items.shared_cart_item_id
+ * (non-NULL = réclamé par une commande active ; la libération à
+ * l'annulation, services/order-status-machine.js bloc 5b, repasse la
+ * colonne à NULL, donc "non-NULL" est toujours la vérité courante, pas
+ * besoin de vérifier le statut de la commande ici).
+ *
+ * ASSUMPTION (à confirmer) : plus de snapshot identité créateur
+ * (beneficiary_name_snapshot / phone_snapshot supprimés). La vue
+ * publique n'expose donc plus aucun nom/téléphone — seulement titre,
+ * message, items et compteurs. Si le produit veut réafficher un prénom
+ * créateur en public, il faudra JOIN users et décider explicitement de
+ * ré-exposer une identité (arbitrage produit, pas technique).
+ */
+
 const db = require('../db');
-const { r } = require('./shared-cart-internals');
 
 async function getSharedCartForPublic(token) {
   const { rows: cartRows } = await db.query(
-    `SELECT id, token, beneficiary_name_snapshot, title, message,
-            currency_snapshot, total_kmf_snapshot, contributed_kmf, remaining_kmf,
-            status, target_date, closed_at, payment_window_ends_at,
-            awaiting_choice_deadline, finalized_at, view_count,
-            created_at
+    `SELECT id, token, title, message, status, delivery_relay_id, created_at
        FROM shared_carts
       WHERE token = $1`,
     [token]
@@ -35,119 +51,100 @@ async function getSharedCartForPublic(token) {
   if (!cartRows.length) return null;
   const cart = cartRows[0];
 
-  // Items (snapshot uniquement, pas product_id complet pour éviter scraping)
   const { rows: items } = await db.query(
-    `SELECT product_name_snapshot AS name,
-            product_image_snapshot AS image,
-            product_category_snapshot AS category,
-            quantity, unit_price_kmf_snapshot AS unit_price_kmf,
-            line_total_kmf_snapshot AS line_total_kmf
-       FROM shared_cart_items
-      WHERE shared_cart_id = $1
-      ORDER BY created_at`,
+    `SELECT sci.id,
+            sci.product_name_snapshot AS name,
+            sci.product_image_snapshot AS image,
+            sci.product_category_snapshot AS category,
+            sci.quantity, sci.unit_price_kmf_snapshot AS unit_price_kmf,
+            sci.line_total_kmf_snapshot AS line_total_kmf,
+            (oi.id IS NOT NULL) AS claimed
+       FROM shared_cart_items sci
+       LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
+      WHERE sci.shared_cart_id = $1
+      ORDER BY sci.created_at`,
     [cart.id]
   );
 
-  // Contributions paid (anonymisées : prénom + montant + message)
-  const { rows: contribs } = await db.query(
-    `SELECT
-       SPLIT_PART(contributor_name, ' ', 1) AS first_name,
-       amount_kmf, message, paid_at
-       FROM shared_cart_contributions
-      WHERE shared_cart_id = $1 AND status = 'paid'
-      ORDER BY paid_at DESC`,
-    [cart.id]
-  );
-
-  // Agrégat estimations (indicatif, vue publique uniquement)
-  const { rows: estimRows } = await db.query(
-    `SELECT COUNT(*)::int AS count,
-            COALESCE(SUM(amount_kmf), 0)::int AS total_estimated_kmf
-       FROM shared_cart_estimations
-      WHERE shared_cart_id = $1`,
-    [cart.id]
-  );
-  const estimations_summary = estimRows[0];
+  const totalKmf = items.reduce((s, it) => s + Number(it.line_total_kmf || 0), 0);
+  const claimedCount = items.filter(it => it.claimed).length;
 
   return {
     cart: {
-      ...cart,
-      id: undefined,   // Ne pas exposer l'UUID interne
+      token: cart.token,
+      title: cart.title,
+      message: cart.message,
+      status: cart.status,
+      created_at: cart.created_at,
     },
-    items,
-    contributions: contribs,
-    estimations_summary,
+    items: items.map(it => ({
+      name: it.name, image: it.image, category: it.category,
+      quantity: it.quantity, unit_price_kmf: it.unit_price_kmf,
+      line_total_kmf: it.line_total_kmf, claimed: it.claimed,
+    })),
+    total_kmf: totalKmf,
+    items_count: items.length,
+    claimed_count: claimedCount,
   };
 }
 
 /**
- * Lecture privée par le bénéficiaire (cockpit créateur — toutes infos).
- * Inclut la liste détaillée des estimations.
+ * Lecture privée par le créateur (cockpit — items avec id complet pour
+ * pouvoir cibler une réclamation précise, contrairement à la vue publique).
  */
 async function getSharedCartForOwner(sharedCartId, userId) {
   const { rows } = await db.query(
-    `SELECT * FROM shared_carts WHERE id = $1 AND beneficiary_user_id = $2`,
+    `SELECT * FROM shared_carts WHERE id = $1 AND organizer_user_id = $2`,
     [sharedCartId, userId]
   );
   if (!rows.length) return null;
   const cart = rows[0];
 
   const { rows: items } = await db.query(
-    `SELECT * FROM shared_cart_items WHERE shared_cart_id = $1 ORDER BY created_at`,
+    `SELECT sci.*, (oi.id IS NOT NULL) AS claimed, oi.order_id AS claimed_by_order_id
+       FROM shared_cart_items sci
+       LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
+      WHERE sci.shared_cart_id = $1
+      ORDER BY sci.created_at`,
     [cart.id]
   );
 
-  const { rows: contributions } = await db.query(
-    `SELECT id, contributor_name, contributor_email,
-            amount_kmf, amount_paid, currency_paid,
-            status, message, paid_at, created_at
-       FROM shared_cart_contributions
-      WHERE shared_cart_id = $1
-      ORDER BY created_at DESC`,
-    [cart.id]
-  );
+  const totalKmf = items.reduce((s, it) => s + Number(it.line_total_kmf_snapshot || 0), 0);
 
-  // V4.1 — estimations remplacent les commitments
-  const { rows: estimations } = await db.query(
-    `SELECT id, participant_name, participant_phone, amount_kmf, created_at, updated_at
-       FROM shared_cart_estimations
-      WHERE shared_cart_id = $1
-      ORDER BY created_at DESC`,
-    [cart.id]
-  );
-
-  return { cart, items, contributions, estimations };
+  return {
+    cart: { ...cart, total_kmf: totalKmf },
+    items,
+    claimed_count: items.filter(it => it.claimed).length,
+  };
 }
 
 /**
- * Liste des paniers partagés du bénéficiaire.
+ * Liste des paniers partagés du créateur.
  */
 async function listMySharedCarts(userId) {
   const { rows } = await db.query(
-    `SELECT id, token, title, status,
-            total_kmf_snapshot, contributed_kmf, remaining_kmf,
-            target_date, closed_at, payment_window_ends_at, awaiting_choice_deadline,
-            finalized_at, finalized_order_id, created_at,
-            (SELECT COUNT(*) FROM shared_cart_contributions
-              WHERE shared_cart_id = sc.id AND status = 'paid')::int AS contributors_count
+    `SELECT sc.id, sc.token, sc.title, sc.status, sc.created_at, sc.closed_at, sc.cancelled_at,
+            COALESCE(agg.total_kmf, 0)::int AS total_kmf,
+            COALESCE(agg.items_count, 0)::int AS items_count,
+            COALESCE(agg.claimed_count, 0)::int AS claimed_count
        FROM shared_carts sc
-      WHERE beneficiary_user_id = $1
-      ORDER BY created_at DESC`,
+       LEFT JOIN LATERAL (
+         SELECT SUM(sci.line_total_kmf_snapshot) AS total_kmf,
+                COUNT(*) AS items_count,
+                COUNT(oi.id) AS claimed_count
+           FROM shared_cart_items sci
+           LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
+          WHERE sci.shared_cart_id = sc.id
+       ) agg ON TRUE
+      WHERE sc.organizer_user_id = $1
+      ORDER BY sc.created_at DESC`,
     [userId]
   );
   return rows;
-}
-
-async function incrementViewCount(token) {
-  await db.query(
-    `UPDATE shared_carts SET view_count = view_count + 1 WHERE token = $1`,
-    [token]
-  );
 }
 
 module.exports = {
   getSharedCartForPublic,
   getSharedCartForOwner,
   listMySharedCarts,
-  incrementViewCount,
 };

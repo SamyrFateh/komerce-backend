@@ -13,61 +13,54 @@ module.exports = {
 
   // ── Identité ─────────────────────────────────────────────────────────────
   name:     'shared-cart',
-  type:     'feature',   // feature | transversal
+  type:     'feature',
   domain:   'shared-cart',
-  status:   'production',   // draft | staging | production | deprecated
+  status:   'production',
   owner:    'backend-core',
   since:    '2026-03',
   doctrine: 'docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md',
 
   // ── Service rendu ──────────────────────────────────────────────────────────
-  service: 'Permettre à plusieurs participants de composer et financer un panier ' +
-           'commun, de la création à la commande finale.',
+  // Réécrit (Lot 2/3, migration 124) : le panier partagé n'est plus un
+  // véhicule de paiement groupé — c'est une liste de souhaits partageable.
+  service: 'Permettre à un créateur de composer une liste de produits ' +
+           'partageable par lien public ; chaque participant réclame un ' +
+           'article en l\'achetant individuellement via le checkout canonique.',
 
   // ── Périmètre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
-      'création, contribution, clôture, annulation du panier partagé',
-      'estimation et garde financière du panier (financial guard)',
-      'transitions d\'état v4/v4.1 et réparation des réservations stock collectives',
+      'création, édition (statut open), fermeture, annulation de la liste partagée',
+      'lecture publique et propriétaire (avec statut de réclamation dérivé par jointure)',
     ],
     out: [
-      'paiement carte/PayPal lui-même (feature payments)',
-      'création de la commande finale (feature orders, consommée en sortie)',
-      'crédit wallet (feature wallet, consommée en sortie)',
+      'paiement carte/PayPal/cash (feature payments, consommée en sortie)',
+      'arbitrage de la réclamation d\'un article (index unique order_items.shared_cart_item_id, migration 123 — feature orders)',
+      'création de la commande (feature orders)',
+      'crédit wallet (feature wallet)',
     ],
   },
 
   // ── Autorité ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement de machine d\'état v4/v4.1 doit être ' +
-             'validé par le propriétaire de shared-cart-engine.js',
+  authority: 'backend-core — tout changement de statut (open/closed/cancelled) ' +
+             'doit être validé par le propriétaire de shared-cart-lifecycle.js',
 
   // ── Périmètre fichiers ────────────────────────────────────────────────────
   files: {
     services: [
-      'services/shared-cart-engine.js',          // barrel — Lot C1 2026-06-28
+      'services/shared-cart-engine.js',          // barrel
       'services/shared-cart-internals.js',       // CONFIG, helpers, audit
       'services/shared-cart-creation.js',        // createFromBasket, createFromCartItems, clearCreatorBasket
-      'services/shared-cart-reads.js',           // getForPublic, getForOwner, listMy, incrementViewCount
-      'services/shared-cart-contributions.js',   // startContribution, attachStripe, markFailed
-      'services/shared-cart-lifecycle.js',       // closeCart, convertToOrder, cancel, stateMachine, expire
-      'services/shared-cart-financial-guard.js',
+      'services/shared-cart-reads.js',           // getForPublic, getForOwner, listMy (total + claimed dérivés)
+      'services/shared-cart-lifecycle.js',       // closeCart, cancelSharedCart
       'services/shared-cart-queries.js',
       'services/shared-cart-items-service.js',
-      'services/shared-cart-cash-service.js',
-      'services/shared-cart-estimation-service.js',
-      'services/shared-cart-refund-queue.js',
-      'services/shared-cart-v41-transitions.js',
-      'services/cancel-shared-cart-with-refunds.js',
     ],
     routes: [
       'routes/shared-cart.js',
-      'routes/shared-cart-cash.js',
-      'routes/shared-cart-from-order.js',
-      'routes/shared-cart-refund-admin.js',
-    
       'routes/baskets.js',
-      'routes/shares.js',],
+      'routes/shares.js',
+    ],
     migrations: [
       'migrations/044_shared_cart.sql',
       'migrations/048_collective_workspaces.sql',
@@ -83,48 +76,37 @@ module.exports = {
       'migrations/080_v41_shared_cart_state_machine.sql',
       'migrations/085_shared_cart_cash_contributions.sql',
       'migrations/099_drop_zombie_shared_cart_commitments.sql',
+      'migrations/123_shared_cart_item_claim_bridge.sql',    // pont order_items <-> shared_cart_items
+      'migrations/124_shared_cart_minimal_domain.sql',       // domaine minimal, colonnes financières retirées
     ],
     tests: [
-      // E2E fonctionnel Feature First — shared-cart est PROPRIETAIRE ;
-      // payments, auth-identity, catalog et logistics sont traversees.
-      'tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js',
       'tests/unit/baskets.test.js',
-      'tests/unit/shared-cart-branches.test.js',
-      'tests/unit/shared-cart-cash-route.test.js',
-      'tests/unit/shared-cart-cash-service.test.js',
-      'tests/unit/shared-cart-contributions.test.js',
       'tests/unit/shared-cart-creation.test.js',
       'tests/unit/shared-cart-creator-route.test.js',
       'tests/unit/shared-cart-engine.test.js',
-      'tests/unit/shared-cart-estimation-service.test.js',
-      'tests/unit/shared-cart-from-order.test.js',
       'tests/unit/shared-cart-internals.test.js',
       'tests/unit/shared-cart-items-service.test.js',
       'tests/unit/shared-cart-public-route.test.js',
       'tests/unit/shared-cart-reads.test.js',
-      'tests/unit/shared-cart-refund-admin.test.js',
       'tests/unit/shares-route.test.js',
-      'tests/unit/shared-cart-v41-transitions.test.js',
       'tests/unit/shared-cart-lifecycle.test.js',
-      'tests/unit/shared-cart-financial-guard.test.js',
       'tests/unit/shared-cart-queries.test.js',
-      'tests/unit/shared-cart-refund-queue.test.js',
-      'tests/unit/cancel-shared-cart-with-refunds.test.js',
-      'tests/unit/shared-cart-edit-mode.test.js',
-      'tests/unit/shared-cart-lot9-business.test.js',
-      'tests/unit/shared-cart-v4-2-creation.test.js',
-      'tests/unit/shared-cart-v41-reconciliation.test.js',
+      // NOTE (2026-08) : ces fichiers de test existent encore dans le repo
+      // mais testent l'ancien domaine V4.1 (contributed_kmf, estimations,
+      // awaiting_choice...) et n'ont pas encore été réécrits contre le code
+      // ci-dessus. Ne pas les considérer comme couverture valide tant qu'ils
+      // n'ont pas été repassés — voir LOT23_README.md de cette livraison.
     ],
     boutique: [
+      // Non retouché dans ce lot (backend uniquement) — ces fichiers
+      // référencent encore contributed_kmf/remaining_kmf et doivent être
+      // mis à jour dans un lot frontend séparé avant merge complet.
       'js/b-group-cart-flow.js',
       'js/b-share-cart.js',
       'js/b-group-view.js',
       'js/b-group-banner.js',
       'js/b-friendly-group-redirect.js',
       'js/b-share-phone-guard.js',
-      // Backfill gouvernance globale (governance/boutique-global-ownership) :
-      // header @komerce-arch confirme domain=shared-cart pour ces 6 fichiers
-      // (docs/BOUTIQUE_360.json) — non couverts avant cette passe.
       'js/group/group-api.js',
       'js/group/group-helpers.js',
       'js/group/group-render-creator.js',
@@ -134,184 +116,126 @@ module.exports = {
       'css/hero-cart-proxy.css',
       'css/shared-followup.css',
     ],
-      dash: [
-      // dashboards/admin views — Lot 4
+    dash: [
+      // Non retouché dans ce lot — référence encore l'ancien domaine.
       'dashboards/admin/js/views/SharedCartsView.js',
-      'dashboards/admin/js/views/EventWorkspacesView.js',
     ],
-},
+  },
 
   // ── Dépôts ───────────────────────────────────────────────────────────────
-  // Cette feature est répartie sur 2 dépôts distincts (pas un monorepo) :
   repos: {
     backend: 'services/ + routes/ ci-dessus',
     boutique: 'js/ + css/ ci-dessus — dépôt "bout", gouverné en détail par ' +
-              'docs/BOUTIQUE_COMPONENT_OWNERSHIP.md et docs/BOUTIQUE_OWNERSHIP_LIVE.md ' +
-              '(auto-généré par scripts/gen-ownership.js du dépôt bout — source de vérité ' +
-              'pour le détail CSS/DOM, ne pas dupliquer ici)',
+              'docs/BOUTIQUE_COMPONENT_OWNERSHIP.md et docs/BOUTIQUE_OWNERSHIP_LIVE.md',
   },
 
   // ── Contrat d'interface ───────────────────────────────────────────────────
   docs: [
-    'docs/backend/PANIER_COLLECTIF_BACKEND_DELTA.md',
-    'docs/chantier/FLOW_AUDIT_COLLECTIVE_G3.md',
-    'docs/chantier/STATUS_SONNET_PANIER_V42.md',
-    'docs/doctrine/DOCTRINE_PANIER_COLLECTIF.md',
-    'docs/doctrine/DOCTRINE_PANIER_PARTAGE.md',
-    'docs/doctrine/DOCTRINE_PANIER_PARTAGE_SURCOUVERTURE.md',
     'docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md',
-    'docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md',
-    'docs/specs/collective-workspaces-v1.md',
-    'docs/specs/event-flow-v2.md',
+    // Les documents suivants décrivent l'ancien domaine V4/V4.1 et doivent
+    // être mis à jour ou archivés (hors périmètre de ce lot, code-only) :
+    // docs/doctrine/DOCTRINE_PANIER_COLLECTIF.md,
+    // docs/doctrine/DOCTRINE_PANIER_PARTAGE.md,
+    // docs/doctrine/DOCTRINE_PANIER_PARTAGE_SURCOUVERTURE.md
   ],
 
-  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
-  // Généré par parsing réel des appels .query() (pas un grep de mots) :
-  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
-  // Une table listée ici pour PLUSIEURS features est une vraie propriété
-  // partagée détectée dans le code, pas un artefact de méthode — à
-  // documenter explicitement si volontaire, ou à re-scoper sinon.
-  // Champ auto-généré : à corriger à la main si une requête dynamique
-  // (nom de table construit par variable) a échappé au scan.
+  // ── Tables DB ────────────────────────────────────────────────────────────
+  // Réécrit pour le domaine minimal — shared_cart_contributions,
+  // shared_cart_estimations, cart_contributions supprimées par la
+  // migration 124 ; stripe_events_processed n'est plus touché par cette
+  // feature (plus de webhook shared-cart).
   db: {
     tables: [
-      'alerts: W',
       'basket_items: RW',
       'baskets: RW',
-      'cart_contributions: RW',
       'cart_shares: RW',
-      'finance_config: R',
-      'order_items: RW',
-      // order_status_history : W-via:order-status-machine (appendOrderHistoryNote — shared-cart-lifecycle.js)
-      'orders: RW',
+      'order_items: R',            // lecture pour le statut "réclamé" dérivé (migration 123)
       'products: R',
-      'recipients: RW',
-      // refunds : W-via:refund-service (recordExternalRefund — shared-cart-refund-queue.js, cancel-shared-cart-with-refunds.js)
-      'relais: R',
-      'shared_cart_contributions: RW',
-      'shared_cart_estimations: RW',
       'shared_cart_events: RW',
       'shared_cart_items: RW',
       'shared_carts: RW',
-      'stripe_events_processed: RW',
-      // transaction_documents retiré (2026-07-07) : délégué à
-      // services/documents/refund-receipt.js — shared-cart ne lit/écrit
-      // jamais cette table en direct (voir MULTI_WRITER_TABLES.md).
       'users: R',
     ],
   },
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 0,
-    totalRoutes: 33,
-    note: "0/33 routes avec middleware Express authenticate — toutes les routes shared-cart opèrent sur capability tokens (:token dans le path) validés applicativement. Point d'attention §5 : POST /api/shares et POST /api/shares/:token/contributions ne sont couverts que par le globalLimiter (500 req/15 min/IP), pas de limiteur dédié — vecteur potentiel de spam de paniers partagés à évaluer.",
+    note: 'Routes créateur/admin sous authenticate/requireAdmin. GET /public/:token ' +
+          'reste un capability token applicatif (pas de middleware auth) — surface ' +
+          'réduite au strict affichage (plus de contribution ni d\'estimation en écriture publique).',
   },
   contract: {
     exposes: [
+      'GET    /api/shared-carts/public/:token',
       'POST   /api/shared-carts/from-cart-items',
       'POST   /api/shared-carts/from-basket',
-      'POST   /api/shared-carts/from-order',
       'GET    /api/shared-carts/mine',
       'GET    /api/shared-carts/:id',
       'GET    /api/shared-carts/:id/as-cart-items',
       'PUT    /api/shared-carts/:id/items',
       'POST   /api/shared-carts/:id/close',
-      'POST   /api/shared-carts/:id/finalize',
-      'POST   /api/shared-carts/:id/awaiting-choice/complete',
-      'POST   /api/shared-carts/:id/awaiting-choice/adjust',
-      'POST   /api/shared-carts/:id/awaiting-choice/cancel',
-      'POST   /api/shared-carts/:id/extend-window',
       'POST   /api/shared-carts/:id/cancel',
-      'GET    /api/shared-carts/public/:token',
-      'GET    /api/shared-carts/public/:token/estimations',
-      'POST   /api/shared-carts/public/:token/estimations',
-      'DELETE /api/shared-carts/public/:token/estimations/:estimationId',
-      'GET    /api/shared-carts/public/:token/estimations/by-phone',
-      'POST   /api/shared-carts/public/:token/contributions',
-      'POST   /api/shared-carts/public/:token/contributions/cash',
-      'POST   /api/shared-carts/contributions/:id/confirm-cash',
       'GET    /api/admin/shared-carts',
-      'GET    /api/admin/shared-carts/refund-queue',
       'GET    /api/admin/shared-carts/:id',
       'POST   /api/admin/shared-carts/:id/expire',
-      'POST   /api/admin/shared-carts/:id/extend',
       'POST   /api/admin/shared-carts/:id/note',
-      'POST   /api/admin/shared-carts/refund-queue/:contributionId/mark-refunded',
-      // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
-      // — routes réelles câblées via bootstrap/api-routes.js (routes/shares.js,
-      // déjà dans le périmètre de fichiers), jamais déclarées jusqu'ici.
-      'POST /api/shares',
-      'GET /api/shares/:token',
-      'POST /api/shares/:token/contributions',
-      'PATCH /api/shares/:token/contributions/:id',
     ],
     consumes: [
-      "refunds (FF-C1 2026-07-29 — orchestration du remboursement ; preuve: services/shared-cart-refund-queue.js -> services/refund-service.js ; services/cancel-shared-cart-with-refunds.js -> services/refund-service.js)",
-'orders',        // domaine propriétaire : order-status-machine
-      'wallet',        // domaine propriétaire : wallet-service
-      'products',      // lecture seule
-      'notification', // émission uniquement,
+      'orders (arbitrage de la réclamation via order_items.shared_cart_item_id — feature orders, migration 123)',
+      'products (lecture seule)',
+      'notification (émission uniquement — WhatsApp création de liste)',
       'auth',
-      'customs',
-      'documents',
-      'logistics',
-      'loyalty (declenche le recalcul de palier apres commande group panier confirmee — services/loyalty-service.js handleOrderConfirmed, O7.3 provider loyalty)',
-      'payments (reutilise makeInput pour un style de champ uniforme au checkout — public/boutique/js/b-checkout.js, scope boutique, O7.3 provider payments)',
-      'auth-identity (reutilise makeIntlPhoneInput — public/boutique/js/b-phone.js, scope boutique, O7.3 provider payments : couture initialement artificielle via b-checkout.js, corrigee vers le vrai proprietaire)',
     ],
   },
 
   // ── Dette assumée / documentée ────────────────────────────────────────────
-  // (audit 2026-07-06, §2a — reclassé après vérification empirique)
   debt: {
     knownGaps: [
-      { gap: 'contrat historique en style verbe simple sur :id ("/:id/contribute", ' +
-             '"/cash/:id/contribute", "/refund-admin/:id") : aucune route ne sert ce style. ' +
-             'La doctrine "paiement = engagement" du panier partagé s\'incarne dans le code ' +
-             'réel en ressources nommées, pas en verbes : une contribution est un enregistrement ' +
-             '(POST .../public/:token/contributions[/cash]), jamais une action fugace sur ' +
-             'l\'identifiant du panier lui-même. Le flux de remboursement admin est de même ' +
-             'un enregistrement de file (POST /api/admin/shared-carts/refund-queue/:contributionId/mark-refunded), ' +
-             'pas un endpoint /refund-admin/:id générique.',
-        risk: 'aucun consommateur externe connu de l\'ancien style verbe. Les 29 endpoints ' +
-              'ci-dessus sont la surface réelle complète, vérifiée contre route-registry.json.',
+      { gap: 'PUT /:id/items ne bloque pas l\'édition d\'une liste ayant déjà des ' +
+             'articles réclamés (order_items.shared_cart_item_id non-NULL) : le ' +
+             'DELETE+INSERT recrée des lignes shared_cart_items avec de nouveaux id, ' +
+             'ce qui détache silencieusement une réclamation existante de sa ligne.',
+        risk: 'Un créateur qui édite sa liste après qu\'un participant a déjà acheté ' +
+              'un article casse le lien de traçabilité claimed→order pour cet article. ' +
+              'La commande déjà passée reste valide (order_items conserve sa ligne), ' +
+              'mais elle n\'apparaît plus liée à la liste. À trancher côté produit avant ' +
+              'merge prod : bloquer l\'édition si des réclamations existent, ou l\'accepter ' +
+              'comme comportement connu.',
+      },
+      { gap: 'Frontend boutique (js/b-group-view.js, js/group/*) et dashboard admin ' +
+             '(SharedCartsView.js) non réécrits dans ce lot — référencent encore ' +
+             'contributed_kmf/remaining_kmf, colonnes supprimées par la migration 124.',
+        risk: 'Cassure UI garantie si la migration 124 est appliquée sans réécriture ' +
+              'frontend correspondante (lot séparé, hors périmètre backend).',
       },
     ],
   },
 
   // ── Invariants propres ────────────────────────────────────────────────────
-  // Complémentaires aux invariants globaux de ZONE_IMPACT.md (I-01..I-10).
   invariants: [
-    'snapshot figé après 1ère contribution payée',
-    { statement: 'idempotence webhook Stripe sur shared_cart_contributions',
-      test: 'tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js' },
-    { statement: 'fenêtre paiement 48h — aucune extension sans machine de statut',
-      test: 'tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js' },
-    'annulation restores wallet si contribution confirmée',
-    'lien partagé ouvre une boutique — jamais un guichet (Boutique First)',
-    'participant consulte en lecture seule — règle sa part seulement si panier payable',
+    'un article de liste n\'est jamais réclamable deux fois — arbitré par index unique, pas par verrou applicatif (migration 123)',
+    'aucune donnée financière n\'est stockée sur shared_carts — le total se calcule toujours par SUM() sur shared_cart_items',
+    'lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)',
+    'annulation de liste (cancel) n\'effectue jamais de remboursement — aucune contribution n\'y transite',
   ],
 
   // ── Classification ────────────────────────────────────────────────────────
-  // Vérifiable par : npm run feature:classification
   classification: {
     kind:     'business-feature',
     decision: 'feature-autonome',
     signals: {
-      ownsTables:          true,  // shared_carts, shared_cart_contributions, collective_workspaces…
-      ownsLifecycle:       true,  // machine d'état v4.1 : OPEN→CLOSED→AWAITING_CHOICE→ORDERED/CANCELLED
-      activeService:       true,  // crée, contribue, clôture, annule
-      multiConsumer:       false, // consommée par orders en sortie, pas l'inverse
-      ownsMigrations:      true,  // 8 migrations dédiées
-      externalSideEffect:  'payment', // Stripe webhooks + PayPal
+      ownsTables:          true,   // shared_carts, shared_cart_items, shared_cart_events
+      ownsLifecycle:       true,   // open → closed → cancelled (3 états)
+      activeService:       true,
+      multiConsumer:       false,
+      ownsMigrations:      true,
+      externalSideEffect:  'none', // plus de paiement groupé, plus de webhook Stripe propre
       surface:             'api',
     },
     rationale: [
-      'écrit dans des tables propriétaires (shared_carts, shared_cart_contributions, collective_workspaces)',
-      'porte une machine de statut propre à 5 états avec invariant de fenêtre 48h',
-      'rend un service métier autonome de bout en bout (création → commande finale)',
-      'effet externe critique : idempotence Stripe sur webhook de contribution',
+      'écrit dans des tables propriétaires (shared_carts, shared_cart_items)',
+      'porte un cycle de vie propre à 3 états, réduit au strict nécessaire (migration 124)',
+      'rend un service métier autonome : composer et partager une liste — l\'achat lui-même est délégué à la feature orders',
     ],
   },
 

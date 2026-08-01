@@ -9,7 +9,7 @@
  * @depends       db.js, services/notification-service.js
  * @used-by       order-payment-confirmation.js, routes/orders.js, cancellation-flows, admin-flows
  * @db-read       order_items, orders, products
- * @db-write      order_status_history, orders
+ * @db-write      order_items, order_status_history, orders
  * @db-write-via:product-admin-service products, product_variants
  * @db-txn        single_status_transition_gate, append_history_before_side_effects
  * @doctrine      status_transition_source_unique, payment_to_stock_single_entry, annulation_tracee
@@ -37,7 +37,6 @@
  *   'stripe_webhook' — Webhook Stripe (pending → confirmed)
  *   'cash_confirm'   — Agent relais confirme cash (pending → confirmed)
  *   'wallet_full_payment' — Wallet couvre 100% de la commande (pending → confirmed)
- *   'shared_cart_full_payment' — Panier partagé financé à 100% (pending → confirmed)
  *   'paypal_capture' — Capture PayPal confirmée (pending → confirmed) — migration 079
  *
  * Guarantees (D6):
@@ -59,7 +58,6 @@ const { sourceStatusesFor, sqlGuard } = require('./payment-status-validator');
 
 const ORDER_STATUSES = Object.freeze([
   'pending',               // en attente de paiement
-  'pending_group_payment', // en attente de financement groupé (LOT 4)
   'confirmed',             // paiement reçu, prêt pour CT
   'ordered', 'preparation', 'shipped', 'in_transit',
   'available', 'collected', 'cancelled', 'refunded',
@@ -67,8 +65,7 @@ const ORDER_STATUSES = Object.freeze([
 
 /** Rank for forward-only checks. Higher = further along. */
 const STATUS_RANK = Object.freeze({
-  pending:               0,   // ← NOUVEAU
-  pending_group_payment: 0,   // alternative à pending — LOT 4 (même rang, état latéral)
+  pending:     0,
   confirmed:   1,
   ordered:     2,
   preparation: 3,
@@ -81,8 +78,7 @@ const STATUS_RANK = Object.freeze({
 
 /** Strict transition matrix (for 'patch' source). */
 const VALID_TRANSITIONS = Object.freeze({
-  pending:              ['confirmed', 'cancelled', 'pending_group_payment'],
-  pending_group_payment: ['confirmed', 'cancelled', 'pending'],  // LOT 4: retour possible si groupe abandonné
+  pending:     ['confirmed', 'cancelled'],
   confirmed:   ['ordered', 'cancelled'],
   ordered:     ['preparation', 'cancelled'],
   preparation: ['shipped', 'cancelled'],
@@ -96,8 +92,7 @@ const VALID_TRANSITIONS = Object.freeze({
 
 /** Role permissions per target status (for 'patch' source). */
 const TRANSITION_ROLES = Object.freeze({
-  pending: ['admin', 'system'],                    // LOT 4: retour depuis pending_group_payment si groupe abandonné
-  pending_group_payment: ['admin', 'system'],        // LOT 4: activé par le créateur ou l'admin
+  pending: ['admin', 'system'],
   confirmed:   ['admin', 'agent_relais', 'system'],  // paiement confirmé
   ordered:     ['admin', 'agent_hub'],
   preparation: ['admin', 'agent_hub'],
@@ -222,7 +217,7 @@ async function transitionOrderStatus({
       return { success: false, error: "Agent relais: uniquement commandes cash relais" };
     }
 
-  } else if (['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'shared_cart_full_payment', 'paypal_capture'].includes(source)) {
+  } else if (['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'paypal_capture'].includes(source)) {
     // Payment confirmation sources: STRICTLY pending → confirmed only
     if (!(previousStatus === 'pending' && newStatus === 'confirmed')) {
       // Already paid, or wrong transition → graceful no-op
@@ -302,7 +297,7 @@ async function transitionOrderStatus({
   // bloc ne s'exécute déjà que si previousStatus === 'pending' (variable en
   // mémoire) — la clause WHERE ajoute la même garantie côté DB, en défense
   // en profondeur contre une course avec une autre transition concurrente.
-  if (newStatus === 'confirmed' && previousStatus === 'pending' && ['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'shared_cart_full_payment', 'paypal_capture', 'system'].includes(source)) {
+  if (newStatus === 'confirmed' && previousStatus === 'pending' && ['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'paypal_capture', 'system'].includes(source)) {
     const paidGuard = sqlGuard(sourceStatusesFor('paid'));
     await q.query(
       `UPDATE orders SET payment_status = 'paid' WHERE id = $1 AND ${paidGuard}`,
@@ -357,7 +352,7 @@ async function transitionOrderStatus({
 
     // Stock restore — UNIQUEMENT si le stock avait réellement été décrémenté.
     // Le décrément se fait au passage pending → confirmed (order-payment-confirmation.js).
-    // Annuler une commande jamais confirmée (pending / pending_group_payment) ne doit
+    // Annuler une commande jamais confirmée (pending) ne doit
     // PAS rendre de stock, sinon on crée du stock fantôme.
     const stockWasDecremented = STATUS_RANK[previousStatus] >= STATUS_RANK.confirmed;
     if (stockWasDecremented) {
@@ -398,6 +393,29 @@ async function transitionOrderStatus({
     } catch (poErr) {
       log.error({ err: poErr, order_id: orderId }, 'Purchase orders cancel sync failed');
       cancelEffects.purchaseOrders = { error: poErr.message };
+    }
+
+    // Shared-list claim release (Boutique First, D2) — une ligne de commande
+    // annulée libère l'article de la liste partagée à laquelle elle était
+    // rattachée, pour qu'un autre participant puisse le réclamer. La colonne
+    // shared_cart_item_id porte l'arbitrage via un index unique standard :
+    // NULL n'entre jamais en conflit avec NULL, donc remettre à NULL ici
+    // suffit à rouvrir l'article sans machine à états ni verrou applicatif.
+    try {
+      const { rowCount } = await q.query(
+        `UPDATE order_items
+            SET shared_cart_item_id = NULL
+          WHERE order_id = $1
+            AND shared_cart_item_id IS NOT NULL`,
+        [orderId]
+      );
+      cancelEffects.sharedListClaimsReleased = rowCount;
+      if (rowCount > 0) {
+        log.info({ order_id: orderId, count: rowCount }, 'Shared-list claims released after order cancellation');
+      }
+    } catch (claimErr) {
+      log.error({ err: claimErr, order_id: orderId }, 'Shared-list claim release failed');
+      cancelEffects.sharedListClaimsReleased = { error: claimErr.message };
     }
   }
 

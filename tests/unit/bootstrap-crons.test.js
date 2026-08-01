@@ -35,11 +35,6 @@ jest.mock('../../services/inventory-service', () => ({
   autoConfirmExpired: (...args) => mockAutoConfirmExpired(...args),
 }));
 
-const mockRunSharedCartStateMachineTick = jest.fn();
-jest.mock('../../services/shared-cart-engine', () => ({
-  runSharedCartStateMachineTick: (...args) => mockRunSharedCartStateMachineTick(...args),
-}));
-
 const mockGetRuleNumber = jest.fn();
 jest.mock('../../utils/rules', () => ({
   getRuleNumber: (...args) => mockGetRuleNumber(...args),
@@ -55,7 +50,6 @@ describe('bootstrap/crons', () => {
     mockProcessCashRelaisReminders.mockResolvedValue(undefined);
     mockProcessBackorderReminders.mockResolvedValue({ processed: 0, sms_sent: 0 });
     mockAutoConfirmExpired.mockResolvedValue({ auto_confirmed: 0 });
-    mockRunSharedCartStateMachineTick.mockResolvedValue(0);
     mockGetRuleNumber.mockResolvedValue(60);
   });
 
@@ -184,53 +178,6 @@ describe('bootstrap/crons', () => {
       expect(mockDbQuery).toHaveBeenCalledTimes(1);
       await jest.advanceTimersByTimeAsync(60 * 60 * 1000);
       expect(mockDbQuery).toHaveBeenCalledTimes(2);
-    });
-  });
-
-  // ── startSharedCartStateMachineCron ─────────────────────────────────────
-  describe('startSharedCartStateMachineCron', () => {
-    test('appelle runSharedCartStateMachineTick après 20 minutes', async () => {
-      mockRunSharedCartStateMachineTick.mockResolvedValue(3);
-      crons.startSharedCartStateMachineCron();
-      await jest.advanceTimersByTimeAsync(20 * 60 * 1000);
-      expect(mockRunSharedCartStateMachineTick).toHaveBeenCalledTimes(1);
-      expect(mockLog.info).toHaveBeenCalledWith(
-        expect.objectContaining({ transitions: 3 }),
-        expect.any(String)
-      );
-    });
-
-    test('log.debug (pas log.info) quand transitions = 0', async () => {
-      mockRunSharedCartStateMachineTick.mockResolvedValue(0);
-      crons.startSharedCartStateMachineCron();
-      await jest.advanceTimersByTimeAsync(20 * 60 * 1000);
-      expect(mockLog.debug).toHaveBeenCalledWith(
-        expect.objectContaining({ transitions: 0 }),
-        expect.any(String)
-      );
-      expect(mockLog.info).not.toHaveBeenCalledWith(
-        expect.objectContaining({ transitions: expect.anything() }),
-        expect.any(String)
-      );
-    });
-
-    test('erreur engine avalée via log.error', async () => {
-      mockRunSharedCartStateMachineTick.mockRejectedValue(new Error('engine crash'));
-      crons.startSharedCartStateMachineCron();
-      await jest.advanceTimersByTimeAsync(20 * 60 * 1000);
-      expect(mockLog.error).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error) }),
-        expect.stringMatching(/shared_cart state machine/i)
-      );
-    });
-
-    test('se répète toutes les heures après la première passe à 20 min', async () => {
-      mockRunSharedCartStateMachineTick.mockResolvedValue(0);
-      crons.startSharedCartStateMachineCron();
-      await jest.advanceTimersByTimeAsync(20 * 60 * 1000);
-      expect(mockRunSharedCartStateMachineTick).toHaveBeenCalledTimes(1);
-      await jest.advanceTimersByTimeAsync(60 * 60 * 1000);
-      expect(mockRunSharedCartStateMachineTick).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -403,11 +350,7 @@ describe('bootstrap/crons', () => {
 
       // Pickup token cleanup (déjà couvert par les 5 min ci-dessus)
       // JWT revocation cleanup (10 min)
-      await jest.advanceTimersByTimeAsync(5 * 60 * 1000);
-
-      // Shared cart state machine (20 min)
-      await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
-      expect(mockRunSharedCartStateMachineTick).toHaveBeenCalled();
+      await jest.advanceTimersByTimeAsync(15 * 60 * 1000);
 
       // Cash relais reminder (60 min par défaut)
       await jest.advanceTimersByTimeAsync(60 * 60 * 1000);
@@ -422,7 +365,6 @@ describe('bootstrap/crons', () => {
       expect(typeof crons.startSnapshotRetentionCron).toBe('function');
       expect(typeof crons.startPickupTokenCleanupCron).toBe('function');
       expect(typeof crons.startJwtRevocationCleanupCron).toBe('function');
-      expect(typeof crons.startSharedCartStateMachineCron).toBe('function');
     });
   });
 });
