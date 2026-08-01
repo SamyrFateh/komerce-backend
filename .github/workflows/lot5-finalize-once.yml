@@ -3,16 +3,13 @@ name: Lot 5 finalize once
 on:
   push:
     branches:
-      - fix/lot5-qualification
-  pull_request:
-    branches:
-      - main
+      - fix/lot5-postmerge-qualification
 
 permissions:
   contents: write
 
 concurrency:
-  group: lot5-finalize-once
+  group: lot5-finalize-once-postmerge
   cancel-in-progress: false
 
 jobs:
@@ -53,7 +50,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: fix/lot5-qualification
+          ref: fix/lot5-postmerge-qualification
 
       - uses: actions/setup-node@v4
         with:
@@ -128,4 +125,4 @@ jobs:
           git add -A
           git diff --cached --check
           git commit --no-verify -m "fix: finalize exceptional pickup qualification"
-          git push origin HEAD:fix/lot5-qualification
+          git push origin HEAD:fix/lot5-postmerge-qualification
