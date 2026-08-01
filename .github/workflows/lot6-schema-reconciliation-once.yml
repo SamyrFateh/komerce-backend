@@ -4,12 +4,15 @@ on:
   push:
     branches:
       - fix/lot6-schema-reconciliation
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 concurrency:
-  group: lot6-schema-reconciliation-once
+  group: lot6-schema-reconciliation-once-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
