@@ -2,9 +2,10 @@
 -- PostgreSQL database dump
 --
 
+\restrict XHTYlKPJZrEsokVgSRkN1SWBFZVtDZewWa035F7UG4gpaQhc9iE589VslAArFOI
 
--- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
--- Dumped by pg_dump version 18.4 (Debian 18.4-1.pgdg13+1)
+-- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
+-- Dumped by pg_dump version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -880,7 +881,7 @@ CREATE TABLE public.catalog_enrichment_runs (
     duration_ms integer,
     error text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT catalog_enrichment_runs_status_check CHECK (((status)::text = ANY ((ARRAY['ok'::character varying, 'low_confidence'::character varying, 'invalid_output'::character varying, 'failed'::character varying])::text[])))
+    CONSTRAINT catalog_enrichment_runs_status_check CHECK (((status)::text = ANY (ARRAY[('ok'::character varying)::text, ('low_confidence'::character varying)::text, ('invalid_output'::character varying)::text, ('failed'::character varying)::text])))
 );
 
 
@@ -906,7 +907,7 @@ CREATE TABLE public.catalog_exclusions (
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT catalog_exclusions_layer_check CHECK (((layer)::text = ANY ((ARRAY['absolute'::character varying, 'restricted'::character varying])::text[])))
+    CONSTRAINT catalog_exclusions_layer_check CHECK (((layer)::text = ANY (ARRAY[('absolute'::character varying)::text, ('restricted'::character varying)::text])))
 );
 
 
@@ -979,7 +980,7 @@ CREATE TABLE public.catalog_media (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT catalog_media_option_values_object CHECK (((option_values IS NULL) OR (jsonb_typeof(option_values) = 'object'::text))),
-    CONSTRAINT catalog_media_role_check CHECK (((role)::text = ANY ((ARRAY['PRODUCT'::character varying, 'SCENE'::character varying, 'DETAIL'::character varying, 'SIZE_GUIDE'::character varying, 'OTHER'::character varying])::text[])))
+    CONSTRAINT catalog_media_role_check CHECK (((role)::text = ANY (ARRAY[('PRODUCT'::character varying)::text, ('SCENE'::character varying)::text, ('DETAIL'::character varying)::text, ('SIZE_GUIDE'::character varying)::text, ('OTHER'::character varying)::text])))
 );
 
 
@@ -2077,7 +2078,7 @@ CREATE TABLE public.order_items (
     module_fabric_id uuid,
     module_fabric_type text,
     module_size character varying(8),
-    module_retouche boolean DEFAULT false CONSTRAINT order_items_ceremony_retouche_not_null NOT NULL,
+    module_retouche boolean DEFAULT false NOT NULL,
     module_qty_meters numeric(6,2),
     module_accessories jsonb,
     availability_status text DEFAULT 'pending'::text,
@@ -2290,7 +2291,7 @@ CREATE TABLE public.orders (
     module_fabric_id uuid,
     module_fabric_type text,
     module_size character varying(8),
-    module_retouche boolean DEFAULT false CONSTRAINT orders_ceremony_retouche_not_null NOT NULL,
+    module_retouche boolean DEFAULT false NOT NULL,
     module_qty_meters numeric(6,2),
     module_accessories jsonb,
     ordered_at timestamp with time zone,
@@ -2655,21 +2656,6 @@ ALTER SEQUENCE public.otp_codes_id_seq OWNED BY public.otp_codes.id;
 
 
 --
--- Name: outbox_events; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.outbox_events (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    event_type text NOT NULL,
-    payload jsonb NOT NULL,
-    created_at timestamp with time zone DEFAULT now(),
-    processed_at timestamp with time zone,
-    attempts integer DEFAULT 0,
-    last_error text
-);
-
-
---
 -- Name: parcel_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2789,7 +2775,7 @@ CREATE TABLE public.parcels (
 CREATE TABLE public.partners (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     name text NOT NULL,
-    partner_type text CONSTRAINT partners_type_not_null NOT NULL,
+    partner_type text NOT NULL,
     location text,
     island text DEFAULT 'Anjouan'::text NOT NULL,
     country character(2) DEFAULT 'KM'::bpchar NOT NULL,
@@ -3070,32 +3056,15 @@ CREATE TABLE public.pricing_components (
 --
 
 CREATE TABLE public.pricing_matrices_audit (
-    id integer CONSTRAINT pricing_matrices_audit_id_not_null1 NOT NULL,
-    matrix_type character varying(20) CONSTRAINT pricing_matrices_audit_matrix_type_not_null1 NOT NULL,
-    category character varying(50) CONSTRAINT pricing_matrices_audit_category_not_null1 NOT NULL,
-    old_value jsonb CONSTRAINT pricing_matrices_audit_old_value_not_null1 NOT NULL,
-    new_value jsonb CONSTRAINT pricing_matrices_audit_new_value_not_null1 NOT NULL,
+    id integer NOT NULL,
+    matrix_type character varying(20) NOT NULL,
+    category character varying(50) NOT NULL,
+    old_value jsonb NOT NULL,
+    new_value jsonb NOT NULL,
     changed_by uuid,
     change_reason text,
-    created_at timestamp with time zone DEFAULT now() CONSTRAINT pricing_matrices_audit_created_at_not_null1 NOT NULL,
-    CONSTRAINT pricing_matrices_audit_matrix_type_check1 CHECK (((matrix_type)::text = ANY ((ARRAY['taxes'::character varying, 'dims'::character varying])::text[])))
-);
-
-
---
--- Name: pricing_matrices_audit_hidden; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.pricing_matrices_audit_hidden (
-    id integer CONSTRAINT pricing_matrices_audit_id_not_null NOT NULL,
-    matrix_type character varying(20) CONSTRAINT pricing_matrices_audit_matrix_type_not_null NOT NULL,
-    category character varying(50) CONSTRAINT pricing_matrices_audit_category_not_null NOT NULL,
-    old_value jsonb CONSTRAINT pricing_matrices_audit_old_value_not_null NOT NULL,
-    new_value jsonb CONSTRAINT pricing_matrices_audit_new_value_not_null NOT NULL,
-    changed_by uuid,
-    change_reason text,
-    created_at timestamp with time zone DEFAULT now() CONSTRAINT pricing_matrices_audit_created_at_not_null NOT NULL,
-    CONSTRAINT pricing_matrices_audit_matrix_type_check CHECK (((matrix_type)::text = ANY ((ARRAY['taxes'::character varying, 'dims'::character varying])::text[])))
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT pricing_matrices_audit_matrix_type_check CHECK (((matrix_type)::text = ANY (ARRAY[('taxes'::character varying)::text, ('dims'::character varying)::text])))
 );
 
 
@@ -3116,27 +3085,7 @@ CREATE SEQUENCE public.pricing_matrices_audit_id_seq
 -- Name: pricing_matrices_audit_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.pricing_matrices_audit_id_seq OWNED BY public.pricing_matrices_audit_hidden.id;
-
-
---
--- Name: pricing_matrices_audit_id_seq1; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.pricing_matrices_audit_id_seq1
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: pricing_matrices_audit_id_seq1; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.pricing_matrices_audit_id_seq1 OWNED BY public.pricing_matrices_audit.id;
+ALTER SEQUENCE public.pricing_matrices_audit_id_seq OWNED BY public.pricing_matrices_audit.id;
 
 
 --
@@ -3197,8 +3146,8 @@ CREATE TABLE public.product_attributes (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT product_attributes_highlight_no_value CHECK ((((kind)::text <> 'HIGHLIGHT'::text) OR (value_text IS NULL))),
-    CONSTRAINT product_attributes_kind_check CHECK (((kind)::text = ANY ((ARRAY['HIGHLIGHT'::character varying, 'SPECIFICATION'::character varying])::text[]))),
-    CONSTRAINT product_attributes_source_check CHECK (((source)::text = ANY ((ARRAY['SUPPLIER'::character varying, 'AI_ENRICHED'::character varying, 'MANUAL'::character varying])::text[])))
+    CONSTRAINT product_attributes_kind_check CHECK (((kind)::text = ANY (ARRAY[('HIGHLIGHT'::character varying)::text, ('SPECIFICATION'::character varying)::text]))),
+    CONSTRAINT product_attributes_source_check CHECK (((source)::text = ANY (ARRAY[('SUPPLIER'::character varying)::text, ('AI_ENRICHED'::character varying)::text, ('MANUAL'::character varying)::text])))
 );
 
 
@@ -3225,7 +3174,7 @@ CREATE TABLE public.product_content_profile (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT product_content_profile_brand_len CHECK (((brand IS NULL) OR (char_length(brand) <= 200))),
     CONSTRAINT product_content_profile_short_desc_len CHECK (((short_description IS NULL) OR (char_length(short_description) <= 500))),
-    CONSTRAINT product_content_profile_source_check CHECK (((source)::text = ANY ((ARRAY['SUPPLIER'::character varying, 'AI_ENRICHED'::character varying, 'MANUAL'::character varying])::text[])))
+    CONSTRAINT product_content_profile_source_check CHECK (((source)::text = ANY (ARRAY[('SUPPLIER'::character varying)::text, ('AI_ENRICHED'::character varying)::text, ('MANUAL'::character varying)::text])))
 );
 
 
@@ -3255,8 +3204,8 @@ CREATE TABLE public.product_content_sections (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT product_content_sections_content_json_object CHECK ((jsonb_typeof(content_json) = 'object'::text)),
-    CONSTRAINT product_content_sections_source_check CHECK (((source)::text = ANY ((ARRAY['SUPPLIER'::character varying, 'AI_ENRICHED'::character varying, 'MANUAL'::character varying])::text[]))),
-    CONSTRAINT product_content_sections_type_check CHECK (((section_type)::text = ANY ((ARRAY['TEXT'::character varying, 'BULLETS'::character varying, 'KEY_VALUE'::character varying])::text[])))
+    CONSTRAINT product_content_sections_source_check CHECK (((source)::text = ANY (ARRAY[('SUPPLIER'::character varying)::text, ('AI_ENRICHED'::character varying)::text, ('MANUAL'::character varying)::text]))),
+    CONSTRAINT product_content_sections_type_check CHECK (((section_type)::text = ANY (ARRAY[('TEXT'::character varying)::text, ('BULLETS'::character varying)::text, ('KEY_VALUE'::character varying)::text])))
 );
 
 
@@ -3322,7 +3271,7 @@ CREATE TABLE public.product_skus (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     supplier_sku text,
     source character varying(20) DEFAULT 'MANUAL'::character varying NOT NULL,
-    CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY ((ARRAY['MANUAL'::character varying, 'SUPPLIER'::character varying])::text[]))),
+    CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY (ARRAY[('MANUAL'::character varying)::text, ('SUPPLIER'::character varying)::text]))),
     CONSTRAINT product_skus_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= 0))),
     CONSTRAINT product_skus_stock_non_negatif CHECK ((stock >= 0))
 );
@@ -5120,7 +5069,7 @@ CREATE TABLE public.wallet_credit_lots (
     status character varying(20) DEFAULT 'active'::character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT wallet_credit_lots_remaining_kmf_check CHECK ((remaining_kmf >= 0)),
-    CONSTRAINT wallet_credit_lots_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'used'::character varying, 'expired'::character varying, 'reversed'::character varying])::text[])))
+    CONSTRAINT wallet_credit_lots_status_check CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('used'::character varying)::text, ('expired'::character varying)::text, ('reversed'::character varying)::text])))
 );
 
 
@@ -5154,7 +5103,7 @@ CREATE TABLE public.wallet_transactions (
     created_by uuid,
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT wallet_transactions_amount_kmf_check CHECK ((amount_kmf > 0)),
-    CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY ((ARRAY['credit'::character varying, 'debit'::character varying, 'reversal'::character varying, 'expiration'::character varying])::text[])))
+    CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY (ARRAY[('credit'::character varying)::text, ('debit'::character varying)::text, ('reversal'::character varying)::text, ('expiration'::character varying)::text])))
 );
 
 
@@ -5211,14 +5160,7 @@ ALTER TABLE ONLY public.pricing_benchmarks ALTER COLUMN id SET DEFAULT nextval('
 -- Name: pricing_matrices_audit id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.pricing_matrices_audit ALTER COLUMN id SET DEFAULT nextval('public.pricing_matrices_audit_id_seq1'::regclass);
-
-
---
--- Name: pricing_matrices_audit_hidden id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.pricing_matrices_audit_hidden ALTER COLUMN id SET DEFAULT nextval('public.pricing_matrices_audit_id_seq'::regclass);
+ALTER TABLE ONLY public.pricing_matrices_audit ALTER COLUMN id SET DEFAULT nextval('public.pricing_matrices_audit_id_seq'::regclass);
 
 
 --
@@ -5830,14 +5772,6 @@ ALTER TABLE ONLY public.otp_codes
 
 
 --
--- Name: outbox_events outbox_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.outbox_events
-    ADD CONSTRAINT outbox_events_pkey PRIMARY KEY (id);
-
-
---
 -- Name: parcel_events parcel_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5966,19 +5900,11 @@ ALTER TABLE ONLY public.pricing_components
 
 
 --
--- Name: pricing_matrices_audit_hidden pricing_matrices_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.pricing_matrices_audit_hidden
-    ADD CONSTRAINT pricing_matrices_audit_pkey PRIMARY KEY (id);
-
-
---
--- Name: pricing_matrices_audit pricing_matrices_audit_pkey1; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: pricing_matrices_audit pricing_matrices_audit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.pricing_matrices_audit
-    ADD CONSTRAINT pricing_matrices_audit_pkey1 PRIMARY KEY (id);
+    ADD CONSTRAINT pricing_matrices_audit_pkey PRIMARY KEY (id);
 
 
 --
@@ -7820,14 +7746,14 @@ CREATE INDEX idx_pickup_verify_attempts_reset_at ON public.pickup_verify_attempt
 -- Name: idx_pma_created; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_pma_created ON public.pricing_matrices_audit_hidden USING btree (created_at DESC);
+CREATE INDEX idx_pma_created ON public.pricing_matrices_audit USING btree (created_at DESC);
 
 
 --
 -- Name: idx_pma_matrix_cat; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_pma_matrix_cat ON public.pricing_matrices_audit_hidden USING btree (matrix_type, category);
+CREATE INDEX idx_pma_matrix_cat ON public.pricing_matrices_audit USING btree (matrix_type, category);
 
 
 --
@@ -9844,19 +9770,11 @@ ALTER TABLE ONLY public.pricing_category_taxes
 
 
 --
--- Name: pricing_matrices_audit_hidden pricing_matrices_audit_changed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.pricing_matrices_audit_hidden
-    ADD CONSTRAINT pricing_matrices_audit_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES public.users(id) ON DELETE SET NULL;
-
-
---
--- Name: pricing_matrices_audit pricing_matrices_audit_changed_by_fkey1; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: pricing_matrices_audit pricing_matrices_audit_changed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.pricing_matrices_audit
-    ADD CONSTRAINT pricing_matrices_audit_changed_by_fkey1 FOREIGN KEY (changed_by) REFERENCES public.users(id) ON DELETE SET NULL;
+    ADD CONSTRAINT pricing_matrices_audit_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
@@ -10406,3 +10324,6 @@ ALTER TABLE ONLY public.wallets
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict XHTYlKPJZrEsokVgSRkN1SWBFZVtDZewWa035F7UG4gpaQhc9iE589VslAArFOI
+

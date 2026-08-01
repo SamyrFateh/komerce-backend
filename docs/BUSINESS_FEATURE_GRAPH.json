@@ -3541,6 +3541,13 @@
       },
       {
         "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/122_cleanup_realdb_test_schema_residue.sql",
+        "resolvedPath": "migrations/122_cleanup_realdb_test_schema_residue.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
         "category": "dash",
         "declared": "dashboards/admin/js/views/PricingView.js",
         "resolvedPath": "public/dashboards/admin/js/views/PricingView.js",
@@ -3579,6 +3586,13 @@
         "category": "dash",
         "declared": "dashboards/admin/js/views/EconomicFlowView.js",
         "resolvedPath": "public/dashboards/admin/js/views/EconomicFlowView.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/integration/txg01-pricing-matrices.test.js",
+        "resolvedPath": "tests/integration/txg01-pricing-matrices.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7479,6 +7493,13 @@
         "declared": "index.html",
         "resolvedPath": "public/boutique/index.html",
         "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "tests",
+        "declared": "tests/integration/r6-crash-window.test.js",
+        "resolvedPath": "tests/integration/r6-crash-window.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "platform-ops",
@@ -13348,6 +13369,54 @@
         "resolved": true
       },
       {
+        "from": "auth-identity",
+        "to": "wallet",
+        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "wallet",
+        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "wallet",
+        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "wallet",
+        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "wallet",
+        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "wallet",
+        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "wallet",
+        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "wallet",
+        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
+        "resolved": true
+      },
+      {
         "from": "business-rules",
         "to": "auth",
         "raw": "auth (garde de route admin)",
@@ -16315,7 +16384,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "business-rules",
@@ -23430,6 +23499,11 @@
           "raw": "CSS_BUNDLES_PATH"
         },
         {
+          "sourceFileId": "tests/integration/txg01-pricing-matrices.test.js",
+          "kind": "require",
+          "raw": "TARGET"
+        },
+        {
           "sourceFileId": "scripts/boutique-ownership-full-check.js",
           "kind": "require",
           "raw": "path.join(abs, f"
@@ -23508,7 +23582,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 824
+        "filesObserved": 826
       },
       "boutique": {
         "filesObserved": 127,
@@ -23547,7 +23621,7 @@
       "NON_RUNTIME_TEST": 7,
       "TECHNICAL_PRIMITIVE": 29,
       "BUSINESS_TRANSVERSAL_SERVICE": 3,
-      "CROSS_FEATURE_DIRECT_IMPORT": 4,
+      "CROSS_FEATURE_DIRECT_IMPORT": 3,
       "BUSINESS_FEATURE_INTERFACE": 7,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -23778,23 +23852,6 @@
         "exceptionRequired": true,
         "exceptionReasons": [
           "runtime-cycle"
-        ]
-      },
-      {
-        "from": "auth-identity",
-        "to": "wallet",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
         ]
       },
       {
@@ -24669,8 +24726,8 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 11,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 2,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-foundation|technical-primitive": 5,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-foundation|technical-primitive": 1,
@@ -24778,9 +24835,7 @@
     "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
-    "missingExceptions": [
-      "auth-identity->wallet"
-    ],
+    "missingExceptions": [],
     "emptyRationaleExceptions": [],
     "unexplainedRuntimeCycles": [],
     "ontologyGapCoverage": {
@@ -26613,7 +26668,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé"
+        "msg": "17 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg01-pricing-matrices.test.js: TARGET | scripts/boutique-ownership-full-check.js: path.join(abs, f) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
@@ -26709,11 +26764,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> platform-ops",
         "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> wallet",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"wallet\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

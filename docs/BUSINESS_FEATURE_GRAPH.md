@@ -137,7 +137,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 4
 - interfaces exposed: 23
 - internal APIs: 3
-- dependencies (consumes): 2 — auth, notifications
+- dependencies (consumes): 10 — auth, notifications, wallet, wallet, wallet, wallet, wallet, wallet, wallet, wallet
 - consumers: 5 — logistics, loyalty, payments, shared-cart, wallet
 
 ### business-rules _(business-transversal)_
@@ -244,9 +244,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - utils: 2
 - services: 25
 - routes: 12
-- migrations: 18
+- migrations: 19
 - dash: 6
-- tests: 46
+- tests: 47
 - tables owned (lifecycle): 15 — `exchange_rates`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_components`, `economic_variables`, `finance_config`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
 - tables written: 20
 - interfaces exposed: 73
@@ -419,7 +419,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 6
 - routes: 5
 - boutique: 6
-- tests: 20
+- tests: 21
 - tables owned (lifecycle): 6 — `parcels`, `parcel_items`, `scans`, `fabrics`, `garment_models`, `store_credits`
 - tables written: 8
 - interfaces exposed: 33
@@ -528,7 +528,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 9
 - internal APIs: 0
 - dependencies (consumes): 4 — auth, documents, auth-identity, payments
-- consumers: 10 — dashboard, documents, economic-engine, infrastructure, logistics, loyalty, orders, payments, refunds, shared-cart
+- consumers: 18 — auth-identity, auth-identity, auth-identity, auth-identity, auth-identity, auth-identity, auth-identity, auth-identity, dashboard, documents, economic-engine, infrastructure, logistics, loyalty, orders, payments, refunds, shared-cart
 
 ### wallet-loyalty _(deprecated)_
 
@@ -1191,6 +1191,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | auth | orders (`orders`) | ✔ |
 | auth-identity | auth (`auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)`) | ✔ |
 | auth-identity | notifications (`notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)`) | ✔ |
+| auth-identity | wallet (`wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)`) | ✔ |
+| auth-identity | wallet (`wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)`) | ✔ |
+| auth-identity | wallet (`wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)`) | ✔ |
+| auth-identity | wallet (`wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)`) | ✔ |
+| auth-identity | wallet (`wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)`) | ✔ |
+| auth-identity | wallet (`wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)`) | ✔ |
+| auth-identity | wallet (`wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)`) | ✔ |
+| auth-identity | wallet (`wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)`) | ✔ |
 | business-rules | auth (`auth (garde de route admin)`) | ✔ |
 | business-rules | infrastructure (`infrastructure (journalisation, acces base)`) | ✔ |
 | catalog | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)`) | ✔ |
@@ -1343,7 +1351,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### WARN / DEBT (128)
+### WARN / DEBT (127)
 
 Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
 
@@ -1361,7 +1369,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "products" (entrée: "products") — contract.consumes de shared-cart référence "products", ne correspond à aucun nom de feature connu
 - **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
-- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:backend — 16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé
+- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:backend — 17 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg01-pricing-matrices.test.js: TARGET | scripts/boutique-ownership-full-check.js: path.join(abs, f) — limitation du modèle statique O5, jamais inventé
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
@@ -1381,7 +1389,6 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> platform-ops — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "platform-ops"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> wallet — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "wallet"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> auth-identity — dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 10 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
@@ -1488,7 +1495,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 824 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 826 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 127 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 83 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1517,7 +1524,7 @@ Meta Graph monté : oui.
 | auth-identity | logistics | static-code | 2 | **OBSERVED_UNDECLARED** |
 | auth-identity | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | auth-identity | platform-ops | static-code | 7 | **OBSERVED_UNDECLARED** |
-| auth-identity | wallet | static-code | 2 | **OBSERVED_UNDECLARED** |
+| auth-identity | wallet | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | business-rules | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | business-rules | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1698,7 +1705,6 @@ Meta Graph monté : oui.
 - `auth-identity` → `infrastructure` (canaux: static-code)
 - `auth-identity` → `logistics` (canaux: static-code)
 - `auth-identity` → `platform-ops` (canaux: static-code)
-- `auth-identity` → `wallet` (canaux: static-code)
 - `catalog` → `auth-identity` (canaux: interface)
 - `catalog` → `infrastructure` (canaux: static-code)
 - `catalog` → `orders` (canaux: static-code)
@@ -1806,7 +1812,7 @@ Meta Graph monté : oui.
 
 ### Dynamic dependencies non résolues statiquement (limitation du modèle, jamais inventées)
 
-- scope `backend` : 16 appel(s) — ex. `tests/unit/modal-mobile-canonical.test.js`: `CSS_BUNDLES_PATH`, `scripts/boutique-ownership-full-check.js`: `path.join(abs, f`, `scripts/contract-generate.js`: `...`
+- scope `backend` : 17 appel(s) — ex. `tests/unit/modal-mobile-canonical.test.js`: `CSS_BUNDLES_PATH`, `tests/integration/txg01-pricing-matrices.test.js`: `TARGET`, `scripts/boutique-ownership-full-check.js`: `path.join(abs, f`
 
 ## O6 — Dependency Disposition
 
@@ -1823,11 +1829,11 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | NON_RUNTIME_TEST | 7 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 29 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 3 | business-dependency-declare-candidate |
-| CROSS_FEATURE_DIRECT_IMPORT | 4 | boundary-remediation-required |
+| CROSS_FEATURE_DIRECT_IMPORT | 3 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 7 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **72** | |
+| **TOTAL** | **71** | |
 
 ### Projection dependencies
 
@@ -1919,7 +1925,6 @@ Consommation réelle d'un service transversal métier — candidat `contract.con
 
 require() direct d'un fichier d'une autre business-feature — couture à casser AVANT déclaration.
 
-- `auth-identity` → `wallet` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
 - `catalog` → `orders` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
 - `recommendations` → `orders` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
 - `shared-cart` → `catalog` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_

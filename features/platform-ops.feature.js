@@ -68,6 +68,7 @@ module.exports = {
       'index.html',
     ],
       tests: [
+      'tests/integration/r6-crash-window.test.js',
       'tests/integration/api.test.js',
       'tests/integration/isweep-invariants.test.js',
       'tests/integration/isweep-services.test.js',
