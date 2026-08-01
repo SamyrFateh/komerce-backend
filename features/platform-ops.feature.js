@@ -36,11 +36,6 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    migrations: [
-      // Lot 6 : nettoyage conservatif de deux résidus DDL laissés par des
-      // preuves REAL_DB historiques ; aucune nouvelle capacité métier.
-      'migrations/122_cleanup_realdb_test_schema_residue.sql',
-    ],
     compositionRoots: [
       'public/boutique/js/main.js',
       'public/boutique/js/boutique.js',
