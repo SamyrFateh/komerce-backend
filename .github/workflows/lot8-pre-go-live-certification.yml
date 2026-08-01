@@ -7,6 +7,7 @@ on:
     paths:
       - 'docs/certification/LOT_8_PRE_GO_LIVE.md'
       - '.github/workflows/lot8-pre-go-live-certification.yml'
+      - 'docs/contract/**'
       - 'features/**'
       - 'routes/auth.js'
       - 'routes/pickup-secret.js'
@@ -80,6 +81,9 @@ jobs:
 
       - name: Contracts, invariants and global map
         run: |
+          npm run contract:generate
+          node scripts/contract-check.js
+          git diff --exit-code -- docs/contract/openapi.json docs/contract/DEBT.md
           npm run gate:catalog-contract
           npm run feature:check
           npm run feature:invariant:check:strict
