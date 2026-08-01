@@ -242,7 +242,12 @@ jobs:
           npm run feature:360:gen
 
       - name: Post-migration map and governance gates
-        run: npm run map:check
+        run: |
+          set +e
+          npm run map:check > /tmp/lot6-map-check.log 2>&1
+          status=$?
+          tail -n 350 /tmp/lot6-map-check.log
+          exit $status
 
   finalize:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/lot6-schema-reconciliation'
