@@ -23,6 +23,10 @@ async function flush(times = 5) {
   for (let i = 0; i < times; i += 1) await Promise.resolve();
 }
 
+function exceptionalCollectEndpoint(orderId) {
+  return ['', 'api', 'pickup', 'exceptional-pickup', orderId, 'collect'].join('/');
+}
+
 describe('Hub relais — retrait exceptionnel nominatif', () => {
   beforeAll(() => {
     document.body.innerHTML = '<main id="ct-main"></main>';
@@ -77,7 +81,7 @@ describe('Hub relais — retrait exceptionnel nominatif', () => {
 
     expect(global.fetch).toHaveBeenNthCalledWith(
       2,
-      '/api/pickup/exceptional-pickup/order-l7-001/collect',
+      exceptionalCollectEndpoint('order-l7-001'),
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',
