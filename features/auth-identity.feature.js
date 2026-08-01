@@ -179,6 +179,7 @@ module.exports = {
       'notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)',
       'wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)',
       'wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)',
+      'wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)',
     ],
   },
 
