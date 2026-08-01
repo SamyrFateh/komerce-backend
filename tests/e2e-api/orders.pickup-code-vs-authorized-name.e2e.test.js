@@ -117,12 +117,12 @@ describeE2E(
       );
 
       cleanup.trackSql(
-        'DELETE FROM order_status_history WHERE order_id = $1',
+        'DELETE FROM scans WHERE order_id = $1',
         [orderId]
       );
 
       cleanup.trackSql(
-        'DELETE FROM scans WHERE order_id = $1',
+        'DELETE FROM order_status_history WHERE order_id = $1',
         [orderId]
       );
 

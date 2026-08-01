@@ -90,6 +90,7 @@ BEGIN
     SELECT 1
     FROM pg_constraint
     WHERE conname = 'chk_scans_pickup_method'
+      AND conrelid = 'public.scans'::regclass
   ) THEN
     ALTER TABLE scans
       ADD CONSTRAINT chk_scans_pickup_method
@@ -103,6 +104,7 @@ BEGIN
     SELECT 1
     FROM pg_constraint
     WHERE conname = 'chk_scans_exceptional_pickup_proof'
+      AND conrelid = 'public.scans'::regclass
   ) THEN
     ALTER TABLE scans
       ADD CONSTRAINT chk_scans_exceptional_pickup_proof

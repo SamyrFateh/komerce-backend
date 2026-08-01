@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-29T16:41:02.283Z",
+  "generatedAt": "2026-08-01T03:18:23.727Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 475,
+  "count": 480,
   "routes": [
     {
       "method": "GET",
@@ -1682,6 +1682,36 @@
       ]
     },
     {
+      "method": "DELETE",
+      "fullPath": "/api/auth/me/pickup-authorization",
+      "mountPrefix": "/api/auth",
+      "localPath": "/me/pickup-authorization",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/auth/me/pickup-authorization",
+      "mountPrefix": "/api/auth",
+      "localPath": "/me/pickup-authorization",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/auth/me/pickup-authorization",
+      "mountPrefix": "/api/auth",
+      "localPath": "/me/pickup-authorization",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "GET",
       "fullPath": "/api/auth/orders",
       "mountPrefix": "/api/auth",
@@ -3191,6 +3221,26 @@
       "fullPath": "/api/pickup/collect/:orderId",
       "mountPrefix": "/api/pickup",
       "localPath": "/collect/:orderId",
+      "routeFile": "routes/pickup-secret.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/pickup/exceptional-pickup/:orderId",
+      "mountPrefix": "/api/pickup",
+      "localPath": "/exceptional-pickup/:orderId",
+      "routeFile": "routes/pickup-secret.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/pickup/exceptional-pickup/:orderId/collect",
+      "mountPrefix": "/api/pickup",
+      "localPath": "/exceptional-pickup/:orderId/collect",
       "routeFile": "routes/pickup-secret.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

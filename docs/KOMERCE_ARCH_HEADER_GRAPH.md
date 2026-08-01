@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 387
-- Files with full headers: 359
+- Scanned code files: 389
+- Files with full headers: 361
 - Files with lite headers: 28
-- Files with any headers: 387
+- Files with any headers: 389
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 798
-- Edges: 4447
+- Graph nodes: 807
+- Edges: 4460
 - DB tables: 117
-- Doctrines: 162
-- Impact areas: 132
-- Unresolved code edges: 425
+- Doctrines: 165
+- Impact areas: 136
+- Unresolved code edges: 430
 - Tables multi-écrivains directs (>=2): 69
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -28,7 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 8
 - auth-identity: 5
 - bootstrap: 2
-- boutique: 18
+- boutique: 20
 - business-rules: 1
 - catalog: 64
 - checkout: 2
@@ -78,7 +78,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - service: 158
 - state: 1
 - state-store: 1
-- ui-bootstrap: 2
+- ui-bootstrap: 4
 - ui-component: 36
 - ui-controller: 1
 - ui-enhancer: 3
@@ -644,9 +644,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: notification-service.js -> services/whatsapp-meta.js (notification-service.js)
 - uses: paypal-flows -> services/order-payment-confirmation.js (paypal-flows)
 - uses: public_shared_cart_links -> public/boutique/js/b-group-view.js (public_shared_cart_links)
+- uses: public/boutique/index.html -> public/boutique/js/b-service-worker-refresh.js (public/boutique/index.html)
 - uses: public/boutique/index.html -> public/boutique/js/boutique.js (public/boutique/index.html)
 - uses: public/boutique/index.html -> public/boutique/js/komerce-api.js (public/boutique/index.html)
 - depends: public/boutique/js/b-scroll-owner.js -> DOM (DOM)
+- depends: public/boutique/js/b-service-worker-refresh.js -> browser-cache-api (browser-cache-api)
+- depends: public/boutique/js/b-service-worker-refresh.js -> browser-service-worker-api (browser-service-worker-api)
 - depends: public/boutique/js/b-store.js -> DOM (DOM)
 - depends: public/boutique/js/b-store.js -> localStorage (localStorage)
 - depends: public/boutique/js/b-store.js -> sessionStorage (sessionStorage)
@@ -655,6 +658,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/group/group-api.js -> fetch (fetch)
 - depends: public/boutique/js/komerce-api.js -> backend_api (backend_api)
 - depends: public/boutique/js/product-store.js -> localStorage (localStorage)
+- depends: public/boutique/js/test-modal-view-model-redirect.js -> browser-location-api (browser-location-api)
+- uses: public/boutique/test-modal-view-model.html -> public/boutique/js/test-modal-view-model-redirect.js (public/boutique/test-modal-view-model.html)
 - uses: railway-runtime -> server.js (railway-runtime)
 - uses: relais-dashboard -> services/payment-cash-confirm.js (relais-dashboard)
 - uses: reminders -> services/notifications/notification-service.js (reminders)
@@ -719,11 +724,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/carriers.js -> db.js (db.js)
 - depends: routes/carriers.js -> services/* (services/*)
 - depends: routes/cash.js -> db.js (db.js)
-- depends: routes/cash.js -> services/* (services/*)
-- depends: routes/catalog-product-detail.js -> db.js (db.js)
-- depends: routes/categories.js -> db.js (db.js)
-- depends: routes/categories.js -> services/* (services/*)
-- depends: routes/client-auth.js -> db.js (db.js)
 
 ## Files Still Without Headers Or Aggregation
 
