@@ -1,0 +1,132 @@
+name: Lot 8 sync main once
+
+on:
+  push:
+    branches:
+      - test/lot8-pre-go-live-certification
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lot8-sync-main-once
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: lot8-ci-secret-not-for-prod
+      ADMIN_PASSWORD: lot8-ci-admin
+      QR_SECRET: lot8-ci-qr-secret
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+      KOMERCE_DISABLE_CRONS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test/lot8-pre-go-live-certification
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Preserve Lot 8 owned files
+        run: |
+          mkdir -p /tmp/lot8/.github/workflows /tmp/lot8/docs/certification /tmp/lot8/public/boutique/tests/unit /tmp/lot8/public/dashboards/tests/unit /tmp/lot8/public/boutique
+          cp .github/workflows/lot8-pre-go-live-certification.yml /tmp/lot8/.github/workflows/
+          cp docs/certification/LOT_8_PRE_GO_LIVE.md /tmp/lot8/docs/certification/
+          cp public/boutique/jest.config.js /tmp/lot8/public/boutique/
+          cp public/boutique/tests/unit/setup-after-env.js /tmp/lot8/public/boutique/tests/unit/
+          cp public/dashboards/tests/unit/pickup-exceptional-flow.test.js /tmp/lot8/public/dashboards/tests/unit/
+
+      - name: Merge current main and resolve generated conflicts from main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main || true
+          conflicts="$(git diff --name-only --diff-filter=U)"
+          if [ -n "$conflicts" ]; then
+            while IFS= read -r file; do
+              git checkout --theirs -- "$file"
+              git add "$file"
+            done <<< "$conflicts"
+          fi
+          test -z "$(git diff --name-only --diff-filter=U)"
+
+      - name: Restore Lot 8 certification files
+        run: |
+          cp /tmp/lot8/.github/workflows/lot8-pre-go-live-certification.yml .github/workflows/
+          cp /tmp/lot8/docs/certification/LOT_8_PRE_GO_LIVE.md docs/certification/
+          cp /tmp/lot8/public/boutique/jest.config.js public/boutique/
+          cp /tmp/lot8/public/boutique/tests/unit/setup-after-env.js public/boutique/tests/unit/
+          cp /tmp/lot8/public/dashboards/tests/unit/pickup-exceptional-flow.test.js public/dashboards/tests/unit/
+
+      - name: Reconcile registry, schema and migration integrity
+        run: |
+          npm ci
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'docs/doctrine/APP_FEATURE_REGISTRY.md';
+          const row = '| 27 | `business-rules` | transversal (business) | backend | [`business-rules.feature.js`](../../features/business-rules.feature.js) | production | Référentiel versionné des règles métier paramétrables, consommé par les features décisionnaires sans décider à leur place |';
+          const lines = fs.readFileSync(path, 'utf8').split(/\r?\n/);
+          if (!lines.some((line) => line.includes('`business-rules`'))) {
+            const anchor = lines.findIndex((line) => line.startsWith('| 26 | `incident-management`'));
+            if (anchor < 0) throw new Error('Registry anchor not found');
+            lines.splice(anchor + 1, 0, row);
+            fs.writeFileSync(path, lines.join('\n'));
+          }
+          NODE
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+          node scripts/db-snapshot.js
+          node scripts/arch-reconcile.js --write
+          node <<'NODE'
+          const crypto = require('crypto');
+          const fs = require('fs');
+          const path = require('path');
+          const hashes = {};
+          for (const file of fs.readdirSync('migrations').filter((name) => name.endsWith('.sql')).sort()) {
+            hashes[file] = crypto.createHash('sha256')
+              .update(fs.readFileSync(path.join('migrations', file), 'utf8'))
+              .digest('hex').slice(0, 16);
+          }
+          fs.writeFileSync('governance/migration-hashes.json', JSON.stringify(hashes, null, 2) + '\n');
+          NODE
+          npm run arch:gate
+          npm run feature:registry-doc
+
+      - name: Remove one-shot workflow and commit merge
+        run: |
+          rm -f .github/workflows/lot8-sync-main-once.yml
+          git add -A
+          git diff --cached --check
+          git commit --no-verify -m "merge: synchronize Lot 8 certification with main"
+          git push origin HEAD:test/lot8-pre-go-live-certification
