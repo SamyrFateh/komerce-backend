@@ -961,15 +961,18 @@ async function collectByPickupCode({ code, user, ip = null, userAgent = null }) 
     // correspondance exacte se fait ensuite par comparaison de hash salé —
     // jamais par égalité directe sur le secret.
     const { rows: candidates } = await client.query(`
-      SELECT o.id, o.reference, o.relais_id, o.recipient_name, o.status,
+      SELECT o.id, o.reference, o.relais_id,
+             u.full_name AS recipient_name,
+             o.status,
              r.name AS relais_name,
              o.pickup_secret_hash, o.pickup_secret_salt, o.pickup_secret_last4,
              o.pickup_secret_expires_at, o.pickup_secret_attempts, o.pickup_secret_blocked_until
       FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
       LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.pickup_secret_last4 = $1
         AND o.status = 'available'
-      FOR UPDATE
+      FOR UPDATE OF o
     `, [last4]);
 
     const order = candidates.find(c =>
@@ -1181,7 +1184,7 @@ async function collectByAuthorizedName({
       LEFT JOIN relais r ON r.id = o.relais_id
       LEFT JOIN users u ON u.id = o.user_id
       WHERE o.id = $1
-      FOR UPDATE
+      FOR UPDATE OF o
     `, [orderId]);
 
     if (!order) {
@@ -1272,7 +1275,7 @@ async function collectByAuthorizedName({
         type:        'exceptional_pickup_name_mismatch',
         entityId:    order.id,
         title:       `Retrait exceptionnel — nom non concordant (${order.reference})`,
-        description: `agent_id=${agentId} role=${role} attempts=${attempts}`,
+        description: `actor_id=${agentId} role=${role} order_id=${order.id} relais_id=${order.relais_id} method=AUTHORIZED_NAME_ID_CHECK authorization_version=${authorization.version} result=NAME_MISMATCH attempts=${attempts}`,
       });
 
       return { status: 401, body: {
