@@ -37,6 +37,8 @@ Le merge du Lot 8 n’est autorisé que lorsque le workflow canonique
 - Security 360 ;
 - gate pré-déploiement sans réexécuter les tests.
 
+Le manifeste `business-rules` est enregistré dans le registre canonique afin de préserver la bijection stricte entre les manifests présents sur disque et `APP_FEATURE_REGISTRY.md`.
+
 ### PostgreSQL réel
 
 - chargement du dump Railway canonique ;
