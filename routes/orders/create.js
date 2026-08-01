@@ -12,7 +12,7 @@
  * @db-write      cart_shares, order_items, order_status_history, orders, recipients
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  orders, checkout
+ * @impact-areas  orders, checkout, shared-cart
  * @version       2026-06
  */
 
@@ -476,8 +476,9 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
            variant_combo, sku_id,
            customs_category_key, sh_code, douane_pct, tva_pct, taxe_add_pct,
            classification_defaulted,
-           requested_transport_rail
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+           requested_transport_rail,
+           shared_cart_item_id
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
         [
           order.id,
           item.product_id,
@@ -510,6 +511,14 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           // Code canonique du rail demandé par le client (null = aucun choix explicite).
           // L'orchestrateur logistique assigne le rail réel dans assigned_transport_rail.
           item.requested_transport_rail ?? null,
+          // Boutique First (D2/D4) — rattachement à un article de liste
+          // partagée. Optionnel : null pour tout achat hors contexte liste.
+          // L'unicité est arbitrée par un index unique en base (migration 123),
+          // pas par une vérification applicative : deux participants qui
+          // achètent le même article de liste au même instant produisent une
+          // seule commande gagnante, l'autre reçoit une violation de
+          // contrainte que ce bloc convertit en 409 explicite plus bas.
+          item.shared_cart_item_id || null,
         ]
       );
     }
@@ -661,6 +670,16 @@ if (creditApplied > 0 && total_kmf === 0 && order.id) {
       await client.query('ROLLBACK');
     } catch (_) {
       // no-op
+    }
+    // Boutique First (D2) — conflit de réclamation sur un article de liste
+    // partagée : le premier paiement confirmé gagne, arbitré par l'index
+    // unique order_items_shared_cart_item_id_unique (migration 123). Le
+    // second appelant reçoit une erreur claire, jamais un état intermédiaire.
+    if (err.code === '23505' && err.constraint === 'order_items_shared_cart_item_id_unique') {
+      return res.status(409).json({
+        error: 'Cet article de la liste vient déjà d\'être pris par quelqu\'un d\'autre.',
+        code: 'shared_cart_item_already_claimed',
+      });
     }
     next(err);
   } finally {

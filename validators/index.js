@@ -196,6 +196,10 @@ const orders = {
           Joi.string().min(1).max(50),
           Joi.string().min(1).max(50)
         ).max(10).allow(null),
+        // Boutique First (D2/D4) — rattachement optionnel à un article de
+        // liste partagée. L'unicité est arbitrée en base (migration 123),
+        // pas ici : ce champ ne fait que transporter la référence.
+        shared_cart_item_id: uuid.allow(null),
       })).min(1).required(),
       relais_id:             uuid,
       payment_mode:          Joi.string().valid('stripe_eur', 'cash_relais', 'paypal_eur').required(),
