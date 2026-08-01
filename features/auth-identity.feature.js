@@ -180,6 +180,7 @@ module.exports = {
       'wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)',
       'wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)',
       'wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)',
+      'wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)',
     ],
   },
 
