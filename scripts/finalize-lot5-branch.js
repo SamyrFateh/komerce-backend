@@ -132,4 +132,120 @@ function replaceOnce(source, before, after, label) {
   fs.writeFileSync(path, source, 'utf8');
 }
 
-console.log('Lot 5 corrigé : identité acheteur, verrous orders, audit, contraintes et nettoyage E2E.');
+// 4) La CSP Boutique interdit les scripts inline. Externaliser les deux
+// scripts existants sans assouplir script-src ni changer leur ordre d'exécution.
+{
+  const indexPath = 'public/boutique/index.html';
+  let index = fs.readFileSync(indexPath, 'utf8');
+  const inlineServiceWorker = `<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){r.update();});
+  });
+
+  navigator.serviceWorker.addEventListener('message', function(e){
+    if(e.data && e.data.type === 'sw-updated'){
+      /* Ne reload que si un SW contrôlait déjà la page au chargement (donc
+         une vraie mise à jour) — jamais lors d'une première activation.
+         Défensif : protège contre le même symptôme si register() est
+         réintroduit un jour (aucun register() n'existe actuellement). */
+      if (navigator.serviceWorker.controller) {
+        console.log('[SW] Nouvelle version', e.data.version, '→ reload auto');
+        location.reload();
+      }
+    }
+  });
+
+  if(window.caches){
+    caches.keys().then(function(names){
+      names.forEach(function(n){
+        if(n.indexOf('komerce-v334') === -1) caches.delete(n);
+      });
+    });
+  }
+}
+</script>`;
+
+  index = replaceOnce(
+    index,
+    inlineServiceWorker,
+    '<script src="/boutique/js/b-service-worker-refresh.js"></script>',
+    'CSP index service worker'
+  );
+  fs.writeFileSync(indexPath, index, 'utf8');
+
+  fs.writeFileSync('public/boutique/js/b-service-worker-refresh.js', `/**
+ * @komerce-arch
+ * @role          boutique-service-worker-refresh
+ * @domain        boutique
+ * @layer         ui-bootstrap
+ * @criticality   medium
+ * @inputs        navigator.serviceWorker, CacheStorage
+ * @outputs       service-worker-update-check, stale-cache-cleanup
+ * @depends       browser-service-worker-api, browser-cache-api
+ * @used-by       public/boutique/index.html
+ * @doctrine      csp_no_inline_script, mise_a_jour_sans_boucle
+ * @impact-areas  boutique-bootstrap, cache, service-worker
+ * @version       2026-08
+ */
+'use strict';
+/* global navigator, caches, location */
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function (registrations) {
+    registrations.forEach(function (registration) {
+      registration.update();
+    });
+  });
+
+  navigator.serviceWorker.addEventListener('message', function (event) {
+    if (event.data && event.data.type === 'sw-updated' && navigator.serviceWorker.controller) {
+      console.log('[SW] Nouvelle version', event.data.version, '→ reload auto');
+      location.reload();
+    }
+  });
+
+  if (window.caches) {
+    caches.keys().then(function (names) {
+      names.forEach(function (name) {
+        if (name.indexOf('komerce-v334') === -1) caches.delete(name);
+      });
+    });
+  }
+}
+`, 'utf8');
+
+  const redirectPath = 'public/boutique/test-modal-view-model.html';
+  let redirect = fs.readFileSync(redirectPath, 'utf8');
+  redirect = replaceOnce(
+    redirect,
+    `  <script>
+    location.replace('/boutique/?tab=group');
+  </script>`,
+    '  <script src="/boutique/js/test-modal-view-model-redirect.js"></script>',
+    'CSP test modal redirect'
+  );
+  fs.writeFileSync(redirectPath, redirect, 'utf8');
+
+  fs.writeFileSync('public/boutique/js/test-modal-view-model-redirect.js', `/**
+ * @komerce-arch
+ * @role          boutique-test-modal-redirect
+ * @domain        boutique
+ * @layer         ui-bootstrap
+ * @criticality   low
+ * @inputs        legacy-test-modal-url
+ * @outputs       canonical-group-view-redirect
+ * @depends       browser-location-api
+ * @used-by       public/boutique/test-modal-view-model.html
+ * @doctrine      csp_no_inline_script, legacy_entry_redirect_only
+ * @impact-areas  boutique-test-entry
+ * @version       2026-08
+ */
+'use strict';
+/* global location */
+
+location.replace('/boutique/?tab=group');
+`, 'utf8');
+}
+
+console.log('Lot 5 corrigé : identité acheteur, verrous orders, audit, contraintes, nettoyage E2E et CSP Boutique.');
