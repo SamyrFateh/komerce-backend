@@ -43,14 +43,14 @@
   "summary": {
     "features": 29,
     "healthy": 6,
-    "attention": 22,
-    "blocked": 1,
-    "businessDependencies": 119,
-    "directCrossFeatureImports": 4,
+    "attention": 23,
+    "blocked": 0,
+    "businessDependencies": 120,
+    "directCrossFeatureImports": 3,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 65,
     "ontologyGaps": 0,
-    "debtItemsTotal": 122,
+    "debtItemsTotal": 121,
     "gateHealthy": 14,
     "gateBlocked": 1
   },
@@ -1146,6 +1146,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "wallet",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -1224,8 +1231,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
-        "directCrossFeatureImports": 1,
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -1277,17 +1284,12 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 2,
+        "debtCount": 1,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table revoked_tokens — écrite par auth-identity (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -5759,7 +5761,7 @@
             ]
           },
           "migrations": {
-            "count": 18,
+            "count": 19,
             "files": [
               {
                 "declared": "migrations/019_finance_columns.sql",
@@ -5849,6 +5851,11 @@
               {
                 "declared": "migrations/103_cost_benchmarks.sql",
                 "resolvedPath": "migrations/103_cost_benchmarks.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/122_cleanup_realdb_test_schema_residue.sql",
+                "resolvedPath": "migrations/122_cleanup_realdb_test_schema_residue.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -6049,7 +6056,7 @@
             ]
           },
           "tests": {
-            "count": 46,
+            "count": 47,
             "files": [
               {
                 "declared": "tests/integration/sourcing-engine-routes.test.js",
@@ -6059,6 +6066,11 @@
               {
                 "declared": "tests/integration/sourcing-flow-g5.test.js",
                 "resolvedPath": "tests/integration/sourcing-flow-g5.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/txg01-pricing-matrices.test.js",
+                "resolvedPath": "tests/integration/txg01-pricing-matrices.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6299,7 +6311,7 @@
             ]
           }
         },
-        "totalFiles": 109,
+        "totalFiles": 111,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -13559,7 +13571,7 @@
             ]
           },
           "tests": {
-            "count": 20,
+            "count": 21,
             "files": [
               {
                 "declared": "tests/integration/api.test.js",
@@ -13579,6 +13591,11 @@
               {
                 "declared": "tests/integration/isweep-transactional-flows.test.js",
                 "resolvedPath": "tests/integration/isweep-transactional-flows.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/r6-crash-window.test.js",
+                "resolvedPath": "tests/integration/r6-crash-window.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -13664,7 +13681,7 @@
             ]
           }
         },
-        "totalFiles": 40,
+        "totalFiles": 41,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
           "count": 22,
@@ -17466,6 +17483,13 @@
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
         {
           "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",

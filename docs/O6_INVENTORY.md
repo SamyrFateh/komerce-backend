@@ -13,11 +13,11 @@
 | NON_RUNTIME_TEST | 7 |
 | TECHNICAL_PRIMITIVE | 29 |
 | BUSINESS_TRANSVERSAL_SERVICE | 3 |
-| CROSS_FEATURE_DIRECT_IMPORT | 4 |
+| CROSS_FEATURE_DIRECT_IMPORT | 3 |
 | BUSINESS_FEATURE_INTERFACE | 7 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **72** |
+| **TOTAL** | **71** |
 
 ## The 94 pairs (from → to)
 
@@ -38,7 +38,6 @@
 | auth-identity → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-foundation | static-code | technical-primitive | technical-dependency-policy | — | `` |
 | auth-identity → logistics | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | auth-identity → platform-ops | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-transversal | static-code | business-file-import | technical-dependency-policy | runtime-cycle | `` |
-| auth-identity → wallet | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_AND_TEST | business-feature | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import | `` |
 | catalog → auth-identity | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | interface | interface | business-dependency-declare-candidate | — | `` |
 | catalog → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-foundation | static-code | technical-primitive | technical-dependency-policy | — | `` |
 | catalog → orders | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_AND_TEST | business-feature | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import | `` |
