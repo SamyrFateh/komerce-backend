@@ -20,14 +20,14 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 806,
-    "edges": 4452,
+    "graphNodes": 804,
+    "edges": 4373,
     "dbTables": 117,
-    "doctrines": 164,
+    "doctrines": 162,
     "impactAreas": 136,
-    "unresolvedCodeEdges": 429,
+    "unresolvedCodeEdges": 428,
     "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 69
+    "multiWriterTables": 68
   },
   "byDomain": {
     "infrastructure": 20,
@@ -125,7 +125,6 @@
         "routes/orders.js",
         "routes/payments.js",
         "routes/otp.js",
-        "routes/shared-cart-cash.js",
         "routes/meta-whatsapp.js",
         "routes/economic-engine.js",
         "routes/boutique-suggestions.js",
@@ -8397,23 +8396,15 @@
       "inputs": [
         "public_token",
         "auth_user",
-        "estimations",
-        "contributions",
-        "stripe_webhook",
         "creator_actions"
       ],
       "outputs": [
         "shared_cart_api",
-        "stripe_sessions",
-        "notifications",
         "admin_views"
       ],
       "depends": [
         "services/shared-cart-engine.js",
-        "services/shared-cart-estimation-service.js",
-        "services/shared-cart-financial-guard.js",
         "services/shared-cart-items-service.js",
-        "services/shared-cart-v41-transitions.js",
         "services/shared-cart-queries.js"
       ],
       "usedBy": [
@@ -8426,14 +8417,11 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
-        "delegated_to_shared_cart_services",
-        "stripe_webhook_idempotency"
+        "delegated_to_shared_cart_services"
       ],
       "doctrine": [
-        "paiement_seul_acte_engageant",
-        "estimations_indicatives",
-        "participant_peut_verifier",
-        "retour_stripe_boutique",
+        "domaine_minimal_boutique_first",
+        "participant_achete_individuellement",
         "panier_ouvert_ferme"
       ],
       "impactAreas": [
@@ -8441,11 +8429,9 @@
         "checkout",
         "participant-flow",
         "creator-dashboard",
-        "stripe",
-        "whatsapp",
         "boutique"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "routes/shares.js",
@@ -15346,8 +15332,7 @@
       ],
       "depends": [
         "db.js",
-        "services/shared-cart-internals.js",
-        "services/shared-cart-estimation-service.js"
+        "services/shared-cart-internals.js"
       ],
       "usedBy": [
         "routes/shared-cart.js"
@@ -15356,8 +15341,6 @@
         "basket_items",
         "baskets",
         "products",
-        "shared_cart_estimations",
-        "shared_cart_items",
         "shared_carts",
         "users"
       ],
@@ -15374,13 +15357,13 @@
         "snapshot_consistency"
       ],
       "doctrine": [
-        "panier_ouvert_ferme",
+        "domaine_minimal_boutique_first",
         "snapshot_fige"
       ],
       "impactAreas": [
         "creator-flow"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "services/shared-cart-engine.js",
@@ -15397,38 +15380,24 @@
         "cart_id",
         "token",
         "cart_items",
-        "payment_event",
-        "timer_event",
         "creator_action"
       ],
       "outputs": [
         "shared_cart",
-        "contribution",
-        "next_status",
-        "order",
+        "items",
         "events"
       ],
       "depends": [
-        "db.js",
-        "services/whatsapp-meta.js",
-        "services/order-service.js",
-        "services/routing.js",
-        "services/order-payment-confirmation.js",
-        "utils/rates.js"
+        "db.js"
       ],
       "usedBy": [
-        "routes/shared-cart.js",
-        "bootstrap/crons.js"
+        "routes/shared-cart.js"
       ],
       "dbRead": [
         "basket_items",
         "baskets",
-        "orders",
+        "order_items",
         "products",
-        "recipients",
-        "relais",
-        "shared_cart_contributions",
-        "shared_cart_estimations",
         "shared_cart_items",
         "shared_carts",
         "users"
@@ -15436,11 +15405,6 @@
       "dbWrite": [
         "basket_items",
         "baskets",
-        "order_items",
-        "order_status_history",
-        "orders",
-        "recipients",
-        "shared_cart_contributions",
         "shared_cart_events",
         "shared_cart_items",
         "shared_carts"
@@ -15448,27 +15412,19 @@
       "dbWriteVia": [],
       "dbTxn": [
         "required_for_state_transition",
-        "idempotent_payment_events",
         "snapshot_consistency"
       ],
       "doctrine": [
-        "paiement_seul_acte_engageant",
+        "domaine_minimal_boutique_first",
         "panier_ouvert_ferme",
-        "snapshot_fige",
-        "fenetre_paiement_48h",
-        "choix_createur_72h",
-        "idempotence_financiere"
+        "snapshot_fige"
       ],
       "impactAreas": [
         "participant-flow",
         "creator-flow",
-        "checkout",
-        "orders",
-        "notifications",
-        "stock",
-        "economic-engine"
+        "checkout"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "services/shared-cart-estimation-service.js",
@@ -15608,8 +15564,8 @@
       "usedBy": [
         "services/shared-cart-creation.js",
         "services/shared-cart-reads.js",
-        "services/shared-cart-contributions.js",
-        "services/shared-cart-lifecycle.js"
+        "services/shared-cart-lifecycle.js",
+        "services/shared-cart-items-service.js"
       ],
       "dbRead": [
         "shared_cart_events"
@@ -15619,12 +15575,14 @@
       ],
       "dbWriteVia": [],
       "dbTxn": [],
-      "doctrine": [],
+      "doctrine": [
+        "domaine_minimal_boutique_first"
+      ],
       "impactAreas": [
         "participant-flow",
         "creator-flow"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "services/shared-cart-items-service.js",
@@ -15640,18 +15598,14 @@
       "inputs": [
         "shared_cart_id",
         "cart_items",
-        "actor_identity",
-        "open_cart_state"
+        "actor_identity"
       ],
       "outputs": [
-        "updated_cart_items",
-        "snapshot_recalculation",
-        "participant_notification_signal"
+        "updated_cart_items"
       ],
       "depends": [
         "db.js",
-        "services/shared-cart-queries.js",
-        "services/shared-cart-v41-transitions.js"
+        "services/shared-cart-internals.js"
       ],
       "usedBy": [
         "routes/shared-cart.js",
@@ -15659,7 +15613,6 @@
       ],
       "dbRead": [
         "products",
-        "shared_cart_contributions",
         "shared_cart_items",
         "shared_carts"
       ],
@@ -15670,22 +15623,17 @@
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "open_cart_only",
-        "snapshot_locked_after_close"
+        "open_cart_only"
       ],
       "doctrine": [
         "panier_ouvert_modifiable",
-        "snapshot_fige_apres_fermeture",
-        "participant_lecture_seule"
+        "domaine_minimal_boutique_first"
       ],
       "impactAreas": [
         "shared-cart-editing",
-        "creator-flow",
-        "participant-flow",
-        "cart",
-        "notifications"
+        "creator-flow"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "services/shared-cart-lifecycle.js",
@@ -15701,71 +15649,37 @@
       "inputs": [
         "shared_cart_id",
         "user_id",
-        "options",
-        "payment_event",
-        "timer_event"
+        "reason"
       ],
       "outputs": [
-        "shared_cart",
-        "order",
-        "transition_count"
+        "shared_cart"
       ],
       "depends": [
         "db.js",
-        "services/shared-cart-internals.js",
-        "services/whatsapp-meta.js",
-        "services/order-service.js",
-        "services/routing.js",
-        "services/order-payment-confirmation.js",
-        "utils/rates.js"
+        "services/shared-cart-internals.js"
       ],
       "usedBy": [
-        "routes/shared-cart.js",
-        "bootstrap/crons.js"
+        "routes/shared-cart.js"
       ],
       "dbRead": [
-        "orders",
-        "products",
-        "recipients",
-        "relais",
-        "shared_cart_contributions",
-        "shared_cart_items",
-        "shared_carts",
-        "users"
+        "shared_carts"
       ],
       "dbWrite": [
-        "basket_items",
-        "baskets",
-        "order_items",
-        "order_status_history",
-        "orders",
-        "recipients",
         "shared_cart_events",
         "shared_carts"
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "required_for_state_transition",
-        "idempotent_payment_events",
-        "snapshot_consistency"
+        "required_for_state_transition"
       ],
       "doctrine": [
-        "paiement_seul_acte_engageant",
-        "panier_ouvert_ferme",
-        "snapshot_fige",
-        "fenetre_paiement_48h",
-        "choix_createur_72h",
-        "idempotence_financiere"
+        "domaine_minimal_boutique_first",
+        "panier_ouvert_ferme"
       ],
       "impactAreas": [
-        "creator-flow",
-        "checkout",
-        "orders",
-        "notifications",
-        "stock",
-        "economic-engine"
+        "creator-flow"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "services/shared-cart-queries.js",
@@ -15785,51 +15699,39 @@
         "status_filters"
       ],
       "outputs": [
-        "shared_cart_records",
-        "contribution_records",
-        "participant_records"
+        "shared_cart_records"
       ],
       "depends": [
         "db.js"
       ],
       "usedBy": [
-        "routes/shared-cart.js",
-        "shared-cart-engine.js",
-        "shared-cart-services"
+        "routes/shared-cart.js"
       ],
       "dbRead": [
-        "finance_config",
-        "shared_cart_contributions",
-        "shared_cart_estimations",
         "shared_cart_events",
         "shared_cart_items",
         "shared_carts",
-        "stripe_events_processed",
         "users"
       ],
       "dbWrite": [
-        "shared_cart_contributions",
         "shared_cart_events",
-        "shared_carts",
-        "stripe_events_processed"
+        "shared_carts"
       ],
       "dbWriteVia": [],
       "dbTxn": [
         "centralized_lookup_no_mutation"
       ],
       "doctrine": [
-        "backend_source_verite",
-        "lookup_centralise",
-        "token_public_controle"
+        "domaine_minimal_boutique_first",
+        "backend_source_verite"
       ],
       "impactAreas": [
         "shared-cart",
         "participant-flow",
         "creator-flow",
-        "admin-debug",
-        "crons"
+        "admin-debug"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "services/shared-cart-reads.js",
@@ -15849,8 +15751,7 @@
       ],
       "outputs": [
         "shared_cart",
-        "items",
-        "contributions"
+        "items"
       ],
       "depends": [
         "db.js",
@@ -15860,25 +15761,21 @@
         "routes/shared-cart.js"
       ],
       "dbRead": [
-        "shared_cart_contributions",
-        "shared_cart_estimations",
+        "order_items",
         "shared_cart_items",
-        "shared_carts",
-        "users"
-      ],
-      "dbWrite": [
         "shared_carts"
       ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "snapshot_fige"
+        "domaine_minimal_boutique_first"
       ],
       "impactAreas": [
         "participant-flow",
         "creator-flow"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "services/shared-cart-refund-queue.js",
@@ -19266,9 +19163,14 @@
       "doctrine": "produit_desactive_non_supprime"
     },
     {
-      "id": "doctrine:retour_stripe_boutique",
+      "id": "doctrine:domaine_minimal_boutique_first",
       "type": "doctrine",
-      "doctrine": "retour_stripe_boutique"
+      "doctrine": "domaine_minimal_boutique_first"
+    },
+    {
+      "id": "doctrine:participant_achete_individuellement",
+      "type": "doctrine",
+      "doctrine": "participant_achete_individuellement"
     },
     {
       "id": "doctrine:PDC-8 Lot 6",
@@ -19526,16 +19428,6 @@
       "doctrine": "snapshot_fige"
     },
     {
-      "id": "doctrine:fenetre_paiement_48h",
-      "type": "doctrine",
-      "doctrine": "fenetre_paiement_48h"
-    },
-    {
-      "id": "doctrine:choix_createur_72h",
-      "type": "doctrine",
-      "doctrine": "choix_createur_72h"
-    },
-    {
       "id": "doctrine:visibilite_createur",
       "type": "doctrine",
       "doctrine": "visibilite_createur"
@@ -19551,19 +19443,14 @@
       "doctrine": "panier_ouvert_modifiable"
     },
     {
-      "id": "doctrine:snapshot_fige_apres_fermeture",
+      "id": "doctrine:fenetre_paiement_48h",
       "type": "doctrine",
-      "doctrine": "snapshot_fige_apres_fermeture"
+      "doctrine": "fenetre_paiement_48h"
     },
     {
-      "id": "doctrine:lookup_centralise",
+      "id": "doctrine:choix_createur_72h",
       "type": "doctrine",
-      "doctrine": "lookup_centralise"
-    },
-    {
-      "id": "doctrine:token_public_controle",
-      "type": "doctrine",
-      "doctrine": "token_public_controle"
+      "doctrine": "choix_createur_72h"
     },
     {
       "id": "doctrine:docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
@@ -20221,11 +20108,6 @@
       "area": "creator-dashboard"
     },
     {
-      "id": "impact:stripe",
-      "type": "impact-area",
-      "area": "stripe"
-    },
-    {
       "id": "impact:refunds",
       "type": "impact-area",
       "area": "refunds"
@@ -20306,6 +20188,11 @@
       "area": "shared-cart-progress"
     },
     {
+      "id": "impact:stripe",
+      "type": "impact-area",
+      "area": "stripe"
+    },
+    {
       "id": "impact:admin-debug",
       "type": "impact-area",
       "area": "admin-debug"
@@ -20339,12 +20226,6 @@
       "to": "routes/otp.js",
       "type": "depends",
       "label": "routes/otp.js"
-    },
-    {
-      "from": "bootstrap/api-routes.js",
-      "to": "routes/shared-cart-cash.js",
-      "type": "depends",
-      "label": "routes/shared-cart-cash.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -32042,27 +31923,9 @@
     },
     {
       "from": "routes/shared-cart.js",
-      "to": "services/shared-cart-estimation-service.js",
-      "type": "depends",
-      "label": "services/shared-cart-estimation-service.js"
-    },
-    {
-      "from": "routes/shared-cart.js",
-      "to": "services/shared-cart-financial-guard.js",
-      "type": "depends",
-      "label": "services/shared-cart-financial-guard.js"
-    },
-    {
-      "from": "routes/shared-cart.js",
       "to": "services/shared-cart-items-service.js",
       "type": "depends",
       "label": "services/shared-cart-items-service.js"
-    },
-    {
-      "from": "routes/shared-cart.js",
-      "to": "services/shared-cart-v41-transitions.js",
-      "type": "depends",
-      "label": "services/shared-cart-v41-transitions.js"
     },
     {
       "from": "routes/shared-cart.js",
@@ -32096,27 +31959,15 @@
     },
     {
       "from": "routes/shared-cart.js",
-      "to": "doctrine:paiement_seul_acte_engageant",
+      "to": "doctrine:domaine_minimal_boutique_first",
       "type": "doctrine",
-      "label": "paiement_seul_acte_engageant"
+      "label": "domaine_minimal_boutique_first"
     },
     {
       "from": "routes/shared-cart.js",
-      "to": "doctrine:estimations_indicatives",
+      "to": "doctrine:participant_achete_individuellement",
       "type": "doctrine",
-      "label": "estimations_indicatives"
-    },
-    {
-      "from": "routes/shared-cart.js",
-      "to": "doctrine:participant_peut_verifier",
-      "type": "doctrine",
-      "label": "participant_peut_verifier"
-    },
-    {
-      "from": "routes/shared-cart.js",
-      "to": "doctrine:retour_stripe_boutique",
-      "type": "doctrine",
-      "label": "retour_stripe_boutique"
+      "label": "participant_achete_individuellement"
     },
     {
       "from": "routes/shared-cart.js",
@@ -32147,18 +31998,6 @@
       "to": "impact:creator-dashboard",
       "type": "impact",
       "label": "creator-dashboard"
-    },
-    {
-      "from": "routes/shared-cart.js",
-      "to": "impact:stripe",
-      "type": "impact",
-      "label": "stripe"
-    },
-    {
-      "from": "routes/shared-cart.js",
-      "to": "impact:whatsapp",
-      "type": "impact",
-      "label": "whatsapp"
     },
     {
       "from": "routes/shared-cart.js",
@@ -42315,12 +42154,6 @@
       "label": "services/shared-cart-internals.js"
     },
     {
-      "from": "services/shared-cart-creation.js",
-      "to": "services/shared-cart-estimation-service.js",
-      "type": "depends",
-      "label": "services/shared-cart-estimation-service.js"
-    },
-    {
       "from": "routes/shared-cart.js",
       "to": "services/shared-cart-creation.js",
       "type": "uses",
@@ -42346,18 +42179,6 @@
     },
     {
       "from": "services/shared-cart-creation.js",
-      "to": "db:shared_cart_estimations",
-      "type": "db-read",
-      "label": "shared_cart_estimations"
-    },
-    {
-      "from": "services/shared-cart-creation.js",
-      "to": "db:shared_cart_items",
-      "type": "db-read",
-      "label": "shared_cart_items"
-    },
-    {
-      "from": "services/shared-cart-creation.js",
       "to": "db:shared_carts",
       "type": "db-read",
       "label": "shared_carts"
@@ -42400,9 +42221,9 @@
     },
     {
       "from": "services/shared-cart-creation.js",
-      "to": "doctrine:panier_ouvert_ferme",
+      "to": "doctrine:domaine_minimal_boutique_first",
       "type": "doctrine",
-      "label": "panier_ouvert_ferme"
+      "label": "domaine_minimal_boutique_first"
     },
     {
       "from": "services/shared-cart-creation.js",
@@ -42423,46 +42244,10 @@
       "label": "db.js"
     },
     {
-      "from": "services/shared-cart-engine.js",
-      "to": "services/whatsapp-meta.js",
-      "type": "depends",
-      "label": "services/whatsapp-meta.js"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "services/order-service.js",
-      "type": "depends",
-      "label": "services/order-service.js"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "services/routing.js",
-      "type": "depends",
-      "label": "services/routing.js"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "services/order-payment-confirmation.js",
-      "type": "depends",
-      "label": "services/order-payment-confirmation.js"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "utils/rates.js",
-      "type": "depends",
-      "label": "utils/rates.js"
-    },
-    {
       "from": "routes/shared-cart.js",
       "to": "services/shared-cart-engine.js",
       "type": "uses",
       "label": "routes/shared-cart.js"
-    },
-    {
-      "from": "bootstrap/crons.js",
-      "to": "services/shared-cart-engine.js",
-      "type": "uses",
-      "label": "bootstrap/crons.js"
     },
     {
       "from": "services/shared-cart-engine.js",
@@ -42478,39 +42263,15 @@
     },
     {
       "from": "services/shared-cart-engine.js",
-      "to": "db:orders",
+      "to": "db:order_items",
       "type": "db-read",
-      "label": "orders"
+      "label": "order_items"
     },
     {
       "from": "services/shared-cart-engine.js",
       "to": "db:products",
       "type": "db-read",
       "label": "products"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "db:recipients",
-      "type": "db-read",
-      "label": "recipients"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "db:relais",
-      "type": "db-read",
-      "label": "relais"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "db:shared_cart_contributions",
-      "type": "db-read",
-      "label": "shared_cart_contributions"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "db:shared_cart_estimations",
-      "type": "db-read",
-      "label": "shared_cart_estimations"
     },
     {
       "from": "services/shared-cart-engine.js",
@@ -42544,36 +42305,6 @@
     },
     {
       "from": "services/shared-cart-engine.js",
-      "to": "db:order_items",
-      "type": "db-write",
-      "label": "order_items"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "db:order_status_history",
-      "type": "db-write",
-      "label": "order_status_history"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "db:orders",
-      "type": "db-write",
-      "label": "orders"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "db:recipients",
-      "type": "db-write",
-      "label": "recipients"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "db:shared_cart_contributions",
-      "type": "db-write",
-      "label": "shared_cart_contributions"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
       "to": "db:shared_cart_events",
       "type": "db-write",
       "label": "shared_cart_events"
@@ -42592,9 +42323,9 @@
     },
     {
       "from": "services/shared-cart-engine.js",
-      "to": "doctrine:paiement_seul_acte_engageant",
+      "to": "doctrine:domaine_minimal_boutique_first",
       "type": "doctrine",
-      "label": "paiement_seul_acte_engageant"
+      "label": "domaine_minimal_boutique_first"
     },
     {
       "from": "services/shared-cart-engine.js",
@@ -42607,24 +42338,6 @@
       "to": "doctrine:snapshot_fige",
       "type": "doctrine",
       "label": "snapshot_fige"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "doctrine:fenetre_paiement_48h",
-      "type": "doctrine",
-      "label": "fenetre_paiement_48h"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "doctrine:choix_createur_72h",
-      "type": "doctrine",
-      "label": "choix_createur_72h"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "doctrine:idempotence_financiere",
-      "type": "doctrine",
-      "label": "idempotence_financiere"
     },
     {
       "from": "services/shared-cart-engine.js",
@@ -42643,30 +42356,6 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "impact:orders",
-      "type": "impact",
-      "label": "orders"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "impact:notifications",
-      "type": "impact",
-      "label": "notifications"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "impact:stock",
-      "type": "impact",
-      "label": "stock"
-    },
-    {
-      "from": "services/shared-cart-engine.js",
-      "to": "impact:economic-engine",
-      "type": "impact",
-      "label": "economic-engine"
     },
     {
       "from": "services/shared-cart-estimation-service.js",
@@ -42879,16 +42568,16 @@
       "label": "services/shared-cart-reads.js"
     },
     {
-      "from": "services/shared-cart-contributions.js",
-      "to": "services/shared-cart-internals.js",
-      "type": "uses",
-      "label": "services/shared-cart-contributions.js"
-    },
-    {
       "from": "services/shared-cart-lifecycle.js",
       "to": "services/shared-cart-internals.js",
       "type": "uses",
       "label": "services/shared-cart-lifecycle.js"
+    },
+    {
+      "from": "services/shared-cart-items-service.js",
+      "to": "services/shared-cart-internals.js",
+      "type": "uses",
+      "label": "services/shared-cart-items-service.js"
     },
     {
       "from": "services/shared-cart-internals.js",
@@ -42901,6 +42590,12 @@
       "to": "db:shared_cart_events",
       "type": "db-write",
       "label": "shared_cart_events"
+    },
+    {
+      "from": "services/shared-cart-internals.js",
+      "to": "doctrine:domaine_minimal_boutique_first",
+      "type": "doctrine",
+      "label": "domaine_minimal_boutique_first"
     },
     {
       "from": "services/shared-cart-internals.js",
@@ -42922,15 +42617,9 @@
     },
     {
       "from": "services/shared-cart-items-service.js",
-      "to": "services/shared-cart-queries.js",
+      "to": "services/shared-cart-internals.js",
       "type": "depends",
-      "label": "services/shared-cart-queries.js"
-    },
-    {
-      "from": "services/shared-cart-items-service.js",
-      "to": "services/shared-cart-v41-transitions.js",
-      "type": "depends",
-      "label": "services/shared-cart-v41-transitions.js"
+      "label": "services/shared-cart-internals.js"
     },
     {
       "from": "routes/shared-cart.js",
@@ -42949,12 +42638,6 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
-    },
-    {
-      "from": "services/shared-cart-items-service.js",
-      "to": "db:shared_cart_contributions",
-      "type": "db-read",
-      "label": "shared_cart_contributions"
     },
     {
       "from": "services/shared-cart-items-service.js",
@@ -42994,15 +42677,9 @@
     },
     {
       "from": "services/shared-cart-items-service.js",
-      "to": "doctrine:snapshot_fige_apres_fermeture",
+      "to": "doctrine:domaine_minimal_boutique_first",
       "type": "doctrine",
-      "label": "snapshot_fige_apres_fermeture"
-    },
-    {
-      "from": "services/shared-cart-items-service.js",
-      "to": "doctrine:participant_lecture_seule",
-      "type": "doctrine",
-      "label": "participant_lecture_seule"
+      "label": "domaine_minimal_boutique_first"
     },
     {
       "from": "services/shared-cart-items-service.js",
@@ -43017,24 +42694,6 @@
       "label": "creator-flow"
     },
     {
-      "from": "services/shared-cart-items-service.js",
-      "to": "impact:participant-flow",
-      "type": "impact",
-      "label": "participant-flow"
-    },
-    {
-      "from": "services/shared-cart-items-service.js",
-      "to": "impact:cart",
-      "type": "impact",
-      "label": "cart"
-    },
-    {
-      "from": "services/shared-cart-items-service.js",
-      "to": "impact:notifications",
-      "type": "impact",
-      "label": "notifications"
-    },
-    {
       "from": "services/shared-cart-lifecycle.js",
       "to": "db.js",
       "type": "depends",
@@ -43047,130 +42706,16 @@
       "label": "services/shared-cart-internals.js"
     },
     {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "services/whatsapp-meta.js",
-      "type": "depends",
-      "label": "services/whatsapp-meta.js"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "services/order-service.js",
-      "type": "depends",
-      "label": "services/order-service.js"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "services/routing.js",
-      "type": "depends",
-      "label": "services/routing.js"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "services/order-payment-confirmation.js",
-      "type": "depends",
-      "label": "services/order-payment-confirmation.js"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "utils/rates.js",
-      "type": "depends",
-      "label": "utils/rates.js"
-    },
-    {
       "from": "routes/shared-cart.js",
       "to": "services/shared-cart-lifecycle.js",
       "type": "uses",
       "label": "routes/shared-cart.js"
     },
     {
-      "from": "bootstrap/crons.js",
-      "to": "services/shared-cart-lifecycle.js",
-      "type": "uses",
-      "label": "bootstrap/crons.js"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:products",
-      "type": "db-read",
-      "label": "products"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:recipients",
-      "type": "db-read",
-      "label": "recipients"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:relais",
-      "type": "db-read",
-      "label": "relais"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:shared_cart_contributions",
-      "type": "db-read",
-      "label": "shared_cart_contributions"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:shared_cart_items",
-      "type": "db-read",
-      "label": "shared_cart_items"
-    },
-    {
       "from": "services/shared-cart-lifecycle.js",
       "to": "db:shared_carts",
       "type": "db-read",
       "label": "shared_carts"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:users",
-      "type": "db-read",
-      "label": "users"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:basket_items",
-      "type": "db-write",
-      "label": "basket_items"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:baskets",
-      "type": "db-write",
-      "label": "baskets"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:order_items",
-      "type": "db-write",
-      "label": "order_items"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:order_status_history",
-      "type": "db-write",
-      "label": "order_status_history"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:orders",
-      "type": "db-write",
-      "label": "orders"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "db:recipients",
-      "type": "db-write",
-      "label": "recipients"
     },
     {
       "from": "services/shared-cart-lifecycle.js",
@@ -43186,9 +42731,9 @@
     },
     {
       "from": "services/shared-cart-lifecycle.js",
-      "to": "doctrine:paiement_seul_acte_engageant",
+      "to": "doctrine:domaine_minimal_boutique_first",
       "type": "doctrine",
-      "label": "paiement_seul_acte_engageant"
+      "label": "domaine_minimal_boutique_first"
     },
     {
       "from": "services/shared-cart-lifecycle.js",
@@ -43198,63 +42743,9 @@
     },
     {
       "from": "services/shared-cart-lifecycle.js",
-      "to": "doctrine:snapshot_fige",
-      "type": "doctrine",
-      "label": "snapshot_fige"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "doctrine:fenetre_paiement_48h",
-      "type": "doctrine",
-      "label": "fenetre_paiement_48h"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "doctrine:choix_createur_72h",
-      "type": "doctrine",
-      "label": "choix_createur_72h"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "doctrine:idempotence_financiere",
-      "type": "doctrine",
-      "label": "idempotence_financiere"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
       "to": "impact:creator-flow",
       "type": "impact",
       "label": "creator-flow"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "impact:checkout",
-      "type": "impact",
-      "label": "checkout"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "impact:orders",
-      "type": "impact",
-      "label": "orders"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "impact:notifications",
-      "type": "impact",
-      "label": "notifications"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "impact:stock",
-      "type": "impact",
-      "label": "stock"
-    },
-    {
-      "from": "services/shared-cart-lifecycle.js",
-      "to": "impact:economic-engine",
-      "type": "impact",
-      "label": "economic-engine"
     },
     {
       "from": "services/shared-cart-queries.js",
@@ -43269,36 +42760,6 @@
       "label": "routes/shared-cart.js"
     },
     {
-      "from": "services/shared-cart-engine.js",
-      "to": "services/shared-cart-queries.js",
-      "type": "uses",
-      "label": "shared-cart-engine.js"
-    },
-    {
-      "from": "shared-cart-services",
-      "to": "services/shared-cart-queries.js",
-      "type": "uses",
-      "label": "shared-cart-services"
-    },
-    {
-      "from": "services/shared-cart-queries.js",
-      "to": "db:finance_config",
-      "type": "db-read",
-      "label": "finance_config"
-    },
-    {
-      "from": "services/shared-cart-queries.js",
-      "to": "db:shared_cart_contributions",
-      "type": "db-read",
-      "label": "shared_cart_contributions"
-    },
-    {
-      "from": "services/shared-cart-queries.js",
-      "to": "db:shared_cart_estimations",
-      "type": "db-read",
-      "label": "shared_cart_estimations"
-    },
-    {
       "from": "services/shared-cart-queries.js",
       "to": "db:shared_cart_events",
       "type": "db-read",
@@ -43318,21 +42779,9 @@
     },
     {
       "from": "services/shared-cart-queries.js",
-      "to": "db:stripe_events_processed",
-      "type": "db-read",
-      "label": "stripe_events_processed"
-    },
-    {
-      "from": "services/shared-cart-queries.js",
       "to": "db:users",
       "type": "db-read",
       "label": "users"
-    },
-    {
-      "from": "services/shared-cart-queries.js",
-      "to": "db:shared_cart_contributions",
-      "type": "db-write",
-      "label": "shared_cart_contributions"
     },
     {
       "from": "services/shared-cart-queries.js",
@@ -43348,27 +42797,15 @@
     },
     {
       "from": "services/shared-cart-queries.js",
-      "to": "db:stripe_events_processed",
-      "type": "db-write",
-      "label": "stripe_events_processed"
+      "to": "doctrine:domaine_minimal_boutique_first",
+      "type": "doctrine",
+      "label": "domaine_minimal_boutique_first"
     },
     {
       "from": "services/shared-cart-queries.js",
       "to": "doctrine:backend_source_verite",
       "type": "doctrine",
       "label": "backend_source_verite"
-    },
-    {
-      "from": "services/shared-cart-queries.js",
-      "to": "doctrine:lookup_centralise",
-      "type": "doctrine",
-      "label": "lookup_centralise"
-    },
-    {
-      "from": "services/shared-cart-queries.js",
-      "to": "doctrine:token_public_controle",
-      "type": "doctrine",
-      "label": "token_public_controle"
     },
     {
       "from": "services/shared-cart-queries.js",
@@ -43395,12 +42832,6 @@
       "label": "admin-debug"
     },
     {
-      "from": "services/shared-cart-queries.js",
-      "to": "impact:crons",
-      "type": "impact",
-      "label": "crons"
-    },
-    {
       "from": "services/shared-cart-reads.js",
       "to": "db.js",
       "type": "depends",
@@ -43420,15 +42851,9 @@
     },
     {
       "from": "services/shared-cart-reads.js",
-      "to": "db:shared_cart_contributions",
+      "to": "db:order_items",
       "type": "db-read",
-      "label": "shared_cart_contributions"
-    },
-    {
-      "from": "services/shared-cart-reads.js",
-      "to": "db:shared_cart_estimations",
-      "type": "db-read",
-      "label": "shared_cart_estimations"
+      "label": "order_items"
     },
     {
       "from": "services/shared-cart-reads.js",
@@ -43444,21 +42869,9 @@
     },
     {
       "from": "services/shared-cart-reads.js",
-      "to": "db:users",
-      "type": "db-read",
-      "label": "users"
-    },
-    {
-      "from": "services/shared-cart-reads.js",
-      "to": "db:shared_carts",
-      "type": "db-write",
-      "label": "shared_carts"
-    },
-    {
-      "from": "services/shared-cart-reads.js",
-      "to": "doctrine:snapshot_fige",
+      "to": "doctrine:domaine_minimal_boutique_first",
       "type": "doctrine",
-      "label": "snapshot_fige"
+      "label": "domaine_minimal_boutique_first"
     },
     {
       "from": "services/shared-cart-reads.js",
@@ -47083,7 +46496,6 @@
         "routes/orders.js",
         "routes/payments.js",
         "routes/otp.js",
-        "routes/shared-cart-cash.js",
         "routes/meta-whatsapp.js",
         "routes/economic-engine.js",
         "routes/boutique-suggestions.js",
@@ -47303,8 +46715,6 @@
         "server.js",
         "services/cash-reminder-service.js",
         "services/inventory-service.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js",
         "utils/logger.js",
         "utils/rules.js"
       ]
@@ -55333,10 +54743,7 @@
       "purpose": null,
       "directDependsOn": [
         "services/shared-cart-engine.js",
-        "services/shared-cart-estimation-service.js",
-        "services/shared-cart-financial-guard.js",
         "services/shared-cart-items-service.js",
-        "services/shared-cart-v41-transitions.js",
         "services/shared-cart-queries.js"
       ],
       "directUsedBy": [
@@ -55350,10 +54757,8 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "paiement_seul_acte_engageant",
-        "estimations_indicatives",
-        "participant_peut_verifier",
-        "retour_stripe_boutique",
+        "domaine_minimal_boutique_first",
+        "participant_achete_individuellement",
         "panier_ouvert_ferme"
       ],
       "impactAreas": [
@@ -55361,23 +54766,17 @@
         "checkout",
         "participant-flow",
         "creator-dashboard",
-        "stripe",
-        "whatsapp",
         "boutique"
       ],
       "mustCheck": [
-        "doctrine:estimations_indicatives",
-        "doctrine:paiement_seul_acte_engageant",
+        "doctrine:domaine_minimal_boutique_first",
         "doctrine:panier_ouvert_ferme",
-        "doctrine:participant_peut_verifier",
-        "doctrine:retour_stripe_boutique",
+        "doctrine:participant_achete_individuellement",
         "impact:boutique",
         "impact:checkout",
         "impact:creator-dashboard",
         "impact:participant-flow",
         "impact:shared-cart",
-        "impact:stripe",
-        "impact:whatsapp",
         "middleware/auth-guest.js",
         "middleware/auth.js",
         "public/boutique/js/b-cart.js",
@@ -59637,7 +59036,6 @@
         "services/payment-paypal.js",
         "services/payment-stripe.js",
         "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js",
         "services/wallet-service.js",
         "utils/logger.js"
       ]
@@ -59688,7 +59086,6 @@
         "impact:wallet",
         "routes/orders.js",
         "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js",
         "services/wallet-service.js"
       ]
     },
@@ -61751,7 +61148,6 @@
         "impact:unknown",
         "routes/orders/create.js",
         "server.js",
-        "services/shared-cart-engine.js",
         "services/shared-cart-lifecycle.js",
         "utils/logger.js"
       ]
@@ -61991,8 +61387,7 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "services/shared-cart-internals.js",
-        "services/shared-cart-estimation-service.js"
+        "services/shared-cart-internals.js"
       ],
       "directUsedBy": [
         "routes/shared-cart.js"
@@ -62002,8 +61397,6 @@
         "basket_items",
         "baskets",
         "products",
-        "shared_cart_estimations",
-        "shared_cart_items",
         "shared_carts",
         "users"
       ],
@@ -62016,7 +61409,7 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "panier_ouvert_ferme",
+        "domaine_minimal_boutique_first",
         "snapshot_fige"
       ],
       "impactAreas": [
@@ -62026,16 +61419,14 @@
         "db:basket_items",
         "db:baskets",
         "db:products",
-        "db:shared_cart_estimations",
         "db:shared_cart_events",
         "db:shared_cart_items",
         "db:shared_carts",
         "db:users",
-        "doctrine:panier_ouvert_ferme",
+        "doctrine:domaine_minimal_boutique_first",
         "doctrine:snapshot_fige",
         "impact:creator-flow",
         "routes/shared-cart.js",
-        "services/shared-cart-estimation-service.js",
         "services/shared-cart-internals.js"
       ]
     },
@@ -62047,27 +61438,17 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db.js",
-        "services/whatsapp-meta.js",
-        "services/order-service.js",
-        "services/routing.js",
-        "services/order-payment-confirmation.js",
-        "utils/rates.js"
+        "db.js"
       ],
       "directUsedBy": [
-        "routes/shared-cart.js",
-        "bootstrap/crons.js"
+        "routes/shared-cart.js"
       ],
       "ownedFiles": [],
       "dbRead": [
         "basket_items",
         "baskets",
-        "orders",
+        "order_items",
         "products",
-        "recipients",
-        "relais",
-        "shared_cart_contributions",
-        "shared_cart_estimations",
         "shared_cart_items",
         "shared_carts",
         "users"
@@ -62075,74 +61456,44 @@
       "dbWrite": [
         "basket_items",
         "baskets",
-        "order_items",
-        "order_status_history",
-        "orders",
-        "recipients",
-        "shared_cart_contributions",
         "shared_cart_events",
         "shared_cart_items",
         "shared_carts"
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "paiement_seul_acte_engageant",
+        "domaine_minimal_boutique_first",
         "panier_ouvert_ferme",
-        "snapshot_fige",
-        "fenetre_paiement_48h",
-        "choix_createur_72h",
-        "idempotence_financiere"
+        "snapshot_fige"
       ],
       "impactAreas": [
         "participant-flow",
         "creator-flow",
-        "checkout",
-        "orders",
-        "notifications",
-        "stock",
-        "economic-engine"
+        "checkout"
       ],
       "mustCheck": [
-        "bootstrap/crons.js",
         "db:basket_items",
         "db:baskets",
         "db:order_items",
-        "db:order_status_history",
-        "db:orders",
         "db:products",
-        "db:recipients",
-        "db:relais",
-        "db:shared_cart_contributions",
-        "db:shared_cart_estimations",
         "db:shared_cart_events",
         "db:shared_cart_items",
         "db:shared_carts",
         "db:users",
-        "doctrine:choix_createur_72h",
-        "doctrine:fenetre_paiement_48h",
-        "doctrine:idempotence_financiere",
-        "doctrine:paiement_seul_acte_engageant",
+        "doctrine:domaine_minimal_boutique_first",
         "doctrine:panier_ouvert_ferme",
         "doctrine:snapshot_fige",
         "impact:checkout",
         "impact:creator-flow",
-        "impact:economic-engine",
-        "impact:notifications",
-        "impact:orders",
         "impact:participant-flow",
-        "impact:stock",
         "routes/shared-cart.js",
         "services/customs-classification.js",
         "services/notification-service.js",
         "services/notifications/notification-service.js",
         "services/order-payment-confirmation.js",
         "services/order-service.js",
-        "services/routing.js",
         "services/shared-cart-financial-guard.js",
-        "services/shared-cart-queries.js",
-        "services/shared-cart-v41-transitions.js",
-        "services/whatsapp-meta.js",
-        "utils/rates.js"
+        "services/shared-cart-v41-transitions.js"
       ]
     },
     "services/shared-cart-estimation-service.js": {
@@ -62194,7 +61545,6 @@
         "impact:shared-cart-progress",
         "public/boutique/js/b-group-view.js",
         "routes/shared-cart.js",
-        "services/shared-cart-creation.js",
         "services/shared-cart-queries.js",
         "utils/logger.js"
       ]
@@ -62268,8 +61618,8 @@
       "directUsedBy": [
         "services/shared-cart-creation.js",
         "services/shared-cart-reads.js",
-        "services/shared-cart-contributions.js",
-        "services/shared-cart-lifecycle.js"
+        "services/shared-cart-lifecycle.js",
+        "services/shared-cart-items-service.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -62279,17 +61629,21 @@
         "shared_cart_events"
       ],
       "dbWriteVia": [],
-      "doctrines": [],
+      "doctrines": [
+        "domaine_minimal_boutique_first"
+      ],
       "impactAreas": [
         "participant-flow",
         "creator-flow"
       ],
       "mustCheck": [
         "db:shared_cart_events",
+        "doctrine:domaine_minimal_boutique_first",
         "impact:creator-flow",
         "impact:participant-flow",
         "services/shared-cart-contributions.js",
         "services/shared-cart-creation.js",
+        "services/shared-cart-items-service.js",
         "services/shared-cart-lifecycle.js",
         "services/shared-cart-reads.js"
       ]
@@ -62303,8 +61657,7 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "services/shared-cart-queries.js",
-        "services/shared-cart-v41-transitions.js"
+        "services/shared-cart-internals.js"
       ],
       "directUsedBy": [
         "routes/shared-cart.js",
@@ -62313,7 +61666,6 @@
       "ownedFiles": [],
       "dbRead": [
         "products",
-        "shared_cart_contributions",
         "shared_cart_items",
         "shared_carts"
       ],
@@ -62325,33 +61677,24 @@
       "dbWriteVia": [],
       "doctrines": [
         "panier_ouvert_modifiable",
-        "snapshot_fige_apres_fermeture",
-        "participant_lecture_seule"
+        "domaine_minimal_boutique_first"
       ],
       "impactAreas": [
         "shared-cart-editing",
-        "creator-flow",
-        "participant-flow",
-        "cart",
-        "notifications"
+        "creator-flow"
       ],
       "mustCheck": [
         "db:products",
-        "db:shared_cart_contributions",
         "db:shared_cart_events",
         "db:shared_cart_items",
         "db:shared_carts",
+        "doctrine:domaine_minimal_boutique_first",
         "doctrine:panier_ouvert_modifiable",
-        "doctrine:participant_lecture_seule",
-        "doctrine:snapshot_fige_apres_fermeture",
-        "impact:cart",
         "impact:creator-flow",
-        "impact:notifications",
-        "impact:participant-flow",
         "impact:shared-cart-editing",
         "public/boutique/js/b-cart.js",
         "routes/shared-cart.js",
-        "services/shared-cart-queries.js",
+        "services/shared-cart-internals.js",
         "services/shared-cart-v41-transitions.js"
       ]
     },
@@ -62364,88 +61707,36 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "services/shared-cart-internals.js",
-        "services/whatsapp-meta.js",
-        "services/order-service.js",
-        "services/routing.js",
-        "services/order-payment-confirmation.js",
-        "utils/rates.js"
+        "services/shared-cart-internals.js"
       ],
       "directUsedBy": [
-        "routes/shared-cart.js",
-        "bootstrap/crons.js"
+        "routes/shared-cart.js"
       ],
       "ownedFiles": [],
       "dbRead": [
-        "orders",
-        "products",
-        "recipients",
-        "relais",
-        "shared_cart_contributions",
-        "shared_cart_items",
-        "shared_carts",
-        "users"
+        "shared_carts"
       ],
       "dbWrite": [
-        "basket_items",
-        "baskets",
-        "order_items",
-        "order_status_history",
-        "orders",
-        "recipients",
         "shared_cart_events",
         "shared_carts"
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "paiement_seul_acte_engageant",
-        "panier_ouvert_ferme",
-        "snapshot_fige",
-        "fenetre_paiement_48h",
-        "choix_createur_72h",
-        "idempotence_financiere"
+        "domaine_minimal_boutique_first",
+        "panier_ouvert_ferme"
       ],
       "impactAreas": [
-        "creator-flow",
-        "checkout",
-        "orders",
-        "notifications",
-        "stock",
-        "economic-engine"
+        "creator-flow"
       ],
       "mustCheck": [
-        "bootstrap/crons.js",
-        "db:basket_items",
-        "db:baskets",
-        "db:order_items",
-        "db:order_status_history",
-        "db:orders",
-        "db:products",
-        "db:recipients",
-        "db:relais",
-        "db:shared_cart_contributions",
         "db:shared_cart_events",
-        "db:shared_cart_items",
         "db:shared_carts",
-        "db:users",
-        "doctrine:choix_createur_72h",
-        "doctrine:fenetre_paiement_48h",
-        "doctrine:idempotence_financiere",
-        "doctrine:paiement_seul_acte_engageant",
+        "doctrine:domaine_minimal_boutique_first",
         "doctrine:panier_ouvert_ferme",
-        "doctrine:snapshot_fige",
-        "impact:checkout",
         "impact:creator-flow",
-        "impact:economic-engine",
-        "impact:notifications",
-        "impact:orders",
-        "impact:stock",
         "routes/shared-cart.js",
-        "services/order-payment-confirmation.js",
-        "services/order-service.js",
         "services/routing.js",
         "services/shared-cart-internals.js",
-        "services/whatsapp-meta.js",
         "utils/logger.js",
         "utils/rates.js"
       ]
@@ -62461,62 +61752,44 @@
         "db.js"
       ],
       "directUsedBy": [
-        "routes/shared-cart.js",
-        "services/shared-cart-engine.js",
-        "shared-cart-services"
+        "routes/shared-cart.js"
       ],
       "ownedFiles": [],
       "dbRead": [
-        "finance_config",
-        "shared_cart_contributions",
-        "shared_cart_estimations",
         "shared_cart_events",
         "shared_cart_items",
         "shared_carts",
-        "stripe_events_processed",
         "users"
       ],
       "dbWrite": [
-        "shared_cart_contributions",
         "shared_cart_events",
-        "shared_carts",
-        "stripe_events_processed"
+        "shared_carts"
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "backend_source_verite",
-        "lookup_centralise",
-        "token_public_controle"
+        "domaine_minimal_boutique_first",
+        "backend_source_verite"
       ],
       "impactAreas": [
         "shared-cart",
         "participant-flow",
         "creator-flow",
-        "admin-debug",
-        "crons"
+        "admin-debug"
       ],
       "mustCheck": [
-        "db:finance_config",
-        "db:shared_cart_contributions",
-        "db:shared_cart_estimations",
         "db:shared_cart_events",
         "db:shared_cart_items",
         "db:shared_carts",
-        "db:stripe_events_processed",
         "db:users",
         "doctrine:backend_source_verite",
-        "doctrine:lookup_centralise",
-        "doctrine:token_public_controle",
+        "doctrine:domaine_minimal_boutique_first",
         "impact:admin-debug",
         "impact:creator-flow",
-        "impact:crons",
         "impact:participant-flow",
         "impact:shared-cart",
         "routes/shared-cart.js",
-        "services/shared-cart-engine.js",
         "services/shared-cart-estimation-service.js",
-        "services/shared-cart-financial-guard.js",
-        "services/shared-cart-items-service.js"
+        "services/shared-cart-financial-guard.js"
       ]
     },
     "services/shared-cart-reads.js": {
@@ -62535,30 +61808,24 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "shared_cart_contributions",
-        "shared_cart_estimations",
+        "order_items",
         "shared_cart_items",
-        "shared_carts",
-        "users"
-      ],
-      "dbWrite": [
         "shared_carts"
       ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "snapshot_fige"
+        "domaine_minimal_boutique_first"
       ],
       "impactAreas": [
         "participant-flow",
         "creator-flow"
       ],
       "mustCheck": [
-        "db:shared_cart_contributions",
-        "db:shared_cart_estimations",
+        "db:order_items",
         "db:shared_cart_items",
         "db:shared_carts",
-        "db:users",
-        "doctrine:snapshot_fige",
+        "doctrine:domaine_minimal_boutique_first",
         "impact:creator-flow",
         "impact:participant-flow",
         "routes/shared-cart.js",
@@ -63699,9 +62966,7 @@
         "impact:shared-cart",
         "impact:whatsapp",
         "routes/meta-whatsapp.js",
-        "services/notifications/notification-service.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js"
+        "services/notifications/notification-service.js"
       ]
     },
     "utils/alerts.js": {
@@ -64645,7 +63910,6 @@
         "routes/orders/create.js",
         "routes/payments.js",
         "services/pricing-rates.js",
-        "services/shared-cart-engine.js",
         "services/shared-cart-lifecycle.js",
         "utils/logger.js",
         "utils/rules.js"
@@ -64889,7 +64153,7 @@
   "multiWriterTables": [
     {
       "table": "orders",
-      "writerCount": 33,
+      "writerCount": 31,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/delete-order-cascade.js",
@@ -64919,8 +64183,6 @@
         "services/qr-collection-core.js",
         "services/routing.js",
         "services/scan-operations.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js",
         "services/simulator/state-advancer.js",
         "services/verify-qr-collection.js",
         "services/wallet-service.js"
@@ -65050,7 +64312,7 @@
     },
     {
       "table": "shared_carts",
-      "writerCount": 11,
+      "writerCount": 10,
       "writers": [
         "routes/shared-cart-from-order.js",
         "services/cancel-shared-cart-with-refunds.js",
@@ -65061,8 +64323,7 @@
         "services/shared-cart-financial-guard.js",
         "services/shared-cart-items-service.js",
         "services/shared-cart-lifecycle.js",
-        "services/shared-cart-queries.js",
-        "services/shared-cart-reads.js"
+        "services/shared-cart-queries.js"
       ]
     },
     {
@@ -65081,34 +64342,6 @@
       ]
     },
     {
-      "table": "order_items",
-      "writerCount": 8,
-      "writers": [
-        "routes/admin/delete-order-cascade.js",
-        "routes/admin/system.js",
-        "routes/orders/create.js",
-        "services/order-status-machine.js",
-        "services/parcel-operations.js",
-        "services/scan-engine.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js"
-      ]
-    },
-    {
-      "table": "order_status_history",
-      "writerCount": 8,
-      "writers": [
-        "routes/admin/delete-order-cascade.js",
-        "routes/admin/system.js",
-        "routes/admin/users.js",
-        "routes/orders/cancel.js",
-        "routes/orders/create.js",
-        "services/order-status-machine.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js"
-      ]
-    },
-    {
       "table": "incidents",
       "writerCount": 7,
       "writers": [
@@ -65119,19 +64352,6 @@
         "services/incident-service.js",
         "services/reconciliation-service.js",
         "services/scan-engine.js"
-      ]
-    },
-    {
-      "table": "shared_cart_contributions",
-      "writerCount": 7,
-      "writers": [
-        "services/cancel-shared-cart-with-refunds.js",
-        "services/shared-cart-cash-service.js",
-        "services/shared-cart-contributions.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-financial-guard.js",
-        "services/shared-cart-queries.js",
-        "services/shared-cart-refund-queue.js"
       ]
     },
     {
@@ -65160,6 +64380,30 @@
       ]
     },
     {
+      "table": "order_items",
+      "writerCount": 6,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "routes/orders/create.js",
+        "services/order-status-machine.js",
+        "services/parcel-operations.js",
+        "services/scan-engine.js"
+      ]
+    },
+    {
+      "table": "order_status_history",
+      "writerCount": 6,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/orders/cancel.js",
+        "routes/orders/create.js",
+        "services/order-status-machine.js"
+      ]
+    },
+    {
       "table": "scan_events",
       "writerCount": 6,
       "writers": [
@@ -65169,28 +64413,6 @@
         "services/hub-operations.js",
         "services/parcel-auto-create-service.js",
         "services/scan-engine.js"
-      ]
-    },
-    {
-      "table": "basket_items",
-      "writerCount": 5,
-      "writers": [
-        "routes/admin/system.js",
-        "routes/admin/users.js",
-        "services/shared-cart-creation.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js"
-      ]
-    },
-    {
-      "table": "baskets",
-      "writerCount": 5,
-      "writers": [
-        "routes/admin/system.js",
-        "routes/admin/users.js",
-        "services/shared-cart-creation.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js"
       ]
     },
     {
@@ -65205,6 +64427,17 @@
       ]
     },
     {
+      "table": "shared_cart_contributions",
+      "writerCount": 5,
+      "writers": [
+        "services/cancel-shared-cart-with-refunds.js",
+        "services/shared-cart-cash-service.js",
+        "services/shared-cart-contributions.js",
+        "services/shared-cart-financial-guard.js",
+        "services/shared-cart-refund-queue.js"
+      ]
+    },
+    {
       "table": "transaction_documents",
       "writerCount": 5,
       "writers": [
@@ -65213,6 +64446,26 @@
         "services/documents/pickup-proof.js",
         "services/documents/refund-receipt.js",
         "services/documents/wallet-receipt.js"
+      ]
+    },
+    {
+      "table": "basket_items",
+      "writerCount": 4,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "services/shared-cart-creation.js",
+        "services/shared-cart-engine.js"
+      ]
+    },
+    {
+      "table": "baskets",
+      "writerCount": 4,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "services/shared-cart-creation.js",
+        "services/shared-cart-engine.js"
       ]
     },
     {
@@ -65243,16 +64496,6 @@
         "services/catalog-promotion.js",
         "services/product-admin-service.js",
         "services/sourcing-mutations.js"
-      ]
-    },
-    {
-      "table": "recipients",
-      "writerCount": 4,
-      "writers": [
-        "routes/admin/users.js",
-        "routes/orders/create.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js"
       ]
     },
     {
@@ -65571,6 +64814,14 @@
       ]
     },
     {
+      "table": "recipients",
+      "writerCount": 2,
+      "writers": [
+        "routes/admin/users.js",
+        "routes/orders/create.js"
+      ]
+    },
+    {
       "table": "refunds",
       "writerCount": 2,
       "writers": [
@@ -65608,14 +64859,6 @@
       "writers": [
         "routes/sourcing-scanner.js",
         "services/suppliers/catalog-import-orchestrator.js"
-      ]
-    },
-    {
-      "table": "stripe_events_processed",
-      "writerCount": 2,
-      "writers": [
-        "services/payment-stripe.js",
-        "services/shared-cart-queries.js"
       ]
     },
     {
@@ -67957,12 +67200,6 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
-    },
-    {
-      "from": "shared-cart-services",
-      "to": "services/shared-cart-queries.js",
-      "type": "uses",
-      "label": "shared-cart-services"
     },
     {
       "from": "services/shared-cart-reads.js",
