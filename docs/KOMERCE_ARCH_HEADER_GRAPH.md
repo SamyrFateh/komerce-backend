@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 363
-- Files with full headers: 335
+- Scanned code files: 362
+- Files with full headers: 334
 - Files with lite headers: 28
-- Files with any headers: 363
+- Files with any headers: 362
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 761
-- Edges: 4105
-- DB tables: 108
+- Graph nodes: 759
+- Edges: 4094
+- DB tables: 107
 - Doctrines: 157
 - Impact areas: 133
-- Unresolved code edges: 416
-- Tables multi-écrivains directs (>=2): 61
+- Unresolved code edges: 415
+- Tables multi-écrivains directs (>=2): 60
 - Avertissements db-write / db-write-via en chevauchement: 0
 
 ## Domains
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - recommendations: 4
 - refunds: 2
 - shared: 1
-- shared-cart: 19
+- shared-cart: 18
 - shared-cart-modal: 7
 - sourcing: 1
 - tracking: 1
@@ -71,7 +71,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - machine: 1
 - manual-test: 1
 - middleware: 11
-- route: 95
+- route: 94
 - route-manifest: 1
 - schema: 1
 - service: 139
@@ -382,9 +382,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-rules.js -> business_rules
 - WRITE utils/rules.js -> business_rules
 - WRITE routes/carriers.js -> carriers
-- WRITE routes/shares.js -> cart_contributions
 - WRITE routes/orders/create.js -> cart_shares
-- WRITE routes/shares.js -> cart_shares
 - WRITE services/cash-operations.js -> cash_collections
 - WRITE services/confirm-pickup-cash-payment.js -> cash_collections
 - WRITE routes/cash.js -> cash_deposits
@@ -468,6 +466,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/cancel.js -> orders
 - WRITE routes/orders/create.js -> orders
 - WRITE routes/orders/qr.js -> orders
+- WRITE routes/orders/status.js -> orders
+- WRITE routes/parcels.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -541,7 +541,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
-- cart_shares: 2 écrivains directs — routes/orders/create.js, routes/shares.js
 - cash_collections: 2 écrivains directs — services/cash-operations.js, services/confirm-pickup-cash-payment.js
 - catalog_field_overrides: 2 écrivains directs — services/catalog-overrides.js, services/product-admin-service.js
 - catalog_media: 2 écrivains directs — routes/sourcing-scanner.js, services/catalog-promotion.js
@@ -565,6 +564,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - signals: 2 écrivains directs — routes/signals.js, services/signal-service.js
 - sourcing_candidate_events: 2 écrivains directs — routes/sourcing-scanner.js, services/suppliers/catalog-import-orchestrator.js
 - supplier_catalog_imports: 2 écrivains directs — services/suppliers/catalog-import-json.js, services/suppliers/catalog-import-orchestrator.js
+- suppliers: 2 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 

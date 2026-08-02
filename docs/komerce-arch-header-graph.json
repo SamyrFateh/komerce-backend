@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 363,
-    "filesWithFullHeaders": 335,
+    "scannedCodeFiles": 362,
+    "filesWithFullHeaders": 334,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 363,
+    "filesWithAnyHeaders": 362,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 761,
-    "edges": 4105,
-    "dbTables": 108,
+    "graphNodes": 759,
+    "edges": 4094,
+    "dbTables": 107,
     "doctrines": 157,
     "impactAreas": 133,
-    "unresolvedCodeEdges": 416,
+    "unresolvedCodeEdges": 415,
     "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 61
+    "multiWriterTables": 60
   },
   "byDomain": {
     "infrastructure": 20,
@@ -38,7 +38,7 @@
     "boutique": 20,
     "catalog": 64,
     "checkout": 2,
-    "shared-cart": 19,
+    "shared-cart": 18,
     "account": 1,
     "shared-cart-modal": 7,
     "recommendations": 4,
@@ -88,7 +88,7 @@
     "api-client": 2,
     "state-store": 1,
     "schema": 1,
-    "route": 95,
+    "route": 94,
     "entrypoint": 1,
     "service": 139,
     "external-adapter": 2,
@@ -98,7 +98,7 @@
   },
   "byCriticality": {
     "critical": 54,
-    "medium": 106,
+    "medium": 105,
     "high": 167,
     "low": 36
   },
@@ -8196,54 +8196,6 @@
         "boutique"
       ],
       "version": "2026-08"
-    },
-    {
-      "id": "routes/shares.js",
-      "file": "routes/shares.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "shares",
-      "domain": "shared-cart",
-      "layer": "route",
-      "criticality": "medium",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [
-        "db.js",
-        "middleware/auth.js",
-        "services/*"
-      ],
-      "usedBy": [
-        "bootstrap/api-routes.js"
-      ],
-      "dbRead": [
-        "cart_contributions",
-        "cart_shares",
-        "products"
-      ],
-      "dbWrite": [
-        "cart_contributions",
-        "cart_shares"
-      ],
-      "dbWriteVia": [],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "unknown"
-      ],
-      "version": "2026-06"
     },
     {
       "id": "routes/signals.js",
@@ -17265,11 +17217,6 @@
       "id": "db:suppliers",
       "type": "db-table",
       "table": "suppliers"
-    },
-    {
-      "id": "db:cart_contributions",
-      "type": "db-table",
-      "table": "cart_contributions"
     },
     {
       "id": "db:sourcing_candidate_events",
@@ -30389,72 +30336,6 @@
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "middleware/auth.js",
-      "type": "depends",
-      "label": "middleware/auth.js"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
-    },
-    {
-      "from": "bootstrap/api-routes.js",
-      "to": "routes/shares.js",
-      "type": "uses",
-      "label": "bootstrap/api-routes.js"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "db:cart_contributions",
-      "type": "db-read",
-      "label": "cart_contributions"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "db:cart_shares",
-      "type": "db-read",
-      "label": "cart_shares"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "db:products",
-      "type": "db-read",
-      "label": "products"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "db:cart_contributions",
-      "type": "db-write",
-      "label": "cart_contributions"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "db:cart_shares",
-      "type": "db-write",
-      "label": "cart_shares"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "impact:unknown",
-      "type": "impact",
-      "label": "unknown"
     },
     {
       "from": "routes/signals.js",
@@ -43668,7 +43549,6 @@
         "routes/relais.js",
         "routes/relay-dashboard.js",
         "routes/scans.js",
-        "routes/shares.js",
         "routes/signals.js",
         "routes/simulator.js",
         "routes/sourcing-scanner.js",
@@ -44234,7 +44114,6 @@
         "routes/relay-dashboard.js",
         "routes/scans.js",
         "routes/shared-cart.js",
-        "routes/shares.js",
         "routes/signals.js",
         "routes/simulator.js",
         "routes/sourcing-scanner.js",
@@ -51620,49 +51499,6 @@
         "services/shared-cart-lifecycle.js",
         "services/shared-cart-queries.js",
         "services/shared-cart-reads.js",
-        "utils/logger.js"
-      ]
-    },
-    "routes/shares.js": {
-      "role": "shares",
-      "domain": "shared-cart",
-      "criticality": "medium",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "db.js",
-        "middleware/auth.js",
-        "services/*"
-      ],
-      "directUsedBy": [
-        "bootstrap/api-routes.js"
-      ],
-      "ownedFiles": [],
-      "dbRead": [
-        "cart_contributions",
-        "cart_shares",
-        "products"
-      ],
-      "dbWrite": [
-        "cart_contributions",
-        "cart_shares"
-      ],
-      "dbWriteVia": [],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "unknown"
-      ],
-      "mustCheck": [
-        "bootstrap/api-routes.js",
-        "db:cart_contributions",
-        "db:cart_shares",
-        "db:products",
-        "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
-        "middleware/auth.js",
         "utils/logger.js"
       ]
     },
@@ -59384,7 +59220,6 @@
         "routes/purchasing.js",
         "routes/relay-dashboard.js",
         "routes/shared-cart.js",
-        "routes/shares.js",
         "routes/signals.js",
         "routes/tracking.js",
         "routes/transit-dashboard.js",
@@ -60483,14 +60318,6 @@
       "writers": [
         "routes/admin-rules.js",
         "utils/rules.js"
-      ]
-    },
-    {
-      "table": "cart_shares",
-      "writerCount": 2,
-      "writers": [
-        "routes/orders/create.js",
-        "routes/shares.js"
       ]
     },
     {
@@ -61942,18 +61769,6 @@
       "label": "services/*"
     },
     {
-      "from": "routes/shares.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "routes/shares.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
-    },
-    {
       "from": "routes/signals.js",
       "to": "db.js",
       "type": "depends",
@@ -63116,6 +62931,12 @@
       "to": "utils/logger.js",
       "type": "uses",
       "label": "routes/shared-cart-refund-admin.js"
+    },
+    {
+      "from": "routes/shares.js",
+      "to": "utils/logger.js",
+      "type": "uses",
+      "label": "routes/shares.js"
     },
     {
       "from": "services/cancel-shared-cart-with-refunds.js",

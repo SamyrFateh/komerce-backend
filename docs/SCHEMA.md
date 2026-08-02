@@ -63,7 +63,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | ENUM | Valeurs | Source de vérité |
 |---|---|---|
-| `order_status` | `pending`, `pending_group_payment`, `confirmed`, `ordered`, `preparation`, `shipped`, `in_transit`, `available`, `collected`, `cancelled`, `refunded` | `services/order-status-machine.js` |
+| `order_status` | `pending`, `confirmed`, `ordered`, `preparation`, `shipped`, `in_transit`, `available`, `collected`, `cancelled`, `refunded` | `services/order-status-machine.js` |
 | `parcel_status` | `draft`, `preparation`, `shipped`, `in_transit`, `arrived`, `available`, `collected`, `cancelled` | `routes/parcel-api-v2.js` + `services/parcel-service.js` |
 | `payment_status` | `pending`, `paid`, `failed`, `refunded`, `partially_paid` | `routes/payments.js` |
 | `payment_mode` | `stripe_eur`, `cash_relais`, `mixed_shared_cart_cash` | `routes/orders/create.js` |
@@ -71,14 +71,10 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `user_role` | définit les rôles auth | `middleware/auth.js` |
 | `basket_type` | type de panier (boutique / partagé / collectif) | `routes/baskets.js` |
 | `ceremony_order_type` | type de commande module cérémonie | `routes/modules.js` |
-| `collective_workspace_status` | cycle de vie workspace collectif | `services/collective-workspace-engine.js` |
-| `collective_session_status` | cycle de vie session paiement collectif | `services/collective-payment-orchestrator.js` |
-| `collective_token_status` | cycle de vie token paiement individuel | `services/collective-payment-orchestrator.js` |
-| `collective_contribution_status` | statut contribution dans workspace | `services/collective-workspace-engine.js` |
 | `shared_cart_status` | cycle de vie panier partagé MVP | `services/shared-cart-engine.js` |
 | `shared_cart_contribution_status` | statut contribution panier partagé | `services/shared-cart-engine.js` |
 
-**Règle absolue** : aucune valeur d'ENUM ne se modifie hors migration SQL. Les valeurs `pending_group_payment` et `in_transit` ont été ajoutées via migrations 059 et `fixMissingSchema()` respectivement.
+**Règle absolue** : aucune valeur d'ENUM ne se modifie hors migration SQL. La valeur `in_transit` a été ajoutée via migration et reste gouvernée par la machine d’état canonique.
 
 ---
 
@@ -119,6 +115,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `pickup_print_tokens` | Token one-shot (TTL 2 min) pour accès au HTML imprimable du reçu cash après encaissement. PK = token hex 48 bytes. FK → `orders(id)` ON DELETE CASCADE. Supprimé à la première lecture. |
 | `pickup_reveal_codes` | Code pickup en clair (8 chars), stocké max 30 min pour révélation one-shot après paiement Stripe/Wallet/MM. PK = `order_id`. Supprimé immédiatement après `GET /reveal-once`. |
 | `pickup_verify_attempts` | Anti-bruteforce de la vérification pickup : compteur par (`attempt_key`, `token`, `ip_hash`) avec fenêtre `reset_at`. Rate-limit multi-instance (remplace un compteur in-memory). |
+| `user_pickup_authorizations` | Autorisation nominative exceptionnelle courante du compte, versionnée, sans donnée de pièce d’identité. |
 
 **Nettoyage** : `startPickupTokenCleanupCron()` toutes les 5 min dans `bootstrap/crons.js`. Multi-instance safe — aucune Map in-memory résiduelle pour ces deux flows.
 
@@ -184,23 +181,13 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 |---|---|
 | `shared_carts` | Panier partagé MVP. |
 | `shared_cart_items` | Items panier partagé. |
-| `shared_cart_contributions` | Contributions des participants. |
 | `shared_cart_events` | Événements panier partagé. |
 | `cart_shares` | Partage de panier (token public). |
-| `cart_contributions` | Contributions (legacy, vérifier vs `shared_cart_contributions`). |
-| `shared_cart_estimations` | Estimations de contribution par participant (montant `amount_kmf` > 0, CHECK). PK uuid, FK logique `shared_cart_id`. |
 
 ### 4.7 Workspace collectif (7 tables)
 
 | Table | Rôle |
 |---|---|
-| `collective_workspaces` | Workspace collectif (événement, cagnotte). |
-| `collective_workspace_items` | Items du workspace. |
-| `collective_workspace_contributions` | Contributions (intention, suggestion, message). |
-| `collective_workspace_events` | Événements workspace. |
-| `collective_payment_sessions` | Sessions de paiement collectif. |
-| `collective_payment_tokens` | Tokens de paiement individuel. |
-| `collective_stock_reservations` | Réservations de stock par token. |
 
 Source de vérité : `services/collective-workspace-engine.js` + `services/collective-payment-orchestrator.js`.
 
@@ -300,7 +287,6 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `v_sourcing_pipeline` | Pipeline sourcing. | Admin sourcing |
 | `v_unsold_pipeline` | Pipeline invendus. | Admin / alertes |
 | `v_loyalty_summary` | Synthèse fidélité par user. | Admin loyalty |
-| `v_group_orders` | Vue agrégée commandes groupées. | Admin paiements collectifs |
 | `v_ceremony_orders` | Vue agrégée commandes cérémonie. | Admin modules |
 | `v_customs_analysis` | Analyse douane. | Admin douane |
 | `v_active_product_suppliers` | Fournisseurs actifs par produit. | Sourcing |
@@ -342,8 +328,6 @@ Au-delà du code applicatif, la DB enforce elle-même plusieurs invariants :
 | `cost_components_allocation_check` | Méthode d'allocation valide. |
 | `cost_components_island_check` | Île valide. |
 | `competitor_target_check` | Prix concurrent : produit OU catégorie obligatoire. |
-| `collective_workspace_contributions_content_check` | Contribution non-vide. |
-| `collective_workspace_contributions_kind_check` | Kind valide. |
 | `parcels_type_check` | Type de colis valide. |
 
 ---

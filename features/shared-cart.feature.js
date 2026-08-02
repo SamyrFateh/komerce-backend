@@ -59,7 +59,6 @@ module.exports = {
     routes: [
       'routes/shared-cart.js',
       'routes/baskets.js',
-      'routes/shares.js',
     ],
     migrations: [
       'migrations/044_shared_cart.sql',
@@ -88,7 +87,6 @@ module.exports = {
       'tests/unit/shared-cart-items-service.test.js',
       'tests/unit/shared-cart-public-route.test.js',
       'tests/unit/shared-cart-reads.test.js',
-      'tests/unit/shares-route.test.js',
       'tests/unit/shared-cart-lifecycle.test.js',
       'tests/unit/shared-cart-queries.test.js',
       // NOTE (2026-08) : ces fichiers de test existent encore dans le repo

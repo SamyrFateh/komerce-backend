@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-02T01:29:15.797Z",
+  "generatedAt": "2026-08-02T01:52:03.190Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 465,
+  "count": 461,
   "routes": [
     {
       "method": "GET",
@@ -4023,46 +4023,6 @@
       "routeFile": "routes/shared-cart.js",
       "mountedFrom": [
         "server.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/shares",
-      "mountPrefix": "/api/shares",
-      "localPath": "/",
-      "routeFile": "routes/shares.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
-      "method": "GET",
-      "fullPath": "/api/shares/:token",
-      "mountPrefix": "/api/shares",
-      "localPath": "/:token",
-      "routeFile": "routes/shares.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/shares/:token/contributions",
-      "mountPrefix": "/api/shares",
-      "localPath": "/:token/contributions",
-      "routeFile": "routes/shares.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
-      "method": "PATCH",
-      "fullPath": "/api/shares/:token/contributions/:id",
-      "mountPrefix": "/api/shares",
-      "localPath": "/:token/contributions/:id",
-      "routeFile": "routes/shares.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
       ]
     },
     {
