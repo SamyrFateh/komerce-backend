@@ -77,7 +77,8 @@ jobs:
           }
 
           run npm ci || exit 0
-          run node -e "const fs=require('fs');const p='features/infrastructure.feature.js';const line=\"      'POST /api/shared-carts/stripe/webhook',\\n\";const s=fs.readFileSync(p,'utf8');if(!s.includes(line))throw new Error('obsolete webhook declaration not found');fs.writeFileSync(p,s.replace(line,''));" || exit 0
+          run node scripts/lot8-domain-cleanup-once.js || exit 0
+          rm -f scripts/lot8-domain-cleanup-once.js
           run psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql || exit 0
           run node scripts/ci-migrate.js || exit 0
           run node scripts/db-snapshot.js || exit 0
@@ -104,7 +105,8 @@ jobs:
           if [ "${{ steps.reconcile.outputs.success }}" = "true" ]; then
             rm -f .github/workflows/lot8-postmerge-reconcile-once.yml
             rm -f docs/certification/LOT_8_RECONCILE_LOG.txt
-            message="fix(lot8): reconcile schema and route registry"
+            rm -f scripts/lot8-domain-cleanup-once.js
+            message="fix(lot8): reconcile schema and retire legacy share routes"
           else
             sed -i 's/[[:space:]]\+$//' docs/certification/LOT_8_RECONCILE_LOG.txt
             message="chore(lot8): record reconciliation failure"
