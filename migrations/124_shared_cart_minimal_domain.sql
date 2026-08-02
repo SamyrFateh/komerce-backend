@@ -28,21 +28,108 @@
 SET client_encoding = 'UTF8';
 SET search_path = public;
 
+BEGIN;
+
 -- ============================================================
 -- 1. order_status — retrait de pending_group_payment
 --    PostgreSQL ne permet pas de retirer une valeur d'un type ENUM
---    directement : on recrée le type sans cette valeur, on bascule la
---    colonne dessus, on supprime l'ancien type.
+--    directement : on recrée le type sans cette valeur, on bascule toutes
+--    les colonnes dessus, puis on supprime l'ancien type.
 -- ============================================================
 
--- Cette vue référence orders.status avec le type ENUM. PostgreSQL interdit
--- l'ALTER TYPE tant que sa règle de réécriture dépend de la colonne. Sa
--- définition canonique est recréée immédiatement après le cutover.
-DROP VIEW IF EXISTS suppliers_stats;
+-- Les vues qui dépendent directement ou indirectement de orders.status ou
+-- order_status_history.status empêchent l'ALTER TYPE. Elles sont mémorisées,
+-- retirées dans l'ordre inverse des dépendances, puis recréées dans la même
+-- transaction. Un échec restaure donc intégralement vues et ancien ENUM.
+CREATE TEMP TABLE _m124_saved_order_status_views (
+  view_oid        OID PRIMARY KEY,
+  view_schema     TEXT NOT NULL,
+  view_name       TEXT NOT NULL,
+  view_definition TEXT NOT NULL,
+  view_owner      TEXT NOT NULL,
+  view_comment    TEXT,
+  depth           INTEGER NOT NULL
+) ON COMMIT DROP;
+
+WITH RECURSIVE impacted(view_oid, view_schema, view_name, depth, path) AS (
+  SELECT DISTINCT
+    c.oid,
+    n.nspname,
+    c.relname,
+    0,
+    ARRAY[c.oid]
+  FROM pg_depend d
+  JOIN pg_rewrite r ON r.oid = d.objid
+  JOIN pg_class c ON c.oid = r.ev_class
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE d.classid = 'pg_rewrite'::regclass
+    AND d.refclassid = 'pg_class'::regclass
+    AND c.relkind = 'v'
+    AND (
+      (
+        d.refobjid = 'public.orders'::regclass
+        AND d.refobjsubid = (
+          SELECT attnum FROM pg_attribute
+          WHERE attrelid = 'public.orders'::regclass
+            AND attname = 'status'
+            AND NOT attisdropped
+        )
+      )
+      OR
+      (
+        d.refobjid = 'public.order_status_history'::regclass
+        AND d.refobjsubid = (
+          SELECT attnum FROM pg_attribute
+          WHERE attrelid = 'public.order_status_history'::regclass
+            AND attname = 'status'
+            AND NOT attisdropped
+        )
+      )
+    )
+
+  UNION ALL
+
+  SELECT
+    c2.oid,
+    n2.nspname,
+    c2.relname,
+    impacted.depth + 1,
+    impacted.path || c2.oid
+  FROM impacted
+  JOIN pg_depend d2 ON d2.refobjid = impacted.view_oid
+  JOIN pg_rewrite r2 ON r2.oid = d2.objid
+  JOIN pg_class c2 ON c2.oid = r2.ev_class
+  JOIN pg_namespace n2 ON n2.oid = c2.relnamespace
+  WHERE d2.classid = 'pg_rewrite'::regclass
+    AND d2.refclassid = 'pg_class'::regclass
+    AND c2.relkind = 'v'
+    AND NOT c2.oid = ANY(impacted.path)
+)
+INSERT INTO _m124_saved_order_status_views (
+  view_oid,
+  view_schema,
+  view_name,
+  view_definition,
+  view_owner,
+  view_comment,
+  depth
+)
+SELECT
+  impacted.view_oid,
+  MIN(impacted.view_schema),
+  MIN(impacted.view_name),
+  pg_get_viewdef(impacted.view_oid, TRUE),
+  pg_get_userbyid(c.relowner),
+  obj_description(impacted.view_oid, 'pg_class'),
+  MAX(impacted.depth)
+FROM impacted
+JOIN pg_class c ON c.oid = impacted.view_oid
+GROUP BY impacted.view_oid, c.relowner;
 
 DO $$
 DECLARE
   stuck_count INTEGER;
+  saved_view RECORD;
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_type t
@@ -53,26 +140,36 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Compensation avant migration de type : toute commande encore dans cet
-  -- état bascule vers 'pending' — transition déjà valide dans l'ancienne
-  -- machine (pending_group_payment → pending, "retour si groupe abandonné"),
-  -- donc sémantiquement neutre, pas une invention de ce lot.
-  SELECT COUNT(*) INTO stuck_count FROM orders WHERE status = 'pending_group_payment';
+  SELECT COUNT(*) INTO stuck_count
+  FROM orders
+  WHERE status = 'pending_group_payment';
+
   IF stuck_count > 0 THEN
-    UPDATE orders SET status = 'pending' WHERE status = 'pending_group_payment';
+    UPDATE orders
+    SET status = 'pending'
+    WHERE status = 'pending_group_payment';
     RAISE NOTICE 'Migration 124 — % commande(s) pending_group_payment basculée(s) vers pending.', stuck_count;
   END IF;
+
+  FOR saved_view IN
+    SELECT *
+    FROM _m124_saved_order_status_views
+    ORDER BY depth DESC, view_oid
+  LOOP
+    EXECUTE format('DROP VIEW %I.%I', saved_view.view_schema, saved_view.view_name);
+  END LOOP;
 
   CREATE TYPE order_status_new AS ENUM (
     'pending', 'confirmed', 'ordered', 'preparation', 'shipped',
     'in_transit', 'available', 'collected', 'cancelled', 'refunded'
   );
 
-  -- Le DEFAULT est typé avec l'ancien ENUM et ne peut pas être converti
-  -- implicitement pendant ALTER COLUMN TYPE. On le retire puis on le repose
-  -- après renommage du nouveau type.
   ALTER TABLE orders ALTER COLUMN status DROP DEFAULT;
   ALTER TABLE orders
+    ALTER COLUMN status TYPE order_status_new
+    USING status::text::order_status_new;
+
+  ALTER TABLE order_status_history
     ALTER COLUMN status TYPE order_status_new
     USING status::text::order_status_new;
 
@@ -80,61 +177,41 @@ BEGIN
   ALTER TYPE order_status_new RENAME TO order_status;
   ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'pending'::order_status;
 
+  FOR saved_view IN
+    SELECT *
+    FROM _m124_saved_order_status_views
+    ORDER BY depth ASC, view_oid
+  LOOP
+    EXECUTE format(
+      'CREATE VIEW %I.%I AS %s',
+      saved_view.view_schema,
+      saved_view.view_name,
+      saved_view.view_definition
+    );
+    EXECUTE format(
+      'ALTER VIEW %I.%I OWNER TO %I',
+      saved_view.view_schema,
+      saved_view.view_name,
+      saved_view.view_owner
+    );
+    IF saved_view.view_comment IS NOT NULL THEN
+      EXECUTE format(
+        'COMMENT ON VIEW %I.%I IS %L',
+        saved_view.view_schema,
+        saved_view.view_name,
+        saved_view.view_comment
+      );
+    END IF;
+  END LOOP;
+
   RAISE NOTICE 'Migration 124 OK — order_status recréé sans pending_group_payment.';
 END $$;
-
-CREATE OR REPLACE VIEW suppliers_stats AS
-SELECT
-  p.id AS partner_id,
-  p.name,
-  p.partner_type,
-  COALESCE((
-    SELECT COUNT(*)
-      FROM orders o
-     WHERE o.supplier_id = p.id
-       AND o.status NOT IN ('cancelled', 'refunded')
-  ), 0) AS orders_count_30d,
-  COALESCE((
-    SELECT SUM(o.total_kmf)
-      FROM orders o
-     WHERE o.supplier_id = p.id
-       AND o.status NOT IN ('cancelled', 'refunded')
-       AND o.created_at >= NOW() - INTERVAL '30 days'
-  ), 0) AS orders_revenue_30d_kmf,
-  COALESCE((
-    SELECT AVG(o.margin_real_pct)
-      FROM orders o
-     WHERE o.supplier_id = p.id
-       AND o.margin_real_pct IS NOT NULL
-       AND o.created_at >= NOW() - INTERVAL '90 days'
-  ), 0) AS avg_margin_pct_90d,
-  COALESCE((
-    SELECT COUNT(*)
-      FROM customs_shipments cs
-     WHERE cs.supplier_id = p.id
-       AND cs.is_active = TRUE
-  ), 0) AS shipments_count,
-  COALESCE((
-    SELECT AVG(cs.effective_rate_pct)
-      FROM customs_shipments cs
-     WHERE cs.supplier_id = p.id
-       AND cs.is_active = TRUE
-       AND cs.shipment_date >= CURRENT_DATE - INTERVAL '90 days'
-  ), 0) AS avg_customs_rate_90d
-FROM partners p
-WHERE p.is_active = TRUE;
 
 -- ============================================================
 -- 2. shared_cart_status — réduction à 3 valeurs
 -- ============================================================
 
--- Pré-requis : deux index partiels existants filtrent sur des valeurs
--- d'enum ('awaiting_choice', 'funded', 'sourcing_check',
--- 'adjustment_required') absentes du type réduit à 3 valeurs. Sans ce
--- DROP, le rebuild d'index déclenché par l'ALTER COLUMN TYPE ci-dessous
--- échoue (littéral introuvable dans le nouveau type). Aucun des deux
--- n'a de raison d'être conservé dans le domaine minimal : le second est
--- déjà couvert par idx_shared_carts_status_v41 (status, created_at).
+-- Deux index partiels filtrent sur des valeurs absentes du type réduit.
 DROP INDEX IF EXISTS idx_shared_carts_awaiting_deadline;
 DROP INDEX IF EXISTS idx_shared_carts_funded;
 
@@ -151,9 +228,6 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Compensation : toute liste dans un statut obsolète est reclassée
-  -- selon l'intention la plus proche du modèle à 3 états, jamais laissée
-  -- dans un état que le nouveau type ne peut plus représenter.
   UPDATE shared_carts SET status = 'open'
    WHERE status::text IN ('draft', 'active', 'partially_funded', 'fully_funded',
                            'funded', 'sourcing_check', 'adjustment_required',
@@ -226,7 +300,6 @@ ALTER TABLE shared_carts
 
 -- ============================================================
 -- 4. Tables de contribution/estimation — supprimées
---    Aucune FK entrante depuis l'extérieur de ces tables (vérifié).
 -- ============================================================
 
 DROP TABLE IF EXISTS shared_cart_contributions;
@@ -237,3 +310,5 @@ DO $$
 BEGIN
   RAISE NOTICE 'Migration 124 OK — domaine liste partagée réduit au modèle minimal.';
 END $$;
+
+COMMIT;
