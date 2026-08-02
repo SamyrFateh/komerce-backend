@@ -1,0 +1,111 @@
+name: Lot 8 finalize PR once
+
+on:
+  push:
+    branches:
+      - fix/lot8-postmerge-certification
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lot8-finalize-pr-once
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: lot8-ci-secret-not-for-prod
+      ADMIN_PASSWORD: lot8-ci-admin
+      QR_SECRET: lot8-ci-qr-secret
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+      KOMERCE_DISABLE_CRONS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/lot8-postmerge-certification
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+      - run: npm --prefix public/boutique ci
+      - run: npm --prefix public/dashboards ci
+
+      - name: Apply final corrections
+        run: |
+          node scripts/lot8-finalize-pr-once.js
+          rm -f scripts/lot8-finalize-pr-once.js
+
+      - name: Rebuild governed artifacts
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          npm run dashboards:360:save
+          npm run boutique:360:save
+          npm run meta:graph:save
+          npm run arch:gen
+          npm run business-graph:gen
+
+      - name: Rebuild PostgreSQL and prove withdrawal race
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+          npx jest \
+            tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js \
+            tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js \
+            --runInBand --forceExit --detectOpenHandles
+
+      - name: Focused Boutique and dashboard checks
+        run: |
+          npm --prefix public/boutique exec -- jest tests/unit/b-favs.test.js --runInBand
+          npm run dashboards:360:check
+          npm --prefix public/dashboards run check:all
+
+      - name: Governance checks
+        run: |
+          npm run gate:feature-audit
+          npm run arch:gate
+          node scripts/contract-check.js
+          npm run feature:registry
+          npm run feature:registry-doc
+
+      - name: Commit qualified corrections
+        run: |
+          rm -f .github/workflows/lot8-finalize-pr-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit --no-verify -m "fix(lot8): qualify final post-merge corrections"
+          git push origin HEAD:fix/lot8-postmerge-certification
