@@ -259,6 +259,11 @@ END $$;
 -- 2. shared_cart_status — réduction à 3 valeurs
 -- ============================================================
 
+-- Projection financière historique de la commande groupée. Elle repose sur
+-- les colonnes et tables de contribution supprimées par ce lot et n'a plus de
+-- sens dans le modèle de liste commune à commandes unitaires.
+DROP VIEW IF EXISTS v_group_orders CASCADE;
+
 -- Index devenus obsolètes ou dépendants du type ENUM remplacé.
 DROP INDEX IF EXISTS idx_shared_carts_awaiting_deadline;
 DROP INDEX IF EXISTS idx_shared_carts_beneficiary;
