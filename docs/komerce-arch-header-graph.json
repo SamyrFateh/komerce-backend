@@ -20,10 +20,10 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 761,
+    "graphNodes": 762,
     "edges": 4085,
     "dbTables": 108,
-    "doctrines": 162,
+    "doctrines": 163,
     "impactAreas": 129,
     "unresolvedCodeEdges": 419,
     "dbWriteViaOverlapWarnings": 0,
@@ -14544,8 +14544,7 @@
         "items"
       ],
       "depends": [
-        "db.js",
-        "services/shared-cart-internals.js"
+        "db.js"
       ],
       "usedBy": [
         "routes/shared-cart.js"
@@ -14560,7 +14559,8 @@
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "domaine_minimal_boutique_first"
+        "domaine_minimal_boutique_first",
+        "lecture_derivee"
       ],
       "impactAreas": [
         "participant-flow",
@@ -18088,6 +18088,11 @@
       "id": "doctrine:backend_source_verite",
       "type": "doctrine",
       "doctrine": "backend_source_verite"
+    },
+    {
+      "id": "doctrine:lecture_derivee",
+      "type": "doctrine",
+      "doctrine": "lecture_derivee"
     },
     {
       "id": "doctrine:docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
@@ -39864,12 +39869,6 @@
       "label": "db.js"
     },
     {
-      "from": "services/shared-cart-reads.js",
-      "to": "services/shared-cart-internals.js",
-      "type": "depends",
-      "label": "services/shared-cart-internals.js"
-    },
-    {
       "from": "routes/shared-cart.js",
       "to": "services/shared-cart-reads.js",
       "type": "uses",
@@ -39904,6 +39903,12 @@
       "to": "doctrine:domaine_minimal_boutique_first",
       "type": "doctrine",
       "label": "domaine_minimal_boutique_first"
+    },
+    {
+      "from": "services/shared-cart-reads.js",
+      "to": "doctrine:lecture_derivee",
+      "type": "doctrine",
+      "label": "lecture_derivee"
     },
     {
       "from": "services/shared-cart-reads.js",
@@ -57556,8 +57561,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db.js",
-        "services/shared-cart-internals.js"
+        "db.js"
       ],
       "directUsedBy": [
         "routes/shared-cart.js"
@@ -57572,7 +57576,8 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "domaine_minimal_boutique_first"
+        "domaine_minimal_boutique_first",
+        "lecture_derivee"
       ],
       "impactAreas": [
         "participant-flow",
@@ -57584,6 +57589,7 @@
         "db:shared_carts",
         "db:users",
         "doctrine:domaine_minimal_boutique_first",
+        "doctrine:lecture_derivee",
         "impact:creator-flow",
         "impact:participant-flow",
         "routes/shared-cart.js",
