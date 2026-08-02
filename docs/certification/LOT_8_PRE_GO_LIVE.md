@@ -12,6 +12,8 @@ Ce certificat clôt la chaîne Lots 5 à 8 du retrait Komerce :
 Le merge du Lot 8 n’est autorisé que lorsque le workflow canonique
 `.github/workflows/lot8-pre-go-live-certification.yml` est intégralement vert sur le SHA exact de la PR.
 
+La clôture post-merge réconcilie le schéma canonique, retire les routes de contribution devenues incompatibles avec le domaine minimal et ne conserve aucun outil one-shot.
+
 ## Doctrine certifiée
 
 1. Le code secret reste le mode normal de retrait.
