@@ -3922,9 +3922,20 @@ CREATE TABLE public.sourcing_candidates (
     updated_by uuid,
     raw_payload jsonb,
     normalized_source_contract jsonb,
+    promotion_status text,
+    promotion_reasons jsonb DEFAULT '[]'::jsonb NOT NULL,
+    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
+    profile_id text,
+    profile_version integer,
+    profile_hash text,
+    source_sha256 text,
+    source_row_sha256 text,
+    connector_version text,
+    observed_at timestamp with time zone,
     CONSTRAINT chk_sourcing_candidates_normalized_source_contract_object CHECK (((normalized_source_contract IS NULL) OR (jsonb_typeof(normalized_source_contract) = 'object'::text))),
     CONSTRAINT sourcing_candidates_confidence_check CHECK ((confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
-    CONSTRAINT sourcing_candidates_state_check CHECK ((state = ANY (ARRAY['raw_imported'::text, 'normalized'::text, 'scanned'::text, 'test_ready'::text, 'watchlist'::text, 'imported_to_catalog'::text, 'rejected'::text, 'archived'::text])))
+    CONSTRAINT sourcing_candidates_promotion_status_check CHECK (((promotion_status IS NULL) OR (promotion_status = ANY (ARRAY['READY_FOR_PROMOTION'::text, 'QUARANTINED_UNSUPPORTED_MEDIA'::text, 'QUARANTINED_LOSSY_MAPPING'::text, 'QUARANTINED_CURRENCY_POLICY'::text])))),
+    CONSTRAINT sourcing_candidates_state_check CHECK ((state = ANY (ARRAY['raw_imported'::text, 'normalized'::text, 'scanned'::text, 'test_ready'::text, 'watchlist'::text, 'imported_to_catalog'::text, 'quarantined'::text, 'rejected'::text, 'archived'::text])))
 );
 
 
@@ -4004,7 +4015,28 @@ CREATE TABLE public.supplier_catalog_imports (
     total_items integer DEFAULT 0 NOT NULL,
     imported_by uuid,
     imported_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT supplier_catalog_imports_source_type_check CHECK ((source_type = ANY (ARRAY['csv'::text, 'manual'::text, 'api'::text])))
+    profile_id text,
+    profile_version integer,
+    profile_hash text,
+    source_sha256 text,
+    source_bytes bigint,
+    connector_name text,
+    connector_version text,
+    connector_contract_version text,
+    pipeline_version text,
+    status text DEFAULT 'COMPLETED'::text NOT NULL,
+    ready_count integer DEFAULT 0 NOT NULL,
+    quarantined_count integer DEFAULT 0 NOT NULL,
+    rejected_count integer DEFAULT 0 NOT NULL,
+    invalid_pct numeric(5,2),
+    quarantined_pct numeric(5,2),
+    started_at timestamp with time zone,
+    finished_at timestamp with time zone,
+    error_code text,
+    error_detail text,
+    batch_findings jsonb DEFAULT '[]'::jsonb NOT NULL,
+    CONSTRAINT supplier_catalog_imports_source_type_check CHECK ((source_type = ANY (ARRAY['csv'::text, 'manual'::text, 'api'::text, 'json'::text]))),
+    CONSTRAINT supplier_catalog_imports_status_check CHECK ((status = ANY (ARRAY['PROCESSING'::text, 'COMPLETED'::text, 'COMPLETED_WITH_QUARANTINE'::text, 'BLOCKED_QUARANTINE_THRESHOLD'::text, 'BLOCKED_INVALID_THRESHOLD'::text, 'FAILED'::text])))
 );
 
 
@@ -5758,6 +5790,14 @@ ALTER TABLE ONLY public.supplier_catalog_imports
 
 
 --
+-- Name: supplier_catalog_imports supplier_catalog_imports_profile_traceability_check; Type: CHECK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE public.supplier_catalog_imports
+    ADD CONSTRAINT supplier_catalog_imports_profile_traceability_check CHECK (((source_type <> 'json'::text) OR ((profile_id IS NOT NULL) AND (profile_version IS NOT NULL) AND (profile_hash IS NOT NULL)))) NOT VALID;
+
+
+--
 -- Name: suppliers suppliers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7486,6 +7526,27 @@ CREATE INDEX idx_sce_candidate ON public.sourcing_candidate_events USING btree (
 --
 
 CREATE INDEX idx_sce_type ON public.sourcing_candidate_events USING btree (event_type);
+
+
+--
+-- Name: idx_sci_profile; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sci_profile ON public.supplier_catalog_imports USING btree (profile_id, profile_version);
+
+
+--
+-- Name: idx_sci_source_sha256; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sci_source_sha256 ON public.supplier_catalog_imports USING btree (source_sha256);
+
+
+--
+-- Name: idx_sci_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sci_status ON public.supplier_catalog_imports USING btree (status, imported_at DESC);
 
 
 --
