@@ -1,6 +1,14 @@
 name: Lot 8 post-merge reconcile once
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/lot8-postmerge-reconcile-once.yml'
+      - '.github/workflows/contract-conformance.yml'
+      - 'docs/db/railway-live-schema.sql'
+      - 'docs/_generated/route-registry.json'
   push:
     branches:
       - fix/lot8-postmerge-certification
