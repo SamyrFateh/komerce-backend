@@ -10,6 +10,7 @@ on:
       - 'docs/db/railway-live-schema.sql'
       - 'docs/_generated/route-registry.json'
       - 'migrations/**'
+      - 'scripts/check-schema-freshness.js'
   push:
     branches:
       - fix/lot8-postmerge-certification
@@ -85,6 +86,16 @@ jobs:
             fi
           }
 
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path('scripts/check-schema-freshness.js')
+          text = path.read_text()
+          old = r'([\\s\\S]*?)\\n\\);'
+          new = r'([\\s\\S]*?)\\);'
+          if old in text:
+              path.write_text(text.replace(old, new, 1))
+          PY
+
           run npm ci || exit 0
           run psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql || exit 0
 
@@ -129,4 +140,6 @@ jobs:
             exit 0
           fi
           git commit --no-verify -m "$message"
+          git fetch origin fix/lot8-postmerge-certification
+          git rebase origin/fix/lot8-postmerge-certification
           git push origin HEAD:fix/lot8-postmerge-certification
