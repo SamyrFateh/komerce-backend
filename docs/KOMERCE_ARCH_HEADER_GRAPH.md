@@ -13,10 +13,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 760
-- Edges: 4089
+- Graph nodes: 761
+- Edges: 4085
 - DB tables: 108
-- Doctrines: 161
+- Doctrines: 162
 - Impact areas: 129
 - Unresolved code edges: 419
 - Tables multi-écrivains directs (>=2): 61
@@ -98,7 +98,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap/crons.js — operational-crons (infrastructure, critical, full)
 - public/boutique/js/b-cart.js — boutique-cart-and-side-cart (boutique, critical, full)
 - public/boutique/js/b-checkout.js — boutique-checkout-orchestrator (checkout, critical, full)
-- public/boutique/js/b-share-cart.js — shared-cart-creation-from-boutique (shared-cart, critical, full)
+- public/boutique/js/b-share-cart.js — shared-list-creation-from-boutique (shared-cart, critical, full)
 - public/boutique/js/b-store.js — boutique-shared-state (boutique, critical, full)
 - public/boutique/js/boutique.js — boutique-ui-orchestrator (boutique, critical, full)
 - public/boutique/js/group/group-checkout-adapter.js — shared-list-checkout-adapter (shared-cart, critical, full)
