@@ -28,13 +28,11 @@ import { showToast, cartTotal }   from './b-cart-core.js';
 import { renderPayPalButton, isPayPalEnabled } from './b-paypal.js'; // Migration 079
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
-import { requireIdentity, getCurrentIdentity, restoreIdentity, bindChangeIdentity }  from './b-identity.js';
+import { requireIdentity, getCurrentIdentity, restoreIdentity, openIdentityModal }  from './b-identity.js';
 import {
   renderFulfillmentSelector as _renderFulfillmentSelector,
   setCheckoutConfirmButton  as _setCheckoutConfirmButton,
   buildOrderSuccessDOM,
-  buildIdentityRecapDOM,
-  applyIdentityToCard,
   renderStepHeader,
   makeInput                 as _makeInputRender,
   makePhoneInput            as _makePhoneInputRender,
@@ -260,6 +258,15 @@ function _renderRelaisSummary(container, od, byIle, allIles) {
   container.appendChild(header);
 }
 
+/** Ligne d'en-tête « PAIEMENT · <moyen choisi> » — se met à jour à chaque changement. */
+function _renderPaymentHeader(container, mode) {
+  const sublabel = mode === 'paypal_eur' ? 'PayPal'
+    : mode === 'stripe_eur' ? 'Carte via Stripe'
+    : 'Cash au relais';
+  container.innerHTML = '';
+  container.appendChild(renderStepHeader({ state: 'current', label: 'PAIEMENT', sublabel }));
+}
+
 /** Feuille pays → île, relais auto. Remplace renderFulfillmentSelector + chips d'îles. */
 function _openRelaisPicker(od, byIle, allIles, onDone) {
   const islandsComoros = allIles.filter(i => i !== 'France');
@@ -436,6 +443,27 @@ function refreshCheckoutComputedUI() {
 
 function btn_busy(btn) { return btn?.dataset?.busy === '1'; }
 
+/** Ligne repliée « ✓ Nom · identifié » + Changer → réouvre la modale d'identité. */
+function _buildIdentityHeader(identity) {
+  const name  = identity.full_name || identity.name || '';
+  const phone = identity.phone || '';
+  const header = renderStepHeader({
+    state:    'done',
+    label:    name || phone,
+    sublabel: 'identifié' + (name && phone ? ' · ' + phone : ''),
+    onChange: async () => {
+      const newUser = await openIdentityModal({ reason: 'changer d\u2019identité', title: 'Utiliser un autre numéro', phone: '' });
+      if (newUser) {
+        state.user = newUser;
+        header.replaceWith(_buildIdentityHeader(newUser));
+      }
+    },
+  });
+  header.id = 'ck-identity-recap';
+  header.classList.add('ck-identity-summary');
+  return header;
+}
+
 // renderCheckoutCompact supprimée — doublon de renderCheckout(), jamais activée (07/05/2026)
 export function renderCheckout() {
     const body = dom.orderBody;
@@ -459,17 +487,14 @@ export function renderCheckout() {
     // il n'a pas sa place sur l'écran principal — il est le 1er cran du choix de retrait.
 
     // ── Bloc récap identité payeur (doctrine §9) ─────────────────────────────
-    // S3.1 — construction DOM déléguée à buildIdentityRecapDOM (b-checkout-render.js)
+    // Ligne repliée façon accordéon (parité visuelle avec le relais) : réutilise
+    // renderStepHeader au lieu de la carte pleine buildIdentityRecapDOM, qui
+    // restait toujours dépliée quel que soit l'état — écart repéré face à la
+    // maquette (« Qui commande » tient sur une seule ligne, comme le relais).
     const _knownUser = getCurrentIdentity();
     if (_knownUser) {
-      const idRecap = buildIdentityRecapDOM(_knownUser);
-      // FIX : « Changer » câblé sur bindChangeIdentity → ouvre vraiment la modale
-      // (openIdentityModal). L'ancien requireIdentity() court-circuitait via
-      // restoreIdentity() et renvoyait l'identité existante sans rien afficher.
-      const _onIdChanged = (newUser) => { state.user = newUser; applyIdentityToCard(idRecap, newUser); };
-      bindChangeIdentity(idRecap, '.k-ck-id-change', _onIdChanged);
-      bindChangeIdentity(idRecap, '.k-ck-id-notyou', _onIdChanged);
-      body.insertBefore(idRecap, body.firstChild); // carte en tête du checkout
+      const idRecap = _buildIdentityHeader(_knownUser);
+      body.insertBefore(idRecap, body.firstChild); // ligne en tête du checkout
     }
     // ── Fin récap identité ───────────────────────────────────────────────────
 
@@ -498,19 +523,13 @@ export function renderCheckout() {
         }
         state.user = restoredUser;
 
-        // Anti-doublon : si la carte existe déjà (rendu concurrent), on rafraîchit juste.
-        let idRecap = body.querySelector('#ck-identity-recap');
-        if (idRecap) {
-          applyIdentityToCard(idRecap, restoredUser);
-          return;
-        }
+        // Anti-doublon : si la ligne existe déjà (rendu concurrent), rien à refaire —
+        // elle se reconstruit elle-même via son propre onChange (_buildIdentityHeader).
+        if (body.querySelector('#ck-identity-recap')) return;
 
         // Construction + insertion EN TÊTE du body (fiable, indépendant de la
         // structure interne — on ne cherche plus un .k-ck-group qui peut manquer).
-        idRecap = buildIdentityRecapDOM(restoredUser);
-        const _onIdChanged2 = (newUser) => { state.user = newUser; applyIdentityToCard(idRecap, newUser); };
-        bindChangeIdentity(idRecap, '.k-ck-id-change', _onIdChanged2);
-        bindChangeIdentity(idRecap, '.k-ck-id-notyou', _onIdChanged2);
+        const idRecap = _buildIdentityHeader(restoredUser);
         body.insertBefore(idRecap, body.firstChild); // toujours en haut
       }).catch(err => {
         // On n'avale plus silencieusement : une erreur réseau est normale (non
@@ -550,7 +569,10 @@ export function renderCheckout() {
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
     s2.className = 'ck-section-block ck-payment-section';
-    s2.appendChild(renderStepHeader({ state: 'current', label: 'PAIEMENT' }));
+    const payHeaderSlot = document.createElement('div');
+    payHeaderSlot.id = 'ck-payment-summary';
+    _renderPaymentHeader(payHeaderSlot, od.payment_mode || 'cash_relais');
+    s2.appendChild(payHeaderSlot);
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
@@ -655,6 +677,9 @@ export function renderCheckout() {
       const isStripe = mode && mode.value === 'stripe_eur';
       const isPaypal = mode && mode.value === 'paypal_eur';
       od.payment_mode = mode ? mode.value : 'cash_relais';
+
+      const payHeaderSlot = document.getElementById('ck-payment-summary');
+      if (payHeaderSlot) _renderPaymentHeader(payHeaderSlot, od.payment_mode);
 
       document.querySelectorAll('.ck-pay-chip').forEach(chip => {
         const r = chip.querySelector('input[type=radio]');

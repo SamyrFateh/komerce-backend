@@ -1,1 +1,0 @@
-function o(){let n=window.location.pathname.match(/^\/g\/([A-Za-z0-9_-]+)$/);if(!n)return;let e=n[1];if(!e||e.length>120){window.location.replace("/boutique/");return}window.location.replace("/event/w/"+encodeURIComponent(e))}export{o as setupFriendlyGroupRedirect};

@@ -35,6 +35,7 @@ jest.mock('../../js/b-identity.js', () => ({
   getCurrentIdentity: jest.fn(() => null),
   restoreIdentity: jest.fn(() => Promise.resolve(null)),
   bindChangeIdentity: jest.fn(),
+  openIdentityModal: jest.fn(() => Promise.resolve(null)),
 }));
 jest.mock('../../js/b-checkout-render.js', () => ({
   renderFulfillmentSelector: jest.fn(),

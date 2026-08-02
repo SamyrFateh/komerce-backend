@@ -127,7 +127,7 @@ export async function restoreIdentity() {
 // requireIdentity() appelle directement openIdentityModal(), qui gère
 // le cas « utilisateur reconnu » via le step 'recap'.
 
-function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre WhatsApp', phone = '' } = {}) {
+export function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre WhatsApp', phone = '' } = {}) {
   ensureStyles();
   return new Promise(resolve => {
 

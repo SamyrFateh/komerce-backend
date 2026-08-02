@@ -71,6 +71,7 @@ jest.mock('../../js/b-identity.js', () => ({
   getCurrentIdentity: jest.fn(() => null),
   restoreIdentity: jest.fn(() => Promise.resolve(null)),
   bindChangeIdentity: jest.fn(),
+  openIdentityModal: jest.fn(() => Promise.resolve(null)),
 }));
 
 jest.mock('../../js/b-checkout-render.js', () => ({
@@ -123,10 +124,10 @@ const { state, dom, scroll } = require('../../js/b-store.js');
 const { showToast, cartTotal } = require('../../js/b-cart-core.js');
 const { apiPost, apiGet } = require('../../js/b-utils.js');
 const { clearCart, openCart, closeCart } = require('../../js/b-cart.js');
-const { requireIdentity, getCurrentIdentity, restoreIdentity, bindChangeIdentity } = require('../../js/b-identity.js');
+const { requireIdentity, getCurrentIdentity, restoreIdentity, bindChangeIdentity, openIdentityModal } = require('../../js/b-identity.js');
 const { digitsOnly: _digitsOnly, normalizeLocal: _normalizeLocal, prettifyLocal: _prettifyLocal, buildE164: _buildE164 } =
   require('../../js/b-phone.js');
-const { buildOrderSuccessDOM, buildIdentityRecapDOM, applyIdentityToCard, makeInput: _makeInputRender, makePhoneInput: _makePhoneInputRender } =
+const { buildOrderSuccessDOM, buildIdentityRecapDOM, applyIdentityToCard, renderStepHeader, makeInput: _makeInputRender, makePhoneInput: _makePhoneInputRender } =
   require('../../js/b-checkout-render.js');
 const { scrollToPosition } = require('../../js/b-scroll-owner.js');
 const { renderPayPalButton, isPayPalEnabled } = require('../../js/b-paypal.js');
@@ -584,14 +585,18 @@ describe('b-checkout', () => {
       jest.useRealTimers();
     });
 
-    it('identité déjà connue → carte récap insérée en tête, sans passer par restoreIdentity', async () => {
+    it('identité déjà connue → ligne repliée (renderStepHeader) insérée en tête, sans passer par restoreIdentity', async () => {
       getCurrentIdentity.mockReturnValue({ full_name: 'Amina', phone: '+269123456' });
 
       renderCheckout();
       await flush();
 
-      expect(buildIdentityRecapDOM).toHaveBeenCalledWith({ full_name: 'Amina', phone: '+269123456' });
-      expect(bindChangeIdentity).toHaveBeenCalled();
+      expect(renderStepHeader).toHaveBeenCalledWith(expect.objectContaining({
+        state: 'done',
+        label: 'Amina',
+        sublabel: expect.stringContaining('+269123456'),
+        onChange: expect.any(Function),
+      }));
       expect(dom.orderBody.firstChild.id).toBe('ck-identity-recap');
       expect(restoreIdentity).not.toHaveBeenCalled();
     });
@@ -612,7 +617,9 @@ describe('b-checkout', () => {
       renderCheckout();
       await flush();
 
-      expect(buildIdentityRecapDOM).toHaveBeenCalledWith({ full_name: 'Fatima', phone: '+269987654' });
+      expect(renderStepHeader).toHaveBeenCalledWith(expect.objectContaining({
+        state: 'done', label: 'Fatima', sublabel: expect.stringContaining('+269987654'),
+      }));
       expect(state.user).toEqual({ full_name: 'Fatima', phone: '+269987654' });
       expect(dom.orderBody.querySelector('#ck-guest-hint')).toBeNull();
     });
@@ -631,10 +638,11 @@ describe('b-checkout', () => {
       expect(dom.orderBody.querySelector('#of-beneficiary-name')).toBeNull();
       expect(dom.orderBody.querySelector('#of-beneficiary-phone')).toBeNull();
 
-      // La carte identité garde ses actions "Changer" / "Ce n'est pas vous ?"
-      // actives en permanence — plus de bascule Moi/Quelqu'un d'autre qui les masque.
+      // La carte identité est désormais une ligne repliée (accordéon) : plus de
+      // bascule Moi/Quelqu'un d'autre à masquer, un seul point de tap "Changer".
       const idCard = dom.orderBody.querySelector('#ck-identity-recap');
-      expect(idCard.querySelector('.k-ck-id-change').hidden).toBe(false);
+      expect(idCard).not.toBeNull();
+      expect(idCard.className).toContain('ck-step-header--done');
     });
   });
 
