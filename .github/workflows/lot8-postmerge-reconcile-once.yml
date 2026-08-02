@@ -86,22 +86,9 @@ jobs:
             fi
           }
 
-          python3 <<'PY'
-          from pathlib import Path
-          path = Path('scripts/check-schema-freshness.js')
-          text = path.read_text()
-          old = r'([\\s\\S]*?)\\n\\);'
-          new = r'([\\s\\S]*?)\\);'
-          if old in text:
-              path.write_text(text.replace(old, new, 1))
-          PY
-
           run npm ci || exit 0
           run psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql || exit 0
-
-          while IFS= read -r file; do
-            run psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "migrations/$file" || exit 0
-          done < <(find migrations -maxdepth 1 -type f -printf '%f\n' | grep -E '^[0-9]{3}.*\.sql$' | sort | awk '$0 >= "111"')
+          run node scripts/ci-migrate.js || exit 0
 
           run node scripts/db-snapshot.js || exit 0
           run node scripts/schema-promote.js --write || exit 0
