@@ -1094,8 +1094,9 @@ DO
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/124_shared_cart_minimal_domain.sql
 SET
 SET
-psql:migrations/124_shared_cart_minimal_domain.sql:79: ERROR:  cannot alter type of a column used by a view or rule
-DETAIL:  rule _RETURN on view suppliers_stats depends on column "status"
+DROP VIEW
+psql:migrations/124_shared_cart_minimal_domain.sql:84: ERROR:  cannot alter type of a column used by a view or rule
+DETAIL:  rule _RETURN on view v_ceremony_orders depends on column "status"
 CONTEXT:  SQL statement "ALTER TABLE orders
     ALTER COLUMN status TYPE order_status_new
     USING status::text::order_status_new"
