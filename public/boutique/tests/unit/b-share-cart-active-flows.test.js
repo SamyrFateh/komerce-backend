@@ -1,6 +1,6 @@
 'use strict';
 
-/** Couverture du formulaire et du POST actif de b-share-cart.js. */
+/** Couverture du partage immédiat et du POST actif de b-share-cart.js. */
 
 const mockShowToast = jest.fn();
 const mockClearCart = jest.fn();
@@ -27,41 +27,6 @@ jest.mock('../../js/b-group-banner.js', () => ({
   refreshBanner: mockRefreshBanner,
 }));
 jest.mock('../../js/b-identity.js', () => ({ requireIdentity: mockRequireIdentity }));
-jest.mock('../../js/b-phone.js', () => ({
-  PHONE_COUNTRIES: [],
-  buildPhoneSelect: jest.fn(),
-  isValidLocalLength: jest.fn(() => true),
-  buildE164: jest.fn((value) => value),
-  digitsOnly: jest.fn((value) => String(value || '').replace(/\D/g, '')),
-  prettifyLocal: jest.fn((value) => value),
-  // O7.3 (provider payments) : makeIntlPhoneInput mocké ici désormais —
-  // b-share-cart.js l'importe directement depuis b-phone.js (son vrai
-  // propriétaire, auth-identity), plus via b-checkout.js. Voir
-  // docs/O7_3_BOUNDARY_ANALYSIS.md.
-  makeIntlPhoneInput: jest.fn(() => {
-    const group = global.document.createElement('div');
-    group.className = 'k-ck-group';
-    group.innerHTML = '<label class="k-ck-label"></label><div class="k-ck-phone-wrap"><select class="k-ck-phone-select"></select><input id="k-sm-ph" class="k-ck-phone-input"></div>';
-    return group;
-  }),
-}));
-
-jest.mock('../../js/b-checkout.js', () => ({
-  makeInput: jest.fn((id, label, type, placeholder, data, key) => {
-    const group = global.document.createElement('div');
-    group.className = 'k-ck-group';
-    const labelEl = global.document.createElement('label');
-    labelEl.className = 'k-ck-label';
-    labelEl.textContent = label;
-    const input = global.document.createElement('input');
-    input.id = id;
-    input.type = type;
-    input.placeholder = placeholder || '';
-    input.addEventListener('input', () => { data[key] = input.value; });
-    group.append(labelEl, input);
-    return group;
-  }),
-}));
 
 const { state } = require('../../js/b-store.js');
 const {
@@ -77,29 +42,22 @@ async function settle() {
   for (let i = 0; i < 20; i += 1) await Promise.resolve();
 }
 
-function fillForm({
-  title = 'Cadeau Aïcha',
-  date = '2026-08-15',
-  mode = 'needs_validation',
-} = {}) {
-  const titleInput = document.getElementById('k-sm-title-f');
-  titleInput.value = title;
-  titleInput.dispatchEvent(new Event('input', { bubbles: true }));
-  const dateInput = document.getElementById('k-sm-date-f');
-  dateInput.value = date;
-  dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-  document.querySelector(`.k-sm-nature-opt[data-mode="${mode}"]`).click();
+function setNavigatorShare(value) {
+  Object.defineProperty(navigator, 'share', {
+    value,
+    configurable: true,
+  });
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
-  jest.useFakeTimers();
   document.body.innerHTML = `
-    <button id="k-cart-share">📤 Partager</button>
+    <button id="k-cart-share">📤 Partager cette liste</button>
     <button class="k-bnav-item" data-tab="group"></button>
     <button class="k-header-nav-btn" data-tab="group"></button>
   `;
   sessionStorage.clear();
+
   state.cart = [cartItem('p-1', 2), cartItem('p-2', 1)];
   state.shareToken = null;
   state.shareId = null;
@@ -110,17 +68,19 @@ beforeEach(() => {
   state.shareContributedKmf = 0;
   state.shareRemainingKmf = 0;
   state.shareUrl = null;
+
   mockRequireIdentity.mockResolvedValue({ id: 'user-1' });
   global.fetch = jest.fn();
   window.open = jest.fn();
+
+  setNavigatorShare(jest.fn().mockResolvedValue());
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText: jest.fn().mockResolvedValue() },
+    configurable: true,
+  });
 });
 
-afterEach(() => {
-  jest.runOnlyPendingTimers();
-  jest.useRealTimers();
-});
-
-test('crée un panier à valider, persiste son état, vide le panier puis ouvre Groupe', async () => {
+test('crée immédiatement une liste, diffuse son lien et ouvre sa vue', async () => {
   global.fetch.mockResolvedValue({
     ok: true,
     json: async () => ({
@@ -128,166 +88,165 @@ test('crée un panier à valider, persiste son état, vide le panier puis ouvre 
       token: 'tok-101',
       share_url: 'https://komerce.test/boutique/?p=tok-101',
       status: 'open',
-      total_kmf: 15000,
-      target_date: '2026-08-15',
+      items_count: 2,
+      clear_local_cart: true,
     }),
   });
 
-  const flow = startShareFlow();
-  fillForm();
-  document.getElementById('k-sm-submit').click();
-  await flow;
+  await startShareFlow();
   await settle();
 
-  expect(mockRequireIdentity).toHaveBeenCalledWith(expect.objectContaining({
-    reason: 'créer un panier groupe',
-  }));
-  expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/from-cart-items', expect.objectContaining({
-    method: 'POST',
-    credentials: 'include',
-  }));
+  expect(document.querySelector('.k-share-modal-overlay')).toBeNull();
+  expect(mockRequireIdentity).toHaveBeenCalledWith({
+    reason: 'partager cette liste',
+    title: 'Sécuriser votre liste',
+  });
+
+  expect(global.fetch).toHaveBeenCalledWith(
+    '/api/shared-carts/from-cart-items',
+    expect.objectContaining({
+      method: 'POST',
+      credentials: 'include',
+    }),
+  );
   expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
     cart_items: [
       { product_id: 'p-1', quantity: 2 },
       { product_id: 'p-2', quantity: 1 },
     ],
-    title: 'Cadeau Aïcha',
-    share_mode: 'needs_validation',
-    target_date: '2026-08-15',
   });
+
   expect(state).toMatchObject({
     shareToken: 'tok-101',
     shareId: 'sc-101',
-    cartName: 'Cadeau Aïcha',
+    cartName: 'Liste partagée',
     shareStatus: 'open',
-    shareTotalKmf: 15000,
-    shareRemainingKmf: 15000,
+    shareUrl: 'https://komerce.test/boutique/?p=tok-101',
   });
   expect(JSON.parse(sessionStorage.getItem('kmrc_share')).token).toBe('tok-101');
-  expect(mockShowBanner).toHaveBeenCalledWith(expect.objectContaining({
-    title: 'Cadeau Aïcha', total_kmf_snapshot: 15000,
+
+  expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
+    title: 'Sélection Komerce',
+    url: 'https://komerce.test/boutique/?p=tok-101',
   }));
   expect(mockClearCart).toHaveBeenCalledTimes(1);
-  expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('Panier groupe créé'), 'success');
+  expect(mockShowToast).toHaveBeenCalledWith(
+    'Liste créée. Le lien est prêt à être partagé.',
+    'success',
+  );
+  expect(mockShowBanner).toHaveBeenCalledWith({
+    title: 'Liste partagée',
+    status: 'open',
+  });
   expect(mockSwitchView).toHaveBeenCalledWith('group');
   expect(mockRenderGroupView).toHaveBeenCalled();
-  expect(document.getElementById('k-cart-share').disabled).toBe(false);
-  expect(document.getElementById('k-cart-share').textContent).toBe('📤 Partager');
+  expect(document.getElementById('k-cart-share')).toMatchObject({
+    disabled: false,
+    textContent: '📤 Partager cette liste',
+  });
 });
 
-test('le mode prêt à payer et le titre vide construisent le payload minimal', async () => {
-  global.fetch.mockResolvedValue({
-    ok: true,
-    json: async () => ({ shared_cart_id: 'sc-2', token: 'tok-2', status: 'closed', total_kmf: 9000 }),
-  });
-
-  const flow = startShareFlow();
-  fillForm({ title: '', date: '', mode: 'ready_to_pay' });
-  document.getElementById('k-sm-submit').click();
-  await flow;
-  const body = JSON.parse(global.fetch.mock.calls[0][1].body);
-
-  expect(body).toEqual({
-    cart_items: [
-      { product_id: 'p-1', quantity: 2 },
-      { product_id: 'p-2', quantity: 1 },
-    ],
-    share_mode: 'ready_to_pay',
-  });
-  expect(state.cartName).toBe('Panier groupe');
-});
-
-test('une identité annulée restaure le bouton et laisse le formulaire ouvert', async () => {
+test('une identité annulée interrompt le flux sans créer de formulaire ni de liste', async () => {
   mockRequireIdentity.mockResolvedValue(null);
-  const flow = startShareFlow();
-  fillForm();
-  const submit = document.getElementById('k-sm-submit');
-  submit.click();
-  await settle();
 
+  await startShareFlow();
+
+  expect(document.querySelector('.k-share-modal-overlay')).toBeNull();
   expect(global.fetch).not.toHaveBeenCalled();
-  expect(submit.disabled).toBe(false);
-  expect(submit.textContent).toBe('Créer le panier →');
-  document.querySelector('.k-sm-close').click();
-  await flow;
+  expect(navigator.share).not.toHaveBeenCalled();
+  expect(mockClearCart).not.toHaveBeenCalled();
 });
 
-test('une erreur de vérification s’affiche puis permet de fermer proprement', async () => {
-  mockRequireIdentity.mockRejectedValue(new Error('OTP expiré'));
-  const flow = startShareFlow();
-  fillForm();
-  document.getElementById('k-sm-submit').click();
-  await settle();
-
-  expect(document.getElementById('k-sm-err').textContent).toBe('OTP expiré');
-  expect(document.getElementById('k-sm-submit').disabled).toBe(false);
-  document.querySelector('.k-sm-close').click();
-  await flow;
-});
-
-test('une erreur API remonte le message et réactive le bouton Partager', async () => {
+test('une erreur API remonte le message et réactive le bouton', async () => {
   global.fetch.mockResolvedValue({
     ok: false,
     status: 409,
-    json: async () => ({ error: 'Limite de paniers actifs atteinte' }),
+    json: async () => ({ error: 'Limite de listes actives atteinte' }),
   });
-  const flow = startShareFlow();
-  fillForm();
-  document.getElementById('k-sm-submit').click();
-  await flow;
 
-  expect(mockShowToast).toHaveBeenCalledWith('Erreur : Limite de paniers actifs atteinte', 'error');
-  expect(mockClearCart).not.toHaveBeenCalled();
-  expect(document.getElementById('k-cart-share').disabled).toBe(false);
-});
+  await startShareFlow();
 
-test('Enter dans le titre déclenche la création', async () => {
-  global.fetch.mockResolvedValue({
-    ok: true,
-    json: async () => ({ shared_cart_id: 'sc-enter', token: 'tok-enter', total_kmf: 3000 }),
-  });
-  const flow = startShareFlow();
-  fillForm({ title: 'Panier Enter' });
-  document.getElementById('k-sm-title-f').dispatchEvent(
-    new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+  expect(mockShowToast).toHaveBeenCalledWith(
+    'Erreur : Limite de listes actives atteinte',
+    'error',
   );
-  await flow;
-  expect(global.fetch).toHaveBeenCalledTimes(1);
+  expect(mockClearCart).not.toHaveBeenCalled();
+  expect(document.getElementById('k-cart-share')).toMatchObject({
+    disabled: false,
+    textContent: '📤 Partager cette liste',
+  });
 });
 
-test('depuis un groupe actif, le choix Nouveau poursuit vers une nouvelle création', async () => {
+test('un clic normal crée une nouvelle liste même si une autre liste est active', async () => {
   state.shareToken = 'tok-old';
-  state.cartName = 'Ancien groupe';
+  state.cartName = 'Ancienne liste';
   global.fetch.mockResolvedValue({
     ok: true,
-    json: async () => ({ shared_cart_id: 'sc-new', token: 'tok-new', total_kmf: 4000 }),
+    json: async () => ({
+      shared_cart_id: 'sc-new',
+      token: 'tok-new',
+      share_url: 'https://komerce.test/boutique/?p=tok-new',
+      status: 'open',
+      clear_local_cart: true,
+    }),
   });
 
-  const flow = startShareFlow();
-  expect(document.querySelector('.k-sm-hint').textContent).toContain('Ancien groupe');
-  document.getElementById('k-sm-new-group').click();
-  await settle();
-  fillForm({ title: 'Nouveau groupe' });
-  document.getElementById('k-sm-submit').click();
-  await flow;
+  await startShareFlow();
 
+  expect(document.querySelector('.k-share-modal-overlay')).toBeNull();
+  expect(global.fetch).toHaveBeenCalledTimes(1);
   expect(state.shareToken).toBe('tok-new');
-  expect(state.cartName).toBe('Nouveau groupe');
+  expect(state.shareId).toBe('sc-new');
 });
 
-test('la fermeture par clic sur l’overlay annule le formulaire', async () => {
-  const flow = startShareFlow();
-  const overlay = document.querySelector('.k-share-modal-overlay');
-  overlay.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  await flow;
+test('le repartage fonctionne sans panier local et sans nouvelle création', async () => {
+  state.cart = [];
+  state.shareToken = 'tok-existing';
+  state.shareUrl = 'https://komerce.test/boutique/?p=tok-existing';
+  state.cartName = 'Repas de dimanche';
+
+  await startShareFlow({ reshare: true });
+
   expect(global.fetch).not.toHaveBeenCalled();
+  expect(mockRequireIdentity).not.toHaveBeenCalled();
+  expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
+    text: expect.stringContaining('Repas de dimanche'),
+    url: 'https://komerce.test/boutique/?p=tok-existing',
+  }));
 });
 
-test('clearShareState après création supprime le cache et les indicateurs', () => {
+test('sans partage natif, le lien est copié et WhatsApp sert de fallback', async () => {
+  setNavigatorShare(undefined);
+  global.fetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      shared_cart_id: 'sc-fallback',
+      token: 'tok-fallback',
+      share_url: 'https://komerce.test/boutique/?p=tok-fallback',
+      status: 'open',
+      clear_local_cart: false,
+    }),
+  });
+
+  await startShareFlow();
+
+  expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+    'https://komerce.test/boutique/?p=tok-fallback',
+  );
+  expect(window.open).toHaveBeenCalledWith(
+    expect.stringContaining('https://wa.me/?text='),
+    '_blank',
+    'noopener',
+  );
+});
+
+test('clearShareState supprime le cache et les indicateurs', () => {
   state.shareToken = 'tok-clear';
   state.shareId = 'sc-clear';
   sessionStorage.setItem('kmrc_share', '{"token":"tok-clear"}');
+
   clearShareState();
+
   expect(state.shareToken).toBeNull();
   expect(state.shareId).toBeNull();
   expect(sessionStorage.getItem('kmrc_share')).toBeNull();

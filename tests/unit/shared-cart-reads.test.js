@@ -123,6 +123,10 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     db.query.mockResolvedValueOnce({ rows });
 
     await expect(listMySharedCarts('user-1')).resolves.toBe(rows);
-    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('organizer_user_id = $1'), ['user-1']);
+
+    const [query, params] = db.query.mock.calls[0];
+    expect(query).toContain("NULLIF(to_jsonb(sc)->>'organizer_user_id', '')::uuid");
+    expect(query).toContain("NULLIF(to_jsonb(sc)->>'beneficiary_user_id', '')::uuid");
+    expect(params).toEqual(['user-1']);
   });
 });
