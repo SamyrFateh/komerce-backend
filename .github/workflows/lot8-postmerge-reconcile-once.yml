@@ -1,132 +1,13 @@
 name: Lot 8 post-merge reconcile once
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/lot8-postmerge-reconcile-once.yml'
-      - '.github/workflows/contract-conformance.yml'
-      - 'docs/db/railway-live-schema.sql'
-      - 'docs/_generated/route-registry.json'
-      - 'migrations/**'
-      - 'scripts/check-schema-freshness.js'
-  push:
-    branches:
-      - fix/lot8-postmerge-certification
+  workflow_dispatch:
 
 permissions:
   contents: write
 
-concurrency:
-  group: lot8-postmerge-reconcile-${{ github.sha }}
-  cancel-in-progress: true
-
 jobs:
-  reconcile:
-    if: github.actor != 'github-actions[bot]'
+  parked:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: komerce
-          POSTGRES_PASSWORD: komerce
-          POSTGRES_DB: komerce_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U komerce -d komerce_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      CI: true
-      NODE_ENV: test
-      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
-      JWT_SECRET: lot8-ci-secret-not-for-prod
-      ADMIN_PASSWORD: lot8-ci-admin
-      QR_SECRET: lot8-ci-qr-secret
-      STRIPE_SECRET_KEY: sk_test_dummy
-      STRIPE_WEBHOOK_SECRET: whsec_dummy
-      AUTHKEY_API_KEY: ci-dummy
-      PAYPAL_CLIENT_ID: ci-dummy
-      PAYPAL_CLIENT_SECRET: ci-dummy
-      PAYPAL_WEBHOOK_ID: ci-dummy
-      META_WA_APP_SECRET: ci-dummy
-      KOMERCE_DISABLE_CRONS: 'true'
-
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: fix/lot8-postmerge-certification
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-
-      - name: Reconcile and record result
-        id: reconcile
-        shell: bash
-        run: |
-          set +e
-          LOG=docs/certification/LOT_8_RECONCILE_LOG.txt
-          : > "$LOG"
-          run() {
-            echo "\n$ $*" | tee -a "$LOG"
-            "$@" 2>&1 | tee -a "$LOG"
-            rc=${PIPESTATUS[0]}
-            if [ "$rc" -ne 0 ]; then
-              echo "FAILED rc=$rc: $*" | tee -a "$LOG"
-              echo "success=false" >> "$GITHUB_OUTPUT"
-              return "$rc"
-            fi
-          }
-
-          run npm ci || exit 0
-          run psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql || exit 0
-          run node scripts/ci-migrate.js || exit 0
-
-          run node scripts/db-snapshot.js || exit 0
-          run node scripts/schema-promote.js --write || exit 0
-          run node scripts/arch-reconcile.js --write || exit 0
-          run node scripts/gen-route-registry.js || exit 0
-          run npm run contract:generate || exit 0
-          run npm run arch:gen || exit 0
-          run npm run business-graph:gen || exit 0
-
-          run node -e "const c=require('crypto'),fs=require('fs'),p=require('path');const h={};for(const f of fs.readdirSync('migrations').filter(x=>x.endsWith('.sql')).sort())h[f]=c.createHash('sha256').update(fs.readFileSync(p.join('migrations',f),'utf8')).digest('hex').slice(0,16);fs.writeFileSync('governance/migration-hashes.json',JSON.stringify(h,null,2)+'\n')" || exit 0
-
-          run node scripts/check-schema-freshness.js --all || exit 0
-          run node scripts/check-schema-resurrection.js || exit 0
-          run npm run gate:feature-audit || exit 0
-          run npm run arch:gate || exit 0
-          run node scripts/contract-check.js || exit 0
-          echo "success=true" >> "$GITHUB_OUTPUT"
-
-      - name: Commit result
-        if: always()
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ "${{ steps.reconcile.outputs.success }}" = "true" ]; then
-            rm -f .github/workflows/lot8-postmerge-reconcile-once.yml
-            rm -f docs/certification/LOT_8_RECONCILE_LOG.txt
-            message="fix(lot8): reconcile schema and route registry"
-          else
-            sed -i 's/[[:space:]]\+$//' docs/certification/LOT_8_RECONCILE_LOG.txt
-            message="chore(lot8): record reconciliation failure"
-          fi
-          git add -A
-          git diff --cached --check
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit --no-verify -m "$message"
-          git fetch origin fix/lot8-postmerge-certification
-          git rebase origin/fix/lot8-postmerge-certification
-          git push origin HEAD:fix/lot8-postmerge-certification
+      - run: echo 'Workflow parked while the resurrection gate is corrected.'
