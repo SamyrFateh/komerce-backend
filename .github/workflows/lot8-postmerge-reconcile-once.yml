@@ -77,6 +77,7 @@ jobs:
           }
 
           run npm ci || exit 0
+          run node -e "const fs=require('fs');const p='features/infrastructure.feature.js';const line=\"      'POST /api/shared-carts/stripe/webhook',\\n\";const s=fs.readFileSync(p,'utf8');if(!s.includes(line))throw new Error('obsolete webhook declaration not found');fs.writeFileSync(p,s.replace(line,''));" || exit 0
           run psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql || exit 0
           run node scripts/ci-migrate.js || exit 0
           run node scripts/db-snapshot.js || exit 0
