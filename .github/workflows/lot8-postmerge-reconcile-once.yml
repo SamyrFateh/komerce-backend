@@ -9,6 +9,7 @@ on:
       - '.github/workflows/contract-conformance.yml'
       - 'docs/db/railway-live-schema.sql'
       - 'docs/_generated/route-registry.json'
+      - 'migrations/**'
   push:
     branches:
       - fix/lot8-postmerge-certification
@@ -98,6 +99,9 @@ jobs:
           run npm run contract:generate || exit 0
           run npm run arch:gen || exit 0
           run npm run business-graph:gen || exit 0
+
+          run node -e "const c=require('crypto'),fs=require('fs'),p=require('path');const h={};for(const f of fs.readdirSync('migrations').filter(x=>x.endsWith('.sql')).sort())h[f]=c.createHash('sha256').update(fs.readFileSync(p.join('migrations',f),'utf8')).digest('hex').slice(0,16);fs.writeFileSync('governance/migration-hashes.json',JSON.stringify(h,null,2)+'\n')" || exit 0
+
           run node scripts/check-schema-freshness.js --all || exit 0
           run node scripts/check-schema-resurrection.js || exit 0
           run npm run gate:feature-audit || exit 0
@@ -116,9 +120,13 @@ jobs:
             rm -f docs/certification/LOT_8_RECONCILE_LOG.txt
             message="fix(lot8): reconcile schema and route registry"
           else
+            sed -i 's/[[:space:]]\+$//' docs/certification/LOT_8_RECONCILE_LOG.txt
             message="chore(lot8): record reconciliation failure"
           fi
           git add -A
           git diff --cached --check
+          if git diff --cached --quiet; then
+            exit 0
+          fi
           git commit --no-verify -m "$message"
           git push origin HEAD:fix/lot8-postmerge-certification
