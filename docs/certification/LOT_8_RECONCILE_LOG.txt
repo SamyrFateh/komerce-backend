@@ -1097,12 +1097,21 @@ SET
 BEGIN
 CREATE TABLE
 INSERT 0 8
-psql:migrations/124_shared_cart_minimal_domain.sql:208: ERROR:  operator does not exist: order_status_new <> order_status
-LINE 3:     USING status::text::order_status_new
-                                   ^
-HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
-QUERY:  ALTER TABLE orders
-    ALTER COLUMN status TYPE order_status_new
-    USING status::text::order_status_new
-CONTEXT:  PL/pgSQL function inline_code_block line 40 at SQL statement
+CREATE TABLE
+INSERT 0 40
+psql:migrations/124_shared_cart_minimal_domain.sql:256: NOTICE:  Migration 124 OK — order_status recréé sans pending_group_payment.
+DO
+DROP INDEX
+DROP INDEX
+DROP INDEX
+DROP INDEX
+DROP INDEX
+DROP INDEX
+DROP INDEX
+psql:migrations/124_shared_cart_minimal_domain.sql:308: ERROR:  cannot alter type of a column used by a view or rule
+DETAIL:  rule _RETURN on view v_group_orders depends on column "status"
+CONTEXT:  SQL statement "ALTER TABLE shared_carts
+    ALTER COLUMN status TYPE shared_cart_status_new
+    USING status::text::shared_cart_status_new"
+PL/pgSQL function inline_code_block line 29 at SQL statement
 FAILED rc=3: psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/124_shared_cart_minimal_domain.sql
