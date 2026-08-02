@@ -49,10 +49,20 @@ function resetShareState() {
   state.cart = [];
 }
 
+function appendElement(tagName, id, { hidden = false, className = '', tab = null } = {}) {
+  const element = document.createElement(tagName);
+  element.id = id;
+  element.hidden = hidden;
+  element.className = className;
+  if (tab) element.dataset.tab = tab;
+  document.body.appendChild(element);
+  return element;
+}
+
 describe('b-share-cart', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    document.body.innerHTML = '';
+    document.body.replaceChildren();
     window.sessionStorage.clear();
     resetShareState();
     global.fetch = jest.fn();
@@ -90,11 +100,10 @@ describe('b-share-cart', () => {
 
   describe('refreshSharedBadges', () => {
     test('affiche le contexte partagé et normalise le CTA', () => {
-      document.body.innerHTML = `
-        <div id="k-share-badge-row" hidden></div>
-        <button id="k-cart-share"></button>
-        <div id="k-sc-shared-badge"></div>
-        <button id="k-sc-share" hidden></button>`;
+      appendElement('div', 'k-share-badge-row', { hidden: true });
+      appendElement('button', 'k-cart-share');
+      appendElement('div', 'k-sc-shared-badge');
+      appendElement('button', 'k-sc-share', { hidden: true });
 
       refreshSharedBadges(true);
 
@@ -109,7 +118,7 @@ describe('b-share-cart', () => {
     });
 
     test('masque le badge mobile si aucune liste n’est active', () => {
-      document.body.innerHTML = '<div id="k-share-badge-row"></div>';
+      appendElement('div', 'k-share-badge-row');
       refreshSharedBadges(false);
       expect(document.getElementById('k-share-badge-row').hidden).toBe(true);
     });
