@@ -3,36 +3,7 @@ name: Contract conformance (P4-1 — bloquant)
 # Audit EMPIRIQUE : confronte le vrai comportement de l'app au contrat OpenAPI,
 # par une méthode INDÉPENDANTE de la dérivation qui a produit le contrat
 # (introspection). Schemathesis génère des requêtes depuis docs/contract/openapi.json,
-# les envoie à l'app bootée, et vérifie que les réponses sont conformes (code de
-# statut déclaré, pas de 500 inattendu, méthodes supportées, etc.).
-#
-# MODE BLOQUANT (GOV-04 activé) : gate server_error bloquante.
-# Run de validation (run #60, 2026-06-24) : 0 5xx. Run suivant (run
-# 75718588251, 2026-06-24) a trouvé 5 server_error :
-#   - GET /api/dashboard/retards (500) et GET /api/invoices/{orderId}/json
-#     (500) — vrais bugs, corrigés (alias SQL "p" manquant dans
-#     getRetards ; orderId non validé comme UUID avant requête).
-#   - GET /api/payments/config (500 "Stripe non configuré") — faux positif
-#     CI : STRIPE_PUBLISHABLE_KEY manquait dans l'env du job alors que
-#     STRIPE_SECRET_KEY/WEBHOOK_SECRET y sont. Root-cause fix : dummy
-#     ajoutée ci-dessous, pas d'exclusion nécessaire.
-#   - GET /health/detailed (503) et POST /api/auth/auto-register (503) —
-#     faux positifs CI structurels, exclus de la gate ci-dessous (voir
-#     raisons en regard de chaque --exclude-path).
-# Les NetworkError/timeout sur /api/admin/signals/* et /api/payments/paypal/refund
-# sont des ERRORS Schemathesis (appels externes sans secrets réels en CI) —
-# non couverts par not_a_server_error, n'affectent pas la gate.
-# Exclusions calibrées :
-#   - unsupported_method : Express renvoie 404 sur TRACE (pas 405) — comportement
-#     framework non modifiable, pas un bug applicatif.
-#   - GET /health/detailed : sondes Stripe/PayPal réelles (stripe.balance.retrieve(),
-#     OAuth PayPal) échouent forcément avec des clés dummy CI → 503 degraded
-#     attendu, c'est la fonction même du healthcheck (cf. STATUS.md AUD-02).
-#   - POST /api/auth/auto-register : fail-closed intentionnel si INTERNAL_API_KEY
-#     absent (503 "Endpoint désactivé") — endpoint interne, pas activé en CI
-#     par choix (pas de clé interne à fuzzer sans risque).
-# 429 désormais documenté dans le contrat → plus de bruit response_conformance.
-# Path params manquants corrigés dans openapi.json → plus d'erreurs Schema Error.
+# les envoie à l'app bootée, et vérifie que les réponses sont conformes.
 
 on:
   pull_request:
@@ -59,11 +30,8 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    # requiredEnv complet de bootstrap/env.js (l'app process.exit(1) sinon) + PORT.
     env:
       PORT: '3000'
-      # Neutralise le rate-limiter pour la sonde (sinon ~450 requêtes → 429 en
-      # cascade noient le vrai signal). Garde NODE_ENV dans rate-limit.js = jamais en prod.
       DISABLE_RATE_LIMIT: '1'
       DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
       NODE_ENV: test
@@ -83,6 +51,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -97,13 +67,13 @@ jobs:
       - name: Install Schemathesis
         run: python -m pip install --quiet schemathesis
 
-      - name: Load DB schema
-        run: psql "$DATABASE_URL" -f db/schema.sql
+      - name: Load canonical deployed schema and pending migrations
+        run: |
+          node scripts/check-schema-freshness.js
+          node scripts/check-schema-resurrection.js
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
 
-      # Token admin via le harness d'intégration éprouvé (seed user + sign JWT).
-      # NB: on capture dans une variable d'abord — `echo "X=$(cmd)" >> file` n'est
-      # PAS détecté par `set -e` si `cmd` échoue (l'échec est dans la substitution,
-      # pas dans `echo`), donc un échec silencieux donnerait un PROBE_TOKEN vide.
       - name: Generate admin probe token
         run: |
           TOKEN="$(node scripts/ci-probe-token.js | tr -cd 'A-Za-z0-9._-')"
@@ -128,12 +98,6 @@ jobs:
           done
           echo "::error::App did not become healthy in time"; cat /tmp/server.log; exit 1
 
-      # Sonde de conformité — BLOQUANT (GOV-04). Le token couvre les endpoints authentifiés ;
-      # --continue-on-failure parcourt tout le contrat avant d'échouer (rapport complet).
-      # Scope bloquant : not_a_server_error uniquement (5xx inattendus).
-      # Validé zéro 5xx réel sur run #60 (2026-06-24) avant activation.
-      # NetworkError/timeout (/api/admin/signals/*, /api/payments/paypal/refund) =
-      # classe séparée dans Schemathesis, non couverte par not_a_server_error.
       - name: Schemathesis conformance (bloquant — server_error)
         run: >-
           schemathesis run docs/contract/openapi.json
