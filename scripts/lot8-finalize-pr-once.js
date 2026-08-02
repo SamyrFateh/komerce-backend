@@ -27,16 +27,13 @@ function removeIfExists(file) { if (fs.existsSync(file)) fs.rmSync(file); }
   if (!source.includes(beforeRecipient)) throw new Error('pickup: o.recipient_name absent');
   source = source.replace(beforeRecipient, 'u.full_name AS recipient_name, o.status,');
 
-  const beforeJoin = 'LEFT JOIN relais r ON r.id = o.relais_id\n       WHERE o.id = $1 AND o.pickup_secret_hash IS NOT NULL';
-  if (!source.includes(beforeJoin)) throw new Error('pickup: jointure code absente');
-  source = source.replace(
-    beforeJoin,
-    'LEFT JOIN relais r ON r.id = o.relais_id\n       LEFT JOIN users u ON u.id = o.user_id\n       WHERE o.id = $1 AND o.pickup_secret_hash IS NOT NULL'
-  );
+  if (!/LEFT JOIN users u ON u\.id = o\.user_id[\s\S]{0,300}WHERE o\.id = \$1 AND o\.pickup_secret_hash IS NOT NULL/.test(source)) {
+    throw new Error('pickup: jointure users du chemin code absente');
+  }
 
   let lockFixes = 0;
   source = source.replace(/FOR UPDATE(?! OF o)/g, (match, offset) => {
-    const context = source.slice(Math.max(0, offset - 1400), offset);
+    const context = source.slice(Math.max(0, offset - 1800), offset);
     if (/FROM orders o[\s\S]*$/.test(context)) {
       lockFixes += 1;
       return 'FOR UPDATE OF o';
