@@ -299,6 +299,44 @@ export function buildOrderSuccessDOM(body, order) {
   };
 }
 
+// ── Step header réutilisable (accordéon checkout) ──────────────────────────────
+
+/**
+ * Ligne d'en-tête d'étape pour l'accordéon checkout (identité / relais / paiement).
+ * Reprend le pastille visuel de b-tracking.js (.k-track-step-dot) pour garder
+ * une seule sémantique done/current/pending à travers toute la boutique.
+ * Fonction pure : ne lit pas state, ne déclenche aucun appel réseau.
+ *
+ * @param {Object} opts
+ * @param {'done'|'current'|'pending'} opts.state
+ * @param {string} opts.label       - ex. "Admin Komerce", "IT Hub Relais · Ndzouani"
+ * @param {string} [opts.sublabel]  - ex. "identifié"
+ * @param {Function} [opts.onChange] - si fourni, ajoute un bouton "Changer"
+ * @returns {HTMLElement}
+ */
+export function renderStepHeader({ state: stepState, label, sublabel, onChange }) {
+  const dotCls     = stepState === 'pending' ? '' : stepState; // '' | 'done' | 'current'
+  const dotContent = stepState === 'done' ? '✓' : '';
+
+  const el = document.createElement('div');
+  el.className = 'ck-step-header ck-step-header--' + stepState;
+  el.innerHTML =
+    '<span class="k-track-step-dot k-track-step-dot--sm ' + dotCls + '" aria-hidden="true">' + dotContent + '</span>'
+    + '<span class="ck-step-header-text">'
+    +   '<span class="ck-step-header-label">' + sanitize(label || '') + '</span>'
+    +   (sublabel ? '<span class="ck-step-header-sub">' + sanitize(sublabel) + '</span>' : '')
+    + '</span>'
+    + (onChange ? '<button type="button" class="ck-step-header-change">Changer</button>' : '');
+
+  // Listener sur la ligne entière (el), pas seulement sur le bouton "Changer" :
+  // le bouton n'est qu'un indice visuel, le clic bulle depuis n'importe quel
+  // point de la ligne (comportement hérité de l'ancien ck-relais-summary).
+  if (onChange) {
+    el.addEventListener('click', onChange);
+  }
+  return el;
+}
+
 // ── Récapitulatif identité (S3.1) ─────────────────────────────────────────────
 
 /**

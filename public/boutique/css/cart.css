@@ -563,7 +563,7 @@ body.cart-open .k-wa-fab {
 .k-stripe-eur.is-visible { display:block; }
 
 /* Wallet */
-.k-wallet-section       { margin-top:5px; padding:7px 10px; border:2px dashed var(--ocean); border-radius:8px; background:linear-gradient(135deg,var(--green-bg-mid),var(--green-bg-warm)); display:none; }
+.k-wallet-section       { margin-top:5px; padding:9px 12px; border:1.5px solid rgba(0,0,0,.08); border-radius:11px; background:var(--white); display:none; }
 .k-wallet-section.is-visible { display:block; }
 .k-wallet-label         { display:flex; align-items:center; gap:10px; cursor:pointer; }
 .k-wallet-cb            { width:18px; height:18px; accent-color:var(--ocean); flex-shrink:0; }
@@ -1380,6 +1380,23 @@ body.cart-open .k-wa-fab {
   line-height: 1.35;
   color: var(--text-muted);
 }
+
+/* Variant compact — une ligne, en pied de formulaire juste avant le bouton
+   Confirmer (remplace le bloc titre+paragraphe en tête d'écran, Lot accordéon) */
+.ck-secure-pickup-notice--footer {
+  margin: 10px 0 4px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  font-size: .74rem;
+  color: var(--text-muted);
+}
+.ck-secure-pickup-notice--footer .ck-secure-pickup-title,
+.ck-secure-pickup-notice--footer .ck-secure-pickup-line { display: none; }
+.ck-secure-pickup-notice--footer .ck-secure-pickup-short { display: inline; }
 
 /* ── Checkout body mobile ── */
 .k-order-overlay.open .k-order-body--checkout {

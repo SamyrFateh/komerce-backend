@@ -50,6 +50,13 @@ jest.mock('../../js/b-checkout-render.js', () => ({
     return el;
   }),
   applyIdentityToCard: jest.fn(),
+  renderStepHeader: jest.fn(({ state: stepState, label, sublabel, onChange }) => {
+    const el = global.document.createElement('div');
+    el.className = 'ck-step-header ck-step-header--' + stepState;
+    el.textContent = [label, sublabel].filter(Boolean).join(' ');
+    if (onChange) el.addEventListener('click', onChange);
+    return el;
+  }),
   makeInput: jest.fn(() => global.document.createElement('div')),
   makePhoneInput: jest.fn(() => global.document.createElement('div')),
 }));

@@ -35,6 +35,7 @@ import {
   buildOrderSuccessDOM,
   buildIdentityRecapDOM,
   applyIdentityToCard,
+  renderStepHeader,
   makeInput                 as _makeInputRender,
   makePhoneInput            as _makePhoneInputRender,
 } from './b-checkout-render.js';
@@ -241,22 +242,22 @@ function _renderRelaisSummary(container, od, byIle, allIles) {
   container.classList.remove('is-error');
   const flag  = od.fulfillment_zone === 'france' ? '🇫🇷' : '🇰🇲';
   const zone  = od.fulfillment_zone === 'france' ? 'France' : 'Comores';
-  container.innerHTML =
-    '<button type="button" class="ck-relais-summary" id="ck-relais-summary">'
-    + '<span class="ck-relais-summary-pin" aria-hidden="true"><span class="ck-relais-pin-dot">KM</span></span>'
-    + '<span class="ck-relais-summary-body">'
-    +   '<span class="ck-relais-summary-main">' + flag + ' ' + sanitize(od.selectedRelaisName || '') + '</span>'
-    +   '<span class="ck-relais-summary-sub">' + sanitize(od.selectedIsland || '') + ' · ' + zone + '</span>'
-    + '</span>'
-    + '<span class="ck-relais-summary-change">Changer</span>'
-    + '</button>';
-  container.querySelector('#ck-relais-summary').addEventListener('click', () => {
-    _openRelaisPicker(od, byIle, allIles, () => {
-      clearRelaySelectionError();
-      _renderRelaisSummary(container, od, byIle, allIles);
-      refreshCheckoutComputedUI();
-    });
+  container.innerHTML = '';
+  const header = renderStepHeader({
+    state:    'done',
+    label:    flag + ' ' + (od.selectedRelaisName || ''),
+    sublabel: (od.selectedIsland || '') + ' · ' + zone,
+    onChange: () => {
+      _openRelaisPicker(od, byIle, allIles, () => {
+        clearRelaySelectionError();
+        _renderRelaisSummary(container, od, byIle, allIles);
+        refreshCheckoutComputedUI();
+      });
+    },
   });
+  header.id = 'ck-relais-summary';
+  header.classList.add('ck-relais-summary');
+  container.appendChild(header);
 }
 
 /** Feuille pays → île, relais auto. Remplace renderFulfillmentSelector + chips d'îles. */
@@ -523,18 +524,21 @@ export function renderCheckout() {
     // Bloc informatif, non interactif : le code de retrait est envoyé au
     // WhatsApp vérifié de l'acheteur (identité OTP), qui le transmet ensuite
     // à qui il veut. Aucune identité de retrait distincte n'est collectée.
+    // Lot accordéon : réduit à une ligne discrète en pied de formulaire
+    // (l'ancien bloc titre+paragraphe en tête d'écran prenait trop de place
+    // maintenant que identité/relais sont collapsés en une ligne chacun).
     const secureNotice = document.createElement('div');
-    secureNotice.className = 'ck-secure-pickup-notice';
+    secureNotice.className = 'ck-secure-pickup-notice ck-secure-pickup-notice--footer';
     secureNotice.innerHTML =
       '<div class="ck-secure-pickup-title">🔒 Retrait sécurisé</div>'
       + '<div class="ck-secure-pickup-line">Le code de retrait sera envoyé sur votre WhatsApp vérifié '
-      + 'lorsque votre commande sera prête. Vous pourrez le transmettre à la personne de votre choix.</div>';
-    body.appendChild(secureNotice);
+      + 'lorsque votre commande sera prête. Vous pourrez le transmettre à la personne de votre choix.</div>'
+      + '<span class="ck-secure-pickup-short">🔒 Code de retrait envoyé sur WhatsApp une fois prête</span>';
+    // Insertion différée : appendChild plus bas, après le bloc paiement (cf. suite du fichier)
 
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
     sRelais.className = 'ck-section-block';
-    sRelais.innerHTML = '<div class="ck-section-title"><span class="ck-step-num" aria-hidden="true">1</span>POINT DE RETRAIT</div>';
     body.appendChild(sRelais);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
@@ -546,7 +550,7 @@ export function renderCheckout() {
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
     s2.className = 'ck-section-block ck-payment-section';
-    s2.innerHTML = '<div class="ck-section-title"><span class="ck-step-num" aria-hidden="true">2</span>PAIEMENT</div>';
+    s2.appendChild(renderStepHeader({ state: 'current', label: 'PAIEMENT' }));
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
@@ -623,6 +627,8 @@ export function renderCheckout() {
       bus.emit('nav:goto-komerce-wallet');
       closeOrderModal();
     });
+
+    body.appendChild(secureNotice);
 
     /* ── 6. Confirm (sticky) ── */
     // FIX: supprimer tout ancien bouton confirm
