@@ -6627,6 +6627,58 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-track-steps--compact .k-track-step-dot { width: 22px; height: 22px; font-size: .65rem; }
 .k-track-steps--compact .k-track-step-sub { display: none; }
 
+/* ── Step header réutilisable — accordéon checkout (identité/relais/paiement) ──
+   Ces classes sont produites par renderStepHeader() dans b-checkout-render.js.
+   Elles n'avaient jamais reçu de style : la ligne se repliait donc en HTML nu
+   (bouton "Changer" natif du navigateur, label+sous-label collés sur une seule
+   ligne). C'est la cause principale du rendu "sans style" constaté en test. */
+.k-track-step-dot--sm { width: 22px; height: 22px; font-size: .68rem; }
+.ck-step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 4px 0;
+}
+.ck-step-header-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ck-step-header-label {
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ck-step-header-sub {
+  font-size: .74rem;
+  font-weight: 600;
+  color: var(--sage-dark);
+  line-height: 1.2;
+}
+.ck-step-header-change {
+  flex: 0 0 auto;
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--sage-dark);
+  cursor: pointer;
+}
+.ck-step-header--pending .ck-step-header-label,
+.ck-step-header--pending .ck-step-header-sub { color: var(--text-muted); }
+
 /* -- TOAST ----------------------------------------------------- */
 .k-toast {
   position: fixed; top: -80px; left: 50%; transform: translateX(-50%);
