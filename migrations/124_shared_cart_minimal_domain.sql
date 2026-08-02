@@ -63,12 +63,17 @@ BEGIN
     'in_transit', 'available', 'collected', 'cancelled', 'refunded'
   );
 
+  -- Le DEFAULT est typé avec l'ancien ENUM et ne peut pas être converti
+  -- implicitement pendant ALTER COLUMN TYPE. On le retire puis on le repose
+  -- après renommage du nouveau type.
+  ALTER TABLE orders ALTER COLUMN status DROP DEFAULT;
   ALTER TABLE orders
     ALTER COLUMN status TYPE order_status_new
     USING status::text::order_status_new;
 
   DROP TYPE order_status;
   ALTER TYPE order_status_new RENAME TO order_status;
+  ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'pending'::order_status;
 
   RAISE NOTICE 'Migration 124 OK — order_status recréé sans pending_group_payment.';
 END $$;
@@ -117,14 +122,14 @@ BEGIN
 
   CREATE TYPE shared_cart_status_new AS ENUM ('open', 'closed', 'cancelled');
 
+  ALTER TABLE shared_carts ALTER COLUMN status DROP DEFAULT;
   ALTER TABLE shared_carts
     ALTER COLUMN status TYPE shared_cart_status_new
     USING status::text::shared_cart_status_new;
 
-  ALTER TABLE shared_carts ALTER COLUMN status SET DEFAULT 'open';
-
   DROP TYPE shared_cart_status;
   ALTER TYPE shared_cart_status_new RENAME TO shared_cart_status;
+  ALTER TABLE shared_carts ALTER COLUMN status SET DEFAULT 'open'::shared_cart_status;
 
   RAISE NOTICE 'Migration 124 OK — shared_cart_status réduit à open/closed/cancelled.';
 END $$;
@@ -133,7 +138,24 @@ END $$;
 -- 3. shared_carts — domaine minimal
 -- ============================================================
 
-ALTER TABLE shared_carts RENAME COLUMN beneficiary_user_id TO organizer_user_id;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'shared_carts'
+      AND column_name = 'beneficiary_user_id'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'shared_carts'
+      AND column_name = 'organizer_user_id'
+  ) THEN
+    ALTER TABLE shared_carts RENAME COLUMN beneficiary_user_id TO organizer_user_id;
+  END IF;
+END $$;
 
 ALTER TABLE shared_carts
   DROP COLUMN IF EXISTS beneficiary_phone_snapshot,
