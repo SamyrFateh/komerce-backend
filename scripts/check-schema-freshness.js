@@ -128,7 +128,7 @@ function objectExistsInSchema(normalizedSchema, { kind, name }) {
 
 function columnExistsInSchema(normalizedSchema, table, col) {
   const tableRe = new RegExp(
-    `create\\s+table\\s+(?:if\\s+not\\s+exists\\s+)?(?:public\\.)?${table}\\s*\\(([\\s\\S]*?)\\n\\);`,
+    `create\\s+table\\s+(?:if\\s+not\\s+exists\\s+)?(?:public\\.)?${table}\\s*\\(([\\s\\S]*?)\\);`,
     'i'
   );
   const tableMatch = tableRe.exec(normalizedSchema);

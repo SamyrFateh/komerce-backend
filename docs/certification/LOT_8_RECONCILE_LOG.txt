@@ -8,7 +8,7 @@ npm warn deprecated superagent@8.1.2: Please upgrade to superagent v10.2.2+, see
 > node -e "if (!process.env.CI) require('child_process').execFileSync('bash',['scripts/setup-hooks.sh'],{stdio:'inherit'})"
 
 
-added 542 packages, and audited 543 packages in 2s
+added 542 packages, and audited 543 packages in 3s
 
 99 packages are looking for funding
   run `npm fund` for details
@@ -50,9 +50,6 @@ CREATE TYPE
 CREATE TYPE
 CREATE TYPE
 CREATE TYPE
-CREATE TYPE
-CREATE TYPE
-CREATE TYPE
 CREATE FUNCTION
 CREATE FUNCTION
 CREATE FUNCTION
@@ -86,7 +83,6 @@ CREATE TABLE
 CREATE TABLE
 CREATE TABLE
 CREATE TABLE
-CREATE TABLE
 COMMENT
 CREATE TABLE
 COMMENT
@@ -97,13 +93,6 @@ COMMENT
 CREATE TABLE
 COMMENT
 COMMENT
-CREATE TABLE
-CREATE TABLE
-CREATE TABLE
-CREATE TABLE
-CREATE TABLE
-CREATE TABLE
-CREATE TABLE
 CREATE TABLE
 CREATE TABLE
 CREATE TABLE
@@ -173,6 +162,8 @@ COMMENT
 COMMENT
 COMMENT
 COMMENT
+COMMENT
+COMMENT
 CREATE SEQUENCE
 CREATE TABLE
 CREATE TABLE
@@ -211,32 +202,7 @@ COMMENT
 COMMENT
 COMMENT
 COMMENT
-CREATE TABLE
-CREATE SEQUENCE
-ALTER SEQUENCE
-CREATE TABLE
-CREATE TABLE
-CREATE SEQUENCE
-CREATE TABLE
-CREATE TABLE
 COMMENT
-COMMENT
-COMMENT
-CREATE TABLE
-COMMENT
-CREATE TABLE
-COMMENT
-CREATE SEQUENCE
-CREATE TABLE
-COMMENT
-CREATE TABLE
-CREATE TABLE
-CREATE TABLE
-CREATE SEQUENCE
-ALTER SEQUENCE
-CREATE TABLE
-CREATE TABLE
-CREATE TABLE
 CREATE TABLE
 CREATE SEQUENCE
 ALTER SEQUENCE
@@ -244,6 +210,38 @@ CREATE TABLE
 CREATE TABLE
 CREATE SEQUENCE
 CREATE TABLE
+CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
+CREATE TABLE
+COMMENT
+CREATE TABLE
+COMMENT
+CREATE SEQUENCE
+CREATE TABLE
+COMMENT
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE SEQUENCE
+ALTER SEQUENCE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE SEQUENCE
+ALTER SEQUENCE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+COMMENT
+CREATE TABLE
+COMMENT
+CREATE TABLE
+COMMENT
+CREATE SEQUENCE
+CREATE TABLE
 COMMENT
 CREATE TABLE
 COMMENT
@@ -259,6 +257,9 @@ COMMENT
 CREATE VIEW
 COMMENT
 CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
 COMMENT
 COMMENT
 COMMENT
@@ -289,8 +290,10 @@ CREATE TABLE
 CREATE TABLE
 COMMENT
 CREATE TABLE
-CREATE TABLE
-CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
+COMMENT
 CREATE TABLE
 CREATE TABLE
 CREATE TABLE
@@ -306,8 +309,10 @@ CREATE TABLE
 CREATE TABLE
 CREATE TABLE
 CREATE TABLE
+CREATE TABLE
 COMMENT
 COMMENT
+CREATE TABLE
 CREATE TABLE
 CREATE TABLE
 CREATE TABLE
@@ -320,11 +325,12 @@ CREATE VIEW
 CREATE TABLE
 CREATE TABLE
 CREATE TABLE
+COMMENT
+CREATE TABLE
 CREATE VIEW
 CREATE VIEW
 CREATE VIEW
 COMMENT
-CREATE VIEW
 CREATE VIEW
 CREATE VIEW
 CREATE VIEW
@@ -487,38 +493,6 @@ ALTER TABLE
 ALTER TABLE
 ALTER TABLE
 ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
 CREATE INDEX
 CREATE INDEX
 CREATE INDEX
@@ -838,11 +812,6 @@ CREATE TRIGGER
 CREATE TRIGGER
 CREATE TRIGGER
 CREATE TRIGGER
-CREATE TRIGGER
-CREATE TRIGGER
-CREATE TRIGGER
-CREATE TRIGGER
-CREATE TRIGGER
 ALTER TABLE
 ALTER TABLE
 ALTER TABLE
@@ -997,74 +966,85 @@ ALTER TABLE
 ALTER TABLE
 ALTER TABLE
 ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-ALTER TABLE
-CREATE TABLE
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE TABLE
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/111_product_content.sql
+psql:migrations/111_product_content.sql:32: NOTICE:  relation "product_content_profile" already exists, skipping
 CREATE TABLE
 COMMENT
+psql:migrations/111_product_content.sql:39: NOTICE:  relation "ux_product_content_profile_product" already exists, skipping
 CREATE INDEX
+psql:migrations/111_product_content.sql:55: NOTICE:  relation "product_content_sections" already exists, skipping
 CREATE TABLE
 COMMENT
+psql:migrations/111_product_content.sql:63: NOTICE:  relation "ux_product_content_sections_key" already exists, skipping
 CREATE INDEX
+psql:migrations/111_product_content.sql:66: NOTICE:  relation "idx_product_content_sections_product_active" already exists, skipping
 CREATE INDEX
+psql:migrations/111_product_content.sql:87: NOTICE:  relation "product_attributes" already exists, skipping
 CREATE TABLE
 COMMENT
+psql:migrations/111_product_content.sql:98: NOTICE:  relation "ux_product_attributes_triplet" already exists, skipping
 CREATE INDEX
+psql:migrations/111_product_content.sql:101: NOTICE:  relation "idx_product_attributes_product_active" already exists, skipping
 CREATE INDEX
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/112_add_series_to_products.sql
+psql:migrations/112_add_series_to_products.sql:14: NOTICE:  column "series" of relation "products" already exists, skipping
 ALTER TABLE
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/113_air_express_opt_out.sql
+psql:migrations/113_air_express_opt_out.sql:17: NOTICE:  column "air_excluded" of relation "products" already exists, skipping
 ALTER TABLE
 COMMENT
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/114_order_items_delivery_mode.sql
+psql:migrations/114_order_items_delivery_mode.sql:13: NOTICE:  column "delivery_mode" of relation "order_items" already exists, skipping
 ALTER TABLE
 COMMENT
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/115_air_freight_rate.sql
 INSERT 0 1
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/116_air_eligibility_status.sql
 DO
+psql:migrations/116_air_eligibility_status.sql:35: NOTICE:  column "air_eligibility_status" of relation "products" already exists, skipping
+psql:migrations/116_air_eligibility_status.sql:35: NOTICE:  column "air_exclusion_reason" of relation "products" already exists, skipping
 ALTER TABLE
 UPDATE 0
 COMMENT
 COMMENT
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/117_requested_transport_rail.sql
+psql:migrations/117_requested_transport_rail.sql:18: NOTICE:  column "requested_transport_rail" of relation "order_items" already exists, skipping
 ALTER TABLE
 UPDATE 0
 UPDATE 0
 COMMENT
 COMMENT
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/118_transport_pricing.sql
+psql:migrations/118_transport_pricing.sql:24: NOTICE:  column "transport_price_kmf" of relation "orders" already exists, skipping
 ALTER TABLE
 COMMENT
 INSERT 0 1
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/119_drop_orders_pickup_code.sql
+psql:migrations/119_drop_orders_pickup_code.sql:39: NOTICE:  index "idx_orders_pickup_code" does not exist, skipping
 DROP INDEX
+psql:migrations/119_drop_orders_pickup_code.sql:40: NOTICE:  index "uq_orders_pickup_active" does not exist, skipping
 DROP INDEX
+psql:migrations/119_drop_orders_pickup_code.sql:44: NOTICE:  column "pickup_code" of relation "orders" does not exist, skipping
 ALTER TABLE
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/120_drop_users_phone_beneficiary.sql
+psql:migrations/120_drop_users_phone_beneficiary.sql:46: NOTICE:  index "idx_users_phone_beneficiary" does not exist, skipping
 DROP INDEX
+psql:migrations/120_drop_users_phone_beneficiary.sql:50: NOTICE:  column "phone_beneficiary" of relation "users" does not exist, skipping
 ALTER TABLE
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/121_exceptional_pickup_authorization.sql
 BEGIN
+psql:migrations/121_exceptional_pickup_authorization.sql:46: NOTICE:  relation "user_pickup_authorizations" already exists, skipping
 CREATE TABLE
 COMMENT
+psql:migrations/121_exceptional_pickup_authorization.sql:61: NOTICE:  column "exceptional_pickup_attempts" of relation "orders" already exists, skipping
+psql:migrations/121_exceptional_pickup_authorization.sql:61: NOTICE:  column "exceptional_pickup_blocked_until" of relation "orders" already exists, skipping
 ALTER TABLE
+psql:migrations/121_exceptional_pickup_authorization.sql:70: NOTICE:  column "pickup_collected_via" of relation "orders" already exists, skipping
 ALTER TABLE
+psql:migrations/121_exceptional_pickup_authorization.sql:85: NOTICE:  column "pickup_method" of relation "scans" already exists, skipping
+psql:migrations/121_exceptional_pickup_authorization.sql:85: NOTICE:  column "authorization_version" of relation "scans" already exists, skipping
+psql:migrations/121_exceptional_pickup_authorization.sql:85: NOTICE:  column "document_checked" of relation "scans" already exists, skipping
+psql:migrations/121_exceptional_pickup_authorization.sql:85: NOTICE:  column "pickup_relais_id" of relation "scans" already exists, skipping
 ALTER TABLE
 DO
 COMMENT
@@ -1086,8 +1066,10 @@ COMMIT
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/123_shared_cart_item_claim_bridge.sql
 SET
 SET
+psql:migrations/123_shared_cart_item_claim_bridge.sql:42: NOTICE:  column "shared_cart_item_id" of relation "order_items" already exists, skipping
 ALTER TABLE
 DO
+psql:migrations/123_shared_cart_item_claim_bridge.sql:64: NOTICE:  relation "order_items_shared_cart_item_id_unique" already exists, skipping
 CREATE INDEX
 psql:migrations/123_shared_cart_item_claim_bridge.sql:69: NOTICE:  Migration 123 OK — pont order_items <-> shared_cart_items posé, arbitrage par contrainte unique.
 DO
@@ -1096,27 +1078,57 @@ SET
 SET
 BEGIN
 CREATE TABLE
-INSERT 0 8
+INSERT 0 7
 CREATE TABLE
 INSERT 0 40
-psql:migrations/124_shared_cart_minimal_domain.sql:256: NOTICE:  Migration 124 OK — order_status recréé sans pending_group_payment.
+psql:migrations/124_shared_cart_minimal_domain.sql:256: NOTICE:  Migration 124 — pending_group_payment déjà absent de order_status, rien à faire.
 DO
+psql:migrations/124_shared_cart_minimal_domain.sql:265: NOTICE:  view "v_group_orders" does not exist, skipping
 DROP VIEW
+psql:migrations/124_shared_cart_minimal_domain.sql:268: NOTICE:  index "idx_shared_carts_awaiting_deadline" does not exist, skipping
+DROP INDEX
+psql:migrations/124_shared_cart_minimal_domain.sql:269: NOTICE:  index "idx_shared_carts_beneficiary" does not exist, skipping
+DROP INDEX
+psql:migrations/124_shared_cart_minimal_domain.sql:270: NOTICE:  index "idx_shared_carts_closed_window" does not exist, skipping
+DROP INDEX
+psql:migrations/124_shared_cart_minimal_domain.sql:271: NOTICE:  index "idx_shared_carts_funded" does not exist, skipping
+DROP INDEX
+psql:migrations/124_shared_cart_minimal_domain.sql:272: NOTICE:  index "idx_shared_carts_open_target_date" does not exist, skipping
+DROP INDEX
+psql:migrations/124_shared_cart_minimal_domain.sql:273: NOTICE:  index "idx_shared_carts_status" does not exist, skipping
 DROP INDEX
 DROP INDEX
-DROP INDEX
-DROP INDEX
-DROP INDEX
-DROP INDEX
-DROP INDEX
-psql:migrations/124_shared_cart_minimal_domain.sql:313: NOTICE:  Migration 124 OK — shared_cart_status réduit à open/closed/cancelled.
+psql:migrations/124_shared_cart_minimal_domain.sql:313: NOTICE:  Migration 124 — shared_cart_status déjà réduit, rien à faire.
 DO
 DO
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "beneficiary_phone_snapshot" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "beneficiary_name_snapshot" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "currency_snapshot" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "total_kmf_snapshot" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "contributed_kmf" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "remaining_kmf" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "expires_at" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "finalized_at" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "finalized_order_id" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "split_mode" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "suggested_share_kmf" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "expected_participants" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "sourcing_checked_at" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "sourcing_note" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "target_date" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "payment_window_ends_at" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "awaiting_choice_started_at" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "awaiting_choice_deadline" of relation "shared_carts" does not exist, skipping
+psql:migrations/124_shared_cart_minimal_domain.sql:357: NOTICE:  column "view_count" of relation "shared_carts" does not exist, skipping
 ALTER TABLE
+psql:migrations/124_shared_cart_minimal_domain.sql:360: NOTICE:  relation "idx_shared_carts_organizer" already exists, skipping
 CREATE INDEX
 CREATE INDEX
+psql:migrations/124_shared_cart_minimal_domain.sql:369: NOTICE:  table "shared_cart_contributions" does not exist, skipping
 DROP TABLE
+psql:migrations/124_shared_cart_minimal_domain.sql:370: NOTICE:  table "shared_cart_estimations" does not exist, skipping
 DROP TABLE
+psql:migrations/124_shared_cart_minimal_domain.sql:371: NOTICE:  table "cart_contributions" does not exist, skipping
 DROP TABLE
 psql:migrations/124_shared_cart_minimal_domain.sql:376: NOTICE:  Migration 124 OK — domaine liste partagée réduit au modèle minimal.
 DO
@@ -1126,58 +1138,44 @@ SET
 SET
 psql:migrations/125_drop_collective_workspace_tables.sql:40: NOTICE:  Migration 125 — début éradication îlot collective.
 DO
+psql:migrations/125_drop_collective_workspace_tables.sql:42: NOTICE:  table "collective_payment_tokens" does not exist, skipping
 DROP TABLE
+psql:migrations/125_drop_collective_workspace_tables.sql:43: NOTICE:  table "collective_payment_sessions" does not exist, skipping
 DROP TABLE
+psql:migrations/125_drop_collective_workspace_tables.sql:44: NOTICE:  table "collective_stock_reservations" does not exist, skipping
 DROP TABLE
+psql:migrations/125_drop_collective_workspace_tables.sql:45: NOTICE:  table "collective_workspace_contributions" does not exist, skipping
 DROP TABLE
+psql:migrations/125_drop_collective_workspace_tables.sql:46: NOTICE:  table "collective_workspace_events" does not exist, skipping
 DROP TABLE
+psql:migrations/125_drop_collective_workspace_tables.sql:47: NOTICE:  table "collective_workspace_items" does not exist, skipping
 DROP TABLE
+psql:migrations/125_drop_collective_workspace_tables.sql:48: NOTICE:  table "collective_workspaces" does not exist, skipping
 DROP TABLE
+psql:migrations/125_drop_collective_workspace_tables.sql:51: NOTICE:  type "collective_contribution_status" does not exist, skipping
 DROP TYPE
+psql:migrations/125_drop_collective_workspace_tables.sql:52: NOTICE:  type "collective_session_status" does not exist, skipping
 DROP TYPE
+psql:migrations/125_drop_collective_workspace_tables.sql:53: NOTICE:  type "collective_token_status" does not exist, skipping
 DROP TYPE
+psql:migrations/125_drop_collective_workspace_tables.sql:54: NOTICE:  type "collective_workspace_status" does not exist, skipping
 DROP TYPE
 psql:migrations/125_drop_collective_workspace_tables.sql:59: NOTICE:  Migration 125 OK — 7 tables collective_* et types associés supprimés.
 DO
 \n$ node scripts/db-snapshot.js
-◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
 ============================================================
  KOMERCE - Snapshot du schema live
 ============================================================
 Cible                   : docs/db/railway-live-schema.sql
-Tables (live)           : 103  (avant: 109)
+Tables (live)           : 103  (avant: 103)
 Mode                    : ecriture
 
-Tables AJOUTEES (4) :
-  + product_attributes
-  + product_content_profile
-  + product_content_sections
-  + user_pickup_authorizations
-Tables RETIREES (10) :
-  - cart_contributions
-  - collective_payment_sessions
-  - collective_payment_tokens
-  - collective_stock_reservations
-  - collective_workspace_contributions
-  - collective_workspace_events
-  - collective_workspace_items
-  - collective_workspaces
-  - shared_cart_contributions
-  - shared_cart_estimations
+Aucun changement de table (le contenu detaille peut tout de meme differer).
 
-✅ Dump rafraichi.
-   Boucle : npm run arch:reconcile -- --write   puis   npm run arch:gate
-   (ou directement : npm run db:sync)
+✅ Dump deja a jour (identique). Rien a ecrire.
 \n$ node scripts/schema-promote.js --write
-============================================================
-SCHEMA-PROMOTE — objets vises vs dump live
-Blocs schema-pending    : 3
-En attente de deploy    : 0
-Promouvables (live OK)  : 3 (product_content_profile, product_content_sections, product_attributes)
-   ↑ product_content_profile → ligne de tableau sous "### 4.5 Paniers et catalogue"
-   ↑ product_content_sections → ligne de tableau sous "### 4.5 Paniers et catalogue"
-   ↑ product_attributes → ligne de tableau sous "### 4.5 Paniers et catalogue"
-✅ SCHEMA.md mis a jour : 3 promotion(s). Relancer gate:schema pour confirmer.
+✅ schema-promote : aucun bloc schema-pending dans SCHEMA.md.
 \n$ node scripts/arch-reconcile.js --write
 ============================================================
  KOMERCE - Reconciliation du budget
@@ -1185,11 +1183,7 @@ Promouvables (live OK)  : 3 (product_content_profile, product_content_sections, 
 Mode                    : --write
 
 --- REPRISES AUTOMATIQUES ---
-Allowlist a elaguer (fiction resolue) : 4
-  - product_attributes
-  - product_content_profile
-  - product_content_sections
-  - user_pickup_authorizations
+Allowlist a elaguer (fiction resolue) : (aucune)
 Cliquet liveTablesUndocumented: 0 (inchange)
 Cliquet headerUnderDeclaration: 0 (inchange)
 
@@ -1199,9 +1193,7 @@ Cliquet headerUnderDeclaration: 0 (inchange)
   ! Tables live non documentees : 1 > plafond 0 (a corriger ; reconcile ne releve jamais un cliquet)
 
 ============================================================
-✅ Budget reconcilie et reecrit : scripts/arch-debt-budget.json
-   - 4 entree(s) d'allowlist elaguee(s)
-   Pense a committer le budget.
+✅ Rien a reconcilier. Budget deja a jour.
 \n$ node scripts/gen-route-registry.js
 route-registry: 465 route(s) résolue(s) → docs/_generated/route-registry.json
 \n$ npm run contract:generate
@@ -1209,12 +1201,12 @@ route-registry: 465 route(s) résolue(s) → docs/_generated/route-registry.json
 > komerce-backend@10.6.1 contract:generate
 > node scripts/contract-generate.js
 
-◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
-{"level":40,"time":"2026-08-02T01:29:16.396Z","service":"komerce-backend","env":"test","module":"purchasing-trigger","msg":"⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled"}
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+{"level":40,"time":"2026-08-02T01:33:17.858Z","service":"komerce-backend","env":"test","module":"purchasing-trigger","msg":"⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled"}
 ✅ Contrat généré : /home/runner/work/komerce-backend/komerce-backend/docs/contract/openapi.json
    425 routes · 12 réponses UNKNOWN
    Dette documentée dans : /home/runner/work/komerce-backend/komerce-backend/docs/contract/DEBT.md
-{"level":30,"time":"2026-08-02T01:29:16.420Z","service":"komerce-backend","env":"test","module":"rate-limit","msg":"REDIS_URL absent — using memory store (single instance)"}
+{"level":30,"time":"2026-08-02T01:33:17.892Z","service":"komerce-backend","env":"test","module":"rate-limit","msg":"REDIS_URL absent — using memory store (single instance)"}
 \n$ npm run arch:gen
 
 > komerce-backend@10.6.1 arch:gen
@@ -1234,36 +1226,36 @@ Generated graph: 335 full, 28 lite, 4105 edges, 0 uncovered, 0 misplaced
 
 ❌ Dump de schéma PÉRIMÉ ou PARTIEL — 30 objet(s)/colonne(s) de baseline manquant(s) :
 
-   [052_contributions_optional_amount.sql]  colonne manquante : collective_workspace_contributions.suggestion
-   [059_group_order.sql]  colonne manquante : shared_carts.split_mode
-   [059_group_order.sql]  colonne manquante : shared_carts.suggested_share_kmf
-   [059_group_order.sql]  colonne manquante : shared_carts.expected_participants
-   [059_group_order.sql]  colonne manquante : shared_carts.sourcing_checked_at
-   [059_group_order.sql]  colonne manquante : shared_carts.sourcing_note
-   [073_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.payment_method
-   [073_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_reference
-   [073_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_relais_id
-   [073_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_by
-   [073_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_at
-   [073a_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.payment_method
-   [073a_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_reference
-   [073a_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_relais_id
-   [073a_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_by
-   [073a_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_at
-   [073b_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.payment_method
-   [073b_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_reference
-   [073b_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_relais_id
-   [073b_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_by
-   [073b_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_at
-   [080_v41_shared_cart_state_machine.sql]  colonne manquante : shared_carts.target_date
-   [080_v41_shared_cart_state_machine.sql]  colonne manquante : shared_carts.payment_window_ends_at
-   [080_v41_shared_cart_state_machine.sql]  colonne manquante : shared_carts.awaiting_choice_started_at
-   [080_v41_shared_cart_state_machine.sql]  colonne manquante : shared_carts.awaiting_choice_deadline
-   [085_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.payment_method
-   [085_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_reference
-   [085_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_relais_id
-   [085_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_by
-   [085_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_at
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.profile_id
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.profile_version
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.profile_hash
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.source_sha256
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.source_bytes
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.connector_name
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.connector_version
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.connector_contract_version
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.pipeline_version
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.status
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.ready_count
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.quarantined_count
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.rejected_count
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.invalid_pct
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.quarantined_pct
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.started_at
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.finished_at
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.error_code
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.error_detail
+   [110_catalog_import_audit.sql]  colonne manquante : supplier_catalog_imports.batch_findings
+   [110_catalog_import_audit.sql]  colonne manquante : sourcing_candidates.promotion_status
+   [110_catalog_import_audit.sql]  colonne manquante : sourcing_candidates.promotion_reasons
+   [110_catalog_import_audit.sql]  colonne manquante : sourcing_candidates.findings
+   [110_catalog_import_audit.sql]  colonne manquante : sourcing_candidates.profile_id
+   [110_catalog_import_audit.sql]  colonne manquante : sourcing_candidates.profile_version
+   [110_catalog_import_audit.sql]  colonne manquante : sourcing_candidates.profile_hash
+   [110_catalog_import_audit.sql]  colonne manquante : sourcing_candidates.source_sha256
+   [110_catalog_import_audit.sql]  colonne manquante : sourcing_candidates.source_row_sha256
+   [110_catalog_import_audit.sql]  colonne manquante : sourcing_candidates.connector_version
+   [110_catalog_import_audit.sql]  colonne manquante : sourcing_candidates.observed_at
 
 Action requise :
    npm run db:snapshot
