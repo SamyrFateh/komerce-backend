@@ -6,14 +6,9 @@
  * @domain       infrastructure
  * @layer        tooling
  * @criticality  high
- * @purpose      Verifier que le dump live couvre toutes les migrations qui
- *               appartenaient deja a sa baseline git (colonnes ADD COLUMN,
- *               ET nouveaux objets CREATE TABLE / CREATE VIEW), tout en
- *               laissant les migrations post-snapshot suivre le Mode B
- *               intended schema. Suit aussi le cycle de vie create/drop
- *               (in-scope uniquement) pour ne pas exiger dans le dump un
- *               objet cree puis re-droppe par une migration ulterieure
- *               (ex. table zombie).
+ * @purpose      Verifier que le dump live couvre l'état FINAL des migrations
+ *               appartenant à sa baseline : créations, suppressions et cycle
+ *               de vie des colonnes, tables et vues.
  * @inputs       migrations/*.sql, docs/db/railway-live-schema.sql, git history
  * @outputs      freshness_report, exit_code
  * @depends      git
@@ -23,31 +18,7 @@
  * @db-txn       none
  * @doctrine     KOMERCE_DB_SCHEMA_DOCTRINE
  * @impact-areas governance, ci, database-schema
- * @version      2026-07
- */
-
-/**
- * KOMERCE — Check fraîcheur du dump de schéma live
- * =================================================
- *
- * Deux modes cohérents avec KOMERCE_DB_SCHEMA_DOCTRINE :
- *
- *   défaut / CI PR
- *     - le dernier commit qui a touché le dump définit sa baseline git ;
- *     - toute migration déjà présente à cette baseline DOIT être reflétée dans
- *       le dump ;
- *     - les migrations ajoutées après ce snapshot sont du Mode B
- *       `intended_migration_schema` et seront appliquées par ci-migrate.js sur
- *       la base éphémère. Elles ne peuvent pas être exigées du dump live avant
- *       leur déploiement.
- *
- *   --all / juste après db-snapshot.js
- *     - toutes les migrations courantes DOIVENT être reflétées dans le dump
- *       fraîchement extrait ;
- *     - protège schema-refresh.yml contre un dump partiel ou une mauvaise DB.
- *
- * Si git est indisponible ou si la baseline du dump est introuvable, le mode
- * par défaut retombe en contrôle `--all` : fail-safe, jamais de skip silencieux.
+ * @version      2026-08
  */
 
 const fs = require('fs');
@@ -59,25 +30,16 @@ const MIGRATIONS_DIR = path.join(ROOT, 'migrations');
 const SCHEMA_FILE = path.join(ROOT, 'docs', 'db', 'railway-live-schema.sql');
 const WARN_ONLY = process.argv.includes('--warn');
 const REQUIRE_ALL = process.argv.includes('--all');
-
-// ALTER TABLE [ONLY] [public.]table ADD COLUMN [IF NOT EXISTS] colname
-const ADD_COL_RE = /ALTER\s+TABLE\s+(?:ONLY\s+)?(?:public\.)?(\w+)\s+ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/gi;
-// CREATE TABLE [IF NOT EXISTS] [public.]name
-const CREATE_TABLE_RE = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?(\w+)/gi;
-// CREATE [OR REPLACE] VIEW [public.]name
-const CREATE_VIEW_RE = /CREATE\s+(?:OR\s+REPLACE\s+)?VIEW\s+(?:public\.)?(\w+)/gi;
-// DROP TABLE [IF EXISTS] [public.]name
-const DROP_TABLE_RE = /DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:public\.)?(\w+)/gi;
-// DROP VIEW [IF EXISTS] [public.]name
-const DROP_VIEW_RE = /DROP\s+VIEW\s+(?:IF\s+EXISTS\s+)?(?:public\.)?(\w+)/gi;
 const MIGRATION_RE = /^\d{3}/;
 
-/**
- * Retire les commentaires ligne `-- ...` avant toute extraction par regex.
- * Sans ça, un commentaire comme "-- Idempotente : CREATE TABLE IF NOT EXISTS"
- * se fait détecter comme une vraie instruction (bug constaté en pratique sur
- * 065_carriers.sql et 071_relay_dashboard_tables.sql).
- */
+const CREATE_TABLE_RE = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?(\w+)/gi;
+const CREATE_VIEW_RE = /CREATE\s+(?:OR\s+REPLACE\s+)?VIEW\s+(?:public\.)?(\w+)/gi;
+const DROP_TABLE_RE = /DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:public\.)?(\w+)/gi;
+const DROP_VIEW_RE = /DROP\s+VIEW\s+(?:IF\s+EXISTS\s+)?(?:public\.)?(\w+)/gi;
+const ALTER_TABLE_STATEMENT_RE = /ALTER\s+TABLE\s+(?:ONLY\s+)?(?:public\.)?(\w+)([\s\S]*?);/gi;
+const ADD_COLUMN_CLAUSE_RE = /\bADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/gi;
+const DROP_COLUMN_CLAUSE_RE = /\bDROP\s+COLUMN\s+(?:IF\s+EXISTS\s+)?(\w+)/gi;
+
 function stripSqlComments(sql) {
   return sql
     .split('\n')
@@ -94,24 +56,33 @@ function listMigrations() {
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 }
 
-function extractAddColumns(sql) {
+function extractColumnClauses(sql, clauseRegex) {
   const clean = stripSqlComments(sql);
   const results = [];
-  let match;
-  ADD_COL_RE.lastIndex = 0;
-  while ((match = ADD_COL_RE.exec(clean)) !== null) {
-    results.push({ table: match[1].toLowerCase(), col: match[2].toLowerCase() });
+  let statement;
+
+  ALTER_TABLE_STATEMENT_RE.lastIndex = 0;
+  while ((statement = ALTER_TABLE_STATEMENT_RE.exec(clean)) !== null) {
+    const table = statement[1].toLowerCase();
+    const body = statement[2];
+    let clause;
+    clauseRegex.lastIndex = 0;
+    while ((clause = clauseRegex.exec(body)) !== null) {
+      results.push({ table, col: clause[1].toLowerCase() });
+    }
   }
+
   return results;
 }
 
-/**
- * Détecte les nouveaux objets (tables, vues) créés par une migration.
- * Angle mort corrigé : jusqu'ici seules les colonnes ADD COLUMN étaient
- * vérifiées contre le dump live — une table ou vue entièrement nouvelle
- * (CREATE TABLE / CREATE VIEW) pouvait être absente du dump sans jamais
- * faire échouer le gate.
- */
+function extractAddColumns(sql) {
+  return extractColumnClauses(sql, ADD_COLUMN_CLAUSE_RE);
+}
+
+function extractDroppedColumns(sql) {
+  return extractColumnClauses(sql, DROP_COLUMN_CLAUSE_RE);
+}
+
 function extractCreatedObjects(sql) {
   const clean = stripSqlComments(sql);
   const results = [];
@@ -130,13 +101,6 @@ function extractCreatedObjects(sql) {
   return results;
 }
 
-/**
- * Détecte les objets DROP TABLE / DROP VIEW d'une migration.
- * Nécessaire pour le suivi de cycle de vie (cf. extractCreatedObjects) :
- * une table créée par une migration ancienne puis re-droppée par une
- * migration postérieure (ex. 071b crée shared_cart_commitments, 099 la
- * re-drop en "zombie") ne doit plus être exigée dans le dump live.
- */
 function extractDroppedObjects(sql) {
   const clean = stripSqlComments(sql);
   const results = [];
@@ -155,12 +119,6 @@ function extractDroppedObjects(sql) {
   return results;
 }
 
-/**
- * Un objet est considéré présent dans le dump live si le dump contient sa
- * propre instruction CREATE TABLE/VIEW pour ce nom — pas une simple
- * occurrence de sous-chaîne (trop faible : une FK vers `product_skus`
- * suffirait à la faire "trouver" sans que la table existe réellement).
- */
 function objectExistsInSchema(normalizedSchema, { kind, name }) {
   const re = kind === 'table'
     ? new RegExp(`create\\s+table\\s+(?:if\\s+not\\s+exists\\s+)?(?:public\\.)?${name}\\b`, 'i')
@@ -168,10 +126,16 @@ function objectExistsInSchema(normalizedSchema, { kind, name }) {
   return re.test(normalizedSchema);
 }
 
-/**
- * Même définition de baseline que ci-migrate.js : le dernier commit qui a
- * touché le dump fixe les migrations déjà supposées contenues dans ce dump.
- */
+function columnExistsInSchema(normalizedSchema, table, col) {
+  const tableRe = new RegExp(
+    `create\\s+table\\s+(?:if\\s+not\\s+exists\\s+)?(?:public\\.)?${table}\\s*\\(([\\s\\S]*?)\\n\\);`,
+    'i'
+  );
+  const tableMatch = tableRe.exec(normalizedSchema);
+  if (!tableMatch) return false;
+  return new RegExp(`(?:^|[,\\n])\\s*${col}\\s+`, 'i').test(tableMatch[1]);
+}
+
 function baselineFromDumpCommit() {
   try {
     const dumpRel = path.relative(ROOT, SCHEMA_FILE).replace(/\\/g, '/');
@@ -199,30 +163,26 @@ function baselineFromDumpCommit() {
   }
 }
 
-/**
- * Construit, à partir des seules migrations DANS LE PÉRIMÈTRE du contrôle
- * (celles qui doivent déjà être reflétées dans le dump), l'état final de
- * chaque objet create/drop rencontré : 'create' si le dernier événement en
- * ordre de fichier est une création, 'drop' si c'est un drop.
- *
- * Volontairement limité aux migrations in-scope : un drop porté par une
- * migration post-snapshot (Mode B, pas encore appliquée) ne doit PAS
- * annuler l'exigence de présence d'un objet créé par une migration baseline
- * — le drop n'a pas encore eu lieu du point de vue du dump live.
- */
-function buildObjectLifecycle(inScopeMigrations) {
-  const lifecycle = new Map(); // key `${kind}:${name}` -> 'create' | 'drop'
+function buildLifecycle(inScopeMigrations) {
+  const objects = new Map();
+  const columns = new Map();
 
   for (const migration of inScopeMigrations) {
     for (const { kind, name } of extractCreatedObjects(migration.sql)) {
-      lifecycle.set(`${kind}:${name}`, 'create');
+      objects.set(`${kind}:${name}`, 'create');
     }
     for (const { kind, name } of extractDroppedObjects(migration.sql)) {
-      lifecycle.set(`${kind}:${name}`, 'drop');
+      objects.set(`${kind}:${name}`, 'drop');
+    }
+    for (const { table, col } of extractAddColumns(migration.sql)) {
+      columns.set(`${table}:${col}`, 'create');
+    }
+    for (const { table, col } of extractDroppedColumns(migration.sql)) {
+      columns.set(`${table}:${col}`, 'drop');
     }
   }
 
-  return lifecycle;
+  return { objects, columns };
 }
 
 function evaluateFreshness({ schema, migrations, baselineFiles, requireAll = false }) {
@@ -232,42 +192,35 @@ function evaluateFreshness({ schema, migrations, baselineFiles, requireAll = fal
 
   const inScopeMigrations = migrations.filter((migration) => {
     const mustExistInDump = requireAll || baselineFiles === null || baselineFiles.has(migration.fname);
-    if (!mustExistInDump) {
-      pending.push(migration.fname);
-    }
+    if (!mustExistInDump) pending.push(migration.fname);
     return mustExistInDump;
   });
 
-  const lifecycle = buildObjectLifecycle(inScopeMigrations);
+  const lifecycle = buildLifecycle(inScopeMigrations);
 
   for (const migration of inScopeMigrations) {
     for (const { table, col } of extractAddColumns(migration.sql)) {
-      if (!normalizedSchema.includes(col)) {
+      if (lifecycle.objects.get(`table:${table}`) === 'drop') continue;
+      if (lifecycle.columns.get(`${table}:${col}`) === 'drop') continue;
+      if (!columnExistsInSchema(normalizedSchema, table, col)) {
         missing.push({ fname: migration.fname, kind: 'column', table, col });
       }
     }
 
     for (const { kind, name } of extractCreatedObjects(migration.sql)) {
-      // Objet créé ici mais re-droppé plus tard par une migration également
-      // in-scope (table "zombie" nettoyée) : plus rien à exiger du dump.
-      if (lifecycle.get(`${kind}:${name}`) === 'drop') continue;
-
+      if (lifecycle.objects.get(`${kind}:${name}`) === 'drop') continue;
       if (!objectExistsInSchema(normalizedSchema, { kind, name })) {
         missing.push({ fname: migration.fname, kind, name });
       }
     }
   }
 
-  return {
-    missing,
-    pending: [...new Set(pending)],
-  };
+  return { missing, pending: [...new Set(pending)] };
 }
 
 function main() {
   const schema = fs.readFileSync(SCHEMA_FILE, 'utf8');
-  const migrationFiles = listMigrations();
-  const migrations = migrationFiles.map((fname) => ({
+  const migrations = listMigrations().map((fname) => ({
     fname,
     sql: fs.readFileSync(path.join(MIGRATIONS_DIR, fname), 'utf8'),
   }));
@@ -301,8 +254,8 @@ function main() {
   if (missing.length === 0) {
     console.log(
       REQUIRE_ALL
-        ? '✅ Dump fraîchement extrait à jour — toutes les colonnes et tous les objets (tables/vues) de migration sont présents.'
-        : '✅ Dump cohérent avec sa baseline git — aucune colonne/table/vue live attendue ne manque.'
+        ? '✅ Dump fraîchement extrait à jour — état final des colonnes, tables et vues conforme aux migrations.'
+        : '✅ Dump cohérent avec sa baseline git — état final des colonnes, tables et vues conforme.'
     );
     process.exitCode = 0;
     return;
@@ -330,9 +283,11 @@ if (require.main === module) main();
 
 module.exports = {
   extractAddColumns,
+  extractDroppedColumns,
   extractCreatedObjects,
   extractDroppedObjects,
   objectExistsInSchema,
+  columnExistsInSchema,
   baselineFromDumpCommit,
   evaluateFreshness,
 };
