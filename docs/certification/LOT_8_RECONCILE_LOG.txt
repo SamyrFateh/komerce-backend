@@ -8,7 +8,7 @@ npm warn deprecated superagent@8.1.2: Please upgrade to superagent v10.2.2+, see
 > node -e "if (!process.env.CI) require('child_process').execFileSync('bash',['scripts/setup-hooks.sh'],{stdio:'inherit'})"
 
 
-added 542 packages, and audited 543 packages in 3s
+added 542 packages, and audited 543 packages in 2s
 
 99 packages are looking for funding
   run `npm fund` for details
@@ -1101,6 +1101,7 @@ CREATE TABLE
 INSERT 0 40
 psql:migrations/124_shared_cart_minimal_domain.sql:256: NOTICE:  Migration 124 OK — order_status recréé sans pending_group_payment.
 DO
+DROP VIEW
 DROP INDEX
 DROP INDEX
 DROP INDEX
@@ -1108,10 +1109,165 @@ DROP INDEX
 DROP INDEX
 DROP INDEX
 DROP INDEX
-psql:migrations/124_shared_cart_minimal_domain.sql:308: ERROR:  cannot alter type of a column used by a view or rule
-DETAIL:  rule _RETURN on view v_group_orders depends on column "status"
-CONTEXT:  SQL statement "ALTER TABLE shared_carts
-    ALTER COLUMN status TYPE shared_cart_status_new
-    USING status::text::shared_cart_status_new"
-PL/pgSQL function inline_code_block line 29 at SQL statement
-FAILED rc=3: psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/124_shared_cart_minimal_domain.sql
+psql:migrations/124_shared_cart_minimal_domain.sql:313: NOTICE:  Migration 124 OK — shared_cart_status réduit à open/closed/cancelled.
+DO
+DO
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+DROP TABLE
+DROP TABLE
+DROP TABLE
+psql:migrations/124_shared_cart_minimal_domain.sql:376: NOTICE:  Migration 124 OK — domaine liste partagée réduit au modèle minimal.
+DO
+COMMIT
+\n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/125_drop_collective_workspace_tables.sql
+SET
+SET
+psql:migrations/125_drop_collective_workspace_tables.sql:40: NOTICE:  Migration 125 — début éradication îlot collective.
+DO
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TYPE
+DROP TYPE
+DROP TYPE
+DROP TYPE
+psql:migrations/125_drop_collective_workspace_tables.sql:59: NOTICE:  Migration 125 OK — 7 tables collective_* et types associés supprimés.
+DO
+\n$ node scripts/db-snapshot.js
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+============================================================
+ KOMERCE - Snapshot du schema live
+============================================================
+Cible                   : docs/db/railway-live-schema.sql
+Tables (live)           : 103  (avant: 109)
+Mode                    : ecriture
+
+Tables AJOUTEES (4) :
+  + product_attributes
+  + product_content_profile
+  + product_content_sections
+  + user_pickup_authorizations
+Tables RETIREES (10) :
+  - cart_contributions
+  - collective_payment_sessions
+  - collective_payment_tokens
+  - collective_stock_reservations
+  - collective_workspace_contributions
+  - collective_workspace_events
+  - collective_workspace_items
+  - collective_workspaces
+  - shared_cart_contributions
+  - shared_cart_estimations
+
+✅ Dump rafraichi.
+   Boucle : npm run arch:reconcile -- --write   puis   npm run arch:gate
+   (ou directement : npm run db:sync)
+\n$ node scripts/schema-promote.js --write
+============================================================
+SCHEMA-PROMOTE — objets vises vs dump live
+Blocs schema-pending    : 3
+En attente de deploy    : 0
+Promouvables (live OK)  : 3 (product_content_profile, product_content_sections, product_attributes)
+   ↑ product_content_profile → ligne de tableau sous "### 4.5 Paniers et catalogue"
+   ↑ product_content_sections → ligne de tableau sous "### 4.5 Paniers et catalogue"
+   ↑ product_attributes → ligne de tableau sous "### 4.5 Paniers et catalogue"
+✅ SCHEMA.md mis a jour : 3 promotion(s). Relancer gate:schema pour confirmer.
+\n$ node scripts/arch-reconcile.js --write
+============================================================
+ KOMERCE - Reconciliation du budget
+============================================================
+Mode                    : --write
+
+--- REPRISES AUTOMATIQUES ---
+Allowlist a elaguer (fiction resolue) : 4
+  - product_attributes
+  - product_content_profile
+  - product_content_sections
+  - user_pickup_authorizations
+Cliquet liveTablesUndocumented: 0 (inchange)
+Cliquet headerUnderDeclaration: 0 (inchange)
+
+--- RESTE A LA MAIN (reconcile ne touche pas) ---
+  ! Fiction hors liste (vrai bug a corriger, ou a inscrire volontairement dans l'allowlist) : cart_contributions
+  ! Fantomes SCHEMA.md (retirer du doc, ces objets n'existent pas live) : cart_contributions, collective_contribution_status, collective_payment_sessions, collective_payment_tokens, collective_session_status, collective_stock_reservations, collective_token_status, collective_workspace_contributions, collective_workspace_contributions_content_check, collective_workspace_contributions_kind_check, collective_workspace_events, collective_workspace_items, collective_workspace_status, collective_workspaces, shared_cart_contributions, shared_cart_estimations, v_group_orders
+  ! Tables live non documentees : 1 > plafond 0 (a corriger ; reconcile ne releve jamais un cliquet)
+
+============================================================
+✅ Budget reconcilie et reecrit : scripts/arch-debt-budget.json
+   - 4 entree(s) d'allowlist elaguee(s)
+   Pense a committer le budget.
+\n$ node scripts/gen-route-registry.js
+route-registry: 465 route(s) résolue(s) → docs/_generated/route-registry.json
+\n$ npm run contract:generate
+
+> komerce-backend@10.6.1 contract:generate
+> node scripts/contract-generate.js
+
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+{"level":40,"time":"2026-08-02T01:29:16.396Z","service":"komerce-backend","env":"test","module":"purchasing-trigger","msg":"⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled"}
+✅ Contrat généré : /home/runner/work/komerce-backend/komerce-backend/docs/contract/openapi.json
+   425 routes · 12 réponses UNKNOWN
+   Dette documentée dans : /home/runner/work/komerce-backend/komerce-backend/docs/contract/DEBT.md
+{"level":30,"time":"2026-08-02T01:29:16.420Z","service":"komerce-backend","env":"test","module":"rate-limit","msg":"REDIS_URL absent — using memory store (single instance)"}
+\n$ npm run arch:gen
+
+> komerce-backend@10.6.1 arch:gen
+> node scripts/generate-komerce-arch-graph.js
+
+Generated graph: 335 full, 28 lite, 4105 edges, 0 uncovered, 0 misplaced
+\n$ npm run business-graph:gen
+
+> komerce-backend@10.6.1 business-graph:gen
+> node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+
+[32m[1m✔ Business Feature Graph généré[0m — 29 feature(s), 0 error(s), 130 warn(s)
+  docs/BUSINESS_FEATURE_GRAPH.json + docs/BUSINESS_FEATURE_GRAPH.md + docs/O6_INVENTORY.md
+\n$ node -e const c=require('crypto'),fs=require('fs'),p=require('path');const h={};for(const f of fs.readdirSync('migrations').filter(x=>x.endsWith('.sql')).sort())h[f]=c.createHash('sha256').update(fs.readFileSync(p.join('migrations',f),'utf8')).digest('hex').slice(0,16);fs.writeFileSync('governance/migration-hashes.json',JSON.stringify(h,null,2)+'\n')
+\n$ node scripts/check-schema-freshness.js --all
+ℹ️  schema freshness : mode --all, dump fraîchement extrait attendu.
+
+❌ Dump de schéma PÉRIMÉ ou PARTIEL — 30 objet(s)/colonne(s) de baseline manquant(s) :
+
+   [052_contributions_optional_amount.sql]  colonne manquante : collective_workspace_contributions.suggestion
+   [059_group_order.sql]  colonne manquante : shared_carts.split_mode
+   [059_group_order.sql]  colonne manquante : shared_carts.suggested_share_kmf
+   [059_group_order.sql]  colonne manquante : shared_carts.expected_participants
+   [059_group_order.sql]  colonne manquante : shared_carts.sourcing_checked_at
+   [059_group_order.sql]  colonne manquante : shared_carts.sourcing_note
+   [073_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.payment_method
+   [073_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_reference
+   [073_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_relais_id
+   [073_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_by
+   [073_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_at
+   [073a_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.payment_method
+   [073a_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_reference
+   [073a_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_relais_id
+   [073a_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_by
+   [073a_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_at
+   [073b_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.payment_method
+   [073b_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_reference
+   [073b_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_relais_id
+   [073b_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_by
+   [073b_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_at
+   [080_v41_shared_cart_state_machine.sql]  colonne manquante : shared_carts.target_date
+   [080_v41_shared_cart_state_machine.sql]  colonne manquante : shared_carts.payment_window_ends_at
+   [080_v41_shared_cart_state_machine.sql]  colonne manquante : shared_carts.awaiting_choice_started_at
+   [080_v41_shared_cart_state_machine.sql]  colonne manquante : shared_carts.awaiting_choice_deadline
+   [085_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.payment_method
+   [085_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_reference
+   [085_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_relais_id
+   [085_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_by
+   [085_shared_cart_cash_contributions.sql]  colonne manquante : shared_cart_contributions.cash_confirmed_at
+
+Action requise :
+   npm run db:snapshot
+   node scripts/check-schema-freshness.js --all
+   git add docs/db/railway-live-schema.sql && git commit -m "chore(schema): refresh depuis Railway prod" && git push
+
+FAILED rc=1: node scripts/check-schema-freshness.js --all

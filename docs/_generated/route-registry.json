@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-29T16:41:02.283Z",
+  "generatedAt": "2026-08-02T01:29:15.797Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 475,
+  "count": 465,
   "routes": [
     {
       "method": "GET",
@@ -1173,40 +1173,10 @@
     },
     {
       "method": "POST",
-      "fullPath": "/api/admin/shared-carts/:id/extend",
-      "mountPrefix": "/api/admin/shared-carts",
-      "localPath": "/:id/extend",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "POST",
       "fullPath": "/api/admin/shared-carts/:id/note",
       "mountPrefix": "/api/admin/shared-carts",
       "localPath": "/:id/note",
       "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "GET",
-      "fullPath": "/api/admin/shared-carts/refund-queue",
-      "mountPrefix": "/api/admin/shared-carts",
-      "localPath": "/refund-queue",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/admin/shared-carts/refund-queue/:contributionId/mark-refunded",
-      "mountPrefix": "/api/admin/shared-carts",
-      "localPath": "/refund-queue/:contributionId/mark-refunded",
-      "routeFile": "routes/shared-cart-refund-admin.js",
       "mountedFrom": [
         "server.js"
       ]
@@ -1676,6 +1646,36 @@
       "fullPath": "/api/auth/me",
       "mountPrefix": "/api/auth",
       "localPath": "/me",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "fullPath": "/api/auth/me/pickup-authorization",
+      "mountPrefix": "/api/auth",
+      "localPath": "/me/pickup-authorization",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/auth/me/pickup-authorization",
+      "mountPrefix": "/api/auth",
+      "localPath": "/me/pickup-authorization",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PUT",
+      "fullPath": "/api/auth/me/pickup-authorization",
+      "mountPrefix": "/api/auth",
+      "localPath": "/me/pickup-authorization",
       "routeFile": "routes/auth.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -3197,6 +3197,26 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/pickup/exceptional-pickup/:orderId",
+      "mountPrefix": "/api/pickup",
+      "localPath": "/exceptional-pickup/:orderId",
+      "routeFile": "routes/pickup-secret.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/pickup/exceptional-pickup/:orderId/collect",
+      "mountPrefix": "/api/pickup",
+      "localPath": "/exceptional-pickup/:orderId/collect",
+      "routeFile": "routes/pickup-secret.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/pickup/pay-cash/:orderId",
       "mountPrefix": "/api/pickup",
@@ -3917,36 +3937,6 @@
     },
     {
       "method": "POST",
-      "fullPath": "/api/shared-carts/:id/awaiting-choice/adjust",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/:id/awaiting-choice/adjust",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/shared-carts/:id/awaiting-choice/cancel",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/:id/awaiting-choice/cancel",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/shared-carts/:id/awaiting-choice/complete",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/:id/awaiting-choice/complete",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "POST",
       "fullPath": "/api/shared-carts/:id/cancel",
       "mountPrefix": "/api/shared-carts",
       "localPath": "/:id/cancel",
@@ -3967,19 +3957,9 @@
     },
     {
       "method": "POST",
-      "fullPath": "/api/shared-carts/:id/extend-window",
+      "fullPath": "/api/shared-carts/:id/items",
       "mountPrefix": "/api/shared-carts",
-      "localPath": "/:id/extend-window",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/shared-carts/:id/finalize",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/:id/finalize",
+      "localPath": "/:id/items",
       "routeFile": "routes/shared-cart.js",
       "mountedFrom": [
         "server.js"
@@ -3996,13 +3976,13 @@
       ]
     },
     {
-      "method": "POST",
-      "fullPath": "/api/shared-carts/contributions/:id/confirm-cash",
+      "method": "DELETE",
+      "fullPath": "/api/shared-carts/:id/items/:itemId",
       "mountPrefix": "/api/shared-carts",
-      "localPath": "/contributions/:id/confirm-cash",
-      "routeFile": "routes/shared-cart-cash.js",
+      "localPath": "/:id/items/:itemId",
+      "routeFile": "routes/shared-cart.js",
       "mountedFrom": [
-        "bootstrap/api-routes.js"
+        "server.js"
       ]
     },
     {
@@ -4020,16 +4000,6 @@
       "fullPath": "/api/shared-carts/from-cart-items",
       "mountPrefix": "/api/shared-carts",
       "localPath": "/from-cart-items",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/shared-carts/from-order",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/from-order",
       "routeFile": "routes/shared-cart.js",
       "mountedFrom": [
         "server.js"
@@ -4054,74 +4024,6 @@
       "mountedFrom": [
         "server.js"
       ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/shared-carts/public/:token/contributions",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/public/:token/contributions",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/shared-carts/public/:token/contributions/cash",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/public/:token/contributions/cash",
-      "routeFile": "routes/shared-cart-cash.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
-      "method": "GET",
-      "fullPath": "/api/shared-carts/public/:token/estimations",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/public/:token/estimations",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/shared-carts/public/:token/estimations",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/public/:token/estimations",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "DELETE",
-      "fullPath": "/api/shared-carts/public/:token/estimations/:estimationId",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/public/:token/estimations/:estimationId",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "GET",
-      "fullPath": "/api/shared-carts/public/:token/estimations/by-phone",
-      "mountPrefix": "/api/shared-carts",
-      "localPath": "/public/:token/estimations/by-phone",
-      "routeFile": "routes/shared-cart.js",
-      "mountedFrom": [
-        "server.js"
-      ]
-    },
-    {
-      "method": "POST",
-      "fullPath": "/api/shared-carts/stripe/webhook",
-      "mountPrefix": "",
-      "localPath": "/api/shared-carts/stripe/webhook",
-      "routeFile": "server.js",
-      "mountedFrom": []
     },
     {
       "method": "POST",

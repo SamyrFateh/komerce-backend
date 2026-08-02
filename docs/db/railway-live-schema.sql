@@ -3,8 +3,8 @@
 --
 
 
--- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
--- Dumped by pg_dump version 18.4 (Debian 18.4-1.pgdg13+1)
+-- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
+-- Dumped by pg_dump version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -46,6 +46,17 @@ COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UU
 
 
 --
+-- Name: air_eligibility_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.air_eligibility_status AS ENUM (
+    'PENDING_REVIEW',
+    'ELIGIBLE',
+    'EXCLUDED'
+);
+
+
+--
 -- Name: basket_type; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -68,57 +79,6 @@ CREATE TYPE public.ceremony_order_type AS ENUM (
 
 
 --
--- Name: collective_contribution_status; Type: TYPE; Schema: public; Owner: -
---
-
-CREATE TYPE public.collective_contribution_status AS ENUM (
-    'intention',
-    'converted',
-    'cancelled'
-);
-
-
---
--- Name: collective_session_status; Type: TYPE; Schema: public; Owner: -
---
-
-CREATE TYPE public.collective_session_status AS ENUM (
-    'open',
-    'ready_to_capture',
-    'paid',
-    'ended',
-    'failed'
-);
-
-
---
--- Name: collective_token_status; Type: TYPE; Schema: public; Owner: -
---
-
-CREATE TYPE public.collective_token_status AS ENUM (
-    'active',
-    'authorized',
-    'paid',
-    'expired',
-    'cancelled',
-    'failed'
-);
-
-
---
--- Name: collective_workspace_status; Type: TYPE; Schema: public; Owner: -
---
-
-CREATE TYPE public.collective_workspace_status AS ENUM (
-    'conception',
-    'payment_pending',
-    'order_created',
-    'session_ended',
-    'archived'
-);
-
-
---
 -- Name: customs_shipment_status; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -135,7 +95,6 @@ CREATE TYPE public.customs_shipment_status AS ENUM (
 
 CREATE TYPE public.order_status AS ENUM (
     'pending',
-    'pending_group_payment',
     'confirmed',
     'ordered',
     'preparation',
@@ -222,26 +181,9 @@ CREATE TYPE public.shared_cart_contribution_status AS ENUM (
 --
 
 CREATE TYPE public.shared_cart_status AS ENUM (
-    'draft',
-    'active',
-    'partially_funded',
-    'fully_funded',
-    'funded',
-    'sourcing_check',
-    'adjustment_required',
-    'converted_to_order',
-    'expired',
-    'cancelled',
-    'refunded',
-    'commitment_open',
-    'closed_for_settlement',
-    'settlement_in_progress',
-    'ready_to_finalize',
     'open',
     'closed',
-    'awaiting_choice',
-    'ordered',
-    'archived'
+    'cancelled'
 );
 
 
@@ -752,23 +694,6 @@ CREATE TABLE public.carriers (
 
 
 --
--- Name: cart_contributions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.cart_contributions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    share_token character varying(20) NOT NULL,
-    contributor_name character varying(80) NOT NULL,
-    mode character varying(10) DEFAULT 'amount'::character varying NOT NULL,
-    product_id uuid,
-    amount_kmf integer,
-    message character varying(200),
-    status character varying(20) DEFAULT 'pledged'::character varying NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
 -- Name: cart_shares; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -869,7 +794,7 @@ CREATE TABLE public.catalog_enrichment_runs (
     duration_ms integer,
     error text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT catalog_enrichment_runs_status_check CHECK (((status)::text = ANY ((ARRAY['ok'::character varying, 'low_confidence'::character varying, 'invalid_output'::character varying, 'failed'::character varying])::text[])))
+    CONSTRAINT catalog_enrichment_runs_status_check CHECK (((status)::text = ANY (ARRAY[('ok'::character varying)::text, ('low_confidence'::character varying)::text, ('invalid_output'::character varying)::text, ('failed'::character varying)::text])))
 );
 
 
@@ -895,7 +820,7 @@ CREATE TABLE public.catalog_exclusions (
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT catalog_exclusions_layer_check CHECK (((layer)::text = ANY ((ARRAY['absolute'::character varying, 'restricted'::character varying])::text[])))
+    CONSTRAINT catalog_exclusions_layer_check CHECK (((layer)::text = ANY (ARRAY[('absolute'::character varying)::text, ('restricted'::character varying)::text])))
 );
 
 
@@ -968,7 +893,7 @@ CREATE TABLE public.catalog_media (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT catalog_media_option_values_object CHECK (((option_values IS NULL) OR (jsonb_typeof(option_values) = 'object'::text))),
-    CONSTRAINT catalog_media_role_check CHECK (((role)::text = ANY ((ARRAY['PRODUCT'::character varying, 'SCENE'::character varying, 'DETAIL'::character varying, 'SIZE_GUIDE'::character varying, 'OTHER'::character varying])::text[])))
+    CONSTRAINT catalog_media_role_check CHECK (((role)::text = ANY (ARRAY[('PRODUCT'::character varying)::text, ('SCENE'::character varying)::text, ('DETAIL'::character varying)::text, ('SIZE_GUIDE'::character varying)::text, ('OTHER'::character varying)::text])))
 );
 
 
@@ -1005,153 +930,6 @@ CREATE TABLE public.charges (
     display_order integer DEFAULT 100,
     is_editable boolean DEFAULT true,
     is_deletable boolean DEFAULT true
-);
-
-
---
--- Name: collective_payment_sessions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.collective_payment_sessions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    workspace_id uuid NOT NULL,
-    total_to_pay_kmf integer NOT NULL,
-    amount_secured_kmf integer DEFAULT 0 NOT NULL,
-    fx_rate_snapshot numeric(12,6),
-    fees_snapshot_kmf integer DEFAULT 0,
-    status public.collective_session_status DEFAULT 'open'::public.collective_session_status NOT NULL,
-    expires_at timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    ended_at timestamp with time zone,
-    CONSTRAINT collective_payment_sessions_amount_secured_kmf_check CHECK ((amount_secured_kmf >= 0)),
-    CONSTRAINT collective_payment_sessions_total_to_pay_kmf_check CHECK ((total_to_pay_kmf > 0))
-);
-
-
---
--- Name: collective_payment_tokens; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.collective_payment_tokens (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    session_id uuid NOT NULL,
-    token_hash text NOT NULL,
-    contributor_name text NOT NULL,
-    contributor_phone text,
-    contributor_email text,
-    amount_kmf integer NOT NULL,
-    stripe_payment_intent_id text,
-    stripe_checkout_session_id text,
-    status public.collective_token_status DEFAULT 'active'::public.collective_token_status NOT NULL,
-    expires_at timestamp with time zone NOT NULL,
-    authorized_at timestamp with time zone,
-    paid_at timestamp with time zone,
-    cancelled_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT collective_payment_tokens_amount_kmf_check CHECK ((amount_kmf > 0))
-);
-
-
---
--- Name: collective_stock_reservations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.collective_stock_reservations (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    workspace_id uuid NOT NULL,
-    product_id uuid NOT NULL,
-    quantity integer NOT NULL,
-    status text DEFAULT 'reserved'::text NOT NULL,
-    reserved_until timestamp with time zone NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    consumed_at timestamp with time zone,
-    released_at timestamp with time zone,
-    expired_at timestamp with time zone,
-    CONSTRAINT collective_stock_reservations_quantity_check CHECK ((quantity > 0))
-);
-
-
---
--- Name: collective_workspace_contributions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.collective_workspace_contributions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    workspace_id uuid NOT NULL,
-    contributor_name text NOT NULL,
-    contributor_phone text,
-    contributor_email text,
-    intended_amount_kmf integer,
-    status public.collective_contribution_status DEFAULT 'intention'::public.collective_contribution_status NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    suggestion text,
-    message text,
-    kind text DEFAULT 'intention'::text NOT NULL,
-    CONSTRAINT collective_workspace_contributions_content_check CHECK (((intended_amount_kmf IS NOT NULL) OR ((suggestion IS NOT NULL) AND (length(TRIM(BOTH FROM suggestion)) > 0)) OR ((message IS NOT NULL) AND (length(TRIM(BOTH FROM message)) > 0)))),
-    CONSTRAINT collective_workspace_contributions_intended_amount_kmf_check CHECK (((intended_amount_kmf IS NULL) OR (intended_amount_kmf > 0))),
-    CONSTRAINT collective_workspace_contributions_kind_check CHECK ((kind = ANY (ARRAY['suggestion'::text, 'intention'::text, 'message'::text])))
-);
-
-
---
--- Name: collective_workspace_events; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.collective_workspace_events (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    workspace_id uuid NOT NULL,
-    event_type text NOT NULL,
-    actor_type text,
-    actor_identifier text,
-    payload jsonb DEFAULT '{}'::jsonb,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: collective_workspace_items; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.collective_workspace_items (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    workspace_id uuid NOT NULL,
-    product_id uuid,
-    quantity integer DEFAULT 1 NOT NULL,
-    product_name_snapshot text,
-    product_image_snapshot text,
-    price_snapshot_kmf integer,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT collective_workspace_items_price_snapshot_kmf_check CHECK (((price_snapshot_kmf IS NULL) OR (price_snapshot_kmf >= 0))),
-    CONSTRAINT collective_workspace_items_quantity_check CHECK ((quantity > 0))
-);
-
-
---
--- Name: collective_workspaces; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.collective_workspaces (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    public_token_hash text NOT NULL,
-    creator_token_hash text NOT NULL,
-    event_name text NOT NULL,
-    event_note text,
-    creator_name text NOT NULL,
-    creator_phone text,
-    creator_email text,
-    creator_user_id uuid,
-    recipient_name text,
-    recipient_phone text,
-    relais_id uuid,
-    status public.collective_workspace_status DEFAULT 'conception'::public.collective_workspace_status NOT NULL,
-    order_id uuid,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    finalized_at timestamp with time zone,
-    archived_at timestamp with time zone,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    metadata jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -2066,7 +1844,7 @@ CREATE TABLE public.order_items (
     module_fabric_id uuid,
     module_fabric_type text,
     module_size character varying(8),
-    module_retouche boolean DEFAULT false CONSTRAINT order_items_ceremony_retouche_not_null NOT NULL,
+    module_retouche boolean DEFAULT false NOT NULL,
     module_qty_meters numeric(6,2),
     module_accessories jsonb,
     availability_status text DEFAULT 'pending'::text,
@@ -2086,8 +1864,13 @@ CREATE TABLE public.order_items (
     taxe_add_pct numeric(5,2),
     classification_defaulted boolean DEFAULT false NOT NULL,
     sku_id uuid,
+    delivery_mode text DEFAULT 'sea'::text NOT NULL,
+    requested_transport_rail text,
+    shared_cart_item_id uuid,
     CONSTRAINT chk_order_items_price CHECK ((price_kmf > 0)),
-    CONSTRAINT chk_order_items_qty CHECK ((quantity > 0))
+    CONSTRAINT chk_order_items_qty CHECK ((quantity > 0)),
+    CONSTRAINT order_items_delivery_mode_check CHECK ((delivery_mode = ANY (ARRAY['sea'::text, 'air'::text]))),
+    CONSTRAINT order_items_requested_transport_rail_check CHECK ((requested_transport_rail = ANY (ARRAY['SEA_STANDARD'::text, 'AIR_EXPRESS'::text])))
 );
 
 
@@ -2183,6 +1966,20 @@ COMMENT ON COLUMN public.order_items.sku_id IS 'FK vers product_skus (Lot 0). NU
 
 
 --
+-- Name: COLUMN order_items.delivery_mode; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.delivery_mode IS 'DÉPRÉCIÉE — remplacée par requested_transport_rail (migration 117). À supprimer après vérification en production.';
+
+
+--
+-- Name: COLUMN order_items.requested_transport_rail; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.requested_transport_rail IS 'Code canonique du rail demandé par le client lors de la commande. NULL = aucun choix explicite (ne déduit pas SEA_STANDARD). Valeurs : SEA_STANDARD, AIR_EXPRESS. À distinguer de assigned_transport_rail (rail réellement exécuté par logistics).';
+
+
+--
 -- Name: order_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -2230,8 +2027,7 @@ CREATE TABLE public.orders (
     cash_ref_code text,
     cash_qr_data text,
     cash_paid_at timestamp with time zone,
-    status public.order_status DEFAULT 'confirmed'::public.order_status NOT NULL,
-    pickup_code text,
+    status public.order_status DEFAULT 'pending'::public.order_status NOT NULL,
     shipped_at timestamp with time zone,
     available_at timestamp with time zone,
     collected_at timestamp with time zone,
@@ -2262,7 +2058,7 @@ CREATE TABLE public.orders (
     module_fabric_id uuid,
     module_fabric_type text,
     module_size character varying(8),
-    module_retouche boolean DEFAULT false CONSTRAINT orders_ceremony_retouche_not_null NOT NULL,
+    module_retouche boolean DEFAULT false NOT NULL,
     module_qty_meters numeric(6,2),
     module_accessories jsonb,
     ordered_at timestamp with time zone,
@@ -2328,6 +2124,10 @@ CREATE TABLE public.orders (
     paypal_payer_email text,
     paypal_payer_id text,
     paypal_pay_in_4_used boolean DEFAULT false,
+    transport_price_kmf integer DEFAULT 0 NOT NULL,
+    exceptional_pickup_attempts integer DEFAULT 0 NOT NULL,
+    exceptional_pickup_blocked_until timestamp with time zone,
+    pickup_collected_via text,
     CONSTRAINT chk_orders_discount CHECK (((discount_pct >= (0)::numeric) AND (discount_pct <= (100)::numeric))),
     CONSTRAINT chk_orders_total CHECK ((total_kmf >= 0))
 );
@@ -2579,6 +2379,13 @@ COMMENT ON COLUMN public.orders.paypal_pay_in_4_used IS 'TRUE si le payeur a cho
 
 
 --
+-- Name: COLUMN orders.transport_price_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.orders.transport_price_kmf IS 'Part du total (orders.total_kmf) facturée au transport, calculée par services/transport-pricing.js au moment de la commande. Distincte de cost_estimated_kmf (coût interne fret, jamais facturé tel quel). 0 pour les commandes créées avant la migration 118.';
+
+
+--
 -- Name: otp_codes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2735,7 +2542,7 @@ CREATE TABLE public.parcels (
 CREATE TABLE public.partners (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     name text NOT NULL,
-    partner_type text CONSTRAINT partners_type_not_null NOT NULL,
+    partner_type text NOT NULL,
     location text,
     island text DEFAULT 'Anjouan'::text NOT NULL,
     country character(2) DEFAULT 'KM'::bpchar NOT NULL,
@@ -3024,7 +2831,7 @@ CREATE TABLE public.pricing_matrices_audit (
     changed_by uuid,
     change_reason text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT pricing_matrices_audit_matrix_type_check CHECK (((matrix_type)::text = ANY ((ARRAY['taxes'::character varying, 'dims'::character varying])::text[])))
+    CONSTRAINT pricing_matrices_audit_matrix_type_check CHECK (((matrix_type)::text = ANY (ARRAY[('taxes'::character varying)::text, ('dims'::character varying)::text])))
 );
 
 
@@ -3088,6 +2895,84 @@ CREATE TABLE public.pricing_strategy_history (
 
 
 --
+-- Name: product_attributes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_attributes (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    kind character varying(20) NOT NULL,
+    group_key text DEFAULT ''::text NOT NULL,
+    attribute_key text NOT NULL,
+    label text,
+    value_text text NOT NULL,
+    unit text,
+    display_order integer,
+    source character varying(20) DEFAULT 'SUPPLIER'::character varying NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE product_attributes; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.product_attributes IS 'Attributs structurés par produit (Lot Content) : points forts (HIGHLIGHT) et spécifications (SPECIFICATION). Identité (product_id, kind, group_key, attribute_key) — group_key NOT NULL DEFAULT '''' (jamais NULL) pour que cet index corresponde exactement à la cible ON CONFLICT (product_id, kind, group_key, attribute_key) de services/catalog-promotion.js (une expression indexée type COALESCE ne satisferait pas cette cible ON CONFLICT en colonnes nues).';
+
+
+--
+-- Name: product_content_profile; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_content_profile (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    brand text,
+    short_description text,
+    source character varying(20) DEFAULT 'SUPPLIER'::character varying NOT NULL,
+    enrichment_version text,
+    reviewed boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE product_content_profile; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.product_content_profile IS 'Profil éditorial 1:1 par produit (Lot Content) : brand + short_description. source=MANUAL préserve la ligne contre toute ré-promotion fournisseur (DOCTRINE_CATALOGUE.md §5).';
+
+
+--
+-- Name: product_content_sections; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_content_sections (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    section_key text NOT NULL,
+    title text,
+    section_type character varying(20) DEFAULT 'TEXT'::character varying NOT NULL,
+    content_json jsonb,
+    display_order integer,
+    source character varying(20) DEFAULT 'SUPPLIER'::character varying NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE product_content_sections; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.product_content_sections IS 'Sections éditoriales par produit (Lot Content) : sections custom fournisseur + sections réservées materials/care/warnings. Désactivée jamais supprimée sur disparition d''un replay (même doctrine que product_skus, migration 108).';
+
+
+--
 -- Name: product_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -3135,7 +3020,7 @@ CREATE TABLE public.product_skus (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     supplier_sku text,
     source character varying(20) DEFAULT 'MANUAL'::character varying NOT NULL,
-    CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY ((ARRAY['MANUAL'::character varying, 'SUPPLIER'::character varying])::text[]))),
+    CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY (ARRAY[('MANUAL'::character varying)::text, ('SUPPLIER'::character varying)::text]))),
     CONSTRAINT product_skus_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= 0))),
     CONSTRAINT product_skus_stock_non_negatif CHECK ((stock >= 0))
 );
@@ -3340,6 +3225,10 @@ CREATE TABLE public.products (
     needs_review boolean DEFAULT false NOT NULL,
     enrichment_confidence numeric(4,3),
     inventory_model text DEFAULT 'LEGACY_VARIANTS'::text NOT NULL,
+    series text,
+    air_excluded boolean DEFAULT false NOT NULL,
+    air_eligibility_status public.air_eligibility_status DEFAULT 'PENDING_REVIEW'::public.air_eligibility_status NOT NULL,
+    air_exclusion_reason text,
     CONSTRAINT chk_products_inventory_model CHECK ((inventory_model = ANY (ARRAY['LEGACY_VARIANTS'::text, 'SKU'::text]))),
     CONSTRAINT chk_products_price CHECK ((price_kmf > 0)),
     CONSTRAINT chk_products_sourcing_rail CHECK (((sourcing_rail IS NULL) OR (sourcing_rail = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text])))),
@@ -3452,6 +3341,27 @@ COMMENT ON COLUMN public.products.enrichment_confidence IS 'Score de confiance (
 --
 
 COMMENT ON COLUMN public.products.inventory_model IS 'LEGACY_VARIANTS (défaut) = stock lu/écrit sur products.stock + product_variants.stock. SKU = stock lu/écrit exclusivement sur product_skus, aucune lecture/écriture legacy autorisée pour ce produit. Bascule atomique portée par le Lot 5 — jamais déduite de l''existence de lignes product_skus.';
+
+
+--
+-- Name: COLUMN products.air_excluded; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.air_excluded IS 'Opt-out livraison aérienne. false (défaut) = éligible AIR_EXPRESS. true = maritime uniquement (volume, matières dangereuses, fragile non-validé). Source unique pour buildDeliveryOptions() dans catalog-product-detail.js.';
+
+
+--
+-- Name: COLUMN products.air_eligibility_status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.air_eligibility_status IS 'Qualification Air : PENDING_REVIEW (défaut, non sélectionnable), ELIGIBLE (approuvé pour fret aérien), EXCLUDED (interdit avec raison). Seul ELIGIBLE peut participer à AIR_EXPRESS quand le rail est PUBLIC.';
+
+
+--
+-- Name: COLUMN products.air_exclusion_reason; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.air_exclusion_reason IS 'Raison de l''exclusion Air (batteries lithium, aérosols, fragile, surpoids...). Null si ELIGIBLE ou PENDING_REVIEW.';
 
 
 --
@@ -3682,8 +3592,42 @@ CREATE TABLE public.scans (
     is_anomaly boolean DEFAULT false NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     parcel_id uuid,
+    pickup_method text,
+    authorization_version integer,
+    document_checked boolean DEFAULT false NOT NULL,
+    pickup_relais_id uuid,
+    CONSTRAINT chk_scans_exceptional_pickup_proof CHECK ((((pickup_method = 'AUTHORIZED_NAME_ID_CHECK'::text) AND (authorization_version IS NOT NULL) AND (authorization_version > 0) AND (document_checked = true) AND (pickup_relais_id IS NOT NULL)) OR ((pickup_method IS DISTINCT FROM 'AUTHORIZED_NAME_ID_CHECK'::text) AND (authorization_version IS NULL) AND (document_checked = false) AND ((pickup_method IS NULL) OR (pickup_relais_id IS NOT NULL))))),
+    CONSTRAINT chk_scans_pickup_method CHECK (((pickup_method IS NULL) OR (pickup_method = ANY (ARRAY['PICKUP_CODE'::text, 'AUTHORIZED_NAME_ID_CHECK'::text])))),
     CONSTRAINT scan_target CHECK (((order_id IS NOT NULL) OR (order_item_id IS NOT NULL)))
 );
+
+
+--
+-- Name: COLUMN scans.pickup_method; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scans.pickup_method IS 'Méthode ayant authentifié la remise : PICKUP_CODE ou AUTHORIZED_NAME_ID_CHECK.';
+
+
+--
+-- Name: COLUMN scans.authorization_version; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scans.authorization_version IS 'Version de l’autorisation nominative contrôlée lors d’un retrait exceptionnel. Aucun nom conservé.';
+
+
+--
+-- Name: COLUMN scans.document_checked; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scans.document_checked IS 'Attestation de l’agent : pièce officielle avec photo contrôlée visuellement. Aucune copie conservée.';
+
+
+--
+-- Name: COLUMN scans.pickup_relais_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scans.pickup_relais_id IS 'Relais dans lequel la remise physique a été enregistrée.';
 
 
 --
@@ -3694,58 +3638,6 @@ CREATE TABLE public.schema_migrations (
     filename text NOT NULL,
     checksum text,
     applied_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: shared_cart_contributions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.shared_cart_contributions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    shared_cart_id uuid NOT NULL,
-    contributor_name text NOT NULL,
-    contributor_email text NOT NULL,
-    contributor_phone text,
-    message text,
-    amount_kmf integer NOT NULL,
-    amount_paid numeric(12,2) NOT NULL,
-    currency_paid text DEFAULT 'EUR'::text NOT NULL,
-    fx_rate_used numeric(12,6),
-    stripe_fee_estimated numeric(10,2),
-    stripe_fee_real numeric(10,2),
-    stripe_session_id text,
-    stripe_payment_intent_id text,
-    status public.shared_cart_contribution_status DEFAULT 'pending'::public.shared_cart_contribution_status NOT NULL,
-    paid_at timestamp with time zone,
-    refunded_at timestamp with time zone,
-    failed_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    metadata jsonb DEFAULT '{}'::jsonb,
-    payment_method text DEFAULT 'stripe'::text NOT NULL,
-    cash_reference text,
-    cash_relais_id uuid,
-    cash_confirmed_by uuid,
-    cash_confirmed_at timestamp with time zone,
-    CONSTRAINT shared_cart_contributions_amount_kmf_check CHECK ((amount_kmf > 0)),
-    CONSTRAINT shared_cart_contributions_amount_paid_check CHECK ((amount_paid > (0)::numeric))
-);
-
-
---
--- Name: shared_cart_estimations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.shared_cart_estimations (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    shared_cart_id uuid NOT NULL,
-    participant_name text NOT NULL,
-    participant_phone text,
-    amount_kmf integer NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT shared_cart_estimations_amount_kmf_check CHECK ((amount_kmf > 0))
 );
 
 
@@ -3793,44 +3685,19 @@ CREATE TABLE public.shared_cart_items (
 CREATE TABLE public.shared_carts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     token text NOT NULL,
-    beneficiary_user_id uuid NOT NULL,
-    beneficiary_phone_snapshot text,
-    beneficiary_name_snapshot text,
+    organizer_user_id uuid NOT NULL,
     source_basket_id uuid,
     title text,
     message text,
-    currency_snapshot text DEFAULT 'KMF'::text NOT NULL,
-    total_kmf_snapshot integer NOT NULL,
-    contributed_kmf integer DEFAULT 0 NOT NULL,
-    remaining_kmf integer NOT NULL,
     delivery_island text,
     delivery_relay_id uuid,
-    status public.shared_cart_status DEFAULT 'draft'::public.shared_cart_status NOT NULL,
-    expires_at timestamp with time zone NOT NULL,
-    finalized_at timestamp with time zone,
+    status public.shared_cart_status DEFAULT 'open'::public.shared_cart_status NOT NULL,
     cancelled_at timestamp with time zone,
-    finalized_order_id uuid,
-    view_count integer DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb,
     source_order_id uuid,
-    split_mode text DEFAULT 'free'::text NOT NULL,
-    suggested_share_kmf integer,
-    expected_participants integer,
-    sourcing_checked_at timestamp with time zone,
-    sourcing_note text,
-    target_date date,
-    closed_at timestamp with time zone,
-    payment_window_ends_at timestamp with time zone,
-    awaiting_choice_started_at timestamp with time zone,
-    awaiting_choice_deadline timestamp with time zone,
-    CONSTRAINT shared_carts_contributed_kmf_check CHECK ((contributed_kmf >= 0)),
-    CONSTRAINT shared_carts_expected_participants_check CHECK (((expected_participants IS NULL) OR (expected_participants > 0))),
-    CONSTRAINT shared_carts_remaining_kmf_check CHECK ((remaining_kmf >= 0)),
-    CONSTRAINT shared_carts_split_mode_check CHECK ((split_mode = ANY (ARRAY['free'::text, 'equal'::text]))),
-    CONSTRAINT shared_carts_suggested_share_kmf_check CHECK (((suggested_share_kmf IS NULL) OR (suggested_share_kmf > 0))),
-    CONSTRAINT shared_carts_total_kmf_snapshot_check CHECK ((total_kmf_snapshot > 0))
+    closed_at timestamp with time zone
 );
 
 
@@ -3989,6 +3856,32 @@ CREATE TABLE public.sourcing_candidate_events (
 
 
 --
+-- Name: sourcing_candidate_observations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_candidate_observations (
+    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
+    candidate_id uuid,
+    import_id uuid NOT NULL,
+    supplier_name text NOT NULL,
+    supplier_product_id text NOT NULL,
+    source_index integer NOT NULL,
+    profile_id text NOT NULL,
+    profile_version integer NOT NULL,
+    profile_hash text NOT NULL,
+    connector_version text NOT NULL,
+    source_sha256 text NOT NULL,
+    source_row_sha256 text NOT NULL,
+    promotion_status text NOT NULL,
+    schema_version_used text,
+    contract jsonb,
+    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
+    raw_payload jsonb NOT NULL,
+    observed_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: sourcing_candidates; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4074,6 +3967,27 @@ CREATE TABLE public.stripe_events_processed (
     event_type text NOT NULL,
     processed_at timestamp with time zone DEFAULT now() NOT NULL,
     payload_summary jsonb DEFAULT '{}'::jsonb
+);
+
+
+--
+-- Name: supplier_catalog_import_rejections; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_catalog_import_rejections (
+    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
+    import_id uuid NOT NULL,
+    supplier_name text NOT NULL,
+    supplier_product_id text,
+    source_index integer NOT NULL,
+    promotion_status text NOT NULL,
+    reason_code text NOT NULL,
+    reasons jsonb DEFAULT '[]'::jsonb NOT NULL,
+    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
+    raw_payload jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT scir_promotion_status_check CHECK ((promotion_status = ANY (ARRAY['REJECTED_SOURCE_DATA_INVALID'::text, 'REJECTED_CONTRACT_INVALID'::text]))),
+    CONSTRAINT scir_reason_code_check CHECK ((reason_code = ANY (ARRAY['SOURCE_ROW_NOT_OBJECT'::text, 'MISSING_SUPPLIER_PRODUCT_ID'::text, 'DUPLICATE_SUPPLIER_PRODUCT_ID_IN_BATCH'::text, 'SOURCE_FIELD_TOO_LARGE'::text, 'SOURCE_PRODUCT_TOO_DEEP'::text, 'SOURCE_VALUE_UNPARSABLE'::text, 'CONTRACT_SCHEMA_INVALID'::text, 'SOURCE_WEIGHT_UNIT_UNKNOWN'::text, 'UNSUPPORTED_VIDEO_REJECTED_BY_POLICY'::text, 'LOSSY_MAPPING_REJECTED_BY_POLICY'::text])))
 );
 
 
@@ -4228,6 +4142,32 @@ CREATE TABLE public.unsold_items (
 
 
 --
+-- Name: user_pickup_authorizations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_pickup_authorizations (
+    user_id uuid NOT NULL,
+    authorized_given_names text,
+    authorized_family_name text,
+    normalized_given_names text,
+    normalized_family_name text,
+    version integer DEFAULT 0 NOT NULL,
+    is_active boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    revoked_at timestamp with time zone,
+    CONSTRAINT user_pickup_authorizations_active_names_required CHECK (((NOT is_active) OR ((authorized_given_names IS NOT NULL) AND (authorized_family_name IS NOT NULL) AND (normalized_given_names IS NOT NULL) AND (normalized_family_name IS NOT NULL))))
+);
+
+
+--
+-- Name: TABLE user_pickup_authorizations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.user_pickup_authorizations IS 'Lot 5 — autorisation nominative de retrait exceptionnel. Préférence courante du compte (auth-identity), consultée au moment exact de la remise par services/pickup-secret-service.js (logistics). Ne stocke jamais de donnée de pièce d''identité (pas de copie, numéro, date d''expiration ou signature).';
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4252,7 +4192,6 @@ CREATE TABLE public.users (
     whatsapp_phone text,
     relais_id uuid,
     phone_payer character varying(20),
-    phone_beneficiary character varying(20),
     big_basket_count integer DEFAULT 0 NOT NULL,
     big_basket_last_notified_count integer DEFAULT 0 NOT NULL
 );
@@ -4350,44 +4289,6 @@ CREATE VIEW public.v_customs_analysis AS
 --
 
 COMMENT ON VIEW public.v_customs_analysis IS 'Analyse douane par catÃ©gorie SH â€” calcul du coefficient de risque recommandÃ©';
-
-
---
--- Name: v_group_orders; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW public.v_group_orders AS
- SELECT sc.id,
-    sc.token,
-    sc.title,
-    sc.status,
-    sc.split_mode,
-    sc.suggested_share_kmf,
-    sc.expected_participants,
-    sc.source_order_id,
-    sc.total_kmf_snapshot AS total_kmf,
-    sc.contributed_kmf AS paid_kmf,
-    sc.remaining_kmf,
-    (round(((100.0 * (sc.contributed_kmf)::numeric) / (NULLIF(sc.total_kmf_snapshot, 0))::numeric)))::integer AS funded_pct,
-    sc.expires_at,
-    sc.finalized_at,
-    sc.finalized_order_id,
-    sc.sourcing_note,
-    sc.beneficiary_user_id,
-    sc.beneficiary_name_snapshot,
-    sc.delivery_relay_id,
-    sc.created_at,
-    sc.updated_at,
-    ( SELECT (count(*))::integer AS count
-           FROM public.shared_cart_contributions scc
-          WHERE ((scc.shared_cart_id = sc.id) AND (scc.status = 'paid'::public.shared_cart_contribution_status))) AS contributors_paid,
-    ( SELECT (count(*))::integer AS count
-           FROM public.shared_cart_contributions scc
-          WHERE ((scc.shared_cart_id = sc.id) AND (scc.status = 'pending'::public.shared_cart_contribution_status))) AS contributors_pending,
-    o.reference AS source_order_reference,
-    o.status AS source_order_status
-   FROM (public.shared_carts sc
-     LEFT JOIN public.orders o ON ((o.id = sc.source_order_id)));
 
 
 --
@@ -4770,7 +4671,7 @@ CREATE TABLE public.wallet_credit_lots (
     status character varying(20) DEFAULT 'active'::character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT wallet_credit_lots_remaining_kmf_check CHECK ((remaining_kmf >= 0)),
-    CONSTRAINT wallet_credit_lots_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'used'::character varying, 'expired'::character varying, 'reversed'::character varying])::text[])))
+    CONSTRAINT wallet_credit_lots_status_check CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('used'::character varying)::text, ('expired'::character varying)::text, ('reversed'::character varying)::text])))
 );
 
 
@@ -4804,7 +4705,7 @@ CREATE TABLE public.wallet_transactions (
     created_by uuid,
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT wallet_transactions_amount_kmf_check CHECK ((amount_kmf > 0)),
-    CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY ((ARRAY['credit'::character varying, 'debit'::character varying, 'reversal'::character varying, 'expiration'::character varying])::text[])))
+    CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY (ARRAY[('credit'::character varying)::text, ('debit'::character varying)::text, ('reversal'::character varying)::text, ('expiration'::character varying)::text])))
 );
 
 
@@ -4953,14 +4854,6 @@ ALTER TABLE ONLY public.carriers
 
 
 --
--- Name: cart_contributions cart_contributions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.cart_contributions
-    ADD CONSTRAINT cart_contributions_pkey PRIMARY KEY (id);
-
-
---
 -- Name: cart_shares cart_shares_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5062,102 +4955,6 @@ ALTER TABLE ONLY public.catalog_media
 
 ALTER TABLE ONLY public.charges
     ADD CONSTRAINT charges_pkey PRIMARY KEY (id);
-
-
---
--- Name: collective_payment_sessions collective_payment_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_payment_sessions
-    ADD CONSTRAINT collective_payment_sessions_pkey PRIMARY KEY (id);
-
-
---
--- Name: collective_payment_tokens collective_payment_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_payment_tokens
-    ADD CONSTRAINT collective_payment_tokens_pkey PRIMARY KEY (id);
-
-
---
--- Name: collective_payment_tokens collective_payment_tokens_stripe_checkout_session_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_payment_tokens
-    ADD CONSTRAINT collective_payment_tokens_stripe_checkout_session_id_key UNIQUE (stripe_checkout_session_id);
-
-
---
--- Name: collective_payment_tokens collective_payment_tokens_stripe_payment_intent_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_payment_tokens
-    ADD CONSTRAINT collective_payment_tokens_stripe_payment_intent_id_key UNIQUE (stripe_payment_intent_id);
-
-
---
--- Name: collective_payment_tokens collective_payment_tokens_token_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_payment_tokens
-    ADD CONSTRAINT collective_payment_tokens_token_hash_key UNIQUE (token_hash);
-
-
---
--- Name: collective_stock_reservations collective_stock_reservations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_stock_reservations
-    ADD CONSTRAINT collective_stock_reservations_pkey PRIMARY KEY (id);
-
-
---
--- Name: collective_workspace_contributions collective_workspace_contributions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspace_contributions
-    ADD CONSTRAINT collective_workspace_contributions_pkey PRIMARY KEY (id);
-
-
---
--- Name: collective_workspace_events collective_workspace_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspace_events
-    ADD CONSTRAINT collective_workspace_events_pkey PRIMARY KEY (id);
-
-
---
--- Name: collective_workspace_items collective_workspace_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspace_items
-    ADD CONSTRAINT collective_workspace_items_pkey PRIMARY KEY (id);
-
-
---
--- Name: collective_workspaces collective_workspaces_creator_token_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspaces
-    ADD CONSTRAINT collective_workspaces_creator_token_hash_key UNIQUE (creator_token_hash);
-
-
---
--- Name: collective_workspaces collective_workspaces_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspaces
-    ADD CONSTRAINT collective_workspaces_pkey PRIMARY KEY (id);
-
-
---
--- Name: collective_workspaces collective_workspaces_public_token_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspaces
-    ADD CONSTRAINT collective_workspaces_public_token_hash_key UNIQUE (public_token_hash);
 
 
 --
@@ -5625,6 +5422,30 @@ ALTER TABLE ONLY public.pricing_strategy_history
 
 
 --
+-- Name: product_attributes product_attributes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_attributes
+    ADD CONSTRAINT product_attributes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: product_content_profile product_content_profile_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_content_profile
+    ADD CONSTRAINT product_content_profile_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: product_content_sections product_content_sections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_content_sections
+    ADD CONSTRAINT product_content_sections_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: product_sku_media product_sku_media_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5793,27 +5614,19 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: shared_cart_contributions shared_cart_contributions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: supplier_catalog_import_rejections scir_import_source_index_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.shared_cart_contributions
-    ADD CONSTRAINT shared_cart_contributions_pkey PRIMARY KEY (id);
-
-
---
--- Name: shared_cart_contributions shared_cart_contributions_stripe_session_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.shared_cart_contributions
-    ADD CONSTRAINT shared_cart_contributions_stripe_session_id_key UNIQUE (stripe_session_id);
+ALTER TABLE ONLY public.supplier_catalog_import_rejections
+    ADD CONSTRAINT scir_import_source_index_unique UNIQUE (import_id, source_index);
 
 
 --
--- Name: shared_cart_estimations shared_cart_estimations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: sourcing_candidate_observations sco_import_source_index_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.shared_cart_estimations
-    ADD CONSTRAINT shared_cart_estimations_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.sourcing_candidate_observations
+    ADD CONSTRAINT sco_import_source_index_unique UNIQUE (import_id, source_index);
 
 
 --
@@ -5897,6 +5710,14 @@ ALTER TABLE ONLY public.sourcing_candidate_events
 
 
 --
+-- Name: sourcing_candidate_observations sourcing_candidate_observations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_candidate_observations
+    ADD CONSTRAINT sourcing_candidate_observations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: sourcing_candidates sourcing_candidates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5918,6 +5739,14 @@ ALTER TABLE ONLY public.store_credits
 
 ALTER TABLE ONLY public.stripe_events_processed
     ADD CONSTRAINT stripe_events_processed_pkey PRIMARY KEY (stripe_event_id);
+
+
+--
+-- Name: supplier_catalog_import_rejections supplier_catalog_import_rejections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_catalog_import_rejections
+    ADD CONSTRAINT supplier_catalog_import_rejections_pkey PRIMARY KEY (id);
 
 
 --
@@ -5982,6 +5811,14 @@ ALTER TABLE ONLY public.unsold_items
 
 ALTER TABLE ONLY public.orders
     ADD CONSTRAINT uq_orders_reference UNIQUE (reference);
+
+
+--
+-- Name: user_pickup_authorizations user_pickup_authorizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_pickup_authorizations
+    ADD CONSTRAINT user_pickup_authorizations_pkey PRIMARY KEY (user_id);
 
 
 --
@@ -6196,20 +6033,6 @@ CREATE INDEX idx_catalog_overrides_product ON public.catalog_field_overrides USI
 
 
 --
--- Name: idx_collective_stock_res_active; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_collective_stock_res_active ON public.collective_stock_reservations USING btree (product_id, status, reserved_until);
-
-
---
--- Name: idx_collective_stock_res_workspace; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_collective_stock_res_workspace ON public.collective_stock_reservations USING btree (workspace_id, status);
-
-
---
 -- Name: idx_comments_order; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6228,41 +6051,6 @@ CREATE INDEX idx_competitor_prices_category ON public.competitor_prices USING bt
 --
 
 CREATE INDEX idx_competitor_prices_product ON public.competitor_prices USING btree (product_id, observed_at DESC) WHERE (is_active = true);
-
-
---
--- Name: idx_contributions_cart; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_contributions_cart ON public.shared_cart_contributions USING btree (shared_cart_id, status);
-
-
---
--- Name: idx_contributions_email; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_contributions_email ON public.shared_cart_contributions USING btree (contributor_email);
-
-
---
--- Name: idx_contributions_session; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_contributions_session ON public.shared_cart_contributions USING btree (stripe_session_id);
-
-
---
--- Name: idx_contributions_share; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_contributions_share ON public.cart_contributions USING btree (share_token);
-
-
---
--- Name: idx_contributions_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_contributions_status ON public.cart_contributions USING btree (status);
 
 
 --
@@ -6298,55 +6086,6 @@ CREATE INDEX idx_cost_components_channel ON public.cost_components USING btree (
 --
 
 CREATE INDEX idx_cost_components_scope ON public.cost_components USING btree (scope, scope_value) WHERE is_active;
-
-
---
--- Name: idx_cps_expires_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cps_expires_at ON public.collective_payment_sessions USING btree (expires_at) WHERE (status = ANY (ARRAY['open'::public.collective_session_status, 'ready_to_capture'::public.collective_session_status]));
-
-
---
--- Name: idx_cps_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cps_status ON public.collective_payment_sessions USING btree (status);
-
-
---
--- Name: idx_cps_workspace; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cps_workspace ON public.collective_payment_sessions USING btree (workspace_id);
-
-
---
--- Name: idx_cpt_pi_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cpt_pi_id ON public.collective_payment_tokens USING btree (stripe_payment_intent_id) WHERE (stripe_payment_intent_id IS NOT NULL);
-
-
---
--- Name: idx_cpt_session; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cpt_session ON public.collective_payment_tokens USING btree (session_id);
-
-
---
--- Name: idx_cpt_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cpt_status ON public.collective_payment_tokens USING btree (status);
-
-
---
--- Name: idx_cpt_token_hash; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cpt_token_hash ON public.collective_payment_tokens USING btree (token_hash);
 
 
 --
@@ -6466,76 +6205,6 @@ CREATE INDEX idx_customs_shipments_supplier ON public.customs_shipments USING bt
 --
 
 CREATE INDEX idx_customs_statut ON public.customs_history USING btree (statut) WHERE (statut IS NOT NULL);
-
-
---
--- Name: idx_cw_creator_token_hash; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cw_creator_token_hash ON public.collective_workspaces USING btree (creator_token_hash);
-
-
---
--- Name: idx_cw_creator_user; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cw_creator_user ON public.collective_workspaces USING btree (creator_user_id) WHERE (creator_user_id IS NOT NULL);
-
-
---
--- Name: idx_cw_public_token_hash; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cw_public_token_hash ON public.collective_workspaces USING btree (public_token_hash);
-
-
---
--- Name: idx_cw_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cw_status ON public.collective_workspaces USING btree (status);
-
-
---
--- Name: idx_cwc_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cwc_status ON public.collective_workspace_contributions USING btree (status);
-
-
---
--- Name: idx_cwc_workspace; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cwc_workspace ON public.collective_workspace_contributions USING btree (workspace_id);
-
-
---
--- Name: idx_cwe_created; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cwe_created ON public.collective_workspace_events USING btree (created_at);
-
-
---
--- Name: idx_cwe_type; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cwe_type ON public.collective_workspace_events USING btree (event_type);
-
-
---
--- Name: idx_cwe_workspace; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cwe_workspace ON public.collective_workspace_events USING btree (workspace_id);
-
-
---
--- Name: idx_cwi_workspace; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_cwi_workspace ON public.collective_workspace_items USING btree (workspace_id);
 
 
 --
@@ -7043,13 +6712,6 @@ CREATE INDEX idx_orders_pickup_channel ON public.orders USING btree (pickup_secr
 
 
 --
--- Name: idx_orders_pickup_code; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_orders_pickup_code ON public.orders USING btree (pickup_code) WHERE (pickup_code IS NOT NULL);
-
-
---
 -- Name: idx_orders_pickup_created; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7470,6 +7132,20 @@ CREATE UNIQUE INDEX idx_pricing_strategies_product_active ON public.pricing_stra
 
 
 --
+-- Name: idx_product_attributes_product_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_attributes_product_active ON public.product_attributes USING btree (product_id) WHERE (is_active = true);
+
+
+--
+-- Name: idx_product_content_sections_product_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_content_sections_product_active ON public.product_content_sections USING btree (product_id) WHERE (is_active = true);
+
+
+--
 -- Name: idx_product_sku_media_media; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7820,38 +7496,52 @@ CREATE INDEX idx_sci_supplier ON public.supplier_catalog_imports USING btree (su
 
 
 --
+-- Name: idx_scir_import; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scir_import ON public.supplier_catalog_import_rejections USING btree (import_id);
+
+
+--
+-- Name: idx_scir_reason_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scir_reason_code ON public.supplier_catalog_import_rejections USING btree (reason_code);
+
+
+--
+-- Name: idx_scir_supplier; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scir_supplier ON public.supplier_catalog_import_rejections USING btree (supplier_name, supplier_product_id);
+
+
+--
+-- Name: idx_sco_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sco_identity ON public.sourcing_candidate_observations USING btree (supplier_name, supplier_product_id, observed_at DESC);
+
+
+--
+-- Name: idx_sco_import; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sco_import ON public.sourcing_candidate_observations USING btree (import_id);
+
+
+--
+-- Name: idx_sco_row_hash; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sco_row_hash ON public.sourcing_candidate_observations USING btree (source_row_sha256);
+
+
+--
 -- Name: idx_sep_processed_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_sep_processed_at ON public.stripe_events_processed USING btree (processed_at);
-
-
---
--- Name: idx_shared_cart_contrib_cash_pending; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_shared_cart_contrib_cash_pending ON public.shared_cart_contributions USING btree (status, payment_method, created_at) WHERE (payment_method = 'cash'::text);
-
-
---
--- Name: idx_shared_cart_contrib_cash_reference; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX idx_shared_cart_contrib_cash_reference ON public.shared_cart_contributions USING btree (cash_reference) WHERE (cash_reference IS NOT NULL);
-
-
---
--- Name: idx_shared_cart_estimations_cart; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_shared_cart_estimations_cart ON public.shared_cart_estimations USING btree (shared_cart_id, created_at DESC);
-
-
---
--- Name: idx_shared_cart_estimations_phone; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_shared_cart_estimations_phone ON public.shared_cart_estimations USING btree (shared_cart_id, participant_phone) WHERE (participant_phone IS NOT NULL);
 
 
 --
@@ -7869,38 +7559,10 @@ CREATE INDEX idx_shared_cart_items_cart ON public.shared_cart_items USING btree 
 
 
 --
--- Name: idx_shared_carts_awaiting_deadline; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_shared_carts_organizer; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_shared_carts_awaiting_deadline ON public.shared_carts USING btree (awaiting_choice_deadline) WHERE (status = 'awaiting_choice'::public.shared_cart_status);
-
-
---
--- Name: idx_shared_carts_beneficiary; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_shared_carts_beneficiary ON public.shared_carts USING btree (beneficiary_user_id, status);
-
-
---
--- Name: idx_shared_carts_closed_window; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_shared_carts_closed_window ON public.shared_carts USING btree (payment_window_ends_at) WHERE (status = 'closed'::public.shared_cart_status);
-
-
---
--- Name: idx_shared_carts_funded; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_shared_carts_funded ON public.shared_carts USING btree (status) WHERE (status = ANY (ARRAY['funded'::public.shared_cart_status, 'sourcing_check'::public.shared_cart_status, 'adjustment_required'::public.shared_cart_status]));
-
-
---
--- Name: idx_shared_carts_open_target_date; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_shared_carts_open_target_date ON public.shared_carts USING btree (target_date) WHERE ((status = 'open'::public.shared_cart_status) AND (target_date IS NOT NULL));
+CREATE INDEX idx_shared_carts_organizer ON public.shared_carts USING btree (organizer_user_id, status);
 
 
 --
@@ -7908,13 +7570,6 @@ CREATE INDEX idx_shared_carts_open_target_date ON public.shared_carts USING btre
 --
 
 CREATE INDEX idx_shared_carts_source_order ON public.shared_carts USING btree (source_order_id) WHERE (source_order_id IS NOT NULL);
-
-
---
--- Name: idx_shared_carts_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_shared_carts_status ON public.shared_carts USING btree (status, expires_at);
 
 
 --
@@ -8107,13 +7762,6 @@ CREATE INDEX idx_users_loyalty ON public.users USING btree (loyalty_tier_id);
 
 
 --
--- Name: idx_users_phone_beneficiary; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_users_phone_beneficiary ON public.users USING btree (phone_beneficiary);
-
-
---
 -- Name: idx_users_phone_payer; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8170,6 +7818,13 @@ CREATE UNIQUE INDEX one_draft_per_order ON public.parcels USING btree (order_id)
 
 
 --
+-- Name: order_items_shared_cart_item_id_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX order_items_shared_cart_item_id_unique ON public.order_items USING btree (shared_cart_item_id);
+
+
+--
 -- Name: uniq_sc_supplier_ref; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8181,13 +7836,6 @@ CREATE UNIQUE INDEX uniq_sc_supplier_ref ON public.sourcing_candidates USING btr
 --
 
 CREATE UNIQUE INDEX uq_orders_cash_ref_active ON public.orders USING btree (cash_ref_code) WHERE ((payment_status = 'pending'::public.payment_status) AND (cash_ref_code IS NOT NULL));
-
-
---
--- Name: uq_orders_pickup_active; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX uq_orders_pickup_active ON public.orders USING btree (pickup_code) WHERE ((status = ANY (ARRAY['available'::public.order_status, 'confirmed'::public.order_status, 'shipped'::public.order_status])) AND (pickup_code IS NOT NULL));
 
 
 --
@@ -8216,6 +7864,27 @@ CREATE UNIQUE INDEX uq_users_email ON public.users USING btree (email) WHERE (em
 --
 
 CREATE UNIQUE INDEX ux_catalog_media_source_identity ON public.catalog_media USING btree (product_id, source_media_id) WHERE (source_media_id IS NOT NULL);
+
+
+--
+-- Name: ux_product_attributes_triplet; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_product_attributes_triplet ON public.product_attributes USING btree (product_id, kind, group_key, attribute_key);
+
+
+--
+-- Name: ux_product_content_profile_product; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_product_content_profile_product ON public.product_content_profile USING btree (product_id);
+
+
+--
+-- Name: ux_product_content_sections_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_product_content_sections_key ON public.product_content_sections USING btree (product_id, section_key);
 
 
 --
@@ -8268,13 +7937,6 @@ CREATE TRIGGER trg_compute_real_margin BEFORE UPDATE OF cost_real_kmf ON public.
 
 
 --
--- Name: shared_cart_contributions trg_contributions_updated; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trg_contributions_updated BEFORE UPDATE ON public.shared_cart_contributions FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
-
---
 -- Name: cost_components trg_cost_components_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -8314,27 +7976,6 @@ CREATE TRIGGER trg_customs_shipments_updated BEFORE UPDATE ON public.customs_shi
 --
 
 CREATE TRIGGER trg_customs_updated_at BEFORE UPDATE ON public.customs_history FOR EACH ROW EXECUTE FUNCTION public.update_customs_updated_at();
-
-
---
--- Name: collective_workspaces trg_cw_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trg_cw_updated_at BEFORE UPDATE ON public.collective_workspaces FOR EACH ROW EXECUTE FUNCTION public.collective_set_updated_at();
-
-
---
--- Name: collective_workspace_contributions trg_cwc_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trg_cwc_updated_at BEFORE UPDATE ON public.collective_workspace_contributions FOR EACH ROW EXECUTE FUNCTION public.collective_set_updated_at();
-
-
---
--- Name: collective_workspace_items trg_cwi_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trg_cwi_updated_at BEFORE UPDATE ON public.collective_workspace_items FOR EACH ROW EXECUTE FUNCTION public.collective_set_updated_at();
 
 
 --
@@ -8450,13 +8091,6 @@ CREATE TRIGGER trg_sc_updated BEFORE UPDATE ON public.sourcing_candidates FOR EA
 
 
 --
--- Name: shared_cart_estimations trg_shared_cart_estimations_updated; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trg_shared_cart_estimations_updated BEFORE UPDATE ON public.shared_cart_estimations FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
-
---
 -- Name: shared_carts trg_shared_carts_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -8549,22 +8183,6 @@ ALTER TABLE ONLY public.business_rules_history
 
 
 --
--- Name: cart_contributions cart_contributions_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.cart_contributions
-    ADD CONSTRAINT cart_contributions_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
-
-
---
--- Name: cart_contributions cart_contributions_share_token_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.cart_contributions
-    ADD CONSTRAINT cart_contributions_share_token_fkey FOREIGN KEY (share_token) REFERENCES public.cart_shares(share_token) ON DELETE CASCADE;
-
-
---
 -- Name: cart_shares cart_shares_converted_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8602,94 +8220,6 @@ ALTER TABLE ONLY public.catalog_field_overrides
 
 ALTER TABLE ONLY public.catalog_media
     ADD CONSTRAINT catalog_media_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
-
-
---
--- Name: collective_payment_sessions collective_payment_sessions_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_payment_sessions
-    ADD CONSTRAINT collective_payment_sessions_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.collective_workspaces(id) ON DELETE RESTRICT;
-
-
---
--- Name: collective_payment_tokens collective_payment_tokens_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_payment_tokens
-    ADD CONSTRAINT collective_payment_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.collective_payment_sessions(id) ON DELETE CASCADE;
-
-
---
--- Name: collective_stock_reservations collective_stock_reservations_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_stock_reservations
-    ADD CONSTRAINT collective_stock_reservations_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id);
-
-
---
--- Name: collective_stock_reservations collective_stock_reservations_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_stock_reservations
-    ADD CONSTRAINT collective_stock_reservations_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.collective_workspaces(id) ON DELETE CASCADE;
-
-
---
--- Name: collective_workspace_contributions collective_workspace_contributions_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspace_contributions
-    ADD CONSTRAINT collective_workspace_contributions_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.collective_workspaces(id) ON DELETE CASCADE;
-
-
---
--- Name: collective_workspace_events collective_workspace_events_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspace_events
-    ADD CONSTRAINT collective_workspace_events_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.collective_workspaces(id) ON DELETE CASCADE;
-
-
---
--- Name: collective_workspace_items collective_workspace_items_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspace_items
-    ADD CONSTRAINT collective_workspace_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
-
-
---
--- Name: collective_workspace_items collective_workspace_items_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspace_items
-    ADD CONSTRAINT collective_workspace_items_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.collective_workspaces(id) ON DELETE CASCADE;
-
-
---
--- Name: collective_workspaces collective_workspaces_creator_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspaces
-    ADD CONSTRAINT collective_workspaces_creator_user_id_fkey FOREIGN KEY (creator_user_id) REFERENCES public.users(id) ON DELETE SET NULL;
-
-
---
--- Name: collective_workspaces collective_workspaces_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspaces
-    ADD CONSTRAINT collective_workspaces_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE SET NULL;
-
-
---
--- Name: collective_workspaces collective_workspaces_relais_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collective_workspaces
-    ADD CONSTRAINT collective_workspaces_relais_id_fkey FOREIGN KEY (relais_id) REFERENCES public.relais(id) ON DELETE SET NULL;
 
 
 --
@@ -9037,6 +8567,14 @@ ALTER TABLE ONLY public.order_items
 
 
 --
+-- Name: order_items order_items_shared_cart_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_items
+    ADD CONSTRAINT order_items_shared_cart_item_id_fkey FOREIGN KEY (shared_cart_item_id) REFERENCES public.shared_cart_items(id) ON DELETE SET NULL;
+
+
+--
 -- Name: order_items order_items_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9341,6 +8879,30 @@ ALTER TABLE ONLY public.pricing_strategy_history
 
 
 --
+-- Name: product_attributes product_attributes_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_attributes
+    ADD CONSTRAINT product_attributes_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: product_content_profile product_content_profile_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_content_profile
+    ADD CONSTRAINT product_content_profile_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: product_content_sections product_content_sections_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_content_sections
+    ADD CONSTRAINT product_content_sections_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
 -- Name: product_sku_media product_sku_media_media_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9501,43 +9063,19 @@ ALTER TABLE ONLY public.scans
 
 
 --
+-- Name: scans scans_pickup_relais_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scans
+    ADD CONSTRAINT scans_pickup_relais_id_fkey FOREIGN KEY (pickup_relais_id) REFERENCES public.relais(id);
+
+
+--
 -- Name: scans scans_scanned_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.scans
     ADD CONSTRAINT scans_scanned_by_fkey FOREIGN KEY (scanned_by) REFERENCES public.users(id) ON DELETE SET NULL;
-
-
---
--- Name: shared_cart_contributions shared_cart_contributions_cash_confirmed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.shared_cart_contributions
-    ADD CONSTRAINT shared_cart_contributions_cash_confirmed_by_fkey FOREIGN KEY (cash_confirmed_by) REFERENCES public.users(id) ON DELETE SET NULL;
-
-
---
--- Name: shared_cart_contributions shared_cart_contributions_cash_relais_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.shared_cart_contributions
-    ADD CONSTRAINT shared_cart_contributions_cash_relais_id_fkey FOREIGN KEY (cash_relais_id) REFERENCES public.relais(id) ON DELETE SET NULL;
-
-
---
--- Name: shared_cart_contributions shared_cart_contributions_shared_cart_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.shared_cart_contributions
-    ADD CONSTRAINT shared_cart_contributions_shared_cart_id_fkey FOREIGN KEY (shared_cart_id) REFERENCES public.shared_carts(id) ON DELETE RESTRICT;
-
-
---
--- Name: shared_cart_estimations shared_cart_estimations_shared_cart_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.shared_cart_estimations
-    ADD CONSTRAINT shared_cart_estimations_shared_cart_id_fkey FOREIGN KEY (shared_cart_id) REFERENCES public.shared_carts(id) ON DELETE CASCADE;
 
 
 --
@@ -9569,7 +9107,7 @@ ALTER TABLE ONLY public.shared_cart_items
 --
 
 ALTER TABLE ONLY public.shared_carts
-    ADD CONSTRAINT shared_carts_beneficiary_user_id_fkey FOREIGN KEY (beneficiary_user_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+    ADD CONSTRAINT shared_carts_beneficiary_user_id_fkey FOREIGN KEY (organizer_user_id) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --
@@ -9578,14 +9116,6 @@ ALTER TABLE ONLY public.shared_carts
 
 ALTER TABLE ONLY public.shared_carts
     ADD CONSTRAINT shared_carts_delivery_relay_id_fkey FOREIGN KEY (delivery_relay_id) REFERENCES public.relais(id) ON DELETE SET NULL;
-
-
---
--- Name: shared_carts shared_carts_finalized_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.shared_carts
-    ADD CONSTRAINT shared_carts_finalized_order_id_fkey FOREIGN KEY (finalized_order_id) REFERENCES public.orders(id) ON DELETE SET NULL;
 
 
 --
@@ -9629,6 +9159,22 @@ ALTER TABLE ONLY public.sourcing_candidate_events
 
 
 --
+-- Name: sourcing_candidate_observations sourcing_candidate_observations_candidate_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_candidate_observations
+    ADD CONSTRAINT sourcing_candidate_observations_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.sourcing_candidates(id) ON DELETE SET NULL;
+
+
+--
+-- Name: sourcing_candidate_observations sourcing_candidate_observations_import_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_candidate_observations
+    ADD CONSTRAINT sourcing_candidate_observations_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE;
+
+
+--
 -- Name: sourcing_candidates sourcing_candidates_import_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9666,6 +9212,14 @@ ALTER TABLE ONLY public.store_credits
 
 ALTER TABLE ONLY public.store_credits
     ADD CONSTRAINT store_credits_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: supplier_catalog_import_rejections supplier_catalog_import_rejections_import_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_catalog_import_rejections
+    ADD CONSTRAINT supplier_catalog_import_rejections_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE;
 
 
 --
@@ -9722,6 +9276,14 @@ ALTER TABLE ONLY public.unsold_items
 
 ALTER TABLE ONLY public.unsold_items
     ADD CONSTRAINT unsold_items_reseller_id_fkey FOREIGN KEY (reseller_id) REFERENCES public.users(id);
+
+
+--
+-- Name: user_pickup_authorizations user_pickup_authorizations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_pickup_authorizations
+    ADD CONSTRAINT user_pickup_authorizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -9791,57 +9353,3 @@ ALTER TABLE ONLY public.wallets
 --
 -- PostgreSQL database dump complete
 --
-
--- Migration 110 — ING-6 audit des rejets (appliquée au pilote production le 2026-07-16)
-CREATE TABLE public.supplier_catalog_import_rejections (
-    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
-    import_id uuid NOT NULL,
-    supplier_name text NOT NULL,
-    supplier_product_id text,
-    source_index integer NOT NULL,
-    promotion_status text NOT NULL,
-    reason_code text NOT NULL,
-    reasons jsonb DEFAULT '[]'::jsonb NOT NULL,
-    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
-    raw_payload jsonb NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT scir_promotion_status_check CHECK ((promotion_status = ANY (ARRAY['REJECTED_SOURCE_DATA_INVALID'::text, 'REJECTED_CONTRACT_INVALID'::text]))),
-    CONSTRAINT scir_reason_code_check CHECK ((reason_code = ANY (ARRAY['SOURCE_ROW_NOT_OBJECT'::text, 'MISSING_SUPPLIER_PRODUCT_ID'::text, 'DUPLICATE_SUPPLIER_PRODUCT_ID_IN_BATCH'::text, 'SOURCE_FIELD_TOO_LARGE'::text, 'SOURCE_PRODUCT_TOO_DEEP'::text, 'SOURCE_VALUE_UNPARSABLE'::text, 'CONTRACT_SCHEMA_INVALID'::text, 'SOURCE_WEIGHT_UNIT_UNKNOWN'::text, 'UNSUPPORTED_VIDEO_REJECTED_BY_POLICY'::text, 'LOSSY_MAPPING_REJECTED_BY_POLICY'::text]))),
-    CONSTRAINT scir_import_source_index_unique UNIQUE (import_id, source_index),
-    CONSTRAINT supplier_catalog_import_rejections_pkey PRIMARY KEY (id),
-    CONSTRAINT supplier_catalog_import_rejections_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_scir_import ON public.supplier_catalog_import_rejections USING btree (import_id);
-CREATE INDEX idx_scir_supplier ON public.supplier_catalog_import_rejections USING btree (supplier_name, supplier_product_id);
-CREATE INDEX idx_scir_reason_code ON public.supplier_catalog_import_rejections USING btree (reason_code);
-
-
--- Migration 110 — ING-6 historique des observations (appliquée au pilote production le 2026-07-16)
-CREATE TABLE public.sourcing_candidate_observations (
-    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
-    candidate_id uuid,
-    import_id uuid NOT NULL,
-    supplier_name text NOT NULL,
-    supplier_product_id text NOT NULL,
-    source_index integer NOT NULL,
-    profile_id text NOT NULL,
-    profile_version integer NOT NULL,
-    profile_hash text NOT NULL,
-    connector_version text NOT NULL,
-    source_sha256 text NOT NULL,
-    source_row_sha256 text NOT NULL,
-    promotion_status text NOT NULL,
-    schema_version_used text,
-    contract jsonb,
-    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
-    raw_payload jsonb NOT NULL,
-    observed_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT sco_import_source_index_unique UNIQUE (import_id, source_index),
-    CONSTRAINT sourcing_candidate_observations_pkey PRIMARY KEY (id),
-    CONSTRAINT sourcing_candidate_observations_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.sourcing_candidates(id) ON DELETE SET NULL,
-    CONSTRAINT sourcing_candidate_observations_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_sco_identity ON public.sourcing_candidate_observations USING btree (supplier_name, supplier_product_id, observed_at DESC);
-CREATE INDEX idx_sco_import ON public.sourcing_candidate_observations USING btree (import_id);
-CREATE INDEX idx_sco_row_hash ON public.sourcing_candidate_observations USING btree (source_row_sha256);
-
