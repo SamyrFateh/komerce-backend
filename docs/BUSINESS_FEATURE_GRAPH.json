@@ -10689,14 +10689,6 @@
       },
       {
         "feature": "infrastructure",
-        "entry": "POST /api/shared-carts/stripe/webhook",
-        "method": "POST",
-        "path": "/api/shared-carts/stripe/webhook",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
-      },
-      {
-        "feature": "infrastructure",
         "entry": "GET /*.html",
         "method": "GET",
         "path": "/*.html",
@@ -25517,11 +25509,6 @@
         "type": "EXPOSED-ROUTE-UNRESOLVED",
         "ref": "infrastructure / GET /webhook/authkey-whatsapp",
         "msg": "\"GET /webhook/authkey-whatsapp\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "infrastructure / POST /api/shared-carts/stripe/webhook",
-        "msg": "\"POST /api/shared-carts/stripe/webhook\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

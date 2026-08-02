@@ -9,7 +9,7 @@ npm warn deprecated superagent@8.1.2: Please upgrade to superagent v10.2.2+, see
 > node -e "if (!process.env.CI) require('child_process').execFileSync('bash',['scripts/setup-hooks.sh'],{stdio:'inherit'})"
 
 
-added 542 packages, and audited 543 packages in 3s
+added 542 packages, and audited 543 packages in 2s
 
 99 packages are looking for funding
   run `npm fund` for details
@@ -20,6 +20,8 @@ To address all issues, run:
   npm audit fix
 
 Run `npm audit` for details.
+
+$ node -e const fs=require('fs');const p='features/infrastructure.feature.js';const line="      'POST /api/shared-carts/stripe/webhook',\n";const s=fs.readFileSync(p,'utf8');if(!s.includes(line))throw new Error('obsolete webhook declaration not found');fs.writeFileSync(p,s.replace(line,''));
 
 $ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
 SET
@@ -974,7 +976,7 @@ ALTER TABLE
 ALTER TABLE
 
 $ node scripts/ci-migrate.js
-◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
 [ci-migrate] Baseline git : 121 migration(s) au commit c32cbe49
 [ci-migrate] Baselinées : 119 (121 dump + 2 ci-excluded)
 [ci-migrate] Rien à appliquer — dump structurellement à jour.
@@ -1024,12 +1026,12 @@ $ npm run contract:generate
 > komerce-backend@10.6.1 contract:generate
 > node scripts/contract-generate.js
 
-◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
-{"level":40,"time":"2026-08-02T01:42:06.049Z","service":"komerce-backend","env":"test","module":"purchasing-trigger","msg":"⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled"}
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+{"level":40,"time":"2026-08-02T01:47:03.064Z","service":"komerce-backend","env":"test","module":"purchasing-trigger","msg":"⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled"}
 ✅ Contrat généré : /home/runner/work/komerce-backend/komerce-backend/docs/contract/openapi.json
    425 routes · 12 réponses UNKNOWN
    Dette documentée dans : /home/runner/work/komerce-backend/komerce-backend/docs/contract/DEBT.md
-{"level":30,"time":"2026-08-02T01:42:06.081Z","service":"komerce-backend","env":"test","module":"rate-limit","msg":"REDIS_URL absent — using memory store (single instance)"}
+{"level":30,"time":"2026-08-02T01:47:03.089Z","service":"komerce-backend","env":"test","module":"rate-limit","msg":"REDIS_URL absent — using memory store (single instance)"}
 
 $ npm run arch:gen
 
@@ -1043,7 +1045,7 @@ $ npm run business-graph:gen
 > komerce-backend@10.6.1 business-graph:gen
 > node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
 
-[32m[1m✔ Business Feature Graph généré[0m — 29 feature(s), 0 error(s), 130 warn(s)
+[32m[1m✔ Business Feature Graph généré[0m — 29 feature(s), 0 error(s), 129 warn(s)
   docs/BUSINESS_FEATURE_GRAPH.json + docs/BUSINESS_FEATURE_GRAPH.md + docs/O6_INVENTORY.md
 
 $ node -e const c=require('crypto'),fs=require('fs'),p=require('path');const h={};for(const f of fs.readdirSync('migrations').filter(x=>x.endsWith('.sql')).sort())h[f]=c.createHash('sha256').update(fs.readFileSync(p.join('migrations',f),'utf8')).digest('hex').slice(0,16);fs.writeFileSync('governance/migration-hashes.json',JSON.stringify(h,null,2)+'\n')
@@ -1113,7 +1115,7 @@ $ npm run gate:feature-audit
 
 [36m[1minfrastructure[0m [2m(infrastructure · couches: middleware, utils, validators, bootstrap, migrations, scripts, docs, ci, assets, db, routes, config, tests)[0m
     [32m✔[0m files-exist    [2m272 fichiers présents[0m
-    [31m✖[0m interface      [2m[MISSING_ROUTE] POST /api/shared-carts/stripe/webhook — aucune route montée à ce chemin[0m
+    [32m✔[0m interface      [2m4 endpoint(s) confirmé(s) dans le registre[0m
     [32m✔[0m interface-inverse [2m4 route(s) réelle(s) toutes déclarées[0m
 
 [36m[1minventory[0m [2m(inventory · couches: services, routes, dash, tests)[0m
@@ -1263,5 +1265,149 @@ $ npm run gate:feature-audit
 [1mTransverse — endpoints réels revendiqués par 2 features (DUPLICATE_ROUTE_OWNER)[0m
     [32m✔[0m aucun endpoint réel revendiqué par 2 features
 
-[1mRésultat : [31m1 FAIL[0m[1m, 1 WARN[0m
-FAILED rc=1: npm run gate:feature-audit
+[1mRésultat : [32m0 FAIL[0m[1m, 1 WARN[0m
+
+$ npm run arch:gate
+
+> komerce-backend@10.6.1 arch:gate
+> npm run arch:gen && node scripts/arch-db-check.js && node scripts/arch-schema-drift-check.js && node scripts/arch-header-sql-check.js && node scripts/check-schema-resurrection.js
+
+
+> komerce-backend@10.6.1 arch:gen
+> node scripts/generate-komerce-arch-graph.js
+
+Generated graph: 335 full, 28 lite, 4105 edges, 0 uncovered, 0 misplaced
+============================================================
+ KOMERCE - Porte architecture / DB (hygiene headers)
+============================================================
+Mode                    : bloquant
+Fichiers scannes        : 363
+Headers (full/lite)     : 335 / 28
+
+--- TIER BLOQUANT ---
+Sans header             : 0
+Header mal place        : 0
+Lite sans owner         : 0
+Mots-clefs SQL          : 0
+@unknown depends/used-by: 0
+
+--- OBSERVE (informatif, jamais bloquant) ---
+Edges morts (structurel): 416
+@unknown (SQL dynamique): 0
+Invariant txn present   : 167  (presence doctrine = sain)
+Tables vs DB live        -> voir: node scripts/arch-schema-drift-check.js
+
+✅ Aucune violation du tier BLOQUANT.
+============================================================
+ KOMERCE - Porte SCHEMA.md <-> DB vivante (drift)
+============================================================
+Mode                    : bloquant
+Dump live               : docs/db/railway-live-schema.sql
+Objets live             : 103 tables, 17 vues, 12 types, 15 fn, 29 triggers
+Tokens table (headers)  : 104
+
+--- TIER BLOQUANT ---
+Fiction (hors liste)    : 1
+Fiction (figee/connue)  : 0
+Fantomes SCHEMA.md      : 17
+
+--- CLIQUET ---
+Tables live non doc.    :   1   REGRESSION > 0
+
+--- FICTION (header -> table inexistante en base) ---
+  [HORS-LISTE ] cart_contributions
+            <- routes/shares.js
+            trouve dans : migrations/057_cart_event_shares.sql (migration locale, pas encore en live)
+            -> deploy pas encore fait : ajouter temporairement "cart_contributions"
+               a knownDriftAllowlist (scripts/arch-debt-budget.json) avec une
+               note "migration 057, pas encore deployee". Auto-elague
+               par arch-reconcile des que live.
+
+--- FANTOMES (SCHEMA.md -> objet inexistant en base) ---
+  cart_contributions
+            trouve dans : migrations/057_cart_event_shares.sql (migration locale, pas encore en live)
+            -> probablement une declaration prematuree : cet objet doit
+               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas
+               une ligne de tableau directe. Voir scripts/schema-promote.js
+               (format du bloc en tete de fichier). Une fois deploye,
+               "npm run schema:promote:write" convertit le bloc en ligne.
+  collective_contribution_status
+  collective_payment_sessions
+            trouve dans : migrations/048_collective_workspaces.sql (migration locale, pas encore en live)
+            -> probablement une declaration prematuree : cet objet doit
+               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas
+               une ligne de tableau directe. Voir scripts/schema-promote.js
+               (format du bloc en tete de fichier). Une fois deploye,
+               "npm run schema:promote:write" convertit le bloc en ligne.
+  collective_payment_tokens
+            trouve dans : migrations/048_collective_workspaces.sql (migration locale, pas encore en live)
+            -> probablement une declaration prematuree : cet objet doit
+               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas
+               une ligne de tableau directe. Voir scripts/schema-promote.js
+               (format du bloc en tete de fichier). Une fois deploye,
+               "npm run schema:promote:write" convertit le bloc en ligne.
+  collective_session_status
+  collective_stock_reservations
+            trouve dans : migrations/075_hub_shares_collective_schema.sql (migration locale, pas encore en live)
+            -> probablement une declaration prematuree : cet objet doit
+               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas
+               une ligne de tableau directe. Voir scripts/schema-promote.js
+               (format du bloc en tete de fichier). Une fois deploye,
+               "npm run schema:promote:write" convertit le bloc en ligne.
+  collective_token_status
+  collective_workspace_contributions
+            trouve dans : migrations/048_collective_workspaces.sql (migration locale, pas encore en live)
+            -> probablement une declaration prematuree : cet objet doit
+               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas
+               une ligne de tableau directe. Voir scripts/schema-promote.js
+               (format du bloc en tete de fichier). Une fois deploye,
+               "npm run schema:promote:write" convertit le bloc en ligne.
+  collective_workspace_contributions_content_check
+  collective_workspace_contributions_kind_check
+  collective_workspace_events
+            trouve dans : migrations/048_collective_workspaces.sql (migration locale, pas encore en live)
+            -> probablement une declaration prematuree : cet objet doit
+               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas
+               une ligne de tableau directe. Voir scripts/schema-promote.js
+               (format du bloc en tete de fichier). Une fois deploye,
+               "npm run schema:promote:write" convertit le bloc en ligne.
+  collective_workspace_items
+            trouve dans : migrations/048_collective_workspaces.sql (migration locale, pas encore en live)
+            -> probablement une declaration prematuree : cet objet doit
+               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas
+               une ligne de tableau directe. Voir scripts/schema-promote.js
+               (format du bloc en tete de fichier). Une fois deploye,
+               "npm run schema:promote:write" convertit le bloc en ligne.
+  collective_workspace_status
+  collective_workspaces
+            trouve dans : migrations/048_collective_workspaces.sql (migration locale, pas encore en live)
+            -> probablement une declaration prematuree : cet objet doit
+               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas
+               une ligne de tableau directe. Voir scripts/schema-promote.js
+               (format du bloc en tete de fichier). Une fois deploye,
+               "npm run schema:promote:write" convertit le bloc en ligne.
+  shared_cart_contributions
+            trouve dans : migrations/044_shared_cart.sql (migration locale, pas encore en live)
+            -> probablement une declaration prematuree : cet objet doit
+               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas
+               une ligne de tableau directe. Voir scripts/schema-promote.js
+               (format du bloc en tete de fichier). Une fois deploye,
+               "npm run schema:promote:write" convertit le bloc en ligne.
+  shared_cart_estimations
+            trouve dans : migrations/080_v41_shared_cart_state_machine.sql (migration locale, pas encore en live)
+            -> probablement une declaration prematuree : cet objet doit
+               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas
+               une ligne de tableau directe. Voir scripts/schema-promote.js
+               (format du bloc en tete de fichier). Une fois deploye,
+               "npm run schema:promote:write" convertit le bloc en ligne.
+  v_group_orders
+
+--- TABLES LIVE NON DOCUMENTEES (cliquet) ---
+  user_pickup_authorizations
+
+============================================================
+🚫 Fiction hors liste blanche: 1 (cart_contributions)
+🚫 Fantomes dans SCHEMA.md: 17 (cart_contributions, collective_contribution_status, collective_payment_sessions, collective_payment_tokens, collective_session_status, collective_stock_reservations, collective_token_status, collective_workspace_contributions, collective_workspace_contributions_content_check, collective_workspace_contributions_kind_check, collective_workspace_events, collective_workspace_items, collective_workspace_status, collective_workspaces, shared_cart_contributions, shared_cart_estimations, v_group_orders)
+🚫 Tables live non documentees: 1 > cliquet 0 (documente-les dans SCHEMA.md, puis "npm run arch:reconcile -- --write")
+ECHEC: 3 blocage(s) de drift.
+FAILED rc=1: npm run arch:gate
