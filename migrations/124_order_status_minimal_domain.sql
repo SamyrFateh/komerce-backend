@@ -106,7 +106,15 @@ BEGIN
 
   DROP INDEX idx_orders_active;
   DROP INDEX idx_orders_status_ordered;
-  DROP INDEX uq_orders_pickup_active;
+
+  -- uq_orders_pickup_active : déjà supprimé par la migration 119
+  -- (drop_orders_pickup_code) sur toute base où 119 est passée avant 124.
+  -- def_uq_orders_pickup_active est alors NULL — pas d'IF EXISTS ici pour
+  -- éviter un DROP silencieux sur les bases où il existe encore, mais on
+  -- ne tente le DROP que s'il a effectivement été trouvé ci-dessus.
+  IF def_uq_orders_pickup_active IS NOT NULL THEN
+    DROP INDEX uq_orders_pickup_active;
+  END IF;
 
   CREATE TYPE order_status_new AS ENUM (
     'pending', 'confirmed', 'ordered', 'preparation', 'shipped',
@@ -150,7 +158,9 @@ BEGIN
   -- recastent naturellement vers le type final maintenant renommé.
   EXECUTE def_idx_orders_active;
   EXECUTE def_idx_orders_status_ordered;
-  EXECUTE def_uq_orders_pickup_active;
+  IF def_uq_orders_pickup_active IS NOT NULL THEN
+    EXECUTE def_uq_orders_pickup_active;
+  END IF;
 
   RAISE NOTICE 'Migration 124 OK — order_status recréé sans pending_group_payment, 7 vues et 3 index restaurés à l''identique.';
 END $$;
