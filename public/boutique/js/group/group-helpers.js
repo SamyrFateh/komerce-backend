@@ -1,26 +1,25 @@
 /**
- * @komerce-arch
+ * @komerce-arch-lite
  * @role          shared-cart-front-helpers
  * @domain        shared-cart
  * @layer         util-ui
- * @criticality   medium
- * @inputs        shared_cart_data, personalized_params, amounts
- * @outputs       formatted_progress, parsed_params, display_helpers
- * @depends       b-utils.js
- * @used-by       b-group-view.js, group-render-creator.js, b-nav.js
- * @doctrine      estimations_indicatives, montant_lisible, lien_personnalise_lisible
- * @impact-areas  shared-cart, participant-flow, creator-flow, personalized-links
- * @version       2026-06
+ * @owner         public/boutique/js/b-group-view.js
+ * @purpose       supports public/boutique/js/b-group-view.js
+ * @impact-areas  shared-cart
+ * @version       2026-08
  */
 'use strict';
 
 /**
  * @module group/group-helpers.js
- * @owner group refactor — helpers de calcul pur (aucun effet de bord)
+ * @owner Boutique First — helper de calcul pur restant après le retrait
+ * des concepts V4.1 (estimations, engagements, fenêtre de paiement,
+ * statuts de règlement). La liste partageable Boutique First ne connaît
+ * que trois statuts (open/closed/cancelled), portés tels quels par le
+ * backend — plus de projection de statut technique côté front.
  *
- * Fonctions stateless partagées par tous les modules group/*.
- * Aucun import réseau, aucune mutation de state, aucun accès DOM.
- * Testables unitairement sans setup.
+ * Fonction stateless, aucun import réseau, aucune mutation de state,
+ * aucun accès DOM. Testable unitairement sans setup.
  */
 
 /**
@@ -29,235 +28,3 @@
  * @returns {number}
  */
 export function r(n) { return Math.round(Number(n) || 0); }
-
-/**
- * Calcule le pourcentage de progression (0–100, arrondi).
- * Utilisé pour la barre "payé" — toujours plafonné à 100 %.
- * @param {number} confirmed  montant confirmé / payé
- * @param {number} total      montant total
- * @returns {number}
- */
-export function pct(confirmed, total) {
-  if (!total) return 0;
-  return Math.max(0, Math.min(100, Math.round((confirmed / total) * 100)));
-}
-
-/**
- * Calcule le pourcentage d'engagement (plafonné à 100 % pour affichage barre).
- * La valeur brute (> 100) est renvoyée séparément pour le badge sur-couvert.
- *
- * @param {Array}  commitments  liste des engagements du panier
- * @param {number} total        total du panier (cart.total_kmf_snapshot)
- * @returns {{ pctCapped: number, pctRaw: number, engagementsTotal: number }}
- *   pctCapped       : 0–100, pour la largeur de la barre intention
- *   pctRaw          : valeur réelle (peut dépasser 100)
- *   engagementsTotal: somme brute des amount_kmf
- */
-export function engagementCoverage(commitments = [], total = 0) {
-  const engagementsTotal = commitments.reduce((s, c) => s + r(c.amount_kmf), 0);
-  if (!total) return { pctCapped: 0, pctRaw: 0, engagementsTotal };
-  const pctRaw    = Math.round((engagementsTotal / total) * 100);
-  const pctCapped = Math.min(100, pctRaw);
-  return { pctCapped, pctRaw, engagementsTotal };
-}
-
-/**
- * Retourne un label emoji + texte selon le statut d'un panier partagé.
- * Si le règlement est ouvert, le statut est écrasé par "En règlement".
- * @param {string}  status           cart.status
- * @param {boolean} isSettlementOpen résultat de isSettlementOpen(cart)
- * @returns {string}
- */
-// Doctrine §8 — V4.1 ne parle JAMAIS aux humains : on ne projette que les
-// 5 libellés visibles. Tout statut technique ou legacy se replie dessus.
-// Mapping : open→En préparation · closed+fenêtre valide→Ouvert au paiement ·
-// closed expiré / awaiting_choice→Fermé · ordered→Finalisé · cancelled→Annulé.
-export function statusLabel(status, paymentOpen) {
-  if (paymentOpen) return 'Ouvert au paiement';        // closed + fenêtre valide
-  switch (status) {
-    case 'open':
-    case 'active':
-    case 'commitment_open':
-      return 'En préparation';
-    case 'closed':                                       // fenêtre expirée
-    case 'awaiting_choice':
-    case 'partially_funded':
-    case 'fully_funded':
-    case 'closed_for_settlement':
-    case 'settlement_in_progress':
-    case 'ready_to_finalize':
-      return 'Fermé';
-    case 'ordered':
-    case 'converted_to_order':
-    case 'finalized':
-      return 'Finalisé';
-    case 'cancelled':
-    case 'refunded':
-      return 'Annulé';
-    case 'expired':
-    case 'archived':
-      return 'Indisponible';
-    default:
-      return 'Fermé';                                 // jamais « actif », jamais brut
-  }
-}
-
-export const BUSINESS = Object.freeze({
-  OPEN: 'OPEN', CLOSED: 'CLOSED', AWAITING_CHOICE: 'AWAITING_CHOICE',
-  ORDERED: 'ORDERED', CANCELLED: 'CANCELLED', EXPIRED: 'EXPIRED', ARCHIVED: 'ARCHIVED',
-});
-
-const _LEGACY_CLOSED  = ['closed_for_settlement', 'settlement_in_progress',
-                         'partially_funded', 'fully_funded', 'ready_to_finalize'];
-const _LEGACY_ORDERED = ['converted_to_order', 'finalized'];
-const _LEGACY_OPEN    = ['draft', 'active', 'commitment_open'];
-
-export function businessStatusOf(cart) {
-  const s = String(cart?.status || '');
-  if (s === 'open')            return BUSINESS.OPEN;
-  if (s === 'closed')          return BUSINESS.CLOSED;
-  if (s === 'awaiting_choice') return BUSINESS.AWAITING_CHOICE;
-  if (s === 'ordered')         return BUSINESS.ORDERED;
-  if (s === 'cancelled' || s === 'refunded') return BUSINESS.CANCELLED;
-  if (s === 'expired')         return BUSINESS.EXPIRED;
-  if (s === 'archived')        return BUSINESS.ARCHIVED;
-  if (_LEGACY_ORDERED.includes(s)) return BUSINESS.ORDERED;
-  if (_LEGACY_CLOSED.includes(s) || metaOf(cart).settlement_open === true) return BUSINESS.CLOSED;
-  if (_LEGACY_OPEN.includes(s))    return BUSINESS.OPEN;
-  return null;
-}
-
-export function paymentWindowEndsAt(cart) {
-  return cart?.payment_window_ends_at ? new Date(cart.payment_window_ends_at) : null;
-}
-
-export function isPaymentWindowOpen(cart) {
-  if (businessStatusOf(cart) !== BUSINESS.CLOSED) return false;
-  const ends = paymentWindowEndsAt(cart);
-  return !ends || ends > new Date();
-}
-
-/**
- * Parse cart.metadata quel que soit son type (string JSON ou objet).
- * Retourne toujours un objet (vide si absent ou invalide).
- * @param {object|null} cart
- * @returns {object}
- */
-export function metaOf(cart) {
-  if (!cart?.metadata) return {};
-  if (typeof cart.metadata === 'object') return cart.metadata;
-  try { return JSON.parse(cart.metadata); } catch (_) { return {}; }
-}
-
-/**
- * Indique si la phase règlement est ouverte pour ce panier.
- * LOT 1.3 / 1.4 — le backend porte désormais l'état dans status
- * (closed_for_settlement → settlement_in_progress → ready_to_finalize),
- * metadata.settlement_open restant le signal transitionnel.
- * @param {object} cart
- * @returns {boolean}
- */
-export function isSettlementOpen(cart) {
-  return businessStatusOf(cart) === BUSINESS.CLOSED;
-}
-
-/**
- * Calcule le montant restant à payer (KMF).
- * PR2 — utilise cart.remaining_kmf (calculé par le backend, source de vérité)
- * si disponible, sinon fallback total − confirmé.
- * Ne renvoie jamais de valeur négative.
- * @param {object} cart
- * @returns {number}
- */
-export function remainingKmf(cart) {
-  const total     = r(cart.total_kmf_snapshot);
-  const confirmed = r(cart.contributed_kmf);
-  return Math.max(0, r(cart.remaining_kmf) || total - confirmed);
-}
-
-/**
- * Calcule la date d'expiration du règlement.
- * Retourne null si le règlement n'est pas ouvert ou si la date d'ouverture manque.
- * @param {object} cart
- * @returns {Date|null}
- */
-export function settlementExpiresAt(cart) {
-  if (businessStatusOf(cart) !== BUSINESS.CLOSED) return null;
-  return paymentWindowEndsAt(cart);
-}
-
-/**
- * Retourne une chaîne lisible indiquant le temps restant avant une échéance.
- * Exemples : "3j restants", "12h30min restantes", "45min restantes", "Expiré".
- * @param {Date|null} expiresAt
- * @returns {string|null}  null si expiresAt est falsy
- */
-export function timeRemaining(expiresAt) {
-  if (!expiresAt) return null;
-  const ms = new Date(expiresAt) - Date.now();
-  if (ms <= 0) return 'Expiré';
-  const h = Math.floor(ms / 3_600_000);
-  const m = Math.floor((ms % 3_600_000) / 60_000);
-  if (h >= 48) return `${Math.floor(h / 24)}j restants`;
-  if (h >= 1)  return `${h}h${m > 0 ? m + 'min' : ''} restantes`;
-  return `${Math.max(1, m)}min restantes`;
-}
-
-/**
- * Retourne l'étape courante du parcours créateur (3 étapes max).
- *
- * @param {object} cart  panier partagé
- * @returns {'ORDER_CREATED'|'CONFIRM'|'SHARE_AND_LOCK'}
- */
-export function getGroupStep(cart) {
-  const biz = businessStatusOf(cart);
-  if (biz === BUSINESS.ORDERED || cart.finalized_order_id) return 'ORDER_CREATED';
-  if (biz === BUSINESS.CLOSED || biz === BUSINESS.AWAITING_CHOICE) return 'CONFIRM';
-  return 'SHARE_AND_LOCK';
-}
-
-/* ── GAP-B / Phase D — liens personnalisés ───────────────────────
- * komerce.km/share/{token}?who=Ali&amt=15000
- * `who`  : prénom du participant visé (affiché, modifiable)
- * `amt`  : montant suggéré en KMF (pré-rempli, modifiable)
- */
-
-/**
- * Construit une URL de partage enrichie avec un prénom et/ou un montant suggéré.
- * @param {string} baseUrl  URL de base (ex: `${origin}/boutique/?p={token}`)
- * @param {{who?: string, amt?: number|string}} [opts]
- * @returns {string}
- */
-export function buildPersonalizedShareUrl(baseUrl, opts = {}) {
-  if (!baseUrl) return baseUrl;
-  try {
-    const url = new URL(baseUrl);
-    const who = String(opts.who || '').trim();
-    const amt = r(opts.amt);
-    if (who) url.searchParams.set('who', who.slice(0, 40));
-    if (amt > 0) url.searchParams.set('amt', String(amt));
-    return url.toString();
-  } catch (_) {
-    return baseUrl;
-  }
-}
-
-/**
- * Lit les paramètres `who` / `amt` depuis une URL (par défaut l'URL courante).
- * @param {string} [href]
- * @returns {{who: string|null, amt: number|null}}
- */
-export function readPersonalizedParams(href) {
-  try {
-    const url = new URL(href || window.location.href);
-    const who = url.searchParams.get('who');
-    const amtRaw = url.searchParams.get('amt');
-    const amt = amtRaw ? r(amtRaw) : null;
-    return {
-      who: who ? who.trim().slice(0, 40) : null,
-      amt: amt && amt > 0 ? amt : null,
-    };
-  } catch (_) {
-    return { who: null, amt: null };
-  }
-}

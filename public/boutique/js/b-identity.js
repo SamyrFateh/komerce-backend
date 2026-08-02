@@ -7,7 +7,7 @@
  * @inputs        phone, name, otp_code, session_cookie
  * @outputs       client_identity, otp_modal_state, authenticated_session
  * @depends       b-phone.js, b-utils.js, routes/otp.js
- * @used-by       b-checkout.js, b-share-cart.js, b-group-view.js
+ * @used-by       b-checkout.js, b-share-cart.js, group/group-render-list.js
  * @doctrine      otp_une_fois, session_client_legere, premiere_commande_sans_friction
  * @impact-areas  checkout, shared-cart, tracking, auth, participant-flow
  * @version       2026-06

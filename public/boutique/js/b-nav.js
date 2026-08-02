@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        view_requests, bus_events, drawer_state, scroll_state, relais_data
  * @outputs       active_view, drawer_state, infinite_scroll, relais_list
- * @depends       b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-checkout.js, b-catalog.js, b-favs.js, b-tracking.js, b-komerce.js, b-group-view.js, b-pager.js, b-scroll-owner.js
+ * @depends       b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-checkout.js, b-catalog.js, b-favs.js, b-tracking.js, b-komerce.js, group/group-render-list.js, b-pager.js, b-scroll-owner.js
  * @used-by       boutique.js
  * @doctrine      navigation_sans_friction, mobile_desktop_coherence
  * @impact-areas  boutique-navigation, view-switching, drawer, infinite-scroll
@@ -31,7 +31,7 @@ import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
 import { renderTrackView }               from './b-tracking.js';
 import { openMonKomerce }                  from './b-komerce.js';
-import { renderGroupView, detectParticipantToken, stopPolling } from './b-group-view.js';
+import { renderGroupView, detectParticipantToken, stopPolling } from './group/group-render-list.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
 

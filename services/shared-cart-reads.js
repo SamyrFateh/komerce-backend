@@ -8,7 +8,7 @@
  * @outputs       shared_cart, items
  * @depends       db.js, services/shared-cart-internals.js
  * @used-by       routes/shared-cart.js
- * @db-read       order_items, shared_cart_items, shared_carts
+ * @db-read       order_items, shared_cart_items, shared_carts, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      domaine_minimal_boutique_first
@@ -43,9 +43,11 @@ const db = require('../db');
 
 async function getSharedCartForPublic(token, viewerUserId) {
   const { rows: cartRows } = await db.query(
-    `SELECT id, token, title, message, status, delivery_relay_id, created_at, organizer_user_id
-       FROM shared_carts
-      WHERE token = $1`,
+    `SELECT sc.id, sc.token, sc.title, sc.message, sc.status, sc.delivery_relay_id,
+            sc.created_at, sc.organizer_user_id, u.full_name AS organizer_full_name
+       FROM shared_carts sc
+       LEFT JOIN users u ON u.id = sc.organizer_user_id
+      WHERE sc.token = $1`,
     [token]
   );
   if (!cartRows.length) return null;
@@ -72,13 +74,26 @@ async function getSharedCartForPublic(token, viewerUserId) {
   // Le front ne reçoit que le booléen dérivé is_creator.
   const isCreator = Boolean(viewerUserId) && viewerUserId === cart.organizer_user_id;
 
+  // Storyboard §8 : identité affichable du créateur dérivée par jointure
+  // à la lecture (jamais un snapshot stocké sur shared_carts). Seul le
+  // prénom est exposé — premier mot de users.full_name — jamais le nom
+  // complet, jamais l'identifiant.
+  const creatorFirstName = (cart.organizer_full_name || '').trim().split(/\s+/)[0] || null;
+
   return {
     cart: {
+      // Contrat API — les endpoints créateur (POST/DELETE .../items,
+      // POST .../close) exigent l'id interne dans leur URL. Sans lui, la
+      // capacité créateur documentée en Contrat API §2 est inappelable —
+      // omission bloquante, pas une nouvelle donnée : exposée uniquement
+      // quand is_creator est vrai, jamais pour un visiteur ordinaire.
+      id: isCreator ? cart.id : undefined,
       token: cart.token,
       title: cart.title,
       message: cart.message,
       status: cart.status,
       created_at: cart.created_at,
+      creator_first_name: creatorFirstName,
     },
     items: items.map(it => ({
       id: it.id, name: it.name, image: it.image,

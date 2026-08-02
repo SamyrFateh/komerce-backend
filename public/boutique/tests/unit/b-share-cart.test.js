@@ -8,7 +8,7 @@
  * refreshSharedBadges, startShareFlow, install.
  *
  * Dépendances mockées : b-cart-core.js (showToast), b-cart.js (clearCart),
- * b-group-view.js (refreshGroupBadge), b-group-banner.js (showBanner/
+ * group/group-state.js (refreshGroupBadge), b-group-banner.js (showBanner/
  * hideBanner/refreshBanner), b-identity.js (requireIdentity — non exercé
  * dans ce périmètre mais mocké par prudence).
  * global.fetch mocké par tests/unit/setup.js, surchargé par test.
@@ -27,8 +27,10 @@
 
 jest.mock('../../js/b-cart-core.js', () => ({ showToast: jest.fn() }));
 jest.mock('../../js/b-cart.js', () => ({ clearCart: jest.fn() }));
-jest.mock('../../js/b-group-view.js', () => ({
+jest.mock('../../js/group/group-state.js', () => ({
   refreshGroupBadge: jest.fn(),
+}));
+jest.mock('../../js/group/group-render-list.js', () => ({
   renderGroupView: jest.fn(),
 }));
 jest.mock('../../js/b-nav.js', () => ({ switchView: jest.fn() }));
@@ -41,7 +43,7 @@ jest.mock('../../js/b-identity.js', () => ({ requireIdentity: jest.fn() }));
 
 const { state } = require('../../js/b-store.js');
 const { showToast } = require('../../js/b-cart-core.js');
-const { refreshGroupBadge } = require('../../js/b-group-view.js');
+const { refreshGroupBadge } = require('../../js/group/group-state.js');
 const { hideBanner } = require('../../js/b-group-banner.js');
 const {
   clearShareState,

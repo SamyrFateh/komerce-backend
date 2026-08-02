@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 125 : Éradication de l'îlot collective (Lot 1 — Boutique First)
+-- Migration 126 : Éradication de l'îlot collective (Lot 1 — Boutique First)
 -- Date : août 2026
 --
 -- CONTEXTE :
@@ -36,7 +36,7 @@ SET search_path = public;
 
 DO $$
 BEGIN
-  RAISE NOTICE 'Migration 125 — début éradication îlot collective.';
+  RAISE NOTICE 'Migration 126 — début éradication îlot collective.';
 END $$;
 
 DROP TABLE IF EXISTS collective_payment_tokens;
@@ -55,5 +55,5 @@ DROP TYPE IF EXISTS collective_workspace_status;
 
 DO $$
 BEGIN
-  RAISE NOTICE 'Migration 125 OK — 7 tables collective_* et types associés supprimés.';
+  RAISE NOTICE 'Migration 126 OK — 7 tables collective_* et types associés supprimés.';
 END $$;

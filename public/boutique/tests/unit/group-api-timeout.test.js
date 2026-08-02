@@ -18,8 +18,6 @@ jest.mock('../../js/b-utils.js', () => ({
 const {
   fetchWithTimeout,
   getSharedCartPublic,
-  getEstimationAggregate,
-  getEstimationByPhone,
 } = require('../../js/group/group-api.js');
 
 function neverSettles() { return new Promise(() => {}); }
@@ -59,15 +57,5 @@ describe('group-api — fetchWithTimeout', () => {
     );
     // On n'attend pas les 10s : on vérifie juste que le rejet est géré ailleurs.
     p.catch(() => {});
-  });
-
-  test('getEstimationAggregate : erreur réseau → rejet propre (géré par l\'appelant), pas de pending silencieux', async () => {
-    global.fetch = jest.fn(() => Promise.reject(new Error('network down')));
-    await expect(getEstimationAggregate('tok')).rejects.toBeTruthy();
-  });
-
-  test('getEstimationByPhone reste "jamais bloquant" : erreur → null', async () => {
-    global.fetch = jest.fn(() => Promise.reject(new Error('network down')));
-    await expect(getEstimationByPhone('tok', '+2691234567')).resolves.toBeNull();
   });
 });

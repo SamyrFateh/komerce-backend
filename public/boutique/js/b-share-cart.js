@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        cart_state, phone_identity, share_mode, delivery_date_options
  * @outputs       shared_cart_link, clear_local_cart_signal, group_view_transition
- * @depends       b-store.js, b-cart-core.js, b-cart.js, b-group-view.js, b-group-banner.js, b-phone.js, b-checkout.js, b-identity.js
+ * @depends       b-store.js, b-cart-core.js, b-cart.js, group/group-render-list.js, b-group-banner.js, b-phone.js, b-checkout.js, b-identity.js
  * @used-by       boutique.js, b-modal-approche-c-hybrid.js
  * @doctrine      partager_geste_natif, panier_ouvert_ferme, paiement_seul_acte_engageant, boutique_canal_decouverte
  * @impact-areas  shared-cart-creation, checkout, participant-flow, creator-flow, local-cart
@@ -28,7 +28,7 @@
 import { state } from './b-store.js';
 import { showToast } from './b-cart-core.js';
 import { clearCart } from './b-cart.js';  // Doctrine v4.2 — N4-CLEAR
-import { refreshGroupBadge } from './b-group-view.js';
+import { refreshGroupBadge } from './group/group-state.js';
 import { showBanner, hideBanner, refreshBanner } from './b-group-banner.js';
 import {
   PHONE_COUNTRIES,
@@ -511,7 +511,7 @@ function openWhatsApp(title, shareUrl, { shareMode, deadline } = {}) {
 
 function switchToGroup() {
   import('./b-nav.js').then(({ switchView }) => {
-    import('./b-group-view.js').then(({ renderGroupView }) => {
+    import('./group/group-render-list.js').then(({ renderGroupView }) => {
       document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
         .forEach(i => i.classList.toggle('active', i.dataset.tab === 'group'));
       renderGroupView();

@@ -17,7 +17,7 @@
 /**
  * @module b-tracking
  * @brief Suivi commandes uniquement.
- * Les paniers partagés sont gérés dans b-group-view.js (onglet Groupe).
+ * Les paniers partagés sont gérés dans group/group-render-list.js (onglet Groupe).
  */
 
 import { sanitize, optimizeImgUrl, fmt, apiGet, apiPost } from './b-utils.js';

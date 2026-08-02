@@ -7,7 +7,7 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       public/boutique/js/b-bus.js, public/boutique/js/b-store.js
- * @used-by       public/boutique/js/b-cart-pill.js, public/boutique/js/b-cart.js, public/boutique/js/b-catalog.js, public/boutique/js/b-checkout.js, public/boutique/js/b-favs.js, public/boutique/js/b-group-view.js, public/boutique/js/b-identity.js, public/boutique/js/b-mini-cart.js, public/boutique/js/b-modal-core.js, public/boutique/js/b-modal-desktop-enhancers.js, public/boutique/js/b-nav.js, public/boutique/js/b-paypal.js, public/boutique/js/b-share-cart.js, public/boutique/js/b-subcat.js, public/boutique/js/b-tracking.js, public/boutique/js/boutique.js, public/boutique/js/render/render-product-card.js
+ * @used-by       public/boutique/js/b-cart-pill.js, public/boutique/js/b-cart.js, public/boutique/js/b-catalog.js, public/boutique/js/b-checkout.js, public/boutique/js/b-favs.js, public/boutique/js/group/group-render-list.js, public/boutique/js/b-identity.js, public/boutique/js/b-mini-cart.js, public/boutique/js/b-modal-core.js, public/boutique/js/b-modal-desktop-enhancers.js, public/boutique/js/b-nav.js, public/boutique/js/b-paypal.js, public/boutique/js/b-share-cart.js, public/boutique/js/b-subcat.js, public/boutique/js/b-tracking.js, public/boutique/js/boutique.js, public/boutique/js/render/render-product-card.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  boutique
  * @version       2026-06

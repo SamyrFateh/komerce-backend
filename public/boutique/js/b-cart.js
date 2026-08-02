@@ -828,7 +828,7 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
             document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
               .forEach(i => i.classList.toggle('active', i.dataset.tab === 'group'));
             switchView('group');
-            import('./b-group-view.js').then(({ renderGroupView }) => renderGroupView());
+            import('./group/group-render-list.js').then(({ renderGroupView }) => renderGroupView());
           });
         } catch (err) {
           if (errEl) errEl.textContent = err?.message || 'Impossible de mettre à jour.';
@@ -849,7 +849,7 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
           document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
             .forEach(i => i.classList.toggle('active', i.dataset.tab === 'group'));
           switchView('group');
-          import('./b-group-view.js').then(({ renderGroupView }) => renderGroupView());
+          import('./group/group-render-list.js').then(({ renderGroupView }) => renderGroupView());
         });
       });
     } else if (!editCtxDrawer && drawerEditBar) {
@@ -1406,7 +1406,7 @@ function renderSideCart() {
             document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
               .forEach(i => i.classList.toggle('active', i.dataset.tab === 'group'));
             switchView('group');
-            import('./b-group-view.js').then(({ renderGroupView }) => renderGroupView());
+            import('./group/group-render-list.js').then(({ renderGroupView }) => renderGroupView());
           });
         } catch (err) {
           if (errEl) errEl.textContent = err?.message || 'Impossible de mettre à jour.';
@@ -1430,7 +1430,7 @@ function renderSideCart() {
           document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
             .forEach(i => i.classList.toggle('active', i.dataset.tab === 'group'));
           switchView('group');
-          import('./b-group-view.js').then(({ renderGroupView }) => renderGroupView());
+          import('./group/group-render-list.js').then(({ renderGroupView }) => renderGroupView());
         });
       });
     }

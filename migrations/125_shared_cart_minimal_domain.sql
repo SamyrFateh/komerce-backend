@@ -1,80 +1,30 @@
 -- ============================================================
--- Migration 124 : Domaine minimal Liste Partagée (Boutique First, Lot 2/3)
+-- Migration 125 : Domaine minimal Liste Partagée
+-- (Boutique First, Lot 2/3, partie 2/2)
 -- Date : août 2026
 --
 -- CONTEXTE :
---   Suppression du mécanisme de contribution/cagnotte et de la machine
---   à états à 20 valeurs. Le paiement passe désormais entièrement par le
---   checkout canonique (migration 123). La liste partagée n'a plus que
---   trois états : open, closed, cancelled. Elle n'a plus aucune colonne
---   financière propre — le montant réclamé se calcule par jointure sur
---   order_items, jamais stocké (invariant produit n°3).
---
---   Supprimé dans la même migration : le mécanisme "paiement groupé
---   depuis une commande existante" (pending_group_payment), découvert
---   pendant ce lot comme un troisième mécanisme parallèle au même
---   problème que shared_cart_contributions et collective_workspaces.
---   Une commande en attente de financement groupé est exactement ce que
---   l'invariant produit n°1 interdit : « aucun paiement en attente ».
+--   Suite de la migration 124. shared_cart_status passe de 20 valeurs à
+--   3 (open/closed/cancelled) — voir 124 pour l'explication de la
+--   séparation en deux fichiers (deux transactions distinctes,
+--   nécessaire empiriquement pour que les deux conversions d'énumération
+--   réussissent toutes les deux). La liste partagée n'a plus aucune
+--   colonne financière propre — le montant réclamé se calcule par
+--   jointure sur order_items, jamais stocké (invariant produit n°3).
 --
 --   Portée volontairement staging : aucune contrainte de compatibilité
 --   descendante. Les lignes existantes dans des statuts obsolètes sont
---   mappées vers le modèle à 3 états par la table de correspondance
---   ci-dessous, pas conservées telles quelles.
+--   mappées vers le modèle à 3 états ci-dessous, pas conservées telles
+--   quelles.
 --
--- IDEMPOTENT via IF EXISTS / DO $$ garde-fou.
+-- IDEMPOTENT via IF EXISTS / garde interne.
 -- ============================================================
 
 SET client_encoding = 'UTF8';
 SET search_path = public;
 
 -- ============================================================
--- 1. order_status — retrait de pending_group_payment
---    PostgreSQL ne permet pas de retirer une valeur d'un type ENUM
---    directement : on recrée le type sans cette valeur, on bascule la
---    colonne dessus, on supprime l'ancien type.
--- ============================================================
-
-DO $$
-DECLARE
-  stuck_count INTEGER;
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_type t
-    JOIN pg_enum e ON e.enumtypid = t.oid
-    WHERE t.typname = 'order_status' AND e.enumlabel = 'pending_group_payment'
-  ) THEN
-    RAISE NOTICE 'Migration 124 — pending_group_payment déjà absent de order_status, rien à faire.';
-    RETURN;
-  END IF;
-
-  -- Compensation avant migration de type : toute commande encore dans cet
-  -- état bascule vers 'pending' — transition déjà valide dans l'ancienne
-  -- machine (pending_group_payment → pending, "retour si groupe abandonné"),
-  -- donc sémantiquement neutre, pas une invention de ce lot.
-  SELECT COUNT(*) INTO stuck_count FROM orders WHERE status = 'pending_group_payment';
-  IF stuck_count > 0 THEN
-    UPDATE orders SET status = 'pending' WHERE status = 'pending_group_payment';
-    RAISE NOTICE 'Migration 124 — % commande(s) pending_group_payment basculée(s) vers pending.', stuck_count;
-  END IF;
-
-  CREATE TYPE order_status_new AS ENUM (
-    'pending', 'confirmed', 'ordered', 'preparation', 'shipped',
-    'in_transit', 'available', 'collected', 'cancelled', 'refunded'
-  );
-
-  ALTER TABLE orders
-    ALTER COLUMN status TYPE order_status_new
-    USING status::text::order_status_new;
-
-  DROP TYPE order_status;
-  ALTER TYPE order_status_new RENAME TO order_status;
-
-  RAISE NOTICE 'Migration 124 OK — order_status recréé sans pending_group_payment.';
-END $$;
-
--- ============================================================
--- 2. shared_cart_status — réduction à 3 valeurs
+-- 1. shared_cart_status — réduction à 3 valeurs
 -- ============================================================
 
 -- Pré-requis : deux index partiels existants filtrent sur des valeurs
@@ -84,8 +34,20 @@ END $$;
 -- échoue (littéral introuvable dans le nouveau type). Aucun des deux
 -- n'a de raison d'être conservé dans le domaine minimal : le second est
 -- déjà couvert par idx_shared_carts_status_v41 (status, created_at).
+-- 7 index référencent shared_carts.status (vérifié exhaustivement via
+-- pg_indexes). Pendant l'ALTER COLUMN TYPE, PostgreSQL tente de
+-- reconstruire chacun avec l'opérateur = entre l'ancien type et le
+-- nouveau — cet opérateur n'existe pas entre deux types ENUM distincts
+-- ("operator does not exist: shared_cart_status_new = shared_cart_status").
+-- Même bug que pour orders.status (migration 124, 3 index partiels).
+-- Retirés avant la conversion, recréés avec les noms pertinents après.
 DROP INDEX IF EXISTS idx_shared_carts_awaiting_deadline;
+DROP INDEX IF EXISTS idx_shared_carts_beneficiary;
+DROP INDEX IF EXISTS idx_shared_carts_closed_window;
 DROP INDEX IF EXISTS idx_shared_carts_funded;
+DROP INDEX IF EXISTS idx_shared_carts_open_target_date;
+DROP INDEX IF EXISTS idx_shared_carts_status;
+DROP INDEX IF EXISTS idx_shared_carts_status_v41;
 
 DO $$
 DECLARE
@@ -96,7 +58,7 @@ BEGIN
   WHERE t.typname = 'shared_cart_status';
 
   IF target_count <= 3 THEN
-    RAISE NOTICE 'Migration 124 — shared_cart_status déjà réduit, rien à faire.';
+    RAISE NOTICE 'Migration 125 — shared_cart_status déjà réduit, rien à faire.';
     RETURN;
   END IF;
 
@@ -117,6 +79,12 @@ BEGIN
 
   CREATE TYPE shared_cart_status_new AS ENUM ('open', 'closed', 'cancelled');
 
+  -- Même bug que pour orders.status (migration 124) : la clause DEFAULT
+  -- ('draft', valeur qui n'existe plus dans le nouveau type à 3 valeurs)
+  -- doit être retirée avant l'ALTER COLUMN TYPE, pas seulement remplacée
+  -- après.
+  ALTER TABLE shared_carts ALTER COLUMN status DROP DEFAULT;
+
   ALTER TABLE shared_carts
     ALTER COLUMN status TYPE shared_cart_status_new
     USING status::text::shared_cart_status_new;
@@ -126,14 +94,25 @@ BEGIN
   DROP TYPE shared_cart_status;
   ALTER TYPE shared_cart_status_new RENAME TO shared_cart_status;
 
-  RAISE NOTICE 'Migration 124 OK — shared_cart_status réduit à open/closed/cancelled.';
+  -- Recréation des index pertinents dans le domaine minimal. Les 5 autres
+  -- (awaiting_deadline, closed_window, funded, open_target_date, status+expires_at)
+  -- portaient sur des colonnes ou des valeurs d'enum supprimées dans ce
+  -- même fichier — ils ne sont pas recréés.
+  CREATE INDEX idx_shared_carts_status_v41 ON shared_carts USING btree (status, created_at DESC);
+
+  RAISE NOTICE 'Migration 125 OK — shared_cart_status réduit à open/closed/cancelled.';
 END $$;
 
 -- ============================================================
--- 3. shared_carts — domaine minimal
+-- 2. shared_carts — domaine minimal
 -- ============================================================
 
 ALTER TABLE shared_carts RENAME COLUMN beneficiary_user_id TO organizer_user_id;
+
+-- Recréation de l'index sur (organizer_user_id, status), supprimé plus
+-- haut pour permettre la conversion de type. Même clé, nouveau nom de
+-- colonne après le RENAME ci-dessus.
+CREATE INDEX idx_shared_carts_organizer ON shared_carts USING btree (organizer_user_id, status);
 
 ALTER TABLE shared_carts
   DROP COLUMN IF EXISTS beneficiary_phone_snapshot,
@@ -157,7 +136,7 @@ ALTER TABLE shared_carts
   DROP COLUMN IF EXISTS view_count;
 
 -- ============================================================
--- 4. Tables de contribution/estimation — supprimées
+-- 3. Tables de contribution/estimation — supprimées
 --    Aucune FK entrante depuis l'extérieur de ces tables (vérifié).
 -- ============================================================
 
@@ -167,5 +146,5 @@ DROP TABLE IF EXISTS cart_contributions;
 
 DO $$
 BEGIN
-  RAISE NOTICE 'Migration 124 OK — domaine liste partagée réduit au modèle minimal.';
+  RAISE NOTICE 'Migration 125 OK — domaine liste partagée réduit au modèle minimal.';
 END $$;

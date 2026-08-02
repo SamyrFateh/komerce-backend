@@ -880,6 +880,10 @@ export async function submitOrder(btn) {
       confection_type: 'aucun',
       variant_combo: i.variant_combo || null,
       requested_transport_rail: i.requested_transport_rail ?? null,
+      // Contrat API §3 : présent uniquement sur les lignes issues d'une
+      // liste partagée (adapter group-checkout-adapter.js) — undefined
+      // pour tout panier personnel, comportement inchangé.
+      shared_cart_item_id: i.shared_cart_item_id ?? undefined,
     }));
 
     let orderData = null;
@@ -1048,6 +1052,10 @@ async function _createKomerceOrderForPayPal() {
     confection_type: 'aucun',
     variant_combo: i.variant_combo || null,
     requested_transport_rail: i.requested_transport_rail ?? null,
+    // Contrat API §3 : présent uniquement sur les lignes issues d'une
+    // liste partagée (adapter group-checkout-adapter.js) — undefined
+    // pour tout panier personnel, comportement inchangé.
+    shared_cart_item_id: i.shared_cart_item_id ?? undefined,
   }));
 
   const apiResult = await apiPost('/api/orders', {

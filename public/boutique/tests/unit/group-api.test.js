@@ -3,27 +3,18 @@
 /**
  * tests/unit/group-api.test.js
  *
- * Module js/group/group-api.js (199L) — @role shared-cart-front-api,
- * @criticality high. Couche réseau exclusive du panier partagé côté
- * boutique (créateur ET participant public) : centralise TOUS les appels
- * vers routes/shared-cart.js.
- *
- * 0% de couverture réelle avant cette session : le seul point d'entrée
- * (b-group-view.test.js) le mocke intégralement (`jest.mock('../../js/
- * group/group-api.js', () => mockGroupApi)`) — jamais importé pour de
- * vrai nulle part. Aucun bug de transport (mauvais verb, mauvais body,
- * mauvaise gestion d'erreur serveur) sur ce fichier ne serait détecté par
- * la suite existante.
+ * Module js/group/group-api.js — Boutique First, domaine minimal.
  *
  * Deux familles d'endpoints, deux stratégies de mock :
- *   - Créateur (apiGet/apiPost -> window.K.request) : mockWindowK() du kit
- *     partagé, on vérifie les arguments exacts passés à request().
+ *   - Créateur (apiGet/apiPost/apiDelete -> window.K.request) : mockWindowK()
+ *     du kit partagé, on vérifie les arguments exacts passés à request().
  *   - Public (fetch direct, credentials:'include') : global.fetch mocké
- *     par test, on vérifie l'URL/verb/body ET le parsing de la réponse
- *     (cas ok, cas erreur avec message serveur, cas erreur sans JSON
- *     valide -> message générique de fallback).
+ *     par test.
  *
- * Pas de DOM, pas d'état b-store impliqué : module pur "transport".
+ * Estimations, contributions, extend-window, finalize, openSettlement :
+ * retirés avec leurs tests (Boutique First — concepts supprimés,
+ * migration 124). Ajout/retrait d'article deviennent des routes unitaires
+ * (Contrat API §5 point 4) : addItemToSharedList, removeItemFromSharedList.
  */
 
 const { mockWindowK } = require('./helpers/boutiqueTestKit');
@@ -32,17 +23,11 @@ const {
   getOwnerSharedCarts,
   getSharedCartOwner,
   getSharedCartItems,
+  addItemToSharedList,
+  removeItemFromSharedList,
   closeCart,
-  openSettlement,
-  extendPaymentWindow,
-  finalizeSharedCart,
   cancelSharedCart,
   getSharedCartPublic,
-  getEstimationAggregate,
-  upsertEstimation,
-  deleteEstimation,
-  getEstimationByPhone,
-  createContribution,
 } = require('../../js/group/group-api.js');
 
 describe('group-api — endpoints créateur (window.K.request)', () => {
@@ -52,7 +37,7 @@ describe('group-api — endpoints créateur (window.K.request)', () => {
     K = mockWindowK();
   });
 
-  test('getOwnerSharedCarts() -> GET /api/shared-carts/mine (FIX 2026-07-11 : timeoutMs transmis)', async () => {
+  test('getOwnerSharedCarts() -> GET /api/shared-carts/mine, timeoutMs transmis', async () => {
     await getOwnerSharedCarts();
     expect(K.request).toHaveBeenCalledWith(
       '/api/shared-carts/mine', 'GET', null, 2, { timeoutMs: 10_000 }
@@ -69,26 +54,28 @@ describe('group-api — endpoints créateur (window.K.request)', () => {
     expect(K.request).toHaveBeenCalledWith('/api/shared-carts/42/as-cart-items', 'GET', null, 2, {});
   });
 
+  test('addItemToSharedList(cartId, productId) -> POST .../items { product_id, quantity: 1 } par défaut', async () => {
+    await addItemToSharedList(7, 'prod-1');
+    expect(K.request).toHaveBeenCalledWith(
+      '/api/shared-carts/7/items', 'POST', { product_id: 'prod-1', quantity: 1 }, 2, {}
+    );
+  });
+
+  test('addItemToSharedList(cartId, productId, quantity) -> quantité transmise', async () => {
+    await addItemToSharedList(7, 'prod-1', 3);
+    expect(K.request).toHaveBeenCalledWith(
+      '/api/shared-carts/7/items', 'POST', { product_id: 'prod-1', quantity: 3 }, 2, {}
+    );
+  });
+
+  test('removeItemFromSharedList(cartId, itemId) -> DELETE /api/shared-carts/:id/items/:itemId', async () => {
+    await removeItemFromSharedList(7, 'item-9');
+    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/7/items/item-9', 'DELETE', null, 0, {});
+  });
+
   test('closeCart(cartId) -> POST /api/shared-carts/:id/close avec body vide', async () => {
     await closeCart(7);
     expect(K.request).toHaveBeenCalledWith('/api/shared-carts/7/close', 'POST', {}, 2, {});
-  });
-
-  test('openSettlement() est un alias strict de closeCart()', async () => {
-    await openSettlement(7);
-    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/7/close', 'POST', {}, 2, {});
-  });
-
-  test('extendPaymentWindow(cartId) -> POST .../extend-window', async () => {
-    await extendPaymentWindow(7);
-    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/7/extend-window', 'POST', {}, 2, {});
-  });
-
-  test('finalizeSharedCart(cartId, payload) -> POST .../finalize avec le payload', async () => {
-    await finalizeSharedCart(7, { accept_partial: true });
-    expect(K.request).toHaveBeenCalledWith(
-      '/api/shared-carts/7/finalize', 'POST', { accept_partial: true }, 2, {}
-    );
   });
 
   test('cancelSharedCart(cartId, payload) -> POST .../cancel avec le payload', async () => {
@@ -104,162 +91,24 @@ describe('group-api — endpoints créateur (window.K.request)', () => {
   });
 });
 
-describe('group-api — endpoints publics (fetch direct)', () => {
+describe('group-api — endpoint public (fetch direct)', () => {
   afterEach(() => { delete global.fetch; });
 
-  test('getSharedCartPublic(token) : ok -> retourne le JSON', async () => {
+  test('getSharedCartPublic(token) : ok -> retourne le JSON, is_creator inclus', async () => {
     global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve({ cart: { id: 1 }, items: [] }) })
+      Promise.resolve({ ok: true, json: () => Promise.resolve({ cart: { id: 1 }, items: [], is_creator: false }) })
     );
     const result = await getSharedCartPublic('tok-1');
     expect(global.fetch).toHaveBeenCalledWith(
       '/api/shared-carts/public/tok-1',
       expect.objectContaining({ credentials: 'include' })
     );
-    expect(result).toEqual({ cart: { id: 1 }, items: [] });
+    expect(result).toEqual({ cart: { id: 1 }, items: [], is_creator: false });
   });
 
   test('getSharedCartPublic(token) : réponse non-ok -> retourne null (jamais throw)', async () => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
     const result = await getSharedCartPublic('tok-bad');
     expect(result).toBeNull();
-  });
-
-  test('getEstimationAggregate(token) : ok -> coerce les champs en Number', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve({ total_estimated_kmf: '1500', count: '3' }) })
-    );
-    const result = await getEstimationAggregate('tok-1');
-    expect(result).toEqual({ total_estimated_kmf: 1500, count: 3 });
-  });
-
-  test('getEstimationAggregate(token) : ok mais champs absents -> 0 par défaut', async () => {
-    global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({}) }));
-    const result = await getEstimationAggregate('tok-1');
-    expect(result).toEqual({ total_estimated_kmf: 0, count: 0 });
-  });
-
-  test('getEstimationAggregate(token) : non-ok -> valeurs neutres sans throw', async () => {
-    global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
-    const result = await getEstimationAggregate('tok-1');
-    expect(result).toEqual({ total_estimated_kmf: 0, count: 0 });
-  });
-
-  test('upsertEstimation(token, payload) : succès -> POST JSON + retourne le body', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 5 }) })
-    );
-    const payload = { amount_kmf: 1000, participant_phone: '+269123' };
-    const result = await upsertEstimation('tok-1', payload);
-    expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/public/tok-1/estimations', expect.objectContaining({
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }));
-    expect(result).toEqual({ id: 5 });
-  });
-
-  test('upsertEstimation() : échec avec message serveur -> throw ce message', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: false, json: () => Promise.resolve({ message: 'Montant invalide' }) })
-    );
-    await expect(upsertEstimation('tok-1', {})).rejects.toThrow('Montant invalide');
-  });
-
-  test('upsertEstimation() : échec avec champ error (pas message) -> throw error', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: false, json: () => Promise.resolve({ error: 'Token expiré' }) })
-    );
-    await expect(upsertEstimation('tok-1', {})).rejects.toThrow('Token expiré');
-  });
-
-  test('upsertEstimation() : échec sans JSON parsable -> message générique de fallback', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: false, json: () => Promise.reject(new Error('not json')) })
-    );
-    await expect(upsertEstimation('tok-1', {})).rejects.toThrow('Erreur lors de l\'enregistrement.');
-  });
-
-  test('deleteEstimation(token, id) sans phone -> body {}', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve({ deleted: true }) })
-    );
-    await deleteEstimation('tok-1', 99);
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/shared-carts/public/tok-1/estimations/99',
-      expect.objectContaining({ method: 'DELETE', body: JSON.stringify({}) })
-    );
-  });
-
-  test('deleteEstimation(token, id, phone) avec phone -> body { participant_phone }', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve({ deleted: true }) })
-    );
-    await deleteEstimation('tok-1', 99, '+269123');
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/shared-carts/public/tok-1/estimations/99',
-      expect.objectContaining({ body: JSON.stringify({ participant_phone: '+269123' }) })
-    );
-  });
-
-  test('deleteEstimation() : échec -> throw le message serveur, sinon message générique', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: false, json: () => Promise.resolve({}) })
-    );
-    await expect(deleteEstimation('tok-1', 99)).rejects.toThrow('Retrait impossible.');
-  });
-
-  test('getEstimationByPhone() : ok -> retourne estimation, absent -> null', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve({ estimation: { amount_kmf: 500 } }) })
-    );
-    const result = await getEstimationByPhone('tok-1', '+269123');
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/shared-carts/public/tok-1/estimations/by-phone?phone=%2B269123',
-      expect.objectContaining({ credentials: 'include' })
-    );
-    expect(result).toEqual({ amount_kmf: 500 });
-  });
-
-  test('getEstimationByPhone() : réponse non-ok -> null (pas de throw)', async () => {
-    global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
-    const result = await getEstimationByPhone('tok-1', '+269123');
-    expect(result).toBeNull();
-  });
-
-  test('getEstimationByPhone() : fetch qui throw -> catch silencieux -> null', async () => {
-    global.fetch = jest.fn(() => Promise.reject(new Error('network down')));
-    const result = await getEstimationByPhone('tok-1', '+269123');
-    expect(result).toBeNull();
-  });
-
-  test('createContribution(token, payload) : succès -> retourne checkout_url', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve({ checkout_url: 'https://stripe/x' }) })
-    );
-    const payload = { amount_kmf: 2000, contributor_name: 'Ali', contributor_email: 'a@b.com', contributor_phone: '+269' };
-    const result = await createContribution('tok-1', payload);
-    expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/public/tok-1/contributions', expect.objectContaining({
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }));
-    expect(result).toEqual({ checkout_url: 'https://stripe/x' });
-  });
-
-  test('createContribution() : échec avec message serveur -> throw ce message', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: false, json: () => Promise.resolve({ message: 'Carte refusée' }) })
-    );
-    await expect(createContribution('tok-1', {})).rejects.toThrow('Carte refusée');
-  });
-
-  test('createContribution() : échec sans JSON parsable -> message générique de fallback', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: false, json: () => Promise.reject(new Error('not json')) })
-    );
-    await expect(createContribution('tok-1', {})).rejects.toThrow('Erreur lors de la contribution.');
   });
 });

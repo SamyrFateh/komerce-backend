@@ -77,7 +77,7 @@ module.exports = {
       'migrations/085_shared_cart_cash_contributions.sql',
       'migrations/099_drop_zombie_shared_cart_commitments.sql',
       'migrations/123_shared_cart_item_claim_bridge.sql',    // pont order_items <-> shared_cart_items
-      'migrations/124_shared_cart_minimal_domain.sql',       // domaine minimal, colonnes financières retirées
+      'migrations/125_shared_cart_minimal_domain.sql',       // domaine minimal, colonnes financières retirées
     ],
     tests: [
       'tests/unit/baskets.test.js',
@@ -103,13 +103,12 @@ module.exports = {
       // mis à jour dans un lot frontend séparé avant merge complet.
       'js/b-group-cart-flow.js',
       'js/b-share-cart.js',
-      'js/b-group-view.js',
       'js/b-group-banner.js',
-      'js/b-friendly-group-redirect.js',
       'js/b-share-phone-guard.js',
       'js/group/group-api.js',
       'js/group/group-helpers.js',
-      'js/group/group-render-creator.js',
+      'js/group/group-checkout-adapter.js',
+      'js/group/group-render-list.js',
       'js/group/group-state.js',
       'css/group-cart-flow.css',
       'css/share-cart.css',

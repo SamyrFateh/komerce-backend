@@ -3,11 +3,16 @@
 /**
  * tests/unit/group-state.test.js
  *
- * Module js/group/group-state.js (116L) — sélection/tri des paniers créateur
- * (isVisibleOwnerCart, sortOwnerCarts, pickOwnerCart), synchronisation du
- * store global + sessionStorage (applyOwnerCartToState), et synchro badges
- * DOM (refreshGroupBadge). Jamais testé en direct avant cette session,
- * seulement exercé en chemin heureux via group-render-creator.test.js.
+ * Module js/group/group-state.js — sélection/tri des paniers créateur
+ * (isVisibleOwnerCart, sortOwnerCarts, pickOwnerCart) et synchro badges
+ * DOM (refreshGroupBadge).
+ *
+ * applyOwnerCartToState (V4.1) retirée avec ses tests : elle projetait
+ * des champs qui n'existent plus sur la réponse publique (total_kmf_snapshot,
+ * contributed_kmf, remaining_kmf — migration 124, domaine minimal
+ * Boutique First). La sélection d'une liste dans le switcher se résout
+ * désormais par un appel à getSharedCartPublic(token) — même chemin, même
+ * donnée, pour tout le monde (storyboard §3).
  *
  * state vient du vrai b-store.js (pattern déjà en place ailleurs). Aucun
  * mock de group-helpers.js (r() est une fonction pure, aucune raison de
@@ -19,19 +24,12 @@ const {
   isVisibleOwnerCart,
   sortOwnerCarts,
   pickOwnerCart,
-  applyOwnerCartToState,
   refreshGroupBadge,
 } = require('../../js/group/group-state.js');
 
 function resetShareState() {
   state.shareToken = null;
   state.shareId = null;
-  state.shareExpiry = null;
-  state.cartName = null;
-  state.shareStatus = null;
-  state.shareTotalKmf = null;
-  state.shareContributedKmf = null;
-  state.shareRemainingKmf = null;
   state.shareUrl = null;
 }
 
@@ -46,14 +44,11 @@ describe('isVisibleOwnerCart', () => {
     expect(isVisibleOwnerCart(null)).toBe(false);
     expect(isVisibleOwnerCart(undefined)).toBe(false);
   });
-  it.each(['cancelled', 'expired', 'finalized', 'converted_to_order'])(
-    'false pour le statut exclu "%s"',
-    (status) => {
-      expect(isVisibleOwnerCart({ status })).toBe(false);
-    }
-  );
-  it.each(['open', 'closed', 'awaiting_choice', 'ordered'])(
-    'true pour le statut visible "%s"',
+  it('false pour le statut "cancelled"', () => {
+    expect(isVisibleOwnerCart({ status: 'cancelled' })).toBe(false);
+  });
+  it.each(['open', 'closed'])(
+    'true pour le statut visible "%s" (une liste fermée reste consultable en lecture seule, storyboard §5)',
     (status) => {
       expect(isVisibleOwnerCart({ status })).toBe(true);
     }
@@ -127,80 +122,6 @@ describe('pickOwnerCart', () => {
   it('retourne null si liste vide ou absente', () => {
     expect(pickOwnerCart([])).toBeNull();
     expect(pickOwnerCart()).toBeNull();
-  });
-});
-
-describe('applyOwnerCartToState', () => {
-  it('ne fait rien si cart est null/undefined', () => {
-    applyOwnerCartToState(null);
-    expect(state.shareToken).toBeNull();
-    expect(window.sessionStorage.getItem('kmrc_share')).toBeNull();
-  });
-
-  it('synchronise tous les champs share_* du state', () => {
-    applyOwnerCartToState({
-      token: 'tok-1',
-      id: 'cart-1',
-      expires_at: '2026-08-01T00:00:00Z',
-      title: 'Mon panier',
-      status: 'open',
-      total_kmf_snapshot: 5000,
-      contributed_kmf: 1500,
-      remaining_kmf: 3500,
-      share_url: 'https://komerce.km/share/tok-1',
-    });
-    expect(state.shareToken).toBe('tok-1');
-    expect(state.shareId).toBe('cart-1');
-    expect(state.shareExpiry).toBe('2026-08-01T00:00:00Z');
-    expect(state.cartName).toBe('Mon panier');
-    expect(state.shareStatus).toBe('open');
-    expect(state.shareTotalKmf).toBe(5000);
-    expect(state.shareContributedKmf).toBe(1500);
-    expect(state.shareRemainingKmf).toBe(3500);
-    expect(state.shareUrl).toBe('https://komerce.km/share/tok-1');
-  });
-
-  it('title manquant → "Panier groupe" par défaut', () => {
-    applyOwnerCartToState({ token: 'tok-2' });
-    expect(state.cartName).toBe('Panier groupe');
-  });
-
-  it('share_url absent mais token présent → construit une URL depuis window.location.origin', () => {
-    applyOwnerCartToState({ token: 'tok-3' });
-    expect(state.shareUrl).toBe(`${window.location.origin}/boutique/?p=tok-3`);
-  });
-
-  it('share_url absent et token absent → shareUrl null', () => {
-    applyOwnerCartToState({ id: 'cart-x' });
-    expect(state.shareUrl).toBeNull();
-  });
-
-  it('montants passés par r() — tolère string/valeurs non numériques', () => {
-    applyOwnerCartToState({ token: 't', total_kmf_snapshot: '2000.6', contributed_kmf: null, remaining_kmf: 'abc' });
-    expect(state.shareTotalKmf).toBe(2001);
-    expect(state.shareContributedKmf).toBe(0);
-    expect(state.shareRemainingKmf).toBe(0);
-  });
-
-  it('persiste un snapshot cohérent dans sessionStorage', () => {
-    applyOwnerCartToState({
-      token: 'tok-4', id: 'cart-4', status: 'closed',
-      total_kmf_snapshot: 1000, contributed_kmf: 400, remaining_kmf: 600,
-    });
-    const stored = JSON.parse(window.sessionStorage.getItem('kmrc_share'));
-    expect(stored).toMatchObject({
-      token: 'tok-4', id: 'cart-4', status: 'closed',
-      total_kmf: 1000, contributed_kmf: 400, remaining_kmf: 600,
-    });
-  });
-
-  it('ne throw pas si sessionStorage indisponible/quota dépassé', () => {
-    const original = window.sessionStorage.setItem;
-    window.sessionStorage.setItem = () => { throw new Error('QuotaExceededError'); };
-    expect(() => applyOwnerCartToState({ token: 'tok-5' })).not.toThrow();
-    // le state a quand même été mis à jour malgré l'échec de persistance
-    expect(state.shareToken).toBe('tok-5');
-    window.sessionStorage.setItem = original;
   });
 });
 

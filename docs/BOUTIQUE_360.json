@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-08-01T21:27:26.153Z",
+  "generatedAt": "2026-08-02T09:54:37.948Z",
   "summary": {
-    "modules": 77,
-    "withHeader": 77,
+    "modules": 76,
+    "withHeader": 76,
     "events": 22,
     "declaredActive": 17,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 53,
+    "endpoints": 48,
     "orphanEmit": 1,
     "orphanListen": 1,
     "undeclared": 5,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 31,
-    "dynamicEndpoints": 24,
+    "dynamicEndpoints": 19,
     "ownedEvents": 3,
     "ownershipRed": 0,
     "ownershipOrange": 0
@@ -75,7 +75,7 @@
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-desktop-sidebar.js",
-        "public/boutique/js/b-group-view.js",
+        "public/boutique/js/group/group-render-list.js",
         "public/boutique/js/b-home-premium-v1.js",
         "public/boutique/js/b-mini-cart.js",
         "public/boutique/js/b-modal-core.js",
@@ -121,7 +121,7 @@
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-favs.js",
-        "public/boutique/js/b-group-view.js",
+        "public/boutique/js/group/group-render-list.js",
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-mini-cart.js",
         "public/boutique/js/b-modal-core.js",
@@ -634,23 +634,6 @@
       "emitCalls": []
     },
     {
-      "file": "public/boutique/js/b-friendly-group-redirect.js",
-      "id": "b-friendly-group-redirect",
-      "hasHeader": true,
-      "role": "boutique-b-friendly-group-redirect",
-      "domain": "shared-cart",
-      "layer": "ui-component",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [],
-      "imports": [],
-      "bodyClasses": [],
-      "emitCalls": []
-    },
-    {
       "file": "public/boutique/js/b-greeting.js",
       "id": "b-greeting",
       "hasHeader": true,
@@ -684,7 +667,7 @@
       ],
       "usedBy": [
         "b-share-cart.js",
-        "b-group-view.js",
+        "group/group-render-list.js",
         "boutique.js"
       ],
       "emits": [],
@@ -711,57 +694,6 @@
       "imports": [],
       "bodyClasses": [],
       "emitCalls": []
-    },
-    {
-      "file": "public/boutique/js/b-group-view.js",
-      "id": "b-group-view",
-      "hasHeader": true,
-      "role": "shared-cart-boutique-view",
-      "domain": "shared-cart",
-      "layer": "ui-component",
-      "criticality": "critical",
-      "doctrine": [
-        "paiement_seul_acte_engageant",
-        "estimations_indicatives",
-        "participant_peut_verifier",
-        "createur_decide_gap"
-      ],
-      "depends": [
-        "group/group-api.js",
-        "group/group-state.js",
-        "group/group-helpers.js",
-        "group/group-render-creator.js",
-        "b-identity.js",
-        "b-group-banner.js"
-      ],
-      "usedBy": [
-        "b-nav.js",
-        "b-share-cart.js",
-        "public_shared_cart_links"
-      ],
-      "emits": [
-        "side-cart:render"
-      ],
-      "listens": [],
-      "imports": [
-        "b-store",
-        "b-bus",
-        "b-cart-core",
-        "b-utils",
-        "b-group-banner",
-        "b-identity",
-        "group-api",
-        "group-state",
-        "group-helpers",
-        "group-render-creator"
-      ],
-      "bodyClasses": [],
-      "emitCalls": [
-        {
-          "name": "side-cart:render",
-          "hasArg": false
-        }
-      ]
     },
     {
       "file": "public/boutique/js/b-home-premium-v1.js",
@@ -807,7 +739,7 @@
       "usedBy": [
         "b-checkout.js",
         "b-share-cart.js",
-        "b-group-view.js"
+        "group/group-render-list.js"
       ],
       "emits": [],
       "listens": [],
@@ -1440,7 +1372,7 @@
         "b-favs.js",
         "b-tracking.js",
         "b-komerce.js",
-        "b-group-view.js",
+        "group/group-render-list.js",
         "b-pager.js",
         "b-scroll-owner.js"
       ],
@@ -1467,7 +1399,7 @@
         "b-favs",
         "b-tracking",
         "b-komerce",
-        "b-group-view",
+        "group-render-list",
         "b-pager",
         "b-scroll-owner"
       ],
@@ -1704,7 +1636,7 @@
         "b-store.js",
         "b-cart-core.js",
         "b-cart.js",
-        "b-group-view.js",
+        "group/group-render-list.js",
         "b-group-banner.js",
         "b-phone.js",
         "b-checkout.js",
@@ -1720,7 +1652,7 @@
         "b-store",
         "b-cart-core",
         "b-cart",
-        "b-group-view",
+        "group-state",
         "b-group-banner",
         "b-phone",
         "b-checkout",
@@ -2049,21 +1981,50 @@
       "layer": "api-client",
       "criticality": "high",
       "doctrine": [
-        "backend_source_verite",
-        "paiement_seul_acte_engageant",
-        "participant_peut_verifier"
+        "boutique_first",
+        "domaine_minimal",
+        "un_appel_une_action"
       ],
       "depends": [
         "routes/shared-cart.js",
         "fetch"
       ],
       "usedBy": [
-        "b-group-view.js"
+        "b-group-view.js",
+        "group/group-render-list.js"
       ],
       "emits": [],
       "listens": [],
       "imports": [
         "b-utils"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/group/group-checkout-adapter.js",
+      "id": "group-checkout-adapter",
+      "hasHeader": true,
+      "role": "shared-list-checkout-adapter",
+      "domain": "shared-cart",
+      "layer": "adapter",
+      "criticality": "critical",
+      "doctrine": [
+        "checkout_ne_connait_jamais_la_liste",
+        "panier_personnel_source_de_verite"
+      ],
+      "depends": [
+        "../b-store.js",
+        "../b-checkout.js"
+      ],
+      "usedBy": [
+        "group/group-render-list.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-checkout"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2075,20 +2036,10 @@
       "role": "shared-cart-front-helpers",
       "domain": "shared-cart",
       "layer": "util-ui",
-      "criticality": "medium",
-      "doctrine": [
-        "estimations_indicatives",
-        "montant_lisible",
-        "lien_personnalise_lisible"
-      ],
-      "depends": [
-        "b-utils.js"
-      ],
-      "usedBy": [
-        "b-group-view.js",
-        "group-render-creator.js",
-        "b-nav.js"
-      ],
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
       "emits": [],
       "listens": [],
       "imports": [],
@@ -2096,32 +2047,38 @@
       "emitCalls": []
     },
     {
-      "file": "public/boutique/js/group/group-render-creator.js",
-      "id": "group-render-creator",
+      "file": "public/boutique/js/group/group-render-list.js",
+      "id": "group-render-list",
       "hasHeader": true,
-      "role": "shared-cart-creator-renderer",
+      "role": "shared-list-view",
       "domain": "shared-cart",
-      "layer": "ui-renderer",
+      "layer": "ui-component",
       "criticality": "high",
       "doctrine": [
-        "createur_decide_gap",
-        "estimations_indicatives",
-        "participant_lecture_seule"
+        "un_seul_composant",
+        "capacites_pas_ecrans",
+        "vocabulaire_achat",
+        "boutique_first"
       ],
       "depends": [
-        "group/group-helpers.js",
+        "../b-store.js",
+        "../b-utils.js",
+        "group/group-api.js",
         "group/group-state.js",
-        "b-utils.js"
+        "group/group-checkout-adapter.js"
       ],
       "usedBy": [
-        "b-group-view.js"
+        "b-nav.js",
+        "b-share-cart.js"
       ],
       "emits": [],
       "listens": [],
       "imports": [
+        "b-store",
         "b-utils",
+        "group-api",
         "group-state",
-        "group-helpers"
+        "group-checkout-adapter"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2140,8 +2097,7 @@
       "emits": [],
       "listens": [],
       "imports": [
-        "b-store",
-        "group-helpers"
+        "b-store"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2519,8 +2475,7 @@
     "side-cart:render": {
       "emitters": [
         "b-cart",
-        "b-cart-core",
-        "b-group-view"
+        "b-cart-core"
       ],
       "listeners": [
         "b-cart"
@@ -3048,22 +3003,22 @@
     },
     {
       "module": "group-api",
+      "route": "/api/shared-carts/{id}/items",
+      "raw": "/api/shared-carts/${cartId}/items",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/{id}/items/{id}",
+      "raw": "/api/shared-carts/${cartId}/items/${itemId}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
       "route": "/api/shared-carts/{id}/close",
       "raw": "/api/shared-carts/${cartId}/close",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/{id}/extend-window",
-      "raw": "/api/shared-carts/${cartId}/extend-window",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/{id}/finalize",
-      "raw": "/api/shared-carts/${cartId}/finalize",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
     },
@@ -3078,41 +3033,6 @@
       "module": "group-api",
       "route": "/api/shared-carts/public/{id}",
       "raw": "/api/shared-carts/public/${token}",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/public/{id}/estimations",
-      "raw": "/api/shared-carts/public/${token}/estimations",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/public/{id}/estimations",
-      "raw": "/api/shared-carts/public/${token}/estimations",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/public/{id}/estimations/{id}",
-      "raw": "/api/shared-carts/public/${token}/estimations/${estimationId}",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/public/{id}/estimations/by-phone",
-      "raw": "/api/shared-carts/public/${token}/estimations/by-phone?phone=${encodeURIComponent(phone)}",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/public/{id}/contributions",
-      "raw": "/api/shared-carts/public/${token}/contributions",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
     },
@@ -3471,17 +3391,12 @@
       "/api/products/{id}/detail",
       "/api/purchasing/suppliers/{id}",
       "/api/shared-carts/public/{id}",
-      "/api/shared-carts/public/{id}/contributions",
-      "/api/shared-carts/public/{id}/estimations",
-      "/api/shared-carts/public/{id}/estimations/by-phone",
-      "/api/shared-carts/public/{id}/estimations/{id}",
       "/api/shared-carts/{id}",
       "/api/shared-carts/{id}/as-cart-items",
       "/api/shared-carts/{id}/cancel",
       "/api/shared-carts/{id}/close",
-      "/api/shared-carts/{id}/extend-window",
-      "/api/shared-carts/{id}/finalize",
       "/api/shared-carts/{id}/items",
+      "/api/shared-carts/{id}/items/{id}",
       "/api/shares"
     ],
     "ownershipRed": [],
@@ -3649,17 +3564,12 @@
     "/api/shared-carts/from-cart-items",
     "/api/shared-carts/mine",
     "/api/shared-carts/public/{id}",
-    "/api/shared-carts/public/{id}/contributions",
-    "/api/shared-carts/public/{id}/estimations",
-    "/api/shared-carts/public/{id}/estimations/by-phone",
-    "/api/shared-carts/public/{id}/estimations/{id}",
     "/api/shared-carts/{id}",
     "/api/shared-carts/{id}/as-cart-items",
     "/api/shared-carts/{id}/cancel",
     "/api/shared-carts/{id}/close",
-    "/api/shared-carts/{id}/extend-window",
-    "/api/shared-carts/{id}/finalize",
     "/api/shared-carts/{id}/items",
+    "/api/shared-carts/{id}/items/{id}",
     "/api/shares",
     "/api/wallet",
     "/api/wallet/transactions"

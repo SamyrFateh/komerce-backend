@@ -25,19 +25,8 @@ export function setupCartProductOpenStyle() {
   // (bundle dist). Le chargement dynamique était redondant et utilisait un
   // cache-buster ?v=1 incohérent avec le ?v=7 du bundle.
 
-  // Compatibilité lien public court /g/:token → /event/w/:token.
-  import('./b-friendly-group-redirect.js')
-    .then(function(mod) {
-      if (mod && typeof mod.setupFriendlyGroupRedirect === 'function') {
-        mod.setupFriendlyGroupRedirect();
-      }
-    })
-    .catch(function(err) {
-      console.warn('[friendly-group-link] chargement impossible', err);
-    });
-
   // NOTE: b-cart-groups-tab.js retiré — setupCartGroupsTab() est vide (legacy désactivé).
-  // Le flux Groupe officiel vit dans b-group-view.js + group/group-api.js.
+  // Le flux Groupe officiel vit dans group/group-render-list.js + group/group-api.js.
 
   // Desktop : la petite dame doit toujours ouvrir un vrai panier,
   // même dans Favoris/Suivi où le side-cart peut être invisible.

@@ -28,13 +28,12 @@ module.exports = {
   files: {
     js: [
       '../js/b-group-banner.js',
-      '../js/b-group-view.js',
       '../js/b-share-cart.js',
       '../js/group/group-api.js',
+      '../js/group/group-checkout-adapter.js',
       '../js/group/group-helpers.js',
-      '../js/group/group-render-creator.js',
+      '../js/group/group-render-list.js',
       '../js/group/group-state.js',
-      '../js/b-friendly-group-redirect.js',
       '../js/b-share-phone-guard.js',
     ],
     boutique: [
@@ -47,8 +46,8 @@ module.exports = {
       '../css/shared-followup.css',
     ],
     tests: [
-      '../tests/unit/group-render-creator.test.js',
-      '../tests/unit/b-friendly-group-redirect.test.js',
+      '../tests/unit/group-render-list.test.js',
+      '../tests/unit/group-checkout-adapter.test.js',
       '../tests/unit/b-share-phone-guard.test.js',
     ],
   },
@@ -58,8 +57,9 @@ module.exports = {
     exposes: [],
     internalApi: [
       'b-share-cart.js / partage de panier',
-      'b-group-view.js / vue groupe',
-      'group-api.js / group-state.js / group-helpers.js / group-render-creator.js',
+      'group-render-list.js / écran unique de la liste partageable',
+      'group-checkout-adapter.js / pont sélection liste -> checkout canonique',
+      'group-api.js / group-state.js / group-helpers.js',
       'b-group-cart-flow.js / orchestration entrée groupe',
     ],
     consumes: [

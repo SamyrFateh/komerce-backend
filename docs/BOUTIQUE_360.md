@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-01T21:27:26.153Z.
+> Régénéré le 2026-08-02T09:54:37.948Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **77** (77 headés) · Événements bus : **22** · Bundles CSS : **3**
-- Endpoints appelés : **53** — 🔴 0 hors contrat · ⚪ 31 non prouvés · 🔵 24 dynamiques
+- Modules JS : **76** (76 headés) · Événements bus : **22** · Bundles CSS : **3**
+- Endpoints appelés : **48** — 🔴 0 hors contrat · ⚪ 31 non prouvés · 🔵 19 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 5 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -53,17 +53,12 @@
 | `/api/shared-carts/from-cart-items` | b-share-cart | ⚪ non prouvé |
 | `/api/shared-carts/mine` | b-share-cart, group-api | ⚪ non prouvé |
 | `/api/shared-carts/public/{id}` | b-group-banner, group-api | 🔵 dynamique |
-| `/api/shared-carts/public/{id}/contributions` | group-api | 🔵 dynamique |
-| `/api/shared-carts/public/{id}/estimations` | group-api | 🔵 dynamique |
-| `/api/shared-carts/public/{id}/estimations/by-phone` | group-api | 🔵 dynamique |
-| `/api/shared-carts/public/{id}/estimations/{id}` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/as-cart-items` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/cancel` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/close` | group-api | 🔵 dynamique |
-| `/api/shared-carts/{id}/extend-window` | group-api | 🔵 dynamique |
-| `/api/shared-carts/{id}/finalize` | group-api | 🔵 dynamique |
-| `/api/shared-carts/{id}/items` | b-cart | 🔵 dynamique |
+| `/api/shared-carts/{id}/items` | b-cart, group-api | 🔵 dynamique |
+| `/api/shared-carts/{id}/items/{id}` | group-api | 🔵 dynamique |
 | `/api/shares` | b-cart, b-favs | ⚪ non prouvé |
 | `/api/wallet` | b-checkout, b-wallet | ⚪ non prouvé |
 | `/api/wallet/transactions` | b-wallet | ⚪ non prouvé |
@@ -91,7 +86,7 @@
 | `nav:goto-komerce-wallet` | b-checkout | b-nav | 🟢 sain |
 | `nav:goto-track` | b-checkout | b-nav | 🟢 sain |
 | `product:open-from-cart` | b-product-open-contract | b-product-open-contract | 🟢 sain |
-| `side-cart:render` | b-cart, b-cart-core, b-group-view | b-cart | 🟢 sain |
+| `side-cart:render` | b-cart, b-cart-core | b-cart | 🟢 sain |
 | `sidebar:built` | b-desktop-sidebar | — | 🔴 émission orpheline |
 | `view:changed` | b-nav | b-catalog-desktop-enhancers, b-home-premium-v1 | 🟡 non déclaré |
 
@@ -100,7 +95,6 @@
 ```mermaid
 graph LR
   b_cart_core["b-cart-core"] -->|side-cart:render| b_cart["b-cart"]
-  b_group_view["b-group-view"] -->|side-cart:render| b_cart["b-cart"]
   b_cart_core["b-cart-core"] -->|cart:update| b_cart["b-cart"]
   b_cart_core["b-cart-core"] -->|cart:update| b_cart_pill["b-cart-pill"]
   b_cart_core["b-cart-core"] -->|cart:update| b_mini_cart["b-mini-cart"]

@@ -14,8 +14,10 @@ const mockRequireIdentity = jest.fn();
 
 jest.mock('../../js/b-cart-core.js', () => ({ showToast: mockShowToast }));
 jest.mock('../../js/b-cart.js', () => ({ clearCart: mockClearCart }));
-jest.mock('../../js/b-group-view.js', () => ({
+jest.mock('../../js/group/group-state.js', () => ({
   refreshGroupBadge: mockRefreshGroupBadge,
+}));
+jest.mock('../../js/group/group-render-list.js', () => ({
   renderGroupView: mockRenderGroupView,
 }));
 jest.mock('../../js/b-nav.js', () => ({ switchView: mockSwitchView }));

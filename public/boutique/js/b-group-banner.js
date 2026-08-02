@@ -7,7 +7,7 @@
  * @inputs        shared_cart_state, expiry, contribution_state
  * @outputs       shared_cart_state_refresh
  * @depends       b-store.js
- * @used-by       b-share-cart.js, b-group-view.js, boutique.js
+ * @used-by       b-share-cart.js, group/group-render-list.js, boutique.js
  * @doctrine      cockpit_groupe_source_unique, panier_ouvert_ferme
  * @impact-areas  shared-cart, participant-flow, creator-flow, navigation
  * @version       2026-07

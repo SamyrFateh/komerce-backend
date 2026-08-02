@@ -19,7 +19,7 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
   });
 
   it('getSharedCartForPublic expose shared_cart_item_id par article, aucun total monétaire, aucune identité créateur brute', async () => {
-    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: 'Merci', status: 'open', delivery_relay_id: 'r1', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: 'Merci', status: 'open', delivery_relay_id: 'r1', created_at: '2026-01-01', organizer_user_id: 'user-organizer', organizer_full_name: 'Aïcha Said' };
     const items = [
       { id: 'sci-1', name: 'Riz', image: null, quantity: 2, unit_price_kmf: 1000, line_total_kmf: 2000, claimed: true },
       { id: 'sci-2', name: 'Sucre', image: null, quantity: 1, unit_price_kmf: 500, line_total_kmf: 500, claimed: false },
@@ -32,6 +32,8 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     // Boutique First : aucun nom/téléphone créateur exposé publiquement.
     expect(result.cart.organizer_user_id).toBeUndefined();
     expect(result.cart.beneficiary_name_snapshot).toBeUndefined();
+    // Storyboard §8 : seul le prénom est dérivé, jamais le nom complet.
+    expect(result.cart.creator_first_name).toBe('Aïcha');
     // Contrat API §1 : total_kmf retiré, aucun usage identifié dans le contrat UX.
     expect(result.total_kmf).toBeUndefined();
     expect(result.items_count).toBe(2);
@@ -44,7 +46,16 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     expect(result.is_creator).toBe(false);
   });
 
-  it('getSharedCartForPublic is_creator=true quand viewerUserId correspond a organizer_user_id, sans jamais exposer ce dernier (Contrat API section 5 point 2)', async () => {
+  it('getSharedCartForPublic creator_first_name est null si le créateur n\'a pas de nom exploitable', async () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer', organizer_full_name: null };
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: [] });
+
+    const result = await getSharedCartForPublic('tok-1');
+
+    expect(result.cart.creator_first_name).toBeNull();
+  });
+
+  it('getSharedCartPublic is_creator=true quand viewerUserId correspond a organizer_user_id, sans jamais exposer ce dernier (Contrat API section 5 point 2)', async () => {
     const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
     db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: [] });
 
@@ -52,15 +63,19 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
 
     expect(result.is_creator).toBe(true);
     expect(result.cart.organizer_user_id).toBeUndefined();
+    // cart.id interne exposé au créateur : nécessaire pour appeler les
+    // endpoints unitaires (POST/DELETE .../items, POST .../close).
+    expect(result.cart.id).toBe('cart-1');
   });
 
-  it('getSharedCartForPublic is_creator=false quand viewerUserId ne correspond pas', async () => {
+  it('getSharedCartPublic is_creator=false quand viewerUserId ne correspond pas, cart.id jamais exposé', async () => {
     const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
     db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: [] });
 
     const result = await getSharedCartForPublic('tok-1', 'user-autre-visiteur');
 
     expect(result.is_creator).toBe(false);
+    expect(result.cart.id).toBeUndefined();
   });
 
   it('getSharedCartForPublic n\'expose plus la catégorie par article (aucun usage identifié dans le contrat UX)', async () => {

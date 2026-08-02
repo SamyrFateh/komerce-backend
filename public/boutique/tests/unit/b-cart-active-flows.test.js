@@ -56,7 +56,7 @@ jest.mock('../../js/shop-schema.js', () => ({
 }));
 
 jest.mock('../../js/b-nav.js', () => ({ switchView: mockSwitchView }));
-jest.mock('../../js/b-group-view.js', () => ({ renderGroupView: mockRenderGroupView }));
+jest.mock('../../js/group/group-render-list.js', () => ({ renderGroupView: mockRenderGroupView }));
 
 document.body.innerHTML = '<input id="k-search-input">';
 Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });

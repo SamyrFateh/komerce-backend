@@ -57,7 +57,7 @@ jest.mock('../../js/b-catalog.js', () => ({
 jest.mock('../../js/b-favs.js', () => ({ renderFavView: jest.fn() }));
 jest.mock('../../js/b-tracking.js', () => ({ renderTrackView: jest.fn() }));
 jest.mock('../../js/b-komerce.js', () => ({ openMonKomerce: jest.fn() }));
-jest.mock('../../js/b-group-view.js', () => ({
+jest.mock('../../js/group/group-render-list.js', () => ({
   renderGroupView: jest.fn(),
   detectParticipantToken: jest.fn(),
   stopPolling: jest.fn(),
@@ -74,7 +74,7 @@ const { renderGrid } = require('../../js/b-catalog.js');
 const { renderFavView } = require('../../js/b-favs.js');
 const { renderTrackView } = require('../../js/b-tracking.js');
 const { openMonKomerce } = require('../../js/b-komerce.js');
-const { renderGroupView, detectParticipantToken, stopPolling } = require('../../js/b-group-view.js');
+const { renderGroupView, detectParticipantToken, stopPolling } = require('../../js/group/group-render-list.js');
 const { destroyMobilePager } = require('../../js/b-pager.js');
 const { scrollPageToTop } = require('../../js/b-scroll-owner.js');
 

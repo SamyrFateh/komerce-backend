@@ -4,41 +4,46 @@
  * @domain        shared-cart
  * @layer         api-client
  * @criticality   high
- * @inputs        share_token, contribution_payload, creator_action
- * @outputs       shared_cart_data, payment_links, action_results
+ * @inputs        share_token, viewer_session, product_id, item_id
+ * @outputs       shared_cart_data, action_results
  * @depends       routes/shared-cart.js, fetch
- * @used-by       b-group-view.js
- * @doctrine      backend_source_verite, paiement_seul_acte_engageant, participant_peut_verifier
- * @impact-areas  shared-cart, participant-flow, creator-flow, checkout, payments
- * @version       2026-06
+ * @used-by       b-group-view.js, group/group-render-list.js
+ * @doctrine      boutique_first, domaine_minimal, un_appel_une_action
+ * @impact-areas  shared-cart, participant-flow, creator-flow, checkout
+ * @version       2026-08
  */
 'use strict';
 
 /**
  * @module group/group-api.js
- * @owner group refactor — couche réseau pour les paniers partagés
+ * @owner Boutique First — couche réseau minimale pour la liste partageable
  *
- * Centralise tous les appels réseau liés aux shared-carts.
+ * Boutique First (Contrat API — Liste partageable) : plus d'estimations,
+ * plus de contributions Stripe propres à la liste, plus de fenêtre de
+ * paiement, plus de finalize/extend-window. Le seul acte engageant reste
+ * le checkout canonique (POST /api/orders), déclenché ailleurs
+ * (b-checkout.js) — ce module ne fait que lire la liste et écrire les
+ * actions unitaires du créateur (ajouter/retirer un article, fermer).
  *
- * Conventions :
- *   - Endpoints créateur (/api/shared-carts/:id/*) → apiGet / apiPost
- *     (passent par window.K.request, credentials:include automatiques)
- *   - Endpoints publics (/api/shared-carts/public/:token/*) → fetch direct,
- *     credentials:'include' explicite (pas d'auth requise, mais cookie session utile)
+ * Conventions (inchangées) :
+ *   - Endpoints créateur (/api/shared-carts/:id/*) → apiGet / apiPost /
+ *     apiDelete (passent par window.K.request, credentials:include auto).
+ *   - Endpoint public (/api/shared-carts/public/:token) → fetch direct,
+ *     credentials:'include' explicite (pas d'auth requise ; le cookie de
+ *     session, s'il existe, permet au backend de dériver is_creator via
+ *     soft-auth — jamais bloquant si absent).
  *
  * Aucune logique métier ici — uniquement transport + parsing minimal.
- * Les erreurs remontent via rejet de promesse (comportement natif apiGet/apiPost/fetch).
  */
 
-import { apiGet, apiPost } from '../b-utils.js';
+import { apiGet, apiPost, apiDelete } from '../b-utils.js';
 
-/* ── fetchWithTimeout (FIX 2026-07-10) ────────────────────────────
- * Les endpoints publics du panier partagé passaient par fetch() nu :
- * si l'API pend (pool DB saturé), la promesse ne se réglait JAMAIS et
- * la vue groupe restait sur "Chargement…" indéfiniment.
- * Garanties : la promesse SE RÈGLE toujours en ≤ timeoutMs (abort +
- * Promise.race, indépendant du support du signal), erreur lisible
- * (e.isTimeout=true, name='TimeoutError').
+/* ── fetchWithTimeout ──────────────────────────────────────────────
+ * L'endpoint public passe par fetch() nu : si l'API pend (pool DB
+ * saturé), la promesse ne se réglerait jamais et la vue resterait sur
+ * "Chargement…" indéfiniment. Garanties : la promesse SE RÈGLE toujours
+ * en ≤ timeoutMs (abort + Promise.race, indépendant du support du
+ * signal), erreur lisible (e.isTimeout=true, name='TimeoutError').
  */
 export const FETCH_TIMEOUT_MS = 10_000;
 
@@ -63,10 +68,8 @@ export function fetchWithTimeout(url, opts = {}, timeoutMs = FETCH_TIMEOUT_MS) {
 
 /**
  * Récupère tous les paniers partagés créés par l'utilisateur connecté.
- * FIX 2026-07-11 : ajout d'un timeout pour éviter que la promesse pende
- * indéfiniment si l'API ne répond pas (bug spinner infini sur l'onglet groupe
- * quand le backend est HS). Le timeout aligne le comportement sur les endpoints
- * publics qui utilisent fetchWithTimeout.
+ * Sert le switcher "mes listes" quand l'onglet Groupe est ouvert sans
+ * token (navigation directe, pas via un lien reçu).
  * @returns {Promise<{carts: Array}>}
  */
 export function getOwnerSharedCarts() {
@@ -74,9 +77,9 @@ export function getOwnerSharedCarts() {
 }
 
 /**
- * Récupère un panier partagé par son id (vue créateur, avec contributions).
+ * Récupère un panier partagé par son id (vue créateur — cockpit).
  * @param {string|number} cartId
- * @returns {Promise<{cart, contributions, commitments?, share_url}>}
+ * @returns {Promise<{cart, items, claimed_count}>}
  */
 export function getSharedCartOwner(cartId) {
   return apiGet(`/api/shared-carts/${cartId}`);
@@ -92,139 +95,61 @@ export function getSharedCartItems(cartId) {
 }
 
 /**
- * V4.1 — Ferme le panier et ouvre la fenêtre de paiement 48 h.
+ * Ajoute un article à la liste — une intention, un appel, écriture
+ * immédiate (Invariant 20 ; Contrat API §2/§5 point 4).
+ * @param {string|number} cartId
+ * @param {string} productId
+ * @param {number} [quantity=1]
+ * @returns {Promise<{ok: boolean, cart, item}>}
+ */
+export function addItemToSharedList(cartId, productId, quantity = 1) {
+  return apiPost(`/api/shared-carts/${cartId}/items`, { product_id: productId, quantity });
+}
+
+/**
+ * Retire un article de la liste — confirmation déjà obtenue côté client
+ * avant cet appel (Invariant 21) ; exécution immédiate côté serveur.
+ * Le serveur refuse (409 item_already_claimed) si l'article a déjà été
+ * acheté — jamais un détachement silencieux de la commande liée.
+ * @param {string|number} cartId
+ * @param {string} itemId
+ * @returns {Promise<{ok: boolean, cart}>}
+ */
+export function removeItemFromSharedList(cartId, itemId) {
+  return apiDelete(`/api/shared-carts/${cartId}/items/${itemId}`);
+}
+
+/**
+ * Ferme la liste — arrête les nouveaux achats, ceux déjà faits restent
+ * des commandes normales inchangées (storyboard §4.5).
  */
 export function closeCart(cartId) {
   return apiPost(`/api/shared-carts/${cartId}/close`, {});
-}
-
-/** Alias transitionnel. */
-export function openSettlement(cartId) {
-  return closeCart(cartId);
-}
-
-/**
- * V4.1 — Prolonge la fenêtre de paiement de 48 h (une seule fois).
- */
-export function extendPaymentWindow(cartId) {
-  return apiPost(`/api/shared-carts/${cartId}/extend-window`, {});
-}
-
-/**
- * Finalise un panier partagé et crée la commande Komerce.
- * @param {string|number} cartId
- * @param {{accept_partial?: boolean}} payload
- * @returns {Promise<{order_reference, order_id, prepaid_kmf}>}
- */
-export function finalizeSharedCart(cartId, payload) {
-  return apiPost(`/api/shared-carts/${cartId}/finalize`, payload);
 }
 
 /**
  * Annule un panier partagé.
  * @param {string|number} cartId
  * @param {{reason: string}} payload
- * @returns {Promise<any>}
  */
 export function cancelSharedCart(cartId, payload) {
   return apiPost(`/api/shared-carts/${cartId}/cancel`, payload);
 }
 
-/* ── Endpoints publics (fetch direct, credentials:include) ───────── */
+/* ── Endpoint public (fetch direct, credentials:include) ──────────── */
 
 /**
- * Récupère les données publiques d'un panier partagé via son token.
+ * Récupère les données publiques d'une liste via son token. Le champ
+ * dérivé `is_creator` (booléen) indique si la session courante
+ * correspond au créateur — jamais l'identifiant brut du créateur
+ * (Contrat API §5 point 2). Même appel, même réponse, pour tout le
+ * monde y compris le créateur (storyboard §0/§3) : c'est le backend qui
+ * dérive is_creator via soft-auth, pas un mode différent côté front.
  * @param {string} token
- * @returns {Promise<{cart, items}|null>}  null si la réponse n'est pas ok
+ * @returns {Promise<{cart, items, items_count, claimed_count, is_creator}|null>}
+ *   null si la réponse n'est pas ok (lien invalide/expiré).
  */
 export async function getSharedCartPublic(token) {
   const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}`, { credentials: 'include' });
   return rsp.ok ? rsp.json() : null;
-}
-
-/**
- * V4.1 — Agrégat public des estimations.
- */
-export async function getEstimationAggregate(token) {
-  const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}/estimations`, { credentials: 'include' });
-  if (!rsp.ok) return { total_estimated_kmf: 0, count: 0 };
-  const data = await rsp.json();
-  return {
-    total_estimated_kmf: Number(data?.total_estimated_kmf) || 0,
-    count: Number(data?.count) || 0,
-  };
-}
-
-/**
- * V4.1 — Crée ou met à jour une estimation (sans OTP).
- */
-export async function upsertEstimation(token, payload) {
-  const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}/estimations`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!rsp.ok) {
-    let msg = 'Erreur lors de l\'enregistrement.';
-    try { const d = await rsp.json(); msg = d?.message || d?.error || msg; } catch (_) {}
-    throw new Error(msg);
-  }
-  return rsp.json();
-}
-
-/**
- * V4.1 — Retire une estimation.
- */
-export async function deleteEstimation(token, estimationId, phone = null) {
-  const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}/estimations/${estimationId}`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(phone ? { participant_phone: phone } : {}),
-  });
-  if (!rsp.ok) {
-    let msg = 'Retrait impossible.';
-    try { const d = await rsp.json(); msg = d?.message || d?.error || msg; } catch (_) {}
-    throw new Error(msg);
-  }
-  return rsp.json();
-}
-
-/**
- * V4.1 — Estimation existante par téléphone (pré-remplissage). Jamais bloquant.
- */
-export async function getEstimationByPhone(token, phone) {
-  try {
-    const rsp = await fetchWithTimeout(
-      `/api/shared-carts/public/${token}/estimations/by-phone?phone=${encodeURIComponent(phone)}`,
-      { credentials: 'include' }
-    );
-    if (!rsp.ok) return null;
-    const data = await rsp.json();
-    return data?.estimation || null;
-  } catch (_) { return null; }
-}
-
-/**
- * Crée une contribution payante (Stripe Checkout) pour un contribution payante.
- * @param {string} token
- * @param {{amount_kmf, contributor_name, contributor_email, contributor_phone, message?}} payload
- * @returns {Promise<{checkout_url?: string}>}
- *
- * FIX-COMMIT-03 : endpoint public — fetch direct.
- */
-export async function createContribution(token, payload) {
-  const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}/contributions`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!rsp.ok) {
-    let msg = 'Erreur lors de la contribution.';
-    try { const d = await rsp.json(); msg = d?.message || d?.error || msg; } catch (_) {}
-    throw new Error(msg);
-  }
-  return rsp.json();
 }

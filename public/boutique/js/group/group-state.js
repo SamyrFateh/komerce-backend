@@ -6,37 +6,50 @@
  * @owner         public/boutique/js/b-group-view.js
  * @purpose       supports public/boutique/js/b-group-view.js
  * @impact-areas  shared-cart
- * @version       2026-06
+ * @version       2026-08
  */
 'use strict';
 
 /**
  * @module group/group-state.js
- * @owner group refactor — helpers sélection et synchronisation d'état
+ * @owner Boutique First — helpers sélection (switcher "mes listes") et
+ * synchronisation du badge global.
  *
  * Fonctions pures de filtrage/tri des paniers créateur (isVisibleOwnerCart,
- * sortOwnerCarts, pickOwnerCart) et mutation contrôlée du store global
- * (applyOwnerCartToState).
+ * sortOwnerCarts, pickOwnerCart) utilisées quand l'onglet Groupe est ouvert
+ * sans token (navigation directe plutôt que via un lien reçu) — le
+ * storyboard ne couvre que l'écran atteint par le lien ; ce switcher est
+ * la fonctionnalité de gestion des listes du créateur, hors périmètre du
+ * storyboard mais toujours nécessaire.
  *
- * Inclut refreshGroupBadge — synchronisation badge DOM depuis state.shareToken.
- * Re-exporté par b-group-view.js pour les consommateurs externes (b-share-cart.js).
+ * applyOwnerCartToState (V4.1) a été retiré : il projetait des champs qui
+ * n'existent plus sur la réponse publique (total_kmf_snapshot,
+ * contributed_kmf, remaining_kmf, migration 124). La sélection d'une
+ * liste dans le switcher se résout désormais par un appel à
+ * getSharedCartPublic(token) — même chemin, même donnée, pour tout le
+ * monde (storyboard §3).
+ *
+ * Inclut refreshGroupBadge — synchronisation badge DOM depuis
+ * state.shareToken. Contrat public conservé : re-exporté par
+ * b-group-view.js pour b-share-cart.js.
  *
  * Règle : aucun appel réseau ici — uniquement logique de sélection et
- * synchronisation avec state + sessionStorage + DOM badge.
+ * synchronisation avec state + DOM badge.
  */
 
 import { state } from '../b-store.js';
-import { r } from './group-helpers.js';
 
 /**
  * Indique si un panier propriétaire doit être affiché dans le switcher.
- * Les paniers clôturés ou expirés sont exclus.
+ * Seuls les paniers annulés sont exclus — une liste fermée reste un état
+ * normal et consultable (storyboard §5, état "Fermée" : lecture seule
+ * pour tout le monde, mais toujours affichée, pas cachée).
  * @param {object|null} cart
  * @returns {boolean}
  */
 export function isVisibleOwnerCart(cart) {
   if (!cart) return false;
-  return !['cancelled', 'expired', 'finalized', 'converted_to_order'].includes(cart.status);
+  return cart.status !== 'cancelled';
 }
 
 /**
@@ -68,43 +81,9 @@ export function pickOwnerCart(carts = [], preferredId = null) {
 }
 
 /**
- * Synchronise le store global et sessionStorage à partir d'un panier
- * partagé sélectionné. Source unique de vérité pour le badge et le banner.
- * @param {object|null} cart
- */
-export function applyOwnerCartToState(cart) {
-  if (!cart) return;
-
-  state.shareToken          = cart.token              || null;
-  state.shareId             = cart.id                 || null;
-  state.shareExpiry         = cart.expires_at         || null;
-  state.cartName            = cart.title              || 'Panier groupe';
-  state.shareStatus         = cart.status             || null;
-  state.shareTotalKmf       = r(cart.total_kmf_snapshot);
-  state.shareContributedKmf = r(cart.contributed_kmf);
-  state.shareRemainingKmf   = r(cart.remaining_kmf);
-  state.shareUrl            = cart.share_url
-    || (cart.token ? `${window.location.origin}/boutique/?p=${cart.token}` : null);
-
-  try {
-    sessionStorage.setItem('kmrc_share', JSON.stringify({
-      token:           state.shareToken,
-      id:              state.shareId,
-      expiry:          state.shareExpiry,
-      name:            state.cartName,
-      status:          state.shareStatus,
-      total_kmf:       state.shareTotalKmf,
-      contributed_kmf: state.shareContributedKmf,
-      remaining_kmf:   state.shareRemainingKmf,
-      share_url:       state.shareUrl,
-    }));
-  } catch (_) {}
-}
-
-/**
  * Synchronise les badges DOM de l'onglet Groupe avec state.shareToken.
- * Appelé après toute opération qui change l'état du panier partagé créateur
- * (création, finalisation, annulation, restauration).
+ * Appelé après toute opération qui change l'état du panier partagé
+ * créateur (création, ajout, retrait, fermeture, annulation).
  *
  * Re-exporté par b-group-view.js — contrat public : refreshGroupBadge().
  */

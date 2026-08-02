@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 363
-- Files with full headers: 335
+- Scanned code files: 362
+- Files with full headers: 334
 - Files with lite headers: 28
-- Files with any headers: 363
+- Files with any headers: 362
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 761
-- Edges: 4105
+- Graph nodes: 760
+- Edges: 4089
 - DB tables: 108
-- Doctrines: 157
-- Impact areas: 133
-- Unresolved code edges: 416
+- Doctrines: 161
+- Impact areas: 129
+- Unresolved code edges: 419
 - Tables multi-écrivains directs (>=2): 61
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - recommendations: 4
 - refunds: 2
 - shared: 1
-- shared-cart: 19
+- shared-cart: 18
 - shared-cart-modal: 7
 - sourcing: 1
 - tracking: 1
@@ -59,6 +59,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Layers
 
+- adapter: 1
 - api-client: 2
 - bootstrap: 6
 - composition-root: 1
@@ -78,12 +79,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
-- ui-component: 36
+- ui-component: 35
 - ui-controller: 1
 - ui-enhancer: 3
 - ui-infrastructure: 1
 - ui-page: 5
-- ui-renderer: 9
+- ui-renderer: 8
 - ui-service: 1
 - ui-state: 1
 - util: 25
@@ -97,10 +98,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap/crons.js — operational-crons (infrastructure, critical, full)
 - public/boutique/js/b-cart.js — boutique-cart-and-side-cart (boutique, critical, full)
 - public/boutique/js/b-checkout.js — boutique-checkout-orchestrator (checkout, critical, full)
-- public/boutique/js/b-group-view.js — shared-cart-boutique-view (shared-cart, critical, full)
 - public/boutique/js/b-share-cart.js — shared-cart-creation-from-boutique (shared-cart, critical, full)
 - public/boutique/js/b-store.js — boutique-shared-state (boutique, critical, full)
 - public/boutique/js/boutique.js — boutique-ui-orchestrator (boutique, critical, full)
+- public/boutique/js/group/group-checkout-adapter.js — shared-list-checkout-adapter (shared-cart, critical, full)
 - routes/admin/delete-order-cascade.js — orders-delete-order-cascade (orders, critical, full)
 - routes/admin/orders.js — orders-orders (orders, critical, full)
 - routes/cash.js — payment-cash (payment, critical, full)
@@ -175,7 +176,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-utils.js — boutique-ui-utilities (boutique, high, full)
 - public/boutique/js/controllers/home-controller.js — boutique-home-navigation-controller (catalog, high, full)
 - public/boutique/js/group/group-api.js — shared-cart-front-api (shared-cart, high, full)
-- public/boutique/js/group/group-render-creator.js — shared-cart-creator-renderer (shared-cart, high, full)
+- public/boutique/js/group/group-render-list.js — shared-list-view (shared-cart, high, full)
 - public/boutique/js/komerce-api.js — boutique-api-client (boutique, high, full)
 - public/boutique/js/product-store.js — boutique-product-store (catalog, high, full)
 - public/boutique/js/shop-schema.js — boutique-taxonomy-schema (catalog, high, full)
@@ -323,7 +324,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-desktop-global-cart-access.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-global-cart-access)
 - public/boutique/js/b-desktop-sidebar.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-sidebar)
 - public/boutique/js/b-desktop-upgrade.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-upgrade)
-- public/boutique/js/b-friendly-group-redirect.js -> owner public/boutique/js/b-group-view.js (boutique-b-friendly-group-redirect)
 - public/boutique/js/b-greeting.js -> owner public/boutique/js/b-catalog.js (boutique-b-greeting)
 - public/boutique/js/b-group-cart-flow.js -> owner public/boutique/js/b-cart.js (boutique-b-group-cart-flow)
 - public/boutique/js/b-home-premium-v1.js -> owner public/boutique/js/b-catalog.js (boutique-b-home-premium-v1)
@@ -334,9 +334,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-paypal.js -> owner public/boutique/js/b-checkout.js (payment-b-paypal)
 - public/boutique/js/b-pdp-curation-suggestions.js -> owner public/boutique/js/b-modal-suggestions.js (recommendations-b-pdp-curation-suggestions)
 - public/boutique/js/b-product-open-contract.js -> owner public/boutique/js/b-modal-core.js (catalog-b-product-open-contract)
-- public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/b-group-view.js (boutique-b-share-phone-guard)
+- public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/group/group-render-list.js (boutique-b-share-phone-guard)
 - public/boutique/js/card-config.js -> owner public/boutique/js/b-catalog.js (boutique-card-config)
 - public/boutique/js/cart-product-summary.js -> owner public/boutique/js/b-cart.js (cart-product-summary)
+- public/boutique/js/group/group-helpers.js -> owner public/boutique/js/b-group-view.js (shared-cart-front-helpers)
 - public/boutique/js/group/group-state.js -> owner public/boutique/js/b-group-view.js (shared-cart-group-state)
 - public/boutique/js/hero-bootstrap.js -> owner public/boutique/js/b-home-premium-v1.js (boutique-hero-bootstrap)
 - public/boutique/js/main.js -> owner public/boutique/js/boutique.js (boutique-main)
@@ -578,6 +579,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
+- uses: b-group-view.js -> public/boutique/js/group/group-api.js (b-group-view.js)
 - uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
 - uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
 - depends: bootstrap/api-routes.js -> routes/economic-engine.js (routes/economic-engine.js)
@@ -611,10 +613,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: modal-suggestions -> routes/boutique-suggestions.js (modal-suggestions)
 - uses: notification-service.js -> services/whatsapp-meta.js (notification-service.js)
 - uses: paypal-flows -> services/order-payment-confirmation.js (paypal-flows)
-- uses: public_shared_cart_links -> public/boutique/js/b-group-view.js (public_shared_cart_links)
 - uses: public/boutique/index.html -> public/boutique/js/b-service-worker-refresh.js (public/boutique/index.html)
 - uses: public/boutique/index.html -> public/boutique/js/boutique.js (public/boutique/index.html)
 - uses: public/boutique/index.html -> public/boutique/js/komerce-api.js (public/boutique/index.html)
+- uses: public/boutique/js/b-group-view.js -> routes/shared-cart.js (public/boutique/js/b-group-view.js)
 - depends: public/boutique/js/b-scroll-owner.js -> DOM (DOM)
 - depends: public/boutique/js/b-service-worker-refresh.js -> browser-cache-api (browser-cache-api)
 - depends: public/boutique/js/b-service-worker-refresh.js -> browser-service-worker-api (browser-service-worker-api)
@@ -624,6 +626,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-utils.js -> fetch (fetch)
 - depends: public/boutique/js/b-utils.js -> Intl (Intl)
 - depends: public/boutique/js/group/group-api.js -> fetch (fetch)
+- owned-by: public/boutique/js/group/group-helpers.js -> public/boutique/js/b-group-view.js (public/boutique/js/b-group-view.js)
+- owned-by: public/boutique/js/group/group-state.js -> public/boutique/js/b-group-view.js (public/boutique/js/b-group-view.js)
 - depends: public/boutique/js/komerce-api.js -> backend_api (backend_api)
 - depends: public/boutique/js/product-store.js -> localStorage (localStorage)
 - depends: public/boutique/js/test-modal-view-model-redirect.js -> browser-location-api (browser-location-api)
@@ -689,9 +693,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/boutique-suggestions.js -> services/boutique-suggestion-service.js (services/boutique-suggestion-service.js)
 - depends: routes/carriers.js -> db.js (db.js)
 - depends: routes/carriers.js -> services/* (services/*)
-- depends: routes/cash.js -> db.js (db.js)
-- depends: routes/cash.js -> services/* (services/*)
-- depends: routes/catalog-product-detail.js -> db.js (db.js)
 
 ## Files Still Without Headers Or Aggregation
 

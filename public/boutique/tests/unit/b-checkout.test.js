@@ -375,6 +375,24 @@ describe('b-checkout', () => {
       expect(dom.orderTitle.textContent).toBe('✅ Commande confirmée');
     });
 
+    it('Contrat API §3 : propage shared_cart_item_id si présent sur l\'item (panier éphémère liste), absent sinon (panier personnel inchangé)', async () => {
+      state.orderData = { selectedRelaisId: 7, payment_mode: 'cash_relais', relayStatus: 'ready' };
+      state.cart = [
+        { product: { id: 1 }, qty: 1, shared_cart_item_id: 'sci-abc' },
+        { product: { id: 2 }, qty: 1 }, // panier personnel classique, pas de shared_cart_item_id
+      ];
+
+      requireIdentity.mockResolvedValue({ phone: '+269123456', full_name: 'Amina' });
+      apiPost.mockResolvedValue({ order: { reference: 'CMD-002', id: 56 } });
+
+      const btn = document.createElement('button');
+      await submitOrder(btn);
+
+      const sentItems = apiPost.mock.calls[0][1].items;
+      expect(sentItems[0].shared_cart_item_id).toBe('sci-abc');
+      expect(sentItems[1].shared_cart_item_id).toBeUndefined();
+    });
+
     it('erreur API → toast erreur, bouton réactivé, busy remis à 0', async () => {
       state.orderData = { selectedRelaisId: 7, payment_mode: 'cash_relais', relayStatus: 'ready' };
       state.cart = [{ product: { id: 1 }, qty: 1 }];

@@ -157,7 +157,7 @@ export const state = {
   shareExpiry: null,
   /**
    * SC-EDIT-01 — Contexte d'édition du panier collectif.
-   * Posé par b-group-view.js au clic "Modifier les articles".
+   * Posé par group/group-render-list.js au clic "Modifier les articles".
    * Supprimé après PUT réussi ou annulation explicite.
    *
    * Shape : {

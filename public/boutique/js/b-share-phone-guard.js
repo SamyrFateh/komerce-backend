@@ -3,8 +3,8 @@
  * @role          boutique-b-share-phone-guard
  * @domain        shared-cart
  * @layer         ui-component
- * @owner         public/boutique/js/b-group-view.js
- * @purpose       supports public/boutique/js/b-group-view.js
+ * @owner         public/boutique/js/group/group-render-list.js
+ * @purpose       supports public/boutique/js/group/group-render-list.js
  * @impact-areas  boutique
  * @version       2026-06
  */
