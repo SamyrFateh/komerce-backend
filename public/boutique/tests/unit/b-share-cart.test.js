@@ -1,28 +1,10 @@
 'use strict';
 
 /**
- * tests/unit/b-share-cart.test.js
+ * Tests du flux « Partager cette liste ».
  *
- * js/b-share-cart.js (675L) — flow "📤 Partager" côté créateur.
- * Exports réels : clearShareState, restoreSharedCartFromBackend,
- * refreshSharedBadges, startShareFlow, install.
- *
- * Dépendances mockées : b-cart-core.js (showToast), b-cart.js (clearCart),
- * group/group-state.js (refreshGroupBadge), b-group-banner.js (showBanner/
- * hideBanner/refreshBanner), b-identity.js (requireIdentity — non exercé
- * dans ce périmètre mais mocké par prudence).
- * global.fetch mocké par tests/unit/setup.js, surchargé par test.
- *
- * Périmètre choisi : restoreSharedCartFromBackend (source de vérité P0 —
- * argent/état), clearShareState, refreshSharedBadges (DOM), et les gardes
- * + branches directement atteignables de startShareFlow (panier vide,
- * reshare avec panier actif → WhatsApp par shareMode, panier actif détecté
- * → choix "voir mon groupe"/"annuler"). Laissé de côté : `promptInit`
- * (~190L de câblage de formulaire DOM + validation téléphone) et le chemin
- * de création complet qui l'appelle en interne (binding privé non
- * interceptable sans le faire tourner réellement) — dette assumée pour un
- * sous-lot dédié avec une fixture DOM plus lourde, comme pour
- * `renderCheckout()` (b-checkout.js) et `setupModal()` (b-modal-core.js).
+ * Le module ne possède plus de formulaire de création : un clic vérifie
+ * l'identité, crée la liste à partir du panier puis ouvre le canal de partage.
  */
 
 jest.mock('../../js/b-cart-core.js', () => ({ showToast: jest.fn() }));
@@ -39,12 +21,14 @@ jest.mock('../../js/b-group-banner.js', () => ({
   hideBanner: jest.fn(),
   refreshBanner: jest.fn(),
 }));
-jest.mock('../../js/b-identity.js', () => ({ requireIdentity: jest.fn() }));
+jest.mock('../../js/b-identity.js', () => ({
+  requireIdentity: jest.fn().mockResolvedValue({ id: 'user-1' }),
+}));
 
 const { state } = require('../../js/b-store.js');
 const { showToast } = require('../../js/b-cart-core.js');
 const { refreshGroupBadge } = require('../../js/group/group-state.js');
-const { hideBanner } = require('../../js/b-group-banner.js');
+const { hideBanner, showBanner } = require('../../js/b-group-banner.js');
 const {
   clearShareState,
   restoreSharedCartFromBackend,
@@ -65,14 +49,29 @@ function resetShareState() {
   state.cart = [];
 }
 
+function appendElement(tagName, id, { hidden = false, className = '', tab = null } = {}) {
+  const element = document.createElement(tagName);
+  element.id = id;
+  element.hidden = hidden;
+  element.className = className;
+  if (tab) element.dataset.tab = tab;
+  document.body.appendChild(element);
+  return element;
+}
+
 describe('b-share-cart', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    document.body.innerHTML = '';
+    document.body.replaceChildren();
     window.sessionStorage.clear();
     resetShareState();
     global.fetch = jest.fn();
     window.open = jest.fn();
+
+    Object.defineProperty(navigator, 'share', {
+      value: jest.fn().mockResolvedValue(),
+      configurable: true,
+    });
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: jest.fn().mockResolvedValue() },
       configurable: true,
@@ -83,7 +82,7 @@ describe('b-share-cart', () => {
     test('réinitialise tous les champs share_* et purge sessionStorage', () => {
       state.shareToken = 'tok-1';
       state.shareId = 'cart-1';
-      state.cartName = 'Panier X';
+      state.cartName = 'Liste X';
       window.sessionStorage.setItem('kmrc_share', '{"token":"tok-1"}');
       window.sessionStorage.setItem('kmrc_banner_dismissed', '1');
 
@@ -100,161 +99,165 @@ describe('b-share-cart', () => {
   });
 
   describe('refreshSharedBadges', () => {
-    test('isShared=true → badge mobile visible, badge desktop masqué (remplacé par bouton Partager)', () => {
-      document.body.innerHTML = `
-        <div id="k-share-badge-row" hidden></div>
-        <button id="k-cart-share"></button>
-        <div id="k-sc-shared-badge"></div>
-        <button id="k-sc-share" hidden></button>`;
+    test('affiche le contexte partagé et normalise le CTA', () => {
+      appendElement('div', 'k-share-badge-row', { hidden: true });
+      appendElement('button', 'k-cart-share');
+      appendElement('div', 'k-sc-shared-badge');
+      appendElement('button', 'k-sc-share', { hidden: true });
+
       refreshSharedBadges(true);
+
       expect(document.getElementById('k-share-badge-row').hidden).toBe(false);
-      expect(document.getElementById('k-cart-share').textContent).toBe('📤 Partager');
+      expect(document.getElementById('k-cart-share').textContent)
+        .toBe('📤 Partager cette liste');
       expect(document.getElementById('k-sc-shared-badge').hidden).toBe(true);
       expect(document.getElementById('k-sc-share').hidden).toBe(false);
+      expect(document.getElementById('k-sc-share').textContent)
+        .toBe('📤 Partager cette liste');
       expect(refreshGroupBadge).toHaveBeenCalled();
     });
 
-    test('isShared=false → badge mobile masqué', () => {
-      document.body.innerHTML = `<div id="k-share-badge-row"></div>`;
+    test('masque le badge mobile si aucune liste n’est active', () => {
+      appendElement('div', 'k-share-badge-row');
       refreshSharedBadges(false);
       expect(document.getElementById('k-share-badge-row').hidden).toBe(true);
     });
 
-    test('sans aucun élément DOM présent → ne throw pas', () => {
+    test('ne dépend pas de la présence des éléments DOM', () => {
       expect(() => refreshSharedBadges(true)).not.toThrow();
     });
   });
 
   describe('restoreSharedCartFromBackend', () => {
-    test('401/403 (non connecté) → retourne null sans toucher au state local', async () => {
+    test('401/403 retourne null sans toucher au cache local', async () => {
       state.shareToken = 'tok-preserved';
       global.fetch.mockResolvedValue({ ok: false, status: 401 });
+
       const result = await restoreSharedCartFromBackend({ silent: true });
+
       expect(result).toBeNull();
       expect(state.shareToken).toBe('tok-preserved');
     });
 
-    test('erreur serveur (500) en silencieux → pas de toast, retourne null', async () => {
+    test('une erreur serveur silencieuse ne produit pas de toast', async () => {
       global.fetch.mockResolvedValue({ ok: false, status: 500 });
+
       const result = await restoreSharedCartFromBackend({ silent: true });
+
       expect(result).toBeNull();
       expect(showToast).not.toHaveBeenCalled();
     });
 
-    test('erreur réseau non silencieuse → toast erreur affiché', async () => {
+    test('une erreur réseau non silencieuse est signalée', async () => {
       global.fetch.mockRejectedValue(new Error('offline'));
+
       const result = await restoreSharedCartFromBackend({ silent: false });
+
       expect(result).toBeNull();
-      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('offline'), 'error');
+      expect(showToast).toHaveBeenCalledWith(
+        expect.stringContaining('offline'),
+        'error',
+      );
     });
 
-    test('200 + liste vide → purge le state local (le backend confirme : aucun panier actif)', async () => {
+    test('une liste vide confirmée par le backend purge le cache', async () => {
       state.shareToken = 'tok-old';
-      global.fetch.mockResolvedValue({ ok: true, json: async () => ({ carts: [] }) });
-      const result = await restoreSharedCartFromBackend();
-      expect(result).toBeNull();
-      expect(state.shareToken).toBeNull();
-    });
-
-    test('200 + carts contenant uniquement des paniers non actifs (finalized/cancelled) → purge', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ carts: [{ id: '1', status: 'finalized' }, { id: '2', status: 'cancelled' }] }),
+        json: async () => ({ carts: [] }),
       });
+
       const result = await restoreSharedCartFromBackend();
+
       expect(result).toBeNull();
       expect(state.shareToken).toBeNull();
     });
 
-    test('200 + panier actif → applique au state, sauvegarde sessionStorage, montre la bannière', async () => {
-      const cart = {
-        id: 'cart-9', token: 'tok-9', status: 'open', title: 'Anniversaire',
-        total_kmf_snapshot: 8000, contributed_kmf: 2000, remaining_kmf: 6000,
-        created_at: new Date().toISOString(),
-      };
-      global.fetch.mockResolvedValue({ ok: true, json: async () => ({ carts: [cart] }) });
-      const result = await restoreSharedCartFromBackend();
+    test('ignore les listes annulées et archivées', async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          carts: [
+            { id: '1', status: 'archived' },
+            { id: '2', status: 'cancelled' },
+          ],
+        }),
+      });
 
-      expect(result).toEqual(cart);
-      expect(state.shareToken).toBe('tok-9');
-      expect(state.shareId).toBe('cart-9');
-      expect(state.shareTotalKmf).toBe(8000);
-      expect(state.shareRemainingKmf).toBe(6000);
-      expect(JSON.parse(window.sessionStorage.getItem('kmrc_share')).token).toBe('tok-9');
-      expect(refreshGroupBadge).toHaveBeenCalled();
+      await restoreSharedCartFromBackend();
+
+      expect(state.shareToken).toBeNull();
     });
 
-    test("plusieurs paniers actifs → sélectionne le plus récent (created_at)", async () => {
-      const older = { id: 'old', token: 'tok-old', status: 'open', created_at: '2026-01-01T00:00:00Z' };
-      const newer = { id: 'new', token: 'tok-new', status: 'open', created_at: '2026-06-01T00:00:00Z' };
-      global.fetch.mockResolvedValue({ ok: true, json: async () => ({ carts: [older, newer] }) });
-      await restoreSharedCartFromBackend();
+    test('restaure la liste active la plus récente', async () => {
+      const older = {
+        id: 'old',
+        token: 'tok-old',
+        status: 'open',
+        title: 'Ancienne liste',
+        created_at: '2026-01-01T00:00:00Z',
+      };
+      const newer = {
+        id: 'new',
+        token: 'tok-new',
+        status: 'open',
+        title: 'Liste récente',
+        created_at: '2026-06-01T00:00:00Z',
+      };
+      global.fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ carts: [older, newer] }),
+      });
+
+      const result = await restoreSharedCartFromBackend();
+
+      expect(result).toEqual(newer);
       expect(state.shareToken).toBe('tok-new');
+      expect(state.cartName).toBe('Liste récente');
+      expect(JSON.parse(sessionStorage.getItem('kmrc_share')).token).toBe('tok-new');
+      expect(showBanner).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Liste récente',
+        status: 'open',
+      }));
     });
   });
 
-  describe('startShareFlow — gardes et branches directes', () => {
-    test('panier vide → toast erreur, aucun appel réseau', async () => {
-      state.cart = [];
-      await startShareFlow({});
-      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('panier'), 'error');
+  describe('startShareFlow', () => {
+    test('un panier vide bloque seulement une nouvelle création', async () => {
+      await startShareFlow();
+
+      expect(showToast).toHaveBeenCalledWith(
+        expect.stringContaining('panier'),
+        'error',
+      );
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    describe('reshare=true avec panier déjà partagé → WhatsApp direct (pas de re-création)', () => {
-      beforeEach(() => {
-        state.cart = [{ id: 'p1', qty: 1, product: { id: 'p1' } }];
-        state.shareToken = 'tok-1';
-        state.shareUrl = 'https://x.test/boutique/?p=tok-1';
-        state.cartName = 'Panier de groupe';
-      });
+    test('un repartage ne dépend pas du panier local', async () => {
+      state.cart = [];
+      state.shareToken = 'tok-1';
+      state.shareUrl = 'https://x.test/boutique/?p=tok-1';
+      state.cartName = 'Repas de famille';
 
-      test('shareStatus="closed" → message "ready_to_pay" (règlement ouvert)', async () => {
-        state.shareStatus = 'closed';
-        await startShareFlow({ reshare: true });
-        expect(window.open).toHaveBeenCalledWith(
-          expect.stringContaining('r%C3%A9gler%20ta%20part'),
-          '_blank', 'noopener',
-        );
-        expect(global.fetch).not.toHaveBeenCalled();
-      });
+      await startShareFlow({ reshare: true });
 
-      test('shareStatus="open" → message "needs_validation" (pas encore confirmé)', async () => {
-        state.shareStatus = 'open';
-        await startShareFlow({ reshare: true });
-        expect(window.open).toHaveBeenCalledWith(
-          expect.stringContaining('sera%20ouvert%20quand'),
-          '_blank', 'noopener',
-        );
-      });
-
-      test('copie le lien de partage dans le presse-papier', async () => {
-        await startShareFlow({ reshare: true });
-        expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://x.test/boutique/?p=tok-1');
-      });
+      expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
+        text: expect.stringContaining('Repas de famille'),
+        url: 'https://x.test/boutique/?p=tok-1',
+      }));
+      expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    describe('!reshare avec panier actif déjà présent → modale de choix', () => {
-      beforeEach(() => {
-        state.cart = [{ id: 'p1', qty: 1, product: { id: 'p1' } }];
-        state.shareToken = 'tok-1';
-        state.cartName = 'Panier existant';
-      });
+    test('un repartage annulé par l’utilisateur ne produit pas d’erreur', async () => {
+      state.shareToken = 'tok-2';
+      state.shareUrl = 'https://x.test/boutique/?p=tok-2';
+      navigator.share.mockRejectedValue(
+        Object.assign(new Error('cancelled'), { name: 'AbortError' }),
+      );
 
-      test('clic "Annuler" (croix) → aucune action, pas d\'appel réseau', async () => {
-        const flowPromise = startShareFlow({});
-        // La modale de choix est injectée de façon synchrone dans le DOM.
-        document.querySelector('.k-sm-close').click();
-        await flowPromise;
-        expect(global.fetch).not.toHaveBeenCalled();
-      });
-
-      test('clic "Voir mon groupe actif" → bascule vers l\'onglet groupe (pas de nouvelle création)', async () => {
-        const flowPromise = startShareFlow({});
-        document.querySelector('#k-sm-view-group').click();
-        await flowPromise;
-        expect(global.fetch).not.toHaveBeenCalled();
-      });
+      await expect(startShareFlow({ reshare: true })).resolves.toBeUndefined();
+      expect(showToast).not.toHaveBeenCalled();
+      expect(window.open).not.toHaveBeenCalled();
     });
   });
 });

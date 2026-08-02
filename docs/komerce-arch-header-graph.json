@@ -20,10 +20,10 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 760,
-    "edges": 4089,
+    "graphNodes": 762,
+    "edges": 4085,
     "dbTables": 108,
-    "doctrines": 161,
+    "doctrines": 163,
     "impactAreas": 129,
     "unresolvedCodeEdges": 419,
     "dbWriteViaOverlapWarnings": 0,
@@ -2838,7 +2838,7 @@
       "file": "public/boutique/js/b-share-cart.js",
       "type": "file",
       "headerType": "full",
-      "role": "shared-cart-creation-from-boutique",
+      "role": "shared-list-creation-from-boutique",
       "domain": "shared-cart",
       "layer": "ui-component",
       "criticality": "critical",
@@ -2846,12 +2846,10 @@
       "purpose": null,
       "inputs": [
         "cart_state",
-        "phone_identity",
-        "share_mode",
-        "delivery_date_options"
+        "phone_identity"
       ],
       "outputs": [
-        "shared_cart_link",
+        "shared_list_link",
         "clear_local_cart_signal",
         "group_view_transition"
       ],
@@ -2861,8 +2859,6 @@
         "b-cart.js",
         "group/group-render-list.js",
         "b-group-banner.js",
-        "b-phone.js",
-        "b-checkout.js",
         "b-identity.js"
       ],
       "usedBy": [
@@ -2874,19 +2870,17 @@
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "partager_geste_natif",
-        "panier_ouvert_ferme",
-        "paiement_seul_acte_engageant",
-        "boutique_canal_decouverte"
+        "partage_immediat",
+        "boutique_canal_decouverte",
+        "checkout_canonique"
       ],
       "impactAreas": [
-        "shared-cart-creation",
-        "checkout",
+        "shared-list-creation",
         "participant-flow",
         "creator-flow",
         "local-cart"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "public/boutique/js/b-share-phone-guard.js",
@@ -14550,8 +14544,7 @@
         "items"
       ],
       "depends": [
-        "db.js",
-        "services/shared-cart-internals.js"
+        "db.js"
       ],
       "usedBy": [
         "routes/shared-cart.js"
@@ -14566,7 +14559,8 @@
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "domaine_minimal_boutique_first"
+        "domaine_minimal_boutique_first",
+        "lecture_derivee"
       ],
       "impactAreas": [
         "participant-flow",
@@ -17581,9 +17575,14 @@
       "doctrine": "mise_a_jour_sans_boucle"
     },
     {
-      "id": "doctrine:partager_geste_natif",
+      "id": "doctrine:partage_immediat",
       "type": "doctrine",
-      "doctrine": "partager_geste_natif"
+      "doctrine": "partage_immediat"
+    },
+    {
+      "id": "doctrine:checkout_canonique",
+      "type": "doctrine",
+      "doctrine": "checkout_canonique"
     },
     {
       "id": "doctrine:state_partage_explicite",
@@ -18091,6 +18090,11 @@
       "doctrine": "backend_source_verite"
     },
     {
+      "id": "doctrine:lecture_derivee",
+      "type": "doctrine",
+      "doctrine": "lecture_derivee"
+    },
+    {
       "id": "doctrine:docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md"
@@ -18546,9 +18550,9 @@
       "area": "service-worker"
     },
     {
-      "id": "impact:shared-cart-creation",
+      "id": "impact:shared-list-creation",
       "type": "impact-area",
-      "area": "shared-cart-creation"
+      "area": "shared-list-creation"
     },
     {
       "id": "impact:local-cart",
@@ -22864,18 +22868,6 @@
     },
     {
       "from": "public/boutique/js/b-share-cart.js",
-      "to": "public/boutique/js/b-phone.js",
-      "type": "depends",
-      "label": "b-phone.js"
-    },
-    {
-      "from": "public/boutique/js/b-share-cart.js",
-      "to": "public/boutique/js/b-checkout.js",
-      "type": "depends",
-      "label": "b-checkout.js"
-    },
-    {
-      "from": "public/boutique/js/b-share-cart.js",
       "to": "public/boutique/js/b-identity.js",
       "type": "depends",
       "label": "b-identity.js"
@@ -22894,21 +22886,9 @@
     },
     {
       "from": "public/boutique/js/b-share-cart.js",
-      "to": "doctrine:partager_geste_natif",
+      "to": "doctrine:partage_immediat",
       "type": "doctrine",
-      "label": "partager_geste_natif"
-    },
-    {
-      "from": "public/boutique/js/b-share-cart.js",
-      "to": "doctrine:panier_ouvert_ferme",
-      "type": "doctrine",
-      "label": "panier_ouvert_ferme"
-    },
-    {
-      "from": "public/boutique/js/b-share-cart.js",
-      "to": "doctrine:paiement_seul_acte_engageant",
-      "type": "doctrine",
-      "label": "paiement_seul_acte_engageant"
+      "label": "partage_immediat"
     },
     {
       "from": "public/boutique/js/b-share-cart.js",
@@ -22918,15 +22898,15 @@
     },
     {
       "from": "public/boutique/js/b-share-cart.js",
-      "to": "impact:shared-cart-creation",
-      "type": "impact",
-      "label": "shared-cart-creation"
+      "to": "doctrine:checkout_canonique",
+      "type": "doctrine",
+      "label": "checkout_canonique"
     },
     {
       "from": "public/boutique/js/b-share-cart.js",
-      "to": "impact:checkout",
+      "to": "impact:shared-list-creation",
       "type": "impact",
-      "label": "checkout"
+      "label": "shared-list-creation"
     },
     {
       "from": "public/boutique/js/b-share-cart.js",
@@ -39889,12 +39869,6 @@
       "label": "db.js"
     },
     {
-      "from": "services/shared-cart-reads.js",
-      "to": "services/shared-cart-internals.js",
-      "type": "depends",
-      "label": "services/shared-cart-internals.js"
-    },
-    {
       "from": "routes/shared-cart.js",
       "to": "services/shared-cart-reads.js",
       "type": "uses",
@@ -39929,6 +39903,12 @@
       "to": "doctrine:domaine_minimal_boutique_first",
       "type": "doctrine",
       "label": "domaine_minimal_boutique_first"
+    },
+    {
+      "from": "services/shared-cart-reads.js",
+      "to": "doctrine:lecture_derivee",
+      "type": "doctrine",
+      "label": "lecture_derivee"
     },
     {
       "from": "services/shared-cart-reads.js",
@@ -46287,7 +46267,7 @@
       ]
     },
     "public/boutique/js/b-share-cart.js": {
-      "role": "shared-cart-creation-from-boutique",
+      "role": "shared-list-creation-from-boutique",
       "domain": "shared-cart",
       "criticality": "critical",
       "headerType": "full",
@@ -46299,8 +46279,6 @@
         "public/boutique/js/b-cart.js",
         "public/boutique/js/group/group-render-list.js",
         "public/boutique/js/b-group-banner.js",
-        "public/boutique/js/b-phone.js",
-        "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-identity.js"
       ],
       "directUsedBy": [
@@ -46312,28 +46290,24 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "partager_geste_natif",
-        "panier_ouvert_ferme",
-        "paiement_seul_acte_engageant",
-        "boutique_canal_decouverte"
+        "partage_immediat",
+        "boutique_canal_decouverte",
+        "checkout_canonique"
       ],
       "impactAreas": [
-        "shared-cart-creation",
-        "checkout",
+        "shared-list-creation",
         "participant-flow",
         "creator-flow",
         "local-cart"
       ],
       "mustCheck": [
         "doctrine:boutique_canal_decouverte",
-        "doctrine:paiement_seul_acte_engageant",
-        "doctrine:panier_ouvert_ferme",
-        "doctrine:partager_geste_natif",
-        "impact:checkout",
+        "doctrine:checkout_canonique",
+        "doctrine:partage_immediat",
         "impact:creator-flow",
         "impact:local-cart",
         "impact:participant-flow",
-        "impact:shared-cart-creation",
+        "impact:shared-list-creation",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-checkout-render.js",
@@ -57587,8 +57561,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db.js",
-        "services/shared-cart-internals.js"
+        "db.js"
       ],
       "directUsedBy": [
         "routes/shared-cart.js"
@@ -57603,7 +57576,8 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "domaine_minimal_boutique_first"
+        "domaine_minimal_boutique_first",
+        "lecture_derivee"
       ],
       "impactAreas": [
         "participant-flow",
@@ -57615,6 +57589,7 @@
         "db:shared_carts",
         "db:users",
         "doctrine:domaine_minimal_boutique_first",
+        "doctrine:lecture_derivee",
         "impact:creator-flow",
         "impact:participant-flow",
         "routes/shared-cart.js",
