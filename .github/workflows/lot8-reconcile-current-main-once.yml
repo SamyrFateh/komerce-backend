@@ -1,0 +1,97 @@
+name: Lot 8 reconcile current main once
+
+on:
+  push:
+    branches:
+      - test/lot8-final-current-main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lot8-reconcile-current-main-once
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: lot8-ci-secret-not-for-prod
+      ADMIN_PASSWORD: lot8-ci-admin
+      QR_SECRET: lot8-ci-qr-secret
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+      KOMERCE_DISABLE_CRONS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test/lot8-final-current-main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Rebuild current canonical PostgreSQL projection
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          while IFS= read -r file; do
+            echo "Applying $file"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "migrations/$file"
+          done < <(find migrations -maxdepth 1 -type f -printf '%f\n' | grep -E '^[0-9]{3}.*\.sql$' | sort | awk '$0 >= "111"')
+          node scripts/db-snapshot.js
+          node scripts/schema-promote.js --write
+          node scripts/arch-reconcile.js --write
+
+      - name: Regenerate route and governed artifacts
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          npm run arch:gen
+          npm run business-graph:gen
+
+      - name: Verify reconciliation
+        run: |
+          node scripts/check-schema-freshness.js --all
+          node scripts/check-schema-resurrection.js
+          npm run gate:feature-audit
+          npm run arch:gate
+          node scripts/contract-check.js
+
+      - name: Remove one-shot workflow and commit
+        run: |
+          rm -f .github/workflows/lot8-reconcile-current-main-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit --no-verify -m "fix(lot8): reconcile schema and route registry"
+          git push origin HEAD:test/lot8-final-current-main
