@@ -898,7 +898,7 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
       event_label: opts.event_label || null,
       sharer_name: opts.sharer_name || null
     };
-    const res = await apiPost('/api/shares', payload);
+    const res = await apiPost('/api/shared-carts/from-cart-items', payload);
     if (res && (res.url || res.share_url)) return res.url || res.share_url;
     throw new Error('url manquante');
   }
@@ -999,7 +999,7 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
   async function _loadSharedCartFromAPI(token) {
     // GET /api/shares/:token → { sharer_name, items:[{product_id,qty,product:{...}}] }
     try {
-      const data = await apiGet('/api/shares/' + encodeURIComponent(token));
+      const data = await apiGet('/api/shared-carts/public/' + encodeURIComponent(token));
 
       let checkProducts = setInterval(function() {
         if (!state.products || state.products.length === 0) return;

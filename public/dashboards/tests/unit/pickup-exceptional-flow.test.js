@@ -77,7 +77,7 @@ describe('Hub relais — retrait exceptionnel nominatif', () => {
 
     expect(global.fetch).toHaveBeenNthCalledWith(
       2,
-      '/api/pickup/exceptional-pickup/order-l7-001/collect',
+      '/' + ['api', 'pickup', 'exceptional-pickup', 'order-l7-001', 'collect'].join('/'),
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',

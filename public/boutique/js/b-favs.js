@@ -136,7 +136,7 @@ export async function shareWishlistWhatsApp() {
   let shareURL;
   try {
     const items = favProducts.map(p => ({ product_id: p.id, qty: 1 }));
-    const res = await apiPost('/api/shares', { items });
+    const res = await apiPost('/api/shared-carts/from-cart-items', { cart_items: items, title: 'Ma liste de souhaits' });
     shareURL = (res && res.share_url) || (window.location.origin + '/Komerce_Boutique.html');
   } catch (e) {
     shareURL = window.location.origin + '/Komerce_Boutique.html';

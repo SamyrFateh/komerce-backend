@@ -21,8 +21,8 @@ To address all issues, run:
 
 Run `npm audit` for details.
 
-$ node scripts/lot8-domain-cleanup-once.js
-Lot 8 domain cleanup applied.
+$ node scripts/lot8-contract-cleanup-once.js
+Lot 8 contract cleanup applied.
 
 $ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
 SET
@@ -977,7 +977,7 @@ ALTER TABLE
 ALTER TABLE
 
 $ node scripts/ci-migrate.js
-◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
 [ci-migrate] Baseline git : 121 migration(s) au commit c32cbe49
 [ci-migrate] Baselinées : 119 (121 dump + 2 ci-excluded)
 [ci-migrate] Rien à appliquer — dump structurellement à jour.
@@ -985,7 +985,7 @@ $ node scripts/ci-migrate.js
 [ci-migrate] ✅ 0 migration(s) appliquée(s).
 
 $ node scripts/db-snapshot.js
-◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
 ============================================================
  KOMERCE - Snapshot du schema live
 ============================================================
@@ -1011,9 +1011,6 @@ Allowlist a elaguer (fiction resolue) : (aucune)
 Cliquet liveTablesUndocumented: 0 (inchange)
 Cliquet headerUnderDeclaration: 0 (inchange)
 
---- RESTE A LA MAIN (reconcile ne touche pas) ---
-  ! Fiction hors liste (vrai bug a corriger, ou a inscrire volontairement dans l'allowlist) : cart_contributions
-
 ============================================================
 ✅ Rien a reconcilier. Budget deja a jour.
 
@@ -1026,7 +1023,7 @@ $ npm run contract:generate
 > node scripts/contract-generate.js
 
 ◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
-{"level":40,"time":"2026-08-02T01:52:03.856Z","service":"komerce-backend","env":"test","module":"purchasing-trigger","msg":"⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled"}
+{"level":40,"time":"2026-08-02T01:55:27.354Z","service":"komerce-backend","env":"test","module":"purchasing-trigger","msg":"⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled"}
 ✅ Contrat généré : /home/runner/work/komerce-backend/komerce-backend/docs/contract/openapi.json
    421 routes · 12 réponses UNKNOWN
    Dette documentée dans : /home/runner/work/komerce-backend/komerce-backend/docs/contract/DEBT.md
@@ -1333,14 +1330,10 @@ $ node scripts/contract-check.js
    Routes dans le contrat : 421
    Réponses UNKNOWN (dette documentée) : 12
 
-❌ 2 dérive(s) bloquantes :
+❌ 1 dérive(s) bloquantes :
 
 ❌ [boutique] "/api/shares" absent du contrat
-   → fichiers : public/boutique/js/b-cart.js, public/boutique/js/b-favs.js
-   → ajouter la route dans contract-generate.js ou vérifier qu'elle existe encore
-
-❌ [dashboards] "/api/pickup/exceptional-pickup/order-l7-001/collect" absent du contrat
-   → fichiers : public/dashboards/tests/unit/pickup-exceptional-flow.test.js
+   → fichiers : public/boutique/js/dist/chunks/chunk-BWQJVHJU.js, public/boutique/js/dist/chunks/chunk-WCB2FJJ3.js
    → ajouter la route dans contract-generate.js ou vérifier qu'elle existe encore
 
 → Relancer `npm run contract:generate` si le changement est intentionnel,
