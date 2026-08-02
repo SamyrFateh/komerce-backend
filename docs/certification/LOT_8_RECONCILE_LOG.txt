@@ -1094,11 +1094,15 @@ DO
 \n$ psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/124_shared_cart_minimal_domain.sql
 SET
 SET
-DROP VIEW
-psql:migrations/124_shared_cart_minimal_domain.sql:84: ERROR:  cannot alter type of a column used by a view or rule
-DETAIL:  rule _RETURN on view v_ceremony_orders depends on column "status"
-CONTEXT:  SQL statement "ALTER TABLE orders
+BEGIN
+CREATE TABLE
+INSERT 0 8
+psql:migrations/124_shared_cart_minimal_domain.sql:208: ERROR:  operator does not exist: order_status_new <> order_status
+LINE 3:     USING status::text::order_status_new
+                                   ^
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+QUERY:  ALTER TABLE orders
     ALTER COLUMN status TYPE order_status_new
-    USING status::text::order_status_new"
-PL/pgSQL function inline_code_block line 33 at SQL statement
+    USING status::text::order_status_new
+CONTEXT:  PL/pgSQL function inline_code_block line 40 at SQL statement
 FAILED rc=3: psql postgres://komerce:komerce@localhost:5432/komerce_test -v ON_ERROR_STOP=1 -f migrations/124_shared_cart_minimal_domain.sql
