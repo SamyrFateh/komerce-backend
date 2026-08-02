@@ -32,9 +32,6 @@ BEGIN;
 
 -- ============================================================
 -- 1. order_status — retrait de pending_group_payment
---    PostgreSQL ne permet pas de retirer une valeur d'un type ENUM
---    directement : on recrée le type sans cette valeur, on bascule toutes
---    les colonnes dessus, puis on supprime l'ancien type.
 -- ============================================================
 
 -- Les vues qui dépendent directement ou indirectement de orders.status ou
@@ -126,10 +123,45 @@ FROM impacted
 JOIN pg_class c ON c.oid = impacted.view_oid
 GROUP BY impacted.view_oid, c.relowner;
 
+-- Tous les index non portés par une contrainte sont également mémorisés.
+-- Les prédicats d'index contiennent des littéraux typés order_status : ils
+-- doivent être reparsés après le remplacement de l'ENUM.
+CREATE TEMP TABLE _m124_saved_order_status_indexes (
+  index_oid        OID PRIMARY KEY,
+  index_schema     TEXT NOT NULL,
+  index_name       TEXT NOT NULL,
+  index_definition TEXT NOT NULL
+) ON COMMIT DROP;
+
+INSERT INTO _m124_saved_order_status_indexes (
+  index_oid,
+  index_schema,
+  index_name,
+  index_definition
+)
+SELECT
+  i.indexrelid,
+  n.nspname,
+  idx.relname,
+  pg_get_indexdef(i.indexrelid)
+FROM pg_index i
+JOIN pg_class idx ON idx.oid = i.indexrelid
+JOIN pg_namespace n ON n.oid = idx.relnamespace
+WHERE i.indrelid IN (
+  'public.orders'::regclass,
+  'public.order_status_history'::regclass
+)
+AND NOT EXISTS (
+  SELECT 1
+  FROM pg_constraint c
+  WHERE c.conindid = i.indexrelid
+);
+
 DO $$
 DECLARE
   stuck_count INTEGER;
   saved_view RECORD;
+  saved_index RECORD;
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_type t
@@ -159,6 +191,14 @@ BEGIN
     EXECUTE format('DROP VIEW %I.%I', saved_view.view_schema, saved_view.view_name);
   END LOOP;
 
+  FOR saved_index IN
+    SELECT *
+    FROM _m124_saved_order_status_indexes
+    ORDER BY index_oid
+  LOOP
+    EXECUTE format('DROP INDEX %I.%I', saved_index.index_schema, saved_index.index_name);
+  END LOOP;
+
   CREATE TYPE order_status_new AS ENUM (
     'pending', 'confirmed', 'ordered', 'preparation', 'shipped',
     'in_transit', 'available', 'collected', 'cancelled', 'refunded'
@@ -176,6 +216,14 @@ BEGIN
   DROP TYPE order_status;
   ALTER TYPE order_status_new RENAME TO order_status;
   ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'pending'::order_status;
+
+  FOR saved_index IN
+    SELECT *
+    FROM _m124_saved_order_status_indexes
+    ORDER BY index_oid
+  LOOP
+    EXECUTE saved_index.index_definition;
+  END LOOP;
 
   FOR saved_view IN
     SELECT *
@@ -211,9 +259,14 @@ END $$;
 -- 2. shared_cart_status — réduction à 3 valeurs
 -- ============================================================
 
--- Deux index partiels filtrent sur des valeurs absentes du type réduit.
+-- Index devenus obsolètes ou dépendants du type ENUM remplacé.
 DROP INDEX IF EXISTS idx_shared_carts_awaiting_deadline;
+DROP INDEX IF EXISTS idx_shared_carts_beneficiary;
+DROP INDEX IF EXISTS idx_shared_carts_closed_window;
 DROP INDEX IF EXISTS idx_shared_carts_funded;
+DROP INDEX IF EXISTS idx_shared_carts_open_target_date;
+DROP INDEX IF EXISTS idx_shared_carts_status;
+DROP INDEX IF EXISTS idx_shared_carts_status_v41;
 
 DO $$
 DECLARE
@@ -297,6 +350,12 @@ ALTER TABLE shared_carts
   DROP COLUMN IF EXISTS awaiting_choice_started_at,
   DROP COLUMN IF EXISTS awaiting_choice_deadline,
   DROP COLUMN IF EXISTS view_count;
+
+CREATE INDEX IF NOT EXISTS idx_shared_carts_organizer
+  ON shared_carts (organizer_user_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_shared_carts_status_v41
+  ON shared_carts (status, created_at DESC);
 
 -- ============================================================
 -- 4. Tables de contribution/estimation — supprimées
