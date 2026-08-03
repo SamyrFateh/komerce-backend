@@ -53,8 +53,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   document.body.innerHTML = `
     <button id="k-cart-share">📤 Partager cette liste</button>
-    <button class="k-bnav-item" data-tab="group"></button>
-    <button class="k-header-nav-btn" data-tab="group"></button>
+    <button class="k-bnav-item" data-tab="komerce"></button>
+    <button class="k-header-nav-btn" data-tab="komerce"></button>
   `;
   sessionStorage.clear();
 
@@ -64,9 +64,6 @@ beforeEach(() => {
   state.shareExpiry = null;
   state.cartName = '';
   state.shareStatus = null;
-  state.shareTotalKmf = 0;
-  state.shareContributedKmf = 0;
-  state.shareRemainingKmf = 0;
   state.shareUrl = null;
 
   mockRequireIdentity.mockResolvedValue({ id: 'user-1' });
@@ -215,7 +212,7 @@ test('le repartage fonctionne sans panier local et sans nouvelle création', asy
   }));
 });
 
-test('sans partage natif, le lien est copié et WhatsApp sert de fallback', async () => {
+test('sans partage natif, le lien est copié et aucun canal n\'est ouvert automatiquement', async () => {
   setNavigatorShare(undefined);
   global.fetch.mockResolvedValue({
     ok: true,
@@ -233,10 +230,14 @@ test('sans partage natif, le lien est copié et WhatsApp sert de fallback', asyn
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
     'https://komerce.test/boutique/?p=tok-fallback',
   );
-  expect(window.open).toHaveBeenCalledWith(
-    expect.stringContaining('https://wa.me/?text='),
-    '_blank',
-    'noopener',
+  expect(window.open).not.toHaveBeenCalledWith(
+    expect.stringContaining('wa.me'),
+    expect.anything(),
+    expect.anything(),
+  );
+  expect(mockShowToast).toHaveBeenCalledWith(
+    expect.stringContaining('WhatsApp'),
+    'success',
   );
 });
 

@@ -231,6 +231,17 @@ bus.on('nav:goto-track', () => { renderTrackView(); switchView('track'); });
 bus.on('nav:goto-komerce-wallet', () => { openMonKomerce({ focus: 'wallet' }); });
 bus.on('komerce:show', () => { switchView('komerce'); });
 
+// §2.1 mandat correction liste partageable — l'onglet Groupe de niveau 1 a
+// disparu ; « Mes listes » (b-komerce.js) est le nouveau point d'entrée et
+// mène au même écran group-render-list.js, sans dupliquer sa logique.
+bus.on('nav:goto-group', () => {
+  document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
+    i.classList.toggle('active', i.dataset.tab === 'komerce');
+  });
+  renderGroupView();
+  switchView('group');
+});
+
 /**
  * Branche la bottom nav mobile + les boutons nav desktop.
  */
@@ -244,7 +255,6 @@ export function setupBnav() {
       if (tab === 'cart')  { openCart(); return; }
       if (tab === 'fav')   { renderFavView(); switchView('fav'); return; }
       if (tab === 'track') { renderTrackView(); switchView('track'); return; }
-      if (tab === 'group') { renderGroupView(); switchView('group'); return; }
       if (tab === 'komerce') { openMonKomerce(); return; }
       switchView('shop');
     });
@@ -268,9 +278,9 @@ export function handleParticipantUrl() {
     const clean = window.location.origin + window.location.pathname;
     window.history.replaceState({}, '', clean);
   } catch (_) {}
-  // Activer l'onglet Groupe
+  // Lien reçu : écran d'entrée dédié, hors du jeu d'onglets de niveau 1.
   document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
-    i.classList.toggle('active', i.dataset.tab === 'group');
+    i.classList.remove('active');
   });
   renderGroupView({ participantToken: token });
   switchView('group');
@@ -304,7 +314,7 @@ function handleTabDeepLink() {
 
     // Activer l'onglet
     document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
-      i.classList.toggle('active', i.dataset.tab === resolvedTab);
+      i.classList.toggle('active', i.dataset.tab === (resolvedTab === 'group' ? 'komerce' : resolvedTab));
     });
 
     if (resolvedTab === 'fav')     { renderFavView(); switchView('fav'); }

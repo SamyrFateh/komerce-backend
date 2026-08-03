@@ -106,7 +106,9 @@ async function snapshot(page, label) {
 
   await snapshot(page, 'BOUTIQUE (initial)');
 
-  await page.click('.k-bnav-item[data-tab="group"]').catch(e => console.log('click group fail', e.message));
+  await page.click('.k-bnav-item[data-tab="komerce"]').catch(e => console.log('click komerce fail', e.message));
+  await page.waitForTimeout(400);
+  await page.click('#k-kmc-listes-btn').catch(e => console.log('click mes-listes fail', e.message));
   await page.waitForTimeout(1200);
   await snapshot(page, 'ONGLET GROUPE');
   // Scroll window résiduel simulé AVANT bascule (déjà fait), maintenant : scroller la vue
@@ -122,7 +124,10 @@ async function snapshot(page, label) {
   await page.evaluate(() => window.scrollTo(0, 400));
   await page.click('.k-bnav-item[data-tab="shop"]');
   await page.waitForTimeout(900);
-  await page.click('.k-bnav-item[data-tab="group"]');
+  // §2.1 — l'onglet Groupe n'existe plus : re-basculer via Mon Komerce > Mes listes
+  await page.click('.k-bnav-item[data-tab="komerce"]');
+  await page.waitForTimeout(400);
+  await page.click('#k-kmc-listes-btn');
   await page.waitForTimeout(900);
   const resetCheck = await page.evaluate(() => ({ winY: window.scrollY, psTop: document.getElementById('k-page-scroll')?.scrollTop || 0 }));
   console.log(' re-bascule shop→groupe : window.scrollY=' + resetCheck.winY + ' (attendu 0) | ps.scrollTop=' + resetCheck.psTop);

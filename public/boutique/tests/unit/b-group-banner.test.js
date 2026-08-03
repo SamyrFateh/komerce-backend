@@ -10,7 +10,7 @@
  * par la doctrine "cockpit Groupe — mai 2026" (commentaire du fichier) et se
  * résume désormais à `hideBanner(); return;` — il ignore totalement `data`.
  * Conséquence : buildHTML, getOrCreateBanner, bindBanner, expandBanner,
- * shouldAutoCollapse, scheduleCollapse, startTick, timeRemaining, pct, r,
+ * shouldAutoCollapse, scheduleCollapse, startTick, timeRemaining, pct,
  * isClosedStatus (≈140 lignes, plus de la moitié du fichier) sont du code
  * mort — plus aucun chemin d'exécution ne les atteint. Confirmé par grep :
  * aucun appelant externe n'invoque autre chose que showBanner/hideBanner/
@@ -32,9 +32,6 @@ function resetState() {
   state.shareToken = null;
   state.shareExpiry = null;
   state.shareStatus = null;
-  state.shareTotalKmf = null;
-  state.shareContributedKmf = null;
-  state.shareRemainingKmf = null;
 }
 
 beforeEach(() => {
@@ -57,7 +54,7 @@ describe('showBanner (vidée par la doctrine cockpit Groupe — délègue entiè
     el.classList.add('show', 'is-compact');
     document.body.appendChild(el);
 
-    showBanner({ title: 'Panier X', status: 'fully_funded', total_kmf_snapshot: 1000, contributed_kmf: 1000 });
+    showBanner({ title: 'Panier X', status: 'fully_funded' });
 
     expect(el.classList.contains('show')).toBe(false);
     expect(el.classList.contains('is-compact')).toBe(false);
@@ -136,7 +133,7 @@ describe('refreshBanner', () => {
     expect(window.sessionStorage.getItem('kmrc_share')).toBeNull();
   });
 
-  it('réponse ok avec data.cart : synchronise tous les champs share_* du state', async () => {
+  it('réponse ok avec data.cart : synchronise expiry et status', async () => {
     state.shareToken = 'tok-123';
     global.fetch.mockResolvedValue({
       ok: true,
@@ -145,9 +142,6 @@ describe('refreshBanner', () => {
           title: 'Panier familial',
           expires_at: '2026-08-01T00:00:00Z',
           status: 'active',
-          total_kmf_snapshot: 5000,
-          contributed_kmf: 2000,
-          remaining_kmf: 3000,
         },
       }),
     });
@@ -158,25 +152,6 @@ describe('refreshBanner', () => {
 
     expect(state.shareExpiry).toBe('2026-08-01T00:00:00Z');
     expect(state.shareStatus).toBe('active');
-    expect(state.shareTotalKmf).toBe(5000);
-    expect(state.shareContributedKmf).toBe(2000);
-    expect(state.shareRemainingKmf).toBe(3000);
-  });
-
-  it('tolère des montants non numériques dans la réponse (via r())', async () => {
-    state.shareToken = 'tok-123';
-    global.fetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ cart: { total_kmf_snapshot: 'abc', contributed_kmf: null, remaining_kmf: '2000.6' } }),
-    });
-
-    refreshBanner();
-    await new Promise(process.nextTick);
-    await new Promise(process.nextTick);
-
-    expect(state.shareTotalKmf).toBe(0);
-    expect(state.shareContributedKmf).toBe(0);
-    expect(state.shareRemainingKmf).toBe(2001);
   });
 
   it('erreur réseau (fetch rejette) : ne throw pas, silencieusement avalée', async () => {

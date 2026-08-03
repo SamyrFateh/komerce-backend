@@ -41,12 +41,8 @@ const SHARE_BUTTON_LABEL = '📤 Partager cette liste';
 
 /* ── Helpers ───────────────────────────────────────────────────── */
 
-function r(n) {
-  return Math.round(Number(n) || 0);
-}
-
 function effectiveDeadline(cart) {
-  return cart?.target_date || cart?.expires_at || null;
+  return cart?.expires_at || null;
 }
 
 function isActiveCart(cart) {
@@ -68,11 +64,6 @@ function applyCartToState(cart) {
   state.cartName = cart.title || DEFAULT_LIST_TITLE;
   state.shareStatus = cart.status || null;
 
-  // Compatibilité de cache uniquement : la liste n'est plus un agrégat financier.
-  state.shareTotalKmf = r(cart.total_kmf_snapshot);
-  state.shareContributedKmf = r(cart.contributed_kmf);
-  state.shareRemainingKmf = r(cart.remaining_kmf);
-
   state.shareUrl = cart.share_url
     || (cart.token ? `${window.location.origin}/boutique/?p=${cart.token}` : null);
 
@@ -93,9 +84,6 @@ function loadShareState() {
     state.shareExpiry = saved.expiry || null;
     state.cartName = saved.name || '';
     state.shareStatus = saved.status || null;
-    state.shareTotalKmf = r(saved.total_kmf);
-    state.shareContributedKmf = r(saved.contributed_kmf);
-    state.shareRemainingKmf = r(saved.remaining_kmf);
     state.shareUrl = saved.share_url || null;
   } catch (_) {}
 }
@@ -108,9 +96,6 @@ function saveShareState() {
       expiry: state.shareExpiry,
       name: state.cartName,
       status: state.shareStatus,
-      total_kmf: state.shareTotalKmf,
-      contributed_kmf: state.shareContributedKmf,
-      remaining_kmf: state.shareRemainingKmf,
       share_url: state.shareUrl,
     }));
   } catch (_) {}
@@ -122,9 +107,6 @@ function clearLocalShareState() {
   state.shareExpiry = null;
   state.cartName = '';
   state.shareStatus = null;
-  state.shareTotalKmf = 0;
-  state.shareContributedKmf = 0;
-  state.shareRemainingKmf = 0;
   state.shareUrl = null;
 
   try {
@@ -170,8 +152,6 @@ export async function restoreSharedCartFromBackend({ silent = true } = {}) {
       title: cart.title || DEFAULT_LIST_TITLE,
       expires_at: effectiveDeadline(cart),
       status: cart.status,
-      contributed_kmf: cart.contributed_kmf,
-      total_kmf_snapshot: cart.total_kmf_snapshot,
     });
 
     return cart;
@@ -268,10 +248,11 @@ async function shareList(title, shareUrl) {
 
   try {
     await navigator.clipboard?.writeText(shareUrl);
-  } catch (_) {}
+    showToast('Lien copié. Collez-le sur WhatsApp ou ailleurs pour le partager.', 'success');
+  } catch (_) {
+    showToast(shareUrl);
+  }
 
-  const message = `${text}\n${shareUrl}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
   return 'fallback';
 }
 
@@ -279,7 +260,7 @@ function switchToGroup() {
   import('./b-nav.js').then(({ switchView }) => {
     import('./group/group-render-list.js').then(({ renderGroupView }) => {
       document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
-        .forEach((item) => item.classList.toggle('active', item.dataset.tab === 'group'));
+        .forEach((item) => item.classList.toggle('active', item.dataset.tab === 'komerce'));
       renderGroupView();
       switchView('group');
     });

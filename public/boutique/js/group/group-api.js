@@ -77,36 +77,6 @@ export function getOwnerSharedCarts() {
 }
 
 /**
- * Récupère un panier partagé par son id (vue créateur — cockpit).
- * @param {string|number} cartId
- * @returns {Promise<{cart, items, claimed_count}>}
- */
-export function getSharedCartOwner(cartId) {
-  return apiGet(`/api/shared-carts/${cartId}`);
-}
-
-/**
- * Récupère les articles d'un panier partagé sous forme de snapshot cart-items.
- * @param {string|number} cartId
- * @returns {Promise<{cart_items: Array}>}
- */
-export function getSharedCartItems(cartId) {
-  return apiGet(`/api/shared-carts/${cartId}/as-cart-items`);
-}
-
-/**
- * Ajoute un article à la liste — une intention, un appel, écriture
- * immédiate (Invariant 20 ; Contrat API §2/§5 point 4).
- * @param {string|number} cartId
- * @param {string} productId
- * @param {number} [quantity=1]
- * @returns {Promise<{ok: boolean, cart, item}>}
- */
-export function addItemToSharedList(cartId, productId, quantity = 1) {
-  return apiPost(`/api/shared-carts/${cartId}/items`, { product_id: productId, quantity });
-}
-
-/**
  * Retire un article de la liste — confirmation déjà obtenue côté client
  * avant cet appel (Invariant 21) ; exécution immédiate côté serveur.
  * Le serveur refuse (409 item_already_claimed) si l'article a déjà été
@@ -125,15 +95,6 @@ export function removeItemFromSharedList(cartId, itemId) {
  */
 export function closeCart(cartId) {
   return apiPost(`/api/shared-carts/${cartId}/close`, {});
-}
-
-/**
- * Annule un panier partagé.
- * @param {string|number} cartId
- * @param {{reason: string}} payload
- */
-export function cancelSharedCart(cartId, payload) {
-  return apiPost(`/api/shared-carts/${cartId}/cancel`, payload);
 }
 
 /* ── Endpoint public (fetch direct, credentials:include) ──────────── */

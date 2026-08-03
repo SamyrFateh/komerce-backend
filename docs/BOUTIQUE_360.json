@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-08-02T23:01:39.807Z",
+  "generatedAt": "2026-08-03T05:50:58.946Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
-    "events": 22,
+    "events": 23,
     "declaredActive": 17,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 48,
+    "endpoints": 44,
     "orphanEmit": 1,
     "orphanListen": 1,
-    "undeclared": 5,
+    "undeclared": 6,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 31,
-    "dynamicEndpoints": 19,
+    "dynamicEndpoints": 15,
     "ownedEvents": 3,
     "ownershipRed": 0,
     "ownershipOrange": 0
@@ -777,6 +777,7 @@
         "boutique.js"
       ],
       "emits": [
+        "nav:goto-group",
         "komerce:show"
       ],
       "listens": [],
@@ -788,6 +789,10 @@
       ],
       "bodyClasses": [],
       "emitCalls": [
+        {
+          "name": "nav:goto-group",
+          "hasArg": false
+        },
         {
           "name": "komerce:show",
           "hasArg": false
@@ -1386,7 +1391,8 @@
         "cart:update",
         "nav:goto-track",
         "nav:goto-komerce-wallet",
-        "komerce:show"
+        "komerce:show",
+        "nav:goto-group"
       ],
       "imports": [
         "b-bus",
@@ -1622,15 +1628,14 @@
       "file": "public/boutique/js/b-share-cart.js",
       "id": "b-share-cart",
       "hasHeader": true,
-      "role": "shared-cart-creation-from-boutique",
+      "role": "shared-list-creation-from-boutique",
       "domain": "shared-cart",
       "layer": "ui-component",
       "criticality": "critical",
       "doctrine": [
-        "partager_geste_natif",
-        "panier_ouvert_ferme",
-        "paiement_seul_acte_engageant",
-        "boutique_canal_decouverte"
+        "partage_immediat",
+        "boutique_canal_decouverte",
+        "checkout_canonique"
       ],
       "depends": [
         "b-store.js",
@@ -1638,8 +1643,6 @@
         "b-cart.js",
         "group/group-render-list.js",
         "b-group-banner.js",
-        "b-phone.js",
-        "b-checkout.js",
         "b-identity.js"
       ],
       "usedBy": [
@@ -1654,10 +1657,7 @@
         "b-cart",
         "group-state",
         "b-group-banner",
-        "b-phone",
-        "b-checkout",
         "b-identity",
-        "b-utils",
         "group-api"
       ],
       "bodyClasses": [],
@@ -2587,6 +2587,14 @@
       ],
       "listeners": []
     },
+    "nav:goto-group": {
+      "emitters": [
+        "b-komerce"
+      ],
+      "listeners": [
+        "b-nav"
+      ]
+    },
     "komerce:show": {
       "emitters": [
         "b-komerce"
@@ -2692,7 +2700,6 @@
         "hero-cart-proxy",
         "group-cart-flow",
         "share-cart",
-        "shared-followup",
         "identity",
         "paypal",
         "wallet",
@@ -2709,13 +2716,6 @@
   "callEdges": [
     {
       "module": "b-cart",
-      "route": "/api/shared-carts/{id}/items",
-      "raw": "/api/shared-carts/${ctx.shared_cart_id}/items",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "b-cart",
       "route": "/api/shares",
       "raw": "/api/shares",
       "dynamic": false,
@@ -2725,13 +2725,6 @@
       "module": "b-cart",
       "route": "/api/shares",
       "raw": "/api/shares/",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "b-cart",
-      "route": "/api/shared-carts/{id}/items",
-      "raw": "/api/shared-carts/${ctx.shared_cart_id}/items",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
     },
@@ -2989,27 +2982,6 @@
     },
     {
       "module": "group-api",
-      "route": "/api/shared-carts/{id}",
-      "raw": "/api/shared-carts/${cartId}",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/{id}/as-cart-items",
-      "raw": "/api/shared-carts/${cartId}/as-cart-items",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/{id}/items",
-      "raw": "/api/shared-carts/${cartId}/items",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
       "route": "/api/shared-carts/{id}/items/{id}",
       "raw": "/api/shared-carts/${cartId}/items/${itemId}",
       "dynamic": true,
@@ -3019,13 +2991,6 @@
       "module": "group-api",
       "route": "/api/shared-carts/{id}/close",
       "raw": "/api/shared-carts/${cartId}/close",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/{id}/cancel",
-      "raw": "/api/shared-carts/${cartId}/cancel",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
     },
@@ -3338,6 +3303,7 @@
       "carousel:changed",
       "favorites:view-refresh",
       "modal:product-changed",
+      "nav:goto-group",
       "sidebar:built",
       "view:changed"
     ],
@@ -3391,11 +3357,7 @@
       "/api/products/{id}/detail",
       "/api/purchasing/suppliers/{id}",
       "/api/shared-carts/public/{id}",
-      "/api/shared-carts/{id}",
-      "/api/shared-carts/{id}/as-cart-items",
-      "/api/shared-carts/{id}/cancel",
       "/api/shared-carts/{id}/close",
-      "/api/shared-carts/{id}/items",
       "/api/shared-carts/{id}/items/{id}",
       "/api/shares"
     ],
@@ -3564,11 +3526,7 @@
     "/api/shared-carts/from-cart-items",
     "/api/shared-carts/mine",
     "/api/shared-carts/public/{id}",
-    "/api/shared-carts/{id}",
-    "/api/shared-carts/{id}/as-cart-items",
-    "/api/shared-carts/{id}/cancel",
     "/api/shared-carts/{id}/close",
-    "/api/shared-carts/{id}/items",
     "/api/shared-carts/{id}/items/{id}",
     "/api/shares",
     "/api/wallet",

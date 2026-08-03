@@ -91,8 +91,8 @@ function mountDrawer() {
     <div class="k-cart-footer-btns"></div>
     <button class="k-bnav-item active" data-tab="home"></button>
     <button class="k-bnav-item" data-tab="shop"></button>
-    <button class="k-bnav-item" data-tab="group"></button>
-    <button class="k-header-nav-btn" data-tab="group"></button>
+    <button class="k-bnav-item" data-tab="komerce"></button>
+    <button class="k-header-nav-btn" data-tab="komerce"></button>
   `;
   dom.cartBody = document.createElement('div');
   dom.cartFooter = document.createElement('div');
@@ -147,7 +147,6 @@ beforeEach(() => {
   state.activeSubcat = null;
   state.modalProduct = null;
   state.modalVariantCombo = null;
-  state.editSharedCart = null;
   state.shareToken = null;
   scroll.savedY = 0;
   mockIsDesktop.mockReturnValue(false);
@@ -257,66 +256,6 @@ test('le CTA vide ferme le drawer et réactive la boutique', () => {
   document.getElementById('k-cart-empty-shop').click();
   expect(document.body.classList.contains('cart-open')).toBe(false);
   expect(document.querySelector('[data-tab="shop"]').classList.contains('active')).toBe(true);
-});
-
-test('le mode édition masque les CTA et refuse un panier de travail vide', () => {
-  state.editSharedCart = { shared_cart_id: 'sc-empty' };
-  state.cart = [{ product: product(8), qty: 2 }];
-  renderCartBody();
-  expect(document.getElementById('k-cart-checkout').style.display).toBe('none');
-  expect(document.getElementById('k-cart-share').style.display).toBe('none');
-  expect(document.getElementById('k-cart-item-count').textContent).toBe('2');
-
-  state.cart = [];
-  document.getElementById('k-cart-edit-update').click();
-  expect(document.getElementById('k-cart-edit-err').textContent)
-    .toContain('Ajoutez au moins un article');
-});
-
-test('met à jour un panier collectif puis revient vers Groupe', async () => {
-  state.editSharedCart = { shared_cart_id: 'sc-ok' };
-  state.cart = [{ product: product(9), qty: 3 }];
-  global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
-  renderCartBody();
-  document.getElementById('k-cart-edit-update').click();
-  await settleAsync();
-
-  expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/sc-ok/items', expect.objectContaining({
-    method: 'PUT', credentials: 'include',
-  }));
-  expect(state.editSharedCart).toBeNull();
-  expect(state.cart).toHaveLength(0);
-  await settleAsync();
-  expect(mockSwitchView).toHaveBeenCalledWith('group');
-  expect(mockRenderGroupView).toHaveBeenCalled();
-});
-
-test('affiche l’erreur serveur et réactive le bouton de mise à jour', async () => {
-  state.editSharedCart = { shared_cart_id: 'sc-ko' };
-  state.cart = [{ product: product(10), qty: 1 }];
-  global.fetch.mockResolvedValue({
-    ok: false,
-    status: 409,
-    json: async () => ({ error: 'Panier fermé' }),
-  });
-  renderCartBody();
-  const update = document.getElementById('k-cart-edit-update');
-  update.click();
-  await settleAsync();
-
-  expect(document.getElementById('k-cart-edit-err').textContent).toBe('Panier fermé');
-  expect(update.disabled).toBe(false);
-});
-
-test('annule l’édition sans vider le panier', async () => {
-  state.editSharedCart = { shared_cart_id: 'sc-cancel' };
-  state.cart = [{ product: product(11), qty: 1 }];
-  renderCartBody();
-  document.getElementById('k-cart-edit-cancel').click();
-  await settleAsync();
-  expect(state.editSharedCart).toBeNull();
-  expect(state.cart).toHaveLength(1);
-  expect(mockSwitchView).toHaveBeenCalledWith('group');
 });
 
 test('rend le side-cart, sa promo, sa variante et ses mutations', () => {

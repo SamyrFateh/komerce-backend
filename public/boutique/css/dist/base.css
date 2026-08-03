@@ -370,9 +370,6 @@
   --whatsapp-deep:          #128c7e   ;  /* WhatsApp deep (gradient) */
 
   /* ── Groupe / panier partagé — tokens alpha (refactor group-cart-flow) ── */
-  --collective-navy:       #1a4a6e;              /* S3.2 — bandeau mode édition panier collectif (bleu Komerce) */
-  --collective-err:        #e53935;              /* S3.2 — message d'erreur mode édition panier collectif */
-  --collective-err-light:  #ffe0e0;              /* S3.2 — message d'erreur side-cart mode édition (fond clair) */
   --green-alpha-06:   rgba(31,122,84,.06);  /* mini-guide fond */
   --green-alpha-09:   rgba(31,122,84,.09);  /* locked-amount, funded-callout fond */
   --green-alpha-12:   rgba(31,122,84,.12);  /* badge phase ouverte fond */

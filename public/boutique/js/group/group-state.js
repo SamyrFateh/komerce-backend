@@ -91,5 +91,5 @@ export function refreshGroupBadge() {
   const has = !!state.shareToken;
   document.getElementById('k-bnav-group-badge')?.classList.toggle('show', has);
   document.getElementById('k-header-group-badge')?.classList.toggle('show', has);
-  document.getElementById('k-header-group-btn')?.classList.toggle('has-active', has);
+  document.getElementById('k-header-komerce-btn')?.classList.toggle('has-active', has);
 }

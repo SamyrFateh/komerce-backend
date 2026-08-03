@@ -1731,8 +1731,7 @@
       "purpose": null,
       "inputs": [
         "shared_cart_state",
-        "expiry",
-        "contribution_state"
+        "expiry"
       ],
       "outputs": [
         "shared_cart_state_refresh"

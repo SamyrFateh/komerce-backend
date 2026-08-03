@@ -81,10 +81,20 @@ function ensureShell() {
         '<section id="k-kmc-wallet-block" class="k-kmc-block" aria-label="Mon wallet"></section>' +
       '</div>' +
       '<div class="k-kmc-col-secondary">' +
+        '<section class="k-kmc-block k-kmc-listes-entry" aria-label="Mes listes">' +
+          '<button type="button" class="k-kmc-listes-btn" id="k-kmc-listes-btn">' +
+            '<span class="k-kmc-listes-label">\ud83c\udf81 Mes listes</span>' +
+            '<span class="k-kmc-listes-chevron" aria-hidden="true">\u203a</span>' +
+          '</button>' +
+        '</section>' +
         '<section id="k-kmc-profile-block" class="k-kmc-block" aria-label="Mon profil"></section>' +
         '<section id="k-kmc-security-block" class="k-kmc-block" aria-label="Retrait et s\u00e9curit\u00e9"></section>' +
       '</div>' +
     '</div>';
+
+  el.querySelector('#k-kmc-listes-btn')?.addEventListener('click', () => {
+    bus.emit('nav:goto-group');
+  });
 
   const anchor = document.getElementById('k-track-view')
     || document.getElementById('k-fav-view')

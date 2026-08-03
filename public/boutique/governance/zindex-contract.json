@@ -1,65 +1,88 @@
 {
   "$schema": "Contrat z-index réel — voir scripts/check-zindex-contract.js",
   "_procedure": "Chaque overlay/panneau plein écran majeur doit être déclaré ici comme une couche avec ses bornes actuelles. Si tu changes volontairement un z-index hors des bornes, mets à jour zIndexMin/zIndexMax dans la même PR — le gate n'a pas de mode --save automatique (contrairement à css-guard.js) car ici la valeur EXACTE compte, pas juste 'pas de hausse'.",
-
   "layers": [
     {
       "name": "chrome-bottom",
-      "selectors": [".k-bnav", ".k-wa-fab"],
+      "selectors": [
+        ".k-bnav",
+        ".k-wa-fab"
+      ],
       "zIndexMin": 80,
       "zIndexMax": 100,
       "reason": "Barre de navigation basse + FAB WhatsApp — chrome permanent, doit toujours rester sous tout overlay/modal."
     },
     {
       "name": "modal-overlay",
-      "selectors": [".k-modal-overlay"],
+      "selectors": [
+        ".k-modal-overlay"
+      ],
       "zIndexMin": 250,
       "zIndexMax": 350,
       "reason": "Overlay de la modale produit (SIBLING_ORDER : doit envelopper #k-modal, cf. check-html-balance.js)."
     },
     {
       "name": "cart-overlay",
-      "selectors": [".k-cart-overlay"],
+      "selectors": [
+        ".k-cart-overlay"
+      ],
       "zIndexMin": 1050,
       "zIndexMax": 1150,
       "reason": "Overlay du drawer panier — doit précéder .k-cart-drawer (SIBLING_ORDER)."
     },
     {
       "name": "cart-drawer",
-      "selectors": [".k-cart-drawer"],
+      "selectors": [
+        ".k-cart-drawer"
+      ],
       "zIndexMin": 1100,
       "zIndexMax": 1180,
       "reason": "Drawer panier — doit précéder .k-order-overlay (flux F4→F5, SIBLING_ORDER)."
     },
     {
       "name": "order-overlay",
-      "selectors": [".k-order-overlay"],
+      "selectors": [
+        ".k-order-overlay"
+      ],
       "zIndexMin": 1180,
       "zIndexMax": 1350,
       "reason": "Modale de commande (checkout) — au-dessus du panier, sous le flux group-cart et les toasts."
     },
     {
-      "name": "group-flow-overlay",
-      "selectors": [".k-group-flow-overlay"],
-      "zIndexMin": 1700,
-      "zIndexMax": 1900,
-      "reason": "Overlay du flux commande groupée — doit rester au-dessus du panier/checkout classique."
-    },
-    {
       "name": "toast",
-      "selectors": [".k-toast"],
+      "selectors": [
+        ".k-toast"
+      ],
       "zIndexMin": 1950,
       "zIndexMax": 2200,
       "reason": "Toast de notification — doit toujours apparaître au-dessus de TOUT le reste (dernier mot visuel)."
     }
   ],
-
   "order": [
-    { "below": "chrome-bottom",       "above": "modal-overlay",       "reason": "La nav basse et le FAB ne doivent jamais passer au-dessus d'une modale ouverte." },
-    { "below": "modal-overlay",       "above": "cart-overlay",        "reason": "Le panier (ouvert depuis n'importe où, y compris depuis la modale produit) doit toujours passer au-dessus de la modale produit." },
-    { "below": "cart-overlay",        "above": "cart-drawer",         "reason": "SIBLING_ORDER : l'overlay panier précède le drawer." },
-    { "below": "cart-drawer",         "above": "order-overlay",       "reason": "SIBLING_ORDER : le drawer précède la modale commande (flux F4→F5)." },
-    { "below": "order-overlay",       "above": "group-flow-overlay",  "reason": "Le flux commande groupée doit rester au-dessus du checkout classique." },
-    { "below": "group-flow-overlay",  "above": "toast",               "reason": "Le toast doit toujours gagner sur tout le reste." }
+    {
+      "below": "chrome-bottom",
+      "above": "modal-overlay",
+      "reason": "La nav basse et le FAB ne doivent jamais passer au-dessus d'une modale ouverte."
+    },
+    {
+      "below": "modal-overlay",
+      "above": "cart-overlay",
+      "reason": "Le panier (ouvert depuis n'importe où, y compris depuis la modale produit) doit toujours passer au-dessus de la modale produit."
+    },
+    {
+      "below": "cart-overlay",
+      "above": "cart-drawer",
+      "reason": "SIBLING_ORDER : l'overlay panier précède le drawer."
+    },
+    {
+      "below": "cart-drawer",
+      "above": "order-overlay",
+      "reason": "SIBLING_ORDER : le drawer précède la modale commande (flux F4→F5)."
+    },
+    {
+      "below": "order-overlay",
+      "above": "toast",
+      "reason": "Le checkout classique doit rester sous le toast — palier intermédiaire group-flow-overlay retiré (résidu SC-EDIT supprimé, plus aucun sélecteur ne l'utilise)."
+    }
   ]
 }

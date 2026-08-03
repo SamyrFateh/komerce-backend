@@ -155,19 +155,6 @@ export const state = {
   shareId:    null,
   cartName:   '',
   shareExpiry: null,
-  /**
-   * SC-EDIT-01 — Contexte d'édition du panier collectif.
-   * Posé par group/group-render-list.js au clic "Modifier les articles".
-   * Supprimé après PUT réussi ou annulation explicite.
-   *
-   * Shape : {
-   *   shared_cart_id : string,   // cartId numérique
-   *   token          : string,   // shareToken (pour notif / rafraîchi)
-   *   return_tab     : 'group',  // onglet de retour après édition
-   *   started_at     : number,   // Date.now() — pour debug
-   * } | null
-   */
-  editSharedCart: null,
 };
 
 /**

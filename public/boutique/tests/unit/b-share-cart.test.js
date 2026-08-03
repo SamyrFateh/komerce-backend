@@ -42,9 +42,6 @@ function resetShareState() {
   state.shareExpiry = null;
   state.cartName = '';
   state.shareStatus = null;
-  state.shareTotalKmf = 0;
-  state.shareContributedKmf = 0;
-  state.shareRemainingKmf = 0;
   state.shareUrl = null;
   state.cart = [];
 }

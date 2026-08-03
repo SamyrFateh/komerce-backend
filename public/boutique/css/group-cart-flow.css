@@ -1,1939 +1,334 @@
-/* Flux simplifié panier collectif */
-.k-group-flow-overlay{position:fixed;inset:0;z-index:1800;background:rgba(31,48,36,.52);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center}.k-group-flow-sheet{width:100%;max-width:420px;background:var(--white);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.22);animation:kGroupFlowUp .22s ease}.k-group-flow-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.k-group-flow-title{font-size:18px;font-weight:900;color:var(--text);margin:0}.k-group-flow-close{border:0;background:var(--sand);width:34px;height:34px;border-radius:999px;cursor:pointer;font-weight:900}.k-group-flow-hero{text-align:center;padding:8px 4px 16px}.k-group-flow-icon{font-size:46px;line-height:1;margin-bottom:8px}.k-group-flow-big{font-size:20px;font-weight:950;color:var(--text);margin:0 0 6px}.k-group-flow-sub{font-size:13px;color:var(--text-muted);line-height:1.35;margin:0}.k-group-flow-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}.k-group-flow-stat{background:var(--sand);border:1px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center}.k-group-flow-stat b{display:block;font-size:14px;color:var(--text);font-weight:950}.k-group-flow-stat span{display:block;font-size:10px;color:var(--text-muted);font-weight:800;margin-top:2px}.k-group-flow-link{display:flex;align-items:center;gap:8px;background:var(--sand);border:1px dashed var(--border);border-radius:14px;padding:10px 12px;margin:10px 0 12px}.k-group-flow-link span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-muted)}.k-group-flow-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.k-group-flow-btn{border:0;border-radius:14px;padding:13px 10px;font-size:14px;font-weight:950;cursor:pointer;min-height:46px}.k-group-flow-btn:active{transform:scale(.98)}.k-group-flow-btn--primary{background:var(--cta-green);color:var(--white)}.k-group-flow-btn--wa{background:var(--whatsapp);color:var(--white)}.k-group-flow-btn--ghost{background:var(--sand);color:var(--text);border:1px solid var(--border);grid-column:1/-1}.k-group-flow-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 0;font-weight:900;color:var(--text)}.k-group-flow-spin{width:20px;height:20px;border-radius:50%;border:3px solid var(--sand-dark);border-top-color:var(--cta-green);animation:kGroupSpin .8s linear infinite}.k-cart-event-btn,.k-sc-btn-group{font-weight:950}.k-cart-event-btn{font-size:0}.k-cart-event-btn:after{content:'📤 Partager';font-size:14px}.k-sc-btn-group-label{font-size:0}.k-sc-btn-group-label:after{content:'📤 Partager';font-size:12px}@media(min-width:900px){.k-group-flow-overlay{align-items:center}.k-group-flow-sheet{border-radius:22px;padding:20px;max-width:390px}}@keyframes kGroupFlowUp{from{transform:translateY(24px);opacity:.6}to{transform:translateY(0);opacity:1}}@keyframes kGroupSpin{to{transform:rotate(360deg)}}
+/**
+ * @komerce-arch-lite
+ * @role          shared-list-view-styles
+ * @domain        shared-cart
+ * @layer         css
+ * @owner         public/boutique/js/group/group-render-list.js
+ * @purpose       supports public/boutique/js/group/group-render-list.js
+ * @impact-areas  shared-cart
+ * @version       2026-08
+ */
 
-/* ══════════════════════════════════════════════════════════════════
- * GROUPE COCKPIT — owner officiel des sélecteurs .k-group-*
- * Migré depuis b-group-view.js → injectStyles() (PR-1)
- * refactor(group): move group cockpit styles to CSS owner
- * ══════════════════════════════════════════════════════════════════ */
+/**
+ * Boutique First — styles de l'écran unique de la liste partageable
+ * (group-render-list.js, préfixe .k-glist-*).
+ *
+ * Ce fichier remplace intégralement l'ancien contenu (1939 lignes,
+ * préfixe .k-gc-* : cagnotte, estimations, finalisation, fenêtre de
+ * paiement) — mort depuis la suppression du moteur de contribution.
+ * Toujours référencé par scripts/css-bundles.js sous le nom
+ * "group-cart-flow" : conservé pour ne pas toucher au bundler, le
+ * contenu seul a changé.
+ */
 
-/* ── BUG-VIEW-1 — Masquage par défaut (symétrique à .k-fav-view/.k-track-view dans cart.css)
-   Sans ce display:none, la vue groupe reste visible même quand elle ne devrait pas l'être,
-   provoquant un mélange de contenus entre onglets Suivi / Groupe / Commandes. ──────────── */
-#k-group-view.k-group-view { display: none; }
-#k-group-view.k-group-view.show { display: block; }
-.k-group-view .k-group-card,
-.k-group-view .k-group-actions-card,
-.k-group-view .k-group-contribute-card,
-.k-group-view .k-group-section-title {
-  font-size: 18px;
-  font-weight: 800;
-  margin: 0 0 14px;
-  color: var(--text);
+.k-glist {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
 }
-.k-group-view .k-group-btn {
-  min-height: 50px;
-  border-radius: 999px;
+
+/* ── Bandeau inviteur ──────────────────────────────────────────── */
+
+.k-glist-banner {
+  margin-bottom: 20px;
 }
-.k-group-view .k-group-self-toggle {
-  background: var(--white);
-  border: 1px dashed var(--border);
-  border-radius: 20px;
-  padding: 16px 18px;
-  margin: 12px 0 0;
+
+.k-glist-invite {
   font-size: 15px;
-  box-shadow: 0 10px 32px rgba(30,40,25,.04);
+  color: var(--text);
+  margin: 0 0 4px;
 }
-.k-group-view .k-group-progress-wrap {
-  position: relative;
+
+.k-glist-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+.k-glist-message {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ── Progression ───────────────────────────────────────────────── */
+
+.k-glist-progress {
+  margin-bottom: 20px;
+}
+
+.k-glist-progress-text {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
   margin-bottom: 6px;
 }
-/* Couche intention — fond, représente les engagements (plafonnée à 100 %) */
-.k-group-view .k-group-progress-bar--engaged {
-  display: block;
-  position: absolute;
-  inset: 0;
-  height: 100%;
-  background: rgba(100,175,90,.28);
+
+.k-glist-progress-bar {
+  height: 6px;
   border-radius: 999px;
-  transition: width .5s cubic-bezier(.16,1,.3,1);
-}
-/* Couche réelle — premier plan, représente les paiements confirmés */
-.k-group-view .k-group-progress-bar--paid {
-  display: block;
-  position: absolute;
-  inset: 0;
-  height: 100%;
-  background: var(--cta-green);
-  border-radius: 999px;
-  transition: width .5s cubic-bezier(.16,1,.3,1);
-}
-/* Rétrocompat : ancienne classe sans modificateur */
-.k-group-view .k-group-progress-bar:not(.k-group-progress-bar--engaged):not(.k-group-progress-bar--paid) {
-  display: block;
-  position: absolute;
-  inset: 0;
-  height: 100%;
-  background: var(--cta-green);
-  border-radius: 999px;
-}
-.k-group-progress-badge--over {
-  background: rgba(100,175,90,.15);
-  color: var(--ocean-dark);
-  border: 1px solid rgba(100,175,90,.30);
-}
-.k-group-progress-legend-paid    { color: var(--ocean-dark); }
-.k-group-progress-legend-engaged { color: rgba(100,175,90,.75); }
-.k-group-progress-legend-total   { margin-left: auto; color: var(--text-muted); font-weight: 600; }
-
-.k-group-view .k-group-progress { height: 8px; }
-.k-group-progress-legend { font-size: 10.5px; gap: 7px; }
-.k-group-progress-badge  { font-size: 10.5px; padding: 2px 7px; }
-
-@media ((min-width: 1200px)) {
-  .k-group-view {
-    max-width: 1180px;
-  }
-}
-
-/* ── Bloc B — Responsive mobile de base (max-width:700px) ────────── */
-
-.k-group-view {
-  max-width: none;
-  margin: 22px auto 72px;
-  padding: 0 14px;
-}
-.k-group-view > * {
-  max-width: none;
-}
-.k-group-view .k-group-progress-card {
-  padding: 18px;
-  border-radius: 0 0 20px 20px;
-}
-.k-group-view .k-group-card,
-.k-group-view .k-group-actions-card,
-.k-group-view .k-group-contribute-card,
-.k-group-view .k-group-creator-actions {
-  grid-template-columns: 1fr;
-}
-
-/* ── Bloc C — Cockpit initial desktop ((min-width: 900px)) ─────────── */
-/* Note : breakpoint 1000px, exception documentée (standard projet = 900px) */
-
-@media ((min-width: 900px)) {
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-section-title,
-  .k-group-view .k-group-share-hint,
-  .k-group-view select,
-  .k-group-view input,
-}
-.k-group-view .k-group-progress-card,
-.k-group-view .k-group-card,
-.k-group-view .k-group-actions-card,
-.k-group-view .k-group-contribute-card,
-
-/* ── Desktop cockpit layout : colonne gauche + réserve articles droite ── */
-
-@media ((min-width: 900px)) {
-}
-
-@media ((min-width: 1200px)) {
-  #k-group-view.k-group-view > * {
-    width: 740px;
-    max-width: 740px;
-  }
-}
-
-/* ── SAFE V2 — cockpit groupe compact desktop ──────────────────── */
-
-@media ((min-width: 900px)) {
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view h3,
-  .k-group-view .k-group-share-hint,
-  .k-group-view select,
-  .k-group-view input,
-}
-#k-group-view.k-group-view > * {
-  width: auto;
-  max-width: none;
-  margin-left: 0;
-  margin-right: 0;
-}
-.k-group-view .k-group-progress-card,
-.k-group-view .k-group-card,
-.k-group-view .k-group-actions-card,
-.k-group-view .k-group-contribute-card,
-.k-group-view .k-group-items-card {
-  padding: 15px 16px;
-  margin-top: 10px;
-}
-
-/* ── Bloc D — Colonne droite articles (SAFE V2-B) ──────────────── */
-
-.k-group-cockpit {
-  display: block;
-}
-.k-group-main-col {
-  min-width: 0;
-}
-.k-group-side-panel {
-  margin-top: 12px;
-}
-.k-group-side-card + .k-group-side-card {
-  margin-top: 10px;
-}
-.k-group-side-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.k-group-side-head strong {
-  font-size: 15px;
-  color: var(--text);
-}
-.k-group-side-head span {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-.k-group-side-list {
-  display: grid;
-  gap: 9px;
-}
-.k-group-side-item {
-  display: grid;
-  grid-template-columns: 44px 1fr;
-  gap: 10px;
-  align-items: center;
-}
-.k-group-side-item img,
-.k-group-side-item-fallback {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  object-fit: cover;
-  background: var(--sand);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.k-group-side-item-main {
-  min-width: 0;
-}
-.k-group-side-item-main strong {
-  display: block;
-  font-size: 13px;
-  line-height: 1.25;
-  color: var(--text);
-  white-space: nowrap;
+  background: var(--border-soft-md);
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-.k-group-side-item-main span {
-  display: block;
-  margin-top: 3px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-.k-group-side-empty {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-.k-group-side-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid var(--border);
-  margin-top: 12px;
-  padding-top: 10px;
-  font-size: 13px;
-}
-.k-group-side-total span {
-  color: var(--text-muted);
-}
-.k-group-side-total strong {
-  color: var(--text);
-}
-.k-group-side-help ol {
-  margin: 8px 0 0 18px;
-  padding: 0;
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.5;
 }
 
-@media ((min-width: 900px)) {
-  #k-group-view.k-group-view > * {
-    width: auto;
-    max-width: none;
-  }
-}
-
-/* (doublon .k-group-cockpit{display:block} supprimé — il écrasait le
-   display:grid du bloc ≥900px ci-dessus : cockpit empilé en une colonne
-   même sur desktop. La base mobile-first vit en tête de fichier.) */
-
-/* ── SAFE V2-C — condensation cockpit groupe ───────────────────── */
-
-@media ((min-width: 900px)) {
-  .k-group-view .k-group-progress-card h3,
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view h3,
-  .k-group-view .k-group-share-hint,
-  .k-group-view select,
-  .k-group-view input,
-  .k-group-side-item img,
-  .k-group-side-help ol {
-    margin-top: 6px;
-    font-size: 12px;
-    line-height: 1.35;
-  }
-}
-.k-group-view .k-group-header,
-.k-group-view .k-group-progress-card,
-.k-group-view .k-group-card,
-.k-group-view .k-group-actions-card,
-.k-group-view .k-group-contribute-card,
-.k-group-view .k-group-items-card,
-.k-group-mini-guide span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  font-size: 12px;
-  line-height: 1.25;
-  color: var(--text);
-  white-space: nowrap;
-}
-.k-group-mini-guide b {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
+.k-glist-progress-fill {
+  height: 100%;
+  background: var(--sage);
   border-radius: 999px;
-  background: var(--cta-green);
-  color: var(--white);
-  font-size: 11px;
-  font-weight: 800;
+  transition: width .25s ease;
 }
 
-/* ── SAFE V2-E — cockpit ultra compact desktop ─────────────────── */
-
-@media ((min-width: 900px)) {
-  .k-group-view .k-group-progress-card h3 {
-    font-size: 15px;
-    margin: 0 0 2px;
-  }
-  .k-group-view .k-group-progress-card small,
-  .k-group-view .k-group-progress-card span,
-  .k-group-view .k-group-progress-card p {
-    font-size: 12px;
-  }
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view h3,
-  .k-group-view .k-group-section-title {
-    font-size: 16px;
-    margin: 0 0 7px;
-  }
-  .k-group-view .k-group-share-hint,
-  .k-group-view .k-group-finalize-hint {
-    margin: 5px 0 0;
-    font-size: 11px;
-    line-height: 1.2;
-  }
-  .k-group-view hr {
-    margin: 7px 0;
-  }
-  .k-group-view label {
-    font-size: 11.5px;
-    margin-bottom: 3px;
-  }
-  .k-group-view select,
-  .k-group-view input,
-  .k-group-side-card + .k-group-side-card {
-    margin-top: 7px;
-  }
-  .k-group-side-item img,
+.k-glist-complete-msg {
+  font-size: 14px;
+  color: var(--sage-dark);
+  margin: 0 0 20px;
 }
 
-/* ── Bloc F — Switcher paniers multi-groupe ─────────────────────── */
+.k-glist-closed-msg {
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--sage-bg-pale);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin: 0 0 16px;
+}
 
-.k-group-cart-switcher {
+/* ── Grille d'articles ─────────────────────────────────────────── */
+
+.k-glist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.k-glist-item {
+  position: relative;
   background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 8px;
-  margin: 6px 0;
-  box-shadow: 0 10px 30px rgba(30,40,25,.04);
+  border: 1px solid var(--border-soft-md);
+  border-radius: var(--radius);
+  padding: 10px;
+  cursor: default;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
-.k-group-cart-switcher-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin: 0 2px 7px;
+
+.k-glist-item[data-selectable="true"] {
+  cursor: pointer;
 }
-.k-group-cart-switcher-head strong {
-  font-size: 12px;
-  color: var(--text);
+
+.k-glist-item[data-selectable="true"]:hover {
+  border-color: var(--sage-light);
 }
-.k-group-cart-switcher-head span {
-  font-size: 11px;
-  color: var(--text-muted);
+
+.k-glist-item--selected {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 2px var(--border-sage-22);
 }
-.k-group-cart-tabs {
-  display: flex;
-  gap: 7px;
-  overflow: auto;
-  scrollbar-width: thin;
-  padding-bottom: 1px;
+
+.k-glist-item--claimed {
+  opacity: .55;
 }
-.k-group-cart-tab.is-active {
-  background: var(--coral-bg-12);
-  border-color: var(--coral-bg-38);
-  box-shadow: inset 0 0 0 1px var(--coral-bg-18);
-}
-.k-group-cart-tab strong {
-  display: block;
-  font-size: 12.5px;
-  line-height: 1.15;
-  color: var(--text);
-  white-space: nowrap;
+
+.k-glist-item-img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background: var(--sage-bg-pale);
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-.k-group-cart-tab span {
-  display: block;
-  margin-top: 3px;
-  font-size: 11px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ── ULTRA COMPACT — Groupe cockpit dense ──────────────────────── */
-
-@media ((min-width: 900px)) {
-  .k-group-view .k-group-header {
-    padding: 8px 16px 5px;
-    border-radius: 13px 13px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 19px;
-    margin: 0;
-    line-height: 1.05;
-  }
-  .k-group-view .k-group-subhead {
-    font-size: 11.8px;
-    line-height: 1.18;
-    margin-top: 2px;
-  }
-  .k-group-cart-switcher {
-    padding: 6px;
-    margin: 5px 0;
-    border-radius: 12px;
-  }
-  .k-group-cart-switcher-head {
-    margin: 0 2px 5px;
-  }
-  .k-group-cart-switcher-head strong {
-    font-size: 11.5px;
-  }
-  .k-group-cart-switcher-head span {
-    font-size: 10.5px;
-  }
-  .k-group-cart-tabs {
-    gap: 5px;
-  }
-  .k-group-cart-tab {
-    min-width: 132px;
-    max-width: 180px;
-    padding: 5px 7px;
-    border-radius: 10px;
-  }
-  .k-group-cart-tab strong {
-    font-size: 11.5px;
-  }
-  .k-group-cart-tab span {
-    font-size: 10.2px;
-    margin-top: 2px;
-  }
-  .k-group-mini-guide {
-    padding: 5px 7px;
-    margin: 5px 0;
-    border-radius: 10px;
-    gap: 6px;
-  }
-  .k-group-mini-guide span {
-    font-size: 10.8px;
-    line-height: 1;
-  }
-  .k-group-mini-guide b {
-    width: 15px;
-    height: 15px;
-    flex-basis: 15px;
-    font-size: 9.5px;
-  }
-  .k-group-view .k-group-progress-card {
-    padding: 8px 16px 9px;
-    margin: 0 0 5px;
-    border-radius: 0 0 13px 13px;
-  }
-  .k-group-view .k-group-progress-card h3,
-  .k-group-view .k-group-progress-card strong {
-    font-size: 14px;
-    margin: 0 0 2px;
-    line-height: 1.12;
-  }
-  .k-group-view .k-group-progress-card p,
-  .k-group-view .k-group-progress-card span,
-  .k-group-view .k-group-progress-card small {
-    font-size: 11.3px;
-    line-height: 1.2;
-  }
-  .k-group-view .k-group-progress {
-    height: 4px;
-    margin: 4px 0;
-  }
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 8px 16px;
-    margin: 5px 0 0;
-    border-radius: 13px;
-  }
-  .k-group-view .k-group-section-title,
-  .k-group-view h3 {
-    font-size: 14.5px;
-    margin: 0 0 5px;
-    line-height: 1.15;
-  }
-  .k-group-view .k-group-self-toggle {
-    margin: 5px 0 0;
-    padding: 6px 9px;
-    min-height: 30px;
-    border-radius: 11px;
-    font-size: 12px;
-  }
-  .k-group-view .k-group-creator-actions {
-    gap: 6px;
-  }
-  .k-group-view .k-group-btn {
-    min-height: 31px;
-    padding: 6px 9px;
-    font-size: 11.8px;
-    line-height: 1.1;
-  }
-  .k-group-view .k-group-share-hint,
-  .k-group-view .k-group-finalize-hint,
-  .k-group-view .k-group-finalized-hint {
-    margin: 4px 0 0;
-    font-size: 10.8px;
-    line-height: 1.15;
-  }
-  .k-group-view label,
-  .k-group-view .k-group-label {
-    font-size: 10.5px;
-    margin-bottom: 2px;
-  }
-  .k-group-view select,
-  .k-group-view input,
-  .k-group-view textarea {
-    min-height: 29px;
-    padding: 5px 8px;
-    font-size: 11.8px;
-    border-radius: 9px;
-  }
-  .k-group-view hr,
-  .k-group-actions-card [style*="border-top"] {
-    margin-top: 7px;
-    padding-top: 7px;
-  }
-  .k-group-identity-note {
-    padding: 6px 8px;
-    margin: 4px 0 7px;
-    border-radius: 10px;
-  }
-  .k-group-identity-note strong {
-    font-size: 11.5px;
-  }
-  .k-group-identity-note span {
-    font-size: 10.5px;
-    line-height: 1.18;
-  }
-  .k-group-side-panel {
-    top: 68px;
-  }
-  .k-group-side-card {
-    padding: 8px;
-    border-radius: 13px;
-  }
-  .k-group-side-head {
-    margin-bottom: 5px;
-  }
-  .k-group-side-head strong {
-    font-size: 12.5px;
-  }
-  .k-group-side-head span {
-    font-size: 10.5px;
-  }
-  .k-group-side-list {
-    gap: 5px;
-  }
-  .k-group-side-item {
-    grid-template-columns: 30px 1fr;
-    gap: 6px;
-  }
-  .k-group-side-item img,
-  .k-group-side-item-fallback {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-  }
-  .k-group-side-item-main strong {
-    font-size: 11px;
-    line-height: 1.1;
-  }
-  .k-group-side-item-main span {
-    font-size: 10px;
-    margin-top: 1px;
-  }
-  .k-group-side-total {
-    margin-top: 6px;
-    padding-top: 6px;
-    font-size: 10.8px;
-  }
-}
-.k-group-view .k-group-header,
-.k-group-view .k-group-progress-card,
-.k-group-view .k-group-card,
-.k-group-view .k-group-actions-card,
-.k-group-view .k-group-contribute-card,
-.k-group-view .k-group-items-card,
-.k-group-side-card {
-  padding: 11px 12px;
-}
-
-/* ── POSITION — remonter le cockpit sous le header ─────────────── */
-/* Valeur effective : margin-top final après toutes les passes SAFE  */
-
-@media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    margin-top: -118px;
-  }
-  .k-group-cockpit {
-    align-items: start;
-  }
-}
-
-@media ((min-width: 1200px)) {
-  #k-group-view.k-group-view {
-    margin-top: -132px;
-  }
-}
-/* Masqué mobile : sous-titre descriptif non essentiel */
-.k-group-view .k-group-subhead {
-  display: none;
-}
-.k-group-items-toggle span span {
-  font-size: 13px;
-  line-height: 1.2;
-}
-
-/* Masqué mobile : texte explicatif long non essentiel */
-.k-group-contribute-card .k-group-desc-text {
-  display: none;
-}
-
-/* — Hints split / equal / violet callout — */
-.k-group-split-hint,
-.k-group-equal-hint,
-.k-group-contribute-card [style*="rgba(112,73,190"] {
-  font-size: 12px;
-  line-height: 1.2;
-  padding: 7px 9px;
-  margin: 6px 0 8px;
-  border-radius: 10px;
-}
-
-/* — .k-group-identity-note : identité OTP — CONSERVÉ INTENTIONNELLEMENT —
-   "Identité sécurisée par OTP" + "vous pouvez utiliser un autre numéro"
-   Ces informations sont nécessaires à la confiance du participant. */
-
-/* — Labels — */
-.k-group-label,
-.k-group-input:focus {
-  border-color: var(--violet);
-  box-shadow: 0 0 0 3px var(--violet-light);
-}
-
-/* — .k-group-mypart : bloc encadré « Ma part » (hint + montant) — */
-.k-group-mypart {
-  border: 1.5px solid var(--violet-mid);
-  background: var(--sand);
-  border-radius: 14px;
-  padding: 12px 14px 10px;
-  margin: 0 0 10px;
-}
-.k-group-mypart-head {
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  color: var(--violet-dark);
   margin-bottom: 8px;
 }
-.k-group-mypart .k-group-split-hint { margin-bottom: 10px; }
-.k-group-mypart .k-group-field      { margin-bottom: 2px; }
-/* Champ message : hauteur réduite car 1 ligne suffit */
-#k-ge-msg,
 
-/* — Erreurs inline — */
-.k-group-input-error {
-  min-height: 14px;
-  margin: 0 0 5px;
-  font-size: 11px;
-}
-/* Bouton submit spécifique : ancré visuellement en bas de carte */
-#k-ge-submit-btn,
-
-/* — Ombres allégées sur mobile — */
-.k-group-card,
-.k-group-actions-card,
-.k-group-progress-card,
-.k-group-items-card,
-
-/* — Switcher multi-panier : tab plus petite sur mobile — */
-.k-group-cart-tab {
-  min-width: 130px;
-}
-
-/* ── GROUP MOBILE COMPACT — sous-mode max-width: 390px (petits écrans) ── */
-/* Cible iPhone SE, Galaxy A, et tout écran < 390px.
-   Densification supplémentaire uniquement — on ne masque pas
-   l'identité OTP (strong conservé), seul le span détail peut être omis
-   car le titre "Identité sécurisée par OTP" suffit à la confiance. */
-
-/* Conteneur encore plus serré */
-#k-group-view.k-group-view {
-  padding: 0 8px 76px;
-}
-
-/* Header ultra-compact */
-.k-group-view .k-group-header {
-  padding: 7px 10px 5px;
-}
-.k-group-view .k-group-header h2 {
-  font-size: 16px;
-}
-
-/* Carte contribution condensée */
-.k-group-contribute-card {
-  padding: 10px;
-}
-.k-group-contribute-card .k-group-section-title {
-  font-size: 20px;
-  margin: 0 0 6px;
-}
-
-/* Identity note : on masque le span détail (le titre OTP reste)
-   Le titre "Identité sécurisée par OTP" seul suffit à rassurer.
-   La mention "autre numéro" est accessible via le flow OTP lui-même. */
-.k-group-identity-note {
-  padding: 6px 8px;
-  margin: 5px 0 7px;
-}
-.k-group-identity-note strong {
-  font-size: 12px;
-}
-.k-group-identity-note span {
-  display: none; /* masqué <390px uniquement — voir commentaire ci-dessus */
-}
-
-/* Champs encore plus compacts */
-.k-group-input {
-  height: 40px;
-  min-height: 40px;
-  font-size: 14px;
-  padding: 6px 9px;
-}
-#k-ge-msg,
-#k-gp-msg {
-  height: 38px;
-}
-.k-group-field {
-  margin-bottom: 6px;
-}
-.k-group-label,
-.k-group-contribute-card label {
-  font-size: 10px;
-  margin-bottom: 2px;
-}
-
-/* Bouton CTA : légèrement réduit mais toujours > 44px (WCAG) */
-.k-group-btn {
-  min-height: 44px;
-  font-size: 14px;
-}
-#k-ge-submit-btn,
-#k-gp-pay-btn {
-  height: 44px;
-  min-height: 44px;
-  font-size: 14px;
-  margin-top: 4px;
-}
-
-/* Items card encore plus serré */
-.k-group-items-card {
-  padding: 8px 10px;
-}
-
-/* Mini-guide masqué sur très petits écrans (non essentiel) */
-.k-group-mini-guide {
-  display: none;
-}
-.k-group-phase-badge--settlement {
-  background: var(--amber-bg-12);
-  color: var(--amber-text-sett);
-}
-.k-group-funded-callout {
-  border: 1px solid var(--green-alpha-28);
-  background: var(--green-alpha-09);
-  border-radius: 18px;
-  padding: 16px;
-  margin-top: 14px;
-}
-.k-group-funded-callout strong {
+.k-glist-item-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
-  font-size: 16px;
-  margin-bottom: 6px;
-  color: var(--text);
 }
-.k-group-funded-callout p {
+
+.k-glist-item-name {
   font-size: 13px;
-  line-height: 1.45;
-  color: var(--text-muted);
-  margin: 0 0 12px;
-}
-
-/* funded-callout variante gap (remplace les inline styles du template) */
-.k-group-funded-callout--gap {
-  border-color: var(--amber-border-28);
-  background: var(--amber-bg-08);
-}
-.k-group-funded-callout--gap strong {
-  color: var(--amber-text-sett);
-}
-
-/* ── LOT 6 — bouton de confirmation : base lisible obligatoire ──────────
-   Avant : .k-group-btn--finalize n'avait AUCUNE règle de base → bouton
-   transparent sur fond clair ("Confirmer la commande" quasi invisible).
-   Exigences : contraste fort, pleine largeur mobile, libellé sur 2 lignes
-   accepté, jamais de blanc sur fond clair. */
-.k-group-btn--finalize {
-  width: 100%;
-  background: var(--cta-green);
-  color: var(--white);
-  border: 0;
-  padding: 13px 16px;
-  white-space: normal;       /* libellés longs → deux lignes acceptées */
-  line-height: 1.25;
-}
-.k-group-btn--finalize:hover { filter: brightness(.94); }
-.k-group-btn--finalize:disabled {
-  background: var(--sand-dark);
-  color: var(--text-muted);
-  cursor: not-allowed;
-}
-/* Variante gap : "Je paie le reste" — amber foncé + texte blanc (contraste AA) */
-.k-group-funded-callout--gap .k-group-btn--finalize {
-  background: var(--amber-text-sett);
-  color: var(--white);
-}
-
-/* ── LOT 6 — ligne Attendre / Je paie le reste ──────────────────────────
-   Desktop & mobile large : deux colonnes, l'action principale domine.
-   Mobile < 380px : boutons côte à côte interdits (sauf WhatsApp/Copier)
-   → empilés, action principale pleine largeur EN PREMIER visuellement. */
-.k-group-actions-row {
-  display: grid;
-  grid-template-columns: minmax(96px, .6fr) 1fr;
-  gap: 10px;
-  align-items: stretch;
-}
-.k-group-actions-row .k-group-btn { width: 100%; }
-/* max:380px → max:899px : écrans très petits n'existent qu'en mobile (doctrine 900px/1200px) */
-@media (max-width: 899px) {
-  .k-group-actions-row {
-    grid-template-columns: 1fr;
-  }
-  /* l'action principale (Je paie le reste) passe au-dessus de "Attendre" */
-  .k-group-actions-row .k-group-btn--finalize { order: -1; }
-  /* seule exception côte à côte autorisée : WhatsApp / Copier */
-  .k-group-view .k-group-creator-actions {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-/* Spécificité 0-2-0 : bat les rules single-class (.k-group-btn--primary etc.) sans !important */
-.k-group-btn.k-group-disabled-finalize {
-  opacity: .72;
-  cursor: not-allowed;
-  background: var(--sand-dark);
-  color: var(--text-muted);
-}
-.k-group-share-hint,
-.k-group-finalize-hint {
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--text-muted);
-  margin: 10px 0 0;
-}
-/* État expiration imminente — remplace inline style ${expSoon} */
-.k-group-share-hint.is-exp-soon {
-  color: var(--danger);
-  font-weight: 700;
-}
-.k-group-split-hint {
-  background: var(--violet-bg-light);
-  color: var(--violet-dark);
-  padding: 7px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  margin: 0 0 12px;
-  line-height: 1.4;
-}
-.k-group-self-toggle {
-  margin-top: 12px;
-  width: 100%;
-  border: 1px dashed var(--border);
-  background: var(--sand);
   color: var(--text);
-  border-radius: 14px;
-  padding: 11px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.k-group-self-panel[hidden] { display: none; }
-.k-group-self-panel:not([hidden]) + .k-group-self-toggle { display: none; }
-.k-group-self-toggle.is-open { display: none; }
-.k-group-locked-amount {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--green-alpha-09);
-  border: 1px solid var(--green-alpha-20);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin: 12px 0;
-}
-.k-group-locked-amount strong {
-  font-size: 20px;
-  color: var(--text);
-}
-.k-group-locked-amount span {
-  font-size: 12px;
-  color: var(--text-muted);
+  margin: 0 0 4px;
   line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.k-group-commitment-list { margin: 8px 0 0; }
-.k-group-commitment-row:last-child { border-bottom: none; }
-.k-group-commitment-name { flex: 1; font-size: 14px; font-weight: 600; }
-.k-group-commitment-amount { font-size: 14px; color: var(--text); }
-.k-group-commitment-status { font-size: 12px; color: var(--text-muted); }
-.k-group-settlement-summary {
-  background: var(--sand);
-  border-radius: 14px;
-  padding: 12px 14px;
-  margin: 10px 0;
-  font-size: 13px;
-}
-.k-group-settlement-summary strong {
-  display: block;
-  font-size: 15px;
-  margin-bottom: 6px;
-}
-.k-group-saved-commitment {
-  border: 1px solid var(--green-alpha-24);
-  background: rgba(31,122,84,.08);
-  border-radius: 14px;
-  padding: 13px 14px;
-  margin: 0 0 12px;
-}
-.k-group-saved-commitment strong {
-  display: block;
+
+.k-glist-item-price {
   font-size: 14px;
-  margin-bottom: 3px;
+  font-weight: 600;
   color: var(--text);
+  margin: 0 0 4px;
 }
-.k-group-saved-commitment span {
-  display: block;
+
+.k-glist-item-status {
   font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.35;
+  color: var(--sage-dark);
+  margin: 0;
 }
-.k-group-saved-commitment button {
-  margin-top: 10px;
-  width: 100%;
-  border: 1px solid var(--border);
+
+.k-glist-item--claimed .k-glist-item-status {
+  color: var(--text-light);
+}
+
+.k-glist-item-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
   background: var(--white);
-  color: var(--text);
-  border-radius: 12px;
-  padding: 10px;
-  font-weight: 800;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgba(0,0,0,.12);
   cursor: pointer;
 }
-.k-group-eng-fields[hidden] { display: none; }
-/* État succès du bouton d'engagement (point 3) : feedback immédiat avant
-   l'apparition de la carte « Part indiquée ». */
-.k-group-btn.is-done,
-.k-group-btn.is-done:disabled {
-  background: var(--checkout-accent);
-  color: var(--white);
-  opacity: 1;
-  cursor: default;
+
+.k-glist-item-remove:hover {
+  color: var(--coral-dark);
 }
-.k-group-items-toggle {
-  width: 100%;
-  border: 0;
-  background: transparent;
+
+/* ── Contrôles créateur ───────────────────────────────────────── */
+
+.k-glist-creator-controls {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-  color: inherit;
-  font: inherit;
-}
-.k-group-items-toggle strong { font-size: 15px; }
-.k-group-items-toggle span { font-size: 12px; color: var(--text-muted); }
-.k-group-items-chevron { transition: transform .2s ease; font-size: 13px; }
-.k-group-items-card.is-open .k-group-items-chevron { transform: rotate(180deg); }
-.k-group-items-list[hidden] { display: none; }
-.k-group-items-list {
-  margin-top: 12px;
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
-}
-
-/* ── Bouton danger — annulation (remplace inline style du template) ─ */
-.k-group-btn--danger {
-  color: var(--danger);
-  border-color: var(--danger);
-  opacity: .8;
-  width: 100%;
-}
-
-/* ── Migration depuis cart.css (PR-G2, 2026-05-28) ─────────────── */
-/* Sélecteurs utilitaires qui n'existaient que dans cart.css        */
-
-/* Carte groupe liste — card head, title, meta, pill */
-.k-group-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-.k-group-card-title { font-size: 16px; font-weight: 950; color: var(--text); line-height: 1.2; }
-.k-group-card-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-.k-group-pill { flex: 0 0 auto; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 950; }
-.k-group-pill.is-open { background: var(--green-bg-leaf); color: var(--green-text-strong); }
-.k-group-pill.is-paid { background: var(--blue-light-bg); color: var(--blue-link-deep); }
-
-/* Montant groupe */
-.k-group-money { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.k-group-money span { font-size: 12px; color: var(--text-muted); font-weight: 800; }
-.k-group-money strong { font-size: 17px; color: var(--text); font-weight: 950; }
-
-/* Engagements / contributions */
-.k-group-contribs { margin-bottom: 16px; }
-.k-group-contribs-label { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
-.k-group-contrib-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); }
-.k-group-contrib-row:last-child { border-bottom: none; }
-.k-group-contrib-name { font-size: 14px; color: var(--text); font-weight: 600; }
-.k-group-contrib-amount { font-size: 14px; color: var(--green-text-strong); font-weight: 800; }
-.k-group-contrib-empty { font-size: 13px; color: var(--text-muted); font-style: italic; margin: 0; }
-
-/* Actions et boutons variantes cart.css */
-.k-group-actions { display: flex; gap: 10px; }
-.k-group-btn--ghost { background: var(--sand); color: var(--text); border: 1px solid var(--border); }
-.k-group-btn--ghost:hover { background: var(--sand-dark); }
-.k-group-btn--copy { background: var(--sand); color: var(--text); border: 1px solid var(--border); }
-.k-group-btn--copy:hover { background: var(--sand-dark); }
-.k-group-btn--primary { width: 100%; padding: 14px; margin-top: 14px; background: var(--violet); color: var(--white); border-radius: 50px; font-size: 15px; }
-.k-group-btn--primary:hover { background: var(--violet-dark); transform: translateY(-1px); }
-.k-group-btn--primary:disabled { background: var(--sand-dark); color: var(--text-light); cursor: not-allowed; transform: none; }
-.k-group-btn--mt { margin-top: 14px; }
-
-/* Spinner chargement */
-.k-group-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 200px; }
-.k-group-spin { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--violet); border-radius: 50%; animation: kGroupSpin .7s linear infinite; }
-@keyframes kGroupSpin { to { transform: rotate(360deg); } }
-
-/* Articles panier partagé (vue participant) */
-.k-group-item-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
-.k-group-item-row:last-child { border-bottom: none; }
-.k-group-item-name { flex: 1; font-size: 13px; color: var(--text); }
-.k-group-item-qty { font-size: 12px; color: var(--text-muted); }
-.k-group-item-price { font-size: 13px; font-weight: 700; color: var(--text); }
-.k-group-contribute-section { border-top: 1px solid var(--border); padding-top: 16px; }
-
-/* Utilitaires */
-.k-group-remaining { font-size: 12px; color: var(--text-muted); margin: -8px 0 12px; text-align: right; }
-.k-group-remaining strong { color: var(--text); }
-.k-group-divider { height: 1px; background: var(--border); margin: 16px 0; }
-
-/* État vide */
-.k-group-empty { border: 1px dashed rgba(103,77,45,.25); background: var(--sand); border-radius: 18px; padding: 32px 16px; text-align: center; color: var(--text-muted); display: grid; gap: 6px; }
-.k-group-empty-icon { font-size: 36px; }
-.k-group-empty strong { font-size: 15px; color: var(--text); }
-.k-group-empty span { font-size: 13px; }
-
-/* Confirmation engagement */
-.k-group-success { text-align: center; padding: 32px 16px; display: grid; gap: 8px; }
-.k-group-success-icon { font-size: 48px; }
-.k-group-success strong { font-size: 18px; font-weight: 950; color: var(--text); }
-.k-group-success p { font-size: 14px; color: var(--text-muted); margin: 0; }
-.k-group-success-detail { font-size: 13px; }
-.k-group-success-remain { color: var(--red-danger-text); }
-
-/* Badge bnav vert */
-.k-bnav-badge--group { position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--cta-green); border: 2px solid var(--white); display: none; }
-.k-bnav-badge--group.show { display: block; }
-
-/* Bannière groupe permanente */
-.k-group-banner {
-  display: none;
-  width: 100%;
-  background: var(--green-bg-leaf);
-  border-bottom: 1px solid var(--cta-green);
-  z-index: 90;
-  position: relative;
-}
-.k-group-banner.show { display: block; }
-.k-gbanner-inner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  max-width: 1200px;
-  margin: 0 auto;
+  margin-top: 20px;
   flex-wrap: wrap;
 }
-.k-gbanner-inner.is-urgent {
-  background: var(--cream-amber-bg);
-  border-color: var(--amber-border);
-}
-.k-gbanner-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--cta-green);
-  flex-shrink: 0;
-  animation: kGroupPulse 2s ease-in-out infinite;
-}
-@keyframes kGroupPulse { 0%,100%{opacity:1} 50%{opacity:.35} }
-.k-gbanner-text {
+
+.k-glist-add-btn,
+.k-glist-close-btn {
   flex: 1;
+  min-width: 140px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft-md);
+  background: var(--white);
   font-size: 13px;
+  cursor: pointer;
+}
+
+.k-glist-add-btn {
   color: var(--text);
-  min-width: 0;
-}
-.k-gbanner-timer { font-weight: 700; }
-.k-gbanner-timer.is-urgent { color: var(--red-danger-text); }
-.k-gbanner-cta {
-  flex-shrink: 0;
-  padding: 5px 12px;
-  background: var(--cta-green);
-  color: var(--white);
-  border: none;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background .15s;
-}
-.k-gbanner-cta:hover { background: var(--green-text-strong); }
-.k-gbanner-close {
-  flex-shrink: 0;
-  width: 24px; height: 24px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  transition: background .12s;
-}
-.k-gbanner-close:hover { background: rgba(0,0,0,.08); }
-
-/* ---------------------------------------------------------------
-   GROUP BANNER — états dynamiques (.is-funded, .is-urgent, .is-compact)
-   Rapatrié depuis b-group-banner.js (L3-S8)
-   Owner : group-cart-flow.css
-   --------------------------------------------------------------- */
-
-.k-group-banner .k-gbanner-inner {
-  transition: transform .22s ease, opacity .22s ease, max-height .22s ease, padding .22s ease;
-}
-.k-group-banner .k-gbanner-inner.is-funded {
-  background: rgba(31,122,84,.14);
-  border-color: rgba(31,122,84,.35);
-  box-shadow: 0 8px 24px rgba(31,122,84,.12);
-}
-.k-group-banner .k-gbanner-inner.is-funded .k-gbanner-dot {
-  background: var(--green-text-sett);
-  animation: kGBPulse 1.4s ease-in-out infinite;
-}
-.k-group-banner .k-gbanner-inner.is-urgent {
-  background: rgba(245,158,11,.13);
-  border-color: rgba(245,158,11,.35);
-}
-.k-group-banner .k-gbanner-cta.is-funded {
-  background: var(--green-text-sett);
-  color: white;
-}
-.k-group-banner.is-compact .k-gbanner-inner {
-  max-height: 42px;
-  overflow: hidden;
-  padding-top: 7px;
-  padding-bottom: 7px;
-  opacity: .92;
-}
-.k-group-banner.is-compact .k-gbanner-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.k-group-banner.is-compact .k-gbanner-timer { display: none; }
-.k-group-banner.is-compact .k-gbanner-close { display: none; }
-.k-group-banner.is-compact .k-gbanner-cta {
-  font-size: 12px;
-  padding: 6px 10px;
-}
-.k-group-banner:hover .k-gbanner-inner,
-.k-group-banner:focus-within .k-gbanner-inner { opacity: 1; }
-
-@keyframes kGBPulse {
-  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 3px rgba(31,122,84,.12); }
-  50%       { transform: scale(1.18); box-shadow: 0 0 0 7px rgba(31,122,84,.08); }
 }
 
-/* ════════════════════════════════════════════════════════════════════
- * VUE PARTICIPANT — PREMIUM DESKTOP (PARTICIPANT-D1)
- * Owner : group-cart-flow.css
- * ════════════════════════════════════════════════════════════════════ */
-
-/* ── Articles enrichis — lignes rich ─────────────────────────────── */
-
-.k-group-item-row--rich {
-  display: grid;
-  grid-template-columns: 44px 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-.k-group-item-row--rich:last-of-type { border-bottom: none; }
-
-.k-group-item-thumb {
-  width: 44px; height: 44px;
-  border-radius: 10px; object-fit: cover;
-  background: var(--sand); flex-shrink: 0;
-}
-.k-group-item-thumb--fallback {
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; background: var(--sand);
-  border-radius: 10px; width: 44px; height: 44px;
-}
-.k-group-item-body {
-  display: flex; flex-direction: column; gap: 2px; min-width: 0;
-}
-.k-group-item-body .k-group-item-name {
-  font-size: 14px; font-weight: 700; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.k-group-item-detail { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-.k-group-item-right {
-  display: flex; flex-direction: column; align-items: flex-end;
-  gap: 4px; flex-shrink: 0;
-}
-.k-group-item-total { font-size: 14px; font-weight: 800; color: var(--text); }
-
-.k-group-items-total-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 0 2px; border-top: 2px solid var(--border);
-  margin-top: 4px; font-size: 13px; color: var(--text-muted);
-}
-.k-group-items-total-row strong { font-size: 15px; font-weight: 950; color: var(--text); }
-
-/* ── Header participant ───────────────────────────────────────────── */
-
-.k-group-header-eyebrow {
-  font-size: 11px; font-weight: 800; color: var(--violet);
-  text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px;
-}
-/* ── Header V4.1 (mockup) ──────────────────────────────────────── */
-.k-group-header-row {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
-}
-.k-group-header-right {
-  font-size: 12px; color: var(--text-muted); white-space: nowrap;
-}
-.k-group-header-right--urgent {
-  color: var(--coral); font-weight: 600;
-}
-.k-group-header-title {
-  font-size: 22px; font-weight: 950; color: var(--text);
-  margin: 0 0 2px; line-height: 1.1;
-}
-.k-group-header-meta {
-  display: flex; align-items: center; flex-wrap: wrap;
-  gap: 6px; font-size: 13px; color: var(--text-muted); margin-top: 6px;
-}
-.k-group-header-total { font-weight: 800; color: var(--text); font-size: 14px; }
-.k-group-header-sep   { color: var(--border); }
-.k-group-header-status { font-weight: 600; }
-.k-group-header-count  { font-weight: 500; }
-
-/* ── Phase badge awaiting (rouge doux, mockup) ─────────────────── */
-.k-group-phase-badge--awaiting {
-  background: var(--red-awaiting-bg); color: var(--red-awaiting-text);
+.k-glist-add-btn:hover,
+.k-glist-close-btn:hover {
+  border-color: var(--sage-light);
+  background: var(--sage-bg-pale);
 }
 
-/* ── Badge estimation violet (inline, mockup) ──────────────────── */
-.k-group-estimation-badge {
-  background: var(--violet-light);
-  color: var(--violet-dark);
-  font-size: 13px; font-weight: 600;
-  padding: 8px 14px; border-radius: 12px;
-  margin: 10px 0; text-align: center;
+.k-glist-close-btn {
+  color: var(--coral-dark);
 }
 
-/* ── Barre de financement (phase paiement, mockup) ─────────────── */
-.k-group-funding-bar { margin: 10px 0 4px; }
-.k-group-funding-bar-labels {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; color: var(--text-muted); margin-bottom: 4px;
-}
-.k-group-funding-bar-amounts { font-weight: 600; color: var(--text); }
-.k-group-funding-bar-track {
-  height: 8px; border-radius: 999px; background: var(--sand);
-}
-.k-group-funding-bar-fill {
-  height: 8px; border-radius: 999px;
-  background: var(--checkout-accent);
-  transition: width .4s ease;
-}
+/* ── Barre d'achat ─────────────────────────────────────────────── */
 
-/* ── Bouton payer vert (mockup) ────────────────────────────────── */
-.k-group-btn--pay {
-  width: 100%; padding: 13px 20px; border-radius: 50px; border: none;
-  font-size: 15px; font-weight: 700; cursor: pointer;
-  background: var(--checkout-accent); color: var(--white);
-  transition: opacity .15s;
-}
-.k-group-btn--pay:hover { opacity: .92; }
-.k-group-btn--pay:disabled { opacity: .6; cursor: default; }
-
-/* ── Formulaire paiement mypart (bordure verte, mockup) ────────── */
-.k-group-mypart--payment {
-  border-color: var(--checkout-accent);
-}
-.k-group-mypart--payment .k-group-mypart-head {
-  color: var(--checkout-accent-deep, var(--checkout-accent));
-}
-.k-group-payment-hint {
-  font-size: 11px; color: var(--text-muted); margin: 0 0 8px; line-height: 1.4;
-}
-
-/* ── Footnote (sous les formulaires) ───────────────────────────── */
-.k-group-footnote {
-  font-size: 11px; color: var(--text-muted); text-align: center;
-  margin: 8px 0 0; line-height: 1.3;
-}
-
-/* ── Carte engagements compacte ──────────────────────────────────── */
-.k-group-commitments-card { margin-top: 10px; padding: 12px 14px; border-radius: 16px; }
-
-/* ── État terminal tout payé ─────────────────────────────────────── */
-.k-group-fully-paid-card { padding: 32px 20px; text-align: center; border-radius: 20px; }
-.k-group-fully-paid-icon { font-size: 40px; margin-bottom: 10px; }
-.k-group-fully-paid-card strong { font-size: 17px; font-weight: 950; color: var(--text); display: block; }
-.k-group-terminal-card { padding: 32px 20px; text-align: center; border-radius: 20px; }
-.k-group-terminal-icon { font-size: 40px; margin-bottom: 10px; }
-.k-group-terminal-card strong { font-size: 17px; font-weight: 950; color: var(--text); display: block; }
-.k-group-terminal-card p { font-size: 13px; color: var(--text-muted); margin: 8px 0 0; }
-
-/* ── Layout participant — mobile (défaut) ────────────────────────── */
-.k-group-participant-layout { display: flex; flex-direction: column; gap: 0; }
-.k-group-participant-col-main,
-.k-group-participant-col-aside { width: 100%; }
-
-/* ── Layout participant — desktop 2 colonnes (canon ≥ 900px) ─────── */
-@media (min-width: 900px) {
-  #k-group-view.k-group-view { padding: 0 16px 40px; }
-
-  .k-group-participant-layout {
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 24px;
-    align-items: start;
-  }
-  .k-group-participant-col-main { display: flex; flex-direction: column; gap: 12px; }
-  .k-group-participant-col-aside { position: sticky; top: 80px; }
-
-  .k-group-view .k-group-subhead { display: block; font-size: 14px; color: var(--text-muted); margin-top: 4px; }
-  .k-group-view .k-group-header {
-    padding: 20px 20px 16px; border-radius: 20px;
-    background: var(--sand); border: 1px solid var(--border);
-  }
-  .k-group-header-title  { font-size: 26px; margin-bottom: 6px; }
-  .k-group-header-eyebrow { font-size: 12px; margin-bottom: 6px; }
-
-  .k-group-items-card { padding: 16px 18px; border-radius: 20px; }
-  .k-group-items-toggle strong { font-size: 18px; }
-
-  .k-group-item-row--rich { grid-template-columns: 56px 1fr auto; gap: 14px; padding: 10px 0; }
-  .k-group-item-thumb,
-  .k-group-item-thumb--fallback { width: 56px; height: 56px; border-radius: 12px; }
-  .k-group-item-body .k-group-item-name { font-size: 15px; }
-  .k-group-item-detail { font-size: 13px; }
-  .k-group-item-total  { font-size: 15px; }
-
-  .k-group-contribute-card { padding: 22px 20px; border-radius: 22px; }
-  .k-group-contribute-card .k-group-desc-text {
-    display: block; font-size: 14px; line-height: 1.5;
-    color: var(--text-muted); margin-bottom: 14px;
-  }
-  .k-group-contribute-card .k-group-section-title { font-size: 22px; margin-bottom: 10px; }
-  .k-group-phase-badge { font-size: 12px; padding: 5px 12px; margin-bottom: 12px; }
-
-  .k-group-label,
-  .k-group-contribute-card label {
-    font-size: 12px; margin-bottom: 5px; font-weight: 800; color: var(--text-muted);
-  }
-  .k-group-input { height: 46px; min-height: 46px; font-size: 15px; padding: 8px 14px; border-radius: 14px; }
-  .k-group-field { margin-bottom: 12px; }
-
-  .k-group-identity-note { padding: 10px 12px; margin: 8px 0 14px; border-radius: 14px; }
-  .k-group-identity-note strong { font-size: 14px; }
-  .k-group-identity-note span { display: block; font-size: 12px; line-height: 1.4; margin-top: 3px; }
-
-  .k-group-split-hint,
-  .k-group-equal-hint { font-size: 13px; padding: 9px 12px; margin: 8px 0 14px; border-radius: 12px; }
-
-  .k-group-btn { min-height: 50px; font-size: 16px; border-radius: 999px; }
-  #k-ge-submit-btn,
-  #k-gp-pay-btn { height: 52px; min-height: 52px; font-size: 16px; margin-top: 12px; letter-spacing: .01em; }
-
-  .k-group-saved-commitment { padding: 14px 16px; border-radius: 16px; margin-bottom: 14px; }
-  .k-group-commitments-card { padding: 14px 18px; border-radius: 18px; }
-}
-
-@media (min-width: 1200px) {
-  .k-group-participant-layout { grid-template-columns: 1fr 440px; gap: 32px; }
-  .k-group-header-title { font-size: 28px; }
-}
-
-/* ══════════════════════════════════════════════════════════════════
- * SIMPLIFICATION UI — carte identité créateur + récap financier
- * Aligné sur mockup "direction à prendre" (PR simplification)
- * ══════════════════════════════════════════════════════════════════ */
-
-/* ── Carte identité créateur ──────────────────────────────────────── */
-.k-group-creator-id {
+.k-glist-minibar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  background: var(--sand);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: var(--white);
+  border-top: 1px solid var(--border-soft-md);
   padding: 12px 16px;
-  margin-bottom: 12px;
+  margin: 24px -16px -96px;
+  box-shadow: 0 -4px 16px rgba(0,0,0,.06);
 }
-.k-group-creator-id-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: var(--cta-green);
+
+.k-glist-minibar.u-hidden {
+  display: none;
+}
+
+.k-glist-minibar-total {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.k-glist-buy-btn {
+  padding: 12px 22px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--sage);
   color: var(--white);
-  font-size: 15px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  letter-spacing: .02em;
-}
-.k-group-creator-id-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.k-group-creator-id-info strong {
   font-size: 14px;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1.2;
-}
-.k-group-creator-id-phone {
-  font-size: 12px;
-  color: var(--whatsapp);
-  font-weight: 700;
-}
-
-/* ── Récap financier créateur ─────────────────────────────────────── */
-.k-group-financial-summary {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 16px 20px 14px;
-  margin-bottom: 12px;
-  box-shadow: 0 8px 28px var(--border-text-06, rgba(30,40,25,.06));
-}
-.k-group-financial-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.k-group-financial-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.k-group-financial-stat strong {
-  font-size: 15px;
-  font-weight: 900;
-  color: var(--text);
-  line-height: 1.2;
-}
-.k-group-financial-stat span {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-.k-group-financial-stat.is-highlight strong {
-  color: var(--cta-green);
-}
-
-/* ── Section verrouillage simplifiée ──────────────────────────────── */
-.k-group-lock-section {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.k-group-lock-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-.k-group-select {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 14px;
-  font-family: var(--font);
-  background: var(--white);
-  color: var(--text);
-  appearance: none;
+  font-weight: 600;
   cursor: pointer;
 }
-.k-group-commitment-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+
+.k-glist-buy-btn:hover {
+  background: var(--sage-dark);
 }
-.k-group-commitment-phone {
-  font-size: 11px;
+
+/* ── États vides / erreurs ────────────────────────────────────── */
+
+.k-glist-empty,
+.k-glist-cancelled {
+  text-align: center;
+  padding: 48px 16px;
   color: var(--text-muted);
-  font-weight: 600;
-}
-.k-group-commitment-status--paid {
-  color: var(--cta-green);
-}
-.k-group-commitment-status--waiting {
-  color: var(--text-muted);
+  font-size: 14px;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   UX V4 — DIRECTION MOCKUP (condensation toggles style checkout)
-   Accordéons, badge de phase, carte identité créateur, avatars.
-   ═══════════════════════════════════════════════════════════════ */
+/* ── Squelette de chargement ──────────────────────────────────── */
 
-/* ── Accordéon style checkout (cf. .ck-track-details) ──────────── */
-.k-group-accordion {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--sand);
-}
-.k-group-accordion summary {
-  list-style: none;
-  cursor: pointer;
-  padding: 11px 13px;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 44px;             /* LOT 6 — cible tactile */
-  box-sizing: border-box;
-}
-.k-group-accordion summary::-webkit-details-marker { display: none; }
-.k-group-accordion summary::after {
-  content: "+";
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-.k-group-accordion[open] summary::after { content: "−"; }
-.k-group-accordion > *:not(summary) { padding: 0 13px 12px; }
-
-.k-group-acc-meta {
-  margin-left: auto;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--text-muted);
-  white-space: nowrap;
+.k-glist-skeleton {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
 }
 
-/* Variante flush : dans une carte déjà bordée (side-card, progress-card) */
-.k-group-accordion--flush {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-.k-group-accordion--flush summary { padding: 2px 0; }
-.k-group-accordion--flush > *:not(summary) { padding: 8px 0 0; }
-
-/* ── Badge de phase (tête de carte d'actions) ──────────────────── */
-.k-group-phase-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: .01em;
+.k-glist-skel-banner,
+.k-glist-skel-progress {
+  height: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--border-soft-md);
   margin-bottom: 12px;
-}
-.k-group-phase-badge--open {
-  background: var(--green-bg-10, rgba(42,122,62,.1));
-  color: var(--cta-green);
-  border: 1px solid var(--green-border-22, rgba(42,122,62,.22));
-}
-.k-group-phase-badge--settle {
-  background: var(--amber-bg-08);
-  color: var(--amber-text-sett);
-  border: 1px solid var(--amber-border-28);
-}
-.k-group-phase-badge--paid {
-  background: var(--green-bg-10, rgba(42,122,62,.1));
-  color: var(--cta-green);
-  border: 1px solid var(--green-border-22, rgba(42,122,62,.22));
-}
-.k-group-phase-badge--done {
-  background: var(--sand);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
+  opacity: .5;
+  animation: kGlistPulse 1.2s ease-in-out infinite;
 }
 
-/* ── Carte identité créateur (direction mockup) ────────────────── */
-.k-group-owner-id { padding: 16px 20px 14px; }
-.k-group-owner-eyebrow {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--violet);
-  margin-bottom: 4px;
-}
-.k-group-owner-title {
-  margin: 0 0 2px;
-  font-size: 20px;
-  font-weight: 900;
-  line-height: 1.15;
-  color: var(--text);
-}
-.k-group-owner-sub {
-  margin: 0 0 8px;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-.k-group-owner-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-size: 13.5px;
-  color: var(--text);
-}
-.k-group-owner-meta strong { font-weight: 900; }
-.k-group-owner-sep { color: var(--text-muted); }
-
-/* ── Avatars initiales participants (direction mockup) ─────────── */
-.k-group-commitment-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.k-group-commitment-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11.5px;
-  font-weight: 800;
-  flex-shrink: 0;
-  color: var(--white);
-}
-.k-group-commitment-avatar--h1 { background: var(--cta-green); }
-.k-group-commitment-avatar--h2 { background: var(--violet); }
-.k-group-commitment-avatar--h3 { background: var(--amber-text-sett); }
-.k-group-commitment-avatar--h4 { background: var(--ocean); }
-.k-group-commitment-avatar--h5 { background: var(--coral); }
-.k-group-commitment-left { min-width: 0; flex: 1; }
-
-/* ── Accordéon Options (LOT 5 — danger séparé dedans) ──────────── */
-.k-group-options-acc { margin-top: 14px; }
-
-/* ── Cockpit créateur V4.1 — carte unifiée (mockup) ──────────── */
-.k-gc-unified { padding: 16px; }
-.k-gc-items-row {
-  display: flex; justify-content: space-between; align-items: center;
-  border: 0.5px solid var(--border); border-radius: var(--radius, 12px);
-  padding: 10px 12px; margin: 10px 0; font-size: 13px;
-}
-.k-gc-items-edit { font-size: 12px; color: var(--violet); cursor: pointer; }
-.k-gc-sec-label {
-  font-size: 12px; font-weight: 600; color: var(--text-muted);
-  margin: 12px 0 6px;
-}
-.k-gc-est-list {
-  border: 0.5px solid var(--border); border-radius: 12px;
-  padding: 2px 12px; margin-bottom: 10px;
-}
-.k-gc-est-row {
-  display: flex; justify-content: space-between; padding: 7px 0;
-  font-size: 13px; color: var(--text);
-}
-.k-gc-est-row + .k-gc-est-row { border-top: 0.5px solid var(--border); }
-.k-gc-est-row span:last-child { font-weight: 600; }
-.k-gc-est-row--anon { color: var(--text-muted); }
-.k-gc-est-row--anon span:last-child { font-weight: 400; }
-.k-gc-est-agg {
-  background: var(--violet-light); color: var(--violet-dark);
-  font-size: 13px; font-weight: 600; padding: 8px 14px;
-  border-radius: 12px; margin-bottom: 14px;
-}
-.k-gc-est-agg span { color: var(--violet); font-weight: 400; }
-.k-gc-empty {
-  font-size: 13px; font-style: italic; color: var(--text-muted);
-  margin: 10px 0; padding: 10px 0; border-left: 3px solid var(--violet-light);
-  padding-left: 12px;
-}
-.k-gc-sub { font-size: 12px; color: var(--text-muted); margin: 2px 0 12px; }
-.k-gc-fund { margin-bottom: 14px; }
-.k-gc-fund-labels {
-  display: flex; justify-content: space-between; font-size: 12px;
-  color: var(--text-muted); margin-bottom: 4px;
-}
-.k-gc-fund-val { font-weight: 600; color: var(--text); }
-.k-gc-fund-track { height: 8px; border-radius: 999px; background: var(--sand); }
-.k-gc-fund-fill { height: 8px; border-radius: 999px; transition: width .4s ease; }
-.k-gc-btn-main {
-  width: 100%; padding: 13px 20px; border-radius: 999px; border: none;
-  font-size: 14px; font-weight: 700; cursor: pointer;
-  background: var(--violet); color: var(--white);
-}
-.k-gc-btn-main:hover { opacity: .92; }
-.k-gc-btn-main:disabled { opacity: .6; cursor: default; }
-.k-gc-btn-finalize {
-  width: 100%; padding: 13px 20px; border-radius: 999px; border: none;
-  font-size: 14px; font-weight: 700; cursor: pointer;
-  background: var(--checkout-accent); color: var(--white);
-}
-.k-gc-note {
-  font-size: 12px; color: var(--text-muted); text-align: center;
-  margin: 8px 0 0; line-height: 1.3;
-}
-.k-gc-share-row {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0;
-}
-/* ── Boutons Cas B (AWAITING_CHOICE, mockup) ──────────────────── */
-.k-gc-btn-choice {
-  width: 100%; text-align: left; padding: 12px 14px;
-  border-radius: 14px; border: 0.5px solid var(--border);
-  margin-bottom: 8px; cursor: pointer;
-  background: var(--white);
-}
-.k-gc-btn-choice strong {
-  display: block; font-size: 14px; font-weight: 600;
-  color: var(--text); margin-bottom: 2px;
-}
-.k-gc-btn-choice small { font-size: 12px; color: var(--text-muted); }
-.k-gc-btn-choice--complete {
-  background: var(--checkout-accent); border-color: var(--checkout-accent);
-}
-.k-gc-btn-choice--complete strong { color: var(--white); }
-.k-gc-btn-choice--complete small { color: rgba(255,255,255,.75); }
-.k-gc-btn-choice--danger { border-color: var(--red-awaiting-bg); }
-.k-gc-btn-choice--danger strong { color: var(--red-danger); }
-.k-gc-btn-choice--danger small { color: var(--text-muted); }
-
-/* ── Cockpit closed phase — header / body structure ───────────── */
-.k-gc-header {
-  padding: 14px 16px 12px;
-  background: var(--coral-light);
-  border-radius: 16px 16px 0 0;
-  border-bottom: 1px solid var(--border-coral-13);
-}
-.k-gc-badge-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-}
-.k-gc-body {
-  padding: 14px 16px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.k-glist-skel-progress {
+  width: 60%;
 }
 
-/* ── Fund section footer ──────────────────────────────────────── */
-.k-gc-fund-foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 5px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-.k-gc-fund-val-accent {
-  color: var(--coral);
-  font-weight: 700;
-}
-
-/* ── Stats row (remaining / total) ───────────────────────────── */
-.k-gc-stats {
+.k-glist-skel-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 10px;
-}
-.k-gc-stat {
-  background: var(--sand);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.k-gc-stat strong {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text);
-}
-.k-gc-stat span {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-.k-gc-stat--coral {
-  background: var(--coral-light);
-  border-color: var(--border-coral-13);
-}
-.k-gc-stat--coral strong { color: var(--coral); }
-.k-group-options-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.k-group-options-body .k-group-btn { width: 100%; }
-.k-group-options-body .k-group-options-danger {
-  margin-top: 6px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
 }
 
-/* ── Condensation mobile ───────────────────────────────────────── */
-/* max:380px → max:899px (doctrine 900px/1200px) */
-@media (max-width: 899px) {
-  .k-group-financial-stats {
-    grid-template-columns: 1fr 1fr;   /* 2×2 — lisible sur petits écrans */
+.k-glist-skel-card {
+  aspect-ratio: .8;
+  border-radius: var(--radius);
+  background: var(--border-soft-md);
+  opacity: .5;
+  animation: kGlistPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes kGlistPulse {
+  0%, 100% { opacity: .35; }
+  50% { opacity: .6; }
+}
+
+@media (min-width: 900px) {
+  .k-glist-minibar {
+    position: static;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-soft-md);
+    box-shadow: none;
+    margin: 24px 0 0;
   }
-  .k-group-acc-meta { font-size: 11.5px; }
 }
-
-/* ── GAP-B / Phase D — lien personnalisé (créateur) ──────────────── */
-.k-gc-personalize-acc { margin-top: 10px; }
-.k-gc-personalize-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.k-gc-personalize-body .k-gc-share-row { margin: 4px 0 0; }
-
-/* ── GAP-B / Phase D — suggestion de l'organisateur (participant) ── */
-.k-group-suggestion-note {
-  font-size: 12.5px;
-  color: var(--violet);
-  background: var(--violet-light);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px 10px;
-  margin: 0 0 8px;
-  line-height: 1.4;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Snapshot produit lecture-seule (sheet) — rapatrié de b-group-view.js
-   (doctrine §1 : plus d'injection <style> runtime).
-   ═══════════════════════════════════════════════════════════════ */
-.k-group-item-row--tap{cursor:pointer;transition:background .12s}
-.k-group-item-row--tap:hover{background:var(--sand,rgba(0,0,0,.03))}
-.k-group-item-row--tap:focus-visible{outline:2px solid var(--violet,#6b4eff);outline-offset:-2px}
-.k-group-item-chev{margin-left:8px;color:var(--text-muted,#999);font-size:18px;line-height:1}
-.k-gsnap-overlay{position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.45);
-  display:flex;align-items:flex-end;justify-content:center;animation:kGsnapFade .2s ease}
-@keyframes kGsnapFade{from{opacity:0}to{opacity:1}}
-@media(min-width:900px){.k-gsnap-overlay{align-items:center}}
-.k-gsnap-sheet{background:var(--white,#fff);border-radius:20px 20px 0 0;width:100%;max-width:420px;
-  padding:0 0 calc(20px + env(safe-area-inset-bottom));overflow:hidden;animation:kGsnapUp .28s ease}
-@media(min-width:900px){.k-gsnap-sheet{border-radius:16px;padding-bottom:20px}}
-@keyframes kGsnapUp{from{transform:translateY(48px);opacity:0}to{transform:none;opacity:1}}
-.k-gsnap-img{width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--sand,#f2f2f2);display:block}
-.k-gsnap-img--ph{display:flex;align-items:center;justify-content:center;font-size:48px}
-.k-gsnap-body{padding:18px 20px 4px}
-.k-gsnap-cat{font-size:12px;font-weight:600;color:var(--text-muted,#999);text-transform:uppercase;letter-spacing:.04em}
-.k-gsnap-name{font-size:18px;font-weight:800;color:var(--text,#111);margin:4px 0 8px;line-height:1.25}
-.k-gsnap-price{font-size:20px;font-weight:800;color:var(--violet,#6b4eff)}
-.k-gsnap-note{font-size:12px;color:var(--text-muted,#999);margin:12px 0 0;line-height:1.5}
-.k-gsnap-back{display:block;width:calc(100% - 40px);margin:16px 20px 0;padding:13px;
-  background:var(--violet,#6b4eff);color:var(--white,#fff);border:none;border-radius:50px;
-  font-size:15px;font-weight:700;cursor:pointer}
-.k-gsnap-back:hover{filter:brightness(.95)}

@@ -9,11 +9,12 @@
     "carousel:changed",
     "favorites:view-refresh",
     "modal:product-changed",
+    "nav:goto-group",
     "sidebar:built",
     "view:changed"
   ],
   "notFoundEndpoints": [],
   "ownershipRed": [],
   "ownershipOrange": [],
-  "savedAt": "2026-07-27T00:18:02.566Z"
+  "savedAt": "2026-08-03T00:30:58.693Z"
 }

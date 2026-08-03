@@ -136,7 +136,7 @@ describe('refreshGroupBadge', () => {
   it('ajoute la classe show + has-active si shareToken présent', () => {
     const bnavBadge = makeBadge('k-bnav-group-badge');
     const headerBadge = makeBadge('k-header-group-badge');
-    const headerBtn = makeBadge('k-header-group-btn');
+    const headerBtn = makeBadge('k-header-komerce-btn');
     state.shareToken = 'tok-1';
 
     refreshGroupBadge();

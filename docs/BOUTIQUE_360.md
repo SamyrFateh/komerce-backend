@@ -1,14 +1,14 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-02T23:01:39.807Z.
+> Régénéré le 2026-08-03T05:50:58.946Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **76** (76 headés) · Événements bus : **22** · Bundles CSS : **3**
-- Endpoints appelés : **48** — 🔴 0 hors contrat · ⚪ 31 non prouvés · 🔵 19 dynamiques
-- Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 5 non déclaré(s)
+- Modules JS : **76** (76 headés) · Événements bus : **23** · Bundles CSS : **3**
+- Endpoints appelés : **44** — 🔴 0 hors contrat · ⚪ 31 non prouvés · 🔵 15 dynamiques
+- Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
 
@@ -53,11 +53,7 @@
 | `/api/shared-carts/from-cart-items` | b-share-cart | ⚪ non prouvé |
 | `/api/shared-carts/mine` | b-share-cart, group-api | ⚪ non prouvé |
 | `/api/shared-carts/public/{id}` | b-group-banner, group-api | 🔵 dynamique |
-| `/api/shared-carts/{id}` | group-api | 🔵 dynamique |
-| `/api/shared-carts/{id}/as-cart-items` | group-api | 🔵 dynamique |
-| `/api/shared-carts/{id}/cancel` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/close` | group-api | 🔵 dynamique |
-| `/api/shared-carts/{id}/items` | b-cart, group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/items/{id}` | group-api | 🔵 dynamique |
 | `/api/shares` | b-cart, b-favs | ⚪ non prouvé |
 | `/api/wallet` | b-checkout, b-wallet | ⚪ non prouvé |
@@ -83,6 +79,7 @@
 | `modal:opened` | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | 🟢 sain (propriétaire: modal-product) |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
+| `nav:goto-group` | b-komerce | b-nav | 🟡 non déclaré |
 | `nav:goto-komerce-wallet` | b-checkout | b-nav | 🟢 sain |
 | `nav:goto-track` | b-checkout | b-nav | 🟢 sain |
 | `product:open-from-cart` | b-product-open-contract | b-product-open-contract | 🟢 sain |
@@ -118,6 +115,7 @@ graph LR
   b_pager["b-pager"] -->|chip:center| b_catalog["b-catalog"]
   b_checkout["b-checkout"] -->|nav:goto-komerce-wallet| b_nav["b-nav"]
   b_checkout["b-checkout"] -->|nav:goto-track| b_nav["b-nav"]
+  b_komerce["b-komerce"] -->|nav:goto-group| b_nav["b-nav"]
   b_komerce["b-komerce"] -->|komerce:show| b_nav["b-nav"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:detail-ready| b_modal_cart["b-modal-cart"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
@@ -151,7 +149,7 @@ graph LR
 | Bundle | Sources |
 |---|---|
 | `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
-| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal`, `wallet`, `komerce` |
+| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `identity`, `paypal`, `wallet`, `komerce` |
 | `css/dist/desktop.css` | `boutique-desktop` |
 
 ---

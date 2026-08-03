@@ -317,7 +317,6 @@ describe('setupBnav', () => {
       '<button class="k-bnav-item" data-tab="cart"></button>' +
       '<button class="k-bnav-item" data-tab="fav"></button>' +
       '<button class="k-bnav-item" data-tab="track"></button>' +
-      '<button class="k-bnav-item" data-tab="group"></button>' +
       '<button class="k-bnav-item" data-tab="komerce"></button>' +
       '<button class="k-bnav-item" data-tab="shop"></button>'
     );
@@ -345,10 +344,10 @@ describe('setupBnav', () => {
     expect(renderTrackView).toHaveBeenCalled();
   });
 
-  test('tab=group -> renderGroupView()', () => {
+  test("bus 'nav:goto-group' (émis par Mon Komerce > Mes listes) -> renderGroupView()", () => {
     mountNavButtons();
     setupBnav();
-    document.querySelector('[data-tab="group"]').click();
+    bus.emit('nav:goto-group');
     expect(renderGroupView).toHaveBeenCalled();
   });
 
@@ -377,8 +376,8 @@ describe('handleParticipantUrl', () => {
     expect(renderGroupView).not.toHaveBeenCalled();
   });
 
-  test('token présent -> nettoie l\'URL, active l\'onglet group, renderGroupView(participantToken)', () => {
-    mountFixture('<button class="k-bnav-item" data-tab="group"></button><button class="k-bnav-item" data-tab="fav"></button>');
+  test('token présent -> nettoie l\'URL, désactive tous les onglets, renderGroupView(participantToken)', () => {
+    mountFixture('<button class="k-bnav-item active" data-tab="shop"></button><button class="k-bnav-item" data-tab="fav"></button>');
     detectParticipantToken.mockReturnValue('TOK123');
     const replaceStateSpy = jest.spyOn(window.history, 'replaceState').mockImplementation(() => {});
 
@@ -386,7 +385,7 @@ describe('handleParticipantUrl', () => {
 
     expect(replaceStateSpy).toHaveBeenCalled();
     expect(renderGroupView).toHaveBeenCalledWith({ participantToken: 'TOK123' });
-    expect(document.querySelector('[data-tab="group"]').classList.contains('active')).toBe(true);
+    expect(document.querySelector('[data-tab="shop"]').classList.contains('active')).toBe(false);
     expect(document.querySelector('[data-tab="fav"]').classList.contains('active')).toBe(false);
 
     replaceStateSpy.mockRestore();

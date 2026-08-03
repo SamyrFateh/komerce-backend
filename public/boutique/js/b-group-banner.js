@@ -4,7 +4,7 @@
  * @domain        shared-cart
  * @layer         ui-component
  * @criticality   medium
- * @inputs        shared_cart_state, expiry, contribution_state
+ * @inputs        shared_cart_state, expiry
  * @outputs       shared_cart_state_refresh
  * @depends       b-store.js
  * @used-by       b-share-cart.js, group/group-render-list.js, boutique.js
@@ -27,10 +27,6 @@
 import { state } from './b-store.js';
 
 const BANNER_ID = 'k-group-banner';
-
-function roundAmount(value) {
-  return Math.round(Number(value) || 0);
-}
 
 /**
  * API conservée pour les appelants historiques. Elle garantit que l'ancienne
@@ -72,9 +68,6 @@ export function refreshBanner() {
 
       state.shareExpiry = data.cart.expires_at;
       state.shareStatus = data.cart.status;
-      state.shareTotalKmf = roundAmount(data.cart.total_kmf_snapshot);
-      state.shareContributedKmf = roundAmount(data.cart.contributed_kmf);
-      state.shareRemainingKmf = roundAmount(data.cart.remaining_kmf);
 
       showBanner();
     })

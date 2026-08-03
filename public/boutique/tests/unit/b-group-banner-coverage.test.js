@@ -23,9 +23,6 @@ beforeEach(() => {
   state.shareToken = null;
   state.shareExpiry = null;
   state.shareStatus = null;
-  state.shareTotalKmf = null;
-  state.shareContributedKmf = null;
-  state.shareRemainingKmf = null;
   global.fetch = jest.fn();
 });
 
@@ -48,7 +45,7 @@ describe('b-group-banner — contrat actif après suppression du rendu global', 
     expect(banner.classList.contains('show')).toBe(false);
   });
 
-  it('synchronise tous les champs du panier groupe et arrondit les montants', async () => {
+  it('synchronise expiry et status du panier groupe', async () => {
     state.shareToken = 'token-42';
     global.fetch.mockResolvedValue({
       ok: true,
@@ -56,9 +53,6 @@ describe('b-group-banner — contrat actif après suppression du rendu global', 
         cart: {
           expires_at: '2026-08-01T00:00:00Z',
           status: 'active',
-          total_kmf_snapshot: '5000.4',
-          contributed_kmf: '1999.7',
-          remaining_kmf: null,
         },
       }),
     });
@@ -72,9 +66,6 @@ describe('b-group-banner — contrat actif après suppression du rendu global', 
     );
     expect(state.shareExpiry).toBe('2026-08-01T00:00:00Z');
     expect(state.shareStatus).toBe('active');
-    expect(state.shareTotalKmf).toBe(5000);
-    expect(state.shareContributedKmf).toBe(2000);
-    expect(state.shareRemainingKmf).toBe(0);
   });
 
   it('purge la session si le panier est absent ou si la réponse HTTP échoue', async () => {

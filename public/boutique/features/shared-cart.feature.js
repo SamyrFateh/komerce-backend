@@ -43,7 +43,6 @@ module.exports = {
       '../css/group-cart-flow.css',
       '../css/hero-cart-proxy.css',
       '../css/share-cart.css',
-      '../css/shared-followup.css',
     ],
     tests: [
       '../tests/unit/group-render-list.test.js',
@@ -66,12 +65,12 @@ module.exports = {
       'auth — identité et téléphone',
       'platform-ops — bus, store et utilitaires',
       'orders — snapshot explicite du panier personnel',
-      'payments — règlement de part selon le contrat backend',
+      'payments — checkout canonique',
     ],
   },
   authority: 'boutique — shared-cart possède seul le cycle groupe et la vue participant.',
   invariants: [
-    'participant en lecture seule hors actions explicitement autorisées',
+    'visiteur en lecture seule hors actions explicitement autorisées',
     'aucun appel au catalogue vivant pour une fiche snapshot partagée',
     'panier personnel et panier partagé restent distincts',
   ],

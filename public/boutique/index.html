@@ -38,8 +38,8 @@
      Ne jamais remettre en inline, ne jamais ajouter defer/async, ne jamais
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=157">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=372">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=158">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=375">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=85">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
@@ -119,14 +119,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
         <span>Suivi</span>
       </button>
-      <button class="k-header-nav-btn k-header-nav-btn--group" data-tab="group" aria-label="Panier Groupe" id="k-header-group-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span>Groupe</span>
-        <span class="k-header-group-badge" id="k-header-group-badge"></span>
-      </button>
-      <button class="k-header-nav-btn" data-tab="komerce" aria-label="Mon Komerce">
+      <button class="k-header-nav-btn k-header-nav-btn--group" data-tab="komerce" aria-label="Mon Komerce" id="k-header-komerce-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
         <span>Mon Komerce</span>
+        <span class="k-header-group-badge" id="k-header-group-badge"></span>
       </button>
       <button class="k-cart-btn k-header-action" id="k-cart-btn" aria-label="Panier">
         <img src="/images/avatar_seule.png" class="k-cart-avatar" alt="">
@@ -614,18 +610,14 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
     <span>Suivi</span>
   </button>
-  <button class="k-bnav-item" data-tab="group">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    <span class="k-bnav-group-label">Groupe</span>
-    <span class="k-bnav-badge k-bnav-badge--group" id="k-bnav-group-badge"></span>
-  </button>
   <button class="k-bnav-item" data-tab="fav">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
     <span>Favoris</span>
   </button>
-  <button class="k-bnav-item" data-tab="komerce">
+  <button class="k-bnav-item" data-tab="komerce" id="k-bnav-komerce-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
     <span>Mon Komerce</span>
+    <span class="k-bnav-badge k-bnav-badge--group" id="k-bnav-group-badge"></span>
   </button>
   <button class="k-bnav-item" data-tab="cart">
     <img src="/images/panier_tresse.png" class="k-bnav-basket" width="24" height="24" alt="Panier">

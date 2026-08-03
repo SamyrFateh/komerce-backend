@@ -21,10 +21,6 @@ export function setupCartProductOpenStyle() {
   // build. Provoquait "Refused to apply style ... MIME type 'text/html'" car
   // le serveur renvoyait l'index HTML en fallback SPA.
 
-  // FIX BUG-H3 : shared-followup.css est déjà inclus dans components.css
-  // (bundle dist). Le chargement dynamique était redondant et utilisait un
-  // cache-buster ?v=1 incohérent avec le ?v=7 du bundle.
-
   // NOTE: b-cart-groups-tab.js retiré — setupCartGroupsTab() est vide (legacy désactivé).
   // Le flux Groupe officiel vit dans group/group-render-list.js + group/group-api.js.
 
