@@ -24,6 +24,7 @@ const mockGetOwnerSharedCarts = jest.fn();
 const mockRemoveItemFromSharedList = jest.fn();
 const mockCloseCart = jest.fn();
 const mockAddItemToSharedList = jest.fn();
+const mockUpdateSharedListItemQuantity = jest.fn();
 const mockPickOwnerCart = jest.fn();
 const mockCheckoutSharedListSelection = jest.fn();
 const mockIsDesktop = jest.fn();
@@ -39,6 +40,7 @@ jest.mock('../../js/group/group-api.js', () => ({
   removeItemFromSharedList: mockRemoveItemFromSharedList,
   closeCart: mockCloseCart,
   addItemToSharedList: mockAddItemToSharedList,
+  updateSharedListItemQuantity: mockUpdateSharedListItemQuantity,
 }));
 jest.mock('../../js/group/group-state.js', () => ({
   pickOwnerCart: mockPickOwnerCart,
@@ -48,6 +50,7 @@ jest.mock('../../js/group/group-checkout-adapter.js', () => ({
 }));
 
 const { state, dom, initDom } = require('../../js/b-store.js');
+const { bus } = require('../../js/b-bus.js');
 const {
   activateSharedListContext,
   refreshSharedListContext,
@@ -568,5 +571,129 @@ describe('Amendement V2 §A — cartSurface (coexistence panier personnel / list
       expect(state.cartSurface).toBe('personal');
       expect(state.sharedListContext.token).toBe('tok-1');
     });
+  });
+});
+
+describe('amendement V2 §B — contrôles de quantité par ligne', () => {
+  beforeEach(() => {
+    mockIsDesktop.mockReturnValue(true);
+  });
+
+  it('rend les boutons +/- uniquement pour le créateur, panier open, ligne non réclamée', () => {
+    activateSharedListContext(publicPayload({ is_creator: true, items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    // Scopé à #k-side-cart : renderSharedListInCart() rend aussi dans le
+    // drawer (dom.cartBody), présent en parallèle dans ce DOM de test — un
+    // querySelectorAll global compterait les deux surfaces et doublerait
+    // le total (cf. les autres tests de ce fichier scopés de la même façon,
+    // ex. ligne ~552 `switcher.querySelectorAll(...)`).
+    const desktopPanel = document.getElementById('k-side-cart');
+    expect(desktopPanel.querySelectorAll('.k-shared-item-qty-btn')).toHaveLength(2);
+  });
+
+  it("n'affiche aucun contrôle de quantité pour un visiteur non créateur", () => {
+    activateSharedListContext(publicPayload({ is_creator: false, items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    expect(document.querySelectorAll('.k-shared-item-qty-btn')).toHaveLength(0);
+  });
+
+  it("n'affiche aucun contrôle de quantité pour une ligne déjà réclamée", () => {
+    activateSharedListContext(publicPayload({ is_creator: true, items: [availableItem({ id: 'i1', claimed: true })] }), 'tok-1');
+    expect(document.querySelectorAll('.k-shared-item-qty-btn')).toHaveLength(0);
+  });
+
+  it('clic sur "+" appelle updateSharedListItemQuantity avec quantité+1 puis rafraîchit', async () => {
+    mockUpdateSharedListItemQuantity.mockResolvedValue({ ok: true });
+    activateSharedListContext(publicPayload({ is_creator: true, items: [availableItem({ id: 'i1', quantity: 2 })] }), 'tok-1');
+    mockGetSharedCartPublic.mockResolvedValue(publicPayload({ is_creator: true, items: [availableItem({ id: 'i1', quantity: 3 })] }));
+
+    document.querySelector('.k-shared-item-qty-btn[data-qty-step="1"]').click();
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+
+    expect(mockUpdateSharedListItemQuantity).toHaveBeenCalledWith('sc-1', 'i1', 3);
+    expect(mockGetSharedCartPublic).toHaveBeenCalled();
+  });
+
+  it('clic sur "-" refuse de descendre à 0 ou moins (aucun appel réseau)', () => {
+    activateSharedListContext(publicPayload({ is_creator: true, items: [availableItem({ id: 'i1', quantity: 1 })] }), 'tok-1');
+
+    document.querySelector('.k-shared-item-qty-btn[data-qty-step="-1"]').click();
+
+    expect(mockUpdateSharedListItemQuantity).not.toHaveBeenCalled();
+  });
+
+  it("verrouille la ligne pendant l'appel réseau (désactive les boutons), déverrouille ensuite", async () => {
+    let resolvePatch;
+    mockUpdateSharedListItemQuantity.mockReturnValue(new Promise((res) => { resolvePatch = res; }));
+    mockGetSharedCartPublic.mockResolvedValue(publicPayload({ is_creator: true, items: [availableItem({ id: 'i1', quantity: 2 })] }));
+    activateSharedListContext(publicPayload({ is_creator: true, items: [availableItem({ id: 'i1', quantity: 1 })] }), 'tok-1');
+
+    document.querySelector('.k-shared-item-qty-btn[data-qty-step="1"]').click();
+    await Promise.resolve();
+
+    expect(document.querySelector('.k-shared-item-qty-btn[data-qty-step="1"]').disabled).toBe(true);
+
+    resolvePatch({ ok: true });
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+
+    expect(document.querySelector('.k-shared-item-qty-btn[data-qty-step="1"]').disabled).toBe(false);
+  });
+
+  it('affiche une erreur et déverrouille la ligne si le serveur refuse (ex: item_already_claimed)', async () => {
+    mockUpdateSharedListItemQuantity.mockRejectedValue(new Error('Cet article a déjà été acheté'));
+    activateSharedListContext(publicPayload({ is_creator: true, items: [availableItem({ id: 'i1', quantity: 1 })] }), 'tok-1');
+
+    document.querySelector('.k-shared-item-qty-btn[data-qty-step="1"]').click();
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+
+    expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('Erreur'), 'error');
+    expect(document.querySelector('.k-shared-item-qty-btn[data-qty-step="1"]').disabled).toBe(false);
+  });
+});
+
+describe('amendement V2 §B — ouverture fiche produit depuis une ligne de liste', () => {
+  let modalOpenHandler;
+
+  beforeEach(() => {
+    mockIsDesktop.mockReturnValue(true);
+    modalOpenHandler = jest.fn();
+    bus.on('modal:open', modalOpenHandler);
+  });
+
+  afterEach(() => {
+    bus.off('modal:open', modalOpenHandler);
+    state.modalReturnSurface = null;
+  });
+
+  it('clic sur la ligne émet modal:open avec product_id, source et sharedCartItemId, et pose modalReturnSurface', () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-42' })] }), 'tok-1');
+
+    document.querySelector('.k-shared-item-open').click();
+
+    expect(modalOpenHandler).toHaveBeenCalledWith({ id: 'p-42', source: 'shared-list', sharedCartItemId: 'i1' });
+    expect(state.modalReturnSurface).toBe('shared-list');
+  });
+
+  it("bus.emit('modal:closed') restaure cartSurface='shared-list' et consomme modalReturnSurface une seule fois", () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-42' })] }), 'tok-1');
+    document.querySelector('.k-shared-item-open').click();
+    setCartSurface('personal');
+    expect(state.cartSurface).toBe('personal');
+
+    bus.emit('modal:closed');
+
+    expect(state.cartSurface).toBe('shared-list');
+    expect(state.modalReturnSurface).toBeNull();
+
+    setCartSurface('personal');
+    bus.emit('modal:closed'); // fermeture ultérieure, sans rapport avec la liste
+    expect(state.cartSurface).toBe('personal'); // pas rejouée
+  });
+
+  it("modal:closed est un no-op si modalReturnSurface n'a jamais été posé", () => {
+    activateSharedListContext(publicPayload({ items: [availableItem()] }), 'tok-1');
+    setCartSurface('personal');
+
+    bus.emit('modal:closed');
+
+    expect(state.cartSurface).toBe('personal');
   });
 });

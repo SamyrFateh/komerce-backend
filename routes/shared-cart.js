@@ -43,6 +43,10 @@
  *   PUT    /api/shared-carts/:id/items    (statut OPEN uniquement)
  *   POST   /api/shared-carts/:id/close    (OPEN → CLOSED)
  *   POST   /api/shared-carts/:id/cancel   (OPEN|CLOSED → CANCELLED)
+ *   POST   /api/shared-carts/:id/items                (ajout unitaire)
+ *   DELETE /api/shared-carts/:id/items/:itemId         (retrait unitaire)
+ *   PATCH  /api/shared-carts/:id/items/:itemId         (quantité unitaire —
+ *          amendement V2 §B, ligne non réclamée uniquement)
  *
  *   ── Admin ──
  *   GET    /api/admin/shared-carts
@@ -64,7 +68,7 @@ const engine  = require('../services/shared-cart-engine');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const { softAuthenticate } = require('../middleware/soft-auth');
-const { updateOpenSharedCartItems, addSharedCartItem, removeSharedCartItem } = require('../services/shared-cart-items-service');
+const { updateOpenSharedCartItems, addSharedCartItem, removeSharedCartItem, updateSharedCartItemQuantity } = require('../services/shared-cart-items-service');
 const log = require('../utils/logger').child({ module: 'shared-cart' });
 const { sendTemplateWhatsApp } = require('../services/whatsapp-meta');
 const queries = require('../services/shared-cart-queries');
@@ -260,6 +264,21 @@ router.delete('/:id/items/:itemId', authenticate, async (req, res, next) => {
   try {
     const { cart } = await removeSharedCartItem(req.params.id, req.user.id, req.params.itemId);
     res.json({ ok: true, cart });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
+});
+
+// Modification unitaire de la quantité d'une ligne — amendement V2 §B
+// (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2). Capacité
+// nouvelle, distincte du PUT /:id/items ci-dessus : ne touche qu'une ligne,
+// jamais toute la liste. Aucun recours à PUT /:id/items pour ce besoin.
+router.patch('/:id/items/:itemId', authenticate, async (req, res, next) => {
+  try {
+    const { quantity } = req.body || {};
+    const { cart, item } = await updateSharedCartItemQuantity(req.params.id, req.user.id, req.params.itemId, quantity);
+    res.json({ ok: true, cart, item });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
     next(err);

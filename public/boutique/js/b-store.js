@@ -186,6 +186,21 @@ export const state = {
    * personnel et liste coexistent, ne se ferment jamais l'un l'autre).
    */
   cartSurface: 'personal',
+  /**
+   * Amendement V2 §B (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_
+   * CART_V2) — surface à restaurer dans le side cart / drawer canonique à
+   * la fermeture de la modale produit, quand celle-ci a été ouverte depuis
+   * une ligne de liste partagée (bus.emit('modal:open', { source:
+   * 'shared-list', ... })).
+   *
+   * null = la modale n'a pas été ouverte depuis la liste, ou a déjà été
+   * consommée : bus.on('modal:closed', ...) ne doit restaurer qu'une fois,
+   * jamais rejouer une restauration obsolète sur une fermeture ultérieure
+   * non liée à la liste. Le module qui déclenche l'ouverture pose la
+   * valeur ; le module qui gère 'modal:closed' la lit puis la remet à
+   * null immédiatement (consommation unique).
+   */
+  modalReturnSurface: null,
 };
 
 /**

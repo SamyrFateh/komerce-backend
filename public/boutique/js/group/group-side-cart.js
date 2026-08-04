@@ -36,6 +36,7 @@ import {
   removeItemFromSharedList,
   closeCart as apiCloseSharedCart,
   addItemToSharedList as apiAddItemToSharedList,
+  updateSharedListItemQuantity as apiUpdateSharedListItemQuantity,
 } from './group-api.js';
 import { pickOwnerCart } from './group-state.js';
 import { checkoutSharedListSelection } from './group-checkout-adapter.js';
@@ -77,6 +78,14 @@ function isActiveContext() {
 function isReadOnly() {
   return state.sharedListContext.status !== 'open';
 }
+
+/**
+ * Amendement V2 §B — verrou local par ligne pendant un PATCH quantité en
+ * vol. Purement transitoire (UI), jamais persisté ni mêlé à
+ * sharedListSelection : un double-clic ou une réponse hors ordre sur la
+ * même ligne ne doit jamais partir en double appel réseau.
+ */
+const pendingQuantityItemIds = new Set();
 
 /* ── Activation / rafraîchissement / nettoyage du contexte ──────────── */
 
@@ -253,6 +262,25 @@ function statusLabel(status) {
   return { open: 'Ouverte', closed: 'Fermée', cancelled: 'Annulée' }[status] || status;
 }
 
+/**
+ * Amendement V2 §B §11 — contrôles de quantité, réservés au propriétaire,
+ * sur une liste ouverte, pour une ligne non réclamée.
+ */
+function quantityControlHtml(item) {
+  if (!state.sharedListContext.isCreator || isReadOnly() || item.claimed) return '';
+  const locked = pendingQuantityItemIds.has(String(item.id));
+  const qty = Number(item.quantity) || 1;
+  return (
+    `<div class="k-shared-item-qty" data-item-id="${sanitize(String(item.id))}">` +
+      `<button type="button" class="k-shared-item-qty-btn" data-qty-step="-1" data-item-id="${sanitize(String(item.id))}" ` +
+        `aria-label="Diminuer la quantité" ${locked ? 'disabled' : ''}>−</button>` +
+      `<span class="k-shared-item-qty-val">${qty}</span>` +
+      `<button type="button" class="k-shared-item-qty-btn" data-qty-step="1" data-item-id="${sanitize(String(item.id))}" ` +
+        `aria-label="Augmenter la quantité" ${locked ? 'disabled' : ''}>+</button>` +
+    `</div>`
+  );
+}
+
 function itemRowHtml(item) {
   const claimed = !!item.claimed;
   const selected = state.sharedListSelection.has(String(item.id));
@@ -275,13 +303,20 @@ function itemRowHtml(item) {
     ? `<button type="button" class="k-shared-item-remove" data-item-id="${sanitize(String(item.id))}" aria-label="Retirer cet article" title="Retirer">✕</button>`
     : '';
 
+  // Amendement V2 §B — image et nom deviennent un bouton unique consultant la
+  // fiche produit canonique (mandat §1/§3) : un seul élément interactif, pas
+  // toute la ligne, pour ne jamais entrer en conflit avec sélection/quantité/retrait.
+  const openLabel = `Voir la fiche produit — ${item.name || 'cet article'}`;
   return (
     `<div class="${classes.join(' ')}" data-item-id="${sanitize(String(item.id))}">` +
-      `<div class="k-cart-item-img">${img}</div>` +
-      `<div class="k-cart-item-info">` +
-        `<div class="k-cart-item-name">${sanitize(item.name || '')}</div>` +
-        `<div class="k-shared-item-meta">${priceText} · <span class="k-shared-item-status">${statusText}</span></div>` +
-      `</div>` +
+      `<button type="button" class="k-shared-item-open" data-item-id="${sanitize(String(item.id))}" aria-label="${sanitize(openLabel)}">` +
+        `<div class="k-cart-item-img">${img}</div>` +
+        `<div class="k-cart-item-info">` +
+          `<div class="k-cart-item-name">${sanitize(item.name || '')}</div>` +
+          `<div class="k-shared-item-meta">${priceText} · <span class="k-shared-item-status">${statusText}</span></div>` +
+        `</div>` +
+      `</button>` +
+      quantityControlHtml(item) +
       `<div class="k-shared-item-controls">${control}${removeBtn}</div>` +
     `</div>`
   );
@@ -359,6 +394,14 @@ function wirePanel(root) {
 
   root.querySelectorAll('.k-shared-item-remove').forEach((btn) => {
     btn.addEventListener('click', () => handleRemoveItem(btn.dataset.itemId));
+  });
+
+  root.querySelectorAll('.k-shared-item-qty-btn').forEach((btn) => {
+    btn.addEventListener('click', () => handleQuantityStep(btn.dataset.itemId, Number(btn.dataset.qtyStep)));
+  });
+
+  root.querySelectorAll('.k-shared-item-open').forEach((btn) => {
+    btn.addEventListener('click', () => handleOpenItemProduct(btn.dataset.itemId));
   });
 
   root.querySelector('#k-shared-list-add')?.addEventListener('click', handleAddItemClick);
@@ -472,6 +515,21 @@ bus.on('side-cart:render', () => {
   }
 });
 
+/**
+ * Amendement V2 §B — restaure la surface liste à la fermeture de la
+ * modale produit quand elle a été ouverte depuis une ligne de liste
+ * (handleOpenItemProduct ci-dessus pose modalReturnSurface juste avant
+ * bus.emit('modal:open', ...)). Consommation unique (mandat b-store.js) :
+ * on remet la valeur à null immédiatement, qu'un contexte actif existe
+ * encore ou non, pour ne jamais rejouer une restauration obsolète sur une
+ * fermeture ultérieure sans rapport avec la liste.
+ */
+bus.on('modal:closed', () => {
+  if (state.modalReturnSurface !== 'shared-list') return;
+  state.modalReturnSurface = null;
+  if (isActiveContext()) setCartSurface('shared-list');
+});
+
 /* ── Amendement V2 §A — bascule explicite de surface (coexistence) ───
  * Ne touche jamais au contexte de liste ni à la sélection locale : c'est
  * uniquement un aiguillage d'affichage entre panier personnel et liste,
@@ -580,6 +638,55 @@ async function handleRemoveItem(itemId) {
   } catch (err) {
     showToast(`Erreur : ${err.message}`, 'error');
   }
+}
+
+/**
+ * Amendement V2 §B §11 — pas +1/-1 sur la quantité d'une ligne. Verrouille
+ * la ligne (pendingQuantityItemIds) pendant l'aller-retour réseau pour
+ * empêcher un double-clic ou une réponse hors ordre de partir en double
+ * appel. Le serveur reste la source de vérité : on rafraîchit depuis lui
+ * plutôt que d'appliquer la nouvelle quantité de façon optimiste.
+ * @param {string} itemId
+ * @param {number} step -1 | 1
+ */
+async function handleQuantityStep(itemId, step) {
+  if (!state.sharedListContext.isCreator || isReadOnly()) return;
+  const item = findItem(itemId);
+  if (!item || item.claimed) return;
+
+  const key = String(itemId);
+  if (pendingQuantityItemIds.has(key)) return;
+
+  const nextQty = (Number(item.quantity) || 1) + step;
+  if (nextQty <= 0) return;
+
+  pendingQuantityItemIds.add(key);
+  renderSharedListInCart();
+  try {
+    await apiUpdateSharedListItemQuantity(state.sharedListContext.sharedCartId, itemId, nextQty);
+    await refreshSharedListContext();
+  } catch (err) {
+    showToast(`Erreur : ${err.message}`, 'error');
+  } finally {
+    pendingQuantityItemIds.delete(key);
+    renderSharedListInCart();
+  }
+}
+
+/**
+ * Amendement V2 §B — ouvre la fiche produit canonique depuis une ligne de
+ * liste. `sharedCartItemId` accompagne l'événement pour un usage futur
+ * éventuel (CTA contextualisés dans la modale) sans en dépendre ici.
+ * Pose modalReturnSurface pour que la fermeture de la modale restaure la
+ * surface liste (mandat §4 — b-store.js::modalReturnSurface, consommation
+ * unique gérée par le listener bus.on('modal:closed') ci-dessous).
+ * @param {string} itemId
+ */
+function handleOpenItemProduct(itemId) {
+  const item = findItem(itemId);
+  if (!item || !item.product_id) return;
+  state.modalReturnSurface = 'shared-list';
+  bus.emit('modal:open', { id: item.product_id, source: 'shared-list', sharedCartItemId: item.id });
 }
 
 async function handleCloseClick() {

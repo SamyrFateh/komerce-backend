@@ -290,8 +290,87 @@ async function removeSharedCartItem(sharedCartId, userId, itemId) {
   });
 }
 
+/**
+ * Modification unitaire de la quantité d'une ligne — amendement V2 §B
+ * (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2). Capacité
+ * nouvelle, distincte de PUT /:id/items (remplacement intégral) et de
+ * addSharedCartItem/removeSharedCartItem (ajout/retrait) : ne touche que
+ * la quantité d'une ligne déjà existante.
+ *
+ * Garde-fous, alignés sur removeSharedCartItem ci-dessus :
+ *   - le panier doit être 'open' (statut) ;
+ *   - un article déjà réclamé par une commande
+ *     (order_items.shared_cart_item_id) ne peut pas voir sa quantité
+ *     modifiée — 409 item_already_claimed, même logique que le retrait.
+ *
+ * Le prix unitaire snapshot (unit_price_kmf_snapshot) n'est jamais
+ * recalculé depuis products — c'est un snapshot, il reste figé. Seul
+ * line_total_kmf_snapshot = unit_price_kmf_snapshot * quantity est
+ * recalculé ici.
+ */
+async function updateSharedCartItemQuantity(sharedCartId, userId, itemId, quantity) {
+  if (!itemId) throw httpError('item_id requis', 400, 'item_id_required');
+  const qty = r(quantity);
+  if (!Number.isFinite(qty) || qty <= 0) {
+    throw httpError('Quantité invalide', 400, 'invalid_quantity');
+  }
+
+  return withTransaction(async (client) => {
+    const { rows: cartRows } = await client.query(
+      `SELECT * FROM shared_carts
+        WHERE id = $1 AND organizer_user_id = $2
+        FOR UPDATE`,
+      [sharedCartId, userId]
+    );
+    if (!cartRows.length) throw httpError('Panier partagé introuvable ou non autorisé', 404, 'shared_cart_not_found');
+    const cart = cartRows[0];
+
+    if (cart.status !== 'open') {
+      throw httpError(`Ce panier n'est plus modifiable (statut : ${cart.status})`, 409, 'cart_not_editable');
+    }
+
+    const { rows: itemRows } = await client.query(
+      `SELECT sci.id, sci.quantity, sci.unit_price_kmf_snapshot,
+              (oi.id IS NOT NULL) AS claimed
+         FROM shared_cart_items sci
+         LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
+        WHERE sci.id = $1 AND sci.shared_cart_id = $2
+        FOR UPDATE OF sci`,
+      [itemId, sharedCartId]
+    );
+    if (!itemRows.length) throw httpError('Article introuvable', 404, 'item_not_found');
+    const existing = itemRows[0];
+    if (existing.claimed) {
+      throw httpError('Cet article a déjà été acheté, sa quantité ne peut plus être modifiée', 409, 'item_already_claimed');
+    }
+
+    const previousQuantity = existing.quantity;
+    const unitPrice = r(existing.unit_price_kmf_snapshot);
+    const lineTotal = unitPrice * qty;
+
+    const { rows: updated } = await client.query(
+      `UPDATE shared_cart_items
+          SET quantity = $1, line_total_kmf_snapshot = $2
+        WHERE id = $3
+        RETURNING *`,
+      [qty, lineTotal, itemId]
+    );
+
+    await client.query(`UPDATE shared_carts SET updated_at = NOW() WHERE id = $1`, [sharedCartId]);
+
+    await addEvent(client, sharedCartId, 'shared_cart_item_quantity_updated', { type: 'user', id: userId }, {
+      item_id: itemId,
+      previous_quantity: previousQuantity,
+      quantity: qty,
+    });
+
+    return { cart, item: updated[0] };
+  });
+}
+
 module.exports = {
   updateOpenSharedCartItems,
   addSharedCartItem,
   removeSharedCartItem,
+  updateSharedCartItemQuantity,
 };

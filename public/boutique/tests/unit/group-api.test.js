@@ -29,6 +29,7 @@ const {
   removeItemFromSharedList,
   closeCart,
   getSharedCartPublic,
+  updateSharedListItemQuantity,
 } = require('../../js/group/group-api.js');
 
 describe('group-api — endpoints créateur (window.K.request)', () => {
@@ -58,6 +59,13 @@ describe('group-api — endpoints créateur (window.K.request)', () => {
   test('propage le rejet si window.K.request échoue (pas de catch silencieux)', async () => {
     K.request.mockRejectedValueOnce(new Error('network down'));
     await expect(getOwnerSharedCarts()).rejects.toThrow('network down');
+  });
+
+  test('updateSharedListItemQuantity(cartId, itemId, quantity) -> PATCH /api/shared-carts/:id/items/:itemId', async () => {
+    await updateSharedListItemQuantity(7, 'item-9', 3);
+    expect(K.request).toHaveBeenCalledWith(
+      '/api/shared-carts/7/items/item-9', 'PATCH', { quantity: 3 }, 0, {}
+    );
   });
 });
 

@@ -32,6 +32,7 @@ const {
   updateOpenSharedCartItems,
   addSharedCartItem,
   removeSharedCartItem,
+  updateSharedCartItemQuantity,
 } = require('../../services/shared-cart-items-service');
 
 describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
@@ -242,6 +243,98 @@ describe('removeSharedCartItem (Contrat API §2/§5 point 4 — retrait unitaire
     const result = await removeSharedCartItem('cart-1', 'user-1', 'item-1');
 
     expect(result.cart).toEqual(cart);
+    expectTransactionCommitted(client);
+  });
+});
+
+describe('updateSharedCartItemQuantity (amendement V2 §B — modification unitaire de quantité)', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('refuse sans item_id, avant toute transaction', async () => {
+    await expect(updateSharedCartItemQuantity('cart-1', 'user-1', undefined, 2)).rejects.toMatchObject({
+      code: 'item_id_required', status: 400,
+    });
+    expect(db.getClient).not.toHaveBeenCalled();
+  });
+
+  it('refuse une quantité invalide (<= 0), avant toute transaction', async () => {
+    await expect(updateSharedCartItemQuantity('cart-1', 'user-1', 'item-1', 0)).rejects.toMatchObject({
+      code: 'invalid_quantity', status: 400,
+    });
+    expect(db.getClient).not.toHaveBeenCalled();
+  });
+
+  it('refuse une quantité non numérique, avant toute transaction', async () => {
+    await expect(updateSharedCartItemQuantity('cart-1', 'user-1', 'item-1', 'abc')).rejects.toMatchObject({
+      code: 'invalid_quantity', status: 400,
+    });
+    expect(db.getClient).not.toHaveBeenCalled();
+  });
+
+  it('panier introuvable ou non autorisé → 404', async () => {
+    const client = makeClient([{ rows: [] }]);
+    db.getClient.mockResolvedValue(client);
+
+    await expect(updateSharedCartItemQuantity('cart-1', 'user-1', 'item-1', 2)).rejects.toMatchObject({
+      code: 'shared_cart_not_found', status: 404,
+    });
+    expectTransactionRolledBack(client);
+  });
+
+  it('refuse si le panier n\'est plus open', async () => {
+    const client = makeClient([{ rows: [{ id: 'cart-1', status: 'closed' }] }]);
+    db.getClient.mockResolvedValue(client);
+
+    await expect(updateSharedCartItemQuantity('cart-1', 'user-1', 'item-1', 2)).rejects.toMatchObject({
+      code: 'cart_not_editable', status: 409,
+    });
+    expectTransactionRolledBack(client);
+  });
+
+  it('article introuvable dans ce panier → 404', async () => {
+    const client = makeClient([
+      { rows: [{ id: 'cart-1', status: 'open' }] },
+      { rows: [] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    await expect(updateSharedCartItemQuantity('cart-1', 'user-1', 'item-1', 2)).rejects.toMatchObject({
+      code: 'item_not_found', status: 404,
+    });
+    expectTransactionRolledBack(client);
+  });
+
+  it('article déjà acheté → 409, quantité jamais modifiée', async () => {
+    const client = makeClient([
+      { rows: [{ id: 'cart-1', status: 'open' }] },
+      { rows: [{ id: 'item-1', quantity: 1, unit_price_kmf_snapshot: 1000, claimed: true }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    await expect(updateSharedCartItemQuantity('cart-1', 'user-1', 'item-1', 3)).rejects.toMatchObject({
+      code: 'item_already_claimed', status: 409,
+    });
+    expectTransactionRolledBack(client);
+  });
+
+  it('modifie la quantité, recalcule uniquement line_total_kmf_snapshot, journalise previous_quantity, commit', async () => {
+    const cart = { id: 'cart-1', status: 'open' };
+    const updatedItem = { id: 'item-1', quantity: 3, unit_price_kmf_snapshot: 1000, line_total_kmf_snapshot: 3000 };
+    const client = makeClient([
+      { rows: [cart] },                                                              // SELECT ... FOR UPDATE
+      { rows: [{ id: 'item-1', quantity: 1, unit_price_kmf_snapshot: 1000, claimed: false }] }, // SELECT item FOR UPDATE OF sci
+      { rows: [updatedItem] },                                                       // UPDATE shared_cart_items RETURNING *
+      { rows: [], rowCount: 1 },                                                     // UPDATE shared_carts
+      { rows: [], rowCount: 1 },                                                     // addEvent
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await updateSharedCartItemQuantity('cart-1', 'user-1', 'item-1', 3);
+
+    expect(result.cart).toEqual(cart);
+    expect(result.item).toEqual(updatedItem);
+    const updateCall = client.calls.find(c => String(c.sql).includes('UPDATE shared_cart_items'));
+    expect(updateCall.params).toEqual([3, 3000, 'item-1']);
     expectTransactionCommitted(client);
   });
 });

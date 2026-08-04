@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T11:11:14.361Z",
+  "generatedAt": "2026-08-04T17:36:16.445Z",
   "summary": {
     "modules": 75,
     "withHeader": 75,
@@ -2061,10 +2061,12 @@
       ],
       "emits": [
         "side-cart:render",
-        "cart-body:render"
+        "cart-body:render",
+        "modal:open"
       ],
       "listens": [
-        "side-cart:render"
+        "side-cart:render",
+        "modal:closed"
       ],
       "imports": [
         "b-store",
@@ -2092,6 +2094,10 @@
         {
           "name": "side-cart:render",
           "hasArg": false
+        },
+        {
+          "name": "modal:open",
+          "hasArg": true
         }
       ]
     },
@@ -2521,7 +2527,8 @@
       "emitters": [
         "b-cart",
         "b-modal-nav",
-        "b-modal-suggestions"
+        "b-modal-suggestions",
+        "group-side-cart"
       ],
       "listeners": [
         "b-modal-core",
@@ -2651,7 +2658,8 @@
       ],
       "listeners": [
         "b-modal-product-detail-bootstrap",
-        "b-pager"
+        "b-pager",
+        "group-side-cart"
       ]
     },
     "modal:composition-synced": {
@@ -3025,6 +3033,13 @@
     },
     {
       "module": "group-api",
+      "route": "/api/shared-carts/{id}/items/{id}",
+      "raw": "/api/shared-carts/${cartId}/items/${itemId}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
       "route": "/api/shared-carts/public/{id}",
       "raw": "/api/shared-carts/public/${token}",
       "dynamic": true,
@@ -3316,7 +3331,8 @@
       ],
       "modal:closed": [
         "b-modal-product-detail-bootstrap",
-        "b-pager"
+        "b-pager",
+        "group-side-cart"
       ],
       "modal:composition-synced": [
         "b-modal-desktop-enhancers",
@@ -3436,11 +3452,13 @@
       "producerUnauthorized": [],
       "declaredConsumers": [
         "b-modal-product-detail-bootstrap",
-        "b-pager"
+        "b-pager",
+        "group-side-cart"
       ],
       "actualConsumers": [
         "b-modal-product-detail-bootstrap",
-        "b-pager"
+        "b-pager",
+        "group-side-cart"
       ],
       "consumerUndeclared": [],
       "payload": "none",

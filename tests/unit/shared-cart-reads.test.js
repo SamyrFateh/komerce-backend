@@ -46,6 +46,21 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     expect(result.is_creator).toBe(false);
   });
 
+  it('getSharedCartForPublic expose product_id par article (amendement V2 §B — fiche produit depuis la liste)', async () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
+    const items = [
+      { id: 'sci-1', product_id: 'prod-42', name: 'Riz', image: null, quantity: 2, unit_price_kmf: 1000, line_total_kmf: 2000, claimed: false },
+    ];
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
+
+    const result = await getSharedCartForPublic('tok-1');
+
+    expect(result.items[0].product_id).toBe('prod-42');
+    // Les autres champs snapshot restent la source d'affichage, inchangés.
+    expect(result.items[0].name).toBe('Riz');
+    expect(result.items[0].unit_price_kmf).toBe(1000);
+  });
+
   it('getSharedCartForPublic creator_first_name est null si le créateur n\'a pas de nom exploitable', async () => {
     const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer', organizer_full_name: null };
     db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: [] });

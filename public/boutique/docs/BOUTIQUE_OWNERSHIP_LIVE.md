@@ -32,7 +32,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 |-----------|:---:|:-------:|:-----------:|-------------------|
 | `b-modal-desktop-product.js` | 94 | 1 | 0/0 | Modal produit |
 | `b-modal-mobile-product.js` | 81 | 1 | 0/0 | Modal produit |
-| `b-cart.js` | 48 | 26 | 2/8 | Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
+| `b-cart.js` | 48 | 26 | 3/8 | Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
 | `b-modal-core.js` | 17 | 49 | 4/2 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout-render.js` | 58 | 0 | 0/0 | — |
 | `b-checkout.js` | 48 | 4 | 0/3 | Bottom-nav mobile |
@@ -70,7 +70,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |
 | `b-desktop-sidebar.js` | 1 | 0 | 0/1 | Chips catégories |
 | `b-share-cart.js` | 1 | 0 | 0/0 | Panier |
-| `b-store.js` | 0 | 1 | 0/1 | Modal produit, Panier, Grille produits, Hero |
+| `b-store.js` | 0 | 1 | 1/2 | Modal produit, Panier, Grille produits, Hero |
 
 ---
 

@@ -27,9 +27,15 @@
  * Le snapshot SQL de CI peut être chargé avant l'application de la migration
  * 125 qui renomme beneficiary_user_id en organizer_user_id. L'expression
  * ci-dessous lit la clé métier canonique depuis la ligne sérialisée, sans
- * référencer directement une colonne potentiellement absente. Elle ne
- * réintroduit aucun concept produit dans les réponses : seul `is_creator`
- * est exposé, jamais l'identifiant brut.
+ * référencer directement une colonne potentiellement absente.
+ *
+ * Amendement V2 §B (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_
+ * CART_V2) : product_id est désormais exposé par ligne dans le payload
+ * public — nécessaire pour ouvrir la fiche produit catalogue depuis un
+ * clic sur l'image/le nom d'une ligne de liste (bus.emit('modal:open', {
+ * id: item.product_id, source: 'shared-list', sharedCartItemId: item.id })).
+ * Le reste du contrat public (is_creator, identifiants organisateur) reste
+ * inchangé.
  */
 
 const db = require('../db');
@@ -55,6 +61,7 @@ async function getSharedCartForPublic(token, viewerUserId) {
 
   const { rows: items } = await db.query(
     `SELECT sci.id,
+            sci.product_id,
             sci.product_name_snapshot AS name,
             sci.product_image_snapshot AS image,
             sci.quantity,
@@ -88,6 +95,7 @@ async function getSharedCartForPublic(token, viewerUserId) {
     },
     items: items.map((item) => ({
       id: item.id,
+      product_id: item.product_id,
       name: item.name,
       image: item.image,
       quantity: item.quantity,

@@ -36,7 +36,7 @@
  * Aucune logique métier ici — uniquement transport + parsing minimal.
  */
 
-import { apiGet, apiPost, apiDelete } from '../b-utils.js';
+import { apiGet, apiPost, apiDelete, apiPatch } from '../b-utils.js';
 
 /* ── fetchWithTimeout ──────────────────────────────────────────────
  * L'endpoint public passe par fetch() nu : si l'API pend (pool DB
@@ -108,6 +108,21 @@ export function closeCart(cartId) {
  */
 export function addItemToSharedList(cartId, productId, quantity = 1) {
   return apiPost(`/api/shared-carts/${cartId}/items`, { product_id: productId, quantity });
+}
+
+/**
+ * Modifie la quantité d'un article déjà présent dans la liste — amendement
+ * V2 §B (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2).
+ * Capacité nouvelle, distincte du PUT /:id/items historique (édition
+ * groupée) : ne touche qu'une ligne. Le serveur refuse (409
+ * item_already_claimed) si l'article a déjà été acheté.
+ * @param {string|number} cartId
+ * @param {string} itemId
+ * @param {number} quantity
+ * @returns {Promise<{ok: boolean, cart, item}>}
+ */
+export function updateSharedListItemQuantity(cartId, itemId, quantity) {
+  return apiPatch(`/api/shared-carts/${cartId}/items/${itemId}`, { quantity });
 }
 
 /* ── Endpoint public (fetch direct, credentials:include) ──────────── */

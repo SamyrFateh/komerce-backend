@@ -1,7 +1,7 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-04T11:11:14.361Z.
+> Régénéré le 2026-08-04T17:36:16.445Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
@@ -74,10 +74,10 @@
 | `favorites:view-refresh` | b-catalog | b-favs | 🟡 non déclaré |
 | `komerce:show` | b-komerce | b-nav | 🟢 sain |
 | `modal:close` | b-cart, b-checkout | b-modal-core | 🟢 sain |
-| `modal:closed` | b-modal-core | b-modal-product-detail-bootstrap, b-pager | 🟢 sain (propriétaire: modal-product) |
+| `modal:closed` | b-modal-core | b-modal-product-detail-bootstrap, b-pager, group-side-cart | 🟢 sain (propriétaire: modal-product) |
 | `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers | 🟢 sain (propriétaire: modal-product) |
 | `modal:detail-ready` | b-modal-product-detail-bootstrap | b-modal-cart | 🟢 sain |
-| `modal:open` | b-cart, b-modal-nav, b-modal-suggestions | b-modal-core, b-product-open-contract | 🟢 sain |
+| `modal:open` | b-cart, b-modal-nav, b-modal-suggestions, group-side-cart | b-modal-core, b-product-open-contract | 🟢 sain |
 | `modal:opened` | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | 🟢 sain (propriétaire: modal-product) |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
@@ -110,6 +110,8 @@ graph LR
   b_modal_nav["b-modal-nav"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
   b_modal_suggestions["b-modal-suggestions"] -->|modal:open| b_modal_core["b-modal-core"]
   b_modal_suggestions["b-modal-suggestions"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
+  group_side_cart["group-side-cart"] -->|modal:open| b_modal_core["b-modal-core"]
+  group_side_cart["group-side-cart"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
   b_cart["b-cart"] -->|checkout:open| boutique["boutique"]
   group_side_cart["group-side-cart"] -->|cart-body:render| b_cart["b-cart"]
   b_nav["b-nav"] -->|view:changed| b_catalog_desktop_enhancers["b-catalog-desktop-enhancers"]
@@ -131,6 +133,7 @@ graph LR
   b_modal_core["b-modal-core"] -->|modal:opened| boutique["boutique"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_pager["b-pager"]
+  b_modal_core["b-modal-core"] -->|modal:closed| group_side_cart["group-side-cart"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_core["b-modal-core"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
   b_modal_product["b-modal-product"] -->|carousel:changed| b_modal_image_ux["b-modal-image-ux"]
@@ -147,7 +150,7 @@ graph LR
 | Événement | Propriétaire | Producteur(s) | Consommateurs | Payload | Verdict |
 |---|---|---|---|---|---|
 | `modal:opened` | modal-product | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | value | 🟢 propriété saine |
-| `modal:closed` | modal-product | b-modal-core | b-modal-product-detail-bootstrap, b-pager | none | 🟢 propriété saine |
+| `modal:closed` | modal-product | b-modal-core | b-modal-product-detail-bootstrap, b-pager, group-side-cart | none | 🟢 propriété saine |
 | `modal:composition-synced` | modal-product | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers | none | 🟢 propriété saine |
 
 ## 3. Bundles CSS

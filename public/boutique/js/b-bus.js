@@ -60,7 +60,7 @@
  * en ATTENTION comme consommateur non déclaré (un ajout légitime doit d'abord être
  * ajouté ici, pas seulement câblé) :
  *   modal:opened     : b-modal-product-detail-bootstrap.js, boutique.js, b-pdp-curation-suggestions.js, b-pager.js, b-modal-desktop-enhancers.js
- *   modal:closed     : b-modal-product-detail-bootstrap.js, b-pager.js
+ *   modal:closed     : b-modal-product-detail-bootstrap.js, b-pager.js, group-side-cart.js
  *   modal:composition-synced : b-modal-desktop-enhancers.js, b-modal-core.js
  *
  * Événements retirés du JSDoc (déclarés mais jamais émis ni consommés) :
