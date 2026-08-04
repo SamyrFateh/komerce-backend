@@ -310,10 +310,14 @@ async function removeSharedCartItem(sharedCartId, userId, itemId) {
  */
 async function updateSharedCartItemQuantity(sharedCartId, userId, itemId, quantity) {
   if (!itemId) throw httpError('item_id requis', 400, 'item_id_required');
-  const qty = r(quantity);
-  if (!Number.isFinite(qty) || qty <= 0) {
+  // Correctif V2-B.1 §6 — r() arrondit (Math.round) : une quantité non
+  // entière (ex. 2.5) passait silencieusement à 3 au lieu d'être refusée.
+  // La validation d'entier doit se faire AVANT tout arrondi.
+  const rawQty = Number(quantity);
+  if (!Number.isInteger(rawQty) || rawQty <= 0) {
     throw httpError('Quantité invalide', 400, 'invalid_quantity');
   }
+  const qty = rawQty;
 
   return withTransaction(async (client) => {
     const { rows: cartRows } = await client.query(

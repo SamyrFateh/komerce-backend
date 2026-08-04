@@ -1,12 +1,12 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-04T17:36:16.445Z.
+> Régénéré le 2026-08-04T20:27:19.458Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **75** (75 headés) · Événements bus : **24** · Bundles CSS : **3**
+- Modules JS : **75** (75 headés) · Événements bus : **25** · Bundles CSS : **3**
 - Endpoints appelés : **45** — 🔴 0 hors contrat · ⚪ 31 non prouvés · 🔵 16 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
 
@@ -70,6 +70,7 @@
 | `cat:select` | b-catalog | b-catalog | 🟢 sain |
 | `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
 | `checkout:open` | b-cart | boutique | 🟢 sain |
+| `checkout:order-failed` | b-checkout | group-side-cart | 🟢 sain |
 | `chip:center` | b-pager | b-catalog | 🟢 sain |
 | `favorites:view-refresh` | b-catalog | b-favs | 🟡 non déclaré |
 | `komerce:show` | b-komerce | b-nav | 🟢 sain |
@@ -122,6 +123,7 @@ graph LR
   b_catalog["b-catalog"] -->|favorites:view-refresh| b_favs["b-favs"]
   b_pager["b-pager"] -->|chip:center| b_catalog["b-catalog"]
   b_checkout["b-checkout"] -->|nav:goto-komerce-wallet| b_nav["b-nav"]
+  b_checkout["b-checkout"] -->|checkout:order-failed| group_side_cart["group-side-cart"]
   b_checkout["b-checkout"] -->|nav:goto-track| b_nav["b-nav"]
   b_komerce["b-komerce"] -->|nav:goto-group| b_nav["b-nav"]
   b_komerce["b-komerce"] -->|komerce:show| b_nav["b-nav"]

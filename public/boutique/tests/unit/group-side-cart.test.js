@@ -612,12 +612,27 @@ describe('amendement V2 §B — contrôles de quantité par ligne', () => {
     expect(mockGetSharedCartPublic).toHaveBeenCalled();
   });
 
-  it('clic sur "-" refuse de descendre à 0 ou moins (aucun appel réseau)', () => {
+  it('clic sur "-" à quantité 1 déclenche un retrait confirmé (pas de PATCH quantity=0) — correctif V2-B.1 §4', () => {
+    window.confirm = jest.fn(() => true);
+    mockRemoveItemFromSharedList.mockResolvedValue({});
+    mockGetSharedCartPublic.mockResolvedValue(publicPayload({ is_creator: true, items: [] }));
+    activateSharedListContext(publicPayload({ is_creator: true, items: [availableItem({ id: 'i1', quantity: 1 })] }), 'tok-1');
+
+    document.querySelector('.k-shared-item-qty-btn[data-qty-step="-1"]').click();
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mockUpdateSharedListItemQuantity).not.toHaveBeenCalled();
+    expect(mockRemoveItemFromSharedList).toHaveBeenCalledWith('sc-1', 'i1');
+  });
+
+  it('clic sur "-" à quantité 1, confirmation refusée -> aucun appel réseau', () => {
+    window.confirm = jest.fn(() => false);
     activateSharedListContext(publicPayload({ is_creator: true, items: [availableItem({ id: 'i1', quantity: 1 })] }), 'tok-1');
 
     document.querySelector('.k-shared-item-qty-btn[data-qty-step="-1"]').click();
 
     expect(mockUpdateSharedListItemQuantity).not.toHaveBeenCalled();
+    expect(mockRemoveItemFromSharedList).not.toHaveBeenCalled();
   });
 
   it("verrouille la ligne pendant l'appel réseau (désactive les boutons), déverrouille ensuite", async () => {
@@ -656,11 +671,13 @@ describe('amendement V2 §B — ouverture fiche produit depuis une ligne de list
     mockIsDesktop.mockReturnValue(true);
     modalOpenHandler = jest.fn();
     bus.on('modal:open', modalOpenHandler);
+    state.products = [{ id: 'p-42' }];
   });
 
   afterEach(() => {
     bus.off('modal:open', modalOpenHandler);
     state.modalReturnSurface = null;
+    state.products = [];
   });
 
   it('clic sur la ligne émet modal:open avec product_id, source et sharedCartItemId, et pose modalReturnSurface', () => {
@@ -695,5 +712,90 @@ describe('amendement V2 §B — ouverture fiche produit depuis une ligne de list
     bus.emit('modal:closed');
 
     expect(state.cartSurface).toBe('personal');
+  });
+
+  it("produit absent ou inactif (introuvable dans state.products) -> toast, aucun modal:open, aucune fermeture de drawer — correctif V2-B.1 §3", () => {
+    state.products = []; // produit supprimé/désactivé depuis le partage
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-gone' })] }), 'tok-1');
+
+    document.querySelector('.k-shared-item-open').click();
+
+    expect(modalOpenHandler).not.toHaveBeenCalled();
+    expect(state.modalReturnSurface).toBeNull();
+    expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('disponible'), 'info');
+  });
+
+  describe('mobile — fermeture/réouverture réelle du drawer (correctif V2-B.1 §1/§2)', () => {
+    beforeEach(() => {
+      mockIsDesktop.mockReturnValue(false);
+    });
+
+    it('clic sur la ligne ferme réellement le drawer avant modal:open', () => {
+      activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-42' })] }), 'tok-1');
+      expect(dom.cartDrawer.classList.contains('open')).toBe(true); // auto-ouvert à l'activation (mandat §4)
+
+      document.querySelector('.k-shared-item-open').click();
+
+      expect(dom.cartDrawer.classList.contains('open')).toBe(false);
+      expect(dom.cartOverlay.classList.contains('open')).toBe(false);
+      expect(document.body.classList.contains('cart-open')).toBe(false);
+      expect(modalOpenHandler).toHaveBeenCalled();
+    });
+
+    it("bus.emit('modal:closed') rouvre réellement le drawer après une ouverture depuis la liste", () => {
+      activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-42' })] }), 'tok-1');
+      document.querySelector('.k-shared-item-open').click();
+      expect(dom.cartDrawer.classList.contains('open')).toBe(false);
+
+      bus.emit('modal:closed');
+
+      expect(dom.cartDrawer.classList.contains('open')).toBe(true);
+      expect(dom.cartOverlay.classList.contains('open')).toBe(true);
+      expect(document.body.classList.contains('cart-open')).toBe(true);
+    });
+
+    it('produit absent -> le drawer ne se ferme jamais (aucune fermeture sans ouverture de modale)', () => {
+      state.products = [];
+      activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-gone' })] }), 'tok-1');
+      expect(dom.cartDrawer.classList.contains('open')).toBe(true);
+
+      document.querySelector('.k-shared-item-open').click();
+
+      expect(dom.cartDrawer.classList.contains('open')).toBe(true);
+    });
+  });
+});
+
+describe('amendement V2 §B — conflit checkout "item_already_claimed" (correctif V2-B.1 §5)', () => {
+  it('bus.emit(\'checkout:order-failed\', { code: shared_cart_item_already_claimed }) rafraîchit la liste active', async () => {
+    mockGetSharedCartPublic.mockResolvedValue(publicPayload({ items: [availableItem({ id: 'i1', claimed: true })] }));
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    mockGetSharedCartPublic.mockClear();
+
+    bus.emit('checkout:order-failed', { code: 'shared_cart_item_already_claimed' });
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+
+    expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('acheté'), 'info');
+    expect(mockGetSharedCartPublic).toHaveBeenCalledWith('tok-1');
+  });
+
+  it('bus.emit(\'checkout:order-failed\', ...) avec un autre code ne touche pas la liste', async () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    mockGetSharedCartPublic.mockClear();
+
+    bus.emit('checkout:order-failed', { code: 'some_other_error' });
+    await Promise.resolve();
+
+    expect(mockGetSharedCartPublic).not.toHaveBeenCalled();
+  });
+
+  it("hors contexte de liste actif, l'événement est un no-op", async () => {
+    clearSharedListContext();
+    mockGetSharedCartPublic.mockClear();
+
+    bus.emit('checkout:order-failed', { code: 'shared_cart_item_already_claimed' });
+    await Promise.resolve();
+
+    expect(mockGetSharedCartPublic).not.toHaveBeenCalled();
   });
 });

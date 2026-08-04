@@ -527,7 +527,28 @@ bus.on('side-cart:render', () => {
 bus.on('modal:closed', () => {
   if (state.modalReturnSurface !== 'shared-list') return;
   state.modalReturnSurface = null;
-  if (isActiveContext()) setCartSurface('shared-list');
+  // Correctif V2-B.1 §2 — reopenSharedListCart() (et non le simple
+  // setCartSurface utilisé auparavant) est nécessaire ici : sur mobile,
+  // fermer la modale ne rouvrait jamais réellement le drawer (les classes
+  // 'open' n'étaient jamais réappliquées). reopenSharedListCart() couvre
+  // à la fois le rendu de surface et la réouverture DOM du drawer, et reste
+  // un no-op desktop équivalent à l'ancien appel (panneau déjà visible).
+  if (isActiveContext()) reopenSharedListCart();
+});
+
+/**
+ * Correctif V2-B.1 §5 — un conflit "item_already_claimed" détecté pendant
+ * le checkout canonique (article réclamé entre-temps par quelqu'un
+ * d'autre) doit rafraîchir la liste affichée. Le checkout ne connaît
+ * jamais la liste (doctrine group-checkout-adapter.js) : on écoute donc un
+ * signal générique émis par b-checkout.js plutôt que d'y coupler
+ * directement ce module. handleSharedListPurchaseConflict() existait déjà
+ * mais n'était jusqu'ici jamais invoquée — dead code.
+ */
+bus.on('checkout:order-failed', ({ code } = {}) => {
+  if (code === 'shared_cart_item_already_claimed' && isActiveContext()) {
+    handleSharedListPurchaseConflict();
+  }
 });
 
 /* ── Amendement V2 §A — bascule explicite de surface (coexistence) ───
@@ -658,7 +679,16 @@ async function handleQuantityStep(itemId, step) {
   if (pendingQuantityItemIds.has(key)) return;
 
   const nextQty = (Number(item.quantity) || 1) + step;
-  if (nextQty <= 0) return;
+  if (nextQty < 0) return;
+  // Correctif V2-B.1 §4 — passer de 1 à 0 ne doit pas être bloqué
+  // silencieusement (aucun retour utilisateur auparavant) : c'est un
+  // retrait, traité par le même flux confirmé que le bouton ✕
+  // (handleRemoveItem, confirm() + DELETE), jamais une décrémentation
+  // silencieuse à 0 ni un appel PATCH quantity=0 (refusé par le serveur).
+  if (nextQty === 0) {
+    await handleRemoveItem(itemId);
+    return;
+  }
 
   pendingQuantityItemIds.add(key);
   renderSharedListInCart();
@@ -685,6 +715,26 @@ async function handleQuantityStep(itemId, step) {
 function handleOpenItemProduct(itemId) {
   const item = findItem(itemId);
   if (!item || !item.product_id) return;
+
+  // Correctif V2-B.1 §3 — state.products (catalogue chargé côté boutique)
+  // ne contient que les produits actifs disponibles à la vente ; un
+  // product_id de ligne de liste peut pointer vers un produit supprimé ou
+  // désactivé depuis le partage. b-modal-core.js::openModal() fait alors
+  // un retour silencieux (aucun produit trouvé) sans aucun signal pour
+  // l'utilisateur. On détecte le cas en amont pour informer clairement,
+  // sans jamais fermer le drawer ni émettre modal:open dans ce cas.
+  const product = (state.products || []).find((p) => String(p.id) === String(item.product_id));
+  if (!product) {
+    showToast('Ce produit n’est plus disponible.', 'info');
+    return;
+  }
+
+  // Correctif V2-B.1 §1 — sur mobile, la modale s'ouvrait par-dessus le
+  // drawer resté ouvert (aucune fermeture réelle avant bus.emit
+  // ('modal:open', ...)). closeSharedListDrawer() est un no-op sûr sur
+  // desktop (le panneau persistant n'a pas de classe 'open' à retirer).
+  closeSharedListDrawer();
+
   state.modalReturnSurface = 'shared-list';
   bus.emit('modal:open', { id: item.product_id, source: 'shared-list', sharedCartItemId: item.id });
 }

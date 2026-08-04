@@ -161,6 +161,7 @@ window.K = (() => {
               const json = await _raceDeadline(res.json().catch(() => ({})));
               const err = new Error(json.error || `HTTP ${res.status}`);
               err.status = res.status;
+              err.code = json.code || null;
               throw err;
             }
             await _sleep(backoff);
@@ -171,6 +172,12 @@ window.K = (() => {
           if (!res.ok) {
             const err = new Error(json.error || `HTTP ${res.status}`);
             err.status = res.status;   // permet aux vues de distinguer 401 vs 5xx
+            // Correctif V2-B.1 §5 — propage le code métier backend (ex.
+            // 'shared_cart_item_already_claimed') jusqu'aux appelants, sans
+            // quoi seule err.message (texte) était disponible et aucun
+            // gestionnaire ne pouvait distinguer un conflit de réclamation
+            // d'une autre erreur 409/400.
+            err.code = json.code || null;
             throw err;
           }
           return json;

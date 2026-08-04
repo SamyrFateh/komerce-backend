@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-04T17:36:16.445Z",
+  "generatedAt": "2026-08-04T20:27:19.458Z",
   "summary": {
     "modules": 75,
     "withHeader": 75,
-    "events": 24,
-    "declaredActive": 20,
+    "events": 25,
+    "declaredActive": 24,
     "declaredDead": 9,
     "cssBundles": 3,
     "endpoints": 45,
@@ -495,6 +495,7 @@
       "emits": [
         "modal:close",
         "nav:goto-komerce-wallet",
+        "checkout:order-failed",
         "nav:goto-track"
       ],
       "listens": [],
@@ -522,6 +523,10 @@
         {
           "name": "nav:goto-komerce-wallet",
           "hasArg": false
+        },
+        {
+          "name": "checkout:order-failed",
+          "hasArg": true
         },
         {
           "name": "nav:goto-track",
@@ -2066,7 +2071,8 @@
       ],
       "listens": [
         "side-cart:render",
-        "modal:closed"
+        "modal:closed",
+        "checkout:order-failed"
       ],
       "imports": [
         "b-store",
@@ -2600,6 +2606,14 @@
       ],
       "listeners": [
         "b-nav"
+      ]
+    },
+    "checkout:order-failed": {
+      "emitters": [
+        "b-checkout"
+      ],
+      "listeners": [
+        "group-side-cart"
       ]
     },
     "nav:goto-track": {
@@ -3287,6 +3301,10 @@
       "modal:suggestions-rendered",
       "modal:detail-ready",
       "nav:goto-track",
+      "checkout:order-failed",
+      "backend",
+      "g",
+      "charge",
       "komerce:show",
       "nav:goto-komerce-wallet",
       "modal:opened",
@@ -3356,8 +3374,11 @@
       "view:changed"
     ],
     "declaredUnused": [
+      "backend",
       "bascule",
+      "charge",
       "de",
+      "g",
       "view:switch"
     ],
     "notFoundEndpoints": [],

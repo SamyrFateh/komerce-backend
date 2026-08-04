@@ -35,7 +35,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-cart.js` | 48 | 26 | 3/8 | Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
 | `b-modal-core.js` | 17 | 49 | 4/2 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout-render.js` | 58 | 0 | 0/0 | — |
-| `b-checkout.js` | 48 | 4 | 0/3 | Bottom-nav mobile |
+| `b-checkout.js` | 48 | 4 | 0/4 | Bottom-nav mobile |
 | `b-modal-product.js` | 25 | 11 | 0/1 | Modal produit |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
 | `b-cart-pill.js` | 6 | 18 | 3/0 | Grille produits, Section catalogue |

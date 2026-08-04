@@ -968,6 +968,14 @@ export async function submitOrder(btn) {
   } catch (e) {
     console.error('submitOrder:', e);
     showToast(e.message || 'Erreur lors de la commande.', 'error');
+    // Correctif V2-B.1 §5 — signal générique d'échec de commande. Le
+    // checkout ne connaît jamais la liste (doctrine group-checkout-
+    // adapter.js) : on émet ici un code d'erreur neutre, à charge du
+    // module intéressé (group-side-cart.js) de réagir ou non. Le modal de
+    // commande reste ouvert sur erreur (pas de fermeture ici), donc
+    // l'observer de fermeture de modale existant ne suffit pas à lui seul
+    // à déclencher un rafraîchissement de liste sur ce cas précis.
+    bus.emit('checkout:order-failed', { code: e.code || null, status: e.status || null });
     btn.disabled = false;
     btn.dataset.busy = '0';
     refreshCheckoutComputedUI();

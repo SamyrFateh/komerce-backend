@@ -271,6 +271,13 @@ describe('updateSharedCartItemQuantity (amendement V2 §B — modification unita
     expect(db.getClient).not.toHaveBeenCalled();
   });
 
+  it('refuse une quantité non entière (ex. 2.5), avant toute transaction — correctif V2-B.1 §6', async () => {
+    await expect(updateSharedCartItemQuantity('cart-1', 'user-1', 'item-1', 2.5)).rejects.toMatchObject({
+      code: 'invalid_quantity', status: 400,
+    });
+    expect(db.getClient).not.toHaveBeenCalled();
+  });
+
   it('panier introuvable ou non autorisé → 404', async () => {
     const client = makeClient([{ rows: [] }]);
     db.getClient.mockResolvedValue(client);

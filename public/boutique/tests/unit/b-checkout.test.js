@@ -417,6 +417,25 @@ describe('b-checkout', () => {
       expect(btn.dataset.busy).toBe('0');
       expect(clearCart).not.toHaveBeenCalled();
     });
+
+    it("erreur API -> émet 'checkout:order-failed' avec le code métier (correctif V2-B.1 §5, sans coupler ce module à la liste)", async () => {
+      state.orderData = { selectedRelaisId: 7, payment_mode: 'cash_relais', relayStatus: 'ready' };
+      state.cart = [{ product: { id: 1 }, qty: 1 }];
+      requireIdentity.mockResolvedValue({ phone: '+269123456', full_name: 'Amina' });
+      const err = new Error('Cet article de la liste vient déjà d\'être pris par quelqu\'un d\'autre.');
+      err.code = 'shared_cart_item_already_claimed';
+      err.status = 409;
+      apiPost.mockRejectedValue(err);
+
+      const onOrderFailed = jest.fn();
+      bus.on('checkout:order-failed', onOrderFailed);
+
+      const btn = document.createElement('button');
+      await submitOrder(btn);
+
+      expect(onOrderFailed).toHaveBeenCalledWith({ code: 'shared_cart_item_already_claimed', status: 409 });
+      bus.off('checkout:order-failed', onOrderFailed);
+    });
   });
 
   describe('submitOrder — chemin Stripe', () => {
