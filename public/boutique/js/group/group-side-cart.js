@@ -101,6 +101,7 @@ export function activateSharedListContext(data, token) {
     message: cart.message || null,
     items: Array.isArray(data.items) ? data.items : [],
   };
+  state.cartSurface = 'shared-list';
 
   pruneInvalidSelection();
   renderSharedListInCart();
@@ -171,6 +172,17 @@ export function isSharedListActive() {
 }
 
 /**
+ * Amendement V2 §A — vraie condition de rendu dans renderCartBody() :
+ * un contexte actif ne suffit plus (il peut rester en arrière-plan pendant
+ * que le panier personnel est affiché). remplace isSharedListActive() comme
+ * garde de rendu dans b-cart.js::renderCartBody().
+ * @returns {boolean}
+ */
+export function isSharedListSurfaceActive() {
+  return state.cartSurface === 'shared-list' && isActiveContext();
+}
+
+/**
  * Appelée par b-cart.js::renderCartBody() sur la branche panier personnel,
  * à chaque rendu, pour garantir qu'aucune trace DOM du mode liste ne
  * subsiste si le contexte vient de se terminer (fermeture, lien invalidé,
@@ -199,6 +211,7 @@ export function clearSharedListContext() {
     items: [],
   };
   state.sharedListSelection = new Set();
+  state.cartSurface = 'personal';
 
   cleanupSharedListDom();
 
@@ -362,7 +375,7 @@ function wirePanel(root) {
  * la branche par défaut hors contexte (mandat §1 "Hors contexte liste").
  */
 export function renderSharedListInCart() {
-  if (!isActiveContext()) return;
+  if (!isActiveContext() || state.cartSurface !== 'shared-list') return;
 
   document.body.classList.add('is-shared-list-context');
 
@@ -398,6 +411,7 @@ export function renderSharedListInCart() {
   }
 
   updateSharedListIndicator();
+  renderCartSurfaceSwitch();
 }
 
 /* ── Ouverture / réouverture (drawer mobile) ─────────────────────────
@@ -407,6 +421,7 @@ export function renderSharedListInCart() {
  */
 export function reopenSharedListCart() {
   if (!isActiveContext()) return;
+  state.cartSurface = 'shared-list';
   renderSharedListInCart();
   if (isDesktop()) return; // Le panneau persistant est déjà visible.
 
@@ -451,8 +466,70 @@ function updateSharedListIndicator() {
 // b-cart.js (bouton #k-cart-close) sans repasser par cette module —
 // on écoute un signal déjà émis pour tout rendu de side cart.
 bus.on('side-cart:render', () => {
-  if (isActiveContext()) updateSharedListIndicator();
+  if (isActiveContext()) {
+    updateSharedListIndicator();
+    renderCartSurfaceSwitch();
+  }
 });
+
+/* ── Amendement V2 §A — bascule explicite de surface (coexistence) ───
+ * Ne touche jamais au contexte de liste ni à la sélection locale : c'est
+ * uniquement un aiguillage d'affichage entre panier personnel et liste,
+ * les deux restant vivants en même temps (mandat §3 étendu).
+ */
+export function setCartSurface(surface) {
+  state.cartSurface = surface;
+
+  if (surface === 'shared-list') {
+    renderSharedListInCart();
+  } else {
+    cleanupSharedListDom();
+  }
+
+  bus.emit('cart-body:render');
+  bus.emit('side-cart:render');
+}
+
+/**
+ * Sélecteur desktop [Panier (n)] [Liste (n)] — permet de revenir au panier
+ * personnel sans jamais fermer le contexte de liste actif. Visible
+ * seulement sur desktop, quand le panier personnel n'est pas vide ET qu'un
+ * contexte de liste est actif (hors de ce cas, une seule surface existe :
+ * rien à basculer, mandat §3 — ne pas ajouter de chrome inutile).
+ */
+export function renderCartSurfaceSwitch() {
+  const sc = document.getElementById('k-side-cart');
+  const shouldShow = isDesktop() && isActiveContext() && state.cart.length > 0;
+
+  if (!shouldShow) {
+    document.getElementById('k-cart-surface-switch')?.remove();
+    return;
+  }
+
+  const personalQty = state.cart.reduce((n, it) => n + (Number(it.qty) || 0), 0);
+  const listTitle = headerCopy().title || 'Liste';
+  const surface = state.cartSurface;
+
+  let switcher = document.getElementById('k-cart-surface-switch');
+  if (!switcher) {
+    switcher = document.createElement('div');
+    switcher.id = 'k-cart-surface-switch';
+    switcher.className = 'k-cart-surface-switch';
+    sc?.prepend(switcher);
+  } else if (sc && switcher.parentElement !== sc) {
+    sc.prepend(switcher);
+  }
+
+  switcher.innerHTML =
+    `<button type="button" class="k-cart-surface-btn" data-surface="personal" ` +
+      `aria-pressed="${surface === 'personal'}">Panier (${personalQty})</button>` +
+    `<button type="button" class="k-cart-surface-btn" data-surface="shared-list" ` +
+      `aria-pressed="${surface === 'shared-list'}">${sanitize(listTitle)} (${state.sharedListContext.items.length})</button>`;
+
+  switcher.querySelectorAll('.k-cart-surface-btn').forEach((btn) => {
+    btn.onclick = () => setCartSurface(btn.dataset.surface);
+  });
+}
 
 /* ── Actions propriétaire (mandat §9) ────────────────────────────────── */
 

@@ -55,6 +55,8 @@ const {
   toggleSharedListItem,
   renderSharedListInCart,
   isSharedListActive,
+  isSharedListSurfaceActive,
+  setCartSurface,
   exitSharedListRenderMode,
   addItemToSharedList,
   activateFromParticipantUrl,
@@ -88,6 +90,7 @@ function resetSharedListState() {
     items: [],
   };
   state.sharedListSelection = new Set();
+  state.cartSurface = 'personal';
 }
 
 function availableItem(overrides = {}) {
@@ -437,5 +440,133 @@ describe('isSharedListActive / exitSharedListRenderMode (contrat avec b-cart.js:
 
     expect(document.body.classList.contains('is-shared-list-context')).toBe(false);
     expect(document.getElementById('k-side-cart').getAttribute('data-mode')).toBeNull();
+  });
+});
+
+describe('Amendement V2 §A — cartSurface (coexistence panier personnel / liste)', () => {
+  it("activer un contexte de liste force cartSurface='shared-list' sans jamais toucher state.cart", () => {
+    const personalCart = [{ product: { id: 'x' }, qty: 2 }];
+    state.cart = personalCart;
+
+    activateSharedListContext(publicPayload({ items: [availableItem()] }), 'tok-1');
+
+    expect(state.cartSurface).toBe('shared-list');
+    expect(state.cart).toBe(personalCart);
+  });
+
+  it("isSharedListSurfaceActive() est faux si le contexte est actif mais la surface est 'personal'", () => {
+    activateSharedListContext(publicPayload({ items: [availableItem()] }), 'tok-1');
+    expect(isSharedListSurfaceActive()).toBe(true);
+
+    setCartSurface('personal');
+    expect(isSharedListActive()).toBe(true); // le contexte reste en arrière-plan
+    expect(isSharedListSurfaceActive()).toBe(false); // mais la surface affichée est le panier
+  });
+
+  it("setCartSurface('personal') nettoie le DOM du side cart sans effacer le contexte ni la sélection", () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    toggleSharedListItem('i1');
+    expect(state.sharedListSelection.has('i1')).toBe(true);
+
+    setCartSurface('personal');
+
+    expect(document.body.classList.contains('is-shared-list-context')).toBe(false);
+    expect(document.getElementById('k-side-cart').getAttribute('data-mode')).toBeNull();
+    // Le contexte et la sélection locale survivent au passage en arrière-plan.
+    expect(state.sharedListContext.token).toBe('tok-1');
+    expect(state.sharedListSelection.has('i1')).toBe(true);
+  });
+
+  it("setCartSurface('shared-list') restaure la projection de la liste dans le side cart", () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    setCartSurface('personal');
+    expect(document.getElementById('k-shared-list-panel')).toBeNull();
+
+    setCartSurface('shared-list');
+
+    expect(document.getElementById('k-side-cart').getAttribute('data-mode')).toBe('shared-list');
+    expect(document.getElementById('k-shared-list-panel')).not.toBeNull();
+  });
+
+  it("alternance répétée panier <-> liste ne perd ni le panier personnel ni la sélection de liste", () => {
+    const personalCart = [{ product: { id: 'x' }, qty: 3 }];
+    state.cart = personalCart;
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    toggleSharedListItem('i1');
+
+    setCartSurface('personal');
+    setCartSurface('shared-list');
+    setCartSurface('personal');
+    setCartSurface('shared-list');
+
+    expect(state.cart).toBe(personalCart);
+    expect(state.sharedListSelection.has('i1')).toBe(true);
+    expect(state.sharedListContext.token).toBe('tok-1');
+  });
+
+  it("clearSharedListContext() ramène cartSurface à 'personal'", () => {
+    activateSharedListContext(publicPayload({ items: [availableItem()] }), 'tok-1');
+    expect(state.cartSurface).toBe('shared-list');
+
+    clearSharedListContext();
+
+    expect(state.cartSurface).toBe('personal');
+    expect(isSharedListSurfaceActive()).toBe(false);
+  });
+
+  it("renderSharedListInCart() est un no-op si la surface n'est pas 'shared-list' (appel direct défensif)", () => {
+    activateSharedListContext(publicPayload({ items: [availableItem()] }), 'tok-1');
+    setCartSurface('personal');
+    document.getElementById('k-shared-list-panel')?.remove();
+
+    renderSharedListInCart();
+
+    expect(document.getElementById('k-shared-list-panel')).toBeNull();
+  });
+
+  describe('sélecteur desktop [Panier] [Liste] (§A — coexistence)', () => {
+    it('absent si le panier personnel est vide, même en contexte liste actif', () => {
+      mockIsDesktop.mockReturnValue(true);
+      state.cart = [];
+      activateSharedListContext(publicPayload({ items: [availableItem()] }), 'tok-1');
+      expect(document.getElementById('k-cart-surface-switch')).toBeNull();
+    });
+
+    it('absent hors contexte liste, même avec un panier personnel non vide', () => {
+      mockIsDesktop.mockReturnValue(true);
+      state.cart = [{ product: { id: 'x' }, qty: 1 }];
+      // aucun activateSharedListContext appelé -> pas de contexte actif
+      expect(document.getElementById('k-cart-surface-switch')).toBeNull();
+    });
+
+    it('présent sur desktop quand panier non vide + contexte liste actif ; absent sur mobile', () => {
+      mockIsDesktop.mockReturnValue(true);
+      state.cart = [{ product: { id: 'x' }, qty: 2 }];
+      activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+
+      const switcher = document.getElementById('k-cart-surface-switch');
+      expect(switcher).not.toBeNull();
+      const buttons = switcher.querySelectorAll('.k-cart-surface-btn');
+      expect(buttons).toHaveLength(2);
+      expect(buttons[0].textContent).toContain('Panier (2)');
+      expect(buttons[0].getAttribute('aria-pressed')).toBe('false'); // surface = shared-list
+      expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
+
+      mockIsDesktop.mockReturnValue(false);
+      buttons[0].click(); // relance un rendu qui recalcule shouldShow via renderCartSurfaceSwitch
+      // setCartSurface('personal') ré-émet side-cart:render -> renderCartSurfaceSwitch() le retire.
+      expect(document.getElementById('k-cart-surface-switch')).toBeNull();
+    });
+
+    it('cliquer le bouton "Panier" bascule cartSurface sans quitter le contexte', () => {
+      mockIsDesktop.mockReturnValue(true);
+      state.cart = [{ product: { id: 'x' }, qty: 1 }];
+      activateSharedListContext(publicPayload({ items: [availableItem()] }), 'tok-1');
+
+      document.querySelector('.k-cart-surface-btn[data-surface="personal"]').click();
+
+      expect(state.cartSurface).toBe('personal');
+      expect(state.sharedListContext.token).toBe('tok-1');
+    });
   });
 });

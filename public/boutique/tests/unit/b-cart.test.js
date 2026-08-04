@@ -74,6 +74,10 @@ const {
   renderCartBody, removeFromCart, markAllCartButtons,
   clearCart, pruneObsoleteCart,
 } = require('../../js/b-cart.js');
+const {
+  activateSharedListContext,
+  clearSharedListContext,
+} = require('../../js/group/group-side-cart.js');
 
 /**
  * Reconstruit les refs DOM minimales attendues par b-cart.js.
@@ -117,6 +121,15 @@ describe('b-cart', () => {
     state.favs = [];
     state.products = [];
     state.editSharedCart = null;
+    // Amendement V2 §A — isolation entre tests : group-side-cart.js (réel,
+    // non mocké dans cette suite) partage state.sharedListContext/
+    // sharedListSelection/cartSurface avec b-cart.js.
+    state.sharedListContext = {
+      sharedCartId: null, token: null, status: 'open', isCreator: false,
+      creatorFirstName: null, title: null, message: null, items: [],
+    };
+    state.sharedListSelection = new Set();
+    state.cartSurface = 'personal';
     scroll.savedY = 0;
     isDesktop.mockReturnValue(false);
     saveCart.mockImplementation(() => {
@@ -484,6 +497,74 @@ describe('b-cart', () => {
       openCartWithHighlight(9);
       expect(dom.cartOverlay.classList.contains('open')).toBe(false);
       expect(document.body.classList.contains('cart-open')).toBe(false);
+    });
+  });
+
+  describe('Amendement V2 §A — avatar/action panier personnel force cartSurface="personal"', () => {
+    function activateBackgroundList() {
+      activateSharedListContext(
+        {
+          cart: { id: 'sc-1', token: 'tok-1', status: 'open', creator_first_name: 'Samsam' },
+          items: [{ id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false }],
+          is_creator: false,
+        },
+        'tok-1',
+      );
+    }
+
+    it("openCart() bascule cartSurface sur 'personal' même si une liste est active en arrière-plan", () => {
+      activateBackgroundList();
+      expect(state.cartSurface).toBe('shared-list');
+
+      openCart();
+
+      expect(state.cartSurface).toBe('personal');
+      expect(state.sharedListContext.token).toBe('tok-1'); // contexte conservé
+    });
+
+    it("openCartWithHighlight() bascule cartSurface sur 'personal'", () => {
+      activateBackgroundList();
+      state.cart = [{ product: { id: 9, price_kmf: 100 }, qty: 1 }];
+
+      openCartWithHighlight(9);
+
+      expect(state.cartSurface).toBe('personal');
+      expect(state.sharedListContext.token).toBe('tok-1');
+    });
+
+    it("renderCartBody() rend le panier personnel quand cartSurface='personal', même contexte liste actif (coexistence)", () => {
+      activateBackgroundList();
+      state.cartSurface = 'personal';
+      state.cart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];
+
+      renderCartBody();
+
+      expect(dom.cartBody.querySelectorAll('.k-cart-item')).toHaveLength(1);
+      expect(dom.cartBody.querySelector('.k-shared-list-header')).toBeNull();
+    });
+
+    it("renderCartBody() rend la liste quand cartSurface='shared-list' et laisse state.cart intact", () => {
+      const personalCart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];
+      state.cart = personalCart;
+      activateBackgroundList(); // force cartSurface='shared-list'
+
+      renderCartBody();
+
+      expect(dom.cartBody.querySelector('.k-shared-list-header')).not.toBeNull();
+      expect(state.cart).toBe(personalCart);
+    });
+
+    it("quitter le contexte (clearSharedListContext) puis ouvrir le panier reste cohérent", () => {
+      activateBackgroundList();
+      clearSharedListContext();
+      state.cart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];
+
+      openCart();
+      renderCartBody();
+
+      expect(state.cartSurface).toBe('personal');
+      expect(dom.cartBody.querySelector('.k-shared-list-header')).toBeNull();
+      expect(dom.cartBody.querySelectorAll('.k-cart-item')).toHaveLength(1);
     });
   });
 

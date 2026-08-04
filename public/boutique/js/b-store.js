@@ -177,6 +177,15 @@ export const state = {
    * observé sur ce champ), donc pas besoin d'équivalent sérialisable.
    */
   sharedListSelection: new Set(),
+  /**
+   * Amendement V2 §A (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_
+   * CART_V2) — quelle surface est projetée dans le side cart / drawer
+   * canonique : 'personal' | 'shared-list'. Distinct de sharedListContext
+   * (qui décrit si un contexte de liste existe) : un contexte peut rester
+   * actif en arrière-plan pendant que cartSurface === 'personal' (panier
+   * personnel et liste coexistent, ne se ferment jamais l'un l'autre).
+   */
+  cartSurface: 'personal',
 };
 
 /**

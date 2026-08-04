@@ -396,7 +396,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2026-03",
-        "service": "Permettre à plusieurs participants de composer et financer un panier commun, de la création à la commande finale.",
+        "service": "Permettre à un créateur de composer une liste de produits partageable par lien public ; chaque participant réclame un article en l'achetant individuellement via le checkout canonique.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -776,6 +776,13 @@
       },
       {
         "feature": "auth-identity",
+        "category": "services",
+        "declared": "services/pickup-authorization-service.js",
+        "resolvedPath": "services/pickup-authorization-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "auth-identity",
         "category": "routes",
         "declared": "routes/client-auth.js",
         "resolvedPath": "routes/client-auth.js",
@@ -818,6 +825,20 @@
       },
       {
         "feature": "auth-identity",
+        "category": "utils",
+        "declared": "utils/name-normalize.js",
+        "resolvedPath": "utils/name-normalize.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "migrations",
+        "declared": "migrations/121_exceptional_pickup_authorization.sql",
+        "resolvedPath": "migrations/121_exceptional_pickup_authorization.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
         "category": "tests",
         "declared": "tests/integration/admin-authz-probe.test.js",
         "resolvedPath": "tests/integration/admin-authz-probe.test.js",
@@ -842,6 +863,20 @@
         "category": "tests",
         "declared": "tests/unit/client-auth.test.js",
         "resolvedPath": "tests/unit/client-auth.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/pickup-authorization-service.test.js",
+        "resolvedPath": "tests/unit/pickup-authorization-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/name-normalize.test.js",
+        "resolvedPath": "tests/unit/name-normalize.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -1974,13 +2009,6 @@
       {
         "feature": "dashboard",
         "category": "services",
-        "declared": "services/dashboard-metrics/workspaces.js",
-        "resolvedPath": "services/dashboard-metrics/workspaces.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "dashboard",
-        "category": "services",
         "declared": "services/dashboard-ops-queries.js",
         "resolvedPath": "services/dashboard-ops-queries.js",
         "status": "resolved-in-technical-graph"
@@ -2830,13 +2858,6 @@
         "category": "tests",
         "declared": "tests/unit/dashboard-shared.test.js",
         "resolvedPath": "tests/unit/dashboard-shared.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "dashboard",
-        "category": "tests",
-        "declared": "tests/unit/dashboard-workspaces.test.js",
-        "resolvedPath": "tests/unit/dashboard-workspaces.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7504,13 +7525,6 @@
       {
         "feature": "platform-ops",
         "category": "tests",
-        "declared": "tests/unit/collective-cleanup-tombstones.test.js",
-        "resolvedPath": "tests/unit/collective-cleanup-tombstones.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "platform-ops",
-        "category": "tests",
         "declared": "tests/unit/config-route.test.js",
         "resolvedPath": "tests/unit/config-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7798,22 +7812,8 @@
       {
         "feature": "shared-cart",
         "category": "services",
-        "declared": "services/shared-cart-contributions.js",
-        "resolvedPath": "services/shared-cart-contributions.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
         "declared": "services/shared-cart-lifecycle.js",
         "resolvedPath": "services/shared-cart-lifecycle.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/shared-cart-financial-guard.js",
-        "resolvedPath": "services/shared-cart-financial-guard.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -7832,132 +7832,6 @@
       },
       {
         "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/shared-cart-cash-service.js",
-        "resolvedPath": "services/shared-cart-cash-service.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/shared-cart-estimation-service.js",
-        "resolvedPath": "services/shared-cart-estimation-service.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/shared-cart-refund-queue.js",
-        "resolvedPath": "services/shared-cart-refund-queue.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/shared-cart-v41-transitions.js",
-        "resolvedPath": "services/shared-cart-v41-transitions.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/cancel-shared-cart-with-refunds.js",
-        "resolvedPath": "services/cancel-shared-cart-with-refunds.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-close-order-service.js",
-        "resolvedPath": "services/collective-close-order-service.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-payment-orchestrator.js",
-        "resolvedPath": "services/collective-payment-orchestrator.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-ready-to-order-orchestrator.js",
-        "resolvedPath": "services/collective-ready-to-order-orchestrator.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-stock-reservation-service.js",
-        "resolvedPath": "services/collective-stock-reservation-service.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-workspace-engine.js",
-        "resolvedPath": "services/collective-workspace-engine.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-workspace-internals.js",
-        "resolvedPath": "services/collective-workspace-internals.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-workspace-creation.js",
-        "resolvedPath": "services/collective-workspace-creation.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-workspace-reads.js",
-        "resolvedPath": "services/collective-workspace-reads.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-workspace-items.js",
-        "resolvedPath": "services/collective-workspace-items.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-workspace-contributions.js",
-        "resolvedPath": "services/collective-workspace-contributions.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/collective-workspace-lifecycle.js",
-        "resolvedPath": "services/collective-workspace-lifecycle.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/repair-collective-ready-to-capture.js",
-        "resolvedPath": "services/repair-collective-ready-to-capture.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/repair-collective-stock-reservations.js",
-        "resolvedPath": "services/repair-collective-stock-reservations.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
         "category": "routes",
         "declared": "routes/shared-cart.js",
         "resolvedPath": "routes/shared-cart.js",
@@ -7966,43 +7840,8 @@
       {
         "feature": "shared-cart",
         "category": "routes",
-        "declared": "routes/shared-cart-cash.js",
-        "resolvedPath": "routes/shared-cart-cash.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "routes",
-        "declared": "routes/shared-cart-from-order.js",
-        "resolvedPath": "routes/shared-cart-from-order.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "routes",
-        "declared": "routes/shared-cart-refund-admin.js",
-        "resolvedPath": "routes/shared-cart-refund-admin.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "routes",
-        "declared": "routes/admin-collective-repairs.js",
-        "resolvedPath": "routes/admin-collective-repairs.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "routes",
         "declared": "routes/baskets.js",
         "resolvedPath": "routes/baskets.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "routes",
-        "declared": "routes/collective-workspaces.js",
-        "resolvedPath": "routes/collective-workspaces.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -8112,16 +7951,16 @@
       },
       {
         "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js",
-        "resolvedPath": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js",
+        "category": "migrations",
+        "declared": "migrations/123_shared_cart_item_claim_bridge.sql",
+        "resolvedPath": "migrations/123_shared_cart_item_claim_bridge.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/admin-collective-repairs.test.js",
-        "resolvedPath": "tests/unit/admin-collective-repairs.test.js",
+        "category": "migrations",
+        "declared": "migrations/125_shared_cart_minimal_domain.sql",
+        "resolvedPath": "migrations/125_shared_cart_minimal_domain.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8129,125 +7968,6 @@
         "category": "tests",
         "declared": "tests/unit/baskets.test.js",
         "resolvedPath": "tests/unit/baskets.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-payment-orchestrator.test.js",
-        "resolvedPath": "tests/unit/collective-payment-orchestrator.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-ready-to-order-orchestrator.test.js",
-        "resolvedPath": "tests/unit/collective-ready-to-order-orchestrator.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-stock-reservation-service.test.js",
-        "resolvedPath": "tests/unit/collective-stock-reservation-service.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-workspace-contributions.test.js",
-        "resolvedPath": "tests/unit/collective-workspace-contributions.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-workspace-creation.test.js",
-        "resolvedPath": "tests/unit/collective-workspace-creation.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-workspace-engine.test.js",
-        "resolvedPath": "tests/unit/collective-workspace-engine.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-workspace-internals.test.js",
-        "resolvedPath": "tests/unit/collective-workspace-internals.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-workspace-items.test.js",
-        "resolvedPath": "tests/unit/collective-workspace-items.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-workspace-lifecycle.test.js",
-        "resolvedPath": "tests/unit/collective-workspace-lifecycle.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-workspace-reads.test.js",
-        "resolvedPath": "tests/unit/collective-workspace-reads.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-workspaces.test.js",
-        "resolvedPath": "tests/unit/collective-workspaces.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/repair-collective-ready-to-capture.test.js",
-        "resolvedPath": "tests/unit/repair-collective-ready-to-capture.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/repair-collective-stock-reservations.test.js",
-        "resolvedPath": "tests/unit/repair-collective-stock-reservations.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-branches.test.js",
-        "resolvedPath": "tests/unit/shared-cart-branches.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-cash-route.test.js",
-        "resolvedPath": "tests/unit/shared-cart-cash-route.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-cash-service.test.js",
-        "resolvedPath": "tests/unit/shared-cart-cash-service.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-contributions.test.js",
-        "resolvedPath": "tests/unit/shared-cart-contributions.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8269,20 +7989,6 @@
         "category": "tests",
         "declared": "tests/unit/shared-cart-engine.test.js",
         "resolvedPath": "tests/unit/shared-cart-engine.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-estimation-service.test.js",
-        "resolvedPath": "tests/unit/shared-cart-estimation-service.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-from-order.test.js",
-        "resolvedPath": "tests/unit/shared-cart-from-order.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8316,22 +8022,8 @@
       {
         "feature": "shared-cart",
         "category": "tests",
-        "declared": "tests/unit/shared-cart-refund-admin.test.js",
-        "resolvedPath": "tests/unit/shared-cart-refund-admin.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
         "declared": "tests/unit/shares-route.test.js",
         "resolvedPath": "tests/unit/shares-route.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-v41-transitions.test.js",
-        "resolvedPath": "tests/unit/shared-cart-v41-transitions.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8344,72 +8036,9 @@
       {
         "feature": "shared-cart",
         "category": "tests",
-        "declared": "tests/unit/shared-cart-financial-guard.test.js",
-        "resolvedPath": "tests/unit/shared-cart-financial-guard.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
         "declared": "tests/unit/shared-cart-queries.test.js",
         "resolvedPath": "tests/unit/shared-cart-queries.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-refund-queue.test.js",
-        "resolvedPath": "tests/unit/shared-cart-refund-queue.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/cancel-shared-cart-with-refunds.test.js",
-        "resolvedPath": "tests/unit/cancel-shared-cart-with-refunds.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-edit-mode.test.js",
-        "resolvedPath": "tests/unit/shared-cart-edit-mode.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-lot9-business.test.js",
-        "resolvedPath": "tests/unit/shared-cart-lot9-business.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-v4-2-creation.test.js",
-        "resolvedPath": "tests/unit/shared-cart-v4-2-creation.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-v41-reconciliation.test.js",
-        "resolvedPath": "tests/unit/shared-cart-v41-reconciliation.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/collective-close-order-service.test.js",
-        "resolvedPath": "tests/unit/collective-close-order-service.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "boutique",
-        "declared": "js/b-group-cart-flow.js",
-        "resolvedPath": "public/boutique/js/b-group-cart-flow.js",
-        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "shared-cart",
@@ -8421,22 +8050,8 @@
       {
         "feature": "shared-cart",
         "category": "boutique",
-        "declared": "js/b-group-view.js",
-        "resolvedPath": "public/boutique/js/b-group-view.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "boutique",
         "declared": "js/b-group-banner.js",
         "resolvedPath": "public/boutique/js/b-group-banner.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "boutique",
-        "declared": "js/b-friendly-group-redirect.js",
-        "resolvedPath": "public/boutique/js/b-friendly-group-redirect.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -8463,8 +8078,15 @@
       {
         "feature": "shared-cart",
         "category": "boutique",
-        "declared": "js/group/group-render-creator.js",
-        "resolvedPath": "public/boutique/js/group/group-render-creator.js",
+        "declared": "js/group/group-checkout-adapter.js",
+        "resolvedPath": "public/boutique/js/group/group-checkout-adapter.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "boutique",
+        "declared": "js/group/group-side-cart.js",
+        "resolvedPath": "public/boutique/js/group/group-side-cart.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -8473,13 +8095,6 @@
         "declared": "js/group/group-state.js",
         "resolvedPath": "public/boutique/js/group/group-state.js",
         "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "boutique",
-        "declared": "css/group-cart-flow.css",
-        "resolvedPath": "public/boutique/css/group-cart-flow.css",
-        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "shared-cart",
@@ -8498,8 +8113,8 @@
       {
         "feature": "shared-cart",
         "category": "boutique",
-        "declared": "css/shared-followup.css",
-        "resolvedPath": "public/boutique/css/shared-followup.css",
+        "declared": "css/shared-list-side-cart.css",
+        "resolvedPath": "public/boutique/css/shared-list-side-cart.css",
         "status": "resolved-on-disk-no-header"
       },
       {
@@ -8507,13 +8122,6 @@
         "category": "dash",
         "declared": "dashboards/admin/js/views/SharedCartsView.js",
         "resolvedPath": "public/dashboards/admin/js/views/SharedCartsView.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "dash",
-        "declared": "dashboards/admin/js/views/EventWorkspacesView.js",
-        "resolvedPath": "public/dashboards/admin/js/views/EventWorkspacesView.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9432,6 +9040,30 @@
         "method": "GET",
         "path": "/api/client/orders",
         "routeFile": "routes/client-auth.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "auth-identity",
+        "entry": "GET /api/auth/me/pickup-authorization",
+        "method": "GET",
+        "path": "/api/auth/me/pickup-authorization",
+        "routeFile": "routes/auth.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "auth-identity",
+        "entry": "PUT /api/auth/me/pickup-authorization",
+        "method": "PUT",
+        "path": "/api/auth/me/pickup-authorization",
+        "routeFile": "routes/auth.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "auth-identity",
+        "entry": "DELETE /api/auth/me/pickup-authorization",
+        "method": "DELETE",
+        "path": "/api/auth/me/pickup-authorization",
+        "routeFile": "routes/auth.js",
         "status": "resolved-owned"
       },
       {
@@ -11452,6 +11084,22 @@
       },
       {
         "feature": "logistics",
+        "entry": "GET /api/pickup/exceptional-pickup/:orderId",
+        "method": "GET",
+        "path": "/api/pickup/exceptional-pickup/{id}",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "logistics",
+        "entry": "POST /api/pickup/exceptional-pickup/:orderId/collect",
+        "method": "POST",
+        "path": "/api/pickup/exceptional-pickup/{id}/collect",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "logistics",
         "entry": "GET /api/relais",
         "method": "GET",
         "path": "/api/relais",
@@ -12508,6 +12156,14 @@
       },
       {
         "feature": "shared-cart",
+        "entry": "GET    /api/shared-carts/public/:token",
+        "method": "GET",
+        "path": "/api/shared-carts/public/{id}",
+        "routeFile": "routes/shared-cart.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "shared-cart",
         "entry": "POST   /api/shared-carts/from-cart-items",
         "method": "POST",
         "path": "/api/shared-carts/from-cart-items",
@@ -12519,14 +12175,6 @@
         "entry": "POST   /api/shared-carts/from-basket",
         "method": "POST",
         "path": "/api/shared-carts/from-basket",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST   /api/shared-carts/from-order",
-        "method": "POST",
-        "path": "/api/shared-carts/from-order",
         "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
@@ -12572,46 +12220,6 @@
       },
       {
         "feature": "shared-cart",
-        "entry": "POST   /api/shared-carts/:id/finalize",
-        "method": "POST",
-        "path": "/api/shared-carts/{id}/finalize",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST   /api/shared-carts/:id/awaiting-choice/complete",
-        "method": "POST",
-        "path": "/api/shared-carts/{id}/awaiting-choice/complete",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST   /api/shared-carts/:id/awaiting-choice/adjust",
-        "method": "POST",
-        "path": "/api/shared-carts/{id}/awaiting-choice/adjust",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST   /api/shared-carts/:id/awaiting-choice/cancel",
-        "method": "POST",
-        "path": "/api/shared-carts/{id}/awaiting-choice/cancel",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST   /api/shared-carts/:id/extend-window",
-        "method": "POST",
-        "path": "/api/shared-carts/{id}/extend-window",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
         "entry": "POST   /api/shared-carts/:id/cancel",
         "method": "POST",
         "path": "/api/shared-carts/{id}/cancel",
@@ -12620,81 +12228,9 @@
       },
       {
         "feature": "shared-cart",
-        "entry": "GET    /api/shared-carts/public/:token",
-        "method": "GET",
-        "path": "/api/shared-carts/public/{id}",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "GET    /api/shared-carts/public/:token/estimations",
-        "method": "GET",
-        "path": "/api/shared-carts/public/{id}/estimations",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST   /api/shared-carts/public/:token/estimations",
-        "method": "POST",
-        "path": "/api/shared-carts/public/{id}/estimations",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "DELETE /api/shared-carts/public/:token/estimations/:estimationId",
-        "method": "DELETE",
-        "path": "/api/shared-carts/public/{id}/estimations/{id}",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "GET    /api/shared-carts/public/:token/estimations/by-phone",
-        "method": "GET",
-        "path": "/api/shared-carts/public/{id}/estimations/by-phone",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST   /api/shared-carts/public/:token/contributions",
-        "method": "POST",
-        "path": "/api/shared-carts/public/{id}/contributions",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST   /api/shared-carts/public/:token/contributions/cash",
-        "method": "POST",
-        "path": "/api/shared-carts/public/{id}/contributions/cash",
-        "routeFile": "routes/shared-cart-cash.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST   /api/shared-carts/contributions/:id/confirm-cash",
-        "method": "POST",
-        "path": "/api/shared-carts/contributions/{id}/confirm-cash",
-        "routeFile": "routes/shared-cart-cash.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
         "entry": "GET    /api/admin/shared-carts",
         "method": "GET",
         "path": "/api/admin/shared-carts",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "GET    /api/admin/shared-carts/refund-queue",
-        "method": "GET",
-        "path": "/api/admin/shared-carts/refund-queue",
         "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
@@ -12716,58 +12252,10 @@
       },
       {
         "feature": "shared-cart",
-        "entry": "POST   /api/admin/shared-carts/:id/extend",
-        "method": "POST",
-        "path": "/api/admin/shared-carts/{id}/extend",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
         "entry": "POST   /api/admin/shared-carts/:id/note",
         "method": "POST",
         "path": "/api/admin/shared-carts/{id}/note",
         "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST   /api/admin/shared-carts/refund-queue/:contributionId/mark-refunded",
-        "method": "POST",
-        "path": "/api/admin/shared-carts/refund-queue/{id}/mark-refunded",
-        "routeFile": "routes/shared-cart-refund-admin.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST /api/shares",
-        "method": "POST",
-        "path": "/api/shares",
-        "routeFile": "routes/shares.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "GET /api/shares/:token",
-        "method": "GET",
-        "path": "/api/shares/{id}",
-        "routeFile": "routes/shares.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "POST /api/shares/:token/contributions",
-        "method": "POST",
-        "path": "/api/shares/{id}/contributions",
-        "routeFile": "routes/shares.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "PATCH /api/shares/:token/contributions/:id",
-        "method": "PATCH",
-        "path": "/api/shares/{id}/contributions/{id}",
-        "routeFile": "routes/shares.js",
         "status": "resolved-owned"
       },
       {
@@ -13010,6 +12498,18 @@
         "feature": "auth-identity",
         "fn": "makeIntlPhoneInput",
         "file": "public/boutique/js/b-phone.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
+        "fn": "getActiveAuthorizationForUpdate",
+        "file": "services/pickup-authorization-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
+        "fn": "hasActiveAuthorization",
+        "file": "services/pickup-authorization-service.js",
         "status": "resolved"
       },
       {
@@ -13628,6 +13128,12 @@
       },
       {
         "from": "logistics",
+        "to": "auth-identity",
+        "raw": "auth-identity (autorisation nominative de retrait exceptionnel — services/pickup-authorization-service.js:getActiveAuthorizationForUpdate/hasActiveAuthorization, jamais de requête directe sur user_pickup_authorizations, Lot 5)",
+        "resolved": true
+      },
+      {
+        "from": "logistics",
         "to": "catalog",
         "raw": "catalog",
         "resolved": true
@@ -13970,74 +13476,26 @@
       },
       {
         "from": "shared-cart",
-        "to": "refunds",
-        "raw": "refunds (FF-C1 2026-07-29 — orchestration du remboursement ; preuve: services/shared-cart-refund-queue.js -> services/refund-service.js ; services/cancel-shared-cart-with-refunds.js -> services/refund-service.js)",
-        "resolved": true
-      },
-      {
-        "from": "shared-cart",
         "to": "orders",
-        "raw": "orders",
-        "resolved": true
-      },
-      {
-        "from": "shared-cart",
-        "to": "wallet",
-        "raw": "wallet",
+        "raw": "orders (arbitrage de la réclamation via order_items.shared_cart_item_id — feature orders, migration 123)",
         "resolved": true
       },
       {
         "from": "shared-cart",
         "to": "products",
-        "raw": "products",
+        "raw": "products (lecture seule)",
         "resolved": false
       },
       {
         "from": "shared-cart",
         "to": "notification",
-        "raw": "notification",
+        "raw": "notification (émission uniquement — WhatsApp création de liste)",
         "resolved": false
       },
       {
         "from": "shared-cart",
         "to": "auth",
         "raw": "auth",
-        "resolved": true
-      },
-      {
-        "from": "shared-cart",
-        "to": "customs",
-        "raw": "customs",
-        "resolved": true
-      },
-      {
-        "from": "shared-cart",
-        "to": "documents",
-        "raw": "documents",
-        "resolved": true
-      },
-      {
-        "from": "shared-cart",
-        "to": "logistics",
-        "raw": "logistics",
-        "resolved": true
-      },
-      {
-        "from": "shared-cart",
-        "to": "loyalty",
-        "raw": "loyalty (declenche le recalcul de palier apres commande group panier confirmee — services/loyalty-service.js handleOrderConfirmed, O7.3 provider loyalty)",
-        "resolved": true
-      },
-      {
-        "from": "shared-cart",
-        "to": "payments",
-        "raw": "payments (reutilise makeInput pour un style de champ uniforme au checkout — public/boutique/js/b-checkout.js, scope boutique, O7.3 provider payments)",
-        "resolved": true
-      },
-      {
-        "from": "shared-cart",
-        "to": "auth-identity",
-        "raw": "auth-identity (reutilise makeIntlPhoneInput — public/boutique/js/b-phone.js, scope boutique, O7.3 provider payments : couture initialement artificielle via b-checkout.js, corrigee vers le vrai proprietaire)",
         "resolved": true
       },
       {
@@ -15023,6 +14481,22 @@
       {
         "boutiqueManifest": "platform-ops",
         "category": "boutique",
+        "declared": "../js/b-service-worker-refresh.js",
+        "resolvedPath": "public/boutique/js/b-service-worker-refresh.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "platform-ops",
+        "category": "boutique",
+        "declared": "../js/test-modal-view-model-redirect.js",
+        "resolvedPath": "public/boutique/js/test-modal-view-model-redirect.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "platform-ops",
+        "category": "boutique",
         "declared": "../js/b-nav.js",
         "resolvedPath": "public/boutique/js/b-nav.js",
         "exists": true,
@@ -15135,14 +14609,6 @@
       {
         "boutiqueManifest": "shared-cart",
         "category": "js",
-        "declared": "../js/b-group-view.js",
-        "resolvedPath": "public/boutique/js/b-group-view.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "shared-cart",
-        "category": "js",
         "declared": "../js/b-share-cart.js",
         "resolvedPath": "public/boutique/js/b-share-cart.js",
         "exists": true,
@@ -15159,6 +14625,14 @@
       {
         "boutiqueManifest": "shared-cart",
         "category": "js",
+        "declared": "../js/group/group-checkout-adapter.js",
+        "resolvedPath": "public/boutique/js/group/group-checkout-adapter.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
         "declared": "../js/group/group-helpers.js",
         "resolvedPath": "public/boutique/js/group/group-helpers.js",
         "exists": true,
@@ -15167,8 +14641,8 @@
       {
         "boutiqueManifest": "shared-cart",
         "category": "js",
-        "declared": "../js/group/group-render-creator.js",
-        "resolvedPath": "public/boutique/js/group/group-render-creator.js",
+        "declared": "../js/group/group-side-cart.js",
+        "resolvedPath": "public/boutique/js/group/group-side-cart.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15183,32 +14657,8 @@
       {
         "boutiqueManifest": "shared-cart",
         "category": "js",
-        "declared": "../js/b-friendly-group-redirect.js",
-        "resolvedPath": "public/boutique/js/b-friendly-group-redirect.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "shared-cart",
-        "category": "js",
         "declared": "../js/b-share-phone-guard.js",
         "resolvedPath": "public/boutique/js/b-share-phone-guard.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "shared-cart",
-        "category": "boutique",
-        "declared": "../js/b-group-cart-flow.js",
-        "resolvedPath": "public/boutique/js/b-group-cart-flow.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "shared-cart",
-        "category": "css",
-        "declared": "../css/group-cart-flow.css",
-        "resolvedPath": "public/boutique/css/group-cart-flow.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15231,24 +14681,16 @@
       {
         "boutiqueManifest": "shared-cart",
         "category": "css",
-        "declared": "../css/shared-followup.css",
-        "resolvedPath": "public/boutique/css/shared-followup.css",
+        "declared": "../css/shared-list-side-cart.css",
+        "resolvedPath": "public/boutique/css/shared-list-side-cart.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "shared-cart",
         "category": "tests",
-        "declared": "../tests/unit/group-render-creator.test.js",
-        "resolvedPath": "public/boutique/tests/unit/group-render-creator.test.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "shared-cart",
-        "category": "tests",
-        "declared": "../tests/unit/b-friendly-group-redirect.test.js",
-        "resolvedPath": "public/boutique/tests/unit/b-friendly-group-redirect.test.js",
+        "declared": "../tests/unit/group-checkout-adapter.test.js",
+        "resolvedPath": "public/boutique/tests/unit/group-checkout-adapter.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15257,6 +14699,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-share-phone-guard.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-share-phone-guard.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "tests",
+        "declared": "../tests/unit/group-side-cart.test.js",
+        "resolvedPath": "public/boutique/tests/unit/group-side-cart.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16032,6 +15482,18 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/pickup-authorization-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pickup-authorization-service.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/pickup-authorization-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/client-auth.js",
                 "targetFile": "db.js"
               },
@@ -16182,16 +15644,6 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/b-komerce.test.js",
                 "targetFile": "public/boutique/js/b-wallet.js"
-              }
-            ]
-          },
-          {
-            "channel": "interface",
-            "evidence": [
-              {
-                "endpoint": "/api/wallet",
-                "routeFile": "routes/wallet.js",
-                "consumerFileId": "public/boutique/js/b-komerce.js"
               }
             ]
           }
@@ -16879,10 +16331,6 @@
                 "targetFile": "public/boutique/js/b-modal.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-cart-product-open-style.js",
-                "targetFile": "public/boutique/js/b-friendly-group-redirect.js"
-              },
-              {
                 "sourceFileId": "public/boutique/js/b-modal-buybox-shared.js",
                 "targetFile": "public/boutique/js/b-modal.js"
               },
@@ -17193,10 +16641,6 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "services/dashboard-metrics/workspaces.js",
-                "targetFile": "db.js"
-              },
-              {
                 "sourceFileId": "services/dashboard-ops-queries.js",
                 "targetFile": "db.js"
               },
@@ -17326,10 +16770,6 @@
               },
               {
                 "sourceFileId": "tests/unit/dashboard-costing.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/dashboard-workspaces.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -18681,20 +18121,8 @@
                 "targetFile": "routes/shares.js"
               },
               {
-                "sourceFileId": "bootstrap/api-routes.js",
-                "targetFile": "routes/shared-cart-cash.js"
-              },
-              {
-                "sourceFileId": "bootstrap/crons.js",
-                "targetFile": "services/shared-cart-engine.js"
-              },
-              {
                 "sourceFileId": "scripts/contract-generate.js",
                 "targetFile": "routes/shared-cart.js"
-              },
-              {
-                "sourceFileId": "scripts/contract-generate.js",
-                "targetFile": "routes/shared-cart-refund-admin.js"
               },
               {
                 "sourceFileId": "scripts/feature-guard.js",
@@ -18703,14 +18131,6 @@
               {
                 "sourceFileId": "server.js",
                 "targetFile": "routes/shared-cart.js"
-              },
-              {
-                "sourceFileId": "server.js",
-                "targetFile": "routes/shared-cart-refund-admin.js"
-              },
-              {
-                "sourceFileId": "server.js",
-                "targetFile": "services/shared-cart-items-service.js"
               }
             ]
           }
@@ -18911,6 +18331,26 @@
               {
                 "sourceFileId": "tests/unit/parcel-api-v2-index.test.js",
                 "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "logistics",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/pickup-secret-service.js",
+                "targetFile": "utils/name-normalize.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-service.js",
+                "targetFile": "services/pickup-authorization-service.js"
               }
             ]
           }
@@ -19150,6 +18590,14 @@
               },
               {
                 "sourceFileId": "routes/pickup-secret.js",
+                "targetFile": "middleware/validate.js"
+              },
+              {
+                "sourceFileId": "routes/pickup-secret.js",
+                "targetFile": "validators/index.js"
+              },
+              {
+                "sourceFileId": "routes/pickup-secret.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -19299,6 +18747,10 @@
               {
                 "sourceFileId": "services/scan-engine.js",
                 "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-service.js",
+                "targetFile": "services/notifications/notification-service.js"
               },
               {
                 "sourceFileId": "routes/parcel-api-v2/scans.js",
@@ -20351,10 +19803,6 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-cart.js",
-                "targetFile": "public/boutique/js/b-nav.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-cart.js",
                 "targetFile": "public/boutique/js/b-bus.js"
               },
               {
@@ -20451,7 +19899,11 @@
             "evidence": [
               {
                 "sourceFileId": "public/boutique/js/b-cart.js",
-                "targetFile": "public/boutique/js/b-group-view.js"
+                "targetFile": "public/boutique/js/group/group-side-cart.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-cart.test.js",
+                "targetFile": "public/boutique/js/group/group-side-cart.js"
               }
             ]
           },
@@ -21759,27 +21211,11 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-nav.js",
-                "targetFile": "public/boutique/js/b-group-view.js"
-              },
-              {
-                "sourceFileId": "tests/unit/collective-cleanup-tombstones.test.js",
-                "targetFile": "services/collective-close-order-service.js"
-              },
-              {
-                "sourceFileId": "tests/unit/collective-cleanup-tombstones.test.js",
-                "targetFile": "services/collective-ready-to-order-orchestrator.js"
-              },
-              {
-                "sourceFileId": "tests/unit/collective-cleanup-tombstones.test.js",
-                "targetFile": "routes/collective-workspaces.js"
-              },
-              {
-                "sourceFileId": "tests/unit/collective-cleanup-tombstones.test.js",
-                "targetFile": "routes/baskets.js"
+                "targetFile": "public/boutique/js/group/group-side-cart.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
-                "targetFile": "public/boutique/js/b-group-view.js"
+                "targetFile": "public/boutique/js/group/group-side-cart.js"
               }
             ]
           }
@@ -22178,16 +21614,8 @@
                 "targetFile": "middleware/auth-guest.js"
               },
               {
-                "sourceFileId": "routes/shared-cart-cash.js",
-                "targetFile": "middleware/auth.js"
-              },
-              {
-                "sourceFileId": "routes/shared-cart-refund-admin.js",
-                "targetFile": "middleware/auth.js"
-              },
-              {
-                "sourceFileId": "routes/admin-collective-repairs.js",
-                "targetFile": "middleware/auth.js"
+                "sourceFileId": "routes/shared-cart.js",
+                "targetFile": "middleware/soft-auth.js"
               }
             ]
           }
@@ -22203,20 +21631,12 @@
             "evidence": [
               {
                 "sourceFileId": "public/boutique/js/b-share-cart.js",
-                "targetFile": "public/boutique/js/b-phone.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-share-cart.js",
-                "targetFile": "public/boutique/js/b-identity.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-group-view.js",
                 "targetFile": "public/boutique/js/b-identity.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "shared-cart",
@@ -22244,46 +21664,6 @@
       },
       {
         "from": "shared-cart",
-        "to": "customs",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "services/shared-cart-lifecycle.js",
-                "targetFile": "services/customs-classification.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
-      },
-      {
-        "from": "shared-cart",
-        "to": "documents",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "services/shared-cart-refund-queue.js",
-                "targetFile": "services/documents/refund-receipt.js"
-              },
-              {
-                "sourceFileId": "services/cancel-shared-cart-with-refunds.js",
-                "targetFile": "services/documents/refund-receipt.js"
-              },
-              {
-                "sourceFileId": "routes/shared-cart-refund-admin.js",
-                "targetFile": "services/documents/refund-receipt.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
-      },
-      {
-        "from": "shared-cart",
         "to": "infrastructure",
         "channels": [
           {
@@ -22302,30 +21682,6 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "services/shared-cart-contributions.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-lifecycle.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-lifecycle.js",
-                "targetFile": "utils/rates.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-lifecycle.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-financial-guard.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-financial-guard.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
                 "sourceFileId": "services/shared-cart-queries.js",
                 "targetFile": "db.js"
               },
@@ -22334,83 +21690,11 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "services/shared-cart-cash-service.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-cash-service.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-estimation-service.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-estimation-service.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-refund-queue.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-refund-queue.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/cancel-shared-cart-with-refunds.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/cancel-shared-cart-with-refunds.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/collective-payment-orchestrator.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/collective-stock-reservation-service.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/collective-workspace-internals.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/repair-collective-ready-to-capture.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/repair-collective-ready-to-capture.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
-                "sourceFileId": "services/repair-collective-stock-reservations.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/repair-collective-stock-reservations.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
                 "sourceFileId": "routes/shared-cart.js",
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "routes/shared-cart-from-order.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "routes/shared-cart-refund-admin.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
                 "sourceFileId": "routes/baskets.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "routes/collective-workspaces.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -22426,55 +21710,11 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "tests/unit/collective-workspace-contributions.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/collective-workspace-creation.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/collective-workspace-internals.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/collective-workspace-items.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/collective-workspace-lifecycle.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-cash-service.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-cash-service.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-contributions.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-contributions.test.js",
-                "targetFile": "db.js"
-              },
-              {
                 "sourceFileId": "tests/unit/shared-cart-creation.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
               {
                 "sourceFileId": "tests/unit/shared-cart-creation.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-estimation-service.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-estimation-service.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -22492,111 +21732,11 @@
               {
                 "sourceFileId": "tests/unit/shared-cart-lifecycle.test.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-financial-guard.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-financial-guard.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-refund-queue.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-refund-queue.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/cancel-shared-cart-with-refunds.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/cancel-shared-cart-with-refunds.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-edit-mode.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-lot9-business.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-lot9-business.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-v4-2-creation.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-v41-reconciliation.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-v41-reconciliation.test.js",
-                "targetFile": "db.js"
               }
             ]
           }
         ],
         "conformanceStatus": "OBSERVED_UNDECLARED"
-      },
-      {
-        "from": "shared-cart",
-        "to": "logistics",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "services/shared-cart-lifecycle.js",
-                "targetFile": "services/pickup-secret-service.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-lifecycle.js",
-                "targetFile": "services/routing.js"
-              },
-              {
-                "sourceFileId": "routes/shared-cart.js",
-                "targetFile": "services/pickup-secret-service.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-lifecycle.test.js",
-                "targetFile": "services/routing.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
-      },
-      {
-        "from": "shared-cart",
-        "to": "loyalty",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "routes/shared-cart.js",
-                "targetFile": "services/loyalty-service.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-branches.test.js",
-                "targetFile": "services/loyalty-service.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-creator-route.test.js",
-                "targetFile": "services/loyalty-service.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "shared-cart",
@@ -22606,27 +21746,11 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/shared-cart-lifecycle.js",
-                "targetFile": "services/whatsapp-meta.js"
-              },
-              {
-                "sourceFileId": "services/cancel-shared-cart-with-refunds.js",
-                "targetFile": "services/whatsapp-meta.js"
-              },
-              {
                 "sourceFileId": "routes/shared-cart.js",
                 "targetFile": "services/whatsapp-meta.js"
               },
               {
-                "sourceFileId": "tests/unit/shared-cart-branches.test.js",
-                "targetFile": "services/whatsapp-meta.js"
-              },
-              {
                 "sourceFileId": "tests/unit/shared-cart-creator-route.test.js",
-                "targetFile": "services/whatsapp-meta.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-lifecycle.test.js",
                 "targetFile": "services/whatsapp-meta.js"
               }
             ]
@@ -22654,44 +21778,12 @@
                 "targetFile": "public/boutique/js/b-cart.js"
               },
               {
-                "sourceFileId": "services/shared-cart-lifecycle.js",
-                "targetFile": "services/order-status-machine.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-lifecycle.js",
-                "targetFile": "services/order-service.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-lifecycle.js",
-                "targetFile": "services/order-payment-confirmation.js"
-              },
-              {
-                "sourceFileId": "routes/shared-cart-from-order.js",
-                "targetFile": "services/order-status-machine.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-lifecycle.test.js",
-                "targetFile": "services/order-payment-confirmation.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-lot9-business.test.js",
-                "targetFile": "services/order-payment-confirmation.js"
-              },
-              {
                 "sourceFileId": "public/boutique/js/b-share-cart.js",
                 "targetFile": "public/boutique/js/b-cart-core.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-share-cart.js",
                 "targetFile": "public/boutique/js/b-cart.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-group-view.js",
-                "targetFile": "public/boutique/js/b-tracking.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-group-view.js",
-                "targetFile": "public/boutique/js/b-cart-core.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-core.test.js",
@@ -22710,13 +21802,17 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "public/boutique/js/b-share-cart.js",
+                "sourceFileId": "public/boutique/js/group/group-checkout-adapter.js",
+                "targetFile": "public/boutique/js/b-checkout.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/group-checkout-adapter.test.js",
                 "targetFile": "public/boutique/js/b-checkout.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "shared-cart",
@@ -22787,31 +21883,7 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-share-cart.js",
-                "targetFile": "public/boutique/js/b-nav.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-share-cart.js",
                 "targetFile": "public/boutique/js/b-store.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-share-cart.js",
-                "targetFile": "public/boutique/js/b-utils.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-group-view.js",
-                "targetFile": "public/boutique/js/b-nav.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-group-view.js",
-                "targetFile": "public/boutique/js/b-store.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-group-view.js",
-                "targetFile": "public/boutique/js/b-bus.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-group-view.js",
-                "targetFile": "public/boutique/js/b-utils.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-group-banner.js",
@@ -22822,11 +21894,35 @@
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
-                "sourceFileId": "public/boutique/js/group/group-render-creator.js",
+                "sourceFileId": "public/boutique/js/group/group-checkout-adapter.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/group/group-side-cart.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/group/group-side-cart.js",
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
+                "sourceFileId": "public/boutique/js/group/group-side-cart.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/group/group-side-cart.js",
+                "targetFile": "public/boutique/js/b-scroll-owner.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/group/group-state.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/group-checkout-adapter.test.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/group-side-cart.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
               {
@@ -22939,26 +22035,6 @@
           }
         ],
         "conformanceStatus": "OBSERVED_UNDECLARED"
-      },
-      {
-        "from": "shared-cart",
-        "to": "refunds",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "services/shared-cart-refund-queue.js",
-                "targetFile": "services/refund-service.js"
-              },
-              {
-                "sourceFileId": "services/cancel-shared-cart-with-refunds.js",
-                "targetFile": "services/refund-service.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "sourcing",
@@ -23357,7 +22433,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 820
+        "filesObserved": 764
       },
       "boutique": {
         "filesObserved": 125,
@@ -23396,8 +22472,8 @@
       "NON_RUNTIME_TEST": 7,
       "TECHNICAL_PRIMITIVE": 29,
       "BUSINESS_TRANSVERSAL_SERVICE": 3,
-      "CROSS_FEATURE_DIRECT_IMPORT": 3,
-      "BUSINESS_FEATURE_INTERFACE": 8,
+      "CROSS_FEATURE_DIRECT_IMPORT": 6,
+      "BUSINESS_FEATURE_INTERFACE": 7,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
     },
@@ -23632,18 +22708,19 @@
       {
         "from": "auth-identity",
         "to": "wallet",
-        "family": "BUSINESS_FEATURE_INTERFACE",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
         "providerKind": "business-feature",
         "channels": [
-          "interface",
           "static-code"
         ],
-        "couplingObserved": "mixed",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
       },
       {
         "from": "catalog",
@@ -24119,7 +23196,7 @@
         "from": "orders",
         "to": "shared-cart",
         "family": "BUSINESS_FEATURE_INTERFACE",
-        "evidenceRole": "RUNTIME_ONLY",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
         "providerKind": "business-feature",
         "channels": [
@@ -24369,6 +23446,23 @@
       },
       {
         "from": "shared-cart",
+        "to": "auth-identity",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "shared-cart",
         "to": "catalog",
         "family": "CROSS_FEATURE_DIRECT_IMPORT",
         "evidenceRole": "RUNTIME_ONLY",
@@ -24413,6 +23507,23 @@
         "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
+      },
+      {
+        "from": "shared-cart",
+        "to": "payments",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
       },
       {
         "from": "shared-cart",
@@ -24517,9 +23628,8 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 11,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 2,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 3,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-foundation|technical-primitive": 5,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-foundation|technical-primitive": 1,
@@ -24528,14 +23638,15 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|technical-transversal|business-file-import": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|mixed": 2,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|mixed": 1,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 3,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|mixed": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1
     },
@@ -24626,7 +23737,11 @@
     "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
-    "missingExceptions": [],
+    "missingExceptions": [
+      "auth-identity->wallet",
+      "shared-cart->auth-identity",
+      "shared-cart->payments"
+    ],
     "emptyRationaleExceptions": [],
     "unexplainedRuntimeCycles": [],
     "ontologyGapCoverage": {
@@ -24734,10 +23849,6 @@
         {
           "feature": "orders",
           "mode": "RW"
-        },
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
         }
       ],
       "readers": [
@@ -24750,10 +23861,11 @@
         "payments",
         "platform-ops",
         "purchasing",
-        "recommendations"
+        "recommendations",
+        "shared-cart"
       ],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": null,
+      "resolution": "ambiguous-multi-writer"
     },
     "orders": {
       "writers": [
@@ -24787,10 +23899,6 @@
         },
         {
           "feature": "purchasing",
-          "mode": "RW"
-        },
-        {
-          "feature": "shared-cart",
           "mode": "RW"
         },
         {
@@ -24913,11 +24021,21 @@
         "notifications",
         "orders",
         "platform-ops",
-        "purchasing",
-        "shared-cart"
+        "purchasing"
       ],
       "lifecycleOwner": null,
       "resolution": "ambiguous-multi-writer"
+    },
+    "user_pickup_authorizations": {
+      "writers": [
+        {
+          "feature": "auth-identity",
+          "mode": "RW"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "auth-identity",
+      "resolution": "single-writer"
     },
     "business_rules": {
       "writers": [
@@ -24971,10 +24089,6 @@
         },
         {
           "feature": "purchasing",
-          "mode": "W"
-        },
-        {
-          "feature": "shared-cart",
           "mode": "W"
         }
       ],
@@ -25327,58 +24441,6 @@
       "lifecycleOwner": "shared-cart",
       "resolution": "multi-writer-resolved-by-classification-signal"
     },
-    "collective_payment_sessions": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
-        }
-      ],
-      "readers": [
-        "dashboard"
-      ],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
-    },
-    "collective_workspace_contributions": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
-        }
-      ],
-      "readers": [
-        "dashboard"
-      ],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
-    },
-    "collective_workspace_items": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
-        }
-      ],
-      "readers": [
-        "dashboard"
-      ],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
-    },
-    "collective_workspaces": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
-        }
-      ],
-      "readers": [
-        "dashboard"
-      ],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
-    },
     "exchange_rates": {
       "writers": [
         {
@@ -25511,10 +24573,6 @@
         {
           "feature": "orders",
           "mode": "RW"
-        },
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
         }
       ],
       "readers": [
@@ -25523,8 +24581,8 @@
         "logistics",
         "notifications"
       ],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": null,
+      "resolution": "ambiguous-multi-writer"
     },
     "scan_events": {
       "writers": [
@@ -25780,8 +24838,7 @@
         }
       ],
       "readers": [
-        "loyalty",
-        "shared-cart"
+        "loyalty"
       ],
       "lifecycleOwner": "economic-engine",
       "resolution": "single-writer"
@@ -26121,15 +25178,11 @@
         {
           "feature": "payments",
           "mode": "RW"
-        },
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
         }
       ],
       "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": "payments",
+      "resolution": "single-writer"
     },
     "suppliers": {
       "writers": [
@@ -26140,72 +25193,6 @@
       ],
       "readers": [],
       "lifecycleOwner": "purchasing",
-      "resolution": "single-writer"
-    },
-    "cart_contributions": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
-    },
-    "collective_payment_tokens": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
-    },
-    "collective_stock_reservations": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
-    },
-    "collective_workspace_events": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "W"
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
-    },
-    "shared_cart_contributions": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "single-writer"
-    },
-    "shared_cart_estimations": {
-      "writers": [
-        {
-          "feature": "shared-cart",
-          "mode": "RW"
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
       "resolution": "single-writer"
     },
     "shared_cart_events": {
@@ -26278,8 +25265,8 @@
       "backend": {
         "manifestsDiscovered": 25,
         "manifestsConnected": 25,
-        "technicalNodesTotal": 309,
-        "technicalNodesOwned": 309,
+        "technicalNodesTotal": 285,
+        "technicalNodesOwned": 285,
         "technicalOrphans": 0
       },
       "dash": {
@@ -26427,12 +25414,12 @@
       },
       {
         "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "shared-cart -> \"notification\" (entrée: \"notification\")",
+        "ref": "shared-cart -> \"notification\" (entrée: \"notification (émission uniquement — WhatsApp création de liste)\")",
         "msg": "contract.consumes de shared-cart référence \"notification\", ne correspond à aucun nom de feature connu"
       },
       {
         "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "shared-cart -> \"products\" (entrée: \"products\")",
+        "ref": "shared-cart -> \"products\" (entrée: \"products (lecture seule)\")",
         "msg": "contract.consumes de shared-cart référence \"products\", ne correspond à aucun nom de feature connu"
       },
       {
@@ -26469,6 +25456,16 @@
         "type": "EXPOSED-ROUTE-UNRESOLVED",
         "ref": "infrastructure / GET /webhook/authkey-whatsapp",
         "msg": "\"GET /webhook/authkey-whatsapp\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "logistics / GET /api/pickup/exceptional-pickup/{id}",
+        "msg": "\"GET /api/pickup/exceptional-pickup/{id}\" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "logistics / POST /api/pickup/exceptional-pickup/{id}/collect",
+        "msg": "\"POST /api/pickup/exceptional-pickup/{id}/collect\" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26533,7 +25530,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26548,7 +25545,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> wallet",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"wallet\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"wallet\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26578,7 +25575,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "dashboard -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 48 preuve(s)) sans contract.consumes déclaré chez \"dashboard\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 46 preuve(s)) sans contract.consumes déclaré chez \"dashboard\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26673,7 +25670,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "logistics -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 72 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 74 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26703,12 +25700,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 24 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 23 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> shared-cart",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26748,7 +25745,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> shared-cart",
-        "msg": "dépendance cross-feature observée (canal: static-code, 10 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"shared-cart\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"shared-cart\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26787,18 +25784,28 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "shared-cart -> auth-identity",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"auth-identity\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> catalog",
         "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"catalog\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 63 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"notifications\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"notifications\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "shared-cart -> payments",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"payments\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26833,7 +25840,7 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "alerts",
-        "msg": "table \"alerts\" a 7 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"alerts\" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26893,7 +25900,7 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_items",
-        "msg": "table \"order_items\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics, orders"
+        "msg": "table \"order_items\" a 3 écrivain(s) déclaré(s) (dashboard, logistics, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26903,7 +25910,7 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "orders",
-        "msg": "table \"orders\" a 10 écrivain(s) déclaré(s) (customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, shared-cart, wallet) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"orders\" a 9 écrivain(s) déclaré(s) (customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, wallet) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26958,7 +25965,7 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "recipients",
-        "msg": "table \"recipients\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard, orders"
+        "msg": "table \"recipients\" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26994,11 +26001,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "sourcing_candidates",
         "msg": "table \"sourcing_candidates\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "stripe_events_processed",
-        "msg": "table \"stripe_events_processed\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par payments"
       },
       {
         "type": "WRITER-NOT-OWNER",

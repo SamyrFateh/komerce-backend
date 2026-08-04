@@ -1,12 +1,12 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-04T09:23:44.516Z.
+> Régénéré le 2026-08-04T11:11:14.361Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **75** (75 headés) · Événements bus : **23** · Bundles CSS : **3**
+- Modules JS : **75** (75 headés) · Événements bus : **24** · Bundles CSS : **3**
 - Endpoints appelés : **45** — 🔴 0 hors contrat · ⚪ 31 non prouvés · 🔵 16 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
 
@@ -65,6 +65,7 @@
 | Événement | Émetteurs | Écouteurs | Statut |
 |---|---|---|---|
 | `carousel:changed` | b-modal-product | b-modal-image-ux | 🟡 non déclaré |
+| `cart-body:render` | group-side-cart | b-cart | 🟢 sain |
 | `cart:update` | b-cart-core | b-cart, b-cart-core, b-cart-pill, b-mini-cart, b-modal-suggestions, b-nav | 🟢 sain |
 | `cat:select` | b-catalog | b-catalog | 🟢 sain |
 | `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
@@ -110,6 +111,7 @@ graph LR
   b_modal_suggestions["b-modal-suggestions"] -->|modal:open| b_modal_core["b-modal-core"]
   b_modal_suggestions["b-modal-suggestions"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
   b_cart["b-cart"] -->|checkout:open| boutique["boutique"]
+  group_side_cart["group-side-cart"] -->|cart-body:render| b_cart["b-cart"]
   b_nav["b-nav"] -->|view:changed| b_catalog_desktop_enhancers["b-catalog-desktop-enhancers"]
   b_nav["b-nav"] -->|view:changed| b_home_premium_v1["b-home-premium-v1"]
   b_catalog["b-catalog"] -->|catalog:cat-changed| b_home_premium_v1["b-home-premium-v1"]

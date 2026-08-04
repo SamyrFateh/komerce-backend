@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-04T09:23:44.516Z",
+  "generatedAt": "2026-08-04T11:11:14.361Z",
   "summary": {
     "modules": 75,
     "withHeader": 75,
-    "events": 23,
-    "declaredActive": 17,
+    "events": 24,
+    "declaredActive": 20,
     "declaredDead": 9,
     "cssBundles": 3,
     "endpoints": 45,
@@ -275,7 +275,8 @@
       ],
       "listens": [
         "cart:update",
-        "side-cart:render"
+        "side-cart:render",
+        "cart-body:render"
       ],
       "imports": [
         "b-bus",
@@ -2059,7 +2060,8 @@
         "b-komerce.js"
       ],
       "emits": [
-        "side-cart:render"
+        "side-cart:render",
+        "cart-body:render"
       ],
       "listens": [
         "side-cart:render"
@@ -2079,6 +2081,14 @@
         "cart-empty"
       ],
       "emitCalls": [
+        {
+          "name": "side-cart:render",
+          "hasArg": false
+        },
+        {
+          "name": "cart-body:render",
+          "hasArg": false
+        },
         {
           "name": "side-cart:render",
           "hasArg": false
@@ -2524,6 +2534,14 @@
       ],
       "listeners": [
         "boutique"
+      ]
+    },
+    "cart-body:render": {
+      "emitters": [
+        "group-side-cart"
+      ],
+      "listeners": [
+        "b-cart"
       ]
     },
     "view:changed": {
@@ -3243,6 +3261,9 @@
       "modal:close",
       "cart:update",
       "side-cart:render",
+      "cart-body:render",
+      "bascule",
+      "de",
       "checkout:open",
       "product:open-from-cart",
       "view:switch",
@@ -3319,6 +3340,8 @@
       "view:changed"
     ],
     "declaredUnused": [
+      "bascule",
+      "de",
       "view:switch"
     ],
     "notFoundEndpoints": [],

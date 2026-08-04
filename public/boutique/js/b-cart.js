@@ -39,7 +39,7 @@ import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
 import { renderAddControl } from './render/render-product-card.js';
 import { getProductCartSummary, getCartItemProductId } from './cart-product-summary.js';
-import { isSharedListActive, renderSharedListInCart, exitSharedListRenderMode } from './group/group-side-cart.js';
+import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRenderMode, setCartSurface } from './group/group-side-cart.js';
 
 'use strict';
 
@@ -555,6 +555,7 @@ import { isSharedListActive, renderSharedListInCart, exitSharedListRenderMode } 
    * Met à jour le rendu complet + synchronise les badges.
    */
   function openCart() {
+    setCartSurface('personal');
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
     // Desktop : le panier EST le side-cart inline (liste + total toujours visibles
@@ -591,6 +592,7 @@ import { isSharedListActive, renderSharedListInCart, exitSharedListRenderMode } 
    * @param {number|string} productId - ID du produit à mettre en avant
    */
   function openCartWithHighlight(productId) {
+    setCartSurface('personal');
     renderCartBody(productId);
     // Celebrating header
     dom.cartHeader.classList.add('celebrating');
@@ -624,7 +626,7 @@ import { isSharedListActive, renderSharedListInCart, exitSharedListRenderMode } 
     // actif ; le panier personnel (state.cart) n'est jamais lu/écrit dans
     // cette branche (mandat §3, §5). Retour immédiat : le rendu normal
     // ci-dessous reste strictement celui du panier personnel hors contexte.
-    if (isSharedListActive()) {
+    if (isSharedListSurfaceActive()) {
       renderSharedListInCart();
       return;
     }
@@ -1223,6 +1225,7 @@ function renderSideCart() {
     cta.addEventListener('click', () => {
       // Desktop : ouvrir le tiroir complet (le side cart est déjà visible,
       // "Voir le panier" = accéder aux détails complets + WhatsApp + Commander)
+      setCartSurface('personal');
       renderCartBody();
       dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
       dom.cartOverlay.classList.add('open');
@@ -1266,6 +1269,11 @@ function renderSideCart() {
 // Appelé par updateCartBadge (b-cart-core.js) et les surfaces qui
 // ont besoin de forcer un re-rendu du side-cart desktop.
 bus.on('side-cart:render', renderSideCart);
+// Amendement V2 §A — group-side-cart.js::setCartSurface() émet cet
+// événement pour re-rendre le drawer/panier depuis le sélecteur desktop
+// [Panier] [Liste] sans importer b-cart.js (mandat §5, pas de dépendance
+// inverse — voir docblock b-bus.js).
+bus.on('cart-body:render', () => renderCartBody());
 
 /* ── MUTATIONS CENTRALISÉES ─────────────────────────────────
  * Toute écriture sur state.cart doit passer par ces fonctions

@@ -9203,6 +9203,42 @@ body.cart-open  #k-section-index { display:none; }
   padding: 0;
 }
 
+/* ── Amendement V2 §A — sélecteur desktop [Panier] [Liste] (coexistence) ─
+ * Prépendu dans #k-side-cart, avant .k-shared-list-panel ou .k-sc-title-bar
+ * selon la surface affichée — group-side-cart.js::renderCartSurfaceSwitch().
+ * Desktop uniquement (mandat §A : jamais de chrome supplémentaire mobile,
+ * l'indicateur mobile reste .k-shared-list-context-chip, §7).
+ */
+
+.k-cart-surface-switch {
+  flex-shrink: 0;
+  display: flex;
+  gap: 4px;
+  padding: 10px 12px 0;
+}
+
+.k-cart-surface-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sand-97);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.k-cart-surface-btn[aria-pressed="true"] {
+  background: var(--ocean);
+  border-color: var(--ocean);
+  color: var(--white);
+}
+
 
 /* ── share-cart.css ──────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════

@@ -98,22 +98,25 @@ module.exports = {
       // n'ont pas été repassés — voir LOT23_README.md de cette livraison.
     ],
     boutique: [
-      // Non retouché dans ce lot (backend uniquement) — ces fichiers
-      // référencent encore contributed_kmf/remaining_kmf et doivent être
-      // mis à jour dans un lot frontend séparé avant merge complet.
-      'js/b-group-cart-flow.js',
+      // Frontend réécrit depuis (mandat de correction post-audit UX +
+      // amendement V2 cartSurface, cf. PROMPT_FINAL_IMPLEMENTATION_
+      // LISTE_PARTAGEABLE_SIDE_CART_V2) — liste alignée sur le manifeste
+      // canonique public/boutique/features/shared-cart.feature.js.
+      // Résidus retirés (introuvables sur disque, FILE-DECLARED-INEXISTANT) :
+      // js/b-group-cart-flow.js, js/group/group-render-list.js (remplacé
+      // par group-side-cart.js), css/group-cart-flow.css,
+      // css/shared-followup.css.
       'js/b-share-cart.js',
       'js/b-group-banner.js',
       'js/b-share-phone-guard.js',
       'js/group/group-api.js',
       'js/group/group-helpers.js',
       'js/group/group-checkout-adapter.js',
-      'js/group/group-render-list.js',
+      'js/group/group-side-cart.js',
       'js/group/group-state.js',
-      'css/group-cart-flow.css',
       'css/share-cart.css',
       'css/hero-cart-proxy.css',
-      'css/shared-followup.css',
+      'css/shared-list-side-cart.css',
     ],
     dash: [
       // Non retouché dans ce lot — référence encore l'ancien domaine.
