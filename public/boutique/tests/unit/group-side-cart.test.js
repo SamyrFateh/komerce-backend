@@ -288,9 +288,14 @@ describe('indicateur mobile "Liste · N" (mandat §7)', () => {
 });
 
 describe('checkout (mandat §8)', () => {
+  afterEach(() => {
+    state.products = [];
+  });
+
   it('Acheter la sélection -> construit les lignes avec shared_cart_item_id et délègue au checkout canonique', () => {
+    state.products = [{ id: 'p-1', name: 'Riz 25 kg', image_url: '/img/riz.jpg', price_kmf: 6500 }];
     activateSharedListContext(
-      publicPayload({ items: [availableItem({ id: 'i1', unit_price_kmf: 6500 })] }),
+      publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-1', unit_price_kmf: 6500 })] }),
       'tok-1',
     );
     toggleSharedListItem('i1');
@@ -301,6 +306,79 @@ describe('checkout (mandat §8)', () => {
     expect(mockCheckoutSharedListSelection).toHaveBeenCalledWith([
       expect.objectContaining({ shared_cart_item_id: 'i1', quantity: 1 }),
     ]);
+  });
+
+  it("régression V2-E — product.id est celui du catalogue (product_id), jamais l'id de ligne de liste", () => {
+    state.products = [{ id: 'p-1', name: 'Riz 25 kg', image_url: '/img/riz.jpg', price_kmf: 6500 }];
+    activateSharedListContext(
+      publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-1', unit_price_kmf: 6500 })] }),
+      'tok-1',
+    );
+    toggleSharedListItem('i1');
+    mockCheckoutSharedListSelection.mockReturnValue(true);
+
+    document.getElementById('k-shared-list-buy').click();
+
+    const [[calledWith]] = mockCheckoutSharedListSelection.mock.calls;
+    expect(calledWith[0].shared_cart_item_id).toBe('i1');
+    expect(calledWith[0].product.id).toBe('p-1');
+    expect(calledWith[0].product.id).not.toBe('i1');
+  });
+
+  it('le produit envoyé au checkout porte le prix catalogue courant, pas le prix snapshot de la liste (montant affiché = montant facturé)', () => {
+    // Le catalogue a évolué depuis le partage de la liste : le snapshot de
+    // la ligne (6500) est resté figé, le prix courant du produit est 7200.
+    state.products = [{ id: 'p-1', name: 'Riz 25 kg', image_url: '/img/riz.jpg', price_kmf: 7200 }];
+    activateSharedListContext(
+      publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-1', unit_price_kmf: 6500 })] }),
+      'tok-1',
+    );
+    toggleSharedListItem('i1');
+    mockCheckoutSharedListSelection.mockReturnValue(true);
+
+    document.getElementById('k-shared-list-buy').click();
+
+    const [[calledWith]] = mockCheckoutSharedListSelection.mock.calls;
+    expect(calledWith[0].product.price_kmf).toBe(7200);
+  });
+
+  it("produit devenu indisponible (absent de state.products) -> retiré de la sélection, toast, exclu du checkout", () => {
+    state.products = []; // supprimé/désactivé depuis le partage de la liste
+    activateSharedListContext(
+      publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-gone', unit_price_kmf: 6500 })] }),
+      'tok-1',
+    );
+    toggleSharedListItem('i1');
+
+    document.getElementById('k-shared-list-buy').click();
+
+    expect(mockCheckoutSharedListSelection).not.toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('disponible'), 'info');
+    expect(state.sharedListSelection.has('i1')).toBe(false);
+  });
+
+  it('sélection mixte (un produit disponible, un devenu indisponible) -> checkout démarré seulement pour le disponible', () => {
+    state.products = [{ id: 'p-1', name: 'Riz 25 kg', image_url: '/img/riz.jpg', price_kmf: 6500 }];
+    activateSharedListContext(
+      publicPayload({
+        items: [
+          availableItem({ id: 'i1', product_id: 'p-1', unit_price_kmf: 6500 }),
+          availableItem({ id: 'i2', product_id: 'p-gone', unit_price_kmf: 4200 }),
+        ],
+      }),
+      'tok-1',
+    );
+    toggleSharedListItem('i1');
+    toggleSharedListItem('i2');
+    mockCheckoutSharedListSelection.mockReturnValue(true);
+
+    document.getElementById('k-shared-list-buy').click();
+
+    expect(mockCheckoutSharedListSelection).toHaveBeenCalledTimes(1);
+    const [[calledWith]] = mockCheckoutSharedListSelection.mock.calls;
+    expect(calledWith).toHaveLength(1);
+    expect(calledWith[0].shared_cart_item_id).toBe('i1');
+    expect(state.sharedListSelection.has('i2')).toBe(false);
   });
 });
 

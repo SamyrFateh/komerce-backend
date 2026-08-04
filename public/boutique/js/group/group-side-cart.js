@@ -993,11 +993,48 @@ function handleBuySelection() {
   const items = selectedItems();
   if (!items.length) return;
 
-  const cartItems = items.map((it) => ({
-    shared_cart_item_id: it.id,
-    product: { id: it.id, name: it.name, image_url: it.image, price_kmf: it.unit_price_kmf },
-    quantity: it.quantity || 1,
-  }));
+  // Correctif V2-E — le panier canonique éphémère doit référencer le vrai
+  // produit catalogue (it.product_id) et son prix courant (state.products),
+  // jamais it.id (shared_cart_items.id, une ligne de liste) ni
+  // unit_price_kmf (prix snapshot figé). routes/orders/create.js résout
+  // product_id contre la table products et facture toujours le prix
+  // courant du produit ; construire l'objet product à partir de la ligne
+  // de liste faisait échouer 100 % des achats (product_id introuvable,
+  // 404) et, même corrigé côté id seul, aurait affiché au checkout un
+  // montant (snapshot) différent du montant réellement facturé (prix
+  // courant). state.products (catalogue actif chargé côté boutique) est
+  // la même source que handleOpenItemProduct() utilise déjà pour détecter
+  // un produit supprimé/désactivé depuis le partage — même garde ici.
+  const cartItems = [];
+  let unavailableCount = 0;
+  items.forEach((it) => {
+    const product = (state.products || []).find((p) => String(p.id) === String(it.product_id));
+    if (!product) {
+      unavailableCount += 1;
+      state.sharedListSelection.delete(String(it.id));
+      return;
+    }
+    cartItems.push({
+      shared_cart_item_id: it.id,
+      product,
+      quantity: it.quantity || 1,
+    });
+  });
+
+  if (unavailableCount > 0) {
+    renderSharedListInCart();
+    showToast(
+      unavailableCount === 1
+        ? 'Un article de votre sélection n’est plus disponible et a été retiré.'
+        : `${unavailableCount} articles de votre sélection ne sont plus disponibles et ont été retirés.`,
+      'info'
+    );
+  }
+
+  if (!cartItems.length) {
+    showToast("Sélection invalide, réessayez.", 'error');
+    return;
+  }
 
   const started = checkoutSharedListSelection(cartItems);
   if (!started) {
@@ -1023,8 +1060,14 @@ function handleBuySelection() {
  * À appeler par le gestionnaire d'erreur checkout si le backend répond
  * "item_already_claimed" (rareté arbitrée en base, mandat §8). Affiche un
  * message non blâmant puis rafraîchit la liste.
+ *
+ * Correctif V2-E — retrait de `export` : plus jamais appelée que par le
+ * listener bus.on('checkout:order-failed', ...) juste en dessous, dans ce
+ * même module (le seul appelant, avant ce correctif, était bel et bien ce
+ * listener déjà présent ici — l'export n'a jamais eu d'autre consommateur,
+ * ni ailleurs dans le front ni dans les tests).
  */
-export async function handleSharedListPurchaseConflict() {
+async function handleSharedListPurchaseConflict() {
   showToast('Cet article vient d’être acheté, en voici d’autres encore disponibles.', 'info');
   await refreshSharedListContext();
 }
