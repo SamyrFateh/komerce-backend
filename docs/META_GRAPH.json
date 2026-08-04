@@ -1,23 +1,23 @@
 {
-  "generatedAt": "2026-08-04T21:22:47.229Z",
+  "generatedAt": "2026-08-04T22:56:08.035Z",
   "sources": {
     "backend": {
-      "nodes": 761
+      "nodes": 765
     },
     "boutique": {
       "modules": 75,
-      "endpoints": 45
+      "endpoints": 47
     },
     "dashboards": {
-      "modules": 41,
-      "callEdges": 112
+      "modules": 40,
+      "callEdges": 111
     },
     "contract": {
-      "endpoints": 439
+      "endpoints": 427
     }
   },
   "summary": {
-    "endpointsConsumed": 86,
+    "endpointsConsumed": 87,
     "sharedEndpoints": 2,
     "phantomSeams": 0,
     "sharedTables": 14
@@ -322,6 +322,36 @@
         "wallet_consumptions",
         "wallet_transactions"
       ]
+    },
+    "/api/shared-carts/library": {
+      "boutique": [
+        "group-api"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/shared-cart.js",
+      "services": [
+        "services/shared-cart-engine.js",
+        "services/shared-cart-items-service.js",
+        "services/shared-cart-queries.js"
+      ],
+      "tables": []
+    },
+    "/api/shared-carts/save": {
+      "boutique": [
+        "group-api"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/shared-cart.js",
+      "services": [
+        "services/shared-cart-engine.js",
+        "services/shared-cart-items-service.js",
+        "services/shared-cart-queries.js"
+      ],
+      "tables": []
     },
     "/api/health": {
       "boutique": [
@@ -975,27 +1005,6 @@
       ],
       "tables": []
     },
-    "/api/admin/dashboard/event-workspaces": {
-      "boutique": [],
-      "dashboards": [
-        "EventWorkspacesView"
-      ],
-      "inContract": true,
-      "status": "UNKNOWN",
-      "routeFile": "routes/admin-dashboard.js",
-      "services": [
-        "services/*"
-      ],
-      "tables": [
-        "customs_shipments",
-        "order_item_cost_imputations",
-        "order_item_real_cost_allocations",
-        "orders",
-        "parcels",
-        "relais",
-        "signals"
-      ]
-    },
     "/api/dashboard/pipeline": {
       "boutique": [],
       "dashboards": [
@@ -1625,7 +1634,6 @@
       "dashboards": [
         "ControlTowerView",
         "CostingView",
-        "EventWorkspacesView",
         "HubRelaisView",
         "OrdersLogisticsView",
         "PilotageView",
@@ -1667,7 +1675,6 @@
         "ControlTowerView",
         "CostingView",
         "CustomsView",
-        "EventWorkspacesView",
         "HubRelaisView",
         "InvoicesView",
         "OrdersLogisticsView",
@@ -1912,7 +1919,6 @@
         "ControlTowerView",
         "CostingView",
         "CustomsView",
-        "EventWorkspacesView",
         "HubRelaisView",
         "OrdersLogisticsView",
         "PilotageView",
@@ -2076,7 +2082,6 @@
         "ActionCenterView",
         "ControlTowerView",
         "CostingView",
-        "EventWorkspacesView",
         "OrdersLogisticsView",
         "PilotageView"
       ]
@@ -2093,7 +2098,6 @@
         "ControlTowerView",
         "CostingView",
         "CustomsView",
-        "EventWorkspacesView",
         "OrdersLogisticsView",
         "PilotageView",
         "SanteView",
@@ -2109,7 +2113,6 @@
       "dashboards": [
         "ControlTowerView",
         "CostingView",
-        "EventWorkspacesView",
         "OrdersLogisticsView",
         "PilotageView"
       ]
@@ -2125,7 +2128,6 @@
         "ControlTowerView",
         "CostingView",
         "CustomsView",
-        "EventWorkspacesView",
         "OrdersLogisticsView",
         "PilotageView",
         "SanteView"

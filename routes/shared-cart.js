@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        public_token, auth_user, creator_actions
  * @outputs       shared_cart_api, admin_views
- * @depends       services/shared-cart-engine.js, services/shared-cart-items-service.js, services/shared-cart-queries.js, middleware/soft-auth.js
+ * @depends       services/shared-cart-engine.js, services/shared-cart-items-service.js, services/shared-cart-queries.js, middleware/soft-auth.js, middleware/auth.js
  * @used-by       server.js, public/boutique/js/b-group-view.js, public/boutique/js/b-share-cart.js, public/boutique/js/b-cart.js
  * @db-read       none
  * @db-write      none
@@ -38,6 +38,11 @@
  *   POST   /api/shared-carts/from-cart-items
  *   POST   /api/shared-carts/from-basket
  *   GET    /api/shared-carts/mine
+ *   GET    /api/shared-carts/library  (bibliothèque « Mes listes » — amendement
+ *          V2 §D, créées par moi + reçues et sauvegardées. Enregistrée AVANT
+ *          GET /:id pour ne pas être capturée par le wildcard.)
+ *   POST   /api/shared-carts/save     (sauvegarde explicite d'une liste reçue
+ *          par token — amendement V2 §D, jamais implicite)
  *   GET    /api/shared-carts/:id
  *   GET    /api/shared-carts/:id/as-cart-items
  *   PUT    /api/shared-carts/:id/items    (statut OPEN uniquement)
@@ -187,6 +192,37 @@ router.get('/mine', authenticate, async (req, res, next) => {
       })),
     });
   } catch (err) { next(err); }
+});
+
+// Bibliothèque « Mes listes » (amendement V2 §D) — enregistrée AVANT
+// GET /:id pour ne pas être capturée par le wildcard.
+router.get('/library', authenticate, async (req, res, next) => {
+  try {
+    const library = await engine.getSharedCartLibrary(req.user.id);
+    res.json({
+      created: library.created.map(c => ({
+        ...c,
+        share_url: `${PUBLIC_BASE_URL}/boutique/?p=${c.token}`,
+      })),
+      saved: library.saved.map(c => ({
+        ...c,
+        share_url: `${PUBLIC_BASE_URL}/boutique/?p=${c.token}`,
+      })),
+    });
+  } catch (err) { next(err); }
+});
+
+// Sauvegarde explicite d'une liste reçue par lien (amendement V2 §D) —
+// jamais posée automatiquement à la simple ouverture d'un lien.
+router.post('/save', authenticate, async (req, res, next) => {
+  try {
+    const { token } = req.body || {};
+    const result = await engine.saveSharedCartForUser(req.user.id, token);
+    res.json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
 });
 
 router.get('/:id', authenticate, async (req, res, next) => {

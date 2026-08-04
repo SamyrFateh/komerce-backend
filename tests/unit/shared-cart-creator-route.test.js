@@ -38,6 +38,8 @@ jest.mock('../../services/shared-cart-engine', () => ({
   getSharedCartForOwner: jest.fn(),
   closeCart: jest.fn(),
   cancelSharedCart: jest.fn(),
+  getSharedCartLibrary: jest.fn(),
+  saveSharedCartForUser: jest.fn(),
 }));
 
 jest.mock('../../middleware/auth', () => ({
@@ -179,6 +181,80 @@ describe('GET /mine', () => {
     const res = await request(app).get('/api/shared-carts/mine');
     expect(res.status).toBe(200);
     expect(res.body.carts[0].share_url).toContain('tok-1');
+  });
+});
+
+// ── GET /library (bibliothèque « Mes listes » — amendement V2 §D) ──────
+
+describe('GET /library', () => {
+  it('succès → 200, created + saved avec share_url calculé', async () => {
+    engine.getSharedCartLibrary.mockResolvedValue({
+      created: [{ id: 'sc-1', token: 'tok-1' }],
+      saved: [{ id: 'sc-2', token: 'tok-2' }],
+    });
+    const res = await request(app).get('/api/shared-carts/library');
+    expect(res.status).toBe(200);
+    expect(engine.getSharedCartLibrary).toHaveBeenCalledWith('user-1');
+    expect(res.body.created[0].share_url).toContain('tok-1');
+    expect(res.body.saved[0].share_url).toContain('tok-2');
+  });
+
+  it('erreur inconnue → next(err) → 500', async () => {
+    engine.getSharedCartLibrary.mockRejectedValue(new Error('boom'));
+    const res = await request(app).get('/api/shared-carts/library');
+    expect(res.status).toBe(500);
+  });
+
+  it("n'est pas capturée par le wildcard GET /:id (enregistrement avant)", async () => {
+    engine.getSharedCartLibrary.mockResolvedValue({ created: [], saved: [] });
+    const res = await request(app).get('/api/shared-carts/library');
+    expect(res.status).toBe(200);
+    expect(engine.getSharedCartForOwner).not.toHaveBeenCalled();
+  });
+});
+
+// ── POST /save (sauvegarde explicite d'une liste reçue — V2 §D) ────────
+
+describe('POST /save', () => {
+  it('succès → 200, transmet token au service', async () => {
+    engine.saveSharedCartForUser.mockResolvedValue({ ok: true, shared_cart_id: 'sc-2', already_saved: false });
+    const res = await request(app).post('/api/shared-carts/save').send({ token: 'tok-2' });
+    expect(res.status).toBe(200);
+    expect(engine.saveSharedCartForUser).toHaveBeenCalledWith('user-1', 'tok-2');
+    expect(res.body.already_saved).toBe(false);
+  });
+
+  it('token requis → 400, code propagé', async () => {
+    const err = new Error('token requis');
+    err.status = 400; err.code = 'token_required';
+    engine.saveSharedCartForUser.mockRejectedValue(err);
+    const res = await request(app).post('/api/shared-carts/save').send({});
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('token_required');
+  });
+
+  it('token inconnu → 404, code propagé', async () => {
+    const err = new Error('Ce lien de liste partagée est invalide ou expiré.');
+    err.status = 404; err.code = 'shared_cart_not_found';
+    engine.saveSharedCartForUser.mockRejectedValue(err);
+    const res = await request(app).post('/api/shared-carts/save').send({ token: 'tok-x' });
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('shared_cart_not_found');
+  });
+
+  it('créateur tente de sauvegarder sa propre liste → 400, code cannot_save_own_list', async () => {
+    const err = new Error('Vous êtes le créateur de cette liste');
+    err.status = 400; err.code = 'cannot_save_own_list';
+    engine.saveSharedCartForUser.mockRejectedValue(err);
+    const res = await request(app).post('/api/shared-carts/save').send({ token: 'tok-1' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('cannot_save_own_list');
+  });
+
+  it('erreur inconnue (pas de .status) → next(err) → 500', async () => {
+    engine.saveSharedCartForUser.mockRejectedValue(new Error('boom'));
+    const res = await request(app).post('/api/shared-carts/save').send({ token: 'tok-2' });
+    expect(res.status).toBe(500);
   });
 });
 

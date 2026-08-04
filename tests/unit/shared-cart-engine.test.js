@@ -27,11 +27,16 @@ const mockLifecycle = {
   closeCart: jest.fn(),
   cancelSharedCart: jest.fn(),
 };
+const mockLibrary = {
+  getSharedCartLibrary: jest.fn(),
+  saveSharedCartForUser: jest.fn(),
+};
 
 jest.mock('../../services/shared-cart-internals', () => mockInternals);
 jest.mock('../../services/shared-cart-creation', () => mockCreation);
 jest.mock('../../services/shared-cart-reads', () => mockReads);
 jest.mock('../../services/shared-cart-lifecycle', () => mockLifecycle);
+jest.mock('../../services/shared-cart-library', () => mockLibrary);
 
 const engine = require('../../services/shared-cart-engine');
 
@@ -70,9 +75,15 @@ describe('shared-cart-engine (facade)', () => {
     const expectedKeys = [
       'createSharedCartFromBasket', 'createSharedCartFromCartItems', 'clearCreatorBasketInTx',
       'getSharedCartForPublic', 'getSharedCartForOwner', 'listMySharedCarts',
+      'getSharedCartLibrary', 'saveSharedCartForUser',
       'closeCart', 'cancelSharedCart',
       'generateToken', 'CONFIG',
     ];
     expect(Object.keys(engine).sort()).toEqual(expectedKeys.sort());
+  });
+
+  it('Amendement V2 §D — délègue getSharedCartLibrary/saveSharedCartForUser vers shared-cart-library', () => {
+    expect(engine.getSharedCartLibrary).toBe(mockLibrary.getSharedCartLibrary);
+    expect(engine.saveSharedCartForUser).toBe(mockLibrary.saveSharedCartForUser);
   });
 });

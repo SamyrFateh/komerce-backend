@@ -40,7 +40,10 @@
 
 #k-side-cart[data-mode="shared-list"] > .k-sc-title-bar,
 #k-side-cart[data-mode="shared-list"] > #k-sc-items,
-#k-side-cart[data-mode="shared-list"] > .k-sc-header {
+#k-side-cart[data-mode="shared-list"] > .k-sc-header,
+#k-side-cart[data-mode="library"] > .k-sc-title-bar,
+#k-side-cart[data-mode="library"] > #k-sc-items,
+#k-side-cart[data-mode="library"] > .k-sc-header {
   display: none;
 }
 
@@ -53,7 +56,8 @@
   min-height: 0;
 }
 
-#k-side-cart[data-mode="shared-list"] {
+#k-side-cart[data-mode="shared-list"],
+#k-side-cart[data-mode="library"] {
   display: flex;
 }
 
@@ -440,4 +444,101 @@
   background: var(--ocean);
   border-color: var(--ocean);
   color: var(--white);
+}
+
+/* ── Drawer mobile : masquer le footer panier personnel en mode bibliothèque ─ */
+
+.k-cart-drawer[data-mode="library"] #k-cart-body {
+  padding: 0;
+}
+
+/* ── Bouton « Sauvegarder cette liste » — destinataire (amendement V2 §D) ─
+ * Réutilise .k-cart-continue-shop (même style que les actions propriétaire)
+ * dans un conteneur dédié, propriétaire = jamais affiché (voir
+ * group-side-cart.js::saveActionHtml).
+ */
+
+.k-shared-list-save-action {
+  flex-shrink: 0;
+  padding: 8px 14px 0;
+}
+
+.k-shared-list-save-action .k-cart-continue-shop {
+  width: 100%;
+  font-size: 12.5px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.k-shared-list-save-action .k-cart-continue-shop:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+/* ── Bibliothèque « Mes listes » (amendement V2 §D) ────────────────────
+ * data-mode="library" réutilise le même conteneur .k-shared-list-panel
+ * que le mode shared-list (un seul composant) — voir
+ * group-side-cart.js::renderLibraryInCart. Deux sections toujours
+ * affichées ensemble : « Créées par moi » / « Partagées avec moi ».
+ */
+
+.k-library-section {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.k-library-section:last-child {
+  border-bottom: none;
+}
+
+.k-library-section-title {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+}
+
+.k-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.k-library-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sand-97);
+  text-align: left;
+  cursor: pointer;
+}
+
+.k-library-item:hover {
+  border-color: var(--ocean);
+}
+
+.k-library-item-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.k-library-item-meta {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.k-library-empty {
+  margin: 0;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--text-muted);
 }

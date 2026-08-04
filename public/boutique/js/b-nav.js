@@ -34,7 +34,7 @@ import { openMonKomerce }                  from './b-komerce.js';
 import {
   detectParticipantToken,
   activateFromParticipantUrl,
-  activateOwnerMostRecentList,
+  activateOwnerLibrary,
 } from './group/group-side-cart.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
@@ -232,16 +232,17 @@ bus.on('nav:goto-track', () => { renderTrackView(); switchView('track'); });
 bus.on('nav:goto-komerce-wallet', () => { openMonKomerce({ focus: 'wallet' }); });
 bus.on('komerce:show', () => { switchView('komerce'); });
 
-// PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — l'onglet Groupe
-// de niveau 1 a disparu ; « Mes listes » (b-komerce.js) est le point
-// d'entrée propriétaire et active la liste la plus récente directement
-// dans le side cart / drawer canonique (isCreator = true). Aucun
-// switchView('group') (mandat §2/§4/§16).
+// PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2_D — l'onglet
+// Groupe de niveau 1 a disparu ; « Mes listes » (b-komerce.js) est le
+// point d'entrée propriétaire et ouvre désormais la vraie bibliothèque
+// (Créées par moi / Partagées avec moi, amendement V2 §D) directement
+// dans le side cart / drawer canonique, plus l'ancienne heuristique
+// « liste la plus récente ». Aucun switchView('group') (mandat §2/§4/§16).
 bus.on('nav:goto-group', () => {
   document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
     i.classList.toggle('active', i.dataset.tab === 'komerce');
   });
-  activateOwnerMostRecentList();
+  activateOwnerLibrary();
 });
 
 /**
@@ -321,10 +322,10 @@ function handleTabDeepLink() {
 
     if (resolvedTab === 'fav')     { renderFavView(); switchView('fav'); }
     if (resolvedTab === 'track')   { renderTrackView(); switchView('track'); }
-    // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — ?tab=group
-    // legacy : redirige vers l'activation propriétaire canonique, jamais
+    // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2_D — ?tab=group
+    // legacy : redirige vers la bibliothèque propriétaire canonique, jamais
     // switchView('group') (mandat §2/§4/§16).
-    if (resolvedTab === 'group')   { activateOwnerMostRecentList(); }
+    if (resolvedTab === 'group')   { activateOwnerLibrary(); }
     if (resolvedTab === 'komerce') { openMonKomerce(tab === 'wallet' ? { focus: 'wallet' } : {}); }
   } catch (_) {}
 }

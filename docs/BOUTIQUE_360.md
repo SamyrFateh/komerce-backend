@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-04T21:22:46.863Z.
+> Régénéré le 2026-08-04T22:56:07.719Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
 - Modules JS : **75** (75 headés) · Événements bus : **25** · Bundles CSS : **3**
-- Endpoints appelés : **45** — 🔴 0 hors contrat · ⚪ 31 non prouvés · 🔵 16 dynamiques
+- Endpoints appelés : **47** — 🔴 0 hors contrat · ⚪ 33 non prouvés · 🔵 16 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -51,8 +51,10 @@
 | `/api/relais/public` | b-nav | ⚪ non prouvé |
 | `/api/scans` | komerce-api | ⚪ non prouvé |
 | `/api/shared-carts/from-cart-items` | b-share-cart | ⚪ non prouvé |
+| `/api/shared-carts/library` | group-api | ⚪ non prouvé |
 | `/api/shared-carts/mine` | b-share-cart, group-api | ⚪ non prouvé |
 | `/api/shared-carts/public/{id}` | b-group-banner, group-api | 🔵 dynamique |
+| `/api/shared-carts/save` | group-api | ⚪ non prouvé |
 | `/api/shared-carts/{id}/close` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/items` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/items/{id}` | group-api | 🔵 dynamique |

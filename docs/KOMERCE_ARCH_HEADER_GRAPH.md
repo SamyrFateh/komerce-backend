@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 361
-- Files with full headers: 334
+- Scanned code files: 362
+- Files with full headers: 335
 - Files with lite headers: 27
-- Files with any headers: 361
+- Files with any headers: 362
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 761
-- Edges: 4087
-- DB tables: 108
-- Doctrines: 163
-- Impact areas: 129
-- Unresolved code edges: 419
+- Graph nodes: 765
+- Edges: 4103
+- DB tables: 109
+- Doctrines: 164
+- Impact areas: 130
+- Unresolved code edges: 420
 - Tables multi-écrivains directs (>=2): 61
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - recommendations: 4
 - refunds: 2
 - shared: 1
-- shared-cart: 18
+- shared-cart: 19
 - shared-cart-modal: 7
 - sourcing: 1
 - tracking: 1
@@ -75,7 +75,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 95
 - route-manifest: 1
 - schema: 1
-- service: 139
+- service: 140
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
@@ -299,6 +299,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/purchasing-admin-service.js — dashboard-purchasing-admin-service (purchasing, high, full)
 - services/relay-dashboard-queries.js — dashboard-relay-dashboard-queries (dashboard, high, full)
 - services/shared-cart-items-service.js — shared-cart-items-update-service (shared-cart, high, full)
+- services/shared-cart-library.js — shared-cart-library-service (shared-cart, high, full)
 - services/shared-cart-queries.js — shared-cart-db-query-service (shared-cart, high, full)
 - services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
 - services/suppliers/json-source-pipeline.js — json-source-pipeline (catalog, high, full)

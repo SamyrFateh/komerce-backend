@@ -187,6 +187,14 @@ export const state = {
    */
   cartSurface: 'personal',
   /**
+   * Amendement V2 §D (bibliothèque « Mes listes ») — dernier résultat de
+   * GET /api/shared-carts/library, projeté dans le side cart / drawer
+   * canonique quand cartSurface === 'library'. Distinct de
+   * sharedListContext (qui décrit une liste ouverte précise) : la
+   * bibliothèque ne réfère à aucune liste unique.
+   */
+  libraryContext: { created: [], saved: [] },
+  /**
    * Amendement V2 §B (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_
    * CART_V2) — surface à restaurer dans le side cart / drawer canonique à
    * la fermeture de la modale produit, quand celle-ci a été ouverte depuis

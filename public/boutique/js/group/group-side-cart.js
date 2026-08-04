@@ -32,13 +32,13 @@ import { bus } from '../b-bus.js';
 import { isDesktop } from '../b-scroll-owner.js';
 import {
   getSharedCartPublic,
-  getOwnerSharedCarts,
+  getSharedCartLibrary,
+  saveSharedCart,
   removeItemFromSharedList,
   closeCart as apiCloseSharedCart,
   addItemToSharedList as apiAddItemToSharedList,
   updateSharedListItemQuantity as apiUpdateSharedListItemQuantity,
 } from './group-api.js';
-import { pickOwnerCart } from './group-state.js';
 import { checkoutSharedListSelection } from './group-checkout-adapter.js';
 
 /* ── Détection du token participant ───────────────────────────────
@@ -243,7 +243,10 @@ export function isSharedListActive() {
  * @returns {boolean}
  */
 export function isSharedListSurfaceActive() {
-  return state.cartSurface === 'shared-list' && isActiveContext();
+  // Amendement V2 §D — la bibliothèque « Mes listes » (state.cartSurface
+  // === 'library') est une surface canonique au même titre que le mode
+  // liste active : pas de contexte de liste requis pour la parcourir.
+  return (state.cartSurface === 'shared-list' && isActiveContext()) || state.cartSurface === 'library';
 }
 
 /**
@@ -255,7 +258,7 @@ export function isSharedListSurfaceActive() {
  * renderSharedListInCart().
  */
 export function exitSharedListRenderMode() {
-  if (isActiveContext()) return;
+  if (isActiveContext() || state.cartSurface === 'library') return;
   cleanupSharedListDom();
 }
 
@@ -315,6 +318,51 @@ function headerCopy() {
 
 function statusLabel(status) {
   return { open: 'Ouverte', closed: 'Fermée', cancelled: 'Annulée' }[status] || status;
+}
+
+/**
+ * Amendement V2 §D — suivi purement local (mémoire, non persisté) des
+ * tokens sauvegardés pendant la session en cours, pour ne pas réafficher
+ * "Sauvegarder cette liste" juste après un clic réussi. La source de
+ * vérité reste le backend (shared_cart_saved_access) ; ce Set n'est
+ * qu'un confort d'affichage immédiat, jamais consulté pour une décision
+ * métier.
+ */
+const savedListTokensThisSession = new Set();
+
+/**
+ * Bouton « Sauvegarder cette liste » — destinataire uniquement (le
+ * créateur voit déjà sa liste dans « Créées par moi »). Sauvegarde
+ * explicite (POST /api/shared-carts/save), jamais automatique à
+ * l'ouverture du lien (doctrine services/shared-cart-library.js).
+ */
+function saveActionHtml() {
+  const ctx = state.sharedListContext;
+  if (ctx.isCreator || !ctx.token) return '';
+  const saved = savedListTokensThisSession.has(ctx.token);
+  return (
+    `<div class="k-shared-list-save-action">` +
+      `<button type="button" id="k-shared-list-save" class="k-cart-continue-shop" ${saved ? 'disabled' : ''}>` +
+        `${saved ? '✓ Liste sauvegardée' : '☆ Sauvegarder cette liste'}` +
+      `</button>` +
+    `</div>`
+  );
+}
+
+async function handleSaveList() {
+  const token = state.sharedListContext.token;
+  if (!token) return;
+  try {
+    const result = await saveSharedCart(token);
+    savedListTokensThisSession.add(token);
+    showToast(
+      result.already_saved ? 'Cette liste est déjà dans vos listes.' : 'Liste ajoutée à vos listes.',
+      'success'
+    );
+    renderSharedListInCart();
+  } catch (_) {
+    showToast('Impossible de sauvegarder cette liste pour le moment.', 'error');
+  }
 }
 
 /**
@@ -431,6 +479,7 @@ function panelHtml() {
       `<span class="k-shared-list-status-badge k-shared-list-status-${sanitize(ctx.status)}">${statusLabel(ctx.status)}</span>` +
     `</div>` +
     (sub ? `<div class="k-shared-list-subtitle">${sanitize(sub)}</div>` : '') +
+    saveActionHtml() +
     progressHtml() +
     `<div class="k-shared-list-items">${ctx.items.map(itemRowHtml).join('')}</div>` +
     creatorActionsHtml() +
@@ -461,6 +510,123 @@ function wirePanel(root) {
   root.querySelector('#k-shared-list-share')?.addEventListener('click', handleShareClick);
   root.querySelector('#k-shared-list-close')?.addEventListener('click', handleCloseClick);
   root.querySelector('#k-shared-list-buy')?.addEventListener('click', handleBuySelection);
+  root.querySelector('#k-shared-list-save')?.addEventListener('click', handleSaveList);
+}
+
+/* ── Bibliothèque « Mes listes » (amendement V2 §D) ──────────────────────
+ * Remplace l'ancienne activateOwnerMostRecentList() (ouverture automatique
+ * de la liste créée la plus récente). Deux sections toujours affichées
+ * ensemble : « Créées par moi » (organisateur) et « Partagées avec moi »
+ * (listes reçues explicitement sauvegardées, jamais un signet implicite).
+ * Un clic sur une liste de l'une ou l'autre section ouvre la même vue
+ * shared-list canonique que activateFromParticipantUrl (le backend dérive
+ * is_creator via soft-auth, pas de mode différent ici).
+ */
+
+function libraryItemRowHtml(cart, opts) {
+  const { section } = opts || {};
+  const title = cart.title || 'Liste sans titre';
+  const total = fmt(Number(cart.total_kmf) || 0, 'KMF');
+  const meta = section === 'saved'
+    ? `${cart.organizer_full_name ? `De ${sanitize(cart.organizer_full_name)} · ` : ''}${total}`
+    : `${statusLabel(cart.status)} · ${total}`;
+  return (
+    `<button type="button" class="k-library-item" data-token="${sanitize(cart.token)}">` +
+      `<span class="k-library-item-title">${sanitize(title)}</span>` +
+      `<span class="k-library-item-meta">${meta}</span>` +
+    `</button>`
+  );
+}
+
+function librarySectionHtml(title, carts, section, emptyLabel) {
+  const body = carts.length
+    ? carts.map((c) => libraryItemRowHtml(c, { section })).join('')
+    : `<p class="k-library-empty">${sanitize(emptyLabel)}</p>`;
+  return (
+    `<div class="k-library-section">` +
+      `<h4 class="k-library-section-title">${sanitize(title)}</h4>` +
+      `<div class="k-library-list">${body}</div>` +
+    `</div>`
+  );
+}
+
+function libraryPanelHtml() {
+  const lib = state.libraryContext || { created: [], saved: [] };
+  return (
+    `<div class="k-shared-list-header">` +
+      `<span class="k-shared-list-title">Mes listes</span>` +
+    `</div>` +
+    librarySectionHtml('Créées par moi', lib.created, 'created', "Vous n'avez pas encore créé de liste.") +
+    librarySectionHtml('Partagées avec moi', lib.saved, 'saved', 'Aucune liste reçue sauvegardée pour le moment.')
+  );
+}
+
+function wireLibraryPanel(root) {
+  if (!root) return;
+  root.querySelectorAll('.k-library-item').forEach((btn) => {
+    btn.addEventListener('click', () => activateFromParticipantUrl(btn.dataset.token));
+  });
+}
+
+/**
+ * Rend la bibliothèque dans les deux surfaces canoniques, même conteneur
+ * (#k-shared-list-panel) que renderSharedListInCart — un seul composant,
+ * data-mode distingue le contenu projeté (mandat §13/un_seul_composant).
+ */
+export function renderLibraryInCart() {
+  if (state.cartSurface !== 'library') return;
+
+  document.body.classList.add('is-shared-list-context');
+
+  const sc = document.getElementById('k-side-cart');
+  if (sc) {
+    sc.setAttribute('data-mode', 'library');
+    sc.classList.add('has-items');
+    let panel = sc.querySelector('#k-shared-list-panel');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'k-shared-list-panel';
+      panel.className = 'k-shared-list-panel';
+      sc.prepend(panel);
+    }
+    panel.innerHTML = libraryPanelHtml();
+    wireLibraryPanel(panel);
+  }
+
+  if (dom.cartDrawer) dom.cartDrawer.setAttribute('data-mode', 'library');
+  if (dom.cartBody) {
+    dom.cartBody.innerHTML = libraryPanelHtml();
+    dom.cartFooter?.classList.add('u-hidden');
+    wireLibraryPanel(dom.cartBody);
+  }
+  if (dom.cartHeaderTitle) dom.cartHeaderTitle.textContent = 'Mes listes';
+}
+
+/**
+ * Point d'entrée propriétaire (Mon Komerce → Mes listes / nav:goto-group /
+ * deep-link ?tab=group) — amendement V2 §D. Remplace
+ * activateOwnerMostRecentList() : ouvre la bibliothèque plutôt que
+ * d'auto-sélectionner la liste la plus récente, pour exposer les deux
+ * sections « Créées par moi » et « Partagées avec moi ».
+ */
+export async function activateOwnerLibrary() {
+  let library;
+  try {
+    library = await getSharedCartLibrary();
+  } catch (_) {
+    showToast('Impossible de charger vos listes pour le moment.', 'error');
+    return false;
+  }
+  state.libraryContext = { created: library?.created || [], saved: library?.saved || [] };
+  state.cartSurface = 'library';
+  renderLibraryInCart();
+
+  if (isDesktop()) return true;
+  dom.cartOverlay?.classList.add('open');
+  dom.cartDrawer?.classList.add('open');
+  document.body.classList.add('cart-open');
+  document.body.classList.remove('cart-empty');
+  return true;
 }
 
 /**
@@ -471,6 +637,14 @@ function wirePanel(root) {
  * la branche par défaut hors contexte (mandat §1 "Hors contexte liste").
  */
 export function renderSharedListInCart() {
+  // Amendement V2 §D — b-cart.js n'appelle qu'un seul point d'entrée
+  // (renderSharedListInCart, via isSharedListSurfaceActive) pour toute
+  // surface canonique liste ; on dispatche ici vers la bibliothèque quand
+  // c'est elle qui est projetée, sans dupliquer la garde côté appelant.
+  if (state.cartSurface === 'library') {
+    renderLibraryInCart();
+    return;
+  }
   if (!isActiveContext() || state.cartSurface !== 'shared-list') return;
 
   document.body.classList.add('is-shared-list-context');
@@ -612,7 +786,7 @@ bus.on('checkout:order-failed', ({ code } = {}) => {
 export function setCartSurface(surface) {
   state.cartSurface = surface;
 
-  if (surface === 'shared-list') {
+  if (surface === 'shared-list' || surface === 'library') {
     renderSharedListInCart();
   } else {
     cleanupSharedListDom();
@@ -868,18 +1042,8 @@ export async function activateFromParticipantUrl(token) {
 }
 
 /* ── Entrée propriétaire (Mon Komerce → Mes listes) ──────────────────────
- * V1 : ouvre la liste la plus récente directement dans le side cart /
- * drawer canonique (isCreator = true), sans onglet ni page dédiée
- * (mandat §4/§9). Un sélecteur multi-listes reste un travail ultérieur si
- * plusieurs listes actives coexistent — voir rapport de clôture.
+ * V1 (retiré, amendement V2 §D) : activateOwnerMostRecentList() ouvrait
+ * automatiquement la liste créée la plus récente, sans notion de liste
+ * *reçue* et conservée. Remplacée par activateOwnerLibrary() ci-dessus
+ * (bibliothèque à deux sections). Voir rapport de clôture V2-D.
  */
-export async function activateOwnerMostRecentList() {
-  const data = await getOwnerSharedCarts();
-  const carts = data?.carts || [];
-  const cart = pickOwnerCart(carts);
-  if (!cart) {
-    showToast("Vous n'avez pas encore de liste partagée.", 'info');
-    return false;
-  }
-  return activateFromParticipantUrl(cart.token);
-}

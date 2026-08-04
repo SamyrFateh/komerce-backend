@@ -35,7 +35,7 @@
 | `products.css` | 888 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 71 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 424 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 545 | 🔴 **ORPHELIN** |
 | `tokens.css` | 516 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
@@ -45,7 +45,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=158
- 2. /boutique/css/dist/components.css?v=379
+ 2. /boutique/css/dist/components.css?v=381
  3. /boutique/css/dist/desktop.css?v=85
 ```
 

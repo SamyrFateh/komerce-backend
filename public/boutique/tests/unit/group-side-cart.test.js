@@ -20,12 +20,12 @@
 
 const mockShowToast = jest.fn();
 const mockGetSharedCartPublic = jest.fn();
-const mockGetOwnerSharedCarts = jest.fn();
+const mockGetSharedCartLibrary = jest.fn();
+const mockSaveSharedCart = jest.fn();
 const mockRemoveItemFromSharedList = jest.fn();
 const mockCloseCart = jest.fn();
 const mockAddItemToSharedList = jest.fn();
 const mockUpdateSharedListItemQuantity = jest.fn();
-const mockPickOwnerCart = jest.fn();
 const mockCheckoutSharedListSelection = jest.fn();
 const mockIsDesktop = jest.fn();
 
@@ -36,14 +36,12 @@ jest.mock('../../js/b-utils.js', () => {
 jest.mock('../../js/b-scroll-owner.js', () => ({ isDesktop: mockIsDesktop }));
 jest.mock('../../js/group/group-api.js', () => ({
   getSharedCartPublic: mockGetSharedCartPublic,
-  getOwnerSharedCarts: mockGetOwnerSharedCarts,
+  getSharedCartLibrary: mockGetSharedCartLibrary,
+  saveSharedCart: mockSaveSharedCart,
   removeItemFromSharedList: mockRemoveItemFromSharedList,
   closeCart: mockCloseCart,
   addItemToSharedList: mockAddItemToSharedList,
   updateSharedListItemQuantity: mockUpdateSharedListItemQuantity,
-}));
-jest.mock('../../js/group/group-state.js', () => ({
-  pickOwnerCart: mockPickOwnerCart,
 }));
 jest.mock('../../js/group/group-checkout-adapter.js', () => ({
   checkoutSharedListSelection: mockCheckoutSharedListSelection,
@@ -57,13 +55,14 @@ const {
   clearSharedListContext,
   toggleSharedListItem,
   renderSharedListInCart,
+  renderLibraryInCart,
   isSharedListActive,
   isSharedListSurfaceActive,
   setCartSurface,
   exitSharedListRenderMode,
   addItemToSharedList,
   activateFromParticipantUrl,
-  activateOwnerMostRecentList,
+  activateOwnerLibrary,
 } = require('../../js/group/group-side-cart.js');
 
 function mountShell() {
@@ -373,6 +372,76 @@ describe('actions propriétaire (mandat §9)', () => {
   });
 });
 
+describe('sauvegarde explicite destinataire (amendement V2 §D)', () => {
+  it("créateur -> bouton 'Sauvegarder cette liste' absent (déjà dans « Créées par moi »)", () => {
+    activateSharedListContext(publicPayload({ is_creator: true }), 'tok-1');
+    expect(document.getElementById('k-shared-list-save')).toBeNull();
+  });
+
+  it("destinataire -> bouton 'Sauvegarder cette liste' visible et actif", () => {
+    activateSharedListContext(publicPayload({ is_creator: false }), 'tok-save-a');
+    const btn = document.getElementById('k-shared-list-save');
+    expect(btn).not.toBeNull();
+    expect(btn.disabled).toBe(false);
+    expect(btn.textContent).toContain('Sauvegarder');
+  });
+
+  it('clic -> POST /save avec le token courant, jamais posé automatiquement à l\'activation', async () => {
+    const payloadB = publicPayload({ is_creator: false });
+    payloadB.cart.token = 'tok-save-b';
+    activateSharedListContext(payloadB, 'tok-save-b');
+    expect(mockSaveSharedCart).not.toHaveBeenCalled();
+    mockSaveSharedCart.mockResolvedValueOnce({ ok: true, shared_cart_id: 'sc-1', already_saved: false });
+
+    document.getElementById('k-shared-list-save').click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockSaveSharedCart).toHaveBeenCalledWith('tok-save-b');
+    expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('ajoutée'), 'success');
+  });
+
+  it('après sauvegarde réussie -> le bouton passe en état "sauvegardée" (désactivé)', async () => {
+    activateSharedListContext(publicPayload({ is_creator: false }), 'tok-save-c');
+    mockSaveSharedCart.mockResolvedValueOnce({ ok: true, shared_cart_id: 'sc-1', already_saved: false });
+
+    document.getElementById('k-shared-list-save').click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const btn = document.getElementById('k-shared-list-save');
+    expect(btn.disabled).toBe(true);
+    expect(btn.textContent).toContain('sauvegardée');
+  });
+
+  it('déjà sauvegardée côté backend -> toast informatif dédié, pas d\'erreur', async () => {
+    const payloadD = publicPayload({ is_creator: false });
+    payloadD.cart.token = 'tok-save-d';
+    activateSharedListContext(payloadD, 'tok-save-d');
+    mockSaveSharedCart.mockResolvedValueOnce({ ok: true, shared_cart_id: 'sc-1', already_saved: true });
+
+    document.getElementById('k-shared-list-save').click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('déjà'), 'success');
+  });
+
+  it('échec réseau -> toast erreur, bouton reste actif', async () => {
+    const payloadE = publicPayload({ is_creator: false });
+    payloadE.cart.token = 'tok-save-e';
+    activateSharedListContext(payloadE, 'tok-save-e');
+    mockSaveSharedCart.mockRejectedValueOnce(new Error('boom'));
+
+    document.getElementById('k-shared-list-save').click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('Impossible'), 'error');
+    expect(document.getElementById('k-shared-list-save').disabled).toBe(false);
+  });
+});
+
 describe('clearSharedListContext', () => {
   it('efface le contexte, la sélection, et les traces DOM du mode liste', () => {
     activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
@@ -387,7 +456,7 @@ describe('clearSharedListContext', () => {
   });
 });
 
-describe('activateFromParticipantUrl / activateOwnerMostRecentList', () => {
+describe('activateFromParticipantUrl / activateOwnerLibrary (amendement V2 §D)', () => {
   it('lien invalide -> toast erreur, aucune activation', async () => {
     mockGetSharedCartPublic.mockResolvedValueOnce(null);
     const ok = await activateFromParticipantUrl('bad-token');
@@ -396,22 +465,51 @@ describe('activateFromParticipantUrl / activateOwnerMostRecentList', () => {
     expect(state.sharedListContext.token).toBeNull();
   });
 
-  it("propriétaire sans liste -> toast informatif, aucune activation", async () => {
-    mockGetOwnerSharedCarts.mockResolvedValueOnce({ carts: [] });
-    mockPickOwnerCart.mockReturnValueOnce(null);
-    const ok = await activateOwnerMostRecentList();
+  it('bibliothèque en erreur réseau -> toast erreur, cartSurface inchangé', async () => {
+    mockGetSharedCartLibrary.mockRejectedValueOnce(new Error('boom'));
+    const ok = await activateOwnerLibrary();
     expect(ok).toBe(false);
-    expect(state.sharedListContext.token).toBeNull();
+    expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('Impossible'), 'error');
+    expect(state.cartSurface).toBe('personal');
   });
 
-  it('propriétaire avec liste active -> active la liste la plus récente, isCreator=true', async () => {
-    mockGetOwnerSharedCarts.mockResolvedValueOnce({ carts: [{ token: 'tok-owner' }] });
-    mockPickOwnerCart.mockReturnValueOnce({ token: 'tok-owner' });
-    mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload({ is_creator: true }));
+  it("bibliothèque vide (aucune liste créée ni sauvegardée) -> les deux sections restent vides, cartSurface = 'library'", async () => {
+    mockGetSharedCartLibrary.mockResolvedValueOnce({ created: [], saved: [] });
+    const ok = await activateOwnerLibrary();
+    expect(ok).toBe(true);
+    expect(state.cartSurface).toBe('library');
+    expect(state.libraryContext).toEqual({ created: [], saved: [] });
+  });
 
-    const ok = await activateOwnerMostRecentList();
+  it("bibliothèque avec listes -> rend les deux sections dans le panneau, data-mode='library'", async () => {
+    mockGetSharedCartLibrary.mockResolvedValueOnce({
+      created: [{ id: 'sc-1', token: 'tok-owner', title: 'Ma liste', status: 'open', total_kmf: 1000 }],
+      saved: [{ id: 'sc-2', token: 'tok-recu', title: 'Liste reçue', organizer_full_name: 'Samsam', total_kmf: 2000 }],
+    });
+
+    const ok = await activateOwnerLibrary();
 
     expect(ok).toBe(true);
+    expect(document.getElementById('k-side-cart').getAttribute('data-mode')).toBe('library');
+    const panel = document.getElementById('k-shared-list-panel');
+    expect(panel.textContent).toContain('Ma liste');
+    expect(panel.textContent).toContain('Liste reçue');
+    expect(panel.querySelectorAll('.k-library-item')).toHaveLength(2);
+  });
+
+  it("clic sur une liste de la bibliothèque -> ouvre la liste via activateFromParticipantUrl (même token)", async () => {
+    mockGetSharedCartLibrary.mockResolvedValueOnce({
+      created: [{ id: 'sc-1', token: 'tok-owner', title: 'Ma liste', status: 'open', total_kmf: 1000 }],
+      saved: [],
+    });
+    mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload({ is_creator: true }));
+
+    await activateOwnerLibrary();
+    document.querySelector('.k-library-item').click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockGetSharedCartPublic).toHaveBeenCalledWith('tok-owner');
     expect(state.sharedListContext.isCreator).toBe(true);
   });
 });

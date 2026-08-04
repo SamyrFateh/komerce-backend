@@ -77,6 +77,30 @@ export function getOwnerSharedCarts() {
 }
 
 /**
+ * Bibliothèque « Mes listes » (amendement V2 §D) — remplace l'heuristique
+ * V1 qui ouvrait automatiquement la liste créée la plus récente
+ * (activateOwnerMostRecentList). Deux sections toujours renvoyées
+ * ensemble : « Créées par moi » et « Partagées avec moi » (listes reçues
+ * qu'un destinataire a explicitement sauvegardées via saveSharedCart()).
+ * @returns {Promise<{created: Array, saved: Array}>}
+ */
+export function getSharedCartLibrary() {
+  return apiGet('/api/shared-carts/library', { timeoutMs: FETCH_TIMEOUT_MS });
+}
+
+/**
+ * Sauvegarde explicite d'une liste reçue par lien dans la bibliothèque du
+ * destinataire — jamais appelé automatiquement à la simple ouverture d'un
+ * lien (doctrine « sauvegarde explicite, jamais implicite », voir
+ * services/shared-cart-library.js). Idempotent côté serveur.
+ * @param {string} token
+ * @returns {Promise<{ok: boolean, shared_cart_id: string, already_saved: boolean}>}
+ */
+export function saveSharedCart(token) {
+  return apiPost('/api/shared-carts/save', { token });
+}
+
+/**
  * Retire un article de la liste — confirmation déjà obtenue côté client
  * avant cet appel (Invariant 21) ; exécution immédiate côté serveur.
  * Le serveur refuse (409 item_already_claimed) si l'article a déjà été

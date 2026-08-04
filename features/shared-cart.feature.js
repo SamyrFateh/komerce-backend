@@ -53,6 +53,7 @@ module.exports = {
       'services/shared-cart-creation.js',        // createFromBasket, createFromCartItems, clearCreatorBasket
       'services/shared-cart-reads.js',           // getForPublic, getForOwner, listMy (total + claimed dérivés)
       'services/shared-cart-lifecycle.js',       // closeCart, cancelSharedCart
+      'services/shared-cart-library.js',         // getSharedCartLibrary, saveSharedCartForUser (Amendement V2 §D)
       'services/shared-cart-queries.js',
       'services/shared-cart-items-service.js',
     ],
@@ -78,6 +79,7 @@ module.exports = {
       'migrations/099_drop_zombie_shared_cart_commitments.sql',
       'migrations/123_shared_cart_item_claim_bridge.sql',    // pont order_items <-> shared_cart_items
       'migrations/125_shared_cart_minimal_domain.sql',       // domaine minimal, colonnes financières retirées
+      'migrations/127_shared_cart_saved_access.sql',         // bibliothèque "Mes listes" (Amendement V2 §D)
     ],
     tests: [
       'tests/unit/baskets.test.js',
@@ -86,6 +88,7 @@ module.exports = {
       'tests/unit/shared-cart-engine.test.js',
       'tests/unit/shared-cart-internals.test.js',
       'tests/unit/shared-cart-items-service.test.js',
+      'tests/unit/shared-cart-library.test.js',
       'tests/unit/shared-cart-public-route.test.js',
       'tests/unit/shared-cart-reads.test.js',
       'tests/unit/shares-route.test.js',
@@ -155,6 +158,7 @@ module.exports = {
       'products: R',
       'shared_cart_events: RW',
       'shared_cart_items: RW',
+      'shared_cart_saved_access: RW',   // bibliothèque "Mes listes" (Amendement V2 §D)
       'shared_carts: RW',
       'users: R',
     ],
@@ -172,6 +176,8 @@ module.exports = {
       'POST   /api/shared-carts/from-cart-items',
       'POST   /api/shared-carts/from-basket',
       'GET    /api/shared-carts/mine',
+      'GET    /api/shared-carts/library',     // Amendement V2 §D
+      'POST   /api/shared-carts/save',        // Amendement V2 §D
       'GET    /api/shared-carts/:id',
       'GET    /api/shared-carts/:id/as-cart-items',
       'PUT    /api/shared-carts/:id/items',

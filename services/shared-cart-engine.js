@@ -39,6 +39,7 @@
  *   services/shared-cart-creation.js   createSharedCartFromBasket, createSharedCartFromCartItems, clearCreatorBasketInTx
  *   services/shared-cart-reads.js      getSharedCartForPublic, getSharedCartForOwner, listMySharedCarts
  *   services/shared-cart-lifecycle.js  closeCart, cancelSharedCart
+ *   services/shared-cart-library.js    getSharedCartLibrary, saveSharedCartForUser (Amendement V2 §D)
  */
 
 'use strict';
@@ -47,6 +48,7 @@ const { CONFIG, generateToken } = require('./shared-cart-internals');
 const { createSharedCartFromBasket, createSharedCartFromCartItems, clearCreatorBasketInTx } = require('./shared-cart-creation');
 const { getSharedCartForPublic, getSharedCartForOwner, listMySharedCarts } = require('./shared-cart-reads');
 const { closeCart, cancelSharedCart } = require('./shared-cart-lifecycle');
+const { getSharedCartLibrary, saveSharedCartForUser } = require('./shared-cart-library');
 
 module.exports = {
   // Création
@@ -57,6 +59,9 @@ module.exports = {
   getSharedCartForPublic,
   getSharedCartForOwner,
   listMySharedCarts,
+  // Bibliothèque « Mes listes » (Amendement V2 §D)
+  getSharedCartLibrary,
+  saveSharedCartForUser,
   // Cycle de vie
   closeCart,
   cancelSharedCart,

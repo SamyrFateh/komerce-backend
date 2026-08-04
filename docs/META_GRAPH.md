@@ -1,19 +1,19 @@
 # Méta-graphe des coutures — les 3 territoires
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-04T21:22:47.229Z.
+> Régénéré le 2026-08-04T22:56:08.035Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
 ## Sources cousues
 
-- Backend : **761** nœuds · Contrat : **439** endpoints
-- Boutique : **75** modules, 45 endpoints
-- Dashboards : **41** modules, 112 arêtes d'appel
+- Backend : **765** nœuds · Contrat : **427** endpoints
+- Boutique : **75** modules, 47 endpoints
+- Dashboards : **40** modules, 111 arêtes d'appel
 
 ## Synthèse des coutures
 
-- Endpoints consommés par au moins un front : **86**
+- Endpoints consommés par au moins un front : **87**
 - 🔗 Endpoints **partagés** (boutique + dashboards) : **2** — rayon de casse amplifié
 - 🔴 Coutures **fantômes** (front → hors contrat) : **0**
 - ⚠️ Tables touchées par **les deux** fronts : **14**
@@ -33,14 +33,14 @@
 | `invoices` | 2 | 1 | 1 |
 | `order_items` | 6 | 3 | 4 |
 | `order_status_history` | 1 | 3 | 2 |
-| `orders` | 19 | 5 | 13 |
+| `orders` | 19 | 5 | 12 |
 | `parcel_items` | 4 | 1 | 3 |
-| `parcels` | 10 | 2 | 10 |
+| `parcels` | 10 | 2 | 9 |
 | `product_skus` | 3 | 3 | 5 |
 | `product_variants` | 4 | 3 | 6 |
 | `products` | 11 | 5 | 9 |
 | `recipients` | 1 | 3 | 2 |
-| `relais` | 9 | 4 | 8 |
+| `relais` | 9 | 4 | 7 |
 | `scan_events` | 3 | 1 | 3 |
 | `users` | 10 | 7 | 6 |
 

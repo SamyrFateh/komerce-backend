@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-07-28T11:04:02.796Z",
+  "generatedAt": "2026-08-04T22:51:24.323Z",
   "summary": {
-    "modules": 41,
-    "routes": 31,
-    "apiMethodsExported": 101,
-    "apiMethodsCalled": 99,
+    "modules": 40,
+    "routes": 30,
+    "apiMethodsExported": 100,
+    "apiMethodsCalled": 98,
     "orphanRoutes": 0,
     "deadApiMethods": 0,
     "missingApiMethods": 0,
     "doctrineViolations": 0,
-    "unprovenContracts": 60
+    "unprovenContracts": 59
   },
   "modules": [
     {
@@ -517,32 +517,6 @@
         "getEconomicExecutive",
         "getEconomicCharges",
         "getEconomicCoherence"
-      ],
-      "rawFetchCount": 0
-    },
-    {
-      "file": "views/EventWorkspacesView.js",
-      "id": "EventWorkspacesView",
-      "hasHeader": true,
-      "isLite": false,
-      "role": "admin-event-workspaces-view",
-      "domain": "admin-dashboard",
-      "layer": "ui-page",
-      "criticality": "medium",
-      "owner": null,
-      "doctrine": [
-        "kmc_api_only"
-      ],
-      "depends": [
-        "api-client.js",
-        "filters-store.js",
-        "utils.js"
-      ],
-      "usedBy": [
-        "none"
-      ],
-      "apiCalls": [
-        "getEventWorkspaces"
       ],
       "rawFetchCount": 0
     },
@@ -1164,12 +1138,6 @@
       "roles": null
     },
     {
-      "path": "/admin/event-workspaces",
-      "view": "EventWorkspacesView",
-      "shell": "ct",
-      "roles": null
-    },
-    {
       "path": "/admin/sales",
       "view": "SalesView",
       "shell": "ct",
@@ -1652,15 +1620,6 @@
       "method": "getEconomicCoherence",
       "defined": true,
       "route": "/api/admin/economic/coherence",
-      "httpMethod": "GET",
-      "dynamic": false,
-      "contractStatus": "UNKNOWN"
-    },
-    {
-      "view": "EventWorkspacesView",
-      "method": "getEventWorkspaces",
-      "defined": true,
-      "route": "/api/admin/dashboard/event-workspaces",
       "httpMethod": "GET",
       "dynamic": false,
       "contractStatus": "UNKNOWN"
@@ -2387,8 +2346,8 @@
     }
   ],
   "headerCoverage": {
-    "total": 41,
-    "full": 41,
+    "total": 40,
+    "full": 40,
     "lite": 0,
     "missing": 0
   },
@@ -2408,7 +2367,6 @@
       "GET /api/admin/customs-shipments/rates/effective",
       "GET /api/admin/dashboard/control-tower",
       "GET /api/admin/dashboard/costing",
-      "GET /api/admin/dashboard/event-workspaces",
       "GET /api/admin/dashboard/logistics",
       "GET /api/admin/dashboard/unified",
       "GET /api/admin/economic/charges",
@@ -2527,7 +2485,6 @@
       "views/CustomsView.js",
       "views/EconomicFlowView.js",
       "views/EconomicView.js",
-      "views/EventWorkspacesView.js",
       "views/HubRelaisView.js",
       "views/InventoryView.js",
       "views/InvoicesView.js",

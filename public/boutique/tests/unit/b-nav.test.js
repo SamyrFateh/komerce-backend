@@ -64,7 +64,7 @@ jest.mock('../../js/b-komerce.js', () => ({ openMonKomerce: jest.fn() }));
 jest.mock('../../js/group/group-side-cart.js', () => ({
   detectParticipantToken: jest.fn(),
   activateFromParticipantUrl: jest.fn(),
-  activateOwnerMostRecentList: jest.fn(),
+  activateOwnerLibrary: jest.fn(),
 }));
 jest.mock('../../js/b-pager.js', () => ({ destroyMobilePager: jest.fn() }));
 jest.mock('../../js/b-scroll-owner.js', () => ({ scrollPageToTop: jest.fn() }));
@@ -81,7 +81,7 @@ const { openMonKomerce } = require('../../js/b-komerce.js');
 const {
   detectParticipantToken,
   activateFromParticipantUrl,
-  activateOwnerMostRecentList,
+  activateOwnerLibrary,
 } = require('../../js/group/group-side-cart.js');
 const { destroyMobilePager } = require('../../js/b-pager.js');
 const { scrollPageToTop } = require('../../js/b-scroll-owner.js');
@@ -340,11 +340,11 @@ describe('setupBnav', () => {
     expect(renderTrackView).toHaveBeenCalled();
   });
 
-  test("bus 'nav:goto-group' (émis par Mon Komerce > Mes listes) -> activateOwnerMostRecentList(), aucun switchView('group')", () => {
+  test("bus 'nav:goto-group' (émis par Mon Komerce > Mes listes) -> activateOwnerLibrary(), aucun switchView('group')", () => {
     mountNavButtons();
     setupBnav();
     bus.emit('nav:goto-group');
-    expect(activateOwnerMostRecentList).toHaveBeenCalled();
+    expect(activateOwnerLibrary).toHaveBeenCalled();
     // Mandat §2/§4/§16 : plus d'onglet 'group' — le composant komerce
     // (Mon Komerce) reste la source d'activation, jamais un onglet dédié.
     expect(document.querySelector('[data-tab="komerce"]').classList.contains('active')).toBe(true);
@@ -402,11 +402,11 @@ describe('handleParticipantUrl -> deep-link ?tab= (PROMPT_FINAL_IMPLEMENTATION_L
     window.history.replaceState({}, '', window.location.pathname);
   });
 
-  test('?tab=group -> activateOwnerMostRecentList(), pas de switchView', () => {
+  test('?tab=group -> activateOwnerLibrary(), pas de switchView', () => {
     detectParticipantToken.mockReturnValue(null);
     setSearch('?tab=group');
     handleParticipantUrl();
-    expect(activateOwnerMostRecentList).toHaveBeenCalled();
+    expect(activateOwnerLibrary).toHaveBeenCalled();
   });
 
   test('?tab=wallet -> redirige vers komerce (openMonKomerce focus wallet)', () => {
@@ -420,7 +420,7 @@ describe('handleParticipantUrl -> deep-link ?tab= (PROMPT_FINAL_IMPLEMENTATION_L
     detectParticipantToken.mockReturnValue(null);
     setSearch('?tab=nope');
     handleParticipantUrl();
-    expect(activateOwnerMostRecentList).not.toHaveBeenCalled();
+    expect(activateOwnerLibrary).not.toHaveBeenCalled();
     expect(openMonKomerce).not.toHaveBeenCalled();
   });
 });
