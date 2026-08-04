@@ -16,6 +16,8 @@
  * Réutilise volontairement les tokens et classes existants plutôt que d'en
  * recréer :
  *   - lignes d'article : .k-cart-item-img / -img-el / -info / -name (cart.css)
+ *   - fallback image snapshot (V2-C) : .k-cart-item-img-fallback, propre à
+ *     ce module (aucun équivalent générique dans cart.css)
  *   - CTA principal     : .kcf-btn.kcf-full (cart.css)
  *   - actions propriétaire : .k-cart-continue-shop (cart.css)
  *   - palette : --coral (CTA), --ocean (accent vert liste), --violet,
@@ -193,6 +195,24 @@
   font-size: 11.5px;
   color: var(--text-muted);
   margin-top: 2px;
+}
+
+/* Amendement V2 §C — fallback image snapshot fiable.
+ * .k-cart-item-img (cart.css) reste le conteneur canonique ; l'élément de
+ * repli est toujours présent dans le DOM mais masqué par défaut, et révélé
+ * soit à la construction (image absente/URL invalide, classe posée côté
+ * JS), soit à chaud par l'attribut onerror natif de <img> (les événements
+ * `error` d'image ne remontent pas — pas de délégation possible). Jamais
+ * d'icône d'image cassée du navigateur.
+ */
+.k-cart-item-img-fallback {
+  display: none;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.k-cart-item-img.is-img-error .k-cart-item-img-fallback {
+  display: inline-flex;
 }
 
 /* Amendement V2 §B — pas de quantité +/- par ligne */

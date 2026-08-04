@@ -27,7 +27,7 @@
  */
 
 import { state, dom } from '../b-store.js';
-import { showToast, sanitize, fmt } from '../b-utils.js';
+import { showToast, sanitize, fmt, optimizeImgUrl } from '../b-utils.js';
 import { bus } from '../b-bus.js';
 import { isDesktop } from '../b-scroll-owner.js';
 import {
@@ -86,6 +86,61 @@ function isReadOnly() {
  * même ligne ne doit jamais partir en double appel réseau.
  */
 const pendingQuantityItemIds = new Set();
+
+/* ── Image de ligne — snapshot fiable (Amendement V2 §C) ─────────────
+ * Le snapshot `item.image` (product_image_snapshot) est figé au moment de
+ * l'ajout à la liste : il peut être absent (jamais renseigné), invalide
+ * (chaîne non exploitable) ou pointer vers une ressource qui a depuis
+ * disparu (erreur de chargement). Dans les trois cas, on affiche un
+ * fallback stable — jamais une icône d'image cassée du navigateur.
+ *
+ * Convention reprise de render-categories.js (k-chip-photo/is-img-error) :
+ * un élément de repli est toujours présent dans le DOM, masqué par CSS,
+ * et révélé soit à la construction (URL absente/invalide), soit à chaud
+ * via l'attribut onerror natif de <img> (les événements `error` d'image
+ * ne remontent pas — délégation impossible, d'où le handler inline).
+ */
+const SHARED_ITEM_IMG_WIDTH = 100; // aligné sur b-cart.js::optimizeImgUrl(p.image_url, 100) pour .k-cart-item-img
+const SHARED_ITEM_IMG_FALLBACK = '<span class="k-cart-item-img-fallback" aria-hidden="true">📦</span>';
+
+/**
+ * Vérifie qu'une chaîne est exploitable comme source d'image côté DOM :
+ * URL absolue http(s) ou chemin relatif au site (jamais javascript:, data:
+ * ou autre schéma). Une chaîne vide, non-string, ou un schéma inattendu
+ * est traité comme « image absente ».
+ */
+function isRenderableImageUrl(raw) {
+  if (typeof raw !== 'string') return false;
+  const trimmed = raw.trim();
+  if (!trimmed) return false;
+  try {
+    const resolved = new URL(trimmed, window.location.origin);
+    return resolved.protocol === 'http:' || resolved.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * Construit la vignette d'une ligne de liste : le HTML interne à injecter
+ * dans `.k-cart-item-img`, et la classe à poser sur ce conteneur.
+ * Couvre les trois cas du mandat V2-C : image absente, URL invalide,
+ * erreur de chargement (onerror, posé à chaud côté navigateur). Toujours
+ * un fallback propre, jamais une icône cassée.
+ */
+function itemImageParts(item) {
+  const rawUrl = typeof item.image === 'string' ? item.image.trim() : '';
+  if (!isRenderableImageUrl(rawUrl)) {
+    return { html: SHARED_ITEM_IMG_FALLBACK, wrapClass: ' is-img-error' };
+  }
+  const optimized = optimizeImgUrl(rawUrl, SHARED_ITEM_IMG_WIDTH);
+  const html = (
+    `<img class="k-cart-item-img-el" src="${sanitize(optimized)}" alt="" loading="lazy" ` +
+    `onerror="this.closest('.k-cart-item-img').classList.add('is-img-error');this.remove();">` +
+    SHARED_ITEM_IMG_FALLBACK
+  );
+  return { html, wrapClass: '' };
+}
 
 /* ── Activation / rafraîchissement / nettoyage du contexte ──────────── */
 
@@ -288,9 +343,7 @@ function itemRowHtml(item) {
   if (claimed) classes.push('is-claimed');
   else if (selected) classes.push('is-selected');
 
-  const img = item.image
-    ? `<img class="k-cart-item-img-el" src="${sanitize(item.image)}" alt="" loading="lazy">`
-    : '';
+  const { html: img, wrapClass: imgWrapClass } = itemImageParts(item);
 
   const statusText = claimed ? 'Déjà acheté' : 'Disponible';
   const priceText = fmt(item.unit_price_kmf, 'KMF');
@@ -310,7 +363,7 @@ function itemRowHtml(item) {
   return (
     `<div class="${classes.join(' ')}" data-item-id="${sanitize(String(item.id))}">` +
       `<button type="button" class="k-shared-item-open" data-item-id="${sanitize(String(item.id))}" aria-label="${sanitize(openLabel)}">` +
-        `<div class="k-cart-item-img">${img}</div>` +
+        `<div class="k-cart-item-img${imgWrapClass}">${img}</div>` +
         `<div class="k-cart-item-info">` +
           `<div class="k-cart-item-name">${sanitize(item.name || '')}</div>` +
           `<div class="k-shared-item-meta">${priceText} · <span class="k-shared-item-status">${statusText}</span></div>` +
