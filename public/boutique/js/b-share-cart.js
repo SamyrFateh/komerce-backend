@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        cart_state, phone_identity
  * @outputs       shared_list_link, clear_local_cart_signal, group_view_transition
- * @depends       b-store.js, b-cart-core.js, b-cart.js, group/group-render-list.js, b-group-banner.js, b-identity.js
+ * @depends       b-store.js, b-cart-core.js, b-cart.js, group/group-side-cart.js, b-group-banner.js, b-identity.js
  * @used-by       boutique.js, b-modal-approche-c-hybrid.js
  * @doctrine      partage_immediat, boutique_canal_decouverte, checkout_canonique
  * @impact-areas  shared-list-creation, participant-flow, creator-flow, local-cart
@@ -256,14 +256,41 @@ async function shareList(title, shareUrl) {
   return 'fallback';
 }
 
-function switchToGroup() {
-  import('./b-nav.js').then(({ switchView }) => {
-    import('./group/group-render-list.js').then(({ renderGroupView }) => {
-      document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
-        .forEach((item) => item.classList.toggle('active', item.dataset.tab === 'komerce'));
-      renderGroupView();
-      switchView('group');
-    });
+/**
+ * PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — remplace
+ * l'ancien switchToGroup() (switchView('group'), onglet principal
+ * autonome, interdit par le mandat §2/§4 : "Aucun switchView('group')").
+ * La liste vient d'être créée par le propriétaire : on active le contexte
+ * dans le side cart / drawer canonique, exactement comme pour un
+ * destinataire, avec isCreator = true.
+ */
+function openSharedListInCanonicalCart(cart) {
+  Promise.all([
+    import('./group/group-side-cart.js'),
+    import('./group/group-api.js'),
+  ]).then(async ([sideCart, api]) => {
+    const data = await api.getSharedCartPublic(cart.token);
+    if (!data) return;
+    sideCart.activateSharedListContext(data, cart.token);
+    document.getElementById('k-cart-btn')?.click();
+  });
+}
+
+/**
+ * Bouton "👥 Suivre les participations →" du badge partagé (#k-sc-group-view).
+ * Remplace l'ancien handler switchToGroup() — supprimé lors de la migration
+ * précédente mais dont ce listener n'avait pas été mis à jour (bug trouvé à
+ * la reprise de session : référence à un identifiant jamais défini dans ce
+ * module, ReferenceError dès l'exécution de install()). On ne connaît ici
+ * que le token courant (state.shareToken) : on réutilise
+ * activateFromParticipantUrl(), qui fait déjà GET public/:token →
+ * activateSharedListContext (le backend dérive is_creator via soft-auth,
+ * cf. group-api.js) — même chemin que le destinataire, isCreator=true.
+ */
+function reopenOwnSharedListInCanonicalCart() {
+  if (!state.shareToken) return;
+  import('./group/group-side-cart.js').then(({ activateFromParticipantUrl }) => {
+    activateFromParticipantUrl(state.shareToken);
   });
 }
 
@@ -333,7 +360,7 @@ export async function startShareFlow({ reshare = false } = {}) {
     // Le canal appartient à l'utilisateur : feuille native si disponible,
     // WhatsApp + copie du lien comme fallback universel.
     await shareList(title, shareUrl);
-    switchToGroup();
+    openSharedListInCanonicalCart(cart);
   } catch (err) {
     showToast(`Erreur : ${err.message}`, 'error');
   } finally {
@@ -375,7 +402,7 @@ export function install() {
   document.getElementById('k-sc-reshare')?.addEventListener('click', () =>
     startShareFlow({ reshare: true }));
 
-  document.getElementById('k-sc-group-view')?.addEventListener('click', switchToGroup);
+  document.getElementById('k-sc-group-view')?.addEventListener('click', reopenOwnSharedListInCanonicalCart);
 
   document.addEventListener('cart:cleared', () => {
     if (_skipClearShareOnCartCleared) return;

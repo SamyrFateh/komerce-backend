@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        view_requests, bus_events, drawer_state, scroll_state, relais_data
  * @outputs       active_view, drawer_state, infinite_scroll, relais_list
- * @depends       b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-checkout.js, b-catalog.js, b-favs.js, b-tracking.js, b-komerce.js, group/group-render-list.js, b-pager.js, b-scroll-owner.js
+ * @depends       b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-checkout.js, b-catalog.js, b-favs.js, b-tracking.js, b-komerce.js, group/group-side-cart.js, b-pager.js, b-scroll-owner.js
  * @used-by       boutique.js
  * @doctrine      navigation_sans_friction, mobile_desktop_coherence
  * @impact-areas  boutique-navigation, view-switching, drawer, infinite-scroll
@@ -31,7 +31,11 @@ import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
 import { renderTrackView }               from './b-tracking.js';
 import { openMonKomerce }                  from './b-komerce.js';
-import { renderGroupView, detectParticipantToken, stopPolling } from './group/group-render-list.js';
+import {
+  detectParticipantToken,
+  activateFromParticipantUrl,
+  activateOwnerMostRecentList,
+} from './group/group-side-cart.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
 
@@ -156,13 +160,10 @@ export function switchView(tab) {
     destroyMobilePager();
   }
 
-  // BUG-05 — arrêter le polling groupe dès qu'on quitte l'onglet group.
-  // Le setInterval de 30s peut se déclencher 1-2 fois après le changement de vue
-  // et tenter d'écrire dans un DOM qui n'existe plus (#k-group-progress-card).
-  // renderGroupView() appellera stopPolling() puis startPolling() au retour.
-  if (tab !== 'group') {
-    stopPolling();
-  }
+  // BUG-05 (historique) — arrêter le polling groupe dès qu'on quitte l'onglet group.
+  // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART (mandat §10, étape 8) :
+  // group-render-list.js et son stopPolling() (no-op) sont supprimés — l'onglet
+  // 'group' et renderGroupView() ne sont plus jamais atteints. Garde retirée.
 
   document.body.classList.remove('k-view-shop', 'k-view-fav', 'k-view-track', 'k-view-group', 'k-view-komerce');
   document.body.classList.add('k-view-' + tab);
@@ -231,15 +232,16 @@ bus.on('nav:goto-track', () => { renderTrackView(); switchView('track'); });
 bus.on('nav:goto-komerce-wallet', () => { openMonKomerce({ focus: 'wallet' }); });
 bus.on('komerce:show', () => { switchView('komerce'); });
 
-// §2.1 mandat correction liste partageable — l'onglet Groupe de niveau 1 a
-// disparu ; « Mes listes » (b-komerce.js) est le nouveau point d'entrée et
-// mène au même écran group-render-list.js, sans dupliquer sa logique.
+// PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — l'onglet Groupe
+// de niveau 1 a disparu ; « Mes listes » (b-komerce.js) est le point
+// d'entrée propriétaire et active la liste la plus récente directement
+// dans le side cart / drawer canonique (isCreator = true). Aucun
+// switchView('group') (mandat §2/§4/§16).
 bus.on('nav:goto-group', () => {
   document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
     i.classList.toggle('active', i.dataset.tab === 'komerce');
   });
-  renderGroupView();
-  switchView('group');
+  activateOwnerMostRecentList();
 });
 
 /**
@@ -278,12 +280,12 @@ export function handleParticipantUrl() {
     const clean = window.location.origin + window.location.pathname;
     window.history.replaceState({}, '', clean);
   } catch (_) {}
-  // Lien reçu : écran d'entrée dédié, hors du jeu d'onglets de niveau 1.
+  // Lien reçu : la boutique reste affichée, la liste se projette dans le
+  // side cart / drawer canonique (mandat §1/§4). Aucun onglet dédié.
   document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
     i.classList.remove('active');
   });
-  renderGroupView({ participantToken: token });
-  switchView('group');
+  activateFromParticipantUrl(token);
 }
 
 /**
@@ -319,7 +321,10 @@ function handleTabDeepLink() {
 
     if (resolvedTab === 'fav')     { renderFavView(); switchView('fav'); }
     if (resolvedTab === 'track')   { renderTrackView(); switchView('track'); }
-    if (resolvedTab === 'group')   { renderGroupView(); switchView('group'); }
+    // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — ?tab=group
+    // legacy : redirige vers l'activation propriétaire canonique, jamais
+    // switchView('group') (mandat §2/§4/§16).
+    if (resolvedTab === 'group')   { activateOwnerMostRecentList(); }
     if (resolvedTab === 'komerce') { openMonKomerce(tab === 'wallet' ? { focus: 'wallet' } : {}); }
   } catch (_) {}
 }

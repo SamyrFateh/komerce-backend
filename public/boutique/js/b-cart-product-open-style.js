@@ -22,7 +22,7 @@ export function setupCartProductOpenStyle() {
   // le serveur renvoyait l'index HTML en fallback SPA.
 
   // NOTE: b-cart-groups-tab.js retiré — setupCartGroupsTab() est vide (legacy désactivé).
-  // Le flux Groupe officiel vit dans group/group-render-list.js + group/group-api.js.
+  // Le flux Groupe officiel vit dans group/group-side-cart.js + group/group-api.js.
 
   // Desktop : la petite dame doit toujours ouvrir un vrai panier,
   // même dans Favoris/Suivi où le side-cart peut être invisible.

@@ -17,7 +17,7 @@
 /**
  * @module b-tracking
  * @brief Suivi commandes uniquement.
- * Les paniers partagés sont gérés dans group/group-render-list.js (onglet Groupe).
+ * Les listes partagées sont gérées dans group/group-side-cart.js (side cart / drawer canonique).
  */
 
 import { sanitize, optimizeImgUrl, fmt, apiGet, apiPost } from './b-utils.js';

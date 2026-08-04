@@ -5,8 +5,8 @@
 const mockShowToast = jest.fn();
 const mockClearCart = jest.fn();
 const mockRefreshGroupBadge = jest.fn();
-const mockRenderGroupView = jest.fn();
-const mockSwitchView = jest.fn();
+const mockActivateSharedListContext = jest.fn();
+const mockGetSharedCartPublic = jest.fn();
 const mockShowBanner = jest.fn();
 const mockHideBanner = jest.fn();
 const mockRefreshBanner = jest.fn();
@@ -17,10 +17,17 @@ jest.mock('../../js/b-cart.js', () => ({ clearCart: mockClearCart }));
 jest.mock('../../js/group/group-state.js', () => ({
   refreshGroupBadge: mockRefreshGroupBadge,
 }));
-jest.mock('../../js/group/group-render-list.js', () => ({
-  renderGroupView: mockRenderGroupView,
+// PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — après création,
+// b-share-cart.js n'appelle plus switchView('group')/renderGroupView() ; il
+// active la liste dans le side cart / drawer canonique via un import()
+// dynamique de group-side-cart.js + group-api.js (mandat §2/§4).
+jest.mock('../../js/group/group-side-cart.js', () => ({
+  activateSharedListContext: mockActivateSharedListContext,
 }));
-jest.mock('../../js/b-nav.js', () => ({ switchView: mockSwitchView }));
+jest.mock('../../js/group/group-api.js', () => ({
+  fetchWithTimeout: jest.requireActual('../../js/group/group-api.js').fetchWithTimeout,
+  getSharedCartPublic: mockGetSharedCartPublic,
+}));
 jest.mock('../../js/b-group-banner.js', () => ({
   showBanner: mockShowBanner,
   hideBanner: mockHideBanner,
@@ -67,6 +74,11 @@ beforeEach(() => {
   state.shareUrl = null;
 
   mockRequireIdentity.mockResolvedValue({ id: 'user-1' });
+  mockGetSharedCartPublic.mockResolvedValue({
+    cart: { id: 'sc-101', token: 'tok-101', status: 'open' },
+    items: [],
+    is_creator: true,
+  });
   global.fetch = jest.fn();
   window.open = jest.fn();
 
@@ -135,8 +147,11 @@ test('crée immédiatement une liste, diffuse son lien et ouvre sa vue', async (
     title: 'Liste partagée',
     status: 'open',
   });
-  expect(mockSwitchView).toHaveBeenCalledWith('group');
-  expect(mockRenderGroupView).toHaveBeenCalled();
+  expect(mockGetSharedCartPublic).toHaveBeenCalledWith('tok-101');
+  expect(mockActivateSharedListContext).toHaveBeenCalledWith(
+    expect.objectContaining({ cart: expect.objectContaining({ token: 'tok-101' }) }),
+    'tok-101',
+  );
   expect(document.getElementById('k-cart-share')).toMatchObject({
     disabled: false,
     textContent: '📤 Partager cette liste',

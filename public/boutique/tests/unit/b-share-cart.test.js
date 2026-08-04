@@ -12,9 +12,6 @@ jest.mock('../../js/b-cart.js', () => ({ clearCart: jest.fn() }));
 jest.mock('../../js/group/group-state.js', () => ({
   refreshGroupBadge: jest.fn(),
 }));
-jest.mock('../../js/group/group-render-list.js', () => ({
-  renderGroupView: jest.fn(),
-}));
 jest.mock('../../js/b-nav.js', () => ({ switchView: jest.fn() }));
 jest.mock('../../js/b-group-banner.js', () => ({
   showBanner: jest.fn(),
@@ -23,6 +20,10 @@ jest.mock('../../js/b-group-banner.js', () => ({
 }));
 jest.mock('../../js/b-identity.js', () => ({
   requireIdentity: jest.fn().mockResolvedValue({ id: 'user-1' }),
+}));
+const mockActivateFromParticipantUrl = jest.fn().mockResolvedValue(true);
+jest.mock('../../js/group/group-side-cart.js', () => ({
+  activateFromParticipantUrl: mockActivateFromParticipantUrl,
 }));
 
 const { state } = require('../../js/b-store.js');
@@ -34,6 +35,7 @@ const {
   restoreSharedCartFromBackend,
   refreshSharedBadges,
   startShareFlow,
+  install,
 } = require('../../js/b-share-cart.js');
 
 function resetShareState() {
@@ -255,6 +257,34 @@ describe('b-share-cart', () => {
       await expect(startShareFlow({ reshare: true })).resolves.toBeUndefined();
       expect(showToast).not.toHaveBeenCalled();
       expect(window.open).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('install', () => {
+    // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — régression :
+    // #k-sc-group-view appelait l'ancien switchToGroup(), supprimé par une
+    // session antérieure sans que ce listener soit mis à jour (ReferenceError
+    // au clic). Couvre le câblage réel du bouton plutôt que la seule
+    // fonction interne, pour qu'un futur renommage similaire échoue ici.
+    // install() est un singleton au niveau module (_installed) : un seul
+    // appel par fichier de test, les deux branches sont vérifiées via deux
+    // clics successifs avec un état différent plutôt que deux install().
+    test('#k-sc-group-view active la liste courante dans le side cart canonique (jamais switchToGroup)', async () => {
+      appendElement('button', 'k-sc-group-view');
+
+      install();
+
+      state.shareToken = null;
+      document.getElementById('k-sc-group-view').click();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(mockActivateFromParticipantUrl).not.toHaveBeenCalled();
+
+      state.shareToken = 'tok-owner-1';
+      document.getElementById('k-sc-group-view').click();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(mockActivateFromParticipantUrl).toHaveBeenCalledWith('tok-owner-1');
     });
   });
 });

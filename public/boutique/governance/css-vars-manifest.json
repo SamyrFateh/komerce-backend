@@ -18,14 +18,6 @@
       "reason": "modal-shell.css:742 — background: var(--cta-green-dark, var(--cta-green)). Aucune teinte 'CTA vert foncé' n'a jamais été créée : cet état (probablement hover/active du bouton CTA) utilise donc toujours la même couleur que l'état normal, sans jamais assombrir. Fonctionnellement inoffensif (fallback cohérent) mais la différenciation visuelle prévue ne s'est jamais produite — candidat à définir dans tokens.css si l'intention hover est encore voulue."
     },
     {
-      "var": "--green-bg-10",
-      "reason": "group-cart-flow.css — pills de statut group-cart, fallback rgba(42,122,62,.1) stable, jamais branché comme token nommé."
-    },
-    {
-      "var": "--green-border-22",
-      "reason": "group-cart-flow.css — même famille que --green-bg-10, fallback rgba(42,122,62,.22) stable."
-    },
-    {
       "var": "--leaf-border",
       "reason": "cart.css — fallback var(--border) systématique, alias jamais promu en token propre."
     },

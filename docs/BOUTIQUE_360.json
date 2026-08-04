@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-08-03T05:50:58.946Z",
+  "generatedAt": "2026-08-04T09:23:44.516Z",
   "summary": {
-    "modules": 76,
-    "withHeader": 76,
+    "modules": 75,
+    "withHeader": 75,
     "events": 23,
     "declaredActive": 17,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 44,
+    "endpoints": 45,
     "orphanEmit": 1,
     "orphanListen": 1,
     "undeclared": 6,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 31,
-    "dynamicEndpoints": 15,
+    "dynamicEndpoints": 16,
     "ownedEvents": 3,
     "ownershipRed": 0,
     "ownershipOrange": 0
@@ -75,7 +75,7 @@
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-desktop-sidebar.js",
-        "public/boutique/js/group/group-render-list.js",
+        "public/boutique/js/group/group-side-cart.js",
         "public/boutique/js/b-home-premium-v1.js",
         "public/boutique/js/b-mini-cart.js",
         "public/boutique/js/b-modal-core.js",
@@ -121,7 +121,7 @@
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-favs.js",
-        "public/boutique/js/group/group-render-list.js",
+        "public/boutique/js/group/group-side-cart.js",
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-mini-cart.js",
         "public/boutique/js/b-modal-core.js",
@@ -286,7 +286,8 @@
         "b-scroll-owner",
         "shop-schema",
         "render-product-card",
-        "cart-product-summary"
+        "cart-product-summary",
+        "group-side-cart"
       ],
       "bodyClasses": [
         "cart-open",
@@ -667,7 +668,7 @@
       ],
       "usedBy": [
         "b-share-cart.js",
-        "group/group-render-list.js",
+        "group/group-side-cart.js",
         "boutique.js"
       ],
       "emits": [],
@@ -675,23 +676,6 @@
       "imports": [
         "b-store"
       ],
-      "bodyClasses": [],
-      "emitCalls": []
-    },
-    {
-      "file": "public/boutique/js/b-group-cart-flow.js",
-      "id": "b-group-cart-flow",
-      "hasHeader": true,
-      "role": "boutique-b-group-cart-flow",
-      "domain": "boutique",
-      "layer": "ui-component",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [],
-      "imports": [],
       "bodyClasses": [],
       "emitCalls": []
     },
@@ -739,7 +723,7 @@
       "usedBy": [
         "b-checkout.js",
         "b-share-cart.js",
-        "group/group-render-list.js"
+        "group/group-side-cart.js"
       ],
       "emits": [],
       "listens": [],
@@ -1377,7 +1361,7 @@
         "b-favs.js",
         "b-tracking.js",
         "b-komerce.js",
-        "group/group-render-list.js",
+        "group/group-side-cart.js",
         "b-pager.js",
         "b-scroll-owner.js"
       ],
@@ -1405,7 +1389,7 @@
         "b-favs",
         "b-tracking",
         "b-komerce",
-        "group-render-list",
+        "group-side-cart",
         "b-pager",
         "b-scroll-owner"
       ],
@@ -1641,7 +1625,7 @@
         "b-store.js",
         "b-cart-core.js",
         "b-cart.js",
-        "group/group-render-list.js",
+        "group/group-side-cart.js",
         "b-group-banner.js",
         "b-identity.js"
       ],
@@ -1991,7 +1975,7 @@
       ],
       "usedBy": [
         "b-group-view.js",
-        "group/group-render-list.js"
+        "group/group-side-cart.js"
       ],
       "emits": [],
       "listens": [],
@@ -2018,7 +2002,7 @@
         "../b-checkout.js"
       ],
       "usedBy": [
-        "group/group-render-list.js"
+        "group/group-side-cart.js"
       ],
       "emits": [],
       "listens": [],
@@ -2047,41 +2031,59 @@
       "emitCalls": []
     },
     {
-      "file": "public/boutique/js/group/group-render-list.js",
-      "id": "group-render-list",
+      "file": "public/boutique/js/group/group-side-cart.js",
+      "id": "group-side-cart",
       "hasHeader": true,
-      "role": "shared-list-view",
+      "role": "shared-list-canonical-cart-projection",
       "domain": "shared-cart",
       "layer": "ui-component",
-      "criticality": "high",
+      "criticality": "critical",
       "doctrine": [
         "un_seul_composant",
-        "capacites_pas_ecrans",
-        "vocabulaire_achat",
-        "boutique_first"
+        "panier_personnel_jamais_fusionne",
+        "checkout_canonique",
+        "boutique_reste_boutique"
       ],
       "depends": [
         "../b-store.js",
         "../b-utils.js",
-        "group/group-api.js",
-        "group/group-state.js",
-        "group/group-checkout-adapter.js"
+        "../b-bus.js",
+        "../b-scroll-owner.js",
+        "group-api.js",
+        "group-state.js",
+        "group-checkout-adapter.js"
       ],
       "usedBy": [
         "b-nav.js",
-        "b-share-cart.js"
+        "b-share-cart.js",
+        "b-komerce.js"
       ],
-      "emits": [],
-      "listens": [],
+      "emits": [
+        "side-cart:render"
+      ],
+      "listens": [
+        "side-cart:render"
+      ],
       "imports": [
         "b-store",
         "b-utils",
+        "b-bus",
+        "b-scroll-owner",
         "group-api",
         "group-state",
         "group-checkout-adapter"
       ],
-      "bodyClasses": [],
-      "emitCalls": []
+      "bodyClasses": [
+        "is-shared-list-context",
+        "cart-open",
+        "cart-empty"
+      ],
+      "emitCalls": [
+        {
+          "name": "side-cart:render",
+          "hasArg": false
+        }
+      ]
     },
     {
       "file": "public/boutique/js/group/group-state.js",
@@ -2475,10 +2477,12 @@
     "side-cart:render": {
       "emitters": [
         "b-cart",
-        "b-cart-core"
+        "b-cart-core",
+        "group-side-cart"
       ],
       "listeners": [
-        "b-cart"
+        "b-cart",
+        "group-side-cart"
       ]
     },
     "cart:update": {
@@ -2698,7 +2702,7 @@
         "interactions",
         "modal-mobile-suggestion-actions",
         "hero-cart-proxy",
-        "group-cart-flow",
+        "shared-list-side-cart",
         "share-cart",
         "identity",
         "paypal",
@@ -2991,6 +2995,13 @@
       "module": "group-api",
       "route": "/api/shared-carts/{id}/close",
       "raw": "/api/shared-carts/${cartId}/close",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/{id}/items",
+      "raw": "/api/shared-carts/${cartId}/items",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
     },
@@ -3358,6 +3369,7 @@
       "/api/purchasing/suppliers/{id}",
       "/api/shared-carts/public/{id}",
       "/api/shared-carts/{id}/close",
+      "/api/shared-carts/{id}/items",
       "/api/shared-carts/{id}/items/{id}",
       "/api/shares"
     ],
@@ -3454,10 +3466,12 @@
         "b-checkout",
         "b-desktop-global-cart-access",
         "b-nav",
-        "b-product-open-contract"
+        "b-product-open-contract",
+        "group-side-cart"
       ],
       "cart-empty": [
-        "b-cart"
+        "b-cart",
+        "group-side-cart"
       ],
       "sc-reserve": [
         "b-cart"
@@ -3483,6 +3497,9 @@
       ],
       "k-view-": [
         "b-nav"
+      ],
+      "is-shared-list-context": [
+        "group-side-cart"
       ]
     }
   },
@@ -3527,6 +3544,7 @@
     "/api/shared-carts/mine",
     "/api/shared-carts/public/{id}",
     "/api/shared-carts/{id}/close",
+    "/api/shared-carts/{id}/items",
     "/api/shared-carts/{id}/items/{id}",
     "/api/shares",
     "/api/wallet",

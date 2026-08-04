@@ -57,10 +57,14 @@ jest.mock('../../js/b-catalog.js', () => ({
 jest.mock('../../js/b-favs.js', () => ({ renderFavView: jest.fn() }));
 jest.mock('../../js/b-tracking.js', () => ({ renderTrackView: jest.fn() }));
 jest.mock('../../js/b-komerce.js', () => ({ openMonKomerce: jest.fn() }));
-jest.mock('../../js/group/group-render-list.js', () => ({
-  renderGroupView: jest.fn(),
+// PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — b-nav.js route
+// désormais 'Mes listes', le lien participant et ?tab=group vers
+// group-side-cart.js (side cart / drawer canonique). group-render-list.js
+// (et son stopPolling(), no-op) sont supprimés (mandat §2/§4/§10).
+jest.mock('../../js/group/group-side-cart.js', () => ({
   detectParticipantToken: jest.fn(),
-  stopPolling: jest.fn(),
+  activateFromParticipantUrl: jest.fn(),
+  activateOwnerMostRecentList: jest.fn(),
 }));
 jest.mock('../../js/b-pager.js', () => ({ destroyMobilePager: jest.fn() }));
 jest.mock('../../js/b-scroll-owner.js', () => ({ scrollPageToTop: jest.fn() }));
@@ -74,7 +78,11 @@ const { renderGrid } = require('../../js/b-catalog.js');
 const { renderFavView } = require('../../js/b-favs.js');
 const { renderTrackView } = require('../../js/b-tracking.js');
 const { openMonKomerce } = require('../../js/b-komerce.js');
-const { renderGroupView, detectParticipantToken, stopPolling } = require('../../js/group/group-render-list.js');
+const {
+  detectParticipantToken,
+  activateFromParticipantUrl,
+  activateOwnerMostRecentList,
+} = require('../../js/group/group-side-cart.js');
 const { destroyMobilePager } = require('../../js/b-pager.js');
 const { scrollPageToTop } = require('../../js/b-scroll-owner.js');
 
@@ -270,18 +278,6 @@ describe('switchView', () => {
     expect(destroyMobilePager).not.toHaveBeenCalled();
   });
 
-  test('onglet différent de group -> stopPolling()', () => {
-    mountViews();
-    switchView('fav');
-    expect(stopPolling).toHaveBeenCalled();
-  });
-
-  test('onglet group -> pas de stopPolling()', () => {
-    mountViews();
-    switchView('group');
-    expect(stopPolling).not.toHaveBeenCalled();
-  });
-
   test('retour sur shop -> renderGrid() puis scrollPageToTop("auto") en rAF', () => {
     mountViews();
     global.requestAnimationFrame = (fn) => { fn(); return 1; };
@@ -344,11 +340,14 @@ describe('setupBnav', () => {
     expect(renderTrackView).toHaveBeenCalled();
   });
 
-  test("bus 'nav:goto-group' (émis par Mon Komerce > Mes listes) -> renderGroupView()", () => {
+  test("bus 'nav:goto-group' (émis par Mon Komerce > Mes listes) -> activateOwnerMostRecentList(), aucun switchView('group')", () => {
     mountNavButtons();
     setupBnav();
     bus.emit('nav:goto-group');
-    expect(renderGroupView).toHaveBeenCalled();
+    expect(activateOwnerMostRecentList).toHaveBeenCalled();
+    // Mandat §2/§4/§16 : plus d'onglet 'group' — le composant komerce
+    // (Mon Komerce) reste la source d'activation, jamais un onglet dédié.
+    expect(document.querySelector('[data-tab="komerce"]').classList.contains('active')).toBe(true);
   });
 
   test('tab=komerce -> renderKomerceView()', () => {
@@ -373,10 +372,10 @@ describe('handleParticipantUrl', () => {
   test('pas de token -> ne fait rien', () => {
     detectParticipantToken.mockReturnValue(null);
     handleParticipantUrl();
-    expect(renderGroupView).not.toHaveBeenCalled();
+    expect(activateFromParticipantUrl).not.toHaveBeenCalled();
   });
 
-  test('token présent -> nettoie l\'URL, désactive tous les onglets, renderGroupView(participantToken)', () => {
+  test("token présent -> nettoie l'URL, désactive tous les onglets, activateFromParticipantUrl(token), aucun switchView('group')", () => {
     mountFixture('<button class="k-bnav-item active" data-tab="shop"></button><button class="k-bnav-item" data-tab="fav"></button>');
     detectParticipantToken.mockReturnValue('TOK123');
     const replaceStateSpy = jest.spyOn(window.history, 'replaceState').mockImplementation(() => {});
@@ -384,11 +383,45 @@ describe('handleParticipantUrl', () => {
     handleParticipantUrl();
 
     expect(replaceStateSpy).toHaveBeenCalled();
-    expect(renderGroupView).toHaveBeenCalledWith({ participantToken: 'TOK123' });
+    expect(activateFromParticipantUrl).toHaveBeenCalledWith('TOK123');
     expect(document.querySelector('[data-tab="shop"]').classList.contains('active')).toBe(false);
     expect(document.querySelector('[data-tab="fav"]').classList.contains('active')).toBe(false);
 
     replaceStateSpy.mockRestore();
+  });
+});
+
+describe('handleParticipantUrl -> deep-link ?tab= (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART)', () => {
+  function setSearch(qs) {
+    const url = new URL(window.location.href);
+    url.search = qs;
+    window.history.replaceState({}, '', url.toString());
+  }
+
+  afterEach(() => {
+    window.history.replaceState({}, '', window.location.pathname);
+  });
+
+  test('?tab=group -> activateOwnerMostRecentList(), pas de switchView', () => {
+    detectParticipantToken.mockReturnValue(null);
+    setSearch('?tab=group');
+    handleParticipantUrl();
+    expect(activateOwnerMostRecentList).toHaveBeenCalled();
+  });
+
+  test('?tab=wallet -> redirige vers komerce (openMonKomerce focus wallet)', () => {
+    detectParticipantToken.mockReturnValue(null);
+    setSearch('?tab=wallet');
+    handleParticipantUrl();
+    expect(openMonKomerce).toHaveBeenCalledWith({ focus: 'wallet' });
+  });
+
+  test('?tab=invalide -> ignoré, aucune activation', () => {
+    detectParticipantToken.mockReturnValue(null);
+    setSearch('?tab=nope');
+    handleParticipantUrl();
+    expect(activateOwnerMostRecentList).not.toHaveBeenCalled();
+    expect(openMonKomerce).not.toHaveBeenCalled();
   });
 });
 

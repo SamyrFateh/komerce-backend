@@ -1,0 +1,441 @@
+'use strict';
+
+/**
+ * tests/unit/group-side-cart.test.js
+ *
+ * Module js/group/group-side-cart.js — PROMPT_FINAL_IMPLEMENTATION_LISTE_
+ * PARTAGEABLE_SIDE_CART. Couvre les invariants du mandat (§3, §6, §7, §8,
+ * §9) : isolation des états, sélection locale sans appel réseau, statuts
+ * disponible/déjà acheté, footer vide/non vide, indicateur mobile, actions
+ * propriétaire, checkout avec shared_cart_item_id, et l'intégration avec
+ * b-cart.js::renderCartBody() via isSharedListActive()/exitSharedListRenderMode()
+ * (bug d'intégration trouvé et corrigé pendant cette session — b-cart.js
+ * appelait ces deux exports alors qu'ils n'existaient pas encore ici).
+ *
+ * group-api.js, group-state.js, group-checkout-adapter.js et b-utils.js
+ * (showToast) sont mockés — ce ne sont pas des dépendances sous test. b-store.js
+ * et b-bus.js sont réels (état/bus partagés, convention des autres suites
+ * boutique). sanitize/fmt de b-utils.js restent réels (assertions HTML lisibles).
+ */
+
+const mockShowToast = jest.fn();
+const mockGetSharedCartPublic = jest.fn();
+const mockGetOwnerSharedCarts = jest.fn();
+const mockRemoveItemFromSharedList = jest.fn();
+const mockCloseCart = jest.fn();
+const mockAddItemToSharedList = jest.fn();
+const mockPickOwnerCart = jest.fn();
+const mockCheckoutSharedListSelection = jest.fn();
+const mockIsDesktop = jest.fn();
+
+jest.mock('../../js/b-utils.js', () => {
+  const actual = jest.requireActual('../../js/b-utils.js');
+  return { ...actual, showToast: mockShowToast };
+});
+jest.mock('../../js/b-scroll-owner.js', () => ({ isDesktop: mockIsDesktop }));
+jest.mock('../../js/group/group-api.js', () => ({
+  getSharedCartPublic: mockGetSharedCartPublic,
+  getOwnerSharedCarts: mockGetOwnerSharedCarts,
+  removeItemFromSharedList: mockRemoveItemFromSharedList,
+  closeCart: mockCloseCart,
+  addItemToSharedList: mockAddItemToSharedList,
+}));
+jest.mock('../../js/group/group-state.js', () => ({
+  pickOwnerCart: mockPickOwnerCart,
+}));
+jest.mock('../../js/group/group-checkout-adapter.js', () => ({
+  checkoutSharedListSelection: mockCheckoutSharedListSelection,
+}));
+
+const { state, dom, initDom } = require('../../js/b-store.js');
+const {
+  activateSharedListContext,
+  refreshSharedListContext,
+  clearSharedListContext,
+  toggleSharedListItem,
+  renderSharedListInCart,
+  isSharedListActive,
+  exitSharedListRenderMode,
+  addItemToSharedList,
+  activateFromParticipantUrl,
+  activateOwnerMostRecentList,
+} = require('../../js/group/group-side-cart.js');
+
+function mountShell() {
+  document.body.innerHTML = `
+    <div id="k-side-cart" class="k-side-cart"></div>
+    <div id="k-cart-overlay"></div>
+    <div id="k-cart-drawer">
+      <div id="k-cart-header"><span id="k-cart-header-title"></span></div>
+      <div id="k-cart-body"></div>
+      <div id="k-cart-footer"></div>
+    </div>
+    <div id="k-order-modal"></div>
+    <div id="k-toast"></div>
+  `;
+  initDom();
+}
+
+function resetSharedListState() {
+  state.sharedListContext = {
+    sharedCartId: null,
+    token: null,
+    status: 'open',
+    isCreator: false,
+    creatorFirstName: null,
+    title: null,
+    message: null,
+    items: [],
+  };
+  state.sharedListSelection = new Set();
+}
+
+function availableItem(overrides = {}) {
+  return {
+    id: 'item-1',
+    product_id: 'p-1',
+    name: 'Riz 25 kg',
+    image: null,
+    quantity: 1,
+    unit_price_kmf: 6500,
+    claimed: false,
+    ...overrides,
+  };
+}
+
+function publicPayload(overrides = {}) {
+  return {
+    cart: { id: 'sc-1', token: 'tok-1', status: 'open', creator_first_name: 'Samsam', title: null },
+    items: [availableItem()],
+    is_creator: false,
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mountShell();
+  resetSharedListState();
+  state.cart = [];
+  mockIsDesktop.mockReturnValue(true);
+});
+
+describe('activateSharedListContext', () => {
+  it("remplit state.sharedListContext sans jamais toucher à state.cart (invariant mandat §3)", () => {
+    const personalCart = [{ product: { id: 'x' }, qty: 2 }];
+    state.cart = personalCart;
+
+    activateSharedListContext(publicPayload(), 'tok-1');
+
+    expect(state.cart).toBe(personalCart);
+    expect(state.sharedListContext.sharedCartId).toBe('sc-1');
+    expect(state.sharedListContext.token).toBe('tok-1');
+    expect(state.sharedListContext.items).toHaveLength(1);
+  });
+
+  it('en-tête destinataire : "Liste de {prénom}" + sous-titre', () => {
+    activateSharedListContext(publicPayload({ is_creator: false }), 'tok-1');
+    renderSharedListInCart();
+    const panel = document.getElementById('k-shared-list-panel');
+    expect(panel.querySelector('.k-shared-list-title').textContent).toBe('Liste de Samsam');
+    expect(panel.querySelector('.k-shared-list-subtitle').textContent).toContain('Samsam a préparé cette liste');
+  });
+
+  it('en-tête propriétaire : "Votre liste", aucun sous-titre', () => {
+    activateSharedListContext(publicPayload({ is_creator: true }), 'tok-1');
+    renderSharedListInCart();
+    const panel = document.getElementById('k-shared-list-panel');
+    expect(panel.querySelector('.k-shared-list-title').textContent).toBe('Votre liste');
+    expect(panel.querySelector('.k-shared-list-subtitle')).toBeNull();
+  });
+
+  it('mobile : ouvre automatiquement le drawer après activation ; desktop : non', () => {
+    mockIsDesktop.mockReturnValue(false);
+    activateSharedListContext(publicPayload(), 'tok-1');
+    expect(dom.cartDrawer.classList.contains('open')).toBe(true);
+
+    document.body.classList.remove('cart-open');
+    dom.cartDrawer.classList.remove('open');
+    mockIsDesktop.mockReturnValue(true);
+    activateSharedListContext(publicPayload(), 'tok-1');
+    expect(dom.cartDrawer.classList.contains('open')).toBe(false);
+  });
+});
+
+describe('statuts des lignes (mandat §6)', () => {
+  it('ligne disponible -> statut "Disponible", sélectionnable', () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ claimed: false })] }), 'tok-1');
+    renderSharedListInCart();
+    const row = document.querySelector('.k-shared-list-item');
+    expect(row.classList.contains('is-claimed')).toBe(false);
+    expect(row.querySelector('.k-shared-item-status').textContent).toBe('Disponible');
+    expect(row.querySelector('.k-shared-item-select').disabled).toBe(false);
+  });
+
+  it('ligne déjà achetée -> reste visible, statut "Déjà acheté", contrôle désactivé', () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ claimed: true })] }), 'tok-1');
+    renderSharedListInCart();
+    const row = document.querySelector('.k-shared-list-item');
+    expect(row.classList.contains('is-claimed')).toBe(true);
+    expect(row.querySelector('.k-shared-item-status').textContent).toBe('Déjà acheté');
+    const control = row.querySelector('.k-shared-item-select');
+    expect(control.disabled).toBe(true);
+    expect(control.getAttribute('aria-disabled')).toBe('true');
+  });
+});
+
+describe('sélection locale (mandat §3/§8 — aucun appel réseau)', () => {
+  it("sélectionner une ligne disponible ne modifie jamais state.cart et n'appelle aucune API", () => {
+    const personalCart = [];
+    state.cart = personalCart;
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+
+    toggleSharedListItem('i1');
+
+    expect(state.sharedListSelection.has('i1')).toBe(true);
+    expect(state.cart).toBe(personalCart);
+    expect(mockAddItemToSharedList).not.toHaveBeenCalled();
+    expect(mockGetSharedCartPublic).toHaveBeenCalledTimes(0);
+  });
+
+  it('une ligne claimed ne peut jamais être sélectionnée (invariant)', () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1', claimed: true })] }), 'tok-1');
+    toggleSharedListItem('i1');
+    expect(state.sharedListSelection.has('i1')).toBe(false);
+  });
+
+  it('re-cliquer désélectionne', () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    toggleSharedListItem('i1');
+    toggleSharedListItem('i1');
+    expect(state.sharedListSelection.has('i1')).toBe(false);
+  });
+});
+
+describe('refreshSharedListContext — nettoyage après refresh', () => {
+  it('retire de la sélection les lignes devenues invalides ou claimed', async () => {
+    activateSharedListContext(
+      publicPayload({ items: [availableItem({ id: 'i1' }), availableItem({ id: 'i2' })] }),
+      'tok-1',
+    );
+    toggleSharedListItem('i1');
+    toggleSharedListItem('i2');
+    expect(state.sharedListSelection.size).toBe(2);
+
+    // i1 a été acheté entre-temps, i2 a disparu de la réponse serveur.
+    mockGetSharedCartPublic.mockResolvedValueOnce(
+      publicPayload({ items: [availableItem({ id: 'i1', claimed: true })] }),
+    );
+
+    await refreshSharedListContext();
+
+    expect(state.sharedListSelection.has('i1')).toBe(false);
+    expect(state.sharedListSelection.has('i2')).toBe(false);
+  });
+});
+
+describe('footer / mini-total (mandat §6)', () => {
+  it('sélection vide -> hint + CTA disabled', () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    renderSharedListInCart();
+    const buy = document.getElementById('k-shared-list-buy');
+    expect(buy.disabled).toBe(true);
+    expect(document.querySelector('.k-shared-list-footer-hint')).not.toBeNull();
+  });
+
+  it('sélection non vide -> total calculé depuis prix snapshot et quantités sélectionnées', () => {
+    activateSharedListContext(
+      publicPayload({
+        items: [
+          availableItem({ id: 'i1', unit_price_kmf: 6500, quantity: 1 }),
+          availableItem({ id: 'i2', unit_price_kmf: 4200, quantity: 2 }),
+        ],
+      }),
+      'tok-1',
+    );
+    toggleSharedListItem('i1');
+    toggleSharedListItem('i2');
+    const buy = document.getElementById('k-shared-list-buy');
+    expect(buy.disabled).toBe(false);
+    expect(document.querySelector('.k-shared-list-footer-recap strong').textContent).toMatch(/14[\s\u00a0\u202f]900/);
+  });
+});
+
+describe('indicateur mobile "Liste · N" (mandat §7)', () => {
+  it('invisible hors contexte liste', () => {
+    expect(document.getElementById('k-shared-list-chip')).toBeNull();
+  });
+
+  it("visible sur mobile en contexte, absent sur desktop", () => {
+    mockIsDesktop.mockReturnValue(false);
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    toggleSharedListItem('i1');
+    let chip = document.getElementById('k-shared-list-chip');
+    expect(chip).not.toBeNull();
+    expect(chip.textContent).toBe('Liste · 1');
+
+    clearSharedListContext();
+    mockIsDesktop.mockReturnValue(true);
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    chip = document.getElementById('k-shared-list-chip');
+    expect(chip).toBeNull();
+  });
+});
+
+describe('checkout (mandat §8)', () => {
+  it('Acheter la sélection -> construit les lignes avec shared_cart_item_id et délègue au checkout canonique', () => {
+    activateSharedListContext(
+      publicPayload({ items: [availableItem({ id: 'i1', unit_price_kmf: 6500 })] }),
+      'tok-1',
+    );
+    toggleSharedListItem('i1');
+    mockCheckoutSharedListSelection.mockReturnValue(true);
+
+    document.getElementById('k-shared-list-buy').click();
+
+    expect(mockCheckoutSharedListSelection).toHaveBeenCalledWith([
+      expect.objectContaining({ shared_cart_item_id: 'i1', quantity: 1 }),
+    ]);
+  });
+});
+
+describe('actions propriétaire (mandat §9)', () => {
+  it('retirer un article -> confirmation puis DELETE puis refresh', async () => {
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+    activateSharedListContext(
+      publicPayload({ is_creator: true, items: [availableItem({ id: 'i1' })] }),
+      'tok-1',
+    );
+    mockRemoveItemFromSharedList.mockResolvedValueOnce({ ok: true });
+    mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload({ is_creator: true, items: [] }));
+
+    document.querySelector('.k-shared-item-remove').click();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockRemoveItemFromSharedList).toHaveBeenCalledWith('sc-1', 'i1');
+    confirmSpy.mockRestore();
+  });
+
+  it('refus de la confirmation -> aucun appel API', () => {
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+    activateSharedListContext(
+      publicPayload({ is_creator: true, items: [availableItem({ id: 'i1' })] }),
+      'tok-1',
+    );
+    document.querySelector('.k-shared-item-remove').click();
+    expect(mockRemoveItemFromSharedList).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('fermer la liste -> confirmation puis POST /close puis refresh', async () => {
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+    activateSharedListContext(
+      publicPayload({ is_creator: true, items: [availableItem({ id: 'i1' })] }),
+      'tok-1',
+    );
+    mockCloseCart.mockResolvedValueOnce({ ok: true });
+    mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload({ is_creator: true, status: 'closed' }));
+
+    document.getElementById('k-shared-list-close').click();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockCloseCart).toHaveBeenCalledWith('sc-1');
+    confirmSpy.mockRestore();
+  });
+
+  it('addItemToSharedList : ajout unitaire immédiat côté serveur (un seul appel)', async () => {
+    activateSharedListContext(publicPayload({ is_creator: true, items: [] }), 'tok-1');
+    mockAddItemToSharedList.mockResolvedValueOnce({ ok: true });
+    mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload({ is_creator: true, items: [availableItem()] }));
+
+    const ok = await addItemToSharedList('p-9', 2);
+
+    expect(ok).toBe(true);
+    expect(mockAddItemToSharedList).toHaveBeenCalledTimes(1);
+    expect(mockAddItemToSharedList).toHaveBeenCalledWith('sc-1', 'p-9', 2);
+  });
+
+  it('addItemToSharedList refuse si non propriétaire', async () => {
+    activateSharedListContext(publicPayload({ is_creator: false, items: [] }), 'tok-1');
+    const ok = await addItemToSharedList('p-9', 1);
+    expect(ok).toBe(false);
+    expect(mockAddItemToSharedList).not.toHaveBeenCalled();
+  });
+});
+
+describe('clearSharedListContext', () => {
+  it('efface le contexte, la sélection, et les traces DOM du mode liste', () => {
+    activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+    toggleSharedListItem('i1');
+
+    clearSharedListContext();
+
+    expect(state.sharedListContext.token).toBeNull();
+    expect(state.sharedListSelection.size).toBe(0);
+    expect(document.body.classList.contains('is-shared-list-context')).toBe(false);
+    expect(document.getElementById('k-side-cart').getAttribute('data-mode')).toBeNull();
+  });
+});
+
+describe('activateFromParticipantUrl / activateOwnerMostRecentList', () => {
+  it('lien invalide -> toast erreur, aucune activation', async () => {
+    mockGetSharedCartPublic.mockResolvedValueOnce(null);
+    const ok = await activateFromParticipantUrl('bad-token');
+    expect(ok).toBe(false);
+    expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('invalide'), 'error');
+    expect(state.sharedListContext.token).toBeNull();
+  });
+
+  it("propriétaire sans liste -> toast informatif, aucune activation", async () => {
+    mockGetOwnerSharedCarts.mockResolvedValueOnce({ carts: [] });
+    mockPickOwnerCart.mockReturnValueOnce(null);
+    const ok = await activateOwnerMostRecentList();
+    expect(ok).toBe(false);
+    expect(state.sharedListContext.token).toBeNull();
+  });
+
+  it('propriétaire avec liste active -> active la liste la plus récente, isCreator=true', async () => {
+    mockGetOwnerSharedCarts.mockResolvedValueOnce({ carts: [{ token: 'tok-owner' }] });
+    mockPickOwnerCart.mockReturnValueOnce({ token: 'tok-owner' });
+    mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload({ is_creator: true }));
+
+    const ok = await activateOwnerMostRecentList();
+
+    expect(ok).toBe(true);
+    expect(state.sharedListContext.isCreator).toBe(true);
+  });
+});
+
+describe('isSharedListActive / exitSharedListRenderMode (contrat avec b-cart.js::renderCartBody, mandat §5)', () => {
+  it('isSharedListActive() reflète l\'état du contexte', () => {
+    expect(isSharedListActive()).toBe(false);
+    activateSharedListContext(publicPayload(), 'tok-1');
+    expect(isSharedListActive()).toBe(true);
+  });
+
+  it('exitSharedListRenderMode() est un no-op tant que le contexte reste actif', () => {
+    activateSharedListContext(publicPayload({ items: [availableItem()] }), 'tok-1');
+    renderSharedListInCart();
+    exitSharedListRenderMode();
+    // Le panneau liste reste en place — exitSharedListRenderMode() ne nettoie
+    // rien tant qu'isSharedListActive() est vrai.
+    expect(document.getElementById('k-shared-list-panel')).not.toBeNull();
+  });
+
+  it('exitSharedListRenderMode() nettoie les traces DOM une fois le contexte terminé', () => {
+    activateSharedListContext(publicPayload({ items: [availableItem()] }), 'tok-1');
+    renderSharedListInCart();
+    clearSharedListContext(); // termine le contexte (état + premier nettoyage)
+    document.body.classList.add('is-shared-list-context'); // simule un résidu DOM
+    document.getElementById('k-side-cart').setAttribute('data-mode', 'shared-list');
+
+    exitSharedListRenderMode();
+
+    expect(document.body.classList.contains('is-shared-list-context')).toBe(false);
+    expect(document.getElementById('k-side-cart').getAttribute('data-mode')).toBeNull();
+  });
+});

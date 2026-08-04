@@ -8867,340 +8867,340 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 
-/* ── group-cart-flow.css ─────────────────────────────────── */
+/* ── shared-list-side-cart.css ───────────────────────────── */
 /**
  * @komerce-arch-lite
- * @role          shared-list-view-styles
+ * @role          shared-list-side-cart-styles
  * @domain        shared-cart
  * @layer         css
- * @owner         public/boutique/js/group/group-render-list.js
- * @purpose       supports public/boutique/js/group/group-render-list.js
- * @impact-areas  shared-cart
+ * @owner         public/boutique/js/group/group-side-cart.js
+ * @purpose       supports public/boutique/js/group/group-side-cart.js
+ * @impact-areas  shared-cart, cart
  * @version       2026-08
  */
 
 /**
- * Boutique First — styles de l'écran unique de la liste partageable
- * (group-render-list.js, préfixe .k-glist-*).
+ * PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — préfixe
+ * .k-shared-list-* / .k-shared-item-*, mandat §13.
  *
- * Ce fichier remplace intégralement l'ancien contenu (1939 lignes,
- * préfixe .k-gc-* : cagnotte, estimations, finalisation, fenêtre de
- * paiement) — mort depuis la suppression du moteur de contribution.
- * Toujours référencé par scripts/css-bundles.js sous le nom
- * "group-cart-flow" : conservé pour ne pas toucher au bundler, le
- * contenu seul a changé.
+ * Réutilise volontairement les tokens et classes existants plutôt que d'en
+ * recréer :
+ *   - lignes d'article : .k-cart-item-img / -img-el / -info / -name (cart.css)
+ *   - CTA principal     : .kcf-btn.kcf-full (cart.css)
+ *   - actions propriétaire : .k-cart-continue-shop (cart.css)
+ *   - palette : --coral (CTA), --ocean (accent vert liste), --violet,
+ *     --green-bg-leaf/--green-text-strong (badge "Ouverte"),
+ *     --amber-bg-light/--amber-text-mid (recap prix), --border, --text,
+ *     --text-muted, --surface-sand-94/96/97 (desktop), --radius-sm.
+ *
+ * Deux points d'ancrage distincts (group-side-cart.js::renderSharedListInCart) :
+ *   - Desktop : #k-side-cart[data-mode="shared-list"] — le panneau est
+ *     PRÉPENDU devant .k-sc-title-bar / #k-sc-items / .k-sc-header (panier
+ *     personnel), qu'il faut donc masquer explicitement via l'attribut
+ *     data-mode (elles ne sont jamais retirées du DOM, seulement cachées).
+ *   - Mobile/drawer : #k-cart-body est REMPLACÉ intégralement par
+ *     .k-shared-list-panel (pas de prepend, rien à masquer côté items) ;
+ *     seul #k-cart-footer (panier personnel) est masqué via .u-hidden,
+ *     déjà géré par le module JS.
  */
 
-.k-glist {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 24px 16px 96px;
-}
+/* ── Masquage du panier personnel desktop pendant le mode liste ─────── */
 
-/* ── Bandeau inviteur ──────────────────────────────────────────── */
-
-.k-glist-banner {
-  margin-bottom: 20px;
-}
-
-.k-glist-invite {
-  font-size: 15px;
-  color: var(--text);
-  margin: 0 0 4px;
-}
-
-.k-glist-title {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0 0 4px;
-}
-
-.k-glist-message {
-  font-size: 14px;
-  color: var(--text-muted);
-  margin: 0;
-}
-
-/* ── Progression ───────────────────────────────────────────────── */
-
-.k-glist-progress {
-  margin-bottom: 20px;
-}
-
-.k-glist-progress-text {
-  display: block;
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-}
-
-.k-glist-progress-bar {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--border-soft-md);
-  overflow: hidden;
-}
-
-.k-glist-progress-fill {
-  height: 100%;
-  background: var(--sage);
-  border-radius: 999px;
-  transition: width .25s ease;
-}
-
-.k-glist-complete-msg {
-  font-size: 14px;
-  color: var(--sage-dark);
-  margin: 0 0 20px;
-}
-
-.k-glist-closed-msg {
-  font-size: 13px;
-  color: var(--text-muted);
-  background: var(--sage-bg-pale);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  margin: 0 0 16px;
-}
-
-/* ── Grille d'articles ─────────────────────────────────────────── */
-
-.k-glist-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-}
-
-.k-glist-item {
-  position: relative;
-  background: var(--white);
-  border: 1px solid var(--border-soft-md);
-  border-radius: var(--radius);
-  padding: 10px;
-  cursor: default;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-
-.k-glist-item[data-selectable="true"] {
-  cursor: pointer;
-}
-
-.k-glist-item[data-selectable="true"]:hover {
-  border-color: var(--sage-light);
-}
-
-.k-glist-item--selected {
-  border-color: var(--sage);
-  box-shadow: 0 0 0 2px var(--border-sage-22);
-}
-
-.k-glist-item--claimed {
-  opacity: .55;
-}
-
-.k-glist-item-img {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: var(--radius-sm);
-  background: var(--sage-bg-pale);
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.k-glist-item-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.k-glist-item-name {
-  font-size: 13px;
-  color: var(--text);
-  margin: 0 0 4px;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.k-glist-item-price {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0 0 4px;
-}
-
-.k-glist-item-status {
-  font-size: 12px;
-  color: var(--sage-dark);
-  margin: 0;
-}
-
-.k-glist-item--claimed .k-glist-item-status {
-  color: var(--text-light);
-}
-
-.k-glist-item-remove {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: none;
-  background: var(--white);
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1;
-  box-shadow: 0 1px 4px rgba(0,0,0,.12);
-  cursor: pointer;
-}
-
-.k-glist-item-remove:hover {
-  color: var(--coral-dark);
-}
-
-/* ── Contrôles créateur ───────────────────────────────────────── */
-
-.k-glist-creator-controls {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-  flex-wrap: wrap;
-}
-
-.k-glist-add-btn,
-.k-glist-close-btn {
-  flex: 1;
-  min-width: 140px;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-soft-md);
-  background: var(--white);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.k-glist-add-btn {
-  color: var(--text);
-}
-
-.k-glist-add-btn:hover,
-.k-glist-close-btn:hover {
-  border-color: var(--sage-light);
-  background: var(--sage-bg-pale);
-}
-
-.k-glist-close-btn {
-  color: var(--coral-dark);
-}
-
-/* ── Barre d'achat ─────────────────────────────────────────────── */
-
-.k-glist-minibar {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: var(--white);
-  border-top: 1px solid var(--border-soft-md);
-  padding: 12px 16px;
-  margin: 24px -16px -96px;
-  box-shadow: 0 -4px 16px rgba(0,0,0,.06);
-}
-
-.k-glist-minibar.u-hidden {
+#k-side-cart[data-mode="shared-list"] > .k-sc-title-bar,
+#k-side-cart[data-mode="shared-list"] > #k-sc-items,
+#k-side-cart[data-mode="shared-list"] > .k-sc-header {
   display: none;
 }
 
-.k-glist-minibar-total {
-  font-size: 16px;
+/* ── Panneau liste — conteneur commun desktop + drawer ───────────────── */
+
+.k-shared-list-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+#k-side-cart[data-mode="shared-list"] {
+  display: flex;
+}
+
+#k-side-cart .k-shared-list-panel {
+  background: var(--surface-sand-94);
+}
+
+/* ── En-tête : titre + badge statut ──────────────────────────────────── */
+
+.k-shared-list-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px 8px;
+  background: var(--surface-sand-97);
+  border-bottom: 1px solid var(--border-coral-09);
+}
+
+.k-shared-list-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: .01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.k-shared-list-status-badge {
+  flex-shrink: 0;
+  font-size: 11px;
   font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: var(--sand);
+  color: var(--text-muted);
+}
+
+.k-shared-list-status-open {
+  background: var(--green-bg-leaf);
+  color: var(--green-text-strong);
+}
+
+.k-shared-list-status-closed {
+  background: var(--sand-dark, var(--sand));
+  color: var(--text-muted);
+}
+
+.k-shared-list-status-cancelled {
+  background: var(--red-bg, var(--sand));
+  color: var(--red-danger-text, var(--text-muted));
+}
+
+.k-shared-list-subtitle {
+  flex-shrink: 0;
+  padding: 8px 14px 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── Barre de progression "N sur M déjà achetés" ─────────────────────── */
+
+.k-shared-list-progress {
+  flex-shrink: 0;
+  padding: 8px 14px 4px;
+}
+
+.k-shared-list-progress-track {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--sand);
+  overflow: hidden;
+}
+
+.k-shared-list-progress-fill {
+  height: 100%;
+  background: var(--ocean);
+  border-radius: 4px;
+  transition: width .25s var(--ease);
+}
+
+.k-shared-list-progress-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── Liste des articles ───────────────────────────────────────────────── */
+
+.k-shared-list-items {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.k-shared-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+}
+
+.k-shared-list-item.is-selected {
+  border-color: var(--ocean);
+  background: var(--green-bg-soft, var(--white));
+}
+
+.k-shared-list-item.is-claimed {
+  opacity: .55;
+}
+
+.k-shared-item-meta {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.k-shared-item-status {
+  color: var(--text-muted);
+}
+
+.k-shared-list-item.is-selected .k-shared-item-status {
+  color: var(--green-text-strong);
+}
+
+.k-shared-item-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.k-shared-item-select {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s var(--ease);
+}
+
+.k-shared-item-select[aria-pressed="true"] {
+  background: var(--ocean);
+  border-color: var(--ocean);
+  color: var(--white);
+}
+
+.k-shared-item-select:disabled {
+  cursor: not-allowed;
+  color: var(--text-light);
+  border-style: dashed;
+}
+
+.k-shared-item-remove {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.k-shared-item-remove:hover {
+  background: var(--sand);
   color: var(--text);
 }
 
-.k-glist-buy-btn {
-  padding: 12px 22px;
+/* ── Actions propriétaire (mandat §9) ─────────────────────────────────── */
+
+.k-shared-list-creator-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.k-shared-list-creator-actions .k-cart-continue-shop {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  padding: 8px 10px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Footer : hint / recap + CTA "Acheter la sélection" ──────────────── */
+
+.k-shared-list-footer {
+  flex-shrink: 0;
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.k-shared-list-footer-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.k-shared-list-footer-recap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-bottom: 8px;
   border-radius: var(--radius-sm);
+  background: var(--amber-bg-light);
+  color: var(--amber-text-mid);
+}
+
+.k-shared-list-footer-recap strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--amber-text-mid);
+}
+
+#k-shared-list-buy {
+  margin: 0;
+}
+
+#k-shared-list-buy:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ── Indicateur mobile flottant "Liste · N" (mandat §7) ───────────────── */
+
+.k-shared-list-context-chip {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--bnav-h) + 12px + env(safe-area-inset-bottom, 0px));
+  z-index: 190;
+  padding: 9px 18px;
   border: none;
-  background: var(--sage);
+  border-radius: 50px;
+  background: var(--ocean);
   color: var(--white);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px var(--shadow-ocean-10, rgba(0,0,0,.18));
   cursor: pointer;
 }
 
-.k-glist-buy-btn:hover {
-  background: var(--sage-dark);
+.k-shared-list-context-chip[hidden] {
+  display: none;
 }
 
-/* ── États vides / erreurs ────────────────────────────────────── */
+/* ── Drawer mobile : masquer le footer panier personnel en mode liste ─── */
 
-.k-glist-empty,
-.k-glist-cancelled {
-  text-align: center;
-  padding: 48px 16px;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-/* ── Squelette de chargement ──────────────────────────────────── */
-
-.k-glist-skeleton {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 24px 16px;
-}
-
-.k-glist-skel-banner,
-.k-glist-skel-progress {
-  height: 16px;
-  border-radius: var(--radius-sm);
-  background: var(--border-soft-md);
-  margin-bottom: 12px;
-  opacity: .5;
-  animation: kGlistPulse 1.2s ease-in-out infinite;
-}
-
-.k-glist-skel-progress {
-  width: 60%;
-}
-
-.k-glist-skel-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.k-glist-skel-card {
-  aspect-ratio: .8;
-  border-radius: var(--radius);
-  background: var(--border-soft-md);
-  opacity: .5;
-  animation: kGlistPulse 1.2s ease-in-out infinite;
-}
-
-@keyframes kGlistPulse {
-  0%, 100% { opacity: .35; }
-  50% { opacity: .6; }
-}
-
-@media (min-width: 900px) {
-  .k-glist-minibar {
-    position: static;
-    border-radius: var(--radius);
-    border: 1px solid var(--border-soft-md);
-    box-shadow: none;
-    margin: 24px 0 0;
-  }
+.k-cart-drawer[data-mode="shared-list"] #k-cart-body {
+  padding: 0;
 }
 
 

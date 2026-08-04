@@ -7,7 +7,7 @@
  * @inputs        shared_list_selection
  * @outputs       ephemeral_canonical_cart, checkout_invocation
  * @depends       ../b-store.js, ../b-checkout.js
- * @used-by       group/group-render-list.js
+ * @used-by       group/group-side-cart.js
  * @doctrine      checkout_ne_connait_jamais_la_liste, panier_personnel_source_de_verite
  * @impact-areas  shared-cart, checkout
  * @version       2026-08

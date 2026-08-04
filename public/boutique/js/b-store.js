@@ -155,6 +155,28 @@ export const state = {
   shareId:    null,
   cartName:   '',
   shareExpiry: null,
+  /**
+   * PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — contexte de
+   * liste partageable projetée dans le side cart / drawer canonique.
+   * Jamais fusionné avec state.cart (mandat §3, invariant explicite).
+   */
+  sharedListContext: {
+    sharedCartId: null,
+    token: null,
+    status: 'open', // open | closed | cancelled
+    isCreator: false,
+    creatorFirstName: null,
+    title: null,
+    message: null,
+    items: [],
+  },
+  /**
+   * Sélection locale du destinataire dans la liste — jamais persistée,
+   * jamais ajoutée à state.cart (mandat §3/§8). Set() natif : ce store
+   * n'est pas serialisé pour cet objet (pas de JSON.stringify(state) global
+   * observé sur ce champ), donc pas besoin d'équivalent sérialisable.
+   */
+  sharedListSelection: new Set(),
 };
 
 /**

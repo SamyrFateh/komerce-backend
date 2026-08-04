@@ -31,14 +31,13 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | Module JS | DOM | CSS-inj | bus on/emit | Composants ciblés |
 |-----------|:---:|:-------:|:-----------:|-------------------|
 | `b-modal-desktop-product.js` | 94 | 1 | 0/0 | Modal produit |
-| `b-cart.js` | 54 | 31 | 2/8 | Side-cart desktop, Panier, Carte produit, Header, Chips catégories, Bottom-nav mobile |
 | `b-modal-mobile-product.js` | 81 | 1 | 0/0 | Modal produit |
+| `b-cart.js` | 48 | 26 | 2/8 | Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
 | `b-modal-core.js` | 17 | 49 | 4/2 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout-render.js` | 58 | 0 | 0/0 | — |
 | `b-checkout.js` | 48 | 4 | 0/3 | Bottom-nav mobile |
 | `b-modal-product.js` | 25 | 11 | 0/1 | Modal produit |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
-| `b-share-cart.js` | 25 | 1 | 0/0 | Panier, Header, Bottom-nav mobile |
 | `b-cart-pill.js` | 6 | 18 | 3/0 | Grille produits, Section catalogue |
 | `b-wallet.js` | 24 | 0 | 0/0 | Section catalogue |
 | `b-mini-cart.js` | 4 | 19 | 2/0 | Panier |
@@ -51,14 +50,14 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-image-ux.js` | 8 | 5 | 1/1 | Modal produit |
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
 | `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
-| `b-komerce.js` | 11 | 0 | 0/1 | Section catalogue |
+| `b-komerce.js` | 11 | 0 | 0/2 | Section catalogue |
 | `boutique.js` | 0 | 11 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/2 | Modal produit |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
 | `hero-bootstrap.js` | 0 | 9 | 0/0 | Grille produits, Hero, Section catalogue |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
 | `b-modal-suggestions.js` | 6 | 0 | 1/3 | Modal produit |
-| `b-nav.js` | 5 | 1 | 4/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
+| `b-nav.js` | 5 | 1 | 5/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
 | `b-favs.js` | 5 | 0 | 1/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
 | `b-paypal.js` | 5 | 0 | 0/0 | — |
 | `b-home-premium-v1.js` | 4 | 0 | 2/0 | Hero, Chips catégories |
@@ -70,6 +69,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-greeting.js` | 2 | 0 | 0/0 | — |
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |
 | `b-desktop-sidebar.js` | 1 | 0 | 0/1 | Chips catégories |
+| `b-share-cart.js` | 1 | 0 | 0/0 | Panier |
 | `b-store.js` | 0 | 1 | 0/1 | Modal produit, Panier, Grille produits, Hero |
 
 ---
@@ -85,7 +85,6 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | hero.css | 140px, 899px, 900px | 🔴 140px, 899px |
 | cart.css | 900px, 899px | 🔴 899px |
 | categories.css | 900px, 1200px, 899px | 🔴 899px |
-| group-cart-flow.css | 900px, 1200px, 899px | 🔴 899px |
 | interactions.css | 899px | 🔴 899px |
 | layout.css | 899px, 900px, 1200px | 🔴 899px |
 | modal-enriched-content.css | 900px, 899px | 🔴 899px |
@@ -102,14 +101,13 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | modal-product-lot4-hybrid.css | 900px, 1200px | ✅ |
 | reset.css | 900px | ✅ |
 | share-cart.css | 900px | ✅ |
-| shared-followup.css | 900px, 1200px | ✅ |
 | tokens.css | 900px, 1200px | ✅ |
 
 ---
 
 ## 4. Dette CSS
 
-### `!important` — total : 22
+### `!important` — total : 21
 
 | Fichier | Occurrences |
 |---------|:-----------:|
@@ -118,7 +116,6 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | share-cart.css | 4 |
 | categories.css | 2 |
 | cart.css | 1 |
-| group-cart-flow.css | 1 |
 | interactions.css | 1 |
 | layout.css | 1 |
 | products.css | 1 |
@@ -137,7 +134,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Composants en multipropriété CSS | 8 | 0 |
 | Modules JS écrivant le DOM | 35 | ≤ 5 |
 | Breakpoints distincts | 5 | ≤ 2 |
-| Violations breakpoint | 14 | 0 |
-| `!important` | 22 | < 5 |
+| Violations breakpoint | 13 | 0 |
+| `!important` | 21 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

@@ -10,14 +10,13 @@
 
 ## 1. Inventaire CSS
 
-25 fichier(s) sur disque, 25 orphelin(s).
+24 fichier(s) sur disque, 24 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
 | `boutique-desktop.css` | 1315 | 🔴 **ORPHELIN** |
-| `cart.css` | 2002 | 🔴 **ORPHELIN** |
+| `cart.css` | 1917 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
-| `group-cart-flow.css` | 1940 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
@@ -36,8 +35,8 @@
 | `products.css` | 888 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 71 | 🔴 **ORPHELIN** |
-| `shared-followup.css` | 3 | 🔴 **ORPHELIN** |
-| `tokens.css` | 519 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 335 | 🔴 **ORPHELIN** |
+| `tokens.css` | 516 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
@@ -45,8 +44,8 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=157
- 2. /boutique/css/dist/components.css?v=370
+ 1. /boutique/css/dist/base.css?v=158
+ 2. /boutique/css/dist/components.css?v=377
  3. /boutique/css/dist/desktop.css?v=85
 ```
 
@@ -79,12 +78,11 @@ Aucun. ✅
 
 ## 5. Hex hardcodés hors tokens.css
 
-25 occurrence(s) au total, répartition :
+15 occurrence(s) au total, répartition :
 
 | Fichier | Nombre |
 |---|---:|
 | `paypal.css` | 14 |
-| `group-cart-flow.css` | 10 |
 | `layout.css` | 1 |
 
 ## 6. `!important` par fichier
@@ -101,19 +99,19 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×2) ⚠️ multi-owner |
-| `--pager-w` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--bnav-h` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--modal-scroll-y` | `js\b-modal-core.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--pager-top` | `js\b-pager.js` (×1) |
+| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1) ⚠️ multi-owner |
+| `--pager-w` | `js\b-pager.js` (×1) |
+| `--bnav-h` | `js\b-pager.js` (×1) |
+| `--modal-scroll-y` | `js\b-modal-core.js` (×1) |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 25 (cible : 0)
+- **CSS orphelins** : 24 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
-- **Hex hardcodés** : 25 (cible : 0 ou allowlist)
+- **Hex hardcodés** : 15 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)
 - **Sélecteurs multi-owner** : 11 (vérifier vs `BOUTIQUE_ARCHITECTURE.md` §3)
 

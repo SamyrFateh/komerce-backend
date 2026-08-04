@@ -7,7 +7,7 @@
  * @inputs        share_token, viewer_session, product_id, item_id
  * @outputs       shared_cart_data, action_results
  * @depends       routes/shared-cart.js, fetch
- * @used-by       b-group-view.js, group/group-render-list.js
+ * @used-by       b-group-view.js, group/group-side-cart.js
  * @doctrine      boutique_first, domaine_minimal, un_appel_une_action
  * @impact-areas  shared-cart, participant-flow, creator-flow, checkout
  * @version       2026-08
@@ -95,6 +95,19 @@ export function removeItemFromSharedList(cartId, itemId) {
  */
 export function closeCart(cartId) {
   return apiPost(`/api/shared-carts/${cartId}/close`, {});
+}
+
+/**
+ * Ajoute un article unitaire à la liste (Invariant 20 : une intention, un
+ * appel, écriture immédiate). Distinct du PUT /:id/items historique (édition
+ * groupée) qu'aucun écran V1 n'appelle plus.
+ * @param {string|number} cartId
+ * @param {string|number} productId
+ * @param {number} [quantity=1]
+ * @returns {Promise<{ok: boolean, cart, item}>}
+ */
+export function addItemToSharedList(cartId, productId, quantity = 1) {
+  return apiPost(`/api/shared-carts/${cartId}/items`, { product_id: productId, quantity });
 }
 
 /* ── Endpoint public (fetch direct, credentials:include) ──────────── */

@@ -19,7 +19,7 @@ module.exports = {
   canonicalFeature: 'shared-cart',
   sliceKind: 'frontend-slice',
 
-  service: 'Panier partagé et flux groupe : création, gestion et rendu créateur/participant.',
+  service: 'Panier partagé et flux groupe : création, gestion et rendu créateur/participant, projeté dans le side cart / drawer canonique (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART).',
   perimeter: {
     in: ['panier partagé Boutique First et vues groupe'],
     out: ['panier personnel, catalogue vivant et paiement hors contrat partagé'],
@@ -32,22 +32,19 @@ module.exports = {
       '../js/group/group-api.js',
       '../js/group/group-checkout-adapter.js',
       '../js/group/group-helpers.js',
-      '../js/group/group-render-list.js',
+      '../js/group/group-side-cart.js',
       '../js/group/group-state.js',
       '../js/b-share-phone-guard.js',
     ],
-    boutique: [
-      '../js/b-group-cart-flow.js',
-    ],
     css: [
-      '../css/group-cart-flow.css',
       '../css/hero-cart-proxy.css',
       '../css/share-cart.css',
+      '../css/shared-list-side-cart.css',
     ],
     tests: [
-      '../tests/unit/group-render-list.test.js',
       '../tests/unit/group-checkout-adapter.test.js',
       '../tests/unit/b-share-phone-guard.test.js',
+      '../tests/unit/group-side-cart.test.js',
     ],
   },
 
@@ -56,10 +53,9 @@ module.exports = {
     exposes: [],
     internalApi: [
       'b-share-cart.js / partage de panier',
-      'group-render-list.js / écran unique de la liste partageable',
+      'group-side-cart.js / activation et rendu de la liste partageable dans le side cart / drawer canonique',
       'group-checkout-adapter.js / pont sélection liste -> checkout canonique',
       'group-api.js / group-state.js / group-helpers.js',
-      'b-group-cart-flow.js / orchestration entrée groupe',
     ],
     consumes: [
       'auth — identité et téléphone',

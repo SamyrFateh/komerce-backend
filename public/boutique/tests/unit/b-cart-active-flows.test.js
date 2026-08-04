@@ -18,7 +18,7 @@ const mockScrollToPosition = jest.fn();
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
 const mockSwitchView = jest.fn();
-const mockRenderGroupView = jest.fn();
+
 
 jest.mock('../../js/b-catalog.js', () => ({
   scrollToCategorySection: mockScrollToCategorySection,
@@ -56,7 +56,6 @@ jest.mock('../../js/shop-schema.js', () => ({
 }));
 
 jest.mock('../../js/b-nav.js', () => ({ switchView: mockSwitchView }));
-jest.mock('../../js/group/group-render-list.js', () => ({ renderGroupView: mockRenderGroupView }));
 
 document.body.innerHTML = '<input id="k-search-input">';
 Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });

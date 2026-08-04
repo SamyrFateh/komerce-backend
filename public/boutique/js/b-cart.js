@@ -39,6 +39,7 @@ import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
 import { renderAddControl } from './render/render-product-card.js';
 import { getProductCartSummary, getCartItemProductId } from './cart-product-summary.js';
+import { isSharedListActive, renderSharedListInCart, exitSharedListRenderMode } from './group/group-side-cart.js';
 
 'use strict';
 
@@ -618,6 +619,17 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
    * @param {number|string} [highlightId] - ID produit à mettre en évidence (optionnel)
    */
   function renderCartBody(highlightId) {
+    // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — le side cart
+    // canonique passe en mode shared-list quand un contexte de liste est
+    // actif ; le panier personnel (state.cart) n'est jamais lu/écrit dans
+    // cette branche (mandat §3, §5). Retour immédiat : le rendu normal
+    // ci-dessous reste strictement celui du panier personnel hors contexte.
+    if (isSharedListActive()) {
+      renderSharedListInCart();
+      return;
+    }
+    exitSharedListRenderMode();
+
     dom.cartBody.innerHTML = '';
 
     // FIX UX : marquer le body avec 'cart-empty' si panier vide

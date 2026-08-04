@@ -3,8 +3,8 @@
  * @role          boutique-b-share-phone-guard
  * @domain        shared-cart
  * @layer         ui-component
- * @owner         public/boutique/js/group/group-render-list.js
- * @purpose       supports public/boutique/js/group/group-render-list.js
+ * @owner         public/boutique/js/b-share-cart.js
+ * @purpose       tombstone — no-op conservé pour compatibilité avec main.js
  * @impact-areas  boutique
  * @version       2026-06
  */

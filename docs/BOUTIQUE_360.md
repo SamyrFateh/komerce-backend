@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-03T05:50:58.946Z.
+> Régénéré le 2026-08-04T09:23:44.516Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **76** (76 headés) · Événements bus : **23** · Bundles CSS : **3**
-- Endpoints appelés : **44** — 🔴 0 hors contrat · ⚪ 31 non prouvés · 🔵 15 dynamiques
+- Modules JS : **75** (75 headés) · Événements bus : **23** · Bundles CSS : **3**
+- Endpoints appelés : **45** — 🔴 0 hors contrat · ⚪ 31 non prouvés · 🔵 16 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -54,6 +54,7 @@
 | `/api/shared-carts/mine` | b-share-cart, group-api | ⚪ non prouvé |
 | `/api/shared-carts/public/{id}` | b-group-banner, group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/close` | group-api | 🔵 dynamique |
+| `/api/shared-carts/{id}/items` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/items/{id}` | group-api | 🔵 dynamique |
 | `/api/shares` | b-cart, b-favs | ⚪ non prouvé |
 | `/api/wallet` | b-checkout, b-wallet | ⚪ non prouvé |
@@ -83,7 +84,7 @@
 | `nav:goto-komerce-wallet` | b-checkout | b-nav | 🟢 sain |
 | `nav:goto-track` | b-checkout | b-nav | 🟢 sain |
 | `product:open-from-cart` | b-product-open-contract | b-product-open-contract | 🟢 sain |
-| `side-cart:render` | b-cart, b-cart-core | b-cart | 🟢 sain |
+| `side-cart:render` | b-cart, b-cart-core, group-side-cart | b-cart, group-side-cart | 🟢 sain |
 | `sidebar:built` | b-desktop-sidebar | — | 🔴 émission orpheline |
 | `view:changed` | b-nav | b-catalog-desktop-enhancers, b-home-premium-v1 | 🟡 non déclaré |
 
@@ -91,7 +92,10 @@
 
 ```mermaid
 graph LR
+  b_cart["b-cart"] -->|side-cart:render| group_side_cart["group-side-cart"]
   b_cart_core["b-cart-core"] -->|side-cart:render| b_cart["b-cart"]
+  b_cart_core["b-cart-core"] -->|side-cart:render| group_side_cart["group-side-cart"]
+  group_side_cart["group-side-cart"] -->|side-cart:render| b_cart["b-cart"]
   b_cart_core["b-cart-core"] -->|cart:update| b_cart["b-cart"]
   b_cart_core["b-cart-core"] -->|cart:update| b_cart_pill["b-cart-pill"]
   b_cart_core["b-cart-core"] -->|cart:update| b_mini_cart["b-mini-cart"]
@@ -149,7 +153,7 @@ graph LR
 | Bundle | Sources |
 |---|---|
 | `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
-| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `identity`, `paypal`, `wallet`, `komerce` |
+| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `hero-cart-proxy`, `shared-list-side-cart`, `share-cart`, `identity`, `paypal`, `wallet`, `komerce` |
 | `css/dist/desktop.css` | `boutique-desktop` |
 
 ---
