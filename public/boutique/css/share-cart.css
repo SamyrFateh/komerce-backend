@@ -1,70 +1,28 @@
-/* ═══════════════════════════════════════════════════════════════
-   KOMERCE — share-cart.css
-   Owner du partage de panier (sidebar + modale).
-   Rapatrié depuis les <style> injectés par b-share-cart.js (doctrine §1).
-   ⚠ Les 2 display:none!important (badges) sont conservés VERBATIM :
-      à traiter dans l'audit !important (dette nouvellement visible).
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @komerce-arch-lite
+ * @role          shared-cart-legacy-indicator-styles
+ * @domain        shared-cart
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-share-cart.js
+ * @purpose       Conserve uniquement les indicateurs historiques masqués du side cart.
+ * @impact-areas  shared-cart, side-cart
+ * @version       2026-08
+ */
 
-/* ── Sidebar / badges ── */
-.k-sc-shared-badge{display:none!important}
-.k-sc-reshare-btn{display:none!important}
+/*
+ * Le formulaire historique « Créer une liste » a été supprimé du runtime
+ * par la PR #671. Ses sélecteurs `.k-share-modal-*` et `.k-sm-*` ne doivent
+ * plus être livrés dans le bundle : le partage actif est désormais direct
+ * (identité → création → feuille de partage native).
+ *
+ * Ces deux indicateurs HTML restent présents pour compatibilité du shell,
+ * mais sont volontairement masqués tant que leur parcours n'est pas remis
+ * en service par une décision produit explicite.
+ */
+.k-sc-shared-badge {
+  display: none !important;
+}
 
-/* ── Modale de partage ── */
-.k-share-modal-overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.45);
-  display:flex;align-items:flex-end;justify-content:center;animation:kSMFadeIn .2s ease}
-@keyframes kSMFadeIn{from{opacity:0}to{opacity:1}}
-@media(min-width:900px){.k-share-modal-overlay{align-items:center}}
-.k-share-modal-sheet{background:var(--white);border-radius:20px 20px 0 0;
-  padding:28px 20px calc(32px + env(safe-area-inset-bottom));width:100%;max-width:420px;
-  animation:kSMSlideUp .28s var(--ease)}
-@media(min-width:900px){.k-share-modal-sheet{border-radius:16px;padding-bottom:28px}}
-@keyframes kSMSlideUp{from{transform:translateY(48px);opacity:0}to{transform:none;opacity:1}}
-.k-sm-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.k-sm-title{font-size:17px;font-weight:800;color:var(--text)}
-.k-sm-close{width:32px;height:32px;border:none;background:var(--sand);border-radius:50%;
-  font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted)}
-.k-sm-close:hover{background:var(--sand-dark)}
-.k-sm-label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);
-  margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
-.k-sm-input{width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);
-  font-size:15px;font-family:var(--font);color:var(--text);background:var(--white);
-  outline:none;box-sizing:border-box;transition:border-color .2s}
-.k-sm-input:focus{border-color:var(--violet)}
-.k-sm-field{margin-bottom:12px}
-.k-sm-hint{font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.5}
-.k-sm-err{font-size:12px;color:var(--red-danger-text);min-height:18px;margin-top:4px}
-.k-sm-btn{width:100%;padding:14px;margin-top:14px;background:var(--violet);color:var(--white);
-  border:none;border-radius:50px;font-size:15px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .15s}
-.k-sm-btn:hover{background:var(--violet-dark);transform:translateY(-1px)}
-.k-sm-btn:disabled{background:var(--sand-dark);color:var(--text-light);cursor:not-allowed;transform:none}
-.k-sm-choice{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.k-sm-btn-secondary{background:var(--sand);color:var(--text)}
-.k-sm-btn-secondary:hover{background:var(--sand-dark)}
-.k-sm-btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
-.k-sm-btn-ghost:hover{background:var(--sand);color:var(--text)}
-/* Phone block inside modal */
-.k-sm-phone-row{display:flex;gap:8px;align-items:stretch}
-.k-sm-phone-sel{flex:0 0 auto;padding:11px 8px 11px 10px;border:2px solid var(--border);
-  border-radius:var(--radius-sm);font-size:14px;font-family:var(--font);color:var(--text);
-  background:var(--white);outline:none;cursor:pointer;transition:border-color .2s;
-  appearance:none;-webkit-appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
-.k-sm-phone-sel:focus{border-color:var(--violet)}
-.k-sm-phone-input{flex:1 1 auto;padding:11px 14px;border:2px solid var(--border);
-  border-radius:var(--radius-sm);font-size:15px;font-family:var(--font);color:var(--text);
-  background:var(--white);outline:none;box-sizing:border-box;transition:border-color .2s;
-  min-width:0}
-.k-sm-phone-input:focus{border-color:var(--violet)}
-.k-sm-phone-input.k-valid{border-color:var(--green-valid)}
-.k-sm-phone-input.k-invalid{border-color:var(--red-danger-text)}
-.k-sm-name-input:not(:placeholder-shown):invalid{border-color:var(--red-danger-text)}
-.k-sm-nature{display:flex;flex-direction:column;gap:8px;margin-top:6px}
-.k-sm-nature-opt{display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;
-  padding:12px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);
-  background:var(--white);font-family:var(--font);cursor:pointer;transition:border-color .15s,box-shadow .15s}
-.k-sm-nature-opt:hover{border-color:var(--violet)}
-.k-sm-nature-opt.is-active{border-color:var(--violet);box-shadow:0 0 0 1px var(--violet) inset}
-.k-sm-nature-opt strong{font-size:14px;font-weight:700;color:var(--text)}
-.k-sm-nature-opt span{font-size:12px;color:var(--text-muted);line-height:1.4}
+.k-sc-reshare-btn {
+  display: none !important;
+}
