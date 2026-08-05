@@ -6,13 +6,13 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js
+ * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js
  * @db-write      none
- * @db-read      none
+ * @db-read       none
  * @used-by       server.js
  * @doctrine      routes_canoniques, stripe_raw_body_preserve, alias_historiques_limites
  * @impact-areas  all-api, checkout, shared-cart, payment, dashboard, economic-engine, boutique, product-detail
- * @version       2026-07
+ * @version       2026-08
  */
 
 'use strict';
@@ -110,6 +110,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const autoDistributeRouter = require('../routes/auto-distribute-api');
   const hubMarkOrderedRouter = require('../routes/hub-mark-ordered');
   const sharesRouter = require('../routes/shares');
+  const sharedCartSavedRouter = require('../routes/shared-cart-saved');
   const metaWhatsAppRoutes = require('../routes/meta-whatsapp');
   const economicEngineRouter  = require('../routes/economic');
   const adminFinanceConfig    = require('../routes/admin-finance-config');
@@ -184,6 +185,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/purchasing', purchasingRouter);
   app.use('/api/loyalty',    loyaltyRouter);
   app.use('/api/unsold',     unsoldRouter);
+  app.use('/api/shared-carts/saved', sharedCartSavedRouter);
   app.use('/api/shares',     sharesRouter);
   app.use('/health',         healthRouter);
   app.use(metaWhatsAppRoutes);
