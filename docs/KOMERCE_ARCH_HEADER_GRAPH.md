@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 362
-- Files with full headers: 335
+- Scanned code files: 363
+- Files with full headers: 336
 - Files with lite headers: 27
-- Files with any headers: 362
+- Files with any headers: 363
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 765
-- Edges: 4103
+- Graph nodes: 767
+- Edges: 4107
 - DB tables: 109
-- Doctrines: 164
+- Doctrines: 165
 - Impact areas: 130
 - Unresolved code edges: 420
 - Tables multi-écrivains directs (>=2): 61
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - recommendations: 4
 - refunds: 2
 - shared: 1
-- shared-cart: 19
+- shared-cart: 20
 - shared-cart-modal: 7
 - sourcing: 1
 - tracking: 1
@@ -67,6 +67,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - cron: 1
 - data-service: 1
 - domain-helper: 1
+- domain-logic: 1
 - entrypoint: 1
 - external-adapter: 2
 - machine: 1

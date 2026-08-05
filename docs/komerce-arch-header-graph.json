@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 362,
-    "filesWithFullHeaders": 335,
+    "scannedCodeFiles": 363,
+    "filesWithFullHeaders": 336,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 362,
+    "filesWithAnyHeaders": 363,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 765,
-    "edges": 4103,
+    "graphNodes": 767,
+    "edges": 4107,
     "dbTables": 109,
-    "doctrines": 164,
+    "doctrines": 165,
     "impactAreas": 130,
     "unresolvedCodeEdges": 420,
     "dbWriteViaOverlapWarnings": 0,
@@ -38,7 +38,7 @@
     "boutique": 19,
     "catalog": 64,
     "checkout": 2,
-    "shared-cart": 19,
+    "shared-cart": 20,
     "account": 1,
     "shared-cart-modal": 7,
     "recommendations": 4,
@@ -87,6 +87,7 @@
     "controller": 1,
     "api-client": 2,
     "adapter": 1,
+    "domain-logic": 1,
     "state-store": 1,
     "schema": 1,
     "route": 95,
@@ -99,7 +100,7 @@
   },
   "byCriticality": {
     "critical": 55,
-    "medium": 105,
+    "medium": 106,
     "high": 167,
     "low": 35
   },
@@ -3392,6 +3393,41 @@
       "doctrine": [],
       "impactAreas": [
         "shared-cart"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "public/boutique/js/group/group-price-variation.js",
+      "file": "public/boutique/js/group/group-price-variation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-list-price-variation",
+      "domain": "shared-cart",
+      "layer": "domain-logic",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "cart_line_items"
+      ],
+      "outputs": [
+        "price_variation_lines",
+        "summary_message"
+      ],
+      "depends": [],
+      "usedBy": [
+        "../b-checkout.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "prix_snapshot_liste_prix_actuel_checkout"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "checkout"
       ],
       "version": "2026-08"
     },
@@ -17690,6 +17726,11 @@
       "doctrine": "panier_personnel_source_de_verite"
     },
     {
+      "id": "doctrine:prix_snapshot_liste_prix_actuel_checkout",
+      "type": "doctrine",
+      "doctrine": "prix_snapshot_liste_prix_actuel_checkout"
+    },
+    {
       "id": "doctrine:un_seul_composant",
       "type": "doctrine",
       "doctrine": "un_seul_composant"
@@ -23708,6 +23749,30 @@
       "to": "impact:shared-cart",
       "type": "impact",
       "label": "shared-cart"
+    },
+    {
+      "from": "public/boutique/js/b-checkout.js",
+      "to": "public/boutique/js/group/group-price-variation.js",
+      "type": "uses",
+      "label": "../b-checkout.js"
+    },
+    {
+      "from": "public/boutique/js/group/group-price-variation.js",
+      "to": "doctrine:prix_snapshot_liste_prix_actuel_checkout",
+      "type": "doctrine",
+      "label": "prix_snapshot_liste_prix_actuel_checkout"
+    },
+    {
+      "from": "public/boutique/js/group/group-price-variation.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "public/boutique/js/group/group-price-variation.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
     },
     {
       "from": "public/boutique/js/group/group-side-cart.js",
@@ -45139,6 +45204,7 @@
         "public/boutique/js/b-store.js",
         "public/boutique/js/boutique.js",
         "public/boutique/js/group/group-checkout-adapter.js",
+        "public/boutique/js/group/group-price-variation.js",
         "routes/orders.js",
         "routes/payments.js",
         "routes/wallet.js"
@@ -47028,6 +47094,35 @@
       "mustCheck": [
         "impact:shared-cart",
         "public/boutique/js/b-group-view.js"
+      ]
+    },
+    "public/boutique/js/group/group-price-variation.js": {
+      "role": "shared-list-price-variation",
+      "domain": "shared-cart",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "public/boutique/js/b-checkout.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "prix_snapshot_liste_prix_actuel_checkout"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "checkout"
+      ],
+      "mustCheck": [
+        "doctrine:prix_snapshot_liste_prix_actuel_checkout",
+        "impact:checkout",
+        "impact:shared-cart",
+        "public/boutique/js/b-checkout.js"
       ]
     },
     "public/boutique/js/group/group-side-cart.js": {

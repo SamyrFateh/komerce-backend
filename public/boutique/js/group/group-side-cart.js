@@ -1018,6 +1018,16 @@ function handleBuySelection() {
       shared_cart_item_id: it.id,
       product,
       quantity: it.quantity || 1,
+      // Correctif V2-E §2 — métadonnées snapshot conservées pour le seul
+      // rendu du checkout (variation de prix, doctrine §3). Ne sert jamais
+      // au calcul du total ni au payload envoyé au backend : cartTotal()
+      // (b-cart-core.js) et le payload de commande (b-checkout.js) lisent
+      // exclusivement it.product.price_kmf, jamais ce snapshot.
+      shared_list_context: {
+        snapshot_unit_price_kmf: Number(it.unit_price_kmf) || 0,
+        snapshot_name: it.name || null,
+        snapshot_image_url: it.image || null,
+      },
     });
   });
 

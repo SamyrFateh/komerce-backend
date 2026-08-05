@@ -975,3 +975,98 @@ describe('amendement V2 §B — conflit checkout "item_already_claimed" (correct
     expect(mockGetSharedCartPublic).not.toHaveBeenCalled();
   });
 });
+
+describe('mandat V2-E §4 — isolation panier personnel / liste (ajout au panier perso depuis la fiche produit)', () => {
+  // Scénario complet du mandat : liste active -> article sélectionné ->
+  // ouverture fiche produit -> ajout au panier personnel -> fermeture de
+  // la modale -> retour à la liste. b-modal-core.js (ajout réel au panier)
+  // n'est pas sous test ici — hors périmètre de ce module (aucune
+  // dépendance de group-side-cart.js vers lui). On simule uniquement son
+  // effet observable : une mutation de state.cart, exactement ce qu'un
+  // clic "Ajouter au panier" produit dans la fiche produit. Le point sous
+  // test est l'ABSENCE totale de couplage entre cette mutation et l'état
+  // de liste partagée.
+  beforeEach(() => {
+    mockIsDesktop.mockReturnValue(false); // mobile — le drawer doit réellement se fermer/rouvrir
+    state.products = [{ id: 'p-42' }];
+  });
+
+  afterEach(() => {
+    state.modalReturnSurface = null;
+    state.products = [];
+  });
+
+  it('ajouter un produit au panier personnel depuis la fiche produit ouverte depuis la liste ne modifie ni la sélection ni le contexte de liste', () => {
+    const personalCart = [];
+    state.cart = personalCart;
+    activateSharedListContext(
+      publicPayload({ is_creator: false, items: [availableItem({ id: 'i1', product_id: 'p-42', quantity: 2 })] }),
+      'tok-1'
+    );
+    toggleSharedListItem('i1');
+    expect(state.sharedListSelection.has('i1')).toBe(true);
+
+    const initialSelection = new Set(state.sharedListSelection);
+    const initialItems = JSON.parse(JSON.stringify(state.sharedListContext.items));
+    const initialQuantity = state.sharedListContext.items.find((it) => it.id === 'i1').quantity;
+
+    // → ouverture de la fiche produit depuis la ligne de liste
+    document.querySelector('.k-shared-item-open').click();
+    expect(dom.cartDrawer.classList.contains('open')).toBe(false); // drawer fermé pour laisser place à la modale
+    expect(state.modalReturnSurface).toBe('shared-list');
+
+    // → ajout au panier personnel (effet observable d'un clic "Ajouter au
+    // panier" dans b-modal-core.js, module hors périmètre ici)
+    state.cart = [...state.cart, { product: { id: 'p-42' }, qty: 1 }];
+
+    // → fermeture de la modale
+    bus.emit('modal:closed');
+
+    // state.cart EST modifié (le panier personnel a bien reçu l'article)
+    expect(state.cart).toHaveLength(1);
+    expect(state.cart[0].product.id).toBe('p-42');
+
+    // state.sharedListSelection reste identique
+    expect(state.sharedListSelection).toEqual(initialSelection);
+    // state.sharedListContext.items reste identique (même quantité de ligne)
+    expect(state.sharedListContext.items).toEqual(initialItems);
+    expect(state.sharedListContext.items.find((it) => it.id === 'i1').quantity).toBe(initialQuantity);
+
+    // aucune route shared-cart n'est appelée par cet ajout au panier
+    expect(mockUpdateSharedListItemQuantity).not.toHaveBeenCalled();
+    expect(mockAddItemToSharedList).not.toHaveBeenCalled();
+    expect(mockRemoveItemFromSharedList).not.toHaveBeenCalled();
+
+    // le drawer mobile se rouvre, la surface revient à 'shared-list'
+    expect(dom.cartDrawer.classList.contains('open')).toBe(true);
+    expect(state.cartSurface).toBe('shared-list');
+  });
+
+  it('même isolation sur desktop : aucun cycle artificiel de fermeture/réouverture du side cart', () => {
+    mockIsDesktop.mockReturnValue(true);
+    const personalCart = [{ product: { id: 'y' }, qty: 1 }];
+    state.cart = personalCart;
+    activateSharedListContext(
+      publicPayload({ items: [availableItem({ id: 'i1', product_id: 'p-42' })] }),
+      'tok-1'
+    );
+    toggleSharedListItem('i1');
+    const initialSelection = new Set(state.sharedListSelection);
+    const initialItems = JSON.parse(JSON.stringify(state.sharedListContext.items));
+
+    document.querySelector('.k-shared-item-open').click();
+    // desktop : le panneau liste reste en place, pas de fermeture/réouverture
+    expect(document.getElementById('k-shared-list-panel')).not.toBeNull();
+
+    state.cart = [...state.cart, { product: { id: 'p-42' }, qty: 1 }];
+    bus.emit('modal:closed');
+
+    expect(state.sharedListSelection).toEqual(initialSelection);
+    expect(state.sharedListContext.items).toEqual(initialItems);
+    expect(mockUpdateSharedListItemQuantity).not.toHaveBeenCalled();
+    expect(mockAddItemToSharedList).not.toHaveBeenCalled();
+    expect(mockRemoveItemFromSharedList).not.toHaveBeenCalled();
+    expect(state.cartSurface).toBe('shared-list');
+  });
+});
+

@@ -70,6 +70,39 @@ describe('checkoutSharedListSelection', () => {
     ]);
   });
 
+  it('conserve shared_cart_item_id et product.id distincts (mandat V2-E §1)', () => {
+    checkoutSharedListSelection([
+      { shared_cart_item_id: 'shared-item-1', product: { id: 'product-42' }, quantity: 1 },
+    ]);
+    const line = state.cart[0];
+    expect(line.shared_cart_item_id).toBe('shared-item-1');
+    expect(line.product.id).toBe('product-42');
+    expect(line.product.id).not.toBe(line.shared_cart_item_id);
+  });
+
+  it('propage shared_list_context (métadonnées snapshot) quand fourni par l\'appelant (mandat V2-E §2)', () => {
+    checkoutSharedListSelection([
+      {
+        shared_cart_item_id: 'sci-1',
+        product: { id: 42, price_kmf: 7200 },
+        quantity: 1,
+        shared_list_context: { snapshot_unit_price_kmf: 6500, snapshot_name: 'Riz', snapshot_image_url: null },
+      },
+    ]);
+    expect(state.cart[0].shared_list_context).toEqual({
+      snapshot_unit_price_kmf: 6500,
+      snapshot_name: 'Riz',
+      snapshot_image_url: null,
+    });
+  });
+
+  it('n\'ajoute pas de champ shared_list_context si absent de l\'appelant (pas de métadonnée fantôme)', () => {
+    checkoutSharedListSelection([
+      { shared_cart_item_id: 'sci-1', product: { id: 42 }, quantity: 1 },
+    ]);
+    expect(state.cart[0].shared_list_context).toBeUndefined();
+  });
+
   it('quantity par défaut à 1 si absente', () => {
     checkoutSharedListSelection([{ shared_cart_item_id: 'sci-1', product: { id: 42 } }]);
     expect(state.cart[0].qty).toBe(1);

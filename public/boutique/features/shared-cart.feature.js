@@ -32,6 +32,7 @@ module.exports = {
       '../js/group/group-api.js',
       '../js/group/group-checkout-adapter.js',
       '../js/group/group-helpers.js',
+      '../js/group/group-price-variation.js',
       '../js/group/group-side-cart.js',
       '../js/group/group-state.js',
       '../js/b-share-phone-guard.js',
@@ -43,6 +44,7 @@ module.exports = {
     ],
     tests: [
       '../tests/unit/group-checkout-adapter.test.js',
+      '../tests/unit/group-price-variation.test.js',
       '../tests/unit/b-share-phone-guard.test.js',
       '../tests/unit/group-side-cart.test.js',
     ],
@@ -55,6 +57,7 @@ module.exports = {
       'b-share-cart.js / partage de panier',
       'group-side-cart.js / activation et rendu de la liste partageable dans le side cart / drawer canonique',
       'group-checkout-adapter.js / pont sélection liste -> checkout canonique',
+      'group-price-variation.js / comparaison prix snapshot liste vs prix catalogue actuel (recap checkout)',
       'group-api.js / group-state.js / group-helpers.js',
     ],
     consumes: [

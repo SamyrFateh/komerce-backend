@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-04T23:45:28.206Z",
+  "generatedAt": "2026-08-05T08:58:45.646Z",
   "summary": {
-    "modules": 75,
-    "withHeader": 75,
+    "modules": 76,
+    "withHeader": 76,
     "events": 25,
     "declaredActive": 24,
     "declaredDead": 9,
@@ -509,6 +509,7 @@
         "b-scroll-owner",
         "b-identity",
         "b-checkout-render",
+        "group-price-variation",
         "b-phone"
       ],
       "bodyClasses": [
@@ -2030,6 +2031,29 @@
       "doctrine": [],
       "depends": [],
       "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/group/group-price-variation.js",
+      "id": "group-price-variation",
+      "hasHeader": true,
+      "role": "shared-list-price-variation",
+      "domain": "shared-cart",
+      "layer": "domain-logic",
+      "criticality": "medium",
+      "doctrine": [
+        "prix_snapshot_liste_prix_actuel_checkout"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "../b-checkout.js"
+      ],
       "emits": [],
       "listens": [],
       "imports": [],

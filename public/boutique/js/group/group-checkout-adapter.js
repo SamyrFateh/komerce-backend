@@ -59,11 +59,22 @@ export function checkoutSharedListSelection(selectedItems) {
   const validItems = selectedItems.filter(it => it && it.product && it.shared_cart_item_id);
   if (!validItems.length) return false;
 
-  const ephemeralCart = validItems.map(it => ({
-    product: it.product,
-    qty: it.quantity || 1,
-    shared_cart_item_id: it.shared_cart_item_id,
-  }));
+  const ephemeralCart = validItems.map(it => {
+    const line = {
+      product: it.product,
+      qty: it.quantity || 1,
+      shared_cart_item_id: it.shared_cart_item_id,
+    };
+    // Correctif V2-E §2 — propager le contexte snapshot (prix/nom/image au
+    // moment du partage) uniquement quand fourni par l'appelant, pour le
+    // rendu de variation de prix côté checkout (group-price-variation.js).
+    // Jamais consommé par b-checkout.js pour le calcul du total ou le
+    // payload de commande — lecture exclusive de it.product.
+    if (it.shared_list_context) {
+      line.shared_list_context = it.shared_list_context;
+    }
+    return line;
+  });
 
   const personalCart = state.cart;
   state.cart = ephemeralCart;

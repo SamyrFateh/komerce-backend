@@ -37,6 +37,7 @@ import {
   makeInput                 as _makeInputRender,
   makePhoneInput            as _makePhoneInputRender,
 } from './b-checkout-render.js';
+import { computePriceVariations, buildPriceVariationSummary } from './group/group-price-variation.js';
 import {
   digitsOnly as _digitsOnly,
   normalizeLocal as _normalizeLocal,
@@ -464,6 +465,40 @@ function _buildIdentityHeader(identity) {
   return header;
 }
 
+/**
+ * Correctif V2-E §2/§3 — recap de variation de prix pour un checkout issu
+ * d'une liste partagée. Purement informatif : n'ouvre aucune modale, ne
+ * bloque jamais la confirmation. Absent si aucune ligne n'a de contexte
+ * liste, ou si aucune ligne n'a réellement changé de prix (doctrine §3 :
+ * rien à afficher si snapshot absent/nul, prix actuel absent, ou prix
+ * identiques). Le total (cartTotal(), en dehors de ce bloc) utilise
+ * toujours le prix catalogue actuel, avec ou sans variation.
+ */
+function _renderPriceVariationRecap(body) {
+  const variations = computePriceVariations(state.cart);
+  if (!variations.length) return;
+
+  const summary = buildPriceVariationSummary(variations);
+  const box = document.createElement('div');
+  box.className = 'ck-section-block ck-price-variation-recap';
+  box.id = 'ck-price-variation-recap';
+
+  const lines = variations.map(v => (
+    '<div class="ck-price-variation-line">'
+      + '<span class="ck-price-variation-name">' + sanitize(v.name) + '</span>'
+      + '<span class="ck-price-variation-caption">Prix actualisé depuis le partage</span>'
+      + '<span class="ck-price-variation-prices">'
+        + '<s>' + fmt(v.snapshotPrice, 'KMF') + '</s>'
+        + ' → '
+        + '<strong>' + fmt(v.currentPrice, 'KMF') + '</strong>'
+      + '</span>'
+    + '</div>'
+  )).join('');
+
+  box.innerHTML = '<div class="ck-price-variation-summary">' + sanitize(summary) + '</div>' + lines;
+  body.appendChild(box);
+}
+
 // renderCheckoutCompact supprimée — doublon de renderCheckout(), jamais activée (07/05/2026)
 export function renderCheckout() {
     const body = dom.orderBody;
@@ -538,6 +573,10 @@ export function renderCheckout() {
       });
     }
     // ── Fin restauration silencieuse ─────────────────────────────────────────
+
+    // ── Variation de prix liste partagée (V2-E §2/§3) ─────────────────────────
+    _renderPriceVariationRecap(body);
+    // ── Fin variation de prix ──────────────────────────────────────────────────
 
     // ── Retrait sécurisé (Lot 3 — remplace « Qui récupère ? ») ────────────────
     // Bloc informatif, non interactif : le code de retrait est envoyé au
