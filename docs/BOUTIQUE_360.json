@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-08-05T10:27:38.276Z",
+  "generatedAt": "2026-08-05T11:36:01.780Z",
   "summary": {
-    "modules": 76,
-    "withHeader": 76,
+    "modules": 75,
+    "withHeader": 75,
     "events": 25,
     "declaredActive": 24,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 47,
+    "endpoints": 46,
     "orphanEmit": 1,
     "orphanListen": 1,
     "undeclared": 6,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 33,
-    "dynamicEndpoints": 16,
+    "dynamicEndpoints": 15,
     "ownedEvents": 3,
     "ownershipRed": 0,
     "ownershipOrange": 0
@@ -2021,23 +2021,6 @@
       "emitCalls": []
     },
     {
-      "file": "public/boutique/js/group/group-helpers.js",
-      "id": "group-helpers",
-      "hasHeader": true,
-      "role": "shared-cart-front-helpers",
-      "domain": "shared-cart",
-      "layer": "util-ui",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [],
-      "imports": [],
-      "bodyClasses": [],
-      "emitCalls": []
-    },
-    {
       "file": "public/boutique/js/group/group-price-variation.js",
       "id": "group-price-variation",
       "hasHeader": true,
@@ -3077,13 +3060,6 @@
     },
     {
       "module": "group-api",
-      "route": "/api/shared-carts/{id}/items",
-      "raw": "/api/shared-carts/${cartId}/items",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
       "route": "/api/shared-carts/{id}/items/{id}",
       "raw": "/api/shared-carts/${cartId}/items/${itemId}",
       "dynamic": true,
@@ -3468,7 +3444,6 @@
       "/api/purchasing/suppliers/{id}",
       "/api/shared-carts/public/{id}",
       "/api/shared-carts/{id}/close",
-      "/api/shared-carts/{id}/items",
       "/api/shared-carts/{id}/items/{id}",
       "/api/shares"
     ],
@@ -3647,7 +3622,6 @@
     "/api/shared-carts/public/{id}",
     "/api/shared-carts/save",
     "/api/shared-carts/{id}/close",
-    "/api/shared-carts/{id}/items",
     "/api/shared-carts/{id}/items/{id}",
     "/api/shares",
     "/api/wallet",

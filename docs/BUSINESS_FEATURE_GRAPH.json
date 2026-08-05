@@ -7819,6 +7819,13 @@
       {
         "feature": "shared-cart",
         "category": "services",
+        "declared": "services/shared-cart-library.js",
+        "resolvedPath": "services/shared-cart-library.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "services",
         "declared": "services/shared-cart-queries.js",
         "resolvedPath": "services/shared-cart-queries.js",
         "status": "resolved-in-technical-graph"
@@ -7965,6 +7972,13 @@
       },
       {
         "feature": "shared-cart",
+        "category": "migrations",
+        "declared": "migrations/127_shared_cart_saved_access.sql",
+        "resolvedPath": "migrations/127_shared_cart_saved_access.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "shared-cart",
         "category": "tests",
         "declared": "tests/unit/baskets.test.js",
         "resolvedPath": "tests/unit/baskets.test.js",
@@ -8003,6 +8017,13 @@
         "category": "tests",
         "declared": "tests/unit/shared-cart-items-service.test.js",
         "resolvedPath": "tests/unit/shared-cart-items-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "tests",
+        "declared": "tests/unit/shared-cart-library.test.js",
+        "resolvedPath": "tests/unit/shared-cart-library.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8066,13 +8087,6 @@
         "category": "boutique",
         "declared": "js/group/group-api.js",
         "resolvedPath": "public/boutique/js/group/group-api.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "boutique",
-        "declared": "js/group/group-helpers.js",
-        "resolvedPath": "public/boutique/js/group/group-helpers.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -8395,13 +8409,6 @@
         "category": "js",
         "declared": "../admin/js/views/EconomicView.js",
         "resolvedPath": "dash:dashboards/admin/js/views/EconomicView.js",
-        "status": "resolved-in-dash-repo"
-      },
-      {
-        "feature": "admin-dashboard",
-        "category": "js",
-        "declared": "../admin/js/views/EventWorkspacesView.js",
-        "resolvedPath": "dash:dashboards/admin/js/views/EventWorkspacesView.js",
         "status": "resolved-in-dash-repo"
       },
       {
@@ -10671,8 +10678,8 @@
         "entry": "POST /api/shared-carts/stripe/webhook",
         "method": "POST",
         "path": "/api/shared-carts/stripe/webhook",
-        "routeFile": "server.js",
-        "status": "resolved-owned"
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
       },
       {
         "feature": "infrastructure",
@@ -11087,16 +11094,16 @@
         "entry": "GET /api/pickup/exceptional-pickup/:orderId",
         "method": "GET",
         "path": "/api/pickup/exceptional-pickup/{id}",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/pickup-secret.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "logistics",
         "entry": "POST /api/pickup/exceptional-pickup/:orderId/collect",
         "method": "POST",
         "path": "/api/pickup/exceptional-pickup/{id}/collect",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/pickup-secret.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "logistics",
@@ -12183,6 +12190,22 @@
         "entry": "GET    /api/shared-carts/mine",
         "method": "GET",
         "path": "/api/shared-carts/mine",
+        "routeFile": "routes/shared-cart.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "shared-cart",
+        "entry": "GET    /api/shared-carts/library",
+        "method": "GET",
+        "path": "/api/shared-carts/library",
+        "routeFile": "routes/shared-cart.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "shared-cart",
+        "entry": "POST   /api/shared-carts/save",
+        "method": "POST",
+        "path": "/api/shared-carts/save",
         "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
@@ -14633,8 +14656,8 @@
       {
         "boutiqueManifest": "shared-cart",
         "category": "js",
-        "declared": "../js/group/group-helpers.js",
-        "resolvedPath": "public/boutique/js/group/group-helpers.js",
+        "declared": "../js/group/group-price-variation.js",
+        "resolvedPath": "public/boutique/js/group/group-price-variation.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -14691,6 +14714,14 @@
         "category": "tests",
         "declared": "../tests/unit/group-checkout-adapter.test.js",
         "resolvedPath": "public/boutique/tests/unit/group-checkout-adapter.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "tests",
+        "declared": "../tests/unit/group-price-variation.test.js",
+        "resolvedPath": "public/boutique/tests/unit/group-price-variation.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -14985,11 +15016,6 @@
                 "endpoint": "/api/admin/partners",
                 "routeFile": "routes/admin/partners.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/SuppliersView.js"
-              },
-              {
-                "endpoint": "/api/admin/dashboard/event-workspaces",
-                "routeFile": "routes/admin-dashboard.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/EventWorkspacesView.js"
               },
               {
                 "endpoint": "/api/dashboard/pipeline",
@@ -20625,6 +20651,22 @@
       },
       {
         "from": "payments",
+        "to": "shared-cart",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/b-checkout.js",
+                "targetFile": "public/boutique/js/group/group-price-variation.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "payments",
         "to": "wallet",
         "channels": [
           {
@@ -21682,6 +21724,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/shared-cart-library.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/shared-cart-queries.js",
                 "targetFile": "db.js"
               },
@@ -21723,6 +21769,10 @@
               },
               {
                 "sourceFileId": "tests/unit/shared-cart-items-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/shared-cart-library.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -21924,6 +21974,10 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/group-side-cart.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/group-side-cart.test.js",
+                "targetFile": "public/boutique/js/b-bus.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-core.test.js",
@@ -22433,14 +22487,14 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 764
+        "filesObserved": 766
       },
       "boutique": {
-        "filesObserved": 125,
+        "filesObserved": 126,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
-        "filesObserved": 83,
+        "filesObserved": 82,
         "limitations": [
           "dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)",
           "dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées \"views/\" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés",
@@ -22472,7 +22526,7 @@
       "NON_RUNTIME_TEST": 7,
       "TECHNICAL_PRIMITIVE": 29,
       "BUSINESS_TRANSVERSAL_SERVICE": 3,
-      "CROSS_FEATURE_DIRECT_IMPORT": 6,
+      "CROSS_FEATURE_DIRECT_IMPORT": 7,
       "BUSINESS_FEATURE_INTERFACE": 7,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -23225,6 +23279,24 @@
         "exceptionReasons": []
       },
       {
+        "from": "payments",
+        "to": "shared-cart",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import",
+          "runtime-cycle"
+        ]
+      },
+      {
         "from": "platform-ops",
         "to": "auth-identity",
         "family": "BUSINESS_FEATURE_INTERFACE",
@@ -23522,7 +23594,8 @@
         "policy": "boundary-remediation-required",
         "exceptionRequired": true,
         "exceptionReasons": [
-          "direct-import"
+          "direct-import",
+          "runtime-cycle"
         ]
       },
       {
@@ -23642,11 +23715,11 @@
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 3,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|mixed": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 4,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1
     },
@@ -23686,6 +23759,25 @@
             "from": "platform-ops",
             "to": "catalog",
             "family": "BUSINESS_FEATURE_INTERFACE"
+          }
+        ]
+      },
+      {
+        "nodes": [
+          "payments",
+          "shared-cart"
+        ],
+        "key": "payments<->shared-cart",
+        "directions": [
+          {
+            "from": "payments",
+            "to": "shared-cart",
+            "family": "CROSS_FEATURE_DIRECT_IMPORT"
+          },
+          {
+            "from": "shared-cart",
+            "to": "payments",
+            "family": "CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       }
@@ -23739,11 +23831,20 @@
     "illegitimateExceptions": [],
     "missingExceptions": [
       "auth-identity->wallet",
+      "payments->shared-cart",
       "shared-cart->auth-identity",
       "shared-cart->payments"
     ],
     "emptyRationaleExceptions": [],
-    "unexplainedRuntimeCycles": [],
+    "unexplainedRuntimeCycles": [
+      {
+        "key": "payments<->shared-cart",
+        "undecided": [
+          "payments->shared-cart",
+          "shared-cart->payments"
+        ]
+      }
+    ],
     "ontologyGapCoverage": {
       "consumers": [],
       "covered": [],
@@ -25217,6 +25318,17 @@
       "lifecycleOwner": "shared-cart",
       "resolution": "single-writer"
     },
+    "shared_cart_saved_access": {
+      "writers": [
+        {
+          "feature": "shared-cart",
+          "mode": "RW"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "shared-cart",
+      "resolution": "single-writer"
+    },
     "shared_carts": {
       "writers": [
         {
@@ -25265,8 +25377,8 @@
       "backend": {
         "manifestsDiscovered": 25,
         "manifestsConnected": 25,
-        "technicalNodesTotal": 285,
-        "technicalNodesOwned": 285,
+        "technicalNodesTotal": 286,
+        "technicalNodesOwned": 286,
         "technicalOrphans": 0
       },
       "dash": {
@@ -25423,9 +25535,9 @@
         "msg": "contract.consumes de shared-cart référence \"products\", ne correspond à aucun nom de feature connu"
       },
       {
-        "type": "DASH-MANIFEST-DUPLICATE-COPY",
+        "type": "DASH-MANIFEST-COPY-DIVERGES",
         "ref": "admin-dashboard",
-        "msg": "\"public/features/admin-dashboard.feature.js\" est une copie déclarée de \"public/dashboards/features/admin-dashboard.feature.js\" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique"
+        "msg": "\"public/features/admin-dashboard.feature.js\" diverge de \"public/dashboards/features/admin-dashboard.feature.js\" au-delà de la divergence déjà documentée (APP_FEATURE_REGISTRY.md) : 1 ligne(s) inattendue(s)"
       },
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -25459,13 +25571,8 @@
       },
       {
         "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "logistics / GET /api/pickup/exceptional-pickup/{id}",
-        "msg": "\"GET /api/pickup/exceptional-pickup/{id}\" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "logistics / POST /api/pickup/exceptional-pickup/{id}/collect",
-        "msg": "\"POST /api/pickup/exceptional-pickup/{id}/collect\" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+        "ref": "infrastructure / POST /api/shared-carts/stripe/webhook",
+        "msg": "\"POST /api/shared-carts/stripe/webhook\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25480,7 +25587,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> dashboard",
-        "msg": "dépendance cross-feature observée (canal: interface, 15 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"dashboard\""
+        "msg": "dépendance cross-feature observée (canal: interface, 14 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"dashboard\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25714,6 +25821,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "payments -> shared-cart",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"shared-cart\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> auth-identity",
         "msg": "dépendance cross-feature observée (canal: interface+static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-identity\""
       },
@@ -25795,7 +25907,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 18 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25810,7 +25922,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 44 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 45 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

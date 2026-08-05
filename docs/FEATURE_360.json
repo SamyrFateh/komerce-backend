@@ -43,14 +43,14 @@
   "summary": {
     "features": 29,
     "healthy": 6,
-    "attention": 23,
-    "blocked": 0,
-    "businessDependencies": 119,
-    "directCrossFeatureImports": 3,
+    "attention": 20,
+    "blocked": 3,
+    "businessDependencies": 112,
+    "directCrossFeatureImports": 7,
     "runtimeCycles": 0,
-    "ambiguousOwnershipSignals": 65,
+    "ambiguousOwnershipSignals": 68,
     "ontologyGaps": 0,
-    "debtItemsTotal": 121,
+    "debtItemsTotal": 125,
     "gateHealthy": 14,
     "gateBlocked": 1
   },
@@ -93,7 +93,7 @@
       "implementation": {
         "byCategory": {
           "js": {
-            "count": 42,
+            "count": 41,
             "files": [
               {
                 "declared": "../admin/js/ClientsView.js",
@@ -193,11 +193,6 @@
               {
                 "declared": "../admin/js/views/EconomicView.js",
                 "resolvedPath": "dash:dashboards/admin/js/views/EconomicView.js",
-                "status": "resolved-in-dash-repo"
-              },
-              {
-                "declared": "../admin/js/views/EventWorkspacesView.js",
-                "resolvedPath": "dash:dashboards/admin/js/views/EventWorkspacesView.js",
                 "status": "resolved-in-dash-repo"
               },
               {
@@ -308,7 +303,7 @@
             ]
           }
         },
-        "totalFiles": 42,
+        "totalFiles": 41,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -814,7 +809,9 @@
           "statement": "toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde",
           "test": "tests/invariants/auth-identity.mutating-routes-guarded.test.js"
         },
-        "les routes de ce manifeste s'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc"
+        "les routes de ce manifeste s'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc",
+        "une seule autorisation nominative active par utilisateur, consultée au moment exact de la remise — jamais figée par commande",
+        "le nom autorisé n'est jamais exposé au relais : logistics ne reçoit que des champs normalisés via getActiveAuthorizationForUpdate, jamais authorized_given_names/authorized_family_name en clair"
       ],
       "implementation": {
         "byCategory": {
@@ -835,6 +832,16 @@
                 "declared": "js/b-phone.js",
                 "resolvedPath": "public/boutique/js/b-phone.js",
                 "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "migrations": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "migrations/121_exceptional_pickup_authorization.sql",
+                "resolvedPath": "migrations/121_exceptional_pickup_authorization.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -859,17 +866,22 @@
             ]
           },
           "services": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "services/otp-test-mode.js",
                 "resolvedPath": "services/otp-test-mode.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/pickup-authorization-service.js",
+                "resolvedPath": "services/pickup-authorization-service.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 6,
             "files": [
               {
                 "declared": "tests/integration/admin-authz-probe.test.js",
@@ -887,14 +899,34 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/name-normalize.test.js",
+                "resolvedPath": "tests/unit/name-normalize.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/otp-test-mode.test.js",
                 "resolvedPath": "tests/unit/otp-test-mode.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/pickup-authorization-service.test.js",
+                "resolvedPath": "tests/unit/pickup-authorization-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "utils": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "utils/name-normalize.js",
+                "resolvedPath": "utils/name-normalize.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           }
         },
-        "totalFiles": 11,
+        "totalFiles": 16,
         "boutiqueManifest": "auth",
         "boutiqueFiles": {
           "count": 5,
@@ -942,6 +974,10 @@
           {
             "table": "otp_codes",
             "resolution": "single-writer"
+          },
+          {
+            "table": "user_pickup_authorizations",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
@@ -956,6 +992,12 @@
             "mode": "W",
             "lifecycleOwner": null,
             "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "user_pickup_authorizations",
+            "mode": "RW",
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "owner"
           },
           {
             "table": "users",
@@ -975,7 +1017,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "orders",
@@ -1000,6 +1042,10 @@
           {
             "table": "otp_codes",
             "resolution": "single-writer"
+          },
+          {
+            "table": "user_pickup_authorizations",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
@@ -1014,6 +1060,12 @@
             "mode": "W",
             "lifecycleOwner": null,
             "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "user_pickup_authorizations",
+            "mode": "RW",
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "owner"
           },
           {
             "table": "users",
@@ -1033,7 +1085,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "orders",
@@ -1056,13 +1108,23 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "getActiveAuthorizationForUpdate",
+            "file": "services/pickup-authorization-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "hasActiveAuthorization",
+            "file": "services/pickup-authorization-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "makeIntlPhoneInput",
             "file": "public/boutique/js/b-phone.js",
             "status": "resolved"
           }
         ],
         "httpInterfaces": {
-          "count": 20
+          "count": 23
         }
       },
       "businessDependencies": [
@@ -1079,14 +1141,6 @@
           "channels": [
             "static-code"
           ]
-        },
-        {
-          "provider": "wallet",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
-          "channels": [
-            "interface",
-            "static-code"
-          ]
         }
       ],
       "consumedBy": [
@@ -1095,6 +1149,13 @@
           "disposition": "BUSINESS_FEATURE_INTERFACE",
           "channels": [
             "interface"
+          ]
+        },
+        {
+          "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -1117,13 +1178,6 @@
           "disposition": "BUSINESS_FEATURE_INTERFACE",
           "channels": [
             "interface",
-            "static-code"
-          ]
-        },
-        {
-          "consumer": "shared-cart",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
             "static-code"
           ]
         },
@@ -1158,8 +1212,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
-        "directCrossFeatureImports": 0,
+        "status": "BLOCKED",
+        "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -1202,12 +1256,17 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 1,
+        "debtCount": 2,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table revoked_tokens — écrite par auth-identity (W), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "DIRECT_CROSS_FEATURE_IMPORT",
+            "severity": "high",
+            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -2627,7 +2686,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "orders",
@@ -2785,7 +2844,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "orders",
@@ -3240,7 +3299,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "parcel_items",
@@ -3312,7 +3371,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "parcel_items",
@@ -3370,13 +3429,6 @@
         },
         {
           "consumer": "orders",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -4014,7 +4066,7 @@
             ]
           },
           "services": {
-            "count": 11,
+            "count": 10,
             "files": [
               {
                 "declared": "services/dashboard-cache.js",
@@ -4052,11 +4104,6 @@
                 "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "services/dashboard-metrics/workspaces.js",
-                "resolvedPath": "services/dashboard-metrics/workspaces.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
                 "declared": "services/dashboard-ops-queries.js",
                 "resolvedPath": "services/dashboard-ops-queries.js",
                 "status": "resolved-in-technical-graph"
@@ -4074,7 +4121,7 @@
             ]
           },
           "tests": {
-            "count": 32,
+            "count": 31,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -4197,11 +4244,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/dashboard-workspaces.test.js",
-                "resolvedPath": "tests/unit/dashboard-workspaces.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/hub-dashboard-queries.test.js",
                 "resolvedPath": "tests/unit/hub-dashboard-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4239,7 +4281,7 @@
             ]
           }
         },
-        "totalFiles": 143,
+        "totalFiles": 141,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -4303,8 +4345,8 @@
           {
             "table": "order_items",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "order_status_history",
@@ -4345,8 +4387,8 @@
           {
             "table": "recipients",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "relais",
@@ -4399,22 +4441,6 @@
           {
             "table": "business_rules_history",
             "lifecycleOwner": "business-rules"
-          },
-          {
-            "table": "collective_payment_sessions",
-            "lifecycleOwner": "shared-cart"
-          },
-          {
-            "table": "collective_workspace_contributions",
-            "lifecycleOwner": "shared-cart"
-          },
-          {
-            "table": "collective_workspace_items",
-            "lifecycleOwner": "shared-cart"
-          },
-          {
-            "table": "collective_workspaces",
-            "lifecycleOwner": "shared-cart"
           },
           {
             "table": "customs_effective_rates",
@@ -4503,8 +4529,8 @@
           {
             "table": "order_items",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "order_status_history",
@@ -4545,8 +4571,8 @@
           {
             "table": "recipients",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "relais",
@@ -4599,22 +4625,6 @@
           {
             "table": "business_rules_history",
             "lifecycleOwner": "business-rules"
-          },
-          {
-            "table": "collective_payment_sessions",
-            "lifecycleOwner": "shared-cart"
-          },
-          {
-            "table": "collective_workspace_contributions",
-            "lifecycleOwner": "shared-cart"
-          },
-          {
-            "table": "collective_workspace_items",
-            "lifecycleOwner": "shared-cart"
-          },
-          {
-            "table": "collective_workspaces",
-            "lifecycleOwner": "shared-cart"
           },
           {
             "table": "customs_effective_rates",
@@ -4770,7 +4780,7 @@
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 9
+        "ambiguousOwnershipCount": 11
       },
       "gateHealth": {
         "status": "HEALTHY",
@@ -4780,7 +4790,7 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 13,
+        "debtCount": 15,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -4800,6 +4810,11 @@
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
+            "evidence": "table order_items — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
             "evidence": "table order_status_history — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
           },
           {
@@ -4811,6 +4826,11 @@
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table products — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
+            "evidence": "table recipients — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
           },
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -5279,7 +5299,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "orders",
@@ -5299,7 +5319,7 @@
           },
           {
             "table": "recipients",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "refunds",
@@ -5353,7 +5373,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "orders",
@@ -5373,7 +5393,7 @@
           },
           {
             "table": "recipients",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "refunds",
@@ -5443,13 +5463,6 @@
         },
         {
           "consumer": "refunds",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -6377,7 +6390,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "orders",
@@ -6397,7 +6410,7 @@
           },
           {
             "table": "recipients",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "refunds",
@@ -6633,7 +6646,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "orders",
@@ -6653,7 +6666,7 @@
           },
           {
             "table": "recipients",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "refunds",
@@ -9116,7 +9129,7 @@
         "readsTables": [
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "parcels",
@@ -9158,7 +9171,7 @@
         "readsTables": [
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "parcels",
@@ -9600,7 +9613,9 @@
         "la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport",
         "le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)",
         "un colis ne change de statut que via une sequence de scan validee",
-        "secret de retrait a usage unique"
+        "secret de retrait a usage unique",
+        "le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l'agent relais — comparaison aveugle uniquement",
+        "le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l'un ne bloque jamais l'autre"
       ],
       "implementation": {
         "byCategory": {
@@ -10083,8 +10098,8 @@
           {
             "table": "order_items",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "orders",
@@ -10180,7 +10195,7 @@
           },
           {
             "table": "recipients",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "users",
@@ -10229,8 +10244,8 @@
           {
             "table": "order_items",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "orders",
@@ -10326,7 +10341,7 @@
           },
           {
             "table": "recipients",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "users",
@@ -10343,12 +10358,19 @@
           }
         ],
         "httpInterfaces": {
-          "count": 68
+          "count": 70
         }
       },
       "businessDependencies": [
         {
           "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -10477,13 +10499,6 @@
           "channels": [
             "static-code"
           ]
-        },
-        {
-          "consumer": "shared-cart",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
         }
       ],
       "projections": {
@@ -10522,7 +10537,7 @@
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 7
+        "ambiguousOwnershipCount": 8
       },
       "gateHealth": {
         "status": "ATTENTION",
@@ -10543,7 +10558,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 10,
+        "debtCount": 11,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -10554,6 +10569,11 @@
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table incidents — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
+            "evidence": "table order_items — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
           },
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -10829,13 +10849,6 @@
         },
         {
           "consumer": "payments",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -11180,7 +11193,7 @@
           },
           {
             "table": "recipients",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "relais",
@@ -11229,7 +11242,7 @@
           },
           {
             "table": "recipients",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "relais",
@@ -11892,8 +11905,8 @@
           {
             "table": "order_items",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "order_status_history",
@@ -11916,8 +11929,8 @@
           {
             "table": "recipients",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "scans",
@@ -12024,8 +12037,8 @@
           {
             "table": "order_items",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "order_status_history",
@@ -12048,8 +12061,8 @@
           {
             "table": "recipients",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "scans",
@@ -12316,7 +12329,7 @@
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 2,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 6
+        "ambiguousOwnershipCount": 8
       },
       "gateHealth": {
         "status": "ATTENTION",
@@ -12337,7 +12350,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 10,
+        "debtCount": 12,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -12357,12 +12370,22 @@
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
+            "evidence": "table order_items — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
             "evidence": "table order_status_history — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
           },
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table orders — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
+            "evidence": "table recipients — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
           },
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -12697,6 +12720,10 @@
           {
             "table": "paypal_events_processed",
             "resolution": "single-writer"
+          },
+          {
+            "table": "stripe_events_processed",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
@@ -12745,14 +12772,14 @@
           {
             "table": "stripe_events_processed",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "parcel_items",
@@ -12781,6 +12808,10 @@
           {
             "table": "paypal_events_processed",
             "resolution": "single-writer"
+          },
+          {
+            "table": "stripe_events_processed",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
@@ -12829,14 +12860,14 @@
           {
             "table": "stripe_events_processed",
             "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "parcel_items",
@@ -12978,13 +13009,6 @@
           ]
         },
         {
-          "consumer": "shared-cart",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
           "consumer": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13009,8 +13033,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
-        "directCrossFeatureImports": 0,
+        "status": "BLOCKED",
+        "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -13045,7 +13069,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 3,
+        "debtCount": 4,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -13061,6 +13085,11 @@
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table orders — écrite par payments (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "DIRECT_CROSS_FEATURE_IMPORT",
+            "severity": "high",
+            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -13338,7 +13367,7 @@
             ]
           },
           "tests": {
-            "count": 20,
+            "count": 19,
             "files": [
               {
                 "declared": "tests/integration/api.test.js",
@@ -13368,11 +13397,6 @@
               {
                 "declared": "tests/integration/security-grid.test.js",
                 "resolvedPath": "tests/integration/security-grid.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-cleanup-tombstones.test.js",
-                "resolvedPath": "tests/unit/collective-cleanup-tombstones.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -13443,10 +13467,10 @@
             ]
           }
         },
-        "totalFiles": 40,
+        "totalFiles": 39,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
-          "count": 19,
+          "count": 21,
           "files": [
             {
               "declared": "../css/boutique-desktop.css",
@@ -13526,6 +13550,13 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../js/b-service-worker-refresh.js",
+              "resolvedPath": "public/boutique/js/b-service-worker-refresh.js",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../js/b-store.js",
               "resolvedPath": "public/boutique/js/b-store.js",
               "category": "boutique",
@@ -13556,6 +13587,13 @@
             {
               "declared": "../js/main.js",
               "resolvedPath": "public/boutique/js/main.js",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../js/test-modal-view-model-redirect.js",
+              "resolvedPath": "public/boutique/js/test-modal-view-model-redirect.js",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
@@ -13672,7 +13710,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "products",
@@ -13780,7 +13818,7 @@
           },
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "products",
@@ -14192,7 +14230,7 @@
         "readsTables": [
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "products",
@@ -14254,7 +14292,7 @@
         "readsTables": [
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "products",
@@ -14511,7 +14549,7 @@
         "readsTables": [
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "orders",
@@ -14533,7 +14571,7 @@
         "readsTables": [
           {
             "table": "order_items",
-            "lifecycleOwner": "shared-cart"
+            "lifecycleOwner": null
           },
           {
             "table": "orders",
@@ -14840,13 +14878,6 @@
           "channels": [
             "static-code"
           ]
-        },
-        {
-          "consumer": "shared-cart",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
         }
       ],
       "projections": {
@@ -14931,45 +14962,31 @@
         "kind": "business-feature",
         "status": "production"
       },
-      "service": "Permettre à plusieurs participants de composer et financer un panier commun, de la création à la commande finale.",
+      "service": "Permettre à un créateur de composer une liste de produits partageable par lien public ; chaque participant réclame un article en l'achetant individuellement via le checkout canonique.",
       "perimeter": {
         "in": [
-          "création, contribution, clôture, annulation du panier partagé",
-          "estimation et garde financière du panier (financial guard)",
-          "transitions d'état v4/v4.1 et réparation des réservations stock collectives"
+          "création, édition (statut open), fermeture, annulation de la liste partagée",
+          "lecture publique et propriétaire (avec statut de réclamation dérivé par jointure)"
         ],
         "out": [
-          "paiement carte/PayPal lui-même (feature payments)",
-          "création de la commande finale (feature orders, consommée en sortie)",
-          "crédit wallet (feature wallet, consommée en sortie)",
-          "tests/unit/collective-payment-orchestrator.test.js"
+          "paiement carte/PayPal/cash (feature payments, consommée en sortie)",
+          "arbitrage de la réclamation d'un article (index unique order_items.shared_cart_item_id, migration 123 — feature orders)",
+          "création de la commande (feature orders)",
+          "crédit wallet (feature wallet)"
         ]
       },
-      "authority": "backend-core — tout changement de machine d'état v4/v4.1 doit être validé par le propriétaire de shared-cart-engine.js",
+      "authority": "backend-core — tout changement de statut (open/closed/cancelled) doit être validé par le propriétaire de shared-cart-lifecycle.js",
       "invariants": [
-        "snapshot figé après 1ère contribution payée",
-        {
-          "statement": "idempotence webhook Stripe sur shared_cart_contributions",
-          "test": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js"
-        },
-        {
-          "statement": "fenêtre paiement 48h — aucune extension sans machine de statut",
-          "test": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js"
-        },
-        "annulation restores wallet si contribution confirmée",
-        "lien partagé ouvre une boutique — jamais un guichet (Boutique First)",
-        "participant consulte en lecture seule — règle sa part seulement si panier payable"
+        "un article de liste n'est jamais réclamable deux fois — arbitré par index unique, pas par verrou applicatif (migration 123)",
+        "aucune donnée financière n'est stockée sur shared_carts — le total se calcule toujours par SUM() sur shared_cart_items",
+        "lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)",
+        "annulation de liste (cancel) n'effectue jamais de remboursement — aucune contribution n'y transite"
       ],
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 14,
+            "count": 10,
             "files": [
-              {
-                "declared": "css/group-cart-flow.css",
-                "resolvedPath": "public/boutique/css/group-cart-flow.css",
-                "status": "resolved-on-disk-no-header"
-              },
               {
                 "declared": "css/hero-cart-proxy.css",
                 "resolvedPath": "public/boutique/css/hero-cart-proxy.css",
@@ -14981,28 +14998,13 @@
                 "status": "resolved-on-disk-no-header"
               },
               {
-                "declared": "css/shared-followup.css",
-                "resolvedPath": "public/boutique/css/shared-followup.css",
+                "declared": "css/shared-list-side-cart.css",
+                "resolvedPath": "public/boutique/css/shared-list-side-cart.css",
                 "status": "resolved-on-disk-no-header"
-              },
-              {
-                "declared": "js/b-friendly-group-redirect.js",
-                "resolvedPath": "public/boutique/js/b-friendly-group-redirect.js",
-                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "js/b-group-banner.js",
                 "resolvedPath": "public/boutique/js/b-group-banner.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "js/b-group-cart-flow.js",
-                "resolvedPath": "public/boutique/js/b-group-cart-flow.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "js/b-group-view.js",
-                "resolvedPath": "public/boutique/js/b-group-view.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -15021,13 +15023,13 @@
                 "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "js/group/group-helpers.js",
-                "resolvedPath": "public/boutique/js/group/group-helpers.js",
+                "declared": "js/group/group-checkout-adapter.js",
+                "resolvedPath": "public/boutique/js/group/group-checkout-adapter.js",
                 "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "js/group/group-render-creator.js",
-                "resolvedPath": "public/boutique/js/group/group-render-creator.js",
+                "declared": "js/group/group-side-cart.js",
+                "resolvedPath": "public/boutique/js/group/group-side-cart.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -15038,13 +15040,8 @@
             ]
           },
           "dash": {
-            "count": 2,
+            "count": 1,
             "files": [
-              {
-                "declared": "dashboards/admin/js/views/EventWorkspacesView.js",
-                "resolvedPath": "public/dashboards/admin/js/views/EventWorkspacesView.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
               {
                 "declared": "dashboards/admin/js/views/SharedCartsView.js",
                 "resolvedPath": "public/dashboards/admin/js/views/SharedCartsView.js",
@@ -15053,7 +15050,7 @@
             ]
           },
           "migrations": {
-            "count": 14,
+            "count": 17,
             "files": [
               {
                 "declared": "migrations/044_shared_cart.sql",
@@ -15124,40 +15121,30 @@
                 "declared": "migrations/099_drop_zombie_shared_cart_commitments.sql",
                 "resolvedPath": "migrations/099_drop_zombie_shared_cart_commitments.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/123_shared_cart_item_claim_bridge.sql",
+                "resolvedPath": "migrations/123_shared_cart_item_claim_bridge.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/125_shared_cart_minimal_domain.sql",
+                "resolvedPath": "migrations/125_shared_cart_minimal_domain.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/127_shared_cart_saved_access.sql",
+                "resolvedPath": "migrations/127_shared_cart_saved_access.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "routes": {
-            "count": 8,
+            "count": 3,
             "files": [
-              {
-                "declared": "routes/admin-collective-repairs.js",
-                "resolvedPath": "routes/admin-collective-repairs.js",
-                "status": "resolved-in-technical-graph"
-              },
               {
                 "declared": "routes/baskets.js",
                 "resolvedPath": "routes/baskets.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "routes/collective-workspaces.js",
-                "resolvedPath": "routes/collective-workspaces.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "routes/shared-cart-cash.js",
-                "resolvedPath": "routes/shared-cart-cash.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "routes/shared-cart-from-order.js",
-                "resolvedPath": "routes/shared-cart-from-order.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "routes/shared-cart-refund-admin.js",
-                "resolvedPath": "routes/shared-cart-refund-admin.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -15173,88 +15160,8 @@
             ]
           },
           "services": {
-            "count": 27,
+            "count": 8,
             "files": [
-              {
-                "declared": "services/cancel-shared-cart-with-refunds.js",
-                "resolvedPath": "services/cancel-shared-cart-with-refunds.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-close-order-service.js",
-                "resolvedPath": "services/collective-close-order-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-payment-orchestrator.js",
-                "resolvedPath": "services/collective-payment-orchestrator.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-ready-to-order-orchestrator.js",
-                "resolvedPath": "services/collective-ready-to-order-orchestrator.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-stock-reservation-service.js",
-                "resolvedPath": "services/collective-stock-reservation-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-workspace-contributions.js",
-                "resolvedPath": "services/collective-workspace-contributions.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-workspace-creation.js",
-                "resolvedPath": "services/collective-workspace-creation.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-workspace-engine.js",
-                "resolvedPath": "services/collective-workspace-engine.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-workspace-internals.js",
-                "resolvedPath": "services/collective-workspace-internals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-workspace-items.js",
-                "resolvedPath": "services/collective-workspace-items.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-workspace-lifecycle.js",
-                "resolvedPath": "services/collective-workspace-lifecycle.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/collective-workspace-reads.js",
-                "resolvedPath": "services/collective-workspace-reads.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/repair-collective-ready-to-capture.js",
-                "resolvedPath": "services/repair-collective-ready-to-capture.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/repair-collective-stock-reservations.js",
-                "resolvedPath": "services/repair-collective-stock-reservations.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/shared-cart-cash-service.js",
-                "resolvedPath": "services/shared-cart-cash-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/shared-cart-contributions.js",
-                "resolvedPath": "services/shared-cart-contributions.js",
-                "status": "resolved-in-technical-graph"
-              },
               {
                 "declared": "services/shared-cart-creation.js",
                 "resolvedPath": "services/shared-cart-creation.js",
@@ -15266,16 +15173,6 @@
                 "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "services/shared-cart-estimation-service.js",
-                "resolvedPath": "services/shared-cart-estimation-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/shared-cart-financial-guard.js",
-                "resolvedPath": "services/shared-cart-financial-guard.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
                 "declared": "services/shared-cart-internals.js",
                 "resolvedPath": "services/shared-cart-internals.js",
                 "status": "resolved-in-technical-graph"
@@ -15283,6 +15180,11 @@
               {
                 "declared": "services/shared-cart-items-service.js",
                 "resolvedPath": "services/shared-cart-items-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/shared-cart-library.js",
+                "resolvedPath": "services/shared-cart-library.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -15299,130 +15201,15 @@
                 "declared": "services/shared-cart-reads.js",
                 "resolvedPath": "services/shared-cart-reads.js",
                 "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/shared-cart-refund-queue.js",
-                "resolvedPath": "services/shared-cart-refund-queue.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/shared-cart-v41-transitions.js",
-                "resolvedPath": "services/shared-cart-v41-transitions.js",
-                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 42,
+            "count": 12,
             "files": [
-              {
-                "declared": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js",
-                "resolvedPath": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/admin-collective-repairs.test.js",
-                "resolvedPath": "tests/unit/admin-collective-repairs.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
               {
                 "declared": "tests/unit/baskets.test.js",
                 "resolvedPath": "tests/unit/baskets.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/cancel-shared-cart-with-refunds.test.js",
-                "resolvedPath": "tests/unit/cancel-shared-cart-with-refunds.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-close-order-service.test.js",
-                "resolvedPath": "tests/unit/collective-close-order-service.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-payment-orchestrator.test.js",
-                "resolvedPath": "tests/unit/collective-payment-orchestrator.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-ready-to-order-orchestrator.test.js",
-                "resolvedPath": "tests/unit/collective-ready-to-order-orchestrator.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-stock-reservation-service.test.js",
-                "resolvedPath": "tests/unit/collective-stock-reservation-service.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-workspace-contributions.test.js",
-                "resolvedPath": "tests/unit/collective-workspace-contributions.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-workspace-creation.test.js",
-                "resolvedPath": "tests/unit/collective-workspace-creation.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-workspace-engine.test.js",
-                "resolvedPath": "tests/unit/collective-workspace-engine.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-workspace-internals.test.js",
-                "resolvedPath": "tests/unit/collective-workspace-internals.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-workspace-items.test.js",
-                "resolvedPath": "tests/unit/collective-workspace-items.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-workspace-lifecycle.test.js",
-                "resolvedPath": "tests/unit/collective-workspace-lifecycle.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-workspace-reads.test.js",
-                "resolvedPath": "tests/unit/collective-workspace-reads.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/collective-workspaces.test.js",
-                "resolvedPath": "tests/unit/collective-workspaces.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/repair-collective-ready-to-capture.test.js",
-                "resolvedPath": "tests/unit/repair-collective-ready-to-capture.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/repair-collective-stock-reservations.test.js",
-                "resolvedPath": "tests/unit/repair-collective-stock-reservations.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-branches.test.js",
-                "resolvedPath": "tests/unit/shared-cart-branches.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-cash-route.test.js",
-                "resolvedPath": "tests/unit/shared-cart-cash-route.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-cash-service.test.js",
-                "resolvedPath": "tests/unit/shared-cart-cash-service.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-contributions.test.js",
-                "resolvedPath": "tests/unit/shared-cart-contributions.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -15436,28 +15223,8 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/shared-cart-edit-mode.test.js",
-                "resolvedPath": "tests/unit/shared-cart-edit-mode.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/shared-cart-engine.test.js",
                 "resolvedPath": "tests/unit/shared-cart-engine.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-estimation-service.test.js",
-                "resolvedPath": "tests/unit/shared-cart-estimation-service.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-financial-guard.test.js",
-                "resolvedPath": "tests/unit/shared-cart-financial-guard.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-from-order.test.js",
-                "resolvedPath": "tests/unit/shared-cart-from-order.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -15471,13 +15238,13 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/shared-cart-lifecycle.test.js",
-                "resolvedPath": "tests/unit/shared-cart-lifecycle.test.js",
+                "declared": "tests/unit/shared-cart-library.test.js",
+                "resolvedPath": "tests/unit/shared-cart-library.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/shared-cart-lot9-business.test.js",
-                "resolvedPath": "tests/unit/shared-cart-lot9-business.test.js",
+                "declared": "tests/unit/shared-cart-lifecycle.test.js",
+                "resolvedPath": "tests/unit/shared-cart-lifecycle.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -15496,31 +15263,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/shared-cart-refund-admin.test.js",
-                "resolvedPath": "tests/unit/shared-cart-refund-admin.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-refund-queue.test.js",
-                "resolvedPath": "tests/unit/shared-cart-refund-queue.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-v4-2-creation.test.js",
-                "resolvedPath": "tests/unit/shared-cart-v4-2-creation.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-v41-reconciliation.test.js",
-                "resolvedPath": "tests/unit/shared-cart-v41-reconciliation.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-v41-transitions.test.js",
-                "resolvedPath": "tests/unit/shared-cart-v41-transitions.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/shares-route.test.js",
                 "resolvedPath": "tests/unit/shares-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15528,7 +15270,7 @@
             ]
           }
         },
-        "totalFiles": 107,
+        "totalFiles": 51,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
           "count": 17,
@@ -15666,56 +15408,8 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
-            "table": "cart_contributions",
-            "resolution": "single-writer"
-          },
-          {
             "table": "cart_shares",
             "resolution": "multi-writer-resolved-by-classification-signal"
-          },
-          {
-            "table": "collective_payment_sessions",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_payment_tokens",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_stock_reservations",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_workspace_contributions",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_workspace_events",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_workspace_items",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_workspaces",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "order_items",
-            "resolution": "multi-writer-resolved-by-classification-signal"
-          },
-          {
-            "table": "recipients",
-            "resolution": "multi-writer-resolved-by-classification-signal"
-          },
-          {
-            "table": "shared_cart_contributions",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "shared_cart_estimations",
-            "resolution": "single-writer"
           },
           {
             "table": "shared_cart_events",
@@ -15726,21 +15420,15 @@
             "resolution": "single-writer"
           },
           {
-            "table": "shared_carts",
+            "table": "shared_cart_saved_access",
             "resolution": "single-writer"
           },
           {
-            "table": "stripe_events_processed",
-            "resolution": "multi-writer-resolved-by-classification-signal"
+            "table": "shared_carts",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
-          {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
           {
             "table": "basket_items",
             "mode": "RW",
@@ -15754,85 +15442,7 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "cart_contributions",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
             "table": "cart_shares",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_payment_sessions",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_payment_tokens",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_stock_reservations",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_workspace_contributions",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_workspace_events",
-            "mode": "W",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_workspace_items",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_workspaces",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "order_items",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
-          {
-            "table": "recipients",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "shared_cart_contributions",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "shared_cart_estimations",
             "mode": "RW",
             "lifecycleOwner": "shared-cart",
             "ownershipStatus": "owner"
@@ -15850,13 +15460,13 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "shared_carts",
+            "table": "shared_cart_saved_access",
             "mode": "RW",
             "lifecycleOwner": "shared-cart",
             "ownershipStatus": "owner"
           },
           {
-            "table": "stripe_events_processed",
+            "table": "shared_carts",
             "mode": "RW",
             "lifecycleOwner": "shared-cart",
             "ownershipStatus": "owner"
@@ -15864,15 +15474,11 @@
         ],
         "readsTables": [
           {
-            "table": "finance_config",
-            "lifecycleOwner": "economic-engine"
-          },
-          {
-            "table": "products",
+            "table": "order_items",
             "lifecycleOwner": null
           },
           {
-            "table": "relais",
+            "table": "products",
             "lifecycleOwner": null
           },
           {
@@ -15892,56 +15498,8 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
-            "table": "cart_contributions",
-            "resolution": "single-writer"
-          },
-          {
             "table": "cart_shares",
             "resolution": "multi-writer-resolved-by-classification-signal"
-          },
-          {
-            "table": "collective_payment_sessions",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_payment_tokens",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_stock_reservations",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_workspace_contributions",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_workspace_events",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_workspace_items",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "collective_workspaces",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "order_items",
-            "resolution": "multi-writer-resolved-by-classification-signal"
-          },
-          {
-            "table": "recipients",
-            "resolution": "multi-writer-resolved-by-classification-signal"
-          },
-          {
-            "table": "shared_cart_contributions",
-            "resolution": "single-writer"
-          },
-          {
-            "table": "shared_cart_estimations",
-            "resolution": "single-writer"
           },
           {
             "table": "shared_cart_events",
@@ -15952,21 +15510,15 @@
             "resolution": "single-writer"
           },
           {
-            "table": "shared_carts",
+            "table": "shared_cart_saved_access",
             "resolution": "single-writer"
           },
           {
-            "table": "stripe_events_processed",
-            "resolution": "multi-writer-resolved-by-classification-signal"
+            "table": "shared_carts",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
-          {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
           {
             "table": "basket_items",
             "mode": "RW",
@@ -15980,85 +15532,7 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "cart_contributions",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
             "table": "cart_shares",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_payment_sessions",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_payment_tokens",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_stock_reservations",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_workspace_contributions",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_workspace_events",
-            "mode": "W",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_workspace_items",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "collective_workspaces",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "order_items",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
-          {
-            "table": "recipients",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "shared_cart_contributions",
-            "mode": "RW",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "shared_cart_estimations",
             "mode": "RW",
             "lifecycleOwner": "shared-cart",
             "ownershipStatus": "owner"
@@ -16076,13 +15550,13 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "shared_carts",
+            "table": "shared_cart_saved_access",
             "mode": "RW",
             "lifecycleOwner": "shared-cart",
             "ownershipStatus": "owner"
           },
           {
-            "table": "stripe_events_processed",
+            "table": "shared_carts",
             "mode": "RW",
             "lifecycleOwner": "shared-cart",
             "ownershipStatus": "owner"
@@ -16090,15 +15564,11 @@
         ],
         "readsTables": [
           {
-            "table": "finance_config",
-            "lifecycleOwner": "economic-engine"
-          },
-          {
-            "table": "products",
+            "table": "order_items",
             "lifecycleOwner": null
           },
           {
-            "table": "relais",
+            "table": "products",
             "lifecycleOwner": null
           },
           {
@@ -16110,47 +15580,12 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 33
+          "count": 15
         }
       },
       "businessDependencies": [
         {
           "provider": "auth",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "provider": "auth-identity",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "provider": "customs",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "provider": "documents",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "provider": "logistics",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "provider": "loyalty",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -16171,24 +15606,10 @@
           ]
         },
         {
-          "provider": "payments",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
           "provider": "recommendations",
           "disposition": "BUSINESS_FEATURE_INTERFACE",
           "channels": [
             "interface",
-            "static-code"
-          ]
-        },
-        {
-          "provider": "refunds",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
             "static-code"
           ]
         }
@@ -16237,14 +15658,12 @@
         ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
-        "directCrossFeatureImports": 1,
+        "status": "BLOCKED",
+        "directCrossFeatureImports": 3,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "wallet"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "ATTENTION",
@@ -16254,7 +15673,7 @@
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 2,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 2
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
@@ -16275,37 +15694,22 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 6,
+        "debtCount": 3,
         "debtItems": [
           {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table alerts — écrite par shared-cart (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table orders — écrite par shared-cart (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
+            "type": "CONSUMES_REFERENCE_UNRESOLVED",
+            "severity": "low",
+            "evidence": "contract.consumes référence \"notification (émission uniquement — WhatsApp création de liste)\" — ne correspond à aucun nom de feature connu"
           },
           {
             "type": "CONSUMES_REFERENCE_UNRESOLVED",
             "severity": "low",
-            "evidence": "contract.consumes référence \"notification\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"products\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"wallet\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+            "evidence": "contract.consumes référence \"products (lecture seule)\" — ne correspond à aucun nom de feature connu"
           },
           {
             "type": "DIRECT_CROSS_FEATURE_IMPORT",
             "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
+            "evidence": "3 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -17142,14 +16546,6 @@
         }
       ],
       "consumedBy": [
-        {
-          "consumer": "auth-identity",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
-          "channels": [
-            "interface",
-            "static-code"
-          ]
-        },
         {
           "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",

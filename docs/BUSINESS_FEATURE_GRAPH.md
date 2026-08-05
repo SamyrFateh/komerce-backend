@@ -72,7 +72,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 25 | 25 | 285 | 285 | 0 |
+| backend | 25 | 25 | 286 | 286 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 13 | 13 | 76 | 76 | 0 |
 
@@ -101,7 +101,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Tableau de bord admin SPA multi-vues.
 
-- js: 42
+- js: 41
 - tables owned (lifecycle): 0
 - tables written: 0
 - interfaces exposed: 0
@@ -473,15 +473,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Permettre à un créateur de composer une liste de produits partageable par lien public ; chaque participant réclame un article en l'achetant individuellement via le checkout canonique.
 
-- services: 7
+- services: 8
 - routes: 3
-- migrations: 16
-- tests: 11
-- boutique: 11
+- migrations: 17
+- tests: 12
+- boutique: 10
 - dash: 1
-- tables owned (lifecycle): 6 — `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_carts`
-- tables written: 6
-- interfaces exposed: 13
+- tables owned (lifecycle): 7 — `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
+- tables written: 7
+- interfaces exposed: 15
 - internal APIs: 0
 - dependencies (consumes): 4 — orders, products, notification, auth
 - consumers: 3 — catalog, infrastructure, refunds
@@ -627,6 +627,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `schema_migrations` | `infrastructure` | single-writer | infrastructure | — |
 | `shared_cart_events` | `shared-cart` | single-writer | shared-cart | — |
 | `shared_cart_items` | `shared-cart` | single-writer | shared-cart | — |
+| `shared_cart_saved_access` | `shared-cart` | single-writer | shared-cart | — |
 | `shared_carts` | `shared-cart` | single-writer | shared-cart | — |
 | `shipments` | `logistics` | single-writer | logistics | — |
 | `signals` | `decision-signals` | single-writer | decision-signals | dashboard |
@@ -878,7 +879,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/health` | infrastructure | `server.js` (resolved-owned) |
 | `GET /api/public/config` | infrastructure | `server.js` (resolved-owned) |
 | `GET /webhook/authkey-whatsapp` | infrastructure | — (not-in-openapi-contract) |
-| `POST /api/shared-carts/stripe/webhook` | infrastructure | `server.js` (resolved-owned) |
+| `POST /api/shared-carts/stripe/webhook` | infrastructure | — (not-in-openapi-contract) |
 | `GET /*.html` | infrastructure | — (not-in-openapi-contract) |
 | `GET /api/hub/inventory/buffer` | inventory | `routes/inventory-api.js` (resolved-owned) |
 | `GET /api/hub/inventory/open-parcels` | inventory | `routes/inventory-api.js` (resolved-owned) |
@@ -930,8 +931,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/pickup/reveal-once/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
 | `GET /api/pickup/status/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
 | `POST /api/pickup/verify/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
-| `GET /api/pickup/exceptional-pickup/{id}` | logistics | — (not-in-openapi-contract) |
-| `POST /api/pickup/exceptional-pickup/{id}/collect` | logistics | — (not-in-openapi-contract) |
+| `GET /api/pickup/exceptional-pickup/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `POST /api/pickup/exceptional-pickup/{id}/collect` | logistics | `routes/pickup-secret.js` (resolved-owned) |
 | `GET /api/relais` | logistics | `routes/relais.js` (resolved-owned) |
 | `GET /api/relais/{id}` | logistics | `routes/relais.js` (resolved-owned) |
 | `GET /api/relais/public` | logistics | `routes/relais.js` (resolved-owned) |
@@ -1068,6 +1069,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/shared-carts/from-cart-items` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
 | `POST /api/shared-carts/from-basket` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
 | `GET /api/shared-carts/mine` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/library` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/save` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
 | `GET /api/shared-carts/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
 | `GET /api/shared-carts/{id}/as-cart-items` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
 | `PUT /api/shared-carts/{id}/items` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
@@ -1321,18 +1324,17 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ purchasing -> "notification" (entrée: "notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)") — contract.consumes de purchasing référence "notification", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "notification" (entrée: "notification (émission uniquement — WhatsApp création de liste)") — contract.consumes de shared-cart référence "notification", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "products" (entrée: "products (lecture seule)") — contract.consumes de shared-cart référence "products", ne correspond à aucun nom de feature connu
-- **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
+- **[DASH-MANIFEST-COPY-DIVERGES]** _[ACTIONABLE_DRIFT]_ admin-dashboard — "public/features/admin-dashboard.feature.js" diverge de "public/dashboards/features/admin-dashboard.feature.js" au-delà de la divergence déjà documentée (APP_FEATURE_REGISTRY.md) : 1 ligne(s) inattendue(s)
 - **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:backend — 16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 - **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /webhook/authkey-whatsapp — "GET /webhook/authkey-whatsapp" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ logistics / GET /api/pickup/exceptional-pickup/{id} — "GET /api/pickup/exceptional-pickup/{id}" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ logistics / POST /api/pickup/exceptional-pickup/{id}/collect — "POST /api/pickup/exceptional-pickup/{id}/collect" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ infrastructure / POST /api/shared-carts/stripe/webhook — "POST /api/shared-carts/stripe/webhook" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> catalog — dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "catalog"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> customs — dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "customs"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> dashboard — dépendance cross-feature observée (canal: interface, 15 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "dashboard"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> dashboard — dépendance cross-feature observée (canal: interface, 14 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "dashboard"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> decision-signals — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "decision-signals"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> economic-engine — dépendance cross-feature observée (canal: interface, 22 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "economic-engine"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> inventory — dépendance cross-feature observée (canal: interface, 5 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "inventory"
@@ -1379,6 +1381,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> platform-ops — dépendance cross-feature observée (canal: static-code, 23 preuve(s)) sans contract.consumes déclaré chez "orders" vers "platform-ops"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> shared-cart — dépendance cross-feature observée (canal: interface+static-code, 3 preuve(s)) sans contract.consumes déclaré chez "orders" vers "shared-cart"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 46 preuve(s)) sans contract.consumes déclaré chez "payments" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> shared-cart — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "payments" vers "shared-cart"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> auth-identity — dépendance cross-feature observée (canal: interface+static-code, 5 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> catalog — dépendance cross-feature observée (canal: interface+static-code, 20 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "catalog"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 27 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "infrastructure"
@@ -1395,10 +1398,10 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ refunds -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "payments"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> auth-identity — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> catalog — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "catalog"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> infrastructure — dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> infrastructure — dépendance cross-feature observée (canal: static-code, 18 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> notifications — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "notifications"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> payments — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "payments"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> platform-ops — dépendance cross-feature observée (canal: static-code, 44 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "platform-ops"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> platform-ops — dépendance cross-feature observée (canal: static-code, 45 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "platform-ops"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> recommendations — dépendance cross-feature observée (canal: interface+static-code, 4 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "recommendations"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ sourcing -> infrastructure — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "sourcing" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ unsold-resolution -> infrastructure — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "unsold-resolution" vers "infrastructure"
@@ -1453,9 +1456,9 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 764 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 125 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
-- dash : 83 fichier(s) observés
+- backend : 766 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 126 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
   - _dash total runtime dependency observability: LIMITED BY O5 STATIC MODEL (dynamic import, registry lookup, dependency injection, event-driven dependency hors périmètre statique)_
@@ -1466,7 +1469,7 @@ Meta Graph monté : oui.
 |---|---|---|---|---|
 | admin-dashboard | catalog | interface | 2 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | customs | interface | 4 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | dashboard | interface | 15 | **OBSERVED_UNDECLARED** |
+| admin-dashboard | dashboard | interface | 14 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | decision-signals | interface | 3 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | economic-engine | interface | 22 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | inventory | interface | 5 | **OBSERVED_UNDECLARED** |
@@ -1592,6 +1595,7 @@ Meta Graph monté : oui.
 | payments | platform-ops | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | payments | purchasing | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | payments | refunds | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| payments | shared-cart | static-code | 1 | **OBSERVED_UNDECLARED** |
 | payments | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | platform-ops | auth-identity | static-code, interface | 5 | **OBSERVED_UNDECLARED** |
@@ -1622,11 +1626,11 @@ Meta Graph monté : oui.
 | shared-cart | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | shared-cart | auth-identity | static-code | 1 | **OBSERVED_UNDECLARED** |
 | shared-cart | catalog | static-code | 3 | **OBSERVED_UNDECLARED** |
-| shared-cart | infrastructure | static-code | 16 | **OBSERVED_UNDECLARED** |
+| shared-cart | infrastructure | static-code | 18 | **OBSERVED_UNDECLARED** |
 | shared-cart | notifications | static-code | 2 | **OBSERVED_UNDECLARED** |
 | shared-cart | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | shared-cart | payments | static-code | 2 | **OBSERVED_UNDECLARED** |
-| shared-cart | platform-ops | static-code | 44 | **OBSERVED_UNDECLARED** |
+| shared-cart | platform-ops | static-code | 45 | **OBSERVED_UNDECLARED** |
 | shared-cart | recommendations | static-code, interface | 4 | **OBSERVED_UNDECLARED** |
 | sourcing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | sourcing | catalog | static-code | 9 | **DECLARED_AND_OBSERVED** |
@@ -1692,6 +1696,7 @@ Meta Graph monté : oui.
 - `orders` → `platform-ops` (canaux: static-code)
 - `orders` → `shared-cart` (canaux: static-code, interface)
 - `payments` → `infrastructure` (canaux: static-code, interface)
+- `payments` → `shared-cart` (canaux: static-code)
 - `platform-ops` → `auth-identity` (canaux: static-code, interface)
 - `platform-ops` → `catalog` (canaux: static-code, interface)
 - `platform-ops` → `infrastructure` (canaux: static-code, interface)
@@ -1784,11 +1789,11 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | NON_RUNTIME_TEST | 7 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 29 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 3 | business-dependency-declare-candidate |
-| CROSS_FEATURE_DIRECT_IMPORT | 6 | boundary-remediation-required |
+| CROSS_FEATURE_DIRECT_IMPORT | 7 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 7 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **74** | |
+| **TOTAL** | **75** | |
 
 ### Projection dependencies
 
@@ -1882,10 +1887,11 @@ require() direct d'un fichier d'une autre business-feature — couture à casser
 
 - `auth-identity` → `wallet` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
 - `catalog` → `orders` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
+- `payments` → `shared-cart` — business-file-import, RUNTIME_ONLY _(exception: direct-import, runtime-cycle)_
 - `recommendations` → `orders` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
 - `shared-cart` → `auth-identity` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
 - `shared-cart` → `catalog` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
-- `shared-cart` → `payments` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
+- `shared-cart` → `payments` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import, runtime-cycle)_
 
 ### Business feature interfaces
 
@@ -1923,6 +1929,7 @@ Cycles runtime réels (après exclusion test-only + composition-root). Chaque di
 
 - `auth-identity` ↔ `platform-ops` — auth-identity→platform-ops (TECHNICAL_PRIMITIVE) ; platform-ops→auth-identity (BUSINESS_FEATURE_INTERFACE)
 - `catalog` ↔ `platform-ops` — catalog→platform-ops (TECHNICAL_PRIMITIVE) ; platform-ops→catalog (BUSINESS_FEATURE_INTERFACE)
+- `payments` ↔ `shared-cart` — payments→shared-cart (CROSS_FEATURE_DIRECT_IMPORT) ; shared-cart→payments (CROSS_FEATURE_DIRECT_IMPORT)
 
 ### Ontology gap coverage (flux local-manifest séparé, hors paires)
 

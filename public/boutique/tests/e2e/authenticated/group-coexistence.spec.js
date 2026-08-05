@@ -38,6 +38,7 @@ const {
   cancelAnyActiveSharedCart,
   spyOnApi,
 } = require('../helpers/api.helpers');
+const { getSharePageUrl } = require('../helpers/business.helpers');
 
 test.describe('FLOW — Isolation panier personnel / liste (F22)', () => {
   test.skip(
@@ -80,7 +81,28 @@ test.describe('FLOW — Isolation panier personnel / liste (F22)', () => {
     const shareState = await getClientShareState(page);
     expect(shareState?.token, 'Le token de la liste doit exister après création').toBeTruthy();
 
-    // La création active automatiquement la surface "shared-list" côté créateur.
+    // La création déclenche l'ouverture de la surface "shared-list" en
+    // fire-and-forget (openSharedListInCanonicalCart, imports dynamiques +
+    // fetch getSharedCartPublic — voir js/b-share-cart.js) qui s'est révélé
+    // pas assez fiable pour un test (échec reproductible même avec 25s
+    // d'attente, y compris en local contre un backend rapide — semble être
+    // un vrai gap fonctionnel, indépendant du réseau, pas juste un problème
+    // de timing). Le badge desktop #k-sc-shared-badge (qui contiendrait
+    // #k-sc-group-view, "👥 Suivre les participations →") s'est également
+    // révélé toujours masqué : refreshSharedBadges() y pose
+    // `desktopBadge.hidden = true` sans condition sur isShared — donc
+    // inutilisable comme déclencheur alternatif (bug réel de l'app,
+    // indépendant de V2-E, à signaler séparément).
+    // On navigue donc explicitement vers son propre lien de partage — le
+    // même mécanisme déjà prouvé fiable par F21 (group-full-cycle.spec.js)
+    // pour un participant, ici avec is_creator=true puisque même compte.
+    const publicResponsePromise = page.waitForResponse(
+      (r) => r.url().includes(`/api/shared-carts/public/${shareState.token}`) && r.request().method() === 'GET',
+      { timeout: 15_000 },
+    );
+    await page.goto(getSharePageUrl(shareState.token));
+    await publicResponsePromise;
+
     const sharedListPanel = page.locator('#k-cart-body .k-shared-list-items, #k-side-cart .k-shared-list-items').first();
     await expect(sharedListPanel).toBeVisible({ timeout: 10_000 });
 

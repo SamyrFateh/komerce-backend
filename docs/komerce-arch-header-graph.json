@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 363,
+    "scannedCodeFiles": 362,
     "filesWithFullHeaders": 336,
-    "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 363,
+    "filesWithLiteHeaders": 26,
+    "filesWithAnyHeaders": 362,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 767,
-    "edges": 4107,
+    "graphNodes": 766,
+    "edges": 4105,
     "dbTables": 109,
     "doctrines": 165,
     "impactAreas": 130,
-    "unresolvedCodeEdges": 420,
+    "unresolvedCodeEdges": 418,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 61
   },
@@ -38,7 +38,7 @@
     "boutique": 19,
     "catalog": 64,
     "checkout": 2,
-    "shared-cart": 20,
+    "shared-cart": 19,
     "account": 1,
     "shared-cart-modal": 7,
     "recommendations": 4,
@@ -79,7 +79,7 @@
     "view-model": 7,
     "ui-controller": 1,
     "ui-state": 1,
-    "util-ui": 2,
+    "util-ui": 1,
     "ui-infrastructure": 1,
     "state": 1,
     "util": 25,
@@ -102,7 +102,7 @@
     "critical": 55,
     "medium": 106,
     "high": 167,
-    "low": 35
+    "low": 34
   },
   "nodes": [
     {
@@ -3372,31 +3372,6 @@
       "version": "2026-08"
     },
     {
-      "id": "public/boutique/js/group/group-helpers.js",
-      "file": "public/boutique/js/group/group-helpers.js",
-      "type": "file-lite",
-      "headerType": "lite",
-      "role": "shared-cart-front-helpers",
-      "domain": "shared-cart",
-      "layer": "util-ui",
-      "criticality": "low",
-      "owner": "public/boutique/js/b-group-view.js",
-      "purpose": "supports public/boutique/js/b-group-view.js",
-      "inputs": [],
-      "outputs": [],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [],
-      "impactAreas": [
-        "shared-cart"
-      ],
-      "version": "2026-08"
-    },
-    {
       "id": "public/boutique/js/group/group-price-variation.js",
       "file": "public/boutique/js/group/group-price-variation.js",
       "type": "file",
@@ -3494,8 +3469,8 @@
       "domain": "shared-cart",
       "layer": "ui-component",
       "criticality": "low",
-      "owner": "public/boutique/js/b-group-view.js",
-      "purpose": "supports public/boutique/js/b-group-view.js",
+      "owner": "public/boutique/js/b-share-cart.js",
+      "purpose": "synchronise les badges DOM depuis state.shareToken",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -23739,18 +23714,6 @@
       "label": "checkout"
     },
     {
-      "from": "public/boutique/js/group/group-helpers.js",
-      "to": "public/boutique/js/b-group-view.js",
-      "type": "owned-by",
-      "label": "public/boutique/js/b-group-view.js"
-    },
-    {
-      "from": "public/boutique/js/group/group-helpers.js",
-      "to": "impact:shared-cart",
-      "type": "impact",
-      "label": "shared-cart"
-    },
-    {
       "from": "public/boutique/js/b-checkout.js",
       "to": "public/boutique/js/group/group-price-variation.js",
       "type": "uses",
@@ -23896,9 +23859,9 @@
     },
     {
       "from": "public/boutique/js/group/group-state.js",
-      "to": "public/boutique/js/b-group-view.js",
+      "to": "public/boutique/js/b-share-cart.js",
       "type": "owned-by",
-      "label": "public/boutique/js/b-group-view.js"
+      "label": "public/boutique/js/b-share-cart.js"
     },
     {
       "from": "public/boutique/js/group/group-state.js",
@@ -46483,7 +46446,8 @@
         "b-modal-approche-c-hybrid.js"
       ],
       "ownedFiles": [
-        "public/boutique/js/b-share-phone-guard.js"
+        "public/boutique/js/b-share-phone-guard.js",
+        "public/boutique/js/group/group-state.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -46519,6 +46483,7 @@
         "public/boutique/js/b-store.js",
         "public/boutique/js/boutique.js",
         "public/boutique/js/group/group-side-cart.js",
+        "public/boutique/js/group/group-state.js",
         "routes/shared-cart.js"
       ]
     },
@@ -47074,28 +47039,6 @@
         "public/boutique/js/group/group-side-cart.js"
       ]
     },
-    "public/boutique/js/group/group-helpers.js": {
-      "role": "shared-cart-front-helpers",
-      "domain": "shared-cart",
-      "criticality": "low",
-      "headerType": "lite",
-      "owner": "public/boutique/js/b-group-view.js",
-      "purpose": "supports public/boutique/js/b-group-view.js",
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [],
-      "impactAreas": [
-        "shared-cart"
-      ],
-      "mustCheck": [
-        "impact:shared-cart",
-        "public/boutique/js/b-group-view.js"
-      ]
-    },
     "public/boutique/js/group/group-price-variation.js": {
       "role": "shared-list-price-variation",
       "domain": "shared-cart",
@@ -47195,8 +47138,8 @@
       "domain": "shared-cart",
       "criticality": "low",
       "headerType": "lite",
-      "owner": "public/boutique/js/b-group-view.js",
-      "purpose": "supports public/boutique/js/b-group-view.js",
+      "owner": "public/boutique/js/b-share-cart.js",
+      "purpose": "synchronise les badges DOM depuis state.shareToken",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -47209,7 +47152,7 @@
       ],
       "mustCheck": [
         "impact:shared-cart",
-        "public/boutique/js/b-group-view.js",
+        "public/boutique/js/b-share-cart.js",
         "public/boutique/js/group/group-side-cart.js"
       ]
     },
@@ -60946,18 +60889,6 @@
       "to": "public/boutique/js/group/group-api.js",
       "type": "uses",
       "label": "b-group-view.js"
-    },
-    {
-      "from": "public/boutique/js/group/group-helpers.js",
-      "to": "public/boutique/js/b-group-view.js",
-      "type": "owned-by",
-      "label": "public/boutique/js/b-group-view.js"
-    },
-    {
-      "from": "public/boutique/js/group/group-state.js",
-      "to": "public/boutique/js/b-group-view.js",
-      "type": "owned-by",
-      "label": "public/boutique/js/b-group-view.js"
     },
     {
       "from": "public/boutique/js/komerce-api.js",

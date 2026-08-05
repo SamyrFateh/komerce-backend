@@ -92,7 +92,6 @@ Règle :
 | Création / partage du panier partagé | `public/boutique/js/b-share-cart.js` |
 | Vue participant / créateur du panier partagé | `public/boutique/js/b-group-view.js` |
 | API frontend panier partagé | `public/boutique/js/group/group-api.js` |
-| Helpers statuts / formatage panier partagé | `public/boutique/js/group/group-helpers.js` |
 | Rendu créateur panier partagé | `public/boutique/js/group/group-render-creator.js` |
 | CSS panier / checkout / side-cart | `public/boutique/css/cart.css` |
 | CSS flux groupe / panier partagé | `public/boutique/css/group-cart-flow.css` |
@@ -172,7 +171,7 @@ Puis vérifier selon la zone :
 |---|---|
 | Bouton partager / choix ready_to_pay | `b-share-cart.js` |
 | Lien participant `?p=TOKEN` | `b-group-view.js` |
-| Libellés humains | `group-helpers.js`, `b-group-view.js`, `group-render-creator.js` |
+| Libellés humains | `b-group-view.js`, `group-render-creator.js` |
 | Bouton `Régler ma part` | `b-group-view.js` |
 | Fiche lecture seule snapshot | `b-group-view.js` |
 | Appels API | `group-api.js` |

@@ -122,18 +122,6 @@ export function closeCart(cartId) {
 }
 
 /**
- * Ajoute un article unitaire à la liste (Invariant 20 : une intention, un
- * appel, écriture immédiate). Distinct du PUT /:id/items historique (édition
- * groupée) qu'aucun écran V1 n'appelle plus.
- * @param {string|number} cartId
- * @param {string|number} productId
- * @param {number} [quantity=1]
- * @returns {Promise<{ok: boolean, cart, item}>}
- */
-export function addItemToSharedList(cartId, productId, quantity = 1) {
-  return apiPost(`/api/shared-carts/${cartId}/items`, { product_id: productId, quantity });
-}
-
 /**
  * Modifie la quantité d'un article déjà présent dans la liste — amendement
  * V2 §B (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2).

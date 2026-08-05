@@ -8,9 +8,10 @@
  * §9) : isolation des états, sélection locale sans appel réseau, statuts
  * disponible/déjà acheté, footer vide/non vide, indicateur mobile, actions
  * propriétaire, checkout avec shared_cart_item_id, et l'intégration avec
- * b-cart.js::renderCartBody() via isSharedListActive()/exitSharedListRenderMode()
- * (bug d'intégration trouvé et corrigé pendant cette session — b-cart.js
- * appelait ces deux exports alors qu'ils n'existaient pas encore ici).
+ * b-cart.js::renderCartBody() via isSharedListSurfaceActive()/
+ * exitSharedListRenderMode(). isSharedListActive() (retiré V2-F, zéro
+ * consommateur réel après le passage à isSharedListSurfaceActive() comme
+ * garde de rendu) n'existe plus.
  *
  * group-api.js, group-state.js, group-checkout-adapter.js et b-utils.js
  * (showToast) sont mockés — ce ne sont pas des dépendances sous test. b-store.js
@@ -24,7 +25,6 @@ const mockGetSharedCartLibrary = jest.fn();
 const mockSaveSharedCart = jest.fn();
 const mockRemoveItemFromSharedList = jest.fn();
 const mockCloseCart = jest.fn();
-const mockAddItemToSharedList = jest.fn();
 const mockUpdateSharedListItemQuantity = jest.fn();
 const mockCheckoutSharedListSelection = jest.fn();
 const mockIsDesktop = jest.fn();
@@ -40,7 +40,6 @@ jest.mock('../../js/group/group-api.js', () => ({
   saveSharedCart: mockSaveSharedCart,
   removeItemFromSharedList: mockRemoveItemFromSharedList,
   closeCart: mockCloseCart,
-  addItemToSharedList: mockAddItemToSharedList,
   updateSharedListItemQuantity: mockUpdateSharedListItemQuantity,
 }));
 jest.mock('../../js/group/group-checkout-adapter.js', () => ({
@@ -56,11 +55,9 @@ const {
   toggleSharedListItem,
   renderSharedListInCart,
   renderLibraryInCart,
-  isSharedListActive,
   isSharedListSurfaceActive,
   setCartSurface,
   exitSharedListRenderMode,
-  addItemToSharedList,
   activateFromParticipantUrl,
   activateOwnerLibrary,
 } = require('../../js/group/group-side-cart.js');
@@ -199,7 +196,6 @@ describe('sélection locale (mandat §3/§8 — aucun appel réseau)', () => {
 
     expect(state.sharedListSelection.has('i1')).toBe(true);
     expect(state.cart).toBe(personalCart);
-    expect(mockAddItemToSharedList).not.toHaveBeenCalled();
     expect(mockGetSharedCartPublic).toHaveBeenCalledTimes(0);
   });
 
@@ -430,23 +426,71 @@ describe('actions propriétaire (mandat §9)', () => {
     confirmSpy.mockRestore();
   });
 
-  it('addItemToSharedList : ajout unitaire immédiat côté serveur (un seul appel)', async () => {
-    activateSharedListContext(publicPayload({ is_creator: true, items: [] }), 'tok-1');
-    mockAddItemToSharedList.mockResolvedValueOnce({ ok: true });
-    mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload({ is_creator: true, items: [availableItem()] }));
+  // V2-F nettoyage final : le bouton "+ Ajouter un article" et
+  // addItemToSharedList() (UI) ont été retirés — voir le test de
+  // non-régression dédié plus bas ("V2-F — bouton Ajouter un article
+  // retiré, actions propriétaire restantes intactes").
+});
 
-    const ok = await addItemToSharedList('p-9', 2);
+describe('V2-F — bouton Ajouter un article retiré, actions propriétaire restantes intactes', () => {
+  it('le bouton #k-shared-list-add n\'est plus rendu, le reste du parcours propriétaire fonctionne sans erreur', async () => {
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const personalCart = [{ product: { id: 'perso-1' }, qty: 3 }];
+    state.cart = personalCart;
 
-    expect(ok).toBe(true);
-    expect(mockAddItemToSharedList).toHaveBeenCalledTimes(1);
-    expect(mockAddItemToSharedList).toHaveBeenCalledWith('sc-1', 'p-9', 2);
-  });
+    activateSharedListContext(
+      publicPayload({ is_creator: true, items: [availableItem({ id: 'i1' })] }),
+      'tok-1',
+    );
 
-  it('addItemToSharedList refuse si non propriétaire', async () => {
-    activateSharedListContext(publicPayload({ is_creator: false, items: [] }), 'tok-1');
-    const ok = await addItemToSharedList('p-9', 1);
-    expect(ok).toBe(false);
-    expect(mockAddItemToSharedList).not.toHaveBeenCalled();
+    // 1. Le bouton retiré n'est plus dans le DOM.
+    expect(document.getElementById('k-shared-list-add')).toBeNull();
+    // 2. Les actions propriétaire restantes sont toujours rendues.
+    expect(document.getElementById('k-shared-list-share')).not.toBeNull();
+    expect(document.getElementById('k-shared-list-close')).not.toBeNull();
+    expect(document.querySelector('.k-shared-item-qty')).not.toBeNull();
+    expect(document.querySelector('.k-shared-item-remove')).not.toBeNull();
+
+    // 3. Modifier la quantité fonctionne toujours.
+    mockUpdateSharedListItemQuantity.mockResolvedValueOnce({ ok: true });
+    mockGetSharedCartPublic.mockResolvedValueOnce(
+      publicPayload({ is_creator: true, items: [availableItem({ id: 'i1', quantity: 2 })] }),
+    );
+    document.querySelector('.k-shared-item-qty-btn[data-qty-step="1"]').click();
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    expect(mockUpdateSharedListItemQuantity).toHaveBeenCalledWith('sc-1', 'i1', 2);
+
+    // 4. Retirer un article fonctionne toujours.
+    mockRemoveItemFromSharedList.mockResolvedValueOnce({ ok: true });
+    mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload({ is_creator: true, items: [] }));
+    document.querySelector('.k-shared-item-remove').click();
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    expect(mockRemoveItemFromSharedList).toHaveBeenCalledWith('sc-1', 'i1');
+
+    // 5. Partager reste cliquable sans lever d'erreur (délégué à
+    // b-share-cart.js via import dynamique — non re-testé en profondeur ici,
+    // déjà couvert par les tests dédiés à b-share-cart.js).
+    expect(() => document.getElementById('k-shared-list-share').click()).not.toThrow();
+
+    // 6. Fermer la liste fonctionne toujours.
+    mockCloseCart.mockResolvedValueOnce({ ok: true });
+    mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload({ is_creator: true, status: 'closed' }));
+    document.getElementById('k-shared-list-close').click();
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    expect(mockCloseCart).toHaveBeenCalledWith('sc-1');
+
+    // 7. Le panier personnel n'a jamais été touché par tout ce parcours.
+    expect(state.cart).toBe(personalCart);
+
+    // 8. La liste reste consultable (panneau toujours présent).
+    expect(document.getElementById('k-shared-list-panel')).not.toBeNull();
+
+    // 9. Aucune erreur JS (import mort, référence cassée) n'a été loggée.
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    confirmSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 });
 
@@ -592,11 +636,16 @@ describe('activateFromParticipantUrl / activateOwnerLibrary (amendement V2 §D)'
   });
 });
 
-describe('isSharedListActive / exitSharedListRenderMode (contrat avec b-cart.js::renderCartBody, mandat §5)', () => {
-  it('isSharedListActive() reflète l\'état du contexte', () => {
-    expect(isSharedListActive()).toBe(false);
+describe('exitSharedListRenderMode (contrat avec b-cart.js::renderCartBody, mandat §5)', () => {
+  // V2-F : isSharedListActive() a été retiré (zéro consommateur réel après
+  // le passage à isSharedListSurfaceActive() comme garde de rendu, voir
+  // group-side-cart.js). L'invariant "le contexte reste actif tant que le
+  // token est présent" est toujours réel et vérifié ici directement via
+  // state.sharedListContext.token plutôt que via le wrapper supprimé.
+  it('activateSharedListContext() pose bien state.sharedListContext.token', () => {
+    expect(state.sharedListContext.token).toBeFalsy();
     activateSharedListContext(publicPayload(), 'tok-1');
-    expect(isSharedListActive()).toBe(true);
+    expect(state.sharedListContext.token).toBe('tok-1');
   });
 
   it('exitSharedListRenderMode() est un no-op tant que le contexte reste actif', () => {
@@ -604,7 +653,7 @@ describe('isSharedListActive / exitSharedListRenderMode (contrat avec b-cart.js:
     renderSharedListInCart();
     exitSharedListRenderMode();
     // Le panneau liste reste en place — exitSharedListRenderMode() ne nettoie
-    // rien tant qu'isSharedListActive() est vrai.
+    // rien tant que state.sharedListContext.token reste présent.
     expect(document.getElementById('k-shared-list-panel')).not.toBeNull();
   });
 
@@ -638,7 +687,7 @@ describe('Amendement V2 §A — cartSurface (coexistence panier personnel / list
     expect(isSharedListSurfaceActive()).toBe(true);
 
     setCartSurface('personal');
-    expect(isSharedListActive()).toBe(true); // le contexte reste en arrière-plan
+    expect(state.sharedListContext.token).toBeTruthy(); // le contexte reste en arrière-plan
     expect(isSharedListSurfaceActive()).toBe(false); // mais la surface affichée est le panier
   });
 
@@ -1034,7 +1083,6 @@ describe('mandat V2-E §4 — isolation panier personnel / liste (ajout au panie
 
     // aucune route shared-cart n'est appelée par cet ajout au panier
     expect(mockUpdateSharedListItemQuantity).not.toHaveBeenCalled();
-    expect(mockAddItemToSharedList).not.toHaveBeenCalled();
     expect(mockRemoveItemFromSharedList).not.toHaveBeenCalled();
 
     // le drawer mobile se rouvre, la surface revient à 'shared-list'
@@ -1064,7 +1112,6 @@ describe('mandat V2-E §4 — isolation panier personnel / liste (ajout au panie
     expect(state.sharedListSelection).toEqual(initialSelection);
     expect(state.sharedListContext.items).toEqual(initialItems);
     expect(mockUpdateSharedListItemQuantity).not.toHaveBeenCalled();
-    expect(mockAddItemToSharedList).not.toHaveBeenCalled();
     expect(mockRemoveItemFromSharedList).not.toHaveBeenCalled();
     expect(state.cartSurface).toBe('shared-list');
   });

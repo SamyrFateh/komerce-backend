@@ -113,7 +113,6 @@ module.exports = {
       'js/b-group-banner.js',
       'js/b-share-phone-guard.js',
       'js/group/group-api.js',
-      'js/group/group-helpers.js',
       'js/group/group-checkout-adapter.js',
       'js/group/group-side-cart.js',
       'js/group/group-state.js',

@@ -36,7 +36,6 @@ import {
   saveSharedCart,
   removeItemFromSharedList,
   closeCart as apiCloseSharedCart,
-  addItemToSharedList as apiAddItemToSharedList,
   updateSharedListItemQuantity as apiUpdateSharedListItemQuantity,
 } from './group-api.js';
 import { checkoutSharedListSelection } from './group-checkout-adapter.js';
@@ -225,21 +224,12 @@ function cleanupSharedListDom() {
 }
 
 /**
- * Garde utilisée par b-cart.js::renderCartBody() (mandat §5 — b-cart.js
- * reste propriétaire du shell canonique et délègue le rendu du corps à ce
- * module tant qu'un contexte de liste est actif, quel que soit l'appelant
- * d'origine : setQty, removeFromCart, clearCart, checkout, etc.).
- * @returns {boolean}
- */
-export function isSharedListActive() {
-  return isActiveContext();
-}
-
-/**
  * Amendement V2 §A — vraie condition de rendu dans renderCartBody() :
- * un contexte actif ne suffit plus (il peut rester en arrière-plan pendant
- * que le panier personnel est affiché). remplace isSharedListActive() comme
- * garde de rendu dans b-cart.js::renderCartBody().
+ * un contexte actif ne suffit pas (il peut rester en arrière-plan pendant
+ * que le panier personnel est affiché). Remplace l'ancienne
+ * isSharedListActive() (retirée V2-F, zéro consommateur réel après ce
+ * remplacement — confirmé par grep exhaustif) comme garde de rendu dans
+ * b-cart.js::renderCartBody().
  * @returns {boolean}
  */
 export function isSharedListSurfaceActive() {
@@ -441,7 +431,6 @@ function creatorActionsHtml() {
   const closed = isReadOnly();
   return (
     `<div class="k-shared-list-creator-actions">` +
-      `<button type="button" id="k-shared-list-add" class="k-cart-continue-shop" ${closed ? 'disabled' : ''}>+ Ajouter un article</button>` +
       `<button type="button" id="k-shared-list-share" class="k-cart-continue-shop">📤 Partager</button>` +
       `<button type="button" id="k-shared-list-close" class="k-cart-continue-shop" ${closed ? 'disabled' : ''}>${closed ? 'Liste fermée' : 'Fermer la liste'}</button>` +
     `</div>`
@@ -506,7 +495,6 @@ function wirePanel(root) {
     btn.addEventListener('click', () => handleOpenItemProduct(btn.dataset.itemId));
   });
 
-  root.querySelector('#k-shared-list-add')?.addEventListener('click', handleAddItemClick);
   root.querySelector('#k-shared-list-share')?.addEventListener('click', handleShareClick);
   root.querySelector('#k-shared-list-close')?.addEventListener('click', handleCloseClick);
   root.querySelector('#k-shared-list-buy')?.addEventListener('click', handleBuySelection);
@@ -837,39 +825,26 @@ export function renderCartSurfaceSwitch() {
   });
 }
 
-/* ── Actions propriétaire (mandat §9) ────────────────────────────────── */
-
-async function handleAddItemClick() {
-  if (isReadOnly()) return;
-  // L'ajout se fait depuis une fiche produit (CTA "Ajouter à cette liste"),
-  // pas depuis le side cart lui-même. On ferme le drawer pour laisser le
-  // créateur naviguer le catalogue ; le contexte liste reste actif
-  // (Invariant §3 : fermer le drawer conserve contexte et sélection).
-  closeSharedListDrawer();
-  showToast('Ouvrez une fiche produit puis choisissez « Ajouter à cette liste ».', 'info');
-}
-
-/**
- * Ajoute un article à la liste depuis une fiche produit. Écrit
- * immédiatement côté serveur (un seul appel, mandat §9), jamais via le
- * panier personnel.
- * @param {string|number} productId
- * @param {number} [quantity=1]
+/* ── Actions propriétaire (mandat §9) ─────────────────────────────────
+ * V2-F nettoyage final : le bouton "+ Ajouter un article" et son handler
+ * handleAddItemClick() ont été retirés — ils ne faisaient que renvoyer
+ * l'utilisateur vers un CTA "Ajouter à cette liste" qui n'a jamais été
+ * construit sur la fiche produit (parcours mort, jamais atteignable). La
+ * fonction addItemToSharedList(productId, quantity) qui aurait effectué
+ * l'ajout réel est retirée avec eux (zéro appelant réel après retrait du
+ * bouton, confirmé par grep exhaustif).
+ *
+ * L'ajout d'un nouvel article à une liste existante n'est pas exposé dans
+ * l'interface actuelle. Le propriétaire peut modifier les quantités et
+ * retirer des lignes existantes. Un futur lot pourra introduire une action
+ * explicite "Ajouter à cette liste" depuis le catalogue ou la fiche
+ * produit, sans modifier le panier personnel.
+ *
+ * La route backend POST /api/shared-carts/:id/items et son service restent
+ * en place (capacité métier valide, réutilisable par un futur parcours) —
+ * seul le client front group-api.js::addItemToSharedList, désormais sans
+ * appelant, a été retiré avec ce lot.
  */
-export async function addItemToSharedList(productId, quantity = 1) {
-  if (!isActiveContext() || !state.sharedListContext.isCreator || isReadOnly()) return false;
-  const cartId = state.sharedListContext.sharedCartId;
-  if (!cartId) return false;
-  try {
-    await apiAddItemToSharedList(cartId, productId, quantity);
-    await refreshSharedListContext();
-    showToast('Article ajouté à la liste.', 'success');
-    return true;
-  } catch (err) {
-    showToast(`Erreur : ${err.message}`, 'error');
-    return false;
-  }
-}
 
 async function handleRemoveItem(itemId) {
   if (!state.sharedListContext.isCreator || isReadOnly()) return;

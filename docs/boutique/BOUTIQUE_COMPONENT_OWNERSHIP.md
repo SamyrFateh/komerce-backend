@@ -59,7 +59,6 @@ Les anciennes notions `panier collectif`, `workspace`, `event`, `settlement`, `e
 | Partage panier | `public/boutique/js/b-share-cart.js` | création lien panier partagé, choix `ready_to_pay/needs_validation`, message WhatsApp | rendu complet vue participant, paiement direct hors boutique |
 | Vue panier partagé | `public/boutique/js/b-group-view.js` | rendu participant/créateur, `?p=TOKEN`, lecture seule snapshot, bouton `Régler ma part` | panier personnel, catalogue live, mutation participant |
 | API panier partagé frontend | `public/boutique/js/group/group-api.js` | appels HTTP panier partagé | rendu UI, mapping de statut humain |
-| Helpers panier partagé | `public/boutique/js/group/group-helpers.js` | formatage, statut humain, business status | DOM, appels API |
 | Rendu créateur panier partagé | `public/boutique/js/group/group-render-creator.js` | blocs créateur, actions créateur | vue participant, mutation directe backend hors API dédiée |
 | Styles catégories | `public/boutique/css/categories.css` | `.k-cats`, `.k-chip`, catégories mobile/base | pager, desktop global, produits |
 | Hero base/mobile | `public/boutique/css/hero.css` | hero mobile/base, sticky bar visuelle | neutralisation cage pager mobile |

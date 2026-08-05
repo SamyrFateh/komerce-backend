@@ -90,6 +90,19 @@ test.describe('FLOW — Bibliothèque "Mes listes" (F23)', () => {
     const token = shareState.token;
 
     // ── PHASE 2 — Le créateur ne voit jamais de bouton "Sauvegarder" ──────
+    // Le rendu fire-and-forget après création (openSharedListInCanonicalCart)
+    // s'est révélé pas assez fiable pour un test (voir commentaire détaillé
+    // dans group-coexistence.spec.js). On navigue explicitement vers son
+    // propre lien de partage — le même mécanisme déjà prouvé fiable par F21
+    // (group-full-cycle.spec.js) pour un participant, ici avec
+    // is_creator=true puisque même compte.
+    const publicResponsePromise = page.waitForResponse(
+      (r) => r.url().includes(`/api/shared-carts/public/${token}`) && r.request().method() === 'GET',
+      { timeout: 15_000 },
+    );
+    await page.goto(getSharePageUrl(token));
+    await publicResponsePromise;
+
     const sharedListPanel = page.locator('#k-cart-body .k-shared-list-items, #k-side-cart .k-shared-list-items').first();
     await expect(sharedListPanel).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#k-side-cart #k-shared-list-save')).toHaveCount(0);
@@ -109,14 +122,18 @@ test.describe('FLOW — Bibliothèque "Mes listes" (F23)', () => {
       viewport: { width: 1280, height: 800 },
       locale: 'fr-FR',
     });
+    // Garde-fou explicite : dans certaines configurations Playwright (projet
+    // avec storageState au niveau du fichier de config), un nouveau contexte
+    // créé via browser().newContext() peut hériter du cookie de session du
+    // contexte principal au lieu de démarrer vide — vérifié en pratique
+    // (capture directe : le cookie kmrc_jwt du créateur était présent sur ce
+    // contexte "anonyme" avant même la navigation, ce qui faisait remonter
+    // is_creator=true côté backend et masquait le bouton Sauvegarder qu'on
+    // veut justement tester). On force l'isolation au lieu de la supposer.
+    await anonContext.clearCookies();
     const anonPage = await anonContext.newPage();
 
     try {
-      const saveCallPromise = anonPage.waitForResponse(
-        (r) => r.url().includes('/api/shared-carts/save') && r.request().method() === 'POST',
-        { timeout: 15_000 },
-      );
-
       await anonPage.goto(getSharePageUrl(token));
 
       // Pas de sauvegarde automatique à l'ouverture : le bouton doit
@@ -125,6 +142,18 @@ test.describe('FLOW — Bibliothèque "Mes listes" (F23)', () => {
       await expect(saveBtn).toBeVisible({ timeout: 10_000 });
       await expect(saveBtn).toHaveText(/Sauvegarder cette liste/);
 
+      // L'écouteur est posé juste avant le clic, pas en tête de bloc : créé
+      // trop tôt, son timeout interne (15s) peut expirer avant même d'être
+      // await plus bas (le goto + les attentes de visibilité ci-dessus
+      // peuvent à eux seuls s'approcher de 15s sur un réseau réel) — la
+      // promesse rejette alors "dans le vide", ce que Playwright traite
+      // comme une erreur non gérée et ferme le contexte (bug trouvé en
+      // reproduisant l'échec réel : "Target page, context or browser has
+      // been closed", exactement à ce timing).
+      const saveCallPromise = anonPage.waitForResponse(
+        (r) => r.url().includes('/api/shared-carts/save') && r.request().method() === 'POST',
+        { timeout: 15_000 },
+      );
       await saveBtn.click();
       const saveResponse = await saveCallPromise;
       expect(saveResponse.status(), 'POST /save sans identité doit être refusé (401)').toBe(401);
