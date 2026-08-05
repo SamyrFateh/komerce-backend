@@ -58,8 +58,10 @@ function syncActiveListSaveButton() {
   );
 
   if (!stillSaved) {
-    button.disabled = false;
-    button.textContent = '☆ Sauvegarder cette liste';
+    if (button.disabled) button.disabled = false;
+    if (button.textContent !== '☆ Sauvegarder cette liste') {
+      button.textContent = '☆ Sauvegarder cette liste';
+    }
   }
 }
 
