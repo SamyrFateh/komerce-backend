@@ -1,0 +1,10 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "build": {
+      "commands": [
+        "node public/boutique/scripts/deploy-css.js"
+      ]
+    }
+  }
+}
