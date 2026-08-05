@@ -4,7 +4,7 @@
  * @domain        shared-cart
  * @layer         ui-component
  * @owner         public/boutique/js/b-share-cart.js
- * @purpose       synchronise les badges DOM depuis state.shareToken
+ * @purpose       synchronise les badges DOM depuis state.shareToken et installe les actions de bibliothèque
  * @impact-areas  shared-cart
  * @version       2026-08
  */
@@ -27,17 +27,18 @@
  * n'existe plus (confirmé par grep au moment du retrait ci-dessus) ;
  * refreshGroupBadge est importé directement par b-share-cart.js.
  *
- * Règle : aucun appel réseau ici — uniquement synchronisation avec state +
- * DOM badge.
+ * Règle : aucun appel réseau dans refreshGroupBadge — uniquement
+ * synchronisation avec state + DOM badge. Le module installe aussi l'action
+ * explicite « Retirer de Mes listes » portée par group-library-remove.js.
  */
 
 import { state } from '../b-store.js';
+import {
+  installSharedLibraryRemove,
+} from './group-library-remove.js';
 
-/**
- * Synchronise les badges DOM de l'onglet Groupe avec state.shareToken.
- * Appelé après toute opération qui change l'état du panier partagé
- * créateur (création, ajout, retrait, fermeture, annulation).
- */
+installSharedLibraryRemove();
+
 export function refreshGroupBadge() {
   const has = !!state.shareToken;
   document.getElementById('k-bnav-group-badge')?.classList.toggle('show', has);

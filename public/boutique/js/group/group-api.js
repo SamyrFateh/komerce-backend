@@ -4,10 +4,10 @@
  * @domain        shared-cart
  * @layer         api-client
  * @criticality   high
- * @inputs        share_token, viewer_session, item_id, quantity
+ * @inputs        share_token, viewer_session, shared_cart_id, item_id, quantity
  * @outputs       shared_cart_data, library_data, action_results
- * @depends       routes/shared-cart.js, fetch
- * @used-by       group/group-side-cart.js
+ * @depends       routes/shared-cart.js, routes/shared-cart-saved.js, fetch
+ * @used-by       group/group-side-cart.js, group/group-library-remove.js
  * @doctrine      boutique_first, domaine_minimal, un_appel_une_action
  * @impact-areas  shared-cart, participant-flow, creator-flow, checkout
  * @version       2026-08
@@ -20,9 +20,9 @@
  *
  * Le checkout canonique (POST /api/orders) reste le seul acte engageant.
  * Ce module transporte uniquement les lectures de liste et de bibliothèque,
- * la sauvegarde explicite d'une liste reçue, ainsi que les actions unitaires
- * encore exposées au propriétaire : modifier une quantité, retirer une ligne
- * et fermer la liste.
+ * la sauvegarde explicite d'une liste reçue, son retrait explicite de la
+ * bibliothèque, ainsi que les actions unitaires encore exposées au
+ * propriétaire : modifier une quantité, retirer une ligne et fermer la liste.
  *
  * L'ajout d'un nouvel article à une liste existante n'est pas exposé dans
  * l'interface actuelle. La capacité backend POST /api/shared-carts/:id/items
@@ -97,6 +97,17 @@ export function getSharedCartLibrary() {
  */
 export function saveSharedCart(token) {
   return apiPost('/api/shared-carts/save', { token });
+}
+
+/**
+ * Retire une liste reçue de la bibliothèque de l'utilisateur courant.
+ * Ne supprime jamais la liste réelle, ses articles, ses commandes ou son
+ * lien public. L'opération est idempotente côté serveur.
+ * @param {string|number} sharedCartId
+ * @returns {Promise<{ok: boolean, shared_cart_id: string, removed: boolean}>}
+ */
+export function removeSavedSharedCart(sharedCartId) {
+  return apiDelete(`/api/shared-carts/saved/${encodeURIComponent(String(sharedCartId))}`);
 }
 
 /**

@@ -4,10 +4,10 @@
  * @domain        shared-cart
  * @layer         service
  * @criticality   high
- * @inputs        user_id, share_token
- * @outputs       library_sections, saved_access_row
+ * @inputs        user_id, share_token, shared_cart_id
+ * @outputs       library_sections, saved_access_row, saved_access_removal
  * @depends       db.js, services/shared-cart-reads.js
- * @used-by       routes/shared-cart.js
+ * @used-by       routes/shared-cart.js, routes/shared-cart-saved.js
  * @db-read       order_items, shared_cart_items, shared_cart_saved_access, shared_carts, users
  * @db-write      shared_cart_saved_access
  * @db-txn        none
@@ -39,10 +39,16 @@
  * saveSharedCartForUser() (POST /api/shared-carts/save) fait apparaître
  * une liste reçue dans la section « Partagées avec moi ». Rien n'est posé
  * automatiquement en arrière-plan — jamais de "signet" implicite.
+ *
+ * Retirer une liste de la bibliothèque ne supprime jamais la liste réelle,
+ * ses articles, ses commandes ou son token public. Seule la ligne d'accès
+ * propre à l'utilisateur courant est retirée.
  */
 
 const db = require('../db');
 const { listMySharedCarts } = require('./shared-cart-reads');
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function httpError(message, status = 400, code = null) {
   const e = new Error(message);
@@ -114,8 +120,6 @@ async function saveSharedCartForUser(userId, token) {
   const cart = cartRows[0];
 
   if (String(cart.organizer_user_id) === String(userId)) {
-    // Le créateur voit déjà sa propre liste dans « Créées par moi » — la
-    // sauvegarder aussi dans « Partagées avec moi » la dupliquerait.
     throw httpError(
       'Vous êtes le créateur de cette liste — elle apparaît déjà dans « Créées par moi ».',
       400,
@@ -141,7 +145,44 @@ async function saveSharedCartForUser(userId, token) {
   return { ok: true, shared_cart_id: cart.id, already_saved: false };
 }
 
+/**
+ * Retire une liste reçue de « Partagées avec moi » pour l'utilisateur
+ * courant. Cette opération est volontairement idempotente : une seconde
+ * suppression répond encore ok avec removed=false.
+ *
+ * Aucun DELETE n'est effectué sur shared_carts ou shared_cart_items et le
+ * token public reste valide. Le contexte de liste éventuellement ouvert
+ * côté Boutique n'est pas concerné par cette préférence de bibliothèque.
+ *
+ * @param {string} userId
+ * @param {string} sharedCartId
+ * @returns {Promise<{ok: boolean, shared_cart_id: string, removed: boolean}>}
+ */
+async function removeSavedSharedCartForUser(userId, sharedCartId) {
+  const normalizedId = String(sharedCartId || '').trim();
+  if (!normalizedId) {
+    throw httpError('shared_cart_id requis', 400, 'shared_cart_id_required');
+  }
+  if (!UUID_RE.test(normalizedId)) {
+    throw httpError('shared_cart_id invalide', 400, 'shared_cart_id_invalid');
+  }
+
+  const result = await db.query(
+    `DELETE FROM shared_cart_saved_access
+      WHERE user_id = $1
+        AND shared_cart_id = $2`,
+    [userId, normalizedId]
+  );
+
+  return {
+    ok: true,
+    shared_cart_id: normalizedId,
+    removed: result.rowCount > 0,
+  };
+}
+
 module.exports = {
   getSharedCartLibrary,
   saveSharedCartForUser,
+  removeSavedSharedCartForUser,
 };

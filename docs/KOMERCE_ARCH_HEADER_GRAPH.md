@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 362
-- Files with full headers: 336
+- Scanned code files: 364
+- Files with full headers: 338
 - Files with lite headers: 26
-- Files with any headers: 362
+- Files with any headers: 364
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 766
-- Edges: 4104
-- DB tables: 109
-- Doctrines: 165
+- Graph nodes: 771
+- Edges: 4128
+- DB tables: 110
+- Doctrines: 167
 - Impact areas: 130
-- Unresolved code edges: 417
+- Unresolved code edges: 418
 - Tables multi-écrivains directs (>=2): 61
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - recommendations: 4
 - refunds: 2
 - shared: 1
-- shared-cart: 19
+- shared-cart: 21
 - shared-cart-modal: 7
 - sourcing: 1
 - tracking: 1
@@ -73,14 +73,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - machine: 1
 - manual-test: 1
 - middleware: 11
-- route: 95
+- route: 96
 - route-manifest: 1
 - schema: 1
 - service: 140
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
-- ui-component: 34
+- ui-component: 35
 - ui-controller: 1
 - ui-enhancer: 3
 - ui-infrastructure: 1
@@ -178,6 +178,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-utils.js — boutique-ui-utilities (boutique, high, full)
 - public/boutique/js/controllers/home-controller.js — boutique-home-navigation-controller (catalog, high, full)
 - public/boutique/js/group/group-api.js — shared-cart-front-api (shared-cart, high, full)
+- public/boutique/js/group/group-library-remove.js — shared-cart-library-removal-ui (shared-cart, high, full)
 - public/boutique/js/komerce-api.js — boutique-api-client (boutique, high, full)
 - public/boutique/js/product-store.js — boutique-product-store (catalog, high, full)
 - public/boutique/js/shop-schema.js — boutique-taxonomy-schema (catalog, high, full)
@@ -230,6 +231,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/pricing.js — economic-engine-pricing (economic-engine, high, full)
 - routes/products.js — products-http-facade (catalog, high, full)
 - routes/relay-dashboard.js — dashboard-relay-dashboard (dashboard, high, full)
+- routes/shared-cart-saved.js — shared-cart-saved-access-http (shared-cart, high, full)
 - routes/tracking.js — logistics-tracking (logistics, high, full)
 - routes/transit-dashboard.js — logistics-transit-dashboard (logistics, high, full)
 - routes/wallet.js — wallet-http-facade (wallet, high, full)
@@ -406,6 +408,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
 - WRITE routes/admin-customs-shipments.js -> customs_shipments
 - WRITE services/customs-shipment-service.js -> customs_shipments
+- WRITE routes/shared-cart-saved.js -> delegated_to_shared_cart_library
 - WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE bootstrap/crons.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
@@ -468,7 +471,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin/system.js -> orders
 - WRITE routes/orders/cancel.js -> orders
 - WRITE routes/orders/create.js -> orders
-- WRITE routes/orders/qr.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -625,6 +627,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-utils.js -> fetch (fetch)
 - depends: public/boutique/js/b-utils.js -> Intl (Intl)
 - depends: public/boutique/js/group/group-api.js -> fetch (fetch)
+- depends: public/boutique/js/group/group-library-remove.js -> group-side-cart.js(dynamic) (group-side-cart.js(dynamic))
 - depends: public/boutique/js/komerce-api.js -> backend_api (backend_api)
 - depends: public/boutique/js/product-store.js -> localStorage (localStorage)
 - depends: public/boutique/js/test-modal-view-model-redirect.js -> browser-location-api (browser-location-api)
@@ -692,7 +695,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/carriers.js -> services/* (services/*)
 - depends: routes/cash.js -> db.js (db.js)
 - depends: routes/cash.js -> services/* (services/*)
-- depends: routes/catalog-product-detail.js -> db.js (db.js)
 
 ## Files Still Without Headers Or Aggregation
 
