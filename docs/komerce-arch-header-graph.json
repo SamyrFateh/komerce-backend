@@ -14428,11 +14428,13 @@
       "purpose": null,
       "inputs": [
         "user_id",
-        "share_token"
+        "share_token",
+        "shared_cart_id"
       ],
       "outputs": [
         "library_sections",
-        "saved_access_row"
+        "saved_access_row",
+        "saved_access_removal"
       ],
       "depends": [
         "db.js",
