@@ -4,86 +4,113 @@
  * @domain        platform
  * @layer         infrastructure
  * @owner         dashboards
- * @purpose       Service Worker — cache offline, pre-fetch assets, bump versions.
- * @impact-areas  platform
- * @version       2026-06
+ * @purpose       Service Worker — cache offline, préchargement et rotation contrôlée des assets.
+ * @impact-areas  platform, boutique-cache
+ * @version       2026-08
  */
 
 'use strict';
-/* Komerce SW v335 — network-first + garde anti-empoisonnement de cache
+
+/* Komerce SW v336 — network-first + purge du bundle de partage historique
  *
- * Changements vs v328 :
- *   - Bump de version (v328 → v335) : force la purge de l'ancien cache sur tous les clients.
- *   - Le nom de cache garde le préfixe v334 car index.html conserve temporairement
- *     uniquement les caches qui contiennent "komerce-v334".
- *   - Ne met plus en cache une réponse dont le Content-Type ne correspond pas à
- *     la ressource demandée. Cas typique : un .js / .css qui renvoie en fait du
- *     HTML (fallback SPA, page d'erreur, redirection 200). Avant, ce HTML était
- *     caché puis resservi comme si c'était le script/feuille de style → vue non
- *     stylée ou cassée. Désormais on renvoie la réponse réseau mais on ne la cache pas.
- *   - Ne cache que les réponses same-origin "basic" et 200 OK.
+ * Le formulaire « Créer une liste » a été retiré du runtime par la PR #671,
+ * mais des clients pouvaient encore conserver l'ancien JS/CSS dans le cache
+ * v334-v335. La rotation vers un nom entièrement nouveau force la purge et
+ * garantit que le partage direct courant est rechargé.
+ *
+ * La garde anti-empoisonnement demeure : une réponse HTML reçue à la place
+ * d'un script ou d'une feuille CSS n'est jamais mise en cache.
  */
-const CACHE = 'komerce-v334-v335';
+const CACHE = 'komerce-v336';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(keys.map(k => {
-        if (k !== CACHE) {
-          console.log('[SW v335] Purge ancien cache :', k);
-          return caches.delete(k);
-        }
-      }));
+      await Promise.all(
+        keys.map((key) => {
+          if (key === CACHE || !key.startsWith('komerce-')) return undefined;
+          console.log('[SW v336] Purge ancien cache :', key);
+          return caches.delete(key);
+        })
+      );
+
       await self.clients.claim();
-      const clients = await self.clients.matchAll({ type: 'window' });
-      clients.forEach(client => {
-        client.postMessage({ type: 'sw-updated', version: 'v335' });
+
+      const clients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+
+      clients.forEach((client) => {
+        client.postMessage({ type: 'sw-updated', version: 'v336' });
       });
     })()
   );
 });
 
-/* Vérifie que la réponse est saine ET que son type correspond à la ressource.
-   Empêche de cacher du HTML servi à la place d'un .js / .css. */
 function isCacheable(request, response) {
-  if (!response || !response.ok)        return false;   // pas de 4xx/5xx/opaque-redirect
-  if (response.type !== 'basic')        return false;   // same-origin uniquement
+  if (!response || !response.ok) return false;
+  if (response.type !== 'basic') return false;
 
-  const ct   = (response.headers.get('Content-Type') || '').toLowerCase();
-  const dest = request.destination;                     // 'script' | 'style' | 'image' | 'font' | 'document' | ''
-  const path = new URL(request.url).pathname.toLowerCase();
+  const contentType = (
+    response.headers.get('Content-Type') || ''
+  ).toLowerCase();
+  const destination = request.destination;
+  const pathname = new URL(request.url).pathname.toLowerCase();
 
-  const isScript = dest === 'script' || path.endsWith('.js')  || path.endsWith('.mjs');
-  const isStyle  = dest === 'style'  || path.endsWith('.css');
+  const isScript =
+    destination === 'script' ||
+    pathname.endsWith('.js') ||
+    pathname.endsWith('.mjs');
+  const isStyle =
+    destination === 'style' ||
+    pathname.endsWith('.css');
 
-  // Un script doit être servi en JS, une feuille de style en CSS.
-  // Sinon (souvent du text/html), on refuse de cacher pour ne pas empoisonner.
-  if (isScript && !(ct.includes('javascript') || ct.includes('ecmascript'))) return false;
-  if (isStyle  && !ct.includes('css'))                                       return false;
+  if (
+    isScript &&
+    !contentType.includes('javascript') &&
+    !contentType.includes('ecmascript')
+  ) {
+    return false;
+  }
+
+  if (isStyle && !contentType.includes('css')) return false;
 
   return true;
 }
 
-self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  e.respondWith(
-    fetch(e.request)
-      .then(response => {
-        if (isCacheable(e.request, response)) {
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (isCacheable(event.request, response)) {
           const clone = response.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone).catch(() => {}));
+          caches
+            .open(CACHE)
+            .then((cache) => cache.put(event.request, clone))
+            .catch(() => {});
         }
         return response;
       })
-      .catch(() => caches.match(e.request).then(c => c || new Response('Hors ligne', { status: 503 })))
+      .catch(() =>
+        caches
+          .match(event.request)
+          .then(
+            (cached) =>
+              cached ||
+              new Response('Hors ligne', { status: 503 })
+          )
+      )
   );
 });
