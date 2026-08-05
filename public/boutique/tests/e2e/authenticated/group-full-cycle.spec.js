@@ -125,8 +125,20 @@ test.describe('FLOW — Liste partageable, découverte publique (F21)', () => {
       expect(Array.isArray(publicList.items)).toBe(true);
       expect(publicList.items.length).toBeGreaterThanOrEqual(1);
 
-      const groupView = participantPage.locator('#k-group-view');
-      await expect(groupView).toBeVisible({ timeout: 10_000 });
+      // Le lien participant projette la liste dans le drawer panier canonique
+      // (mandat §1/§4 — "la boutique reste affichée, la liste se projette dans
+      // le side cart / drawer canonique. Aucun onglet dédié.", voir
+      // js/b-nav.js::handleParticipantUrl). L'ancien onglet #k-group-view a
+      // été retiré (js/b-nav.js::switchView — "l'onglet 'group' et
+      // renderGroupView() ne sont plus jamais atteints"). Sur mobile
+      // (viewport de ce contexte participant), le contenu est rendu dans
+      // #k-cart-body via panelHtml() (js/group/group-side-cart.js) et le
+      // drawer s'ouvre automatiquement (reopenSharedListCart()).
+      const sharedListItems = participantPage.locator('#k-cart-body .k-shared-list-items');
+      await expect(sharedListItems).toBeVisible({ timeout: 10_000 });
+
+      const cartDrawer = participantPage.locator('#k-cart-drawer');
+      await expect(cartDrawer).toHaveAttribute('data-mode', 'shared-list');
 
       const finalCheck = await verifySharedCart(page, token);
       expect(
