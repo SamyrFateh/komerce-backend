@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 362
-- Files with full headers: 336
+- Scanned code files: 363
+- Files with full headers: 337
 - Files with lite headers: 26
-- Files with any headers: 362
+- Files with any headers: 363
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 766
-- Edges: 4104
-- DB tables: 109
-- Doctrines: 165
+- Graph nodes: 769
+- Edges: 4114
+- DB tables: 110
+- Doctrines: 166
 - Impact areas: 130
 - Unresolved code edges: 417
 - Tables multi-écrivains directs (>=2): 61
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - recommendations: 4
 - refunds: 2
 - shared: 1
-- shared-cart: 19
+- shared-cart: 20
 - shared-cart-modal: 7
 - sourcing: 1
 - tracking: 1
@@ -73,7 +73,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - machine: 1
 - manual-test: 1
 - middleware: 11
-- route: 95
+- route: 96
 - route-manifest: 1
 - schema: 1
 - service: 140
@@ -230,6 +230,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/pricing.js — economic-engine-pricing (economic-engine, high, full)
 - routes/products.js — products-http-facade (catalog, high, full)
 - routes/relay-dashboard.js — dashboard-relay-dashboard (dashboard, high, full)
+- routes/shared-cart-saved.js — shared-cart-saved-access-http (shared-cart, high, full)
 - routes/tracking.js — logistics-tracking (logistics, high, full)
 - routes/transit-dashboard.js — logistics-transit-dashboard (logistics, high, full)
 - routes/wallet.js — wallet-http-facade (wallet, high, full)
@@ -406,6 +407,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
 - WRITE routes/admin-customs-shipments.js -> customs_shipments
 - WRITE services/customs-shipment-service.js -> customs_shipments
+- WRITE routes/shared-cart-saved.js -> delegated_to_shared_cart_library
 - WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE bootstrap/crons.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
@@ -468,7 +470,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin/system.js -> orders
 - WRITE routes/orders/cancel.js -> orders
 - WRITE routes/orders/create.js -> orders
-- WRITE routes/orders/qr.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 

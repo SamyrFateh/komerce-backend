@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 362,
-    "filesWithFullHeaders": 336,
+    "scannedCodeFiles": 363,
+    "filesWithFullHeaders": 337,
     "filesWithLiteHeaders": 26,
-    "filesWithAnyHeaders": 362,
+    "filesWithAnyHeaders": 363,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 766,
-    "edges": 4104,
-    "dbTables": 109,
-    "doctrines": 165,
+    "graphNodes": 769,
+    "edges": 4114,
+    "dbTables": 110,
+    "doctrines": 166,
     "impactAreas": 130,
     "unresolvedCodeEdges": 417,
     "dbWriteViaOverlapWarnings": 0,
@@ -38,7 +38,7 @@
     "boutique": 19,
     "catalog": 64,
     "checkout": 2,
-    "shared-cart": 19,
+    "shared-cart": 20,
     "account": 1,
     "shared-cart-modal": 7,
     "recommendations": 4,
@@ -90,7 +90,7 @@
     "domain-logic": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 95,
+    "route": 96,
     "entrypoint": 1,
     "service": 140,
     "external-adapter": 2,
@@ -101,7 +101,7 @@
   "byCriticality": {
     "critical": 55,
     "medium": 106,
-    "high": 167,
+    "high": 168,
     "low": 34
   },
   "nodes": [
@@ -8068,6 +8068,48 @@
       "version": "2026-06"
     },
     {
+      "id": "routes/shared-cart-saved.js",
+      "file": "routes/shared-cart-saved.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-saved-access-http",
+      "domain": "shared-cart",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_user",
+        "shared_cart_id"
+      ],
+      "outputs": [
+        "saved_access_removal_result"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/shared-cart-library.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "public/boutique/js/group/group-api.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [
+        "delegated_to_shared_cart_library"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "retirer_le_signet_jamais_la_liste"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "mon-komerce",
+        "participant-flow"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "routes/shared-cart.js",
       "file": "routes/shared-cart.js",
       "type": "file",
@@ -14428,18 +14470,21 @@
       "purpose": null,
       "inputs": [
         "user_id",
-        "share_token"
+        "share_token",
+        "shared_cart_id"
       ],
       "outputs": [
         "library_sections",
-        "saved_access_row"
+        "saved_access_row",
+        "saved_access_removal"
       ],
       "depends": [
         "db.js",
         "services/shared-cart-reads.js"
       ],
       "usedBy": [
-        "routes/shared-cart.js"
+        "routes/shared-cart.js",
+        "routes/shared-cart-saved.js"
       ],
       "dbRead": [
         "order_items",
@@ -17241,6 +17286,11 @@
       "table": "suppliers"
     },
     {
+      "id": "db:delegated_to_shared_cart_library",
+      "type": "db-table",
+      "table": "delegated_to_shared_cart_library"
+    },
+    {
       "id": "db:cart_contributions",
       "type": "db-table",
       "table": "cart_contributions"
@@ -17869,6 +17919,11 @@
       "id": "doctrine:produit_desactive_non_supprime",
       "type": "doctrine",
       "doctrine": "produit_desactive_non_supprime"
+    },
+    {
+      "id": "doctrine:retirer_le_signet_jamais_la_liste",
+      "type": "doctrine",
+      "doctrine": "retirer_le_signet_jamais_la_liste"
     },
     {
       "id": "doctrine:domaine_minimal_boutique_first",
@@ -18781,6 +18836,11 @@
       "area": "admin-products"
     },
     {
+      "id": "impact:mon-komerce",
+      "type": "impact-area",
+      "area": "mon-komerce"
+    },
+    {
       "id": "impact:creator-dashboard",
       "type": "impact-area",
       "area": "creator-dashboard"
@@ -18854,11 +18914,6 @@
       "id": "impact:purchasing",
       "type": "impact-area",
       "area": "purchasing"
-    },
-    {
-      "id": "impact:mon-komerce",
-      "type": "impact-area",
-      "area": "mon-komerce"
     },
     {
       "id": "impact:admin-debug",
@@ -30191,6 +30246,60 @@
       "label": "logistics"
     },
     {
+      "from": "routes/shared-cart-saved.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/shared-cart-saved.js",
+      "to": "services/shared-cart-library.js",
+      "type": "depends",
+      "label": "services/shared-cart-library.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/shared-cart-saved.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "public/boutique/js/group/group-api.js",
+      "to": "routes/shared-cart-saved.js",
+      "type": "uses",
+      "label": "public/boutique/js/group/group-api.js"
+    },
+    {
+      "from": "routes/shared-cart-saved.js",
+      "to": "db:delegated_to_shared_cart_library",
+      "type": "db-write",
+      "label": "delegated_to_shared_cart_library"
+    },
+    {
+      "from": "routes/shared-cart-saved.js",
+      "to": "doctrine:retirer_le_signet_jamais_la_liste",
+      "type": "doctrine",
+      "label": "retirer_le_signet_jamais_la_liste"
+    },
+    {
+      "from": "routes/shared-cart-saved.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "routes/shared-cart-saved.js",
+      "to": "impact:mon-komerce",
+      "type": "impact",
+      "label": "mon-komerce"
+    },
+    {
+      "from": "routes/shared-cart-saved.js",
+      "to": "impact:participant-flow",
+      "type": "impact",
+      "label": "participant-flow"
+    },
+    {
       "from": "routes/shared-cart.js",
       "to": "services/shared-cart-engine.js",
       "type": "depends",
@@ -39822,6 +39931,12 @@
       "label": "routes/shared-cart.js"
     },
     {
+      "from": "routes/shared-cart-saved.js",
+      "to": "services/shared-cart-library.js",
+      "type": "uses",
+      "label": "routes/shared-cart-saved.js"
+    },
+    {
       "from": "services/shared-cart-library.js",
       "to": "db:order_items",
       "type": "db-read",
@@ -43666,6 +43781,7 @@
         "routes/relais.js",
         "routes/relay-dashboard.js",
         "routes/scans.js",
+        "routes/shared-cart-saved.js",
         "routes/shares.js",
         "routes/signals.js",
         "routes/simulator.js",
@@ -44231,6 +44347,7 @@
         "routes/relais.js",
         "routes/relay-dashboard.js",
         "routes/scans.js",
+        "routes/shared-cart-saved.js",
         "routes/shared-cart.js",
         "routes/shares.js",
         "routes/signals.js",
@@ -46993,6 +47110,7 @@
         "impact:participant-flow",
         "impact:shared-cart",
         "public/boutique/js/group/group-side-cart.js",
+        "routes/shared-cart-saved.js",
         "routes/shared-cart.js"
       ]
     },
@@ -51488,6 +51606,47 @@
         "middleware/auth.js",
         "middleware/validate.js",
         "services/scan-operations.js"
+      ]
+    },
+    "routes/shared-cart-saved.js": {
+      "role": "shared-cart-saved-access-http",
+      "domain": "shared-cart",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/shared-cart-library.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "public/boutique/js/group/group-api.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "delegated_to_shared_cart_library"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "retirer_le_signet_jamais_la_liste"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "mon-komerce",
+        "participant-flow"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:delegated_to_shared_cart_library",
+        "doctrine:retirer_le_signet_jamais_la_liste",
+        "impact:mon-komerce",
+        "impact:participant-flow",
+        "impact:shared-cart",
+        "middleware/auth.js",
+        "public/boutique/js/group/group-api.js",
+        "services/shared-cart-library.js"
       ]
     },
     "routes/shared-cart.js": {
@@ -57642,7 +57801,8 @@
         "services/shared-cart-reads.js"
       ],
       "directUsedBy": [
-        "routes/shared-cart.js"
+        "routes/shared-cart.js",
+        "routes/shared-cart-saved.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -57678,6 +57838,7 @@
         "impact:mon-komerce",
         "impact:participant-flow",
         "impact:shared-cart",
+        "routes/shared-cart-saved.js",
         "routes/shared-cart.js",
         "services/shared-cart-reads.js"
       ]
