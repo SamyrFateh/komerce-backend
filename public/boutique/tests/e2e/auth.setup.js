@@ -64,13 +64,14 @@ setup('authentifie le compte de test et sauvegarde la session', async ({ page, b
 
   await page.goto(baseURL);
 
-  // Ouvre le gate d'identité : l'onglet wallet seul n'ouvre PAS la modale — il
-  // affiche la vue wallet avec un bouton "📲 M'identifier" (#k-wlt-auth-btn,
-  // voir js/b-wallet.js::renderAuthGate) qui déclenche requireIdentity() au
-  // clic. C'est ce bouton qu'il faut cliquer, pas l'onglet lui-même.
-  await page.locator('[data-tab="wallet"]').first().click();
-  await page.waitForSelector('#k-wlt-auth-btn', { state: 'visible', timeout: 10_000 });
-  await page.locator('#k-wlt-auth-btn').click();
+  // Ouvre le gate d'identité : l'onglet "komerce" (ex-"wallet", consolidé sous
+  // le bouton "Mon Komerce" — data-tab="komerce") ouvre désormais DIRECTEMENT
+  // la modale d'identité ("Accéder à Mon Komerce") quand non authentifié — il
+  // n'y a plus d'étape intermédiaire "vue wallet + bouton #k-wlt-auth-btn"
+  // (celle-ci a été retirée de js/b-komerce.js / js/b-wallet.js). Vérifié en
+  // observant le DOM réel : le clic sur l'onglet fait apparaître directement
+  // le dialog #k-id-step-phone.
+  await page.locator('[data-tab="komerce"]').first().click();
 
   // ── Étape téléphone ──────────────────────────────────────────────────────
   // Le formulaire a 3 champs distincts (voir b-identity.js:437-452, ordre DOM
