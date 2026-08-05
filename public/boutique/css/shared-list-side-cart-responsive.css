@@ -1,0 +1,279 @@
+/**
+ * @komerce-arch-lite
+ * @role          shared-list-narrow-layout-styles
+ * @domain        shared-cart
+ * @layer         css
+ * @owner         public/boutique/js/group/group-side-cart.js
+ * @purpose       Stabilise les cartes produit et les zones d'action de la liste partageable dans les conteneurs étroits.
+ * @impact-areas  shared-cart, side-cart, drawer, responsive
+ * @version       2026-08
+ */
+
+/**
+ * Le side cart desktop mesure environ 330 px même sur un grand viewport.
+ * Les media queries viewport ne suffisent donc pas : le composant devient
+ * son propre conteneur de mise en page. Les règles ci-dessous s'appliquent
+ * aussi au drawer mobile, sans modifier le DOM ni la logique métier.
+ */
+.k-shared-list-panel {
+  container-name: shared-list;
+  container-type: inline-size;
+}
+
+/* Le switch est un frère du panneau. Le panneau ne doit jamais conserver
+ * height:100% quand le switch est présent, sinon le footer et le switch se
+ * disputent la même hauteur et finissent visuellement superposés. */
+#k-side-cart[data-mode="shared-list"] > .k-shared-list-panel,
+#k-side-cart[data-mode="library"] > .k-shared-list-panel {
+  order: 1;
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#k-side-cart[data-mode="shared-list"] > .k-cart-surface-switch,
+#k-side-cart[data-mode="library"] > .k-cart-surface-switch {
+  order: 2;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  background: var(--surface-sand-97);
+}
+
+/* Le fallback reste visible derrière l'image. En cas d'erreur, le handler
+ * retire l'image ; le conteneur garde alors une vignette propre et centrée. */
+.k-shared-list-item .k-cart-item-img {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.k-shared-list-item .k-cart-item-img-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.k-shared-list-item .k-cart-item-img-fallback {
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.k-shared-list-item .k-cart-item-img.is-img-error .k-cart-item-img-fallback {
+  display: inline-flex;
+}
+
+@container shared-list (max-width: 420px) {
+  .k-shared-list-header {
+    padding: 10px 12px 8px;
+  }
+
+  .k-shared-list-progress {
+    padding: 8px 12px 4px;
+  }
+
+  .k-shared-list-items {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  /* Trois zones lisibles : produit en haut, quantité puis actions en bas. */
+  .k-shared-list-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "product product"
+      "quantity actions";
+    align-items: center;
+    gap: 10px 8px;
+    padding: 10px;
+  }
+
+  .k-shared-item-open {
+    grid-area: product;
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+  }
+
+  .k-shared-item-open .k-cart-item-img {
+    width: 56px;
+    min-width: 56px;
+    height: 56px;
+  }
+
+  .k-shared-item-open .k-cart-item-info {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .k-shared-item-open .k-cart-item-name {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.3;
+  }
+
+  /* Le prix et le statut ne partagent plus la largeur des boutons. */
+  .k-shared-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 4px;
+    min-width: 0;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+  }
+
+  .k-shared-item-status {
+    display: block;
+    flex-basis: 100%;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .k-shared-item-qty {
+    grid-area: quantity;
+    justify-self: start;
+    gap: 7px;
+  }
+
+  .k-shared-item-qty-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+  }
+
+  .k-shared-item-qty-val {
+    min-width: 20px;
+    font-size: 13px;
+  }
+
+  .k-shared-item-controls {
+    grid-area: actions;
+    justify-self: end;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .k-shared-item-select {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 11.5px;
+  }
+
+  .k-shared-item-remove {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .k-shared-list-creator-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px 12px;
+  }
+
+  .k-shared-list-creator-actions .k-cart-continue-shop {
+    min-height: 40px;
+    padding: 8px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .k-shared-list-footer {
+    position: relative;
+    z-index: 2;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--surface-sand-97);
+    box-shadow: 0 -8px 18px var(--shadow-soft, rgba(0, 0, 0, .05));
+  }
+
+  .k-shared-list-footer-hint {
+    margin-bottom: 8px;
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+
+  .k-shared-list-footer-recap {
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+  }
+
+  .k-shared-list-footer-recap span {
+    min-width: 0;
+    line-height: 1.25;
+  }
+
+  #k-shared-list-buy {
+    min-height: 48px;
+  }
+}
+
+/* Sécurité pour les navigateurs sans container queries : le side cart reste
+ * le cas critique puisqu'il est toujours étroit, même sur desktop. */
+@supports not (container-type: inline-size) {
+  #k-side-cart[data-mode="shared-list"] .k-shared-list-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "product product"
+      "quantity actions";
+    gap: 10px 8px;
+    padding: 10px;
+  }
+
+  #k-side-cart[data-mode="shared-list"] .k-shared-item-open {
+    grid-area: product;
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 10px;
+    width: 100%;
+  }
+
+  #k-side-cart[data-mode="shared-list"] .k-shared-item-qty {
+    grid-area: quantity;
+  }
+
+  #k-side-cart[data-mode="shared-list"] .k-shared-item-controls {
+    grid-area: actions;
+    justify-self: end;
+  }
+}
+
+@container shared-list (max-width: 310px) {
+  .k-shared-list-item {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "product"
+      "quantity"
+      "actions";
+  }
+
+  .k-shared-item-controls {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .k-shared-item-select {
+    flex: 1 1 auto;
+  }
+}
