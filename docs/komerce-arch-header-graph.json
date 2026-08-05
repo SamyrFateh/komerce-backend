@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 766,
-    "edges": 4105,
+    "edges": 4104,
     "dbTables": 109,
     "doctrines": 165,
     "impactAreas": 130,
-    "unresolvedCodeEdges": 418,
+    "unresolvedCodeEdges": 417,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 61
   },
@@ -3300,11 +3300,12 @@
       "inputs": [
         "share_token",
         "viewer_session",
-        "product_id",
-        "item_id"
+        "item_id",
+        "quantity"
       ],
       "outputs": [
         "shared_cart_data",
+        "library_data",
         "action_results"
       ],
       "depends": [
@@ -3312,7 +3313,6 @@
         "fetch"
       ],
       "usedBy": [
-        "b-group-view.js",
         "group/group-side-cart.js"
       ],
       "dbRead": [],
@@ -23616,12 +23616,6 @@
       "to": "fetch",
       "type": "depends",
       "label": "fetch"
-    },
-    {
-      "from": "b-group-view.js",
-      "to": "public/boutique/js/group/group-api.js",
-      "type": "uses",
-      "label": "b-group-view.js"
     },
     {
       "from": "public/boutique/js/group/group-side-cart.js",
@@ -46973,7 +46967,6 @@
         "fetch"
       ],
       "directUsedBy": [
-        "b-group-view.js",
         "public/boutique/js/group/group-side-cart.js"
       ],
       "ownedFiles": [],
@@ -60883,12 +60876,6 @@
       "to": "fetch",
       "type": "depends",
       "label": "fetch"
-    },
-    {
-      "from": "b-group-view.js",
-      "to": "public/boutique/js/group/group-api.js",
-      "type": "uses",
-      "label": "b-group-view.js"
     },
     {
       "from": "public/boutique/js/komerce-api.js",
