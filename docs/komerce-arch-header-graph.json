@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 769,
-    "edges": 4114,
+    "edges": 4115,
     "dbTables": 110,
     "doctrines": 166,
     "impactAreas": 130,
@@ -129,7 +129,8 @@
         "routes/meta-whatsapp.js",
         "routes/economic-engine.js",
         "routes/boutique-suggestions.js",
-        "routes/catalog-product-detail.js"
+        "routes/catalog-product-detail.js",
+        "routes/shared-cart-saved.js"
       ],
       "usedBy": [
         "server.js"
@@ -153,7 +154,7 @@
         "boutique",
         "product-detail"
       ],
-      "version": "2026-07"
+      "version": "2026-08"
     },
     {
       "id": "bootstrap/boot-guard.js",
@@ -18973,6 +18974,12 @@
       "to": "routes/catalog-product-detail.js",
       "type": "depends",
       "label": "routes/catalog-product-detail.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/shared-cart-saved.js",
+      "type": "depends",
+      "label": "routes/shared-cart-saved.js"
     },
     {
       "from": "server.js",
@@ -43663,7 +43670,8 @@
         "routes/meta-whatsapp.js",
         "routes/economic-engine.js",
         "routes/boutique-suggestions.js",
-        "routes/catalog-product-detail.js"
+        "routes/catalog-product-detail.js",
+        "routes/shared-cart-saved.js"
       ],
       "directUsedBy": [
         "server.js"
