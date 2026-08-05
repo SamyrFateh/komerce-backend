@@ -36,10 +36,10 @@ module.exports = {
   canonicalFeature: 'payments',
   sliceKind: 'ui-orchestration',
 
-  service: "Tunnel de commande (rendu du recapitulatif, validation, soumission) — du panier valide a la confirmation.",
+  service: "Tunnel de commande canonique : identité, point de retrait, paiement, confirmation et projection visuelle à rail vertical.",
 
   perimeter: {
-    in:  ['fichiers js/* annotes @domain checkout'],
+    in:  ['fichiers js/* annotes @domain checkout', 'présentation responsive du tunnel checkout'],
     out: ['logique backend equivalente (repo komerce-backend, feature orders)'],
   },
 
@@ -47,6 +47,9 @@ module.exports = {
     js: [
       '../js/b-checkout-render.js',
       '../js/b-checkout.js',
+    ],
+    css: [
+      '../css/checkout-vertical-rail.css',
     ],
     tests: [
       '../tests/unit/b-checkout.test.js',
@@ -67,6 +70,7 @@ module.exports = {
     // interne, pas une route HTTP.
     internalApi: [
       'b-checkout.js (orchestration checkout, validation commande)',
+      'checkout-vertical-rail.css (projection UI identité → relais → paiement)',
     ],
     consumes: [
       'auth — b-checkout.js importe b-identity.js, b-phone.js',
@@ -80,6 +84,7 @@ module.exports = {
 
   invariants: [
     'tout fichier js/* portant @domain checkout doit etre liste dans files.js de ce manifeste',
+    'le skin checkout ne modifie jamais les calculs, contrats API, OTP ou transitions de paiement',
   ],
 
 };
