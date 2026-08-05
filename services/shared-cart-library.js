@@ -48,6 +48,8 @@
 const db = require('../db');
 const { listMySharedCarts } = require('./shared-cart-reads');
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function httpError(message, status = 400, code = null) {
   const e = new Error(message);
   e.status = status;
@@ -160,6 +162,9 @@ async function removeSavedSharedCartForUser(userId, sharedCartId) {
   const normalizedId = String(sharedCartId || '').trim();
   if (!normalizedId) {
     throw httpError('shared_cart_id requis', 400, 'shared_cart_id_required');
+  }
+  if (!UUID_RE.test(normalizedId)) {
+    throw httpError('shared_cart_id invalide', 400, 'shared_cart_id_invalid');
   }
 
   const result = await db.query(
