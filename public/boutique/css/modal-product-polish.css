@@ -1,0 +1,321 @@
+/**
+ * @komerce-arch-lite
+ * @role          product-modal-polish
+ * @domain        recommendations
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-modal-suggestions.js
+ * @purpose       Stabilise les actions des suggestions et affine la hiérarchie de la modale produit.
+ * @impact-areas  product-modal, recommendations, modal-header, promotion-badges
+ * @version       2026-08
+ */
+
+/*
+ * Contraintes produit :
+ * - + coral comme sur l’accueil ;
+ * - état ajouté vert ;
+ * - stepper dans la même emprise, sans saut de layout ;
+ * - panier centré dans le header ;
+ * - badges promotion contenus dans leur média ;
+ * - suggestions plus proches du contenu qui les précède.
+ */
+
+/* ── Header : panier centré, fermeture seule à droite ────────── */
+
+#k-modal .k-modal-topbar {
+  position: relative;
+}
+
+#k-modal .k-modal-topbar-right {
+  margin-left: auto;
+}
+
+#k-modal .k-modal-cart-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+#k-modal .k-modal-cart-btn:active {
+  transform: translate(-50%, -50%) scale(.94);
+}
+
+/* ── Badges promotion : restent dans la zone média ──────────── */
+
+#k-modal .k-modal-promo-badge,
+#k-modal .k-sug-promo-badge {
+  box-sizing: border-box;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.15;
+  pointer-events: none;
+}
+
+#k-modal .k-modal-promo-badge {
+  top: 10px;
+  left: 10px;
+  z-index: 4;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(31,48,36,.14);
+}
+
+#k-modal .k-sug-card-img {
+  isolation: isolate;
+}
+
+#k-modal .k-sug-promo-badge {
+  top: 6px;
+  left: 6px;
+  max-width: calc(100% - 12px);
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(31,48,36,.12);
+}
+
+/* ── Suggestions : rythme vertical plus direct ───────────────── */
+
+#k-modal .k-modal-suggestions {
+  padding-top: 0;
+}
+
+#k-modal .k-sug-section {
+  padding-top: 7px;
+}
+
+#k-modal .k-sug-section + .k-sug-section {
+  margin-top: 3px;
+  padding-top: 12px;
+}
+
+#k-modal .k-sug-title {
+  min-height: 42px;
+  margin-bottom: 8px;
+  padding: 7px 10px;
+  gap: 8px;
+}
+
+#k-modal .k-sug-title-icon {
+  width: 26px;
+  height: 26px;
+  font-size: 15px;
+}
+
+#k-modal .k-sug-title-text {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+#k-modal .k-sug-chips {
+  padding: 2px 0 7px;
+}
+
+/* ── Action suggestion : slot stable + / stepper ────────────── */
+
+#k-modal .k-sug-card-bottom {
+  min-height: 40px;
+}
+
+#k-modal .k-sug-card-actions {
+  --k-sug-action-width: 82px;
+  --k-sug-action-height: 32px;
+
+  width: var(--k-sug-action-width);
+  min-width: var(--k-sug-action-width);
+  max-width: var(--k-sug-action-width);
+  min-height: var(--k-sug-action-height);
+  flex: 0 0 var(--k-sug-action-width);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: visible;
+}
+
+#k-modal .k-sug-add {
+  width: var(--k-sug-action-height);
+  height: var(--k-sug-action-height);
+  min-width: var(--k-sug-action-height);
+  padding: 0;
+  border: 1px solid var(--coral);
+  border-radius: 50%;
+  background: var(--coral);
+  color: var(--white);
+  box-shadow: 0 3px 9px rgba(200,92,45,.22);
+}
+
+#k-modal .k-sug-add:hover {
+  background: var(--coral-dark);
+  border-color: var(--coral-dark);
+}
+
+#k-modal .k-sug-add:active {
+  background: var(--coral-dark);
+  transform: scale(.90);
+}
+
+#k-modal .k-sug-add-plus {
+  color: currentColor;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+#k-modal .k-sug-card-actions.is-filled {
+  display: grid;
+  grid-template-columns: 27px 28px 27px;
+  width: var(--k-sug-action-width);
+  min-width: var(--k-sug-action-width);
+  max-width: var(--k-sug-action-width);
+  min-height: var(--k-sug-action-height);
+  padding: 0;
+  border: 1px solid var(--cta-green);
+  border-radius: 999px;
+  background: var(--cta-green);
+  overflow: hidden;
+  box-shadow: 0 3px 9px rgba(42,122,62,.20);
+}
+
+#k-modal .k-sug-card-actions.is-filled .k-sug-step {
+  width: 27px;
+  height: var(--k-sug-action-height);
+  min-width: 27px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--white);
+  box-shadow: none;
+  font-size: 16px;
+}
+
+#k-modal .k-sug-card-actions.is-filled .k-sug-step:hover,
+#k-modal .k-sug-card-actions.is-filled .k-sug-step:active {
+  background: rgba(255,255,255,.15);
+}
+
+#k-modal .k-sug-card-actions.is-filled .k-sug-qty {
+  min-width: 28px;
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+/* Plusieurs variantes : conserve exactement le même slot transactionnel. */
+#k-modal .k-sug-card-actions.has-multiple-lines .k-card-add-review {
+  width: var(--k-sug-action-height);
+  height: var(--k-sug-action-height);
+  margin-left: auto;
+  border: 1px solid var(--cta-green);
+  border-radius: 50%;
+  background: var(--cta-green);
+  color: var(--white);
+}
+
+#k-modal .k-sug-card-actions.has-multiple-lines .k-sug-qty {
+  color: var(--white);
+}
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+
+@media (max-width: 899px) {
+  #k-modal .k-modal-topbar {
+    min-height: calc(56px + env(safe-area-inset-top));
+  }
+
+  #k-modal .k-modal-cart-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  #k-modal .k-modal-cart-icon {
+    width: 31px;
+    height: 31px;
+  }
+
+  #k-modal .k-modal-suggestions {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  #k-modal .k-sug-grid {
+    gap: 8px;
+  }
+
+  #k-modal .k-sug-card-actions {
+    --k-sug-action-width: 76px;
+    --k-sug-action-height: 30px;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled {
+    grid-template-columns: 25px 26px 25px;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled .k-sug-step {
+    width: 25px;
+    min-width: 25px;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled .k-sug-qty {
+    min-width: 26px;
+  }
+
+  #k-modal .k-sug-card-name {
+    min-height: 32px;
+  }
+}
+
+/* ── Desktop ─────────────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  #k-modal .k-modal-promo-badge {
+    top: 12px;
+    left: 94px;
+    max-width: calc(100% - 108px);
+    padding: 5px 11px;
+    font-size: 12px;
+  }
+
+  #k-modal .k-modal-suggestions:not(.k-modal-suggestions--desktop-list) {
+    padding: 18px 28px 30px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
+    margin-bottom: 10px;
+    padding-bottom: 7px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips {
+    padding-bottom: 10px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section {
+    margin-top: 18px;
+  }
+
+  /* Le slot fixe rend inutile le fallback colonne prix/stepper. */
+  #k-modal .k-sug-card-bottom:has(.k-sug-card-actions.is-filled) {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+
+  #k-modal .k-sug-card-bottom:has(.k-sug-card-actions.is-filled) .k-sug-card-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #k-modal .k-sug-add,
+  #k-modal .k-sug-step,
+  #k-modal .k-modal-cart-btn {
+    transition: none;
+  }
+}
