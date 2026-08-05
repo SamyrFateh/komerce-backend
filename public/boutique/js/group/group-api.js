@@ -4,10 +4,10 @@
  * @domain        shared-cart
  * @layer         api-client
  * @criticality   high
- * @inputs        share_token, viewer_session, product_id, item_id
- * @outputs       shared_cart_data, action_results
+ * @inputs        share_token, viewer_session, item_id, quantity
+ * @outputs       shared_cart_data, library_data, action_results
  * @depends       routes/shared-cart.js, fetch
- * @used-by       b-group-view.js, group/group-side-cart.js
+ * @used-by       group/group-side-cart.js
  * @doctrine      boutique_first, domaine_minimal, un_appel_une_action
  * @impact-areas  shared-cart, participant-flow, creator-flow, checkout
  * @version       2026-08
@@ -18,20 +18,22 @@
  * @module group/group-api.js
  * @owner Boutique First — couche réseau minimale pour la liste partageable
  *
- * Boutique First (Contrat API — Liste partageable) : plus d'estimations,
- * plus de contributions Stripe propres à la liste, plus de fenêtre de
- * paiement, plus de finalize/extend-window. Le seul acte engageant reste
- * le checkout canonique (POST /api/orders), déclenché ailleurs
- * (b-checkout.js) — ce module ne fait que lire la liste et écrire les
- * actions unitaires du créateur (ajouter/retirer un article, fermer).
+ * Le checkout canonique (POST /api/orders) reste le seul acte engageant.
+ * Ce module transporte uniquement les lectures de liste et de bibliothèque,
+ * la sauvegarde explicite d'une liste reçue, ainsi que les actions unitaires
+ * encore exposées au propriétaire : modifier une quantité, retirer une ligne
+ * et fermer la liste.
  *
- * Conventions (inchangées) :
+ * L'ajout d'un nouvel article à une liste existante n'est pas exposé dans
+ * l'interface actuelle. La capacité backend POST /api/shared-carts/:id/items
+ * reste hors de ce client jusqu'à la conception d'un parcours produit dédié.
+ *
+ * Conventions :
  *   - Endpoints créateur (/api/shared-carts/:id/*) → apiGet / apiPost /
- *     apiDelete (passent par window.K.request, credentials:include auto).
+ *     apiDelete / apiPatch via window.K.request, credentials:include auto.
  *   - Endpoint public (/api/shared-carts/public/:token) → fetch direct,
- *     credentials:'include' explicite (pas d'auth requise ; le cookie de
- *     session, s'il existe, permet au backend de dériver is_creator via
- *     soft-auth — jamais bloquant si absent).
+ *     credentials:'include' explicite ; la session éventuelle permet au
+ *     backend de dériver is_creator sans rendre l'authentification obligatoire.
  *
  * Aucune logique métier ici — uniquement transport + parsing minimal.
  */
@@ -67,9 +69,9 @@ export function fetchWithTimeout(url, opts = {}, timeoutMs = FETCH_TIMEOUT_MS) {
 /* ── Endpoints créateur (authentifiés via window.K.request) ──────── */
 
 /**
- * Récupère tous les paniers partagés créés par l'utilisateur connecté.
- * Sert le switcher "mes listes" quand l'onglet Groupe est ouvert sans
- * token (navigation directe, pas via un lien reçu).
+ * Lecture de compatibilité des listes créées par l'utilisateur connecté.
+ * La bibliothèque canonique utilise getSharedCartLibrary(), qui sépare
+ * explicitement les listes créées et les listes reçues sauvegardées.
  * @returns {Promise<{carts: Array}>}
  */
 export function getOwnerSharedCarts() {
@@ -77,11 +79,9 @@ export function getOwnerSharedCarts() {
 }
 
 /**
- * Bibliothèque « Mes listes » (amendement V2 §D) — remplace l'heuristique
- * V1 qui ouvrait automatiquement la liste créée la plus récente
- * (activateOwnerMostRecentList). Deux sections toujours renvoyées
- * ensemble : « Créées par moi » et « Partagées avec moi » (listes reçues
- * qu'un destinataire a explicitement sauvegardées via saveSharedCart()).
+ * Bibliothèque « Mes listes » : deux sections sont renvoyées ensemble,
+ * « Créées par moi » et « Partagées avec moi ». Une liste reçue n'apparaît
+ * dans la seconde section qu'après sauvegarde explicite.
  * @returns {Promise<{created: Array, saved: Array}>}
  */
 export function getSharedCartLibrary() {
@@ -89,10 +89,9 @@ export function getSharedCartLibrary() {
 }
 
 /**
- * Sauvegarde explicite d'une liste reçue par lien dans la bibliothèque du
- * destinataire — jamais appelé automatiquement à la simple ouverture d'un
- * lien (doctrine « sauvegarde explicite, jamais implicite », voir
- * services/shared-cart-library.js). Idempotent côté serveur.
+ * Sauvegarde explicitement une liste reçue dans la bibliothèque du
+ * destinataire. Cet appel n'est jamais déclenché automatiquement à la
+ * simple ouverture d'un lien. L'opération est idempotente côté serveur.
  * @param {string} token
  * @returns {Promise<{ok: boolean, shared_cart_id: string, already_saved: boolean}>}
  */
@@ -101,10 +100,8 @@ export function saveSharedCart(token) {
 }
 
 /**
- * Retire un article de la liste — confirmation déjà obtenue côté client
- * avant cet appel (Invariant 21) ; exécution immédiate côté serveur.
- * Le serveur refuse (409 item_already_claimed) si l'article a déjà été
- * acheté — jamais un détachement silencieux de la commande liée.
+ * Retire un article de la liste après confirmation côté interface.
+ * Le serveur refuse l'opération si la ligne a déjà été achetée.
  * @param {string|number} cartId
  * @param {string} itemId
  * @returns {Promise<{ok: boolean, cart}>}
@@ -114,20 +111,16 @@ export function removeItemFromSharedList(cartId, itemId) {
 }
 
 /**
- * Ferme la liste — arrête les nouveaux achats, ceux déjà faits restent
- * des commandes normales inchangées (storyboard §4.5).
+ * Ferme la liste : aucun nouvel achat ne peut démarrer, tandis que les
+ * commandes déjà créées restent des commandes normales inchangées.
  */
 export function closeCart(cartId) {
   return apiPost(`/api/shared-carts/${cartId}/close`, {});
 }
 
 /**
-/**
- * Modifie la quantité d'un article déjà présent dans la liste — amendement
- * V2 §B (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2).
- * Capacité nouvelle, distincte du PUT /:id/items historique (édition
- * groupée) : ne touche qu'une ligne. Le serveur refuse (409
- * item_already_claimed) si l'article a déjà été acheté.
+ * Modifie la quantité d'une ligne existante sans passer par l'ancien PUT
+ * groupé. Le serveur refuse l'opération si la ligne a déjà été achetée.
  * @param {string|number} cartId
  * @param {string} itemId
  * @param {number} quantity
@@ -141,14 +134,11 @@ export function updateSharedListItemQuantity(cartId, itemId, quantity) {
 
 /**
  * Récupère les données publiques d'une liste via son token. Le champ
- * dérivé `is_creator` (booléen) indique si la session courante
- * correspond au créateur — jamais l'identifiant brut du créateur
- * (Contrat API §5 point 2). Même appel, même réponse, pour tout le
- * monde y compris le créateur (storyboard §0/§3) : c'est le backend qui
- * dérive is_creator via soft-auth, pas un mode différent côté front.
+ * dérivé is_creator indique si la session courante correspond au créateur,
+ * sans exposer son identifiant brut et sans créer de mode frontend séparé.
  * @param {string} token
  * @returns {Promise<{cart, items, items_count, claimed_count, is_creator}|null>}
- *   null si la réponse n'est pas ok (lien invalide/expiré).
+ *   null si la réponse n'est pas ok (lien invalide ou expiré).
  */
 export async function getSharedCartPublic(token) {
   const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}`, { credentials: 'include' });
