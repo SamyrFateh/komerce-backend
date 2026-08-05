@@ -1,20 +1,12 @@
 {
-  "total": 6,
+  "total": 2,
   "perFile": {
-    "group-cart-flow.css": [
+    "checkout-vertical-rail.css": [
       "max:380"
     ],
-    "layout.css": [
-      "min:1100"
-    ],
-    "modal-product-lot4-hybrid.css": [
-      "min:1024",
-      "min:1440"
-    ],
-    "modal-shell.css": [
-      "max:1120",
-      "min:1024"
+    "shared-list-library-remove.css": [
+      "max:430"
     ]
   },
-  "savedAt": "2026-07-19T12:27:28.246Z"
+  "savedAt": "2026-08-05T19:49:18.609Z"
 }

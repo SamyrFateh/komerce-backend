@@ -203,7 +203,7 @@
     z-index: 2;
     padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
     background: var(--surface-sand-97);
-    box-shadow: 0 -8px 18px var(--shadow-soft, rgba(0, 0, 0, .05));
+    box-shadow: 0 -8px 18px var(--shadow-card-05, rgba(30, 40, 25, .05));
   }
 
   .k-shared-list-footer-hint {

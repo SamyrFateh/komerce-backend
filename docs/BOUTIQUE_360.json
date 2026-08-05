@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-08-05T11:36:01.780Z",
+  "generatedAt": "2026-08-05T20:22:12.435Z",
   "summary": {
-    "modules": 75,
-    "withHeader": 75,
+    "modules": 76,
+    "withHeader": 76,
     "events": 25,
     "declaredActive": 24,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 46,
+    "endpoints": 47,
     "orphanEmit": 1,
     "orphanListen": 1,
     "undeclared": 6,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 33,
-    "dynamicEndpoints": 15,
+    "dynamicEndpoints": 16,
     "ownedEvents": 3,
     "ownershipRed": 0,
     "ownershipOrange": 0
@@ -1978,11 +1978,12 @@
       ],
       "depends": [
         "routes/shared-cart.js",
+        "routes/shared-cart-saved.js",
         "fetch"
       ],
       "usedBy": [
-        "b-group-view.js",
-        "group/group-side-cart.js"
+        "group/group-side-cart.js",
+        "group/group-library-remove.js"
       ],
       "emits": [],
       "listens": [],
@@ -2016,6 +2017,42 @@
       "imports": [
         "b-store",
         "b-checkout"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/group/group-library-remove.js",
+      "id": "group-library-remove",
+      "hasHeader": true,
+      "role": "shared-cart-library-removal-ui",
+      "domain": "shared-cart",
+      "layer": "ui-component",
+      "criticality": "high",
+      "doctrine": [
+        "retirer_le_signet_jamais_la_liste",
+        "contexte_actif_preserve"
+      ],
+      "depends": [
+        "../b-store.js",
+        "../b-utils.js",
+        "../b-bus.js",
+        "group-api.js",
+        "group-side-cart.js(dynamic)"
+      ],
+      "usedBy": [
+        "group-state.js"
+      ],
+      "emits": [],
+      "listens": [
+        "side-cart:render",
+        "cart-body:render"
+      ],
+      "imports": [
+        "b-store",
+        "b-utils",
+        "b-bus",
+        "group-api"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2127,7 +2164,8 @@
       "emits": [],
       "listens": [],
       "imports": [
-        "b-store"
+        "b-store",
+        "group-library-remove"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2510,6 +2548,7 @@
       ],
       "listeners": [
         "b-cart",
+        "group-library-remove",
         "group-side-cart"
       ]
     },
@@ -2560,7 +2599,8 @@
         "group-side-cart"
       ],
       "listeners": [
-        "b-cart"
+        "b-cart",
+        "group-library-remove"
       ]
     },
     "view:changed": {
@@ -2747,13 +2787,17 @@
         "cart",
         "interactions",
         "modal-mobile-suggestion-actions",
+        "modal-product-polish",
         "hero-cart-proxy",
         "shared-list-side-cart",
+        "shared-list-side-cart-responsive",
+        "shared-list-library-remove",
         "share-cart",
         "identity",
         "paypal",
         "wallet",
-        "komerce"
+        "komerce",
+        "checkout-vertical-rail"
       ]
     },
     {
@@ -3043,6 +3087,13 @@
       "raw": "/api/shared-carts/save",
       "dynamic": false,
       "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/saved/{id}",
+      "raw": "/api/shared-carts/saved/${encodeURIComponent(String(sharedCartId))}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
     },
     {
       "module": "group-api",
@@ -3443,6 +3494,7 @@
       "/api/products/{id}/detail",
       "/api/purchasing/suppliers/{id}",
       "/api/shared-carts/public/{id}",
+      "/api/shared-carts/saved/{id}",
       "/api/shared-carts/{id}/close",
       "/api/shared-carts/{id}/items/{id}",
       "/api/shares"
@@ -3621,6 +3673,7 @@
     "/api/shared-carts/mine",
     "/api/shared-carts/public/{id}",
     "/api/shared-carts/save",
+    "/api/shared-carts/saved/{id}",
     "/api/shared-carts/{id}/close",
     "/api/shared-carts/{id}/items/{id}",
     "/api/shares",

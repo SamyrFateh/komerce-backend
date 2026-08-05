@@ -318,7 +318,7 @@ function statusLabel(status) {
  * qu'un confort d'affichage immédiat, jamais consulté pour une décision
  * métier.
  */
-const savedListTokensThisSession = new Set();
+const savedListTokensThisSession = state.savedListTokensThisSession;
 
 /**
  * Bouton « Sauvegarder cette liste » — destinataire uniquement (le

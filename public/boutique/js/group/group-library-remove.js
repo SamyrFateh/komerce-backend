@@ -41,6 +41,12 @@ function scheduleDecoration() {
   scheduled = true;
   queueMicrotask(() => {
     scheduled = false;
+    // Garde-fou teardown (V2-F) : ce microtask peut se déclencher APRÈS que
+    // l'environnement de test (jsdom) a détruit la fenêtre — le document
+    // devient alors null et tout accès DOM crashe ("Cannot read properties
+    // of null (reading '_location')"). En production document est toujours
+    // présent ici, donc ce garde est un no-op strict côté prod.
+    if (typeof document === 'undefined' || !document || !document.defaultView) return;
     decorateLibraryRows();
     syncActiveListSaveButton();
   });
@@ -51,11 +57,21 @@ function syncActiveListSaveButton() {
   const token = state.sharedListContext?.token;
   const button = document.getElementById('k-shared-list-save');
 
-  if (!button || !token || !Array.isArray(saved)) return;
+  if (!button || !token) return;
 
-  const stillSaved = saved.some(
+  // V2-F fix : une liste est "sauvegardée" si elle est soit dans la
+  // bibliothèque rechargée (libraryContext.saved), soit sauvegardée pendant
+  // la session courante (savedListTokensThisSession, alimenté par
+  // handleSaveList AVANT tout rechargement de la bibliothèque). Sans ce
+  // second critère, cette synchro asynchrone défaisait l'état "✓ Liste
+  // sauvegardée" juste après un clic réussi (le bouton clignotait :
+  // sauvegardée → à sauvegarder), car libraryContext.saved n'est pas encore
+  // rafraîchi à ce moment-là.
+  const savedInSession = state.savedListTokensThisSession?.has(token);
+  const savedInLibrary = Array.isArray(saved) && saved.some(
     (cart) => String(cart.token) === String(token)
   );
+  const stillSaved = savedInSession || savedInLibrary;
 
   if (!stillSaved) {
     if (button.disabled) button.disabled = false;
@@ -162,7 +178,15 @@ function startObserver() {
     subtree: true,
   });
 
-  scheduleDecoration();
+  // V2-F fix : pas de scheduleDecoration() immédiat ici. À l'install (au
+  // chargement de page), aucune bibliothèque n'est affichée, donc
+  // decorateLibraryRows() serait un no-op — mais le queueMicrotask qu'il
+  // planifie survit au teardown de la fenêtre jsdom entre deux suites de
+  // tests et crashe ("Cannot read properties of null (reading '_location')").
+  // La décoration se déclenche de toute façon via les événements bus
+  // ('side-cart:render' / 'cart-body:render') dès qu'une bibliothèque est
+  // réellement rendue, et via le MutationObserver ci-dessus. Comportement
+  // production strictement identique.
 }
 
 export function installSharedLibraryRemove() {

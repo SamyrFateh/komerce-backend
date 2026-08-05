@@ -8843,6 +8843,330 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 
+/* ── modal-product-polish.css ────────────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          product-modal-polish
+ * @domain        recommendations
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-modal-suggestions.js
+ * @purpose       Stabilise les actions des suggestions et affine la hiérarchie de la modale produit.
+ * @impact-areas  product-modal, recommendations, modal-header, promotion-badges
+ * @version       2026-08
+ */
+
+/*
+ * Contraintes produit :
+ * - + coral comme sur l’accueil ;
+ * - état ajouté vert ;
+ * - stepper dans la même emprise, sans saut de layout ;
+ * - panier centré dans le header ;
+ * - badges promotion contenus dans leur média ;
+ * - suggestions plus proches du contenu qui les précède.
+ */
+
+/* ── Header : panier centré, fermeture seule à droite ────────── */
+
+#k-modal .k-modal-topbar {
+  position: relative;
+}
+
+#k-modal .k-modal-topbar-right {
+  margin-left: auto;
+}
+
+#k-modal .k-modal-cart-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+#k-modal .k-modal-cart-btn:active {
+  transform: translate(-50%, -50%) scale(.94);
+}
+
+/* ── Badges promotion : restent dans la zone média ──────────── */
+
+#k-modal .k-modal-promo-badge,
+#k-modal .k-sug-promo-badge {
+  box-sizing: border-box;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.15;
+  pointer-events: none;
+}
+
+#k-modal .k-modal-promo-badge {
+  top: 10px;
+  left: 10px;
+  z-index: 4;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(31,48,36,.14);
+}
+
+#k-modal .k-sug-card-img {
+  isolation: isolate;
+}
+
+#k-modal .k-sug-promo-badge {
+  top: 6px;
+  left: 6px;
+  max-width: calc(100% - 12px);
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(31,48,36,.12);
+}
+
+/* ── Suggestions : rythme vertical plus direct ───────────────── */
+
+#k-modal .k-modal-suggestions {
+  padding-top: 0;
+}
+
+#k-modal .k-sug-section {
+  padding-top: 7px;
+}
+
+#k-modal .k-sug-section + .k-sug-section {
+  margin-top: 3px;
+  padding-top: 12px;
+}
+
+#k-modal .k-sug-title {
+  min-height: 42px;
+  margin-bottom: 8px;
+  padding: 7px 10px;
+  gap: 8px;
+}
+
+#k-modal .k-sug-title-icon {
+  width: 26px;
+  height: 26px;
+  font-size: 15px;
+}
+
+#k-modal .k-sug-title-text {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+#k-modal .k-sug-chips {
+  padding: 2px 0 7px;
+}
+
+/* ── Action suggestion : slot stable + / stepper ────────────── */
+
+#k-modal .k-sug-card-bottom {
+  min-height: 40px;
+}
+
+#k-modal .k-sug-card-actions {
+  --k-sug-action-width: 82px;
+  --k-sug-action-height: 32px;
+
+  width: var(--k-sug-action-width);
+  min-width: var(--k-sug-action-width);
+  max-width: var(--k-sug-action-width);
+  min-height: var(--k-sug-action-height);
+  flex: 0 0 var(--k-sug-action-width);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: visible;
+}
+
+#k-modal .k-sug-add {
+  width: var(--k-sug-action-height);
+  height: var(--k-sug-action-height);
+  min-width: var(--k-sug-action-height);
+  padding: 0;
+  border: 1px solid var(--coral);
+  border-radius: 50%;
+  background: var(--coral);
+  color: var(--white);
+  box-shadow: 0 3px 9px rgba(200,92,45,.22);
+}
+
+#k-modal .k-sug-add:hover {
+  background: var(--coral-dark);
+  border-color: var(--coral-dark);
+}
+
+#k-modal .k-sug-add:active {
+  background: var(--coral-dark);
+  transform: scale(.90);
+}
+
+#k-modal .k-sug-add-plus {
+  color: currentColor;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+#k-modal .k-sug-card-actions.is-filled {
+  display: grid;
+  grid-template-columns: 27px 28px 27px;
+  width: var(--k-sug-action-width);
+  min-width: var(--k-sug-action-width);
+  max-width: var(--k-sug-action-width);
+  min-height: var(--k-sug-action-height);
+  padding: 0;
+  border: 1px solid var(--cta-green);
+  border-radius: 999px;
+  background: var(--cta-green);
+  overflow: hidden;
+  box-shadow: 0 3px 9px rgba(42,122,62,.20);
+}
+
+#k-modal .k-sug-card-actions.is-filled .k-sug-step {
+  width: 27px;
+  height: var(--k-sug-action-height);
+  min-width: 27px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--white);
+  box-shadow: none;
+  font-size: 16px;
+}
+
+#k-modal .k-sug-card-actions.is-filled .k-sug-step:hover,
+#k-modal .k-sug-card-actions.is-filled .k-sug-step:active {
+  background: rgba(255,255,255,.15);
+}
+
+#k-modal .k-sug-card-actions.is-filled .k-sug-qty {
+  min-width: 28px;
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+/* Plusieurs variantes : conserve exactement le même slot transactionnel. */
+#k-modal .k-sug-card-actions.has-multiple-lines .k-card-add-review {
+  width: var(--k-sug-action-height);
+  height: var(--k-sug-action-height);
+  margin-left: auto;
+  border: 1px solid var(--cta-green);
+  border-radius: 50%;
+  background: var(--cta-green);
+  color: var(--white);
+}
+
+#k-modal .k-sug-card-actions.has-multiple-lines .k-sug-qty {
+  color: var(--white);
+}
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+
+@media (max-width: 899px) {
+  #k-modal .k-modal-topbar {
+    min-height: calc(56px + env(safe-area-inset-top));
+  }
+
+  #k-modal .k-modal-cart-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  #k-modal .k-modal-cart-icon {
+    width: 31px;
+    height: 31px;
+  }
+
+  #k-modal .k-modal-suggestions {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  #k-modal .k-sug-grid {
+    gap: 8px;
+  }
+
+  #k-modal .k-sug-card-actions {
+    --k-sug-action-width: 76px;
+    --k-sug-action-height: 30px;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled {
+    grid-template-columns: 25px 26px 25px;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled .k-sug-step {
+    width: 25px;
+    min-width: 25px;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled .k-sug-qty {
+    min-width: 26px;
+  }
+
+  #k-modal .k-sug-card-name {
+    min-height: 32px;
+  }
+}
+
+/* ── Desktop ─────────────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  #k-modal .k-modal-promo-badge {
+    top: 12px;
+    left: 94px;
+    max-width: calc(100% - 108px);
+    padding: 5px 11px;
+    font-size: 12px;
+  }
+
+  #k-modal .k-modal-suggestions:not(.k-modal-suggestions--desktop-list) {
+    padding: 18px 28px 30px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
+    margin-bottom: 10px;
+    padding-bottom: 7px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips {
+    padding-bottom: 10px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section {
+    margin-top: 18px;
+  }
+
+  /* Le slot fixe rend inutile le fallback colonne prix/stepper. */
+  #k-modal .k-sug-card-bottom:has(.k-sug-card-actions.is-filled) {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+
+  #k-modal .k-sug-card-bottom:has(.k-sug-card-actions.is-filled) .k-sug-card-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #k-modal .k-sug-add,
+  #k-modal .k-sug-step,
+  #k-modal .k-modal-cart-btn {
+    transition: none;
+  }
+}
+
+
 /* ── hero-cart-proxy.css ─────────────────────────────────── */
 /**
  * @component Boutique / Hero Cart Proxy
@@ -9414,77 +9738,379 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 
+/* ── shared-list-side-cart-responsive.css ────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          shared-list-narrow-layout-styles
+ * @domain        shared-cart
+ * @layer         css
+ * @owner         public/boutique/js/group/group-side-cart.js
+ * @purpose       Stabilise les cartes produit et les zones d'action de la liste partageable dans les conteneurs étroits.
+ * @impact-areas  shared-cart, side-cart, drawer, responsive
+ * @version       2026-08
+ */
+
+/**
+ * Le side cart desktop mesure environ 330 px même sur un grand viewport.
+ * Les media queries viewport ne suffisent donc pas : le composant devient
+ * son propre conteneur de mise en page. Les règles ci-dessous s'appliquent
+ * aussi au drawer mobile, sans modifier le DOM ni la logique métier.
+ */
+.k-shared-list-panel {
+  container-name: shared-list;
+  container-type: inline-size;
+}
+
+/* Le switch est un frère du panneau. Le panneau ne doit jamais conserver
+ * height:100% quand le switch est présent, sinon le footer et le switch se
+ * disputent la même hauteur et finissent visuellement superposés. */
+#k-side-cart[data-mode="shared-list"] > .k-shared-list-panel,
+#k-side-cart[data-mode="library"] > .k-shared-list-panel {
+  order: 1;
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#k-side-cart[data-mode="shared-list"] > .k-cart-surface-switch,
+#k-side-cart[data-mode="library"] > .k-cart-surface-switch {
+  order: 2;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  background: var(--surface-sand-97);
+}
+
+/* Le fallback reste visible derrière l'image. En cas d'erreur, le handler
+ * retire l'image ; le conteneur garde alors une vignette propre et centrée. */
+.k-shared-list-item .k-cart-item-img {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.k-shared-list-item .k-cart-item-img-el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.k-shared-list-item .k-cart-item-img-fallback {
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.k-shared-list-item .k-cart-item-img.is-img-error .k-cart-item-img-fallback {
+  display: inline-flex;
+}
+
+@container shared-list (max-width: 420px) {
+  .k-shared-list-header {
+    padding: 10px 12px 8px;
+  }
+
+  .k-shared-list-progress {
+    padding: 8px 12px 4px;
+  }
+
+  .k-shared-list-items {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  /* Trois zones lisibles : produit en haut, quantité puis actions en bas. */
+  .k-shared-list-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "product product"
+      "quantity actions";
+    align-items: center;
+    gap: 10px 8px;
+    padding: 10px;
+  }
+
+  .k-shared-item-open {
+    grid-area: product;
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+  }
+
+  .k-shared-item-open .k-cart-item-img {
+    width: 56px;
+    min-width: 56px;
+    height: 56px;
+  }
+
+  .k-shared-item-open .k-cart-item-info {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .k-shared-item-open .k-cart-item-name {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.3;
+  }
+
+  /* Le prix et le statut ne partagent plus la largeur des boutons. */
+  .k-shared-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 4px;
+    min-width: 0;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+  }
+
+  .k-shared-item-status {
+    display: block;
+    flex-basis: 100%;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .k-shared-item-qty {
+    grid-area: quantity;
+    justify-self: start;
+    gap: 7px;
+  }
+
+  .k-shared-item-qty-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+  }
+
+  .k-shared-item-qty-val {
+    min-width: 20px;
+    font-size: 13px;
+  }
+
+  .k-shared-item-controls {
+    grid-area: actions;
+    justify-self: end;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .k-shared-item-select {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 11.5px;
+  }
+
+  .k-shared-item-remove {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .k-shared-list-creator-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px 12px;
+  }
+
+  .k-shared-list-creator-actions .k-cart-continue-shop {
+    min-height: 40px;
+    padding: 8px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .k-shared-list-footer {
+    position: relative;
+    z-index: 2;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--surface-sand-97);
+    box-shadow: 0 -8px 18px var(--shadow-card-05, rgba(30, 40, 25, .05));
+  }
+
+  .k-shared-list-footer-hint {
+    margin-bottom: 8px;
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+
+  .k-shared-list-footer-recap {
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+  }
+
+  .k-shared-list-footer-recap span {
+    min-width: 0;
+    line-height: 1.25;
+  }
+
+  #k-shared-list-buy {
+    min-height: 48px;
+  }
+}
+
+/* Sécurité pour les navigateurs sans container queries : le side cart reste
+ * le cas critique puisqu'il est toujours étroit, même sur desktop. */
+@supports not (container-type: inline-size) {
+  #k-side-cart[data-mode="shared-list"] .k-shared-list-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "product product"
+      "quantity actions";
+    gap: 10px 8px;
+    padding: 10px;
+  }
+
+  #k-side-cart[data-mode="shared-list"] .k-shared-item-open {
+    grid-area: product;
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 10px;
+    width: 100%;
+  }
+
+  #k-side-cart[data-mode="shared-list"] .k-shared-item-qty {
+    grid-area: quantity;
+  }
+
+  #k-side-cart[data-mode="shared-list"] .k-shared-item-controls {
+    grid-area: actions;
+    justify-self: end;
+  }
+}
+
+@container shared-list (max-width: 310px) {
+  .k-shared-list-item {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "product"
+      "quantity"
+      "actions";
+  }
+
+  .k-shared-item-controls {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .k-shared-item-select {
+    flex: 1 1 auto;
+  }
+}
+
+
+/* ── shared-list-library-remove.css ──────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          shared-cart-library-removal-styles
+ * @domain        shared-cart
+ * @layer         ui-style
+ * @owner         public/boutique/js/group/group-library-remove.js
+ * @purpose       Aligne l'action « Retirer » dans la section Partagées avec moi.
+ * @impact-areas  shared-cart, mon-komerce, side-cart, drawer
+ * @version       2026-08
+ */
+
+.k-library-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+
+.k-library-item-row .k-library-item {
+  min-width: 0;
+}
+
+.k-library-item-remove {
+  align-self: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--red-danger-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--red-danger-text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.k-library-item-remove:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.k-library-item-remove:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 430px) {
+  .k-library-item-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .k-library-item-remove {
+    justify-self: end;
+    min-height: 36px;
+  }
+}
+
+
 /* ── share-cart.css ──────────────────────────────────────── */
-/* ═══════════════════════════════════════════════════════════════
-   KOMERCE — share-cart.css
-   Owner du partage de panier (sidebar + modale).
-   Rapatrié depuis les <style> injectés par b-share-cart.js (doctrine §1).
-   ⚠ Les 2 display:none!important (badges) sont conservés VERBATIM :
-      à traiter dans l'audit !important (dette nouvellement visible).
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @komerce-arch-lite
+ * @role          shared-cart-legacy-indicator-styles
+ * @domain        shared-cart
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-share-cart.js
+ * @purpose       Conserve uniquement les indicateurs historiques masqués du side cart.
+ * @impact-areas  shared-cart, side-cart
+ * @version       2026-08
+ */
 
-/* ── Sidebar / badges ── */
-.k-sc-shared-badge{display:none!important}
-.k-sc-reshare-btn{display:none!important}
+/*
+ * Le formulaire historique « Créer une liste » a été supprimé du runtime
+ * par la PR #671. Ses sélecteurs `.k-share-modal-*` et `.k-sm-*` ne doivent
+ * plus être livrés dans le bundle : le partage actif est désormais direct
+ * (identité → création → feuille de partage native).
+ *
+ * Ces deux indicateurs HTML restent présents pour compatibilité du shell,
+ * mais sont volontairement masqués tant que leur parcours n'est pas remis
+ * en service par une décision produit explicite.
+ */
+.k-sc-shared-badge {
+  display: none !important;
+}
 
-/* ── Modale de partage ── */
-.k-share-modal-overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.45);
-  display:flex;align-items:flex-end;justify-content:center;animation:kSMFadeIn .2s ease}
-@keyframes kSMFadeIn{from{opacity:0}to{opacity:1}}
-@media(min-width:900px){.k-share-modal-overlay{align-items:center}}
-.k-share-modal-sheet{background:var(--white);border-radius:20px 20px 0 0;
-  padding:28px 20px calc(32px + env(safe-area-inset-bottom));width:100%;max-width:420px;
-  animation:kSMSlideUp .28s var(--ease)}
-@media(min-width:900px){.k-share-modal-sheet{border-radius:16px;padding-bottom:28px}}
-@keyframes kSMSlideUp{from{transform:translateY(48px);opacity:0}to{transform:none;opacity:1}}
-.k-sm-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.k-sm-title{font-size:17px;font-weight:800;color:var(--text)}
-.k-sm-close{width:32px;height:32px;border:none;background:var(--sand);border-radius:50%;
-  font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted)}
-.k-sm-close:hover{background:var(--sand-dark)}
-.k-sm-label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);
-  margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
-.k-sm-input{width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);
-  font-size:15px;font-family:var(--font);color:var(--text);background:var(--white);
-  outline:none;box-sizing:border-box;transition:border-color .2s}
-.k-sm-input:focus{border-color:var(--violet)}
-.k-sm-field{margin-bottom:12px}
-.k-sm-hint{font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.5}
-.k-sm-err{font-size:12px;color:var(--red-danger-text);min-height:18px;margin-top:4px}
-.k-sm-btn{width:100%;padding:14px;margin-top:14px;background:var(--violet);color:var(--white);
-  border:none;border-radius:50px;font-size:15px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .15s}
-.k-sm-btn:hover{background:var(--violet-dark);transform:translateY(-1px)}
-.k-sm-btn:disabled{background:var(--sand-dark);color:var(--text-light);cursor:not-allowed;transform:none}
-.k-sm-choice{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.k-sm-btn-secondary{background:var(--sand);color:var(--text)}
-.k-sm-btn-secondary:hover{background:var(--sand-dark)}
-.k-sm-btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
-.k-sm-btn-ghost:hover{background:var(--sand);color:var(--text)}
-/* Phone block inside modal */
-.k-sm-phone-row{display:flex;gap:8px;align-items:stretch}
-.k-sm-phone-sel{flex:0 0 auto;padding:11px 8px 11px 10px;border:2px solid var(--border);
-  border-radius:var(--radius-sm);font-size:14px;font-family:var(--font);color:var(--text);
-  background:var(--white);outline:none;cursor:pointer;transition:border-color .2s;
-  appearance:none;-webkit-appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
-.k-sm-phone-sel:focus{border-color:var(--violet)}
-.k-sm-phone-input{flex:1 1 auto;padding:11px 14px;border:2px solid var(--border);
-  border-radius:var(--radius-sm);font-size:15px;font-family:var(--font);color:var(--text);
-  background:var(--white);outline:none;box-sizing:border-box;transition:border-color .2s;
-  min-width:0}
-.k-sm-phone-input:focus{border-color:var(--violet)}
-.k-sm-phone-input.k-valid{border-color:var(--green-valid)}
-.k-sm-phone-input.k-invalid{border-color:var(--red-danger-text)}
-.k-sm-name-input:not(:placeholder-shown):invalid{border-color:var(--red-danger-text)}
-.k-sm-nature{display:flex;flex-direction:column;gap:8px;margin-top:6px}
-.k-sm-nature-opt{display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;
-  padding:12px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);
-  background:var(--white);font-family:var(--font);cursor:pointer;transition:border-color .15s,box-shadow .15s}
-.k-sm-nature-opt:hover{border-color:var(--violet)}
-.k-sm-nature-opt.is-active{border-color:var(--violet);box-shadow:0 0 0 1px var(--violet) inset}
-.k-sm-nature-opt strong{font-size:14px;font-weight:700;color:var(--text)}
-.k-sm-nature-opt span{font-size:12px;color:var(--text-muted);line-height:1.4}
+.k-sc-reshare-btn {
+  display: none !important;
+}
 
 
 /* ── identity.css ────────────────────────────────────────── */
@@ -10369,4 +10995,536 @@ body.k-id-scroll-lock { overflow: hidden; }
   .k-kmc-col-secondary { flex: 1; }
 
   .k-kmc-form .k-kmc-action-btn { width: auto; }
+}
+
+
+/* ── checkout-vertical-rail.css ──────────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          checkout-vertical-rail-skin
+ * @domain        checkout
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-checkout.js
+ * @purpose       Projette le checkout canonique dans le parcours visuel à rail vertical.
+ * @impact-areas  checkout, payment-ui, relay-ui, order-success, responsive-layout
+ * @version       2026-08
+ */
+
+/*
+ * Référence produit : identité → point de retrait → paiement.
+ * Les étapes validées se replient ; le CTA final porte l'acte engageant.
+ * Aucun contrat métier, calcul, paiement, OTP ou création de commande n'est modifié.
+ */
+
+/* ── Shell ────────────────────────────────────────────────────── */
+
+.k-order-overlay.open {
+  background: rgba(18,35,27,.58);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.k-order-overlay.open .k-order-modal { background: var(--checkout-cream); }
+
+.k-order-header {
+  min-height: 58px;
+  padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+  background: linear-gradient(135deg,
+    var(--checkout-accent-deep) 0%,
+    var(--checkout-accent-mid) 58%,
+    var(--checkout-accent) 100%);
+  box-shadow: 0 6px 20px rgba(26,59,44,.18);
+}
+
+.ck-modal-back-btn--header {
+  min-height: 36px;
+  padding: 0 13px;
+  background: rgba(255,255,255,.13);
+  border: 1px solid rgba(255,255,255,.34);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+}
+
+.ck-order-title-text { font-size: 1rem; letter-spacing: .015em; }
+
+/* ── Rail vertical ────────────────────────────────────────────── */
+
+.k-order-overlay.open .k-order-body--checkout {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 22px 16px 30px 60px;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(232,131,90,.08), transparent 24%),
+    var(--checkout-cream);
+}
+
+.k-order-body--checkout::before {
+  content: "";
+  position: absolute;
+  top: 38px;
+  bottom: 44px;
+  left: 31px;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(to bottom,
+    var(--checkout-accent) 0 28%,
+    rgba(232,131,90,.62) 28% 72%,
+    rgba(31,48,36,.12) 72% 100%);
+  pointer-events: none;
+}
+
+.k-order-body--checkout > .ck-section-block:empty { display: none; }
+
+.ck-step-header {
+  position: relative;
+  width: 100%;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  margin: 0;
+  border: 1px solid rgba(31,48,36,.10);
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: 0 8px 24px rgba(31,48,36,.06), 0 1px 2px rgba(31,48,36,.04);
+}
+
+.ck-step-header .k-track-step-dot {
+  position: absolute;
+  top: 19px;
+  left: -44px;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  border: 4px solid var(--checkout-cream);
+  box-shadow: 0 2px 8px rgba(31,48,36,.16);
+  z-index: 2;
+}
+
+.ck-step-header .k-track-step-dot.done {
+  background: var(--checkout-accent);
+  color: var(--white);
+}
+
+.ck-step-header .k-track-step-dot.current {
+  background: var(--coral);
+  color: var(--white);
+}
+
+.ck-payment-section .k-track-step-dot.current::before {
+  content: "3";
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.ck-step-header-text {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ck-step-header-text::before {
+  font-size: .64rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ck-identity-summary .ck-step-header-text::before { content: "Qui commande ?"; }
+.ck-relais-section .ck-step-header-text::before { content: "Point de retrait"; }
+.ck-payment-section .ck-step-header-text::before { content: "Comment payez-vous ?"; }
+
+.ck-step-header-label {
+  overflow: hidden;
+  color: var(--text);
+  font-size: .94rem;
+  font-weight: 800;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ck-step-header-sub {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: .76rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ck-step-header-change {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(31,122,84,.24);
+  border-radius: 999px;
+  background: var(--sage-bg);
+  color: var(--sage-dark);
+  font-size: .74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ck-step-header-change:hover {
+  border-color: var(--checkout-accent);
+  background: var(--white);
+}
+
+/* ── Identité ────────────────────────────────────────────────── */
+
+.ck-identity-summary,
+.k-ck-guest-hint {
+  position: relative;
+  margin: 0 0 18px;
+}
+
+.k-ck-guest-hint {
+  min-height: 76px;
+  padding: 14px 15px;
+  border: 1px solid rgba(232,131,90,.26);
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: 0 8px 24px rgba(31,48,36,.06);
+}
+
+.k-ck-guest-hint::before {
+  content: "1";
+  position: absolute;
+  top: 20px;
+  left: -44px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid var(--checkout-cream);
+  border-radius: 50%;
+  background: var(--coral);
+  color: var(--white);
+  box-shadow: 0 2px 8px rgba(31,48,36,.16);
+  font-size: .72rem;
+  font-weight: 900;
+  z-index: 2;
+}
+
+.k-ck-guest-hint .k-ck-guest-ic {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(232,131,90,.12);
+}
+
+/* ── Relais ──────────────────────────────────────────────────── */
+
+.ck-relais-section {
+  position: relative;
+  margin: 0 0 18px;
+}
+
+.ck-relais-section .ck-step-header {
+  background: var(--sage-bg);
+  border-color: rgba(31,122,84,.18);
+}
+
+.ck-relais-loading,
+.ck-relais-empty,
+.ck-relais-error {
+  position: relative;
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  padding: 14px 15px;
+  border: 1px solid rgba(31,48,36,.10);
+  border-radius: 16px;
+  background: var(--white);
+  color: var(--text-muted);
+  box-shadow: 0 8px 24px rgba(31,48,36,.05);
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+.ck-relais-loading::before,
+.ck-relais-empty::before,
+.ck-relais-error::before {
+  content: "2";
+  position: absolute;
+  top: 18px;
+  left: -44px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid var(--checkout-cream);
+  border-radius: 50%;
+  background: var(--coral);
+  color: var(--white);
+  box-shadow: 0 2px 8px rgba(31,48,36,.16);
+  font-size: .72rem;
+  font-weight: 900;
+  z-index: 2;
+}
+
+.ck-relais-error { flex-wrap: wrap; gap: 10px; color: var(--coral-dark); }
+
+.ck-relais-retry {
+  min-height: 34px;
+  margin-left: auto;
+  padding: 0 12px;
+  border: 1px solid rgba(232,131,90,.34);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--coral-dark);
+  font-weight: 800;
+}
+
+/* ── Paiement ────────────────────────────────────────────────── */
+
+.ck-payment-section {
+  position: relative;
+  padding: 0;
+  margin: 0 0 10px;
+  border: 0;
+}
+
+.ck-payment-section .ck-step-header {
+  min-height: auto;
+  padding: 4px 0 11px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ck-payment-section .ck-step-header-label { font-size: 1rem; }
+.ck-payment-section .ck-step-header-sub { color: var(--coral-dark); }
+
+.ck-pay-grid {
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.ck-pay-chip {
+  min-height: 78px;
+  padding: 10px 12px;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  border: 1.5px solid rgba(31,48,36,.11);
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: 0 6px 18px rgba(31,48,36,.05);
+  text-align: left;
+}
+
+.ck-pay-chip:hover {
+  border-color: rgba(232,131,90,.48);
+  transform: translateY(-1px);
+}
+
+.ck-pay-chip--active {
+  border-color: var(--coral);
+  background: var(--checkout-chip-active-bg);
+  box-shadow: 0 0 0 2px var(--coral-focus-12), 0 8px 22px rgba(200,92,45,.10);
+}
+
+.ck-pay-chip--off { opacity: .56; filter: none; }
+.ck-chip-icon { font-size: 1.28rem; }
+.ck-chip-lbl { font-size: .82rem; line-height: 1.25; }
+
+.ck-chip-lbl em.ck-soon,
+.ck-chip-lbl em.ck-stripe-tag {
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+.k-stripe-wrap,
+.k-paypal-wrap,
+.k-wallet-section {
+  border: 1px solid rgba(31,48,36,.10);
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: 0 6px 18px rgba(31,48,36,.04);
+}
+
+.k-stripe-wrap { padding: 13px 14px; }
+.k-wallet-section { margin-top: 0; padding: 12px 14px; }
+
+.ck-secure-pickup-notice--footer {
+  margin: 12px 0 4px;
+  padding: 11px 13px;
+  border: 1px solid rgba(31,122,84,.13);
+  border-radius: 14px;
+  background: rgba(31,122,84,.06);
+  color: var(--sage-dark);
+  line-height: 1.35;
+}
+
+/* ── CTA final ───────────────────────────────────────────────── */
+
+.k-order-overlay.open .ck-confirm-btn {
+  width: calc(100% - 24px);
+  min-height: 66px;
+  margin: 10px 12px calc(12px + env(safe-area-inset-bottom));
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg,
+    var(--checkout-accent-deep) 0%,
+    var(--checkout-accent) 100%);
+  color: var(--white);
+  box-shadow: 0 10px 26px rgba(31,122,84,.28);
+}
+
+.k-order-overlay.open .ck-confirm-btn:not(:disabled):hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.k-order-overlay.open .ck-confirm-btn:disabled {
+  background: rgba(31,48,36,.20);
+  box-shadow: none;
+}
+
+.ck-confirm-main { font-size: 1rem; font-weight: 900; }
+.ck-confirm-subtext { color: var(--white); font-size: .72rem; opacity: .82; }
+
+/* ── Informations secondaires ───────────────────────────────── */
+
+.ck-price-variation-recap {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(232,131,90,.22);
+  border-radius: 14px;
+  background: rgba(232,131,90,.07);
+}
+
+.ck-price-variation-line {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+}
+
+.ck-price-variation-caption { grid-column: 1; }
+.ck-price-variation-prices { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+
+/* ── Confirmation ────────────────────────────────────────────── */
+
+.k-confirm-simple {
+  position: relative;
+  min-height: 100%;
+  justify-content: center;
+  gap: 13px;
+  padding: 26px 18px 30px;
+  overflow: hidden;
+}
+
+.k-confirm-simple::before,
+.k-confirm-simple::after {
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(31,122,84,.06);
+  pointer-events: none;
+}
+
+.k-confirm-simple::before { top: -70px; right: -70px; }
+.k-confirm-simple::after { bottom: -90px; left: -70px; }
+
+.k-confirm-emoji {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: 0 12px 30px rgba(31,122,84,.18);
+  color: transparent;
+  font-size: 0;
+  z-index: 1;
+}
+
+.k-confirm-emoji::before {
+  content: "✓";
+  color: var(--checkout-accent);
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.k-confirm-title { font-size: 1.45rem; }
+
+.k-confirm-ref-block,
+.k-confirm-cash-block,
+.k-confirm-notices,
+.k-confirm-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.k-confirm-actions { width: 100%; }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+
+@media (max-width: 380px) {
+  .k-order-overlay.open .k-order-body--checkout { padding-right: 12px; padding-left: 54px; }
+  .k-order-body--checkout::before { left: 27px; }
+
+  .ck-step-header .k-track-step-dot,
+  .k-ck-guest-hint::before,
+  .ck-relais-loading::before,
+  .ck-relais-empty::before,
+  .ck-relais-error::before { left: -40px; }
+
+  .ck-step-header { padding-right: 11px; padding-left: 11px; }
+  .ck-step-header-change { padding: 0 9px; }
+  .ck-pay-chip { min-height: 72px; padding: 9px 10px; }
+}
+
+@media (min-width: 900px) {
+  .k-order-overlay.open .k-order-modal {
+    width: min(540px, calc(100vw - 48px));
+    max-width: 540px;
+    max-height: 92vh;
+    border-radius: 24px;
+  }
+
+  .k-order-header { border-radius: 24px 24px 0 0; }
+  .k-order-overlay.open .k-order-body--checkout { padding: 26px 24px 34px 70px; }
+  .k-order-body--checkout::before { left: 38px; }
+
+  .ck-step-header .k-track-step-dot,
+  .k-ck-guest-hint::before,
+  .ck-relais-loading::before,
+  .ck-relais-empty::before,
+  .ck-relais-error::before { left: -48px; }
+
+  .k-order-overlay.open .ck-confirm-btn {
+    width: calc(100% - 32px);
+    margin: 12px 16px 16px;
+    border-radius: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-pay-chip,
+  .ck-step-header-change,
+  .k-order-overlay.open .ck-confirm-btn { transition: none; }
 }

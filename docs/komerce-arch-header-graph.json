@@ -20,9 +20,9 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 771,
-    "edges": 4128,
-    "dbTables": 110,
+    "graphNodes": 770,
+    "edges": 4127,
+    "dbTables": 109,
     "doctrines": 167,
     "impactAreas": 130,
     "unresolvedCodeEdges": 418,
@@ -8143,9 +8143,7 @@
         "public/boutique/js/group/group-api.js"
       ],
       "dbRead": [],
-      "dbWrite": [
-        "delegated_to_shared_cart_library"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
@@ -17333,11 +17331,6 @@
       "id": "db:suppliers",
       "type": "db-table",
       "table": "suppliers"
-    },
-    {
-      "id": "db:delegated_to_shared_cart_library",
-      "type": "db-table",
-      "table": "delegated_to_shared_cart_library"
     },
     {
       "id": "db:cart_contributions",
@@ -30406,12 +30399,6 @@
       "to": "routes/shared-cart-saved.js",
       "type": "uses",
       "label": "public/boutique/js/group/group-api.js"
-    },
-    {
-      "from": "routes/shared-cart-saved.js",
-      "to": "db:delegated_to_shared_cart_library",
-      "type": "db-write",
-      "label": "delegated_to_shared_cart_library"
     },
     {
       "from": "routes/shared-cart-saved.js",
@@ -51814,9 +51801,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [],
-      "dbWrite": [
-        "delegated_to_shared_cart_library"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
         "retirer_le_signet_jamais_la_liste"
@@ -51828,7 +51813,6 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:delegated_to_shared_cart_library",
         "doctrine:retirer_le_signet_jamais_la_liste",
         "impact:mon-komerce",
         "impact:participant-flow",

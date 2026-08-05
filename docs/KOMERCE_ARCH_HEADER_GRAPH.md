@@ -13,9 +13,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 771
-- Edges: 4128
-- DB tables: 110
+- Graph nodes: 770
+- Edges: 4127
+- DB tables: 109
 - Doctrines: 167
 - Impact areas: 130
 - Unresolved code edges: 418
@@ -408,7 +408,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
 - WRITE routes/admin-customs-shipments.js -> customs_shipments
 - WRITE services/customs-shipment-service.js -> customs_shipments
-- WRITE routes/shared-cart-saved.js -> delegated_to_shared_cart_library
 - WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE bootstrap/crons.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
@@ -471,6 +470,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin/system.js -> orders
 - WRITE routes/orders/cancel.js -> orders
 - WRITE routes/orders/create.js -> orders
+- WRITE routes/orders/qr.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 

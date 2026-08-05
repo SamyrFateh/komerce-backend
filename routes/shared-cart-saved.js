@@ -9,7 +9,7 @@
  * @depends       middleware/auth.js, services/shared-cart-library.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/group/group-api.js
  * @db-read       none
- * @db-write      delegated_to_shared_cart_library
+ * @db-write      none
  * @db-txn        none
  * @doctrine      retirer_le_signet_jamais_la_liste
  * @impact-areas  shared-cart, mon-komerce, participant-flow

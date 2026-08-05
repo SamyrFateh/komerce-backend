@@ -195,6 +195,15 @@ export const state = {
    */
   libraryContext: { created: [], saved: [] },
   /**
+   * V2-F — tokens des listes reçues sauvegardées PENDANT la session courante
+   * (source de vérité immédiate pour l'état "✓ Liste sauvegardée" du bouton,
+   * avant tout rechargement de libraryContext.saved). Partagé via state pour
+   * que group-side-cart.js (qui l'alimente à la sauvegarde) et
+   * group-library-remove.js (syncActiveListSaveButton, qui le consulte)
+   * voient le même Set sans dépendance circulaire entre modules.
+   */
+  savedListTokensThisSession: new Set(),
+  /**
    * Amendement V2 §B (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_
    * CART_V2) — surface à restaurer dans le side cart / drawer canonique à
    * la fermeture de la modale produit, quand celle-ci a été ouverte depuis

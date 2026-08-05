@@ -10,13 +10,14 @@
 
 ## 1. Inventaire CSS
 
-24 fichier(s) sur disque, 24 orphelin(s).
+28 fichier(s) sur disque, 28 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
 | `boutique-desktop.css` | 1315 | 🔴 **ORPHELIN** |
 | `cart.css` | 1917 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
+| `checkout-vertical-rail.css` | 530 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
@@ -29,12 +30,15 @@
 | `modal-mobile-canonical.css` | 682 | 🔴 **ORPHELIN** |
 | `modal-mobile-suggestion-actions.css` | 62 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 502 | 🔴 **ORPHELIN** |
+| `modal-product-polish.css` | 322 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1512 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 1240 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 888 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
-| `share-cart.css` | 71 | 🔴 **ORPHELIN** |
+| `share-cart.css` | 29 | 🔴 **ORPHELIN** |
+| `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart-responsive.css` | 280 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart.css` | 545 | 🔴 **ORPHELIN** |
 | `tokens.css` | 516 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
@@ -45,7 +49,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=158
- 2. /boutique/css/dist/components.css?v=381
+ 2. /boutique/css/dist/components.css?v=383
  3. /boutique/css/dist/desktop.css?v=85
 ```
 
@@ -109,7 +113,7 @@ Aucun. ✅
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 24 (cible : 0)
+- **CSS orphelins** : 28 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
 - **Hex hardcodés** : 15 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)

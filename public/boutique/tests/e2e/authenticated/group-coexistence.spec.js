@@ -33,14 +33,42 @@ const {
 } = require('../helpers/boutique.helpers');
 const {
   verifySharedCart,
-  getClientShareToken,
   getClientShareState,
   cancelAnyActiveSharedCart,
   spyOnApi,
 } = require('../helpers/api.helpers');
 const { getSharePageUrl } = require('../helpers/business.helpers');
 
+async function readSharedListState(page) {
+  return page
+    .locator('#k-side-cart .k-shared-list-item')
+    .evaluateAll((rows) =>
+      rows.map((row) => ({
+        id: row.dataset.itemId || null,
+        name:
+          row.querySelector('.k-cart-item-name')?.textContent?.trim() || '',
+        quantity:
+          row
+            .querySelector('.k-shared-item-qty-val')
+            ?.textContent?.trim() || null,
+        selected: row.classList.contains('is-selected'),
+        claimed: row.classList.contains('is-claimed'),
+        selectionPressed:
+          row
+            .querySelector('.k-shared-item-select')
+            ?.getAttribute('aria-pressed') || null,
+      })),
+    );
+}
+
 test.describe('FLOW — Isolation panier personnel / liste (F22)', () => {
+  test.use({
+    viewport: {
+      width: 1280,
+      height: 800,
+    },
+  });
+
   test.skip(
     !process.env.ALLOW_GROUP_FLOW,
     'F22 nécessite ALLOW_GROUP_FLOW=true — staging uniquement',
@@ -55,106 +83,328 @@ test.describe('FLOW — Isolation panier personnel / liste (F22)', () => {
     await cancelAnyActiveSharedCart(page);
   });
 
-  test('F22 — ajout au panier perso depuis une fiche produit ouverte via la liste n\'altère jamais la liste', async ({ page }) => {
-    // ── PHASE 1 — Créer une liste (partage immédiat, comme F20) ──────────
-    await page.goto(BASE_URL);
-    await waitForGrid(page);
-    await openFirstCard(page);
-    await addToCartFromModal(page);
-    await closeModal(page);
-    await openCartDrawer(page);
+  test(
+    'F22 — ajout au panier perso depuis une fiche produit ouverte via la liste n\'altère jamais la liste',
+    async ({ page }) => {
+      await page.goto(BASE_URL);
+      await waitForGrid(page);
+      await openFirstCard(page);
+      await addToCartFromModal(page);
+      await closeModal(page);
+      await openCartDrawer(page);
 
-    const shareBtn = page.locator('#k-cart-share, #k-sc-share').first();
-    await expect(shareBtn).toBeVisible({ timeout: 10_000 });
-    await page.evaluate(() => {
-      window.open = () => null;
-      try {
-        Object.defineProperty(navigator, 'share', { configurable: true, value: async () => {} });
-      } catch (_) {}
-    });
-    await shareBtn.click();
+      const shareBtn = page.locator('#k-cart-share, #k-sc-share').first();
+      await expect(shareBtn).toBeVisible({ timeout: 10_000 });
 
-    await page.waitForFunction(
-      () => !!sessionStorage.getItem('kmrc_share'),
-      { timeout: 15_000 },
-    ).catch(() => {});
-    const shareState = await getClientShareState(page);
-    expect(shareState?.token, 'Le token de la liste doit exister après création').toBeTruthy();
+      await page.evaluate(() => {
+        window.open = () => null;
 
-    // La création déclenche l'ouverture de la surface "shared-list" en
-    // fire-and-forget (openSharedListInCanonicalCart, imports dynamiques +
-    // fetch getSharedCartPublic — voir js/b-share-cart.js) qui s'est révélé
-    // pas assez fiable pour un test (échec reproductible même avec 25s
-    // d'attente, y compris en local contre un backend rapide — semble être
-    // un vrai gap fonctionnel, indépendant du réseau, pas juste un problème
-    // de timing). Le badge desktop #k-sc-shared-badge (qui contiendrait
-    // #k-sc-group-view, "👥 Suivre les participations →") s'est également
-    // révélé toujours masqué : refreshSharedBadges() y pose
-    // `desktopBadge.hidden = true` sans condition sur isShared — donc
-    // inutilisable comme déclencheur alternatif (bug réel de l'app,
-    // indépendant de V2-E, à signaler séparément).
-    // On navigue donc explicitement vers son propre lien de partage — le
-    // même mécanisme déjà prouvé fiable par F21 (group-full-cycle.spec.js)
-    // pour un participant, ici avec is_creator=true puisque même compte.
-    const publicResponsePromise = page.waitForResponse(
-      (r) => r.url().includes(`/api/shared-carts/public/${shareState.token}`) && r.request().method() === 'GET',
-      { timeout: 15_000 },
-    );
-    await page.goto(getSharePageUrl(shareState.token));
-    await publicResponsePromise;
+        try {
+          Object.defineProperty(navigator, 'share', {
+            configurable: true,
+            value: async () => {},
+          });
+        } catch (_) {}
+      });
 
-    const sharedListPanel = page.locator('#k-cart-body .k-shared-list-items, #k-side-cart .k-shared-list-items').first();
-    await expect(sharedListPanel).toBeVisible({ timeout: 10_000 });
+      await shareBtn.click();
 
-    // ── Snapshot de l'état "liste" AVANT toute action panier perso ────────
-    // (window.state n'est jamais exposé globalement par l'app — aucun
-    // module ne fait `window.state = state`, b-store.js l'exporte en ESM
-    // uniquement. On observe donc l'état exclusivement via le DOM rendu et
-    // via l'API backend, jamais via un accès direct à l'état interne JS.)
-    const sharedListSnapshot = await sharedListPanel.innerHTML();
-    const cartBadgeBefore = parseInt(
-      (await page.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
-      10,
-    );
+      await page.waitForFunction(
+        () => !!sessionStorage.getItem('kmrc_share'),
+        { timeout: 15_000 },
+      ).catch(() => {});
 
-    // Sonde : aucune route shared-cart (items/quantité/ajout/retrait) ne
-    // doit être appelée pendant l'ajout au panier perso depuis la modale.
-    const itemsRouteSpy = await spyOnApi(page, '/api/shared-carts/', 'PUT');
-    const itemsPostSpy = await spyOnApi(page, '/api/shared-carts/', 'POST');
-    const itemsDeleteSpy = await spyOnApi(page, '/api/shared-carts/', 'DELETE');
+      const shareState = await getClientShareState(page);
 
-    // ── PHASE 2 — Ouvrir la fiche produit depuis la liste ─────────────────
-    const firstItemOpen = page.locator('.k-shared-item-open').first();
-    await expect(firstItemOpen).toBeVisible({ timeout: 10_000 });
-    await firstItemOpen.click();
+      expect(
+        shareState?.token,
+        'Le token de la liste doit exister après création',
+      ).toBeTruthy();
 
-    await expect(page.locator('#k-add-cart-btn')).toBeVisible({ timeout: 10_000 });
+      const publicResponsePromise = page.waitForResponse(
+        (response) =>
+          response
+            .url()
+            .includes(`/api/shared-carts/public/${shareState.token}`) &&
+          response.request().method() === 'GET',
+        { timeout: 15_000 },
+      );
 
-    // ── PHASE 3 — Ajouter au panier PERSONNEL depuis la modale ────────────
-    await addToCartFromModal(page);
+      await page.goto(getSharePageUrl(shareState.token));
+      await publicResponsePromise;
 
-    // ── PHASE 4 — Fermer la modale → retour automatique à la liste ────────
-    await closeModal(page);
+      const sharedListPanel = page
+        .locator(
+          '#k-cart-body .k-shared-list-items, ' +
+          '#k-side-cart .k-shared-list-items',
+        )
+        .first();
 
-    const sharedListPanelAfter = page.locator('#k-cart-body .k-shared-list-items, #k-side-cart .k-shared-list-items').first();
-    await expect(sharedListPanelAfter).toBeVisible({ timeout: 10_000 });
+      await expect(sharedListPanel).toBeVisible({ timeout: 10_000 });
 
-    // ── PHASE 5 — Assertions d'isolation ───────────────────────────────────
-    const sharedListSnapshotAfter = await sharedListPanelAfter.innerHTML();
-    expect(sharedListSnapshotAfter, 'Le contenu rendu de la liste ne doit pas changer').toBe(sharedListSnapshot);
+      const sharedListSnapshot = await sharedListPanel.innerHTML();
 
-    const cartBadgeAfter = parseInt(
-      (await page.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
-      10,
-    );
-    expect(cartBadgeAfter, 'Le badge panier personnel doit refléter le nouvel article ajouté').toBeGreaterThan(cartBadgeBefore);
+      const cartBadgeBefore = parseInt(
+        (
+          await page
+            .locator('.k-cart-badge')
+            .first()
+            .textContent()
+            .catch(() => '0')
+        ) || '0',
+        10,
+      );
 
-    expect(itemsRouteSpy.calls().length, 'Aucun PUT shared-carts ne doit être déclenché par cette action').toBe(0);
-    expect(itemsPostSpy.calls().length, 'Aucun POST shared-carts ne doit être déclenché par cette action').toBe(0);
-    expect(itemsDeleteSpy.calls().length, 'Aucun DELETE shared-carts ne doit être déclenché par cette action').toBe(0);
+      const itemsRouteSpy = await spyOnApi(
+        page,
+        '/api/shared-carts/',
+        'PUT',
+      );
 
-    // ── Vérification backend — la liste reste inchangée côté serveur ──────
-    const finalCheck = await verifySharedCart(page, shareState.token);
-    expect(finalCheck.exists, 'La liste doit toujours exister côté API').toBe(true);
-  });
+      const itemsPostSpy = await spyOnApi(
+        page,
+        '/api/shared-carts/',
+        'POST',
+      );
+
+      const itemsDeleteSpy = await spyOnApi(
+        page,
+        '/api/shared-carts/',
+        'DELETE',
+      );
+
+      const firstItemOpen = page.locator('.k-shared-item-open').first();
+
+      await expect(firstItemOpen).toBeVisible({ timeout: 10_000 });
+      await firstItemOpen.click();
+
+      await expect(page.locator('#k-add-cart-btn')).toBeVisible({
+        timeout: 10_000,
+      });
+
+      await addToCartFromModal(page);
+      await closeModal(page);
+
+      const sharedListPanelAfter = page
+        .locator(
+          '#k-cart-body .k-shared-list-items, ' +
+          '#k-side-cart .k-shared-list-items',
+        )
+        .first();
+
+      await expect(sharedListPanelAfter).toBeVisible({ timeout: 10_000 });
+
+      const sharedListSnapshotAfter =
+        await sharedListPanelAfter.innerHTML();
+
+      expect(
+        sharedListSnapshotAfter,
+        'Le contenu rendu de la liste ne doit pas changer',
+      ).toBe(sharedListSnapshot);
+
+      const cartBadgeAfter = parseInt(
+        (
+          await page
+            .locator('.k-cart-badge')
+            .first()
+            .textContent()
+            .catch(() => '0')
+        ) || '0',
+        10,
+      );
+
+      expect(
+        cartBadgeAfter,
+        'Le badge panier personnel doit refléter le nouvel article ajouté',
+      ).toBeGreaterThan(cartBadgeBefore);
+
+      expect(
+        itemsRouteSpy.calls().length,
+        'Aucun PUT shared-carts ne doit être déclenché par cette action',
+      ).toBe(0);
+
+      expect(
+        itemsPostSpy.calls().length,
+        'Aucun POST shared-carts ne doit être déclenché par cette action',
+      ).toBe(0);
+
+      expect(
+        itemsDeleteSpy.calls().length,
+        'Aucun DELETE shared-carts ne doit être déclenché par cette action',
+      ).toBe(0);
+
+      const finalCheck = await verifySharedCart(
+        page,
+        shareState.token,
+      );
+
+      expect(
+        finalCheck.exists,
+        'La liste doit toujours exister côté API',
+      ).toBe(true);
+    },
+  );
+
+  test(
+    'F22b — bascule desktop panier/liste (#k-cart-surface-switch) sans jamais perdre d\'état',
+    async ({ page }) => {
+      await page.goto(BASE_URL);
+      await waitForGrid(page);
+      await openFirstCard(page);
+      await addToCartFromModal(page);
+      await closeModal(page);
+      await openCartDrawer(page);
+
+      const shareBtn = page.locator('#k-cart-share, #k-sc-share').first();
+      await expect(shareBtn).toBeVisible({ timeout: 10_000 });
+
+      await page.evaluate(() => {
+        window.open = () => null;
+
+        try {
+          Object.defineProperty(navigator, 'share', {
+            configurable: true,
+            value: async () => {},
+          });
+        } catch (_) {}
+      });
+
+      await shareBtn.click();
+
+      await page.waitForFunction(
+        () => !!sessionStorage.getItem('kmrc_share'),
+        { timeout: 15_000 },
+      ).catch(() => {});
+
+      const shareState = await getClientShareState(page);
+      expect(shareState?.token).toBeTruthy();
+
+      const publicResp = page.waitForResponse(
+        (response) =>
+          response
+            .url()
+            .includes(`/api/shared-carts/public/${shareState.token}`) &&
+          response.request().method() === 'GET',
+        { timeout: 15_000 },
+      );
+
+      await page.goto(getSharePageUrl(shareState.token));
+      await publicResp;
+
+      const sharedListPanel = page.locator(
+        '#k-side-cart .k-shared-list-items',
+      );
+
+      await expect(sharedListPanel).toBeVisible({ timeout: 10_000 });
+
+      await expect(
+        page.locator('#k-cart-surface-switch'),
+      ).toHaveCount(0);
+
+      const secondCard = page
+        .locator('#k-grid .k-promo-card, #k-grid .k-card')
+        .nth(1);
+
+      await expect(secondCard).toBeVisible({ timeout: 10_000 });
+      await secondCard.click();
+
+      await page.waitForSelector(
+        '#k-modal-overlay.open, .k-modal-overlay.open',
+        { timeout: 6_000 },
+      );
+
+      await addToCartFromModal(page);
+      await closeModal(page);
+
+      const switcher = page.locator('#k-cart-surface-switch');
+
+      await expect(switcher).toBeVisible({ timeout: 10_000 });
+
+      const personalBtn = switcher.locator(
+        '.k-cart-surface-btn[data-surface="personal"]',
+      );
+
+      const listBtn = switcher.locator(
+        '.k-cart-surface-btn[data-surface="shared-list"]',
+      );
+
+      await expect(personalBtn).toBeVisible();
+      await expect(listBtn).toBeVisible();
+      await expect(listBtn).toHaveAttribute('aria-pressed', 'true');
+
+      const firstSelectableItem = sharedListPanel
+        .locator('.k-shared-item-select:not([disabled])')
+        .first();
+
+      await expect(firstSelectableItem).toBeVisible();
+      await firstSelectableItem.click();
+
+      await expect(firstSelectableItem).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+
+      const listStateBefore = await readSharedListState(page);
+
+      expect(
+        listStateBefore.some((item) => item.selected),
+        'Au moins une ligne doit être sélectionnée avant la bascule',
+      ).toBe(true);
+
+      await personalBtn.click();
+
+      await expect(personalBtn).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+
+      await expect(listBtn).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+
+      await expect(
+        page.locator('#k-side-cart #k-sc-items'),
+      ).toBeVisible({ timeout: 10_000 });
+
+      await expect(
+        page.locator('#k-side-cart .k-shared-list-items'),
+      ).toHaveCount(0);
+
+      await listBtn.click();
+
+      await expect(listBtn).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+
+      const sharedListPanelAfter = page.locator(
+        '#k-side-cart .k-shared-list-items',
+      );
+
+      await expect(sharedListPanelAfter).toBeVisible({
+        timeout: 10_000,
+      });
+
+      const listStateAfter = await readSharedListState(page);
+
+      expect(
+        listStateAfter,
+        'Les articles, quantités, statuts et sélections doivent être conservés après l\'aller-retour',
+      ).toEqual(listStateBefore);
+
+      await expect(switcher).toBeVisible();
+      await expect(switcher).toContainText('Panier (1)');
+
+      const finalCheck = await verifySharedCart(
+        page,
+        shareState.token,
+      );
+
+      expect(
+        finalCheck.exists,
+        'La liste doit toujours exister côté API',
+      ).toBe(true);
+    },
+  );
 });

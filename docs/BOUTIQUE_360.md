@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-05T11:36:01.780Z.
+> Régénéré le 2026-08-05T20:22:12.435Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **75** (75 headés) · Événements bus : **25** · Bundles CSS : **3**
-- Endpoints appelés : **46** — 🔴 0 hors contrat · ⚪ 33 non prouvés · 🔵 15 dynamiques
+- Modules JS : **76** (76 headés) · Événements bus : **25** · Bundles CSS : **3**
+- Endpoints appelés : **47** — 🔴 0 hors contrat · ⚪ 33 non prouvés · 🔵 16 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -55,6 +55,7 @@
 | `/api/shared-carts/mine` | b-share-cart, group-api | ⚪ non prouvé |
 | `/api/shared-carts/public/{id}` | b-group-banner, group-api | 🔵 dynamique |
 | `/api/shared-carts/save` | group-api | ⚪ non prouvé |
+| `/api/shared-carts/saved/{id}` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/close` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/items/{id}` | group-api | 🔵 dynamique |
 | `/api/shares` | b-cart, b-favs | ⚪ non prouvé |
@@ -66,7 +67,7 @@
 | Événement | Émetteurs | Écouteurs | Statut |
 |---|---|---|---|
 | `carousel:changed` | b-modal-product | b-modal-image-ux | 🟡 non déclaré |
-| `cart-body:render` | group-side-cart | b-cart | 🟢 sain |
+| `cart-body:render` | group-side-cart | b-cart, group-library-remove | 🟢 sain |
 | `cart:update` | b-cart-core | b-cart, b-cart-core, b-cart-pill, b-mini-cart, b-modal-suggestions, b-nav | 🟢 sain |
 | `cat:select` | b-catalog | b-catalog | 🟢 sain |
 | `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
@@ -87,7 +88,7 @@
 | `nav:goto-komerce-wallet` | b-checkout | b-nav | 🟢 sain |
 | `nav:goto-track` | b-checkout | b-nav | 🟢 sain |
 | `product:open-from-cart` | b-product-open-contract | b-product-open-contract | 🟢 sain |
-| `side-cart:render` | b-cart, b-cart-core, group-side-cart | b-cart, group-side-cart | 🟢 sain |
+| `side-cart:render` | b-cart, b-cart-core, group-side-cart | b-cart, group-library-remove, group-side-cart | 🟢 sain |
 | `sidebar:built` | b-desktop-sidebar | — | 🔴 émission orpheline |
 | `view:changed` | b-nav | b-catalog-desktop-enhancers, b-home-premium-v1 | 🟡 non déclaré |
 
@@ -95,10 +96,13 @@
 
 ```mermaid
 graph LR
+  b_cart["b-cart"] -->|side-cart:render| group_library_remove["group-library-remove"]
   b_cart["b-cart"] -->|side-cart:render| group_side_cart["group-side-cart"]
   b_cart_core["b-cart-core"] -->|side-cart:render| b_cart["b-cart"]
+  b_cart_core["b-cart-core"] -->|side-cart:render| group_library_remove["group-library-remove"]
   b_cart_core["b-cart-core"] -->|side-cart:render| group_side_cart["group-side-cart"]
   group_side_cart["group-side-cart"] -->|side-cart:render| b_cart["b-cart"]
+  group_side_cart["group-side-cart"] -->|side-cart:render| group_library_remove["group-library-remove"]
   b_cart_core["b-cart-core"] -->|cart:update| b_cart["b-cart"]
   b_cart_core["b-cart-core"] -->|cart:update| b_cart_pill["b-cart-pill"]
   b_cart_core["b-cart-core"] -->|cart:update| b_mini_cart["b-mini-cart"]
@@ -116,6 +120,7 @@ graph LR
   group_side_cart["group-side-cart"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
   b_cart["b-cart"] -->|checkout:open| boutique["boutique"]
   group_side_cart["group-side-cart"] -->|cart-body:render| b_cart["b-cart"]
+  group_side_cart["group-side-cart"] -->|cart-body:render| group_library_remove["group-library-remove"]
   b_nav["b-nav"] -->|view:changed| b_catalog_desktop_enhancers["b-catalog-desktop-enhancers"]
   b_nav["b-nav"] -->|view:changed| b_home_premium_v1["b-home-premium-v1"]
   b_catalog["b-catalog"] -->|catalog:cat-changed| b_home_premium_v1["b-home-premium-v1"]
@@ -161,7 +166,7 @@ graph LR
 | Bundle | Sources |
 |---|---|
 | `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
-| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `hero-cart-proxy`, `shared-list-side-cart`, `share-cart`, `identity`, `paypal`, `wallet`, `komerce` |
+| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `modal-product-polish`, `hero-cart-proxy`, `shared-list-side-cart`, `shared-list-side-cart-responsive`, `shared-list-library-remove`, `share-cart`, `identity`, `paypal`, `wallet`, `komerce`, `checkout-vertical-rail` |
 | `css/dist/desktop.css` | `boutique-desktop` |
 
 ---
