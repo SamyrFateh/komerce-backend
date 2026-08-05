@@ -1,0 +1,59 @@
+/**
+ * @komerce-arch-lite
+ * @role          shared-cart-library-removal-styles
+ * @domain        shared-cart
+ * @layer         ui-style
+ * @owner         public/boutique/js/group/group-library-remove.js
+ * @purpose       Aligne l'action « Retirer » dans la section Partagées avec moi.
+ * @impact-areas  shared-cart, mon-komerce, side-cart, drawer
+ * @version       2026-08
+ */
+
+.k-library-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+
+.k-library-item-row .k-library-item {
+  min-width: 0;
+}
+
+.k-library-item-remove {
+  align-self: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--red-danger-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--red-danger-text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.k-library-item-remove:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.k-library-item-remove:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 430px) {
+  .k-library-item-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .k-library-item-remove {
+    justify-self: end;
+    min-height: 36px;
+  }
+}
