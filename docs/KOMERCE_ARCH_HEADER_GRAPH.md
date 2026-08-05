@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 363
-- Files with full headers: 337
+- Scanned code files: 364
+- Files with full headers: 338
 - Files with lite headers: 26
-- Files with any headers: 363
+- Files with any headers: 364
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 769
-- Edges: 4117
+- Graph nodes: 771
+- Edges: 4128
 - DB tables: 110
-- Doctrines: 166
+- Doctrines: 167
 - Impact areas: 130
 - Unresolved code edges: 418
 - Tables multi-écrivains directs (>=2): 61
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - recommendations: 4
 - refunds: 2
 - shared: 1
-- shared-cart: 20
+- shared-cart: 21
 - shared-cart-modal: 7
 - sourcing: 1
 - tracking: 1
@@ -80,7 +80,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
-- ui-component: 34
+- ui-component: 35
 - ui-controller: 1
 - ui-enhancer: 3
 - ui-infrastructure: 1
@@ -178,6 +178,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-utils.js — boutique-ui-utilities (boutique, high, full)
 - public/boutique/js/controllers/home-controller.js — boutique-home-navigation-controller (catalog, high, full)
 - public/boutique/js/group/group-api.js — shared-cart-front-api (shared-cart, high, full)
+- public/boutique/js/group/group-library-remove.js — shared-cart-library-removal-ui (shared-cart, high, full)
 - public/boutique/js/komerce-api.js — boutique-api-client (boutique, high, full)
 - public/boutique/js/product-store.js — boutique-product-store (catalog, high, full)
 - public/boutique/js/shop-schema.js — boutique-taxonomy-schema (catalog, high, full)
@@ -601,7 +602,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: future b-modal-product.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-product.js)
 - uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
-- uses: group/group-library-remove.js -> public/boutique/js/group/group-api.js (group/group-library-remove.js)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
 - uses: lecture verrouillée) -> services/pickup-authorization-service.js (lecture verrouillée))
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
@@ -627,6 +627,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-utils.js -> fetch (fetch)
 - depends: public/boutique/js/b-utils.js -> Intl (Intl)
 - depends: public/boutique/js/group/group-api.js -> fetch (fetch)
+- depends: public/boutique/js/group/group-library-remove.js -> group-side-cart.js(dynamic) (group-side-cart.js(dynamic))
 - depends: public/boutique/js/komerce-api.js -> backend_api (backend_api)
 - depends: public/boutique/js/product-store.js -> localStorage (localStorage)
 - depends: public/boutique/js/test-modal-view-model-redirect.js -> browser-location-api (browser-location-api)
