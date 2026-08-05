@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 769,
-    "edges": 4115,
+    "edges": 4117,
     "dbTables": 110,
     "doctrines": 166,
     "impactAreas": 130,
-    "unresolvedCodeEdges": 417,
+    "unresolvedCodeEdges": 418,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 61
   },
@@ -3301,6 +3301,7 @@
       "inputs": [
         "share_token",
         "viewer_session",
+        "shared_cart_id",
         "item_id",
         "quantity"
       ],
@@ -3311,10 +3312,12 @@
       ],
       "depends": [
         "routes/shared-cart.js",
+        "routes/shared-cart-saved.js",
         "fetch"
       ],
       "usedBy": [
-        "group/group-side-cart.js"
+        "group/group-side-cart.js",
+        "group/group-library-remove.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -23675,6 +23678,12 @@
     },
     {
       "from": "public/boutique/js/group/group-api.js",
+      "to": "routes/shared-cart-saved.js",
+      "type": "depends",
+      "label": "routes/shared-cart-saved.js"
+    },
+    {
+      "from": "public/boutique/js/group/group-api.js",
       "to": "fetch",
       "type": "depends",
       "label": "fetch"
@@ -23684,6 +23693,12 @@
       "to": "public/boutique/js/group/group-api.js",
       "type": "uses",
       "label": "group/group-side-cart.js"
+    },
+    {
+      "from": "group/group-library-remove.js",
+      "to": "public/boutique/js/group/group-api.js",
+      "type": "uses",
+      "label": "group/group-library-remove.js"
     },
     {
       "from": "public/boutique/js/group/group-api.js",
@@ -47089,10 +47104,12 @@
       "purpose": null,
       "directDependsOn": [
         "routes/shared-cart.js",
+        "routes/shared-cart-saved.js",
         "fetch"
       ],
       "directUsedBy": [
-        "public/boutique/js/group/group-side-cart.js"
+        "public/boutique/js/group/group-side-cart.js",
+        "group/group-library-remove.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -61045,6 +61062,12 @@
       "to": "fetch",
       "type": "depends",
       "label": "fetch"
+    },
+    {
+      "from": "group/group-library-remove.js",
+      "to": "public/boutique/js/group/group-api.js",
+      "type": "uses",
+      "label": "group/group-library-remove.js"
     },
     {
       "from": "public/boutique/js/komerce-api.js",

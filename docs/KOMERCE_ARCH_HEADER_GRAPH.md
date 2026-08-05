@@ -14,11 +14,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 769
-- Edges: 4115
+- Edges: 4117
 - DB tables: 110
 - Doctrines: 166
 - Impact areas: 130
-- Unresolved code edges: 417
+- Unresolved code edges: 418
 - Tables multi-écrivains directs (>=2): 61
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -601,6 +601,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: future b-modal-product.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-product.js)
 - uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
+- uses: group/group-library-remove.js -> public/boutique/js/group/group-api.js (group/group-library-remove.js)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
 - uses: lecture verrouillée) -> services/pickup-authorization-service.js (lecture verrouillée))
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
@@ -693,7 +694,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/carriers.js -> services/* (services/*)
 - depends: routes/cash.js -> db.js (db.js)
 - depends: routes/cash.js -> services/* (services/*)
-- depends: routes/catalog-product-detail.js -> db.js (db.js)
 
 ## Files Still Without Headers Or Aggregation
 
