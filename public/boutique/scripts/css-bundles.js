@@ -30,7 +30,7 @@ const BUNDLES = [
     files: ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
             'modal-mobile-canonical', 'modal-enriched-content', 'modal-cart-sku-guard',
             'cart', 'interactions', 'modal-mobile-suggestion-actions', 'hero-cart-proxy',
-            'shared-list-side-cart', 'share-cart', 'identity', 'paypal', 'wallet', 'komerce'],
+            'shared-list-side-cart', 'shared-list-side-cart-responsive', 'share-cart', 'identity', 'paypal', 'wallet', 'komerce'],
   },
   {
     out: 'desktop.css',

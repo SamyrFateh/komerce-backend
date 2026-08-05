@@ -40,12 +40,14 @@ module.exports = {
       '../css/hero-cart-proxy.css',
       '../css/share-cart.css',
       '../css/shared-list-side-cart.css',
+      '../css/shared-list-side-cart-responsive.css',
     ],
     tests: [
       '../tests/unit/group-checkout-adapter.test.js',
       '../tests/unit/group-price-variation.test.js',
       '../tests/unit/b-share-phone-guard.test.js',
       '../tests/unit/group-side-cart.test.js',
+      '../tests/unit/shared-list-responsive-layout.test.js',
     ],
   },
 
