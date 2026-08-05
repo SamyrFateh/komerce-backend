@@ -31,6 +31,7 @@ module.exports = {
       '../js/b-share-cart.js',
       '../js/group/group-api.js',
       '../js/group/group-checkout-adapter.js',
+      '../js/group/group-library-remove.js',
       '../js/group/group-price-variation.js',
       '../js/group/group-side-cart.js',
       '../js/group/group-state.js',
@@ -41,6 +42,7 @@ module.exports = {
       '../css/share-cart.css',
       '../css/shared-list-side-cart.css',
       '../css/shared-list-side-cart-responsive.css',
+      '../css/shared-list-library-remove.css',
     ],
     tests: [
       '../tests/unit/group-checkout-adapter.test.js',
@@ -57,6 +59,7 @@ module.exports = {
     internalApi: [
       'b-share-cart.js / partage de panier',
       'group-side-cart.js / activation et rendu de la liste partageable dans le side cart / drawer canonique',
+      'group-library-remove.js / retrait explicite d’un signet reçu dans Mes listes',
       'group-checkout-adapter.js / pont sélection liste -> checkout canonique',
       'group-price-variation.js / comparaison prix snapshot liste vs prix catalogue actuel (recap checkout)',
       'group-api.js / group-state.js',
@@ -73,5 +76,6 @@ module.exports = {
     'visiteur en lecture seule hors actions explicitement autorisées',
     'aucun appel au catalogue vivant pour une fiche snapshot partagée',
     'panier personnel et panier partagé restent distincts',
+    'retirer une liste sauvegardée ne supprime jamais la liste ni son token public',
   ],
 };
