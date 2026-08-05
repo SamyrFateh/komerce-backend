@@ -10,7 +10,7 @@
  * @used-by       b-modal-core.js
  * @doctrine      suggestions_decouverte_non_intrusives, boutique_canal_decouverte, no_hardcoded_taxonomy
  * @impact-areas  product-discovery, modal, personalization, catalog-navigation
- * @version       2026-07
+ * @version       2026-08
  */
 'use strict';
 
@@ -195,8 +195,13 @@ function _renderSuggestionCard(product) {
   return renderProductCard(product, { variant: 'suggestion', actionVariant: 'modal' });
 }
 
-function _setupMobileSuggestionAdvance() {
-  if (window.innerWidth >= 900) return;
+/**
+ * Retire l'ancien comportement mobile qui changeait automatiquement de filtre
+ * en arrivant en bas de la modale puis rappelait scrollIntoView(). Les
+ * suggestions restent désormais entièrement pilotées par les gestes explicites
+ * de l'utilisateur : scroll et sélection de chip.
+ */
+function _clearLegacyMobileSuggestionAdvance() {
   const scrollEl = modalZone('.k-modal-scroll');
   if (!scrollEl) return;
 
@@ -208,51 +213,9 @@ function _setupMobileSuggestionAdvance() {
   }
   clearTimeout(scrollEl._sugInfTimer);
 
-  let advancing = false;
-  scrollEl._sugInfinite = function() {
-    if (advancing) return;
-    const remaining = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
-    if (remaining > 80) return;
-
-    advancing = true;
-    const chipButtons = Array.from(dom.sugRail.querySelectorAll('.k-sug-chip'));
-    if (chipButtons.length < 2) {
-      advancing = false;
-      return;
-    }
-
-    const activeIndex = chipButtons.findIndex((chip) => chip.classList.contains('is-active'));
-    const nextIndex = (activeIndex + 1) % chipButtons.length;
-
-    if (nextIndex === 0) {
-      const sameGrid = dom.sugRail.querySelector('.k-sug-grid--same');
-      if (sameGrid) {
-        const cards = Array.from(sameGrid.children);
-        for (let index = cards.length - 1; index > 0; index -= 1) {
-          const randomIndex = Math.floor(Math.random() * (index + 1));
-          [cards[index], cards[randomIndex]] = [cards[randomIndex], cards[index]];
-        }
-        const fragment = document.createDocumentFragment();
-        cards.forEach((card) => fragment.appendChild(card));
-        sameGrid.appendChild(fragment);
-      }
-    }
-
-    chipButtons[nextIndex].click();
-    setTimeout(() => {
-      const title = dom.sugRail.querySelector('.k-sug-title');
-      if (title) title.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setTimeout(() => { advancing = false; }, 600);
-    }, 150);
-  };
-
-  scrollEl._sugScrollFallback = function() {
-    clearTimeout(scrollEl._sugInfTimer);
-    scrollEl._sugInfTimer = setTimeout(scrollEl._sugInfinite, 300);
-  };
-
-  scrollEl.addEventListener('scrollend', scrollEl._sugInfinite, { passive: true });
-  scrollEl.addEventListener('scroll', scrollEl._sugScrollFallback, { passive: true });
+  delete scrollEl._sugInfinite;
+  delete scrollEl._sugScrollFallback;
+  delete scrollEl._sugInfTimer;
 }
 
 function renderSuggestions(sameCat, otherCat, categoryName) {
@@ -304,7 +267,7 @@ function renderSuggestions(sameCat, otherCat, categoryName) {
       <div class="k-sug-section">
         <div class="k-sug-title">
           <span class="k-sug-title-icon">🔍</span>
-          <span class="k-sug-title-text">🔍 Vous aimeriez vraiment ${sanitize(catLabel)}</span>
+          <span class="k-sug-title-text">Vous aimeriez vraiment ${sanitize(catLabel)}</span>
         </div>
         ${chipsHTML}
         <div class="k-sug-grid k-sug-grid--same">${sameCat.map(_renderSuggestionCard).join('')}</div>
@@ -316,7 +279,7 @@ function renderSuggestions(sameCat, otherCat, categoryName) {
       <div class="k-sug-section">
         <div class="k-sug-title">
           <span class="k-sug-title-icon">✨</span>
-          <span class="k-sug-title-text">✨ Cela peut vous plaire</span>
+          <span class="k-sug-title-text">Cela peut vous plaire</span>
         </div>
         <div class="k-sug-grid k-sug-grid--other">${otherCat.map(_renderSuggestionCard).join('')}</div>
       </div>`;
@@ -326,12 +289,12 @@ function renderSuggestions(sameCat, otherCat, categoryName) {
   _installSuggestionDelegation(dom.sugRail);
   _applySubcatFilter(dom.sugRail);
   applyModalDesktopSuggestionState();
+  _clearLegacyMobileSuggestionAdvance();
 
   const oldHeading = sugSection.querySelector('h3');
   if (oldHeading) oldHeading.classList.add('u-hidden');
 
   bus.emit('modal:suggestions-rendered', { product: state.modalProduct });
-  _setupMobileSuggestionAdvance();
 }
 
 export { renderSuggestions };

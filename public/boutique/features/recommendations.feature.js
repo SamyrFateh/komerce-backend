@@ -32,10 +32,10 @@ module.exports = {
   canonicalFeature: 'recommendations',
   sliceKind: 'frontend-slice',
 
-  service: "Suggestions et curation produit (rail de suggestions modal, curation editoriale PDP).",
+  service: "Suggestions et curation produit : rail modal, contrôle d’ajout stable et curation éditoriale PDP.",
 
   perimeter: {
-    in:  ['fichiers js/* annotes @domain recommendations'],
+    in:  ['fichiers js/* annotes @domain recommendations', 'présentation des cartes de suggestion dans la modale produit'],
     out: ['logique backend equivalente (repo komerce-backend, feature recommendations)'],
   },
 
@@ -43,6 +43,9 @@ module.exports = {
     js: [
       '../js/b-modal-suggestions.js',
       '../js/b-pdp-curation-suggestions.js',
+    ],
+    css: [
+      '../css/modal-product-polish.css',
     ],
   },
 
@@ -55,6 +58,7 @@ module.exports = {
     internalApi: [
       'b-modal-suggestions.js (partagé avec modal-product)',
       'b-pdp-curation-suggestions.js',
+      'modal-product-polish.css (géométrie stable + / stepper et rythme du rail modal)',
     ],
     consumes: [
       'boutique — b-modal-suggestions.js, b-pdp-curation-suggestions.js importent b-bus.js, b-cart.js, b-scroll-owner.js, b-store.js, b-utils.js',
@@ -65,6 +69,8 @@ module.exports = {
 
   invariants: [
     'tout fichier js/* portant @domain recommendations doit etre liste dans files.js de ce manifeste',
+    'le bouton + et le stepper des suggestions partagent une emprise stable et ne déplacent jamais la carte',
+    'le scroll des suggestions ne change jamais automatiquement de filtre ni de position',
   ],
 
 };
