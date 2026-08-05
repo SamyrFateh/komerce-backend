@@ -4,8 +4,8 @@
  * @domain        shared-cart
  * @layer         service
  * @criticality   high
- * @inputs        user_id, share_token
- * @outputs       library_sections, saved_access_row
+ * @inputs        user_id, share_token, shared_cart_id
+ * @outputs       library_sections, saved_access_row, saved_access_removal
  * @depends       db.js, services/shared-cart-reads.js
  * @used-by       routes/shared-cart.js
  * @db-read       order_items, shared_cart_items, shared_cart_saved_access, shared_carts, users
@@ -39,10 +39,16 @@
  * saveSharedCartForUser() (POST /api/shared-carts/save) fait apparaître
  * une liste reçue dans la section « Partagées avec moi ». Rien n'est posé
  * automatiquement en arrière-plan — jamais de "signet" implicite.
+ *
+ * Retirer une liste de « Mes listes » supprime uniquement ce signet
+ * personnel. La liste, ses articles, son lien public et les droits du
+ * créateur restent inchangés.
  */
 
 const db = require('../db');
 const { listMySharedCarts } = require('./shared-cart-reads');
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function httpError(message, status = 400, code = null) {
   const e = new Error(message);
@@ -141,7 +147,41 @@ async function saveSharedCartForUser(userId, token) {
   return { ok: true, shared_cart_id: cart.id, already_saved: false };
 }
 
+/**
+ * Retire une liste reçue de la bibliothèque personnelle du destinataire.
+ * L'opération est volontairement idempotente : retirer deux fois renvoie
+ * toujours ok=true, avec removed=false au second appel. Aucun DELETE n'est
+ * effectué sur shared_carts ni shared_cart_items.
+ *
+ * @param {string} userId
+ * @param {string} sharedCartId
+ * @returns {Promise<{ok: boolean, shared_cart_id: string, removed: boolean}>}
+ */
+async function removeSavedSharedCartForUser(userId, sharedCartId) {
+  const normalizedId = String(sharedCartId || '').trim();
+  if (!normalizedId) {
+    throw httpError('shared_cart_id requis', 400, 'shared_cart_id_required');
+  }
+  if (!UUID_RE.test(normalizedId)) {
+    throw httpError('shared_cart_id invalide', 400, 'shared_cart_id_invalid');
+  }
+
+  const result = await db.query(
+    `DELETE FROM shared_cart_saved_access
+      WHERE user_id = $1
+        AND shared_cart_id = $2`,
+    [userId, normalizedId]
+  );
+
+  return {
+    ok: true,
+    shared_cart_id: normalizedId,
+    removed: result.rowCount > 0,
+  };
+}
+
 module.exports = {
   getSharedCartLibrary,
   saveSharedCartForUser,
+  removeSavedSharedCartForUser,
 };
