@@ -10,7 +10,7 @@
 
 ## 1. Inventaire CSS
 
-28 fichier(s) sur disque, 28 orphelin(s).
+29 fichier(s) sur disque, 29 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
@@ -38,8 +38,9 @@
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 29 | 🔴 **ORPHELIN** |
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart-responsive.css` | 280 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 545 | 🔴 **ORPHELIN** |
+| `shared-list-lists-tab.css` | 207 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart-responsive.css` | 174 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 198 | 🔴 **ORPHELIN** |
 | `tokens.css` | 516 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
@@ -49,7 +50,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=158
- 2. /boutique/css/dist/components.css?v=383
+ 2. /boutique/css/dist/components.css?v=386
  3. /boutique/css/dist/desktop.css?v=85
 ```
 
@@ -103,17 +104,17 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js\b-pager.js` (×1) |
-| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1) ⚠️ multi-owner |
-| `--pager-w` | `js\b-pager.js` (×1) |
-| `--bnav-h` | `js\b-pager.js` (×1) |
-| `--modal-scroll-y` | `js\b-modal-core.js` (×1) |
+| `--pager-top` | `js/b-pager.js` (×1) |
+| `--pager-h` | `js/b-pager.js` (×1)<br>`js/b-subcat.js` (×1) ⚠️ multi-owner |
+| `--pager-w` | `js/b-pager.js` (×1) |
+| `--bnav-h` | `js/b-pager.js` (×1) |
+| `--modal-scroll-y` | `js/b-modal-core.js` (×1) |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 28 (cible : 0)
+- **CSS orphelins** : 29 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
 - **Hex hardcodés** : 15 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)

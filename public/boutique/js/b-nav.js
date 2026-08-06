@@ -29,12 +29,11 @@ import { openCart, closeCart, renderCart, clearCart, shareCartWhatsApp, loadShar
 import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
-import { renderTrackView }               from './b-tracking.js';
+import { renderTrackView, renderListsView } from './b-tracking.js';
 import { openMonKomerce }                  from './b-komerce.js';
 import {
   detectParticipantToken,
   activateFromParticipantUrl,
-  activateOwnerLibrary,
 } from './group/group-side-cart.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
@@ -233,16 +232,21 @@ bus.on('nav:goto-komerce-wallet', () => { openMonKomerce({ focus: 'wallet' }); }
 bus.on('komerce:show', () => { switchView('komerce'); });
 
 // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2_D — l'onglet
-// Groupe de niveau 1 a disparu ; « Mes listes » (b-komerce.js) est le
-// point d'entrée propriétaire et ouvre désormais la vraie bibliothèque
-// (Créées par moi / Partagées avec moi, amendement V2 §D) directement
-// dans le side cart / drawer canonique, plus l'ancienne heuristique
-// « liste la plus récente ». Aucun switchView('group') (mandat §2/§4/§16).
+// Groupe de niveau 1 a disparu ; « Mes listes » (b-komerce.js) ouvre la
+// bibliothèque dans le side cart/drawer canonique via
+// group-side-cart.js::activateFromParticipantUrl() (amendement V2 §D).
+// Lot C a retiré activateOwnerLibrary() de group-side-cart.js — la
+// bibliothèque est projetée par l'onglet « Listes » de js/b-tracking.js
+// (renderListsView(), construit après la clôture Lot D, voir point ouvert
+// #1 du rapport). L'onglet « Suivi » reste utilisé comme conteneur DOM
+// (aucun switchView('group') dédié, mandat §2/§4/§16) mais bascule
+// immédiatement sur son sous-onglet Listes plutôt que Commandes.
 bus.on('nav:goto-group', () => {
   document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
-    i.classList.toggle('active', i.dataset.tab === 'komerce');
+    i.classList.toggle('active', i.dataset.tab === 'track');
   });
-  activateOwnerLibrary();
+  renderListsView();
+  switchView('track');
 });
 
 /**
@@ -323,9 +327,9 @@ function handleTabDeepLink() {
     if (resolvedTab === 'fav')     { renderFavView(); switchView('fav'); }
     if (resolvedTab === 'track')   { renderTrackView(); switchView('track'); }
     // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2_D — ?tab=group
-    // legacy : redirige vers la bibliothèque propriétaire canonique, jamais
-    // switchView('group') (mandat §2/§4/§16).
-    if (resolvedTab === 'group')   { activateOwnerLibrary(); }
+    // legacy : ouvre directement le sous-onglet Listes de l'onglet Suivi
+    // (voir bus.on('nav:goto-group') plus haut, même logique).
+    if (resolvedTab === 'group')   { renderListsView(); switchView('track'); }
     if (resolvedTab === 'komerce') { openMonKomerce(tab === 'wallet' ? { focus: 'wallet' } : {}); }
   } catch (_) {}
 }

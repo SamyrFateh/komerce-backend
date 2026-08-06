@@ -4,24 +4,31 @@
  * @domain        tracking
  * @layer         ui-page
  * @criticality   high
- * @inputs        order_reference, phone, otp_code, client_session
- * @outputs       tracking_view, order_history, timeline, otp_state
- * @depends       b-phone.js, b-utils.js, b-cart-core.js, routes/otp.js, routes/orders.js
- * @used-by       b-nav.js, boutique.js
- * @doctrine      otp_une_fois, suivi_client_simple, reference_commande_lisible
- * @impact-areas  tracking, auth, orders, participant-flow, customer-support
- * @version       2026-06
+ * @inputs        order_reference, phone, otp_code, client_session, library_context
+ * @outputs       tracking_view, order_history, timeline, otp_state, lists_tab
+ * @depends       b-store.js, b-phone.js, b-utils.js, b-cart-core.js, group/group-api.js, routes/otp.js, routes/orders.js, routes/shared-cart.js
+ * @used-by       b-nav.js, boutique.js, group/group-library-remove.js
+ * @doctrine      otp_une_fois, suivi_client_simple, reference_commande_lisible, sauvegarde_explicite_jamais_implicite
+ * @impact-areas  tracking, auth, orders, participant-flow, customer-support, shared-cart, mon-komerce
+ * @version       2026-08
  */
 'use strict';
 
 /**
  * @module b-tracking
- * @brief Suivi commandes uniquement.
- * Les listes partagées sont gérées dans group/group-side-cart.js (side cart / drawer canonique).
+ * @brief Suivi commandes (onglet « Commandes ») + bibliothèque « Mes listes »
+ * (onglet « Listes », amendement V2 §D / Lot C — construit ici après avoir
+ * été un point ouvert du rapport de clôture Lot D). La projection d'une
+ * liste précise dans le side cart/drawer canonique reste entièrement gérée
+ * par group/group-side-cart.js (activateFromParticipantUrl) — ce module ne
+ * fait qu'afficher la liste des listes et déclencher cette activation au
+ * clic. Zéro fusion avec state.cart, zéro écran de gestion parallèle
+ * (mandat §2/§3 du refactor shared-cart).
  */
 
 import { sanitize, optimizeImgUrl, fmt, apiGet, apiPost } from './b-utils.js';
 import { showToast }                                       from './b-cart-core.js';
+import { state }                                            from './b-store.js';
 import {
   PHONE_COUNTRIES,
   phoneBlockHTML,
@@ -30,6 +37,10 @@ import {
   digitsOnly,
   normalizeLocal,
 } from './b-phone.js';
+import {
+  getSharedCartLibrary,
+  closeCart as apiCloseSharedCart,
+} from './group/group-api.js';
 
 'use strict';
 
@@ -182,7 +193,16 @@ export function renderMyOrdersList(el, orders) {
   if (searchBtn) searchBtn.addEventListener('click', () => renderTrackViewSearchMode(el));
 }
 
-export function renderTrackView() {
+/**
+ * Point d'ancrage DOM commun aux deux onglets (Commandes / Listes).
+ * Crée #k-track-view s'il n'existe pas encore, puis y installe la coquille
+ * persistante (sous-nav + 2 panneaux) une seule fois. N'écrase JAMAIS un
+ * shell déjà en place, pour ne pas perdre l'onglet actif au fil des appels
+ * répétés à renderTrackView()/renderListsView() (ex. clic répété sur Suivi
+ * dans la bottom nav).
+ * @returns {HTMLElement} #k-track-view
+ */
+function ensureTrackShell() {
   let el = document.getElementById('k-track-view');
   if (!el) {
     el = document.createElement('div');
@@ -191,6 +211,55 @@ export function renderTrackView() {
     const favEl = document.getElementById('k-fav-view') || document.getElementById('k-catalog-section');
     favEl.after(el);
   }
+
+  if (!el.querySelector('.k-track-subnav')) {
+    el.innerHTML =
+      '<div class="k-track-subnav" role="tablist">' +
+        '<button type="button" class="k-track-subnav-tab active" data-track-tab="orders" role="tab" aria-selected="true">📦 Commandes</button>' +
+        '<button type="button" class="k-track-subnav-tab" data-track-tab="lists" role="tab" aria-selected="false">📋 Listes</button>' +
+      '</div>' +
+      '<div id="k-track-orders-panel-wrap" class="k-track-tab-panel"></div>' +
+      '<div id="k-track-lists-panel-wrap" class="k-track-tab-panel u-hidden"></div>';
+
+    el.querySelectorAll('.k-track-subnav-tab').forEach((btn) => {
+      btn.addEventListener('click', () => switchTrackTab(btn.dataset.trackTab));
+    });
+  }
+
+  return el;
+}
+
+/**
+ * Bascule visuelle entre les deux panneaux de la coquille (aucun rechargement
+ * du panneau Commandes au retour depuis Listes — seul le panneau Listes est
+ * (re)chargé à l'activation, cohérent avec le fait que la bibliothèque peut
+ * avoir changé entre-temps — ex. liste sauvegardée/retirée ailleurs).
+ * @param {'orders'|'lists'} tab
+ */
+function switchTrackTab(tab) {
+  const el = document.getElementById('k-track-view');
+  if (!el) return;
+
+  el.querySelectorAll('.k-track-subnav-tab').forEach((btn) => {
+    const active = btn.dataset.trackTab === tab;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', String(active));
+  });
+
+  const ordersWrap = document.getElementById('k-track-orders-panel-wrap');
+  const listsWrap  = document.getElementById('k-track-lists-panel-wrap');
+  if (ordersWrap) ordersWrap.classList.toggle('u-hidden', tab !== 'orders');
+  if (listsWrap)  listsWrap.classList.toggle('u-hidden', tab !== 'lists');
+
+  if (tab === 'lists') renderListsTab(listsWrap);
+}
+
+export function renderTrackView() {
+  ensureTrackShell();
+  switchTrackTab('orders');
+
+  const el = document.getElementById('k-track-orders-panel-wrap');
+  if (!el) return;
 
   el.innerHTML = '<div class="k-track-loading"><div class="k-track-loading-spin"></div><p>Chargement de vos commandes…</p></div>';
 
@@ -224,6 +293,182 @@ export function renderTrackView() {
     console.warn('[tracking] render:', e);
     renderTrackError(el, e);
   });
+}
+
+/**
+ * Point d'entrée onglet « Listes » — ouvre directement sur la bibliothèque
+ * sans déclencher le fetch /api/orders du panneau Commandes (mandat §D :
+ * les deux onglets restent des lectures indépendantes, jamais couplées).
+ * Consommateurs : b-nav.js (bus.on('nav:goto-group'), deep-link ?tab=group).
+ */
+export function renderListsView() {
+  ensureTrackShell();
+  switchTrackTab('lists');
+}
+
+// ── Onglet « Listes » — bibliothèque « Mes listes » (amendement V2 §D) ─────
+
+const LIBRARY_STATUS_DISPLAY = {
+  open:      { emoji: '🟢', label: 'Ouverte',  cls: 'open' },
+  closed:    { emoji: '🔒', label: 'Fermée',   cls: 'closed' },
+  cancelled: { emoji: '❌', label: 'Annulée',  cls: 'cancelled' },
+};
+
+function libraryStatus(status) {
+  return LIBRARY_STATUS_DISPLAY[status] || LIBRARY_STATUS_DISPLAY.open;
+}
+
+/**
+ * Carte d'une liste. `closable` gouverne uniquement l'affichage du bouton
+ * Fermer — jamais affiché côté « Partagées avec moi » (le destinataire
+ * n'est pas le créateur, closeCart() le refuserait de toute façon côté
+ * backend : services/shared-cart-lifecycle.js exige organizer_user_id).
+ *
+ * Note structurelle : les listes « Créées par moi » sont explicitement
+ * enveloppées dans leur propre `.k-library-item-row` ici (avec le bouton
+ * Fermer). Les listes « Partagées avec moi » sont rendues SANS wrapper —
+ * group/group-library-remove.js::decorateLibraryRows() construit lui-même
+ * ce wrapper et y ajoute le bouton Retirer ; lui fournir un wrapper déjà en
+ * place le ferait tourner court (branche `existingRow`, aucun bouton
+ * ajouté). Ne pas envelopper cette section serait donc une régression
+ * silencieuse de la fonctionnalité de retrait.
+ */
+function libraryItemInnerHtml(cart) {
+  const status  = libraryStatus(cart.status);
+  const total   = fmt(cart.total_kmf || 0, 'KMF');
+  const count   = parseInt(cart.items_count, 10) || 0;
+  const claimed = parseInt(cart.claimed_count, 10) || 0;
+  return (
+    '<div class="k-library-item-body">' +
+      '<div class="k-library-item-title">' + sanitize(cart.title || 'Liste sans titre') + '</div>' +
+      '<div class="k-library-item-meta">' + claimed + '/' + count + ' article' + (count > 1 ? 's' : '') + ' · ' + total + '</div>' +
+      '<div class="k-library-item-status k-library-item-status--' + status.cls + '">' + status.emoji + ' ' + status.label + '</div>' +
+    '</div>' +
+    '<span class="k-library-item-arrow">›</span>'
+  );
+}
+
+function renderCreatedSection(carts) {
+  if (!carts.length) {
+    return '<p class="k-library-empty-hint">Aucune liste créée pour le moment.</p>';
+  }
+  return carts.map((cart) => {
+    const closeBtn = cart.status === 'open'
+      ? '<button type="button" class="k-library-item-close" data-cart-id="' + sanitize(String(cart.id)) + '">Fermer</button>'
+      : '';
+    return (
+      '<div class="k-library-item-row">' +
+        '<button type="button" class="k-library-item" data-token="' + sanitize(cart.token || '') + '">' +
+          libraryItemInnerHtml(cart) +
+        '</button>' +
+        closeBtn +
+      '</div>'
+    );
+  }).join('');
+}
+
+function renderSavedSection(carts) {
+  if (!carts.length) {
+    return '<p class="k-library-empty-hint">Aucune liste sauvegardée. Ouvrez un lien reçu puis « ☆ Sauvegarder cette liste » pour la retrouver ici.</p>';
+  }
+  // Pas de wrapper .k-library-item-row ici — voir libraryItemInnerHtml() ci-dessus.
+  return carts.map((cart) =>
+    '<button type="button" class="k-library-item" data-token="' + sanitize(cart.token || '') + '">' +
+      libraryItemInnerHtml(cart) +
+    '</button>'
+  ).join('');
+}
+
+function wireLibraryItemOpen(el) {
+  el.querySelectorAll('.k-library-item[data-token]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const token = btn.dataset.token;
+      if (!token) return;
+      btn.disabled = true;
+      try {
+        const { activateFromParticipantUrl } = await import('./group/group-side-cart.js');
+        await activateFromParticipantUrl(token);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+function wireLibraryCloseButtons(el) {
+  el.querySelectorAll('.k-library-item-close[data-cart-id]').forEach((btn) => {
+    btn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const cartId = btn.dataset.cartId;
+      if (!cartId) return;
+
+      const ok = window.confirm('Fermer cette liste ? Elle deviendra en lecture seule.');
+      if (!ok) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Fermeture…';
+      try {
+        await apiCloseSharedCart(cartId);
+        showToast('Liste fermée.', 'success');
+        await renderListsTab(el);
+      } catch (err) {
+        showToast(`Impossible de fermer cette liste : ${err.message}`, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Fermer';
+      }
+    });
+  });
+}
+
+function renderLibrarySections(el) {
+  const created = state.libraryContext?.created || [];
+  const saved   = state.libraryContext?.saved   || [];
+
+  el.innerHTML =
+    '<section class="k-track-lists-panel">' +
+      '<h2>📋 Créées par moi</h2>' +
+      '<div class="k-library-section">' + renderCreatedSection(created) + '</div>' +
+      '<h2>📋 Partagées avec moi</h2>' +
+      '<div class="k-library-section">' + renderSavedSection(saved) + '</div>' +
+    '</section>';
+
+  wireLibraryItemOpen(el);
+  wireLibraryCloseButtons(el);
+}
+
+function renderListsError(el, err) {
+  el.innerHTML =
+    '<div class="k-track-error">' +
+      '<div class="k-track-error-icon">⚠️</div>' +
+      '<div class="k-track-error-title">Impossible de charger vos listes</div>' +
+      '<div class="k-track-error-sub">Vérifiez votre connexion puis réessayez.</div>' +
+      '<button class="k-track-retry-btn" id="k-track-lists-retry-btn">🔄 Réessayer</button>' +
+    '</div>';
+  el.querySelector('#k-track-lists-retry-btn')?.addEventListener('click', () => renderListsTab(el));
+}
+
+/**
+ * Rend le contenu de l'onglet Listes dans `el` (#k-track-lists-panel-wrap).
+ * Consommé aussi par group/group-library-remove.js::rerenderLibrary()
+ * après un retrait (import dynamique, cf. son en-tête).
+ * @param {HTMLElement} el
+ */
+export async function renderListsTab(el) {
+  if (!el) return;
+  el.innerHTML = '<div class="k-track-loading"><div class="k-track-loading-spin"></div><p>Chargement de vos listes…</p></div>';
+
+  try {
+    const library = await getSharedCartLibrary();
+    state.libraryContext = {
+      created: Array.isArray(library.created) ? library.created : [],
+      saved:   Array.isArray(library.saved)   ? library.saved   : [],
+    };
+    renderLibrarySections(el);
+  } catch (err) {
+    console.warn('[tracking] renderListsTab:', err);
+    renderListsError(el, err);
+  }
 }
 
 // ── État erreur + Réessayer (FIX 2026-07-10) ────────────────────────────────

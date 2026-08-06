@@ -31,6 +31,7 @@ const BUNDLES = [
             'modal-mobile-canonical', 'modal-enriched-content', 'modal-cart-sku-guard',
             'cart', 'interactions', 'modal-mobile-suggestion-actions', 'modal-product-polish', 'hero-cart-proxy',
             'shared-list-side-cart', 'shared-list-side-cart-responsive', 'shared-list-library-remove',
+            'shared-list-lists-tab',
             'share-cart', 'identity', 'paypal', 'wallet', 'komerce', 'checkout-vertical-rail'],
   },
   {

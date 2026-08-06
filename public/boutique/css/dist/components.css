@@ -9194,167 +9194,44 @@ body.cart-open  #k-section-index { display:none; }
 /* ── shared-list-side-cart.css ───────────────────────────── */
 /**
  * @komerce-arch-lite
- * @role          shared-list-side-cart-styles
+ * @role          shared-cart-snapshot-line-styles
  * @domain        shared-cart
  * @layer         css
- * @owner         public/boutique/js/group/group-side-cart.js
- * @purpose       supports public/boutique/js/group/group-side-cart.js
+ * @owner         public/boutique/js/b-cart.js
+ * @purpose       supports the canonical snapshot line rendered by b-cart.js::renderCartSnapshot
  * @impact-areas  shared-cart, cart
  * @version       2026-08
  */
 
 /**
- * PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — préfixe
- * .k-shared-list-* / .k-shared-item-*, mandat §13.
+ * Lot D (refactor soustractif shared-cart, clôture) — ce fichier ne
+ * possède plus de panneau, d'en-tête, de barre de progression, de footer
+ * ni de bibliothèque propres : tout cela appartenait au renderer parallèle
+ * démantelé (group-render-list.js, puis les restes de group-side-cart.js
+ * antérieurs au Lot A) et a été retiré avec lui. b-cart.js est l'unique
+ * propriétaire du rendu (mandat un_renderer_panier) ; il pilote le chrome
+ * canonique existant (#k-cart-header, dom.cartFooter, .k-sc-title-bar,
+ * .k-sc-header — voir cart.css / boutique-desktop.css) et n'ajoute que
+ * quelques classes sur la ligne de snapshot elle-même.
  *
- * Réutilise volontairement les tokens et classes existants plutôt que d'en
- * recréer :
- *   - lignes d'article : .k-cart-item-img / -img-el / -info / -name (cart.css)
- *   - fallback image snapshot (V2-C) : .k-cart-item-img-fallback, propre à
- *     ce module (aucun équivalent générique dans cart.css)
- *   - CTA principal     : .kcf-btn.kcf-full (cart.css)
- *   - actions propriétaire : .k-cart-continue-shop (cart.css)
- *   - palette : --coral (CTA), --ocean (accent vert liste), --violet,
- *     --green-bg-leaf/--green-text-strong (badge "Ouverte"),
- *     --amber-bg-light/--amber-text-mid (recap prix), --border, --text,
- *     --text-muted, --surface-sand-94/96/97 (desktop), --radius-sm.
- *
- * Deux points d'ancrage distincts (group-side-cart.js::renderSharedListInCart) :
- *   - Desktop : #k-side-cart[data-mode="shared-list"] — le panneau est
- *     PRÉPENDU devant .k-sc-title-bar / #k-sc-items / .k-sc-header (panier
- *     personnel), qu'il faut donc masquer explicitement via l'attribut
- *     data-mode (elles ne sont jamais retirées du DOM, seulement cachées).
- *   - Mobile/drawer : #k-cart-body est REMPLACÉ intégralement par
- *     .k-shared-list-panel (pas de prepend, rien à masquer côté items) ;
- *     seul #k-cart-footer (panier personnel) est masqué via .u-hidden,
- *     déjà géré par le module JS.
+ * Réutilise volontairement les classes du panier personnel plutôt que d'en
+ * recréer : .k-cart-item-img/-img-el/-info/-name, .k-cart-item-remove,
+ * .k-cart-item-qty/.k-qty-btn/.k-qty-val, .k-cart-continue-shop, .kcf-btn,
+ * .k-sc-btn-cart/.k-sc-btn-checkout (toutes déjà stylées ailleurs). Les
+ * seules classes réellement nouvelles sont celles ci-dessous, propres à la
+ * ligne de snapshot (jamais un conteneur qui remplace ou masque le
+ * panier canonique).
  */
 
-/* ── Masquage du panier personnel desktop pendant le mode liste ─────── */
+/* ── Ligne de snapshot (#k-sc-items / #k-cart-body) ──────────────────────
+ * .is-cart-snapshot / .is-cart-item-claimed / .k-cart-item-context-note
+ * sont les trois modificateurs contextuels du mandat de clôture — les
+ * seuls conservés au-delà du strict renommage. Ce fichier les définit
+ * pour la première fois : ils n'avaient jamais eu de style propre avant
+ * ce lot.
+ */
 
-#k-side-cart[data-mode="shared-list"] > .k-sc-title-bar,
-#k-side-cart[data-mode="shared-list"] > #k-sc-items,
-#k-side-cart[data-mode="shared-list"] > .k-sc-header,
-#k-side-cart[data-mode="library"] > .k-sc-title-bar,
-#k-side-cart[data-mode="library"] > #k-sc-items,
-#k-side-cart[data-mode="library"] > .k-sc-header {
-  display: none;
-}
-
-/* ── Panneau liste — conteneur commun desktop + drawer ───────────────── */
-
-.k-shared-list-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
-#k-side-cart[data-mode="shared-list"],
-#k-side-cart[data-mode="library"] {
-  display: flex;
-}
-
-#k-side-cart .k-shared-list-panel {
-  background: var(--surface-sand-94);
-}
-
-/* ── En-tête : titre + badge statut ──────────────────────────────────── */
-
-.k-shared-list-header {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 12px 14px 8px;
-  background: var(--surface-sand-97);
-  border-bottom: 1px solid var(--border-coral-09);
-}
-
-.k-shared-list-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: .01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.k-shared-list-status-badge {
-  flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 20px;
-  background: var(--sand);
-  color: var(--text-muted);
-}
-
-.k-shared-list-status-open {
-  background: var(--green-bg-leaf);
-  color: var(--green-text-strong);
-}
-
-.k-shared-list-status-closed {
-  background: var(--sand-dark, var(--sand));
-  color: var(--text-muted);
-}
-
-.k-shared-list-status-cancelled {
-  background: var(--red-bg, var(--sand));
-  color: var(--red-danger-text, var(--text-muted));
-}
-
-.k-shared-list-subtitle {
-  flex-shrink: 0;
-  padding: 8px 14px 0;
-  font-size: 11.5px;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-/* ── Barre de progression "N sur M déjà achetés" ─────────────────────── */
-
-.k-shared-list-progress {
-  flex-shrink: 0;
-  padding: 8px 14px 4px;
-}
-
-.k-shared-list-progress-track {
-  height: 6px;
-  border-radius: 4px;
-  background: var(--sand);
-  overflow: hidden;
-}
-
-.k-shared-list-progress-fill {
-  height: 100%;
-  background: var(--ocean);
-  border-radius: 4px;
-  transition: width .25s var(--ease);
-}
-
-.k-shared-list-progress-label {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-/* ── Liste des articles ───────────────────────────────────────────────── */
-
-.k-shared-list-items {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 14px;
-}
-
-.k-shared-list-item {
+.k-cart-snapshot-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -9364,17 +9241,11 @@ body.cart-open  #k-section-index { display:none; }
   background: var(--white);
 }
 
-.k-shared-list-item.is-selected {
-  border-color: var(--ocean);
-  background: var(--green-bg-soft, var(--white));
-}
-
-.k-shared-list-item.is-claimed {
+.k-cart-snapshot-item.is-cart-item-claimed {
   opacity: .55;
 }
 
-/* Amendement V2 §B — image + nom deviennent un bouton unique (fiche produit) */
-.k-shared-item-open {
+.k-cart-snapshot-item-open {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -9389,19 +9260,43 @@ body.cart-open  #k-section-index { display:none; }
   font: inherit;
 }
 
-.k-shared-item-meta {
+.k-cart-item-context-note {
   font-size: 11.5px;
   color: var(--text-muted);
   margin-top: 2px;
 }
 
-/* Amendement V2 §C — fallback image snapshot fiable.
- * .k-cart-item-img (cart.css) reste le conteneur canonique ; l'élément de
- * repli est toujours présent dans le DOM mais masqué par défaut, et révélé
- * soit à la construction (image absente/URL invalide, classe posée côté
- * JS), soit à chaud par l'attribut onerror natif de <img> (les événements
- * `error` d'image ne remontent pas — pas de délégation possible). Jamais
- * d'icône d'image cassée du navigateur.
+.k-cart-snapshot-item-status {
+  color: var(--text-muted);
+}
+
+.k-cart-snapshot-item-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.k-cart-snapshot-item-status-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: var(--sand);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.k-cart-snapshot-item-status-badge.is-claimed {
+  background: var(--sand-dark, var(--sand));
+}
+
+/* Fallback image snapshot (V2-C, conservé) — .k-cart-item-img (cart.css)
+ * reste le conteneur canonique ; l'élément de repli est toujours présent
+ * dans le DOM mais masqué par défaut, révélé soit à la construction (image
+ * absente/URL invalide, classe posée côté JS), soit à chaud par onerror
+ * natif de <img> (les événements `error` d'image ne remontent pas — pas de
+ * délégation possible). Jamais d'icône d'image cassée du navigateur.
  */
 .k-cart-item-img-fallback {
   display: none;
@@ -9413,169 +9308,22 @@ body.cart-open  #k-section-index { display:none; }
   display: inline-flex;
 }
 
-/* Amendement V2 §B — pas de quantité +/- par ligne */
-.k-shared-item-qty {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.k-shared-item-qty-btn {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--white);
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.k-shared-item-qty-btn:disabled {
-  cursor: not-allowed;
-  color: var(--text-light);
-  border-style: dashed;
-}
-
-.k-shared-item-qty-val {
-  min-width: 16px;
-  text-align: center;
-  font-size: 12.5px;
+/* ── Badge de statut inséré dans le chrome canonique ──────────────────────
+ * Inséré DANS #k-cart-header / .k-sc-title-bar (existants), jamais un
+ * bandeau propre — voir b-cart.js::applySnapshotStatusBadge.
+ */
+.k-cart-snapshot-status {
+  font-size: 11px;
   font-weight: 600;
-}
-
-.k-shared-item-status {
   color: var(--text-muted);
-}
-
-.k-shared-list-item.is-selected .k-shared-item-status {
-  color: var(--green-text-strong);
-}
-
-.k-shared-item-controls {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.k-shared-item-select {
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 6px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--white);
-  color: var(--text);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all .15s var(--ease);
-}
-
-.k-shared-item-select[aria-pressed="true"] {
-  background: var(--ocean);
-  border-color: var(--ocean);
-  color: var(--white);
-}
-
-.k-shared-item-select:disabled {
-  cursor: not-allowed;
-  color: var(--text-light);
-  border-style: dashed;
-}
-
-.k-shared-item-remove {
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  border-radius: 50%;
-}
-
-.k-shared-item-remove:hover {
-  background: var(--sand);
-  color: var(--text);
-}
-
-/* ── Actions propriétaire (mandat §9) ─────────────────────────────────── */
-
-.k-shared-list-creator-actions {
-  flex-shrink: 0;
-  display: flex;
-  gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--border);
-  flex-wrap: wrap;
-}
-
-.k-shared-list-creator-actions .k-cart-continue-shop {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 12px;
-  padding: 8px 10px;
-  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ── Footer : hint / recap + CTA "Acheter la sélection" ──────────────── */
-
-.k-shared-list-footer {
-  flex-shrink: 0;
-  padding: 10px 14px 14px;
-  border-top: 1px solid var(--border);
-}
-
-.k-shared-list-footer-hint {
-  margin: 0 0 8px;
-  font-size: 12px;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.k-shared-list-footer-recap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  border-radius: var(--radius-sm);
-  background: var(--amber-bg-light);
-  color: var(--amber-text-mid);
-}
-
-.k-shared-list-footer-recap strong {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--amber-text-mid);
-}
-
-#k-shared-list-buy {
-  margin: 0;
-}
-
-#k-shared-list-buy:disabled {
-  opacity: .55;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
-
-/* ── Indicateur mobile flottant "Liste · N" (mandat §7) ───────────────── */
+/* ── Indicateur mobile flottant "Liste · N" (mandat §7, conservé) ────────
+ * Toujours produit par group-side-cart.js::updateSharedListIndicator().
+ */
 
 .k-shared-list-context-chip {
   position: fixed;
@@ -9598,17 +9346,10 @@ body.cart-open  #k-section-index { display:none; }
   display: none;
 }
 
-/* ── Drawer mobile : masquer le footer panier personnel en mode liste ─── */
-
-.k-cart-drawer[data-mode="shared-list"] #k-cart-body {
-  padding: 0;
-}
-
-/* ── Amendement V2 §A — sélecteur desktop [Panier] [Liste] (coexistence) ─
- * Prépendu dans #k-side-cart, avant .k-shared-list-panel ou .k-sc-title-bar
- * selon la surface affichée — group-side-cart.js::renderCartSurfaceSwitch().
- * Desktop uniquement (mandat §A : jamais de chrome supplémentaire mobile,
- * l'indicateur mobile reste .k-shared-list-context-chip, §7).
+/* ── Amendement V2 §A — sélecteur desktop [Panier] [Liste] (coexistence,
+ * conservé — feature légitime distincte du panneau démantelé). Prépendu
+ * dans #k-side-cart par group-side-cart.js::renderCartSurfaceSwitch().
+ * Desktop uniquement (l'indicateur mobile reste le chip ci-dessus, §7).
  */
 
 .k-cart-surface-switch {
@@ -9640,159 +9381,49 @@ body.cart-open  #k-section-index { display:none; }
   color: var(--white);
 }
 
-/* ── Drawer mobile : masquer le footer panier personnel en mode bibliothèque ─ */
-
-.k-cart-drawer[data-mode="library"] #k-cart-body {
+/* ── Drawer mobile : léger resserrement en mode snapshot ─────────────────
+ * #k-cart-body reçoit les lignes directement (plus de wrapper propre) ;
+ * data-mode="library" retiré (mode bibliothèque, plus produit ici depuis
+ * Lot C — voir js/b-tracking.js).
+ */
+.k-cart-drawer[data-mode="shared-list"] #k-cart-body {
   padding: 0;
-}
-
-/* ── Bouton « Sauvegarder cette liste » — destinataire (amendement V2 §D) ─
- * Réutilise .k-cart-continue-shop (même style que les actions propriétaire)
- * dans un conteneur dédié, propriétaire = jamais affiché (voir
- * group-side-cart.js::saveActionHtml).
- */
-
-.k-shared-list-save-action {
-  flex-shrink: 0;
-  padding: 8px 14px 0;
-}
-
-.k-shared-list-save-action .k-cart-continue-shop {
-  width: 100%;
-  font-size: 12.5px;
-  padding: 8px 10px;
-  text-align: center;
-}
-
-.k-shared-list-save-action .k-cart-continue-shop:disabled {
-  opacity: .6;
-  cursor: default;
-}
-
-/* ── Bibliothèque « Mes listes » (amendement V2 §D) ────────────────────
- * data-mode="library" réutilise le même conteneur .k-shared-list-panel
- * que le mode shared-list (un seul composant) — voir
- * group-side-cart.js::renderLibraryInCart. Deux sections toujours
- * affichées ensemble : « Créées par moi » / « Partagées avec moi ».
- */
-
-.k-library-section {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.k-library-section:last-child {
-  border-bottom: none;
-}
-
-.k-library-section-title {
-  margin: 0 0 8px;
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  color: var(--text-muted);
-}
-
-.k-library-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.k-library-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sand-97);
-  text-align: left;
-  cursor: pointer;
-}
-
-.k-library-item:hover {
-  border-color: var(--ocean);
-}
-
-.k-library-item-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.k-library-item-meta {
-  font-size: 11.5px;
-  color: var(--text-muted);
-}
-
-.k-library-empty {
-  margin: 0;
-  padding: 4px 0;
-  font-size: 12px;
-  color: var(--text-muted);
 }
 
 
 /* ── shared-list-side-cart-responsive.css ────────────────── */
 /**
  * @komerce-arch-lite
- * @role          shared-list-narrow-layout-styles
+ * @role          shared-cart-snapshot-narrow-layout-styles
  * @domain        shared-cart
  * @layer         css
- * @owner         public/boutique/js/group/group-side-cart.js
- * @purpose       Stabilise les cartes produit et les zones d'action de la liste partageable dans les conteneurs étroits.
+ * @owner         public/boutique/js/b-cart.js
+ * @purpose       Stabilise la ligne de snapshot dans les conteneurs étroits (side cart desktop ~330px, drawer mobile).
  * @impact-areas  shared-cart, side-cart, drawer, responsive
  * @version       2026-08
  */
 
 /**
- * Le side cart desktop mesure environ 330 px même sur un grand viewport.
- * Les media queries viewport ne suffisent donc pas : le composant devient
- * son propre conteneur de mise en page. Les règles ci-dessous s'appliquent
- * aussi au drawer mobile, sans modifier le DOM ni la logique métier.
+ * Lot D (refactor soustractif shared-cart, clôture) — le panneau
+ * (.k-shared-list-panel) qui portait `container-type: inline-size` a été
+ * retiré (b-cart.js écrit désormais les lignes directement dans #k-sc-items
+ * / #k-cart-body, sans conteneur propre). #k-side-cart lui-même redevient
+ * l'ancrage du container query : c'est lui qui reste étroit (~330px) même
+ * sur un grand viewport, panier personnel ou snapshot confondus.
  */
-.k-shared-list-panel {
+#k-side-cart {
   container-name: shared-list;
   container-type: inline-size;
 }
 
-/* Le switch est un frère du panneau. Le panneau ne doit jamais conserver
- * height:100% quand le switch est présent, sinon le footer et le switch se
- * disputent la même hauteur et finissent visuellement superposés. */
-#k-side-cart[data-mode="shared-list"] > .k-shared-list-panel,
-#k-side-cart[data-mode="library"] > .k-shared-list-panel {
-  order: 1;
-  flex: 1 1 auto;
-  height: auto;
-  min-height: 0;
-  overflow: hidden;
-}
-
-#k-side-cart[data-mode="shared-list"] > .k-cart-surface-switch,
-#k-side-cart[data-mode="library"] > .k-cart-surface-switch {
-  order: 2;
-  flex: 0 0 auto;
-  margin: 0;
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--border);
-  background: var(--surface-sand-97);
-}
-
-/* Le fallback reste visible derrière l'image. En cas d'erreur, le handler
- * retire l'image ; le conteneur garde alors une vignette propre et centrée. */
-.k-shared-list-item .k-cart-item-img {
+.k-cart-snapshot-item .k-cart-item-img {
   position: relative;
   overflow: hidden;
   display: grid;
   place-items: center;
 }
 
-.k-shared-list-item .k-cart-item-img-el {
+.k-cart-snapshot-item .k-cart-item-img-el {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -9800,33 +9431,20 @@ body.cart-open  #k-section-index { display:none; }
   object-fit: cover;
 }
 
-.k-shared-list-item .k-cart-item-img-fallback {
+.k-cart-snapshot-item .k-cart-item-img-fallback {
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
 }
 
-.k-shared-list-item .k-cart-item-img.is-img-error .k-cart-item-img-fallback {
+.k-cart-snapshot-item .k-cart-item-img.is-img-error .k-cart-item-img-fallback {
   display: inline-flex;
 }
 
 @container shared-list (max-width: 420px) {
-  .k-shared-list-header {
-    padding: 10px 12px 8px;
-  }
-
-  .k-shared-list-progress {
-    padding: 8px 12px 4px;
-  }
-
-  .k-shared-list-items {
-    gap: 10px;
-    padding: 10px 12px;
-  }
-
   /* Trois zones lisibles : produit en haut, quantité puis actions en bas. */
-  .k-shared-list-item {
+  .k-cart-snapshot-item {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
@@ -9837,7 +9455,7 @@ body.cart-open  #k-section-index { display:none; }
     padding: 10px;
   }
 
-  .k-shared-item-open {
+  .k-cart-snapshot-item-open {
     grid-area: product;
     width: 100%;
     min-width: 0;
@@ -9847,18 +9465,18 @@ body.cart-open  #k-section-index { display:none; }
     gap: 10px;
   }
 
-  .k-shared-item-open .k-cart-item-img {
+  .k-cart-snapshot-item-open .k-cart-item-img {
     width: 56px;
     min-width: 56px;
     height: 56px;
   }
 
-  .k-shared-item-open .k-cart-item-info {
+  .k-cart-snapshot-item-open .k-cart-item-info {
     min-width: 0;
     overflow: hidden;
   }
 
-  .k-shared-item-open .k-cart-item-name {
+  .k-cart-snapshot-item-open .k-cart-item-name {
     display: -webkit-box;
     overflow: hidden;
     white-space: normal;
@@ -9869,7 +9487,7 @@ body.cart-open  #k-section-index { display:none; }
   }
 
   /* Le prix et le statut ne partagent plus la largeur des boutons. */
-  .k-shared-item-meta {
+  .k-cart-snapshot-item-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 2px 4px;
@@ -9881,7 +9499,7 @@ body.cart-open  #k-section-index { display:none; }
     color: var(--text);
   }
 
-  .k-shared-item-status {
+  .k-cart-snapshot-item-status {
     display: block;
     flex-basis: 100%;
     font-size: 11.5px;
@@ -9889,90 +9507,23 @@ body.cart-open  #k-section-index { display:none; }
     color: var(--text-muted);
   }
 
-  .k-shared-item-qty {
+  .k-cart-snapshot-item .k-cart-item-qty {
     grid-area: quantity;
     justify-self: start;
-    gap: 7px;
   }
 
-  .k-shared-item-qty-btn {
-    width: 32px;
-    height: 32px;
-    font-size: 15px;
-  }
-
-  .k-shared-item-qty-val {
-    min-width: 20px;
-    font-size: 13px;
-  }
-
-  .k-shared-item-controls {
+  .k-cart-snapshot-item-controls {
     grid-area: actions;
     justify-self: end;
     min-width: 0;
     gap: 4px;
-  }
-
-  .k-shared-item-select {
-    min-height: 36px;
-    padding: 8px 12px;
-    font-size: 11.5px;
-  }
-
-  .k-shared-item-remove {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-  }
-
-  .k-shared-list-creator-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-    padding: 8px 12px;
-  }
-
-  .k-shared-list-creator-actions .k-cart-continue-shop {
-    min-height: 40px;
-    padding: 8px;
-    white-space: normal;
-    line-height: 1.25;
-  }
-
-  .k-shared-list-footer {
-    position: relative;
-    z-index: 2;
-    padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
-    background: var(--surface-sand-97);
-    box-shadow: 0 -8px 18px var(--shadow-card-05, rgba(30, 40, 25, .05));
-  }
-
-  .k-shared-list-footer-hint {
-    margin-bottom: 8px;
-    font-size: 11.5px;
-    line-height: 1.35;
-  }
-
-  .k-shared-list-footer-recap {
-    gap: 8px;
-    margin-bottom: 8px;
-    padding: 8px 10px;
-  }
-
-  .k-shared-list-footer-recap span {
-    min-width: 0;
-    line-height: 1.25;
-  }
-
-  #k-shared-list-buy {
-    min-height: 48px;
   }
 }
 
 /* Sécurité pour les navigateurs sans container queries : le side cart reste
  * le cas critique puisqu'il est toujours étroit, même sur desktop. */
 @supports not (container-type: inline-size) {
-  #k-side-cart[data-mode="shared-list"] .k-shared-list-item {
+  #k-side-cart[data-mode="shared-list"] .k-cart-snapshot-item {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
@@ -9982,7 +9533,7 @@ body.cart-open  #k-section-index { display:none; }
     padding: 10px;
   }
 
-  #k-side-cart[data-mode="shared-list"] .k-shared-item-open {
+  #k-side-cart[data-mode="shared-list"] .k-cart-snapshot-item-open {
     grid-area: product;
     display: grid;
     grid-template-columns: 56px minmax(0, 1fr);
@@ -9990,18 +9541,18 @@ body.cart-open  #k-section-index { display:none; }
     width: 100%;
   }
 
-  #k-side-cart[data-mode="shared-list"] .k-shared-item-qty {
+  #k-side-cart[data-mode="shared-list"] .k-cart-snapshot-item .k-cart-item-qty {
     grid-area: quantity;
   }
 
-  #k-side-cart[data-mode="shared-list"] .k-shared-item-controls {
+  #k-side-cart[data-mode="shared-list"] .k-cart-snapshot-item-controls {
     grid-area: actions;
     justify-self: end;
   }
 }
 
 @container shared-list (max-width: 310px) {
-  .k-shared-list-item {
+  .k-cart-snapshot-item {
     grid-template-columns: 1fr;
     grid-template-areas:
       "product"
@@ -10009,13 +9560,9 @@ body.cart-open  #k-section-index { display:none; }
       "actions";
   }
 
-  .k-shared-item-controls {
+  .k-cart-snapshot-item-controls {
     width: 100%;
     justify-self: stretch;
-  }
-
-  .k-shared-item-select {
-    flex: 1 1 auto;
   }
 }
 
@@ -10076,6 +9623,215 @@ body.cart-open  #k-section-index { display:none; }
   }
 
   .k-library-item-remove {
+    justify-self: end;
+    min-height: 36px;
+  }
+}
+
+
+/* ── shared-list-lists-tab.css ───────────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          shared-cart-lists-tab-styles
+ * @domain        shared-cart
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-tracking.js
+ * @purpose       Sous-navigation persistante Commandes|Listes de l'onglet Suivi,
+ *                et cartes de la bibliothèque « Mes listes » (créées / partagées).
+ * @impact-areas  shared-cart, tracking, mon-komerce
+ * @version       2026-08
+ */
+
+/* ── Sous-nav Commandes | Listes ─────────────────────────────────────── */
+
+.k-track-subnav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 4px;
+  background: var(--sand-warm);
+  border-radius: 12px;
+}
+
+.k-track-subnav-tab {
+  flex: 1;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.k-track-subnav-tab.active {
+  background: var(--white);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.k-track-subnav-tab:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.k-track-tab-panel.u-hidden {
+  display: none;
+}
+
+/* ── Panneau « Listes » ──────────────────────────────────────────────── */
+
+.k-track-lists-panel h2 {
+  margin: 18px 0 8px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.k-track-lists-panel h2:first-child {
+  margin-top: 0;
+}
+
+.k-library-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.k-library-empty-hint {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--sand);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+/* ── Carte de liste ──────────────────────────────────────────────────── */
+
+.k-library-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+
+.k-library-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow .15s, transform .1s;
+}
+
+.k-library-item:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.k-library-item:active {
+  transform: scale(.99);
+}
+
+.k-library-item:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.k-library-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.k-library-item-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.k-library-item-meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.k-library-item-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.k-library-item-status--open {
+  color: var(--green-text);
+}
+
+.k-library-item-status--closed {
+  color: var(--text-muted);
+}
+
+.k-library-item-status--cancelled {
+  color: var(--status-cancelled-text);
+}
+
+.k-library-item-arrow {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+.k-library-item-close {
+  align-self: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--red-danger-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--red-danger-text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.k-library-item-close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.k-library-item-close:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 899px) {
+  .k-library-item-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .k-library-item-close {
     justify-self: end;
     min-height: 36px;
   }

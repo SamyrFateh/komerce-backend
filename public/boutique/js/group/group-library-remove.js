@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        library_context, saved_list_remove_click
  * @outputs       saved_access_delete, library_dom_refresh, toast
- * @depends       ../b-store.js, ../b-utils.js, ../b-bus.js, group-api.js, group-side-cart.js(dynamic)
+ * @depends       ../b-store.js, ../b-utils.js, ../b-bus.js, group-api.js, ../b-tracking.js(dynamic)
  * @used-by       group-state.js
  * @doctrine      retirer_le_signet_jamais_la_liste, contexte_actif_preserve
  * @impact-areas  shared-cart, mon-komerce, participant-flow
@@ -20,6 +20,15 @@ import { showToast } from '../b-utils.js';
 import { bus } from '../b-bus.js';
 import { removeSavedSharedCart } from './group-api.js';
 
+/**
+ * Lot C (refactor soustractif shared-cart) — la bibliothèque « Mes listes »
+ * n'est plus projetée par group-side-cart.js::activateOwnerLibrary() (state.
+ * cartSurface === 'library', retirée) : elle est désormais alimentée et
+ * rendue par l'onglet « Listes » de js/b-tracking.js
+ * (state.libraryContext reste la source lue ici, inchangé). Ce module ne
+ * fait que décorer les lignes déjà rendues avec un bouton « Retirer » — il
+ * ne construit toujours aucun HTML de bibliothèque lui-même.
+ */
 let installed = false;
 let scheduled = false;
 let observer = null;
@@ -82,9 +91,10 @@ function syncActiveListSaveButton() {
 }
 
 async function rerenderLibrary() {
-  if (state.cartSurface !== 'library') return;
-  const { renderLibraryInCart } = await import('./group-side-cart.js');
-  renderLibraryInCart();
+  const panel = document.getElementById('k-track-lists-panel-wrap');
+  if (!panel || panel.classList.contains('u-hidden')) return;
+  const { renderListsTab } = await import('../b-tracking.js');
+  await renderListsTab(panel);
   scheduleDecoration();
 }
 
@@ -125,10 +135,7 @@ async function handleRemove(button, cart) {
 }
 
 function decorateLibraryRows() {
-  const roots = document.querySelectorAll(
-    '#k-side-cart[data-mode="library"], ' +
-    '#k-cart-drawer[data-mode="library"]'
-  );
+  const roots = document.querySelectorAll('#k-track-lists-panel-wrap');
 
   roots.forEach((root) => {
     root.querySelectorAll('.k-library-item[data-token]').forEach((itemButton) => {
@@ -183,10 +190,18 @@ function startObserver() {
   // decorateLibraryRows() serait un no-op — mais le queueMicrotask qu'il
   // planifie survit au teardown de la fenêtre jsdom entre deux suites de
   // tests et crashe ("Cannot read properties of null (reading '_location')").
-  // La décoration se déclenche de toute façon via les événements bus
-  // ('side-cart:render' / 'cart-body:render') dès qu'une bibliothèque est
-  // réellement rendue, et via le MutationObserver ci-dessus. Comportement
-  // production strictement identique.
+  // La décoration se déclenche de toute façon via l'événement bus
+  // 'side-cart:render' dès qu'une bibliothèque est réellement rendue, et via
+  // le MutationObserver ci-dessus. Comportement production strictement
+  // identique.
+  //
+  // Lot D (correction — audit de clôture) : l'écoute jumelle sur le
+  // signal panier "corps rendu depuis bascule de surface" a été retirée.
+  // Ce canal n'avait plus d'émetteur depuis que Lot A a retiré son unique
+  // point d'émission de group-side-cart.js::setCartSurface() (couvert
+  // désormais par le seul signal "side-cart:render") — boutique:360 le
+  // signalait comme écouteur orphelin. Voir b-bus.js pour le retrait
+  // symétrique côté b-cart.js.
 }
 
 export function installSharedLibraryRemove() {
@@ -194,7 +209,6 @@ export function installSharedLibraryRemove() {
   installed = true;
 
   bus.on('side-cart:render', scheduleDecoration);
-  bus.on('cart-body:render', scheduleDecoration);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', startObserver, {

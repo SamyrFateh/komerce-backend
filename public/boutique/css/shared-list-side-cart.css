@@ -1,166 +1,43 @@
 /**
  * @komerce-arch-lite
- * @role          shared-list-side-cart-styles
+ * @role          shared-cart-snapshot-line-styles
  * @domain        shared-cart
  * @layer         css
- * @owner         public/boutique/js/group/group-side-cart.js
- * @purpose       supports public/boutique/js/group/group-side-cart.js
+ * @owner         public/boutique/js/b-cart.js
+ * @purpose       supports the canonical snapshot line rendered by b-cart.js::renderCartSnapshot
  * @impact-areas  shared-cart, cart
  * @version       2026-08
  */
 
 /**
- * PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — préfixe
- * .k-shared-list-* / .k-shared-item-*, mandat §13.
+ * Lot D (refactor soustractif shared-cart, clôture) — ce fichier ne
+ * possède plus de panneau, d'en-tête, de barre de progression, de footer
+ * ni de bibliothèque propres : tout cela appartenait au renderer parallèle
+ * démantelé (group-render-list.js, puis les restes de group-side-cart.js
+ * antérieurs au Lot A) et a été retiré avec lui. b-cart.js est l'unique
+ * propriétaire du rendu (mandat un_renderer_panier) ; il pilote le chrome
+ * canonique existant (#k-cart-header, dom.cartFooter, .k-sc-title-bar,
+ * .k-sc-header — voir cart.css / boutique-desktop.css) et n'ajoute que
+ * quelques classes sur la ligne de snapshot elle-même.
  *
- * Réutilise volontairement les tokens et classes existants plutôt que d'en
- * recréer :
- *   - lignes d'article : .k-cart-item-img / -img-el / -info / -name (cart.css)
- *   - fallback image snapshot (V2-C) : .k-cart-item-img-fallback, propre à
- *     ce module (aucun équivalent générique dans cart.css)
- *   - CTA principal     : .kcf-btn.kcf-full (cart.css)
- *   - actions propriétaire : .k-cart-continue-shop (cart.css)
- *   - palette : --coral (CTA), --ocean (accent vert liste), --violet,
- *     --green-bg-leaf/--green-text-strong (badge "Ouverte"),
- *     --amber-bg-light/--amber-text-mid (recap prix), --border, --text,
- *     --text-muted, --surface-sand-94/96/97 (desktop), --radius-sm.
- *
- * Deux points d'ancrage distincts (group-side-cart.js::renderSharedListInCart) :
- *   - Desktop : #k-side-cart[data-mode="shared-list"] — le panneau est
- *     PRÉPENDU devant .k-sc-title-bar / #k-sc-items / .k-sc-header (panier
- *     personnel), qu'il faut donc masquer explicitement via l'attribut
- *     data-mode (elles ne sont jamais retirées du DOM, seulement cachées).
- *   - Mobile/drawer : #k-cart-body est REMPLACÉ intégralement par
- *     .k-shared-list-panel (pas de prepend, rien à masquer côté items) ;
- *     seul #k-cart-footer (panier personnel) est masqué via .u-hidden,
- *     déjà géré par le module JS.
+ * Réutilise volontairement les classes du panier personnel plutôt que d'en
+ * recréer : .k-cart-item-img/-img-el/-info/-name, .k-cart-item-remove,
+ * .k-cart-item-qty/.k-qty-btn/.k-qty-val, .k-cart-continue-shop, .kcf-btn,
+ * .k-sc-btn-cart/.k-sc-btn-checkout (toutes déjà stylées ailleurs). Les
+ * seules classes réellement nouvelles sont celles ci-dessous, propres à la
+ * ligne de snapshot (jamais un conteneur qui remplace ou masque le
+ * panier canonique).
  */
 
-/* ── Masquage du panier personnel desktop pendant le mode liste ─────── */
+/* ── Ligne de snapshot (#k-sc-items / #k-cart-body) ──────────────────────
+ * .is-cart-snapshot / .is-cart-item-claimed / .k-cart-item-context-note
+ * sont les trois modificateurs contextuels du mandat de clôture — les
+ * seuls conservés au-delà du strict renommage. Ce fichier les définit
+ * pour la première fois : ils n'avaient jamais eu de style propre avant
+ * ce lot.
+ */
 
-#k-side-cart[data-mode="shared-list"] > .k-sc-title-bar,
-#k-side-cart[data-mode="shared-list"] > #k-sc-items,
-#k-side-cart[data-mode="shared-list"] > .k-sc-header,
-#k-side-cart[data-mode="library"] > .k-sc-title-bar,
-#k-side-cart[data-mode="library"] > #k-sc-items,
-#k-side-cart[data-mode="library"] > .k-sc-header {
-  display: none;
-}
-
-/* ── Panneau liste — conteneur commun desktop + drawer ───────────────── */
-
-.k-shared-list-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
-#k-side-cart[data-mode="shared-list"],
-#k-side-cart[data-mode="library"] {
-  display: flex;
-}
-
-#k-side-cart .k-shared-list-panel {
-  background: var(--surface-sand-94);
-}
-
-/* ── En-tête : titre + badge statut ──────────────────────────────────── */
-
-.k-shared-list-header {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 12px 14px 8px;
-  background: var(--surface-sand-97);
-  border-bottom: 1px solid var(--border-coral-09);
-}
-
-.k-shared-list-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: .01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.k-shared-list-status-badge {
-  flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 20px;
-  background: var(--sand);
-  color: var(--text-muted);
-}
-
-.k-shared-list-status-open {
-  background: var(--green-bg-leaf);
-  color: var(--green-text-strong);
-}
-
-.k-shared-list-status-closed {
-  background: var(--sand-dark, var(--sand));
-  color: var(--text-muted);
-}
-
-.k-shared-list-status-cancelled {
-  background: var(--red-bg, var(--sand));
-  color: var(--red-danger-text, var(--text-muted));
-}
-
-.k-shared-list-subtitle {
-  flex-shrink: 0;
-  padding: 8px 14px 0;
-  font-size: 11.5px;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-/* ── Barre de progression "N sur M déjà achetés" ─────────────────────── */
-
-.k-shared-list-progress {
-  flex-shrink: 0;
-  padding: 8px 14px 4px;
-}
-
-.k-shared-list-progress-track {
-  height: 6px;
-  border-radius: 4px;
-  background: var(--sand);
-  overflow: hidden;
-}
-
-.k-shared-list-progress-fill {
-  height: 100%;
-  background: var(--ocean);
-  border-radius: 4px;
-  transition: width .25s var(--ease);
-}
-
-.k-shared-list-progress-label {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-/* ── Liste des articles ───────────────────────────────────────────────── */
-
-.k-shared-list-items {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 14px;
-}
-
-.k-shared-list-item {
+.k-cart-snapshot-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -170,17 +47,11 @@
   background: var(--white);
 }
 
-.k-shared-list-item.is-selected {
-  border-color: var(--ocean);
-  background: var(--green-bg-soft, var(--white));
-}
-
-.k-shared-list-item.is-claimed {
+.k-cart-snapshot-item.is-cart-item-claimed {
   opacity: .55;
 }
 
-/* Amendement V2 §B — image + nom deviennent un bouton unique (fiche produit) */
-.k-shared-item-open {
+.k-cart-snapshot-item-open {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -195,19 +66,43 @@
   font: inherit;
 }
 
-.k-shared-item-meta {
+.k-cart-item-context-note {
   font-size: 11.5px;
   color: var(--text-muted);
   margin-top: 2px;
 }
 
-/* Amendement V2 §C — fallback image snapshot fiable.
- * .k-cart-item-img (cart.css) reste le conteneur canonique ; l'élément de
- * repli est toujours présent dans le DOM mais masqué par défaut, et révélé
- * soit à la construction (image absente/URL invalide, classe posée côté
- * JS), soit à chaud par l'attribut onerror natif de <img> (les événements
- * `error` d'image ne remontent pas — pas de délégation possible). Jamais
- * d'icône d'image cassée du navigateur.
+.k-cart-snapshot-item-status {
+  color: var(--text-muted);
+}
+
+.k-cart-snapshot-item-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.k-cart-snapshot-item-status-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: var(--sand);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.k-cart-snapshot-item-status-badge.is-claimed {
+  background: var(--sand-dark, var(--sand));
+}
+
+/* Fallback image snapshot (V2-C, conservé) — .k-cart-item-img (cart.css)
+ * reste le conteneur canonique ; l'élément de repli est toujours présent
+ * dans le DOM mais masqué par défaut, révélé soit à la construction (image
+ * absente/URL invalide, classe posée côté JS), soit à chaud par onerror
+ * natif de <img> (les événements `error` d'image ne remontent pas — pas de
+ * délégation possible). Jamais d'icône d'image cassée du navigateur.
  */
 .k-cart-item-img-fallback {
   display: none;
@@ -219,169 +114,22 @@
   display: inline-flex;
 }
 
-/* Amendement V2 §B — pas de quantité +/- par ligne */
-.k-shared-item-qty {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.k-shared-item-qty-btn {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--white);
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.k-shared-item-qty-btn:disabled {
-  cursor: not-allowed;
-  color: var(--text-light);
-  border-style: dashed;
-}
-
-.k-shared-item-qty-val {
-  min-width: 16px;
-  text-align: center;
-  font-size: 12.5px;
+/* ── Badge de statut inséré dans le chrome canonique ──────────────────────
+ * Inséré DANS #k-cart-header / .k-sc-title-bar (existants), jamais un
+ * bandeau propre — voir b-cart.js::applySnapshotStatusBadge.
+ */
+.k-cart-snapshot-status {
+  font-size: 11px;
   font-weight: 600;
-}
-
-.k-shared-item-status {
   color: var(--text-muted);
-}
-
-.k-shared-list-item.is-selected .k-shared-item-status {
-  color: var(--green-text-strong);
-}
-
-.k-shared-item-controls {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.k-shared-item-select {
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 6px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--white);
-  color: var(--text);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all .15s var(--ease);
-}
-
-.k-shared-item-select[aria-pressed="true"] {
-  background: var(--ocean);
-  border-color: var(--ocean);
-  color: var(--white);
-}
-
-.k-shared-item-select:disabled {
-  cursor: not-allowed;
-  color: var(--text-light);
-  border-style: dashed;
-}
-
-.k-shared-item-remove {
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  border-radius: 50%;
-}
-
-.k-shared-item-remove:hover {
-  background: var(--sand);
-  color: var(--text);
-}
-
-/* ── Actions propriétaire (mandat §9) ─────────────────────────────────── */
-
-.k-shared-list-creator-actions {
-  flex-shrink: 0;
-  display: flex;
-  gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--border);
-  flex-wrap: wrap;
-}
-
-.k-shared-list-creator-actions .k-cart-continue-shop {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 12px;
-  padding: 8px 10px;
-  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ── Footer : hint / recap + CTA "Acheter la sélection" ──────────────── */
-
-.k-shared-list-footer {
-  flex-shrink: 0;
-  padding: 10px 14px 14px;
-  border-top: 1px solid var(--border);
-}
-
-.k-shared-list-footer-hint {
-  margin: 0 0 8px;
-  font-size: 12px;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.k-shared-list-footer-recap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  border-radius: var(--radius-sm);
-  background: var(--amber-bg-light);
-  color: var(--amber-text-mid);
-}
-
-.k-shared-list-footer-recap strong {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--amber-text-mid);
-}
-
-#k-shared-list-buy {
-  margin: 0;
-}
-
-#k-shared-list-buy:disabled {
-  opacity: .55;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
-
-/* ── Indicateur mobile flottant "Liste · N" (mandat §7) ───────────────── */
+/* ── Indicateur mobile flottant "Liste · N" (mandat §7, conservé) ────────
+ * Toujours produit par group-side-cart.js::updateSharedListIndicator().
+ */
 
 .k-shared-list-context-chip {
   position: fixed;
@@ -404,17 +152,10 @@
   display: none;
 }
 
-/* ── Drawer mobile : masquer le footer panier personnel en mode liste ─── */
-
-.k-cart-drawer[data-mode="shared-list"] #k-cart-body {
-  padding: 0;
-}
-
-/* ── Amendement V2 §A — sélecteur desktop [Panier] [Liste] (coexistence) ─
- * Prépendu dans #k-side-cart, avant .k-shared-list-panel ou .k-sc-title-bar
- * selon la surface affichée — group-side-cart.js::renderCartSurfaceSwitch().
- * Desktop uniquement (mandat §A : jamais de chrome supplémentaire mobile,
- * l'indicateur mobile reste .k-shared-list-context-chip, §7).
+/* ── Amendement V2 §A — sélecteur desktop [Panier] [Liste] (coexistence,
+ * conservé — feature légitime distincte du panneau démantelé). Prépendu
+ * dans #k-side-cart par group-side-cart.js::renderCartSurfaceSwitch().
+ * Desktop uniquement (l'indicateur mobile reste le chip ci-dessus, §7).
  */
 
 .k-cart-surface-switch {
@@ -446,99 +187,11 @@
   color: var(--white);
 }
 
-/* ── Drawer mobile : masquer le footer panier personnel en mode bibliothèque ─ */
-
-.k-cart-drawer[data-mode="library"] #k-cart-body {
+/* ── Drawer mobile : léger resserrement en mode snapshot ─────────────────
+ * #k-cart-body reçoit les lignes directement (plus de wrapper propre) ;
+ * data-mode="library" retiré (mode bibliothèque, plus produit ici depuis
+ * Lot C — voir js/b-tracking.js).
+ */
+.k-cart-drawer[data-mode="shared-list"] #k-cart-body {
   padding: 0;
-}
-
-/* ── Bouton « Sauvegarder cette liste » — destinataire (amendement V2 §D) ─
- * Réutilise .k-cart-continue-shop (même style que les actions propriétaire)
- * dans un conteneur dédié, propriétaire = jamais affiché (voir
- * group-side-cart.js::saveActionHtml).
- */
-
-.k-shared-list-save-action {
-  flex-shrink: 0;
-  padding: 8px 14px 0;
-}
-
-.k-shared-list-save-action .k-cart-continue-shop {
-  width: 100%;
-  font-size: 12.5px;
-  padding: 8px 10px;
-  text-align: center;
-}
-
-.k-shared-list-save-action .k-cart-continue-shop:disabled {
-  opacity: .6;
-  cursor: default;
-}
-
-/* ── Bibliothèque « Mes listes » (amendement V2 §D) ────────────────────
- * data-mode="library" réutilise le même conteneur .k-shared-list-panel
- * que le mode shared-list (un seul composant) — voir
- * group-side-cart.js::renderLibraryInCart. Deux sections toujours
- * affichées ensemble : « Créées par moi » / « Partagées avec moi ».
- */
-
-.k-library-section {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.k-library-section:last-child {
-  border-bottom: none;
-}
-
-.k-library-section-title {
-  margin: 0 0 8px;
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  color: var(--text-muted);
-}
-
-.k-library-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.k-library-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sand-97);
-  text-align: left;
-  cursor: pointer;
-}
-
-.k-library-item:hover {
-  border-color: var(--ocean);
-}
-
-.k-library-item-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.k-library-item-meta {
-  font-size: 11.5px;
-  color: var(--text-muted);
-}
-
-.k-library-empty {
-  margin: 0;
-  padding: 4px 0;
-  font-size: 12px;
-  color: var(--text-muted);
 }

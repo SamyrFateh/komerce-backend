@@ -14,8 +14,13 @@
  * @purpose       Tests unitaires de la navigation principale de la boutique
  *                (switchView, setupBnav, deep-links). Vérifie que Mon Komerce
  *                utilise openMonKomerce comme point d'entrée canonique (Lot 4B).
- * @impact-areas  boutique-navigation, account
- * @version       2026-07-lot4b
+ *                Lot D (clôture shared-cart) : activateOwnerLibrary() a été
+ *                retiré de group-side-cart.js (Lot C) sans mise à jour de
+ *                b-nav.js — import fantôme corrigé, nav:goto-group et
+ *                ?tab=group retombent désormais sur Suivi (repli sûr en
+ *                attendant l'onglet Listes réel, dette signalée).
+ * @impact-areas  boutique-navigation, account, shared-cart
+ * @version       2026-08-lotD
  */
 'use strict';
 
@@ -61,7 +66,7 @@ jest.mock('../../js/b-catalog.js', () => ({
   appendNextPage: jest.fn(),
 }));
 jest.mock('../../js/b-favs.js', () => ({ renderFavView: jest.fn() }));
-jest.mock('../../js/b-tracking.js', () => ({ renderTrackView: jest.fn() }));
+jest.mock('../../js/b-tracking.js', () => ({ renderTrackView: jest.fn(), renderListsView: jest.fn() }));
 jest.mock('../../js/b-komerce.js', () => ({ openMonKomerce: jest.fn() }));
 // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — b-nav.js route
 // désormais 'Mes listes', le lien participant et ?tab=group vers
@@ -70,7 +75,6 @@ jest.mock('../../js/b-komerce.js', () => ({ openMonKomerce: jest.fn() }));
 jest.mock('../../js/group/group-side-cart.js', () => ({
   detectParticipantToken: jest.fn(),
   activateFromParticipantUrl: jest.fn(),
-  activateOwnerLibrary: jest.fn(),
 }));
 jest.mock('../../js/b-pager.js', () => ({ destroyMobilePager: jest.fn() }));
 jest.mock('../../js/b-scroll-owner.js', () => ({ scrollPageToTop: jest.fn() }));
@@ -82,12 +86,11 @@ const { openCart, closeCart, clearCart, shareCartWhatsApp, loadSharedCart } = re
 const { checkoutCart, closeOrderModal } = require('../../js/b-checkout.js');
 const { renderGrid } = require('../../js/b-catalog.js');
 const { renderFavView } = require('../../js/b-favs.js');
-const { renderTrackView } = require('../../js/b-tracking.js');
+const { renderTrackView, renderListsView } = require('../../js/b-tracking.js');
 const { openMonKomerce } = require('../../js/b-komerce.js');
 const {
   detectParticipantToken,
   activateFromParticipantUrl,
-  activateOwnerLibrary,
 } = require('../../js/group/group-side-cart.js');
 const { destroyMobilePager } = require('../../js/b-pager.js');
 const { scrollPageToTop } = require('../../js/b-scroll-owner.js');
@@ -346,14 +349,16 @@ describe('setupBnav', () => {
     expect(renderTrackView).toHaveBeenCalled();
   });
 
-  test("bus 'nav:goto-group' (émis par Mon Komerce > Mes listes) -> activateOwnerLibrary(), aucun switchView('group')", () => {
+  test("bus 'nav:goto-group' (émis par Mon Komerce > Mes listes) -> ouvre l'onglet Listes de Suivi, aucun switchView('group')", () => {
     mountNavButtons();
     setupBnav();
     bus.emit('nav:goto-group');
-    expect(activateOwnerLibrary).toHaveBeenCalled();
-    // Mandat §2/§4/§16 : plus d'onglet 'group' — le composant komerce
-    // (Mon Komerce) reste la source d'activation, jamais un onglet dédié.
-    expect(document.querySelector('[data-tab="komerce"]').classList.contains('active')).toBe(true);
+    // Point ouvert #1 du rapport de clôture Lot D, résolu : renderListsTab()
+    // a été construit dans b-tracking.js. nav:goto-group ouvre désormais le
+    // sous-onglet Listes de l'onglet Suivi (renderListsView()) plutôt que
+    // de replier sur Commandes (renderTrackView()).
+    expect(renderListsView).toHaveBeenCalled();
+    expect(document.querySelector('[data-tab="track"]').classList.contains('active')).toBe(true);
   });
 
   test('tab=komerce -> renderKomerceView()', () => {
@@ -408,11 +413,11 @@ describe('handleParticipantUrl -> deep-link ?tab= (PROMPT_FINAL_IMPLEMENTATION_L
     window.history.replaceState({}, '', window.location.pathname);
   });
 
-  test('?tab=group -> activateOwnerLibrary(), pas de switchView', () => {
+  test('?tab=group -> ouvre l\'onglet Listes de Suivi (point ouvert #1 résolu, onglet Listes construit)', () => {
     detectParticipantToken.mockReturnValue(null);
     setSearch('?tab=group');
     handleParticipantUrl();
-    expect(activateOwnerLibrary).toHaveBeenCalled();
+    expect(renderListsView).toHaveBeenCalled();
   });
 
   test('?tab=wallet -> redirige vers komerce (openMonKomerce focus wallet)', () => {
@@ -424,9 +429,10 @@ describe('handleParticipantUrl -> deep-link ?tab= (PROMPT_FINAL_IMPLEMENTATION_L
 
   test('?tab=invalide -> ignoré, aucune activation', () => {
     detectParticipantToken.mockReturnValue(null);
+    renderTrackView.mockClear();
     setSearch('?tab=nope');
     handleParticipantUrl();
-    expect(activateOwnerLibrary).not.toHaveBeenCalled();
+    expect(renderTrackView).not.toHaveBeenCalled();
     expect(openMonKomerce).not.toHaveBeenCalled();
   });
 });

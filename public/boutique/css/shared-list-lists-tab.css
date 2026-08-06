@@ -1,0 +1,206 @@
+/**
+ * @komerce-arch-lite
+ * @role          shared-cart-lists-tab-styles
+ * @domain        shared-cart
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-tracking.js
+ * @purpose       Sous-navigation persistante Commandes|Listes de l'onglet Suivi,
+ *                et cartes de la bibliothèque « Mes listes » (créées / partagées).
+ * @impact-areas  shared-cart, tracking, mon-komerce
+ * @version       2026-08
+ */
+
+/* ── Sous-nav Commandes | Listes ─────────────────────────────────────── */
+
+.k-track-subnav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 4px;
+  background: var(--sand-warm);
+  border-radius: 12px;
+}
+
+.k-track-subnav-tab {
+  flex: 1;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.k-track-subnav-tab.active {
+  background: var(--white);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.k-track-subnav-tab:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.k-track-tab-panel.u-hidden {
+  display: none;
+}
+
+/* ── Panneau « Listes » ──────────────────────────────────────────────── */
+
+.k-track-lists-panel h2 {
+  margin: 18px 0 8px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.k-track-lists-panel h2:first-child {
+  margin-top: 0;
+}
+
+.k-library-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.k-library-empty-hint {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--sand);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+/* ── Carte de liste ──────────────────────────────────────────────────── */
+
+.k-library-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+
+.k-library-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow .15s, transform .1s;
+}
+
+.k-library-item:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.k-library-item:active {
+  transform: scale(.99);
+}
+
+.k-library-item:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.k-library-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.k-library-item-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.k-library-item-meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.k-library-item-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.k-library-item-status--open {
+  color: var(--green-text);
+}
+
+.k-library-item-status--closed {
+  color: var(--text-muted);
+}
+
+.k-library-item-status--cancelled {
+  color: var(--status-cancelled-text);
+}
+
+.k-library-item-arrow {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+.k-library-item-close {
+  align-self: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--red-danger-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--red-danger-text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.k-library-item-close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.k-library-item-close:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 899px) {
+  .k-library-item-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .k-library-item-close {
+    justify-self: end;
+    min-height: 36px;
+  }
+}

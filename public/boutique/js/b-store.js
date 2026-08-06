@@ -171,13 +171,6 @@ export const state = {
     items: [],
   },
   /**
-   * Sélection locale du destinataire dans la liste — jamais persistée,
-   * jamais ajoutée à state.cart (mandat §3/§8). Set() natif : ce store
-   * n'est pas serialisé pour cet objet (pas de JSON.stringify(state) global
-   * observé sur ce champ), donc pas besoin d'équivalent sérialisable.
-   */
-  sharedListSelection: new Set(),
-  /**
    * Amendement V2 §A (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_
    * CART_V2) — quelle surface est projetée dans le side cart / drawer
    * canonique : 'personal' | 'shared-list'. Distinct de sharedListContext

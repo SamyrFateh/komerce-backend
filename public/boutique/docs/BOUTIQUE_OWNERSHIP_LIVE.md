@@ -32,7 +32,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 |-----------|:---:|:-------:|:-----------:|-------------------|
 | `b-modal-desktop-product.js` | 94 | 1 | 0/0 | Modal produit |
 | `b-modal-mobile-product.js` | 81 | 1 | 0/0 | Modal produit |
-| `b-cart.js` | 48 | 26 | 3/8 | Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
+| `b-cart.js` | 55 | 26 | 4/8 | Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
 | `b-modal-core.js` | 17 | 49 | 4/2 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout-render.js` | 58 | 0 | 0/0 | — |
 | `b-checkout.js` | 51 | 4 | 0/4 | Bottom-nav mobile |
@@ -44,8 +44,8 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-buybox-shared.js` | 22 | 0 | 0/0 | Modal produit |
 | `b-modal-nav.js` | 10 | 10 | 1/4 | Modal produit |
 | `b-pager.js` | 3 | 16 | 2/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
+| `b-tracking.js` | 19 | 0 | 1/0 | Section catalogue |
 | `b-identity.js` | 11 | 5 | 0/0 | — |
-| `b-tracking.js` | 15 | 0 | 0/0 | Section catalogue |
 | `b-catalog.js` | 11 | 2 | 3/3 | Carte produit, Grille produits, Chips catégories, Section catalogue |
 | `b-modal-image-ux.js` | 8 | 5 | 1/1 | Modal produit |
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
@@ -56,7 +56,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
 | `hero-bootstrap.js` | 0 | 9 | 0/0 | Grille produits, Hero, Section catalogue |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
-| `b-nav.js` | 5 | 1 | 5/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
+| `b-nav.js` | 5 | 1 | 6/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
 | `b-favs.js` | 5 | 0 | 1/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
 | `b-paypal.js` | 5 | 0 | 0/0 | — |
 | `b-home-premium-v1.js` | 4 | 0 | 2/0 | Hero, Chips catégories |
@@ -97,6 +97,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | modal-shell.css | 900px, 899px, 1200px | 🔴 899px |
 | products.css | 900px, 1200px, 899px | 🔴 899px |
 | shared-list-library-remove.css | 430px | 🔴 430px |
+| shared-list-lists-tab.css | 430px | 🔴 430px |
 | boutique-desktop.css | 900px, 1200px | ✅ |
 | hero-cart-proxy.css | 900px | ✅ |
 | identity.css | 900px | ✅ |
@@ -136,7 +137,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Composants en multipropriété CSS | 8 | 0 |
 | Modules JS écrivant le DOM | 35 | ≤ 5 |
 | Breakpoints distincts | 7 | ≤ 2 |
-| Violations breakpoint | 16 | 0 |
+| Violations breakpoint | 17 | 0 |
 | `!important` | 19 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

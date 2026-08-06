@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        cart_state, shared_cart_context, product_actions, viewport
  * @outputs       cart_drawer, side_cart, quantity_changes, shared_cart_item_updates
- * @depends       b-store.js, b-cart-core.js, b-catalog.js, b-scroll-owner.js, shop-schema.js, routes/shared-cart.js
+ * @depends       b-bus.js, b-store.js, b-cart-core.js, b-catalog.js, b-scroll-owner.js, shop-schema.js, group/group-side-cart.js, routes/shared-cart.js
  * @used-by       boutique.js, b-checkout.js, b-modal-core.js, b-nav.js, b-share-cart.js
  * @doctrine      panier_ouvert_ferme, participant_lecture_seule, side_cart_non_intrusif, modal_produit_sans_chevauchement
  * @impact-areas  checkout-entry, side-cart, shared-cart-editing, participant-flow, responsive-layout
@@ -614,6 +614,392 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       const newItem = dom.cartBody.querySelector('.k-cart-item.new-item');
       if (newItem) newItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 120);
+  }
+
+  /* ── Lot A (refactor soustractif shared-cart) — renderer canonique du
+   * contexte snapshot ────────────────────────────────────────────────
+   * b-cart.js devient l'unique propriétaire des lignes, du side cart et
+   * du drawer, y compris pour un snapshot de liste partagée. Le
+   * contrôleur (group/group-side-cart.js) ne construit plus aucun HTML :
+   * il fournit un contexte + les items + des callbacks d'action, et
+   * appelle renderCartSnapshot() ci-dessous. Réutilise les mêmes classes
+   * .k-cart-item-img/-info/-name que le panier personnel.
+   *
+   * Lot D (correction — audit de clôture) : la version précédente avait
+   * bien renommé les deux identifiants littéralement interdits
+   * (#k-shared-list-panel → #k-cart-snapshot-panel,
+   * .k-shared-list-item → .k-cart-snapshot-item) mais laissait intact,
+   * derrière ce nouveau nom, un panneau complet — en-tête/titre/badge de
+   * statut, barre de progression, footer avec CTA d'achat dédié — qui
+   * MASQUAIT le footer canonique (dom.cartFooter) au lieu de le piloter.
+   * C'est exactement le « footer/progression propres » que les invariants
+   * de clôture interdisent (pas seulement les deux sélecteurs nommés).
+   * Correction : plus aucun conteneur propre. Les lignes s'écrivent
+   * directement dans les conteneurs canoniques (#k-sc-items, #k-cart-body)
+   * et le statut/la progression/les actions pilotent le chrome canonique
+   * existant (#k-cart-header, dom.cartFooter, .k-sc-title-bar,
+   * .k-sc-header) — voir applySnapshotDrawerFooter/applySnapshotSideCartChrome
+   * ci-dessous. Les seuls éléments ajoutés sont quelques boutons/un badge
+   * de statut insérés DANS ces conteneurs déjà existants, jamais un
+   * conteneur qui les remplace ou les cache.
+   *
+   * @typedef {Object} SnapshotRenderContext
+   * @property {'shared-snapshot'} source
+   * @property {boolean} readOnly
+   * @property {string} title
+   * @property {string|null} subtitle
+   * @property {string|null} status
+   * @property {string|null} organizerName
+   * @property {boolean} isOrganizer
+   * @property {boolean} editMode - Lot B, mode édition explicite (quantité/retrait visibles seulement si true)
+   * @property {string} headerTitle
+   * @property {number} availableCount
+   * @property {number} availableTotal
+   * @property {boolean} showSaveAction
+   * @property {boolean} saved
+   * @property {Set<string>} pendingQuantityItemIds
+   */
+
+  const SNAPSHOT_ITEM_IMG_WIDTH = 100; // aligné sur optimizeImgUrl(p.image_url, 100) pour .k-cart-item-img
+  const SNAPSHOT_ITEM_IMG_FALLBACK = '<span class="k-cart-item-img-fallback" aria-hidden="true">📦</span>';
+
+  function isRenderableSnapshotImageUrl(raw) {
+    if (typeof raw !== 'string') return false;
+    const trimmed = raw.trim();
+    if (!trimmed) return false;
+    try {
+      const resolved = new URL(trimmed, window.location.origin);
+      return resolved.protocol === 'http:' || resolved.protocol === 'https:';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function snapshotItemImageParts(item) {
+    const rawUrl = typeof item.image === 'string' ? item.image.trim() : '';
+    if (!isRenderableSnapshotImageUrl(rawUrl)) {
+      return { html: SNAPSHOT_ITEM_IMG_FALLBACK, wrapClass: ' is-img-error' };
+    }
+    const optimized = optimizeImgUrl(rawUrl, SNAPSHOT_ITEM_IMG_WIDTH);
+    const html = (
+      `<img class="k-cart-item-img-el" src="${sanitize(optimized)}" alt="" loading="lazy" ` +
+      `onerror="this.closest('.k-cart-item-img').classList.add('is-img-error');this.remove();">` +
+      SNAPSHOT_ITEM_IMG_FALLBACK
+    );
+    return { html, wrapClass: '' };
+  }
+
+  function snapshotStatusLabel(status) {
+    return { open: 'Ouverte', closed: 'Fermée', cancelled: 'Annulée' }[status] || status;
+  }
+
+  function snapshotQuantityControlHtml(item, context) {
+    // Lot B — contrôles d'édition invisibles hors du mode édition explicite,
+    // même pour l'organisateur. Réutilise .k-cart-item-qty/.k-qty-btn/
+    // .k-qty-val (cart.css, panier personnel) — aucune classe dédiée.
+    if (!context.isOrganizer || !context.editMode || context.readOnly || item.claimed) return '';
+    const locked = context.pendingQuantityItemIds && context.pendingQuantityItemIds.has(String(item.id));
+    const qty = Number(item.quantity) || 1;
+    return (
+      `<div class="k-cart-item-qty" data-item-id="${sanitize(String(item.id))}">` +
+        `<button type="button" class="k-qty-btn" data-qty-step="-1" data-item-id="${sanitize(String(item.id))}" ` +
+          `aria-label="Diminuer la quantité" ${locked ? 'disabled' : ''}>−</button>` +
+        `<span class="k-qty-val">${qty}</span>` +
+        `<button type="button" class="k-qty-btn" data-qty-step="1" data-item-id="${sanitize(String(item.id))}" ` +
+          `aria-label="Augmenter la quantité" ${locked ? 'disabled' : ''}>+</button>` +
+      `</div>`
+    );
+  }
+
+  function snapshotItemRowHtml(item, context) {
+    const claimed = !!item.claimed;
+    const classes = ['k-cart-snapshot-item', 'is-cart-snapshot'];
+    if (claimed) classes.push('is-cart-item-claimed');
+
+    const { html: img, wrapClass: imgWrapClass } = snapshotItemImageParts(item);
+
+    const statusText = claimed ? 'Déjà acheté' : 'Disponible';
+    const priceText = fmt(item.unit_price_kmf, 'KMF');
+
+    // Lot B (doctrine snapshot + lecture simple) — plus de sélection par
+    // ligne : une ligne non réclamée est simplement disponible, achetée
+    // avec le reste de la liste via le bouton global du footer canonique.
+    // Le seul statut affiché par ligne est claimed/disponible (badge, pas
+    // de CTA). Réutilise .k-cart-item-remove (cart.css, panier personnel)
+    // pour le retrait — aucune classe dédiée.
+    const control = claimed
+      ? `<span class="k-cart-snapshot-item-status-badge is-claimed">Déjà acheté</span>`
+      : '';
+
+    // Lot B — même garde editMode que le contrôle de quantité.
+    const removeBtn = context.isOrganizer && context.editMode && !claimed
+      ? `<button type="button" class="k-cart-item-remove" data-item-id="${sanitize(String(item.id))}" aria-label="Retirer cet article" title="Retirer">✕</button>`
+      : '';
+
+    const openLabel = `Voir la fiche produit — ${item.name || 'cet article'}`;
+    return (
+      `<div class="${classes.join(' ')}" data-item-id="${sanitize(String(item.id))}">` +
+        `<button type="button" class="k-cart-snapshot-item-open" data-item-id="${sanitize(String(item.id))}" aria-label="${sanitize(openLabel)}">` +
+          `<div class="k-cart-item-img${imgWrapClass}">${img}</div>` +
+          `<div class="k-cart-item-info">` +
+            `<div class="k-cart-item-name">${sanitize(item.name || '')}</div>` +
+            `<div class="k-cart-snapshot-item-meta k-cart-item-context-note">${priceText} · <span class="k-cart-snapshot-item-status">${statusText}</span></div>` +
+          `</div>` +
+        `</button>` +
+        snapshotQuantityControlHtml(item, context) +
+        `<div class="k-cart-snapshot-item-controls">${control}${removeBtn}</div>` +
+      `</div>`
+    );
+  }
+
+  /**
+   * Wiring des lignes snapshot uniquement (retrait, quantité, ouverture
+   * fiche produit) — aucun binding de chrome ici, contrairement à
+   * l'ancienne wireSnapshotPanel(). Le chrome (statut, achat, actions
+   * organisateur) est câblé séparément par applySnapshotDrawerFooter/
+   * applySnapshotSideCartChrome sur les conteneurs canoniques.
+   */
+  function wireSnapshotItems(root, actions) {
+    if (!root || !actions) return;
+    root.querySelectorAll('.k-cart-item-remove').forEach((btn) => {
+      btn.addEventListener('click', () => actions.onRemove(btn.dataset.itemId));
+    });
+    root.querySelectorAll('.k-qty-btn').forEach((btn) => {
+      btn.addEventListener('click', () => actions.onQuantityStep(btn.dataset.itemId, Number(btn.dataset.qtyStep)));
+    });
+    root.querySelectorAll('.k-cart-snapshot-item-open').forEach((btn) => {
+      btn.addEventListener('click', () => actions.onOpenProduct(btn.dataset.itemId));
+    });
+  }
+
+  function snapshotStatusText(context) {
+    const parts = [snapshotStatusLabel(context.status)];
+    if (context.organizerName) parts.push(context.organizerName);
+    if (context.subtitle) parts.push(context.subtitle);
+    return parts.join(' · ');
+  }
+
+  /**
+   * Insère (une fois) puis met à jour un petit badge de statut texte DANS
+   * un conteneur canonique existant (jamais un bandeau propre). `id` doit
+   * être unique par conteneur cible (drawer vs side cart desktop).
+   */
+  function applySnapshotStatusBadge(container, id, context, anchorSelector) {
+    if (!container) return;
+    let badge = container.querySelector('#' + id);
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.id = id;
+      badge.className = 'k-cart-snapshot-status';
+      const anchor = anchorSelector ? container.querySelector(anchorSelector) : null;
+      if (anchor) container.insertBefore(badge, anchor);
+      else container.appendChild(badge);
+    }
+    badge.textContent = snapshotStatusText(context);
+  }
+
+  function removeSnapshotButtons(container) {
+    container?.querySelectorAll('[data-snapshot-button="1"]').forEach((el) => el.remove());
+  }
+
+  /**
+   * Bouton dédié créé une seule fois dans un conteneur canonique (jamais
+   * dans un panneau propre), ré-utilisé et simplement mis à jour aux
+   * rendus suivants. `el.onclick = fn` (affectation, pas addEventListener)
+   * pour rebrancher l'action courante sans empiler de listeners.
+   */
+  function getOrCreateSnapshotButton(container, id, className) {
+    if (!container) return null;
+    let btn = container.querySelector('#' + id);
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = id;
+      btn.className = className;
+      btn.dataset.snapshotButton = '1';
+      container.appendChild(btn);
+    }
+    return btn;
+  }
+
+  // Boutons du panier personnel non applicables en mode snapshot (achat/
+  // partage/vidage personnels) — masqués via .u-hidden (existant), jamais
+  // retirés du DOM, restaurés au cleanup. #k-cart-continue (← Continuer)
+  // reste inchangé : affordance générique de retour, valable aussi en
+  // snapshot.
+  const DRAWER_NATIVE_BTN_IDS_TO_HIDE = ['k-cart-checkout', 'k-cart-share', 'k-cart-clear'];
+  const SIDECART_NATIVE_BTN_IDS_TO_HIDE = ['k-sc-checkout', 'k-sc-cta', 'k-sc-share', 'k-sc-clear'];
+
+  /**
+   * Pilote le chrome canonique du drawer/mobile (#k-cart-header,
+   * dom.cartFooter) pour le contexte snapshot — ne construit plus de
+   * footer propre. Le footer canonique reste visible ; seuls son contenu
+   * texte et ses boutons d'action sont adaptés.
+   */
+  function applySnapshotDrawerFooter(context, items, actions) {
+    const header = document.getElementById('k-cart-header');
+    applySnapshotStatusBadge(header, 'k-cart-snapshot-status', context, '#k-cart-close');
+
+    if (!dom.cartFooter) return;
+    dom.cartFooter.classList.remove('u-hidden');
+    DRAWER_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => document.getElementById(id)?.classList.add('u-hidden'));
+
+    const claimedCount = items.filter((it) => it.claimed).length;
+    const itemCountEl = document.getElementById('k-cart-item-count');
+    const itemPluralEl = document.getElementById('k-cart-item-plural');
+    const subtotalEl = document.getElementById('k-cart-subtotal-val');
+    if (itemCountEl) itemCountEl.textContent = `${claimedCount}/${items.length}`;
+    if (itemPluralEl) itemPluralEl.textContent = ' déjà achetés';
+    if (subtotalEl) subtotalEl.textContent = fmt(context.availableTotal, 'KMF');
+    if (dom.cartTotalVal) dom.cartTotalVal.textContent = fmt(context.availableTotal, 'KMF');
+    if (dom.cartTotalConv) dom.cartTotalConv.textContent = '';
+
+    const btnRow = document.getElementById('k-cart-footer-btns');
+    removeSnapshotButtons(btnRow);
+    if (!btnRow) return;
+
+    if (context.showSaveAction) {
+      const saveBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-save', 'k-cart-continue-shop');
+      saveBtn.textContent = context.saved ? '✓ Sauvegardée' : '☆ Sauvegarder';
+      saveBtn.disabled = !!context.saved;
+      saveBtn.onclick = () => actions.onSave();
+    }
+    if (context.isOrganizer && !context.readOnly) {
+      const editBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-edit', 'k-cart-continue-shop');
+      editBtn.textContent = context.editMode ? 'Terminer' : '✎ Modifier';
+      editBtn.setAttribute('aria-pressed', String(!!context.editMode));
+      editBtn.onclick = () => actions.onToggleEditMode();
+    }
+    if (context.isOrganizer) {
+      const shareBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-share', 'k-cart-continue-shop');
+      shareBtn.textContent = '📤 Partager';
+      shareBtn.onclick = () => actions.onShare();
+
+      const closeBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-closelist', 'k-cart-continue-shop');
+      closeBtn.textContent = context.readOnly ? 'Liste fermée' : 'Fermer la liste';
+      closeBtn.disabled = !!context.readOnly;
+      closeBtn.onclick = () => actions.onClose();
+    }
+    const buyBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-buy', 'kcf-btn kcf-full');
+    buyBtn.textContent = context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.availableCount})`;
+    buyBtn.disabled = context.availableCount === 0;
+    buyBtn.onclick = () => actions.onBuy();
+  }
+
+  function cleanupSnapshotDrawerFooter() {
+    document.getElementById('k-cart-header')?.querySelector('#k-cart-snapshot-status')?.remove();
+    DRAWER_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => document.getElementById(id)?.classList.remove('u-hidden'));
+    removeSnapshotButtons(document.getElementById('k-cart-footer-btns'));
+  }
+
+  /**
+   * Pilote le chrome canonique du side cart desktop (.k-sc-title-bar,
+   * .k-sc-header) — même principe que la version drawer ci-dessus.
+   */
+  function applySnapshotSideCartChrome(context, items, actions) {
+    const sc = document.getElementById('k-side-cart');
+    if (!sc) return;
+    sc.setAttribute('data-mode', 'shared-list');
+    sc.classList.add('has-items');
+
+    const titleBar = sc.querySelector('.k-sc-title-bar');
+    const titleLabel = sc.querySelector('.k-sc-title-label');
+    if (titleLabel) titleLabel.textContent = context.title || 'Liste partagée';
+    applySnapshotStatusBadge(titleBar, 'k-sc-snapshot-status', context, null);
+
+    SIDECART_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => sc.querySelector('#' + id)?.classList.add('u-hidden'));
+
+    const totalEl = sc.querySelector('#k-sc-total');
+    if (totalEl) totalEl.textContent = fmt(context.availableTotal, 'KMF');
+
+    const scHeader = sc.querySelector('.k-sc-header');
+    removeSnapshotButtons(scHeader);
+    if (!scHeader) return;
+
+    if (context.showSaveAction) {
+      const saveBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-save', 'k-sc-btn-cart');
+      saveBtn.textContent = context.saved ? '✓ Sauvegardée' : '☆ Sauvegarder';
+      saveBtn.disabled = !!context.saved;
+      saveBtn.onclick = () => actions.onSave();
+    }
+    if (context.isOrganizer && !context.readOnly) {
+      const editBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-edit', 'k-sc-btn-cart');
+      editBtn.textContent = context.editMode ? 'Terminer' : '✎ Modifier';
+      editBtn.onclick = () => actions.onToggleEditMode();
+    }
+    if (context.isOrganizer) {
+      const shareBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-share', 'k-sc-btn-cart');
+      shareBtn.textContent = '📤 Partager';
+      shareBtn.onclick = () => actions.onShare();
+
+      const closeBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-closelist', 'k-sc-btn-cart');
+      closeBtn.textContent = context.readOnly ? 'Liste fermée' : 'Fermer la liste';
+      closeBtn.disabled = !!context.readOnly;
+      closeBtn.onclick = () => actions.onClose();
+    }
+    const buyBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-buy', 'k-sc-btn-checkout');
+    buyBtn.textContent = context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.availableCount})`;
+    buyBtn.disabled = context.availableCount === 0;
+    buyBtn.onclick = () => actions.onBuy();
+  }
+
+  function cleanupSnapshotSideCartChrome() {
+    const sc = document.getElementById('k-side-cart');
+    if (!sc) return;
+    sc.removeAttribute('data-mode');
+    SIDECART_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => sc.querySelector('#' + id)?.classList.remove('u-hidden'));
+    sc.querySelector('.k-sc-title-bar')?.querySelector('#k-sc-snapshot-status')?.remove();
+    removeSnapshotButtons(sc.querySelector('.k-sc-header'));
+    // #k-sc-items n'est pas vidé ici : renderSideCart() le resynchronise
+    // seul juste après (pipeline panier personnel), comme avant ce fix.
+  }
+
+  /**
+   * Point d'entrée canonique appelé par le contrôleur de snapshot
+   * (group-side-cart.js::renderSharedListInCart). Rend les lignes
+   * directement dans les conteneurs canoniques (#k-sc-items desktop,
+   * #k-cart-body drawer — plus de wrapper #k-cart-snapshot-panel) et
+   * pilote le chrome canonique (header/footer) au lieu de le masquer.
+   * @param {SnapshotRenderContext} context
+   * @param {Array<object>} items - lignes shared_cart_items brutes
+   * @param {object} actions - callbacks fournis par le contrôleur (onToggleEditMode, onRemove, onQuantityStep, onOpenProduct, onShare, onClose, onBuy, onSave)
+   */
+export function renderCartSnapshot(context, items, actions) {
+    document.body.classList.add('is-shared-list-context');
+    const rowsHtml = items.map((it) => snapshotItemRowHtml(it, context)).join('');
+
+    const sc = document.getElementById('k-side-cart');
+    if (sc) {
+      const itemsEl = sc.querySelector('#k-sc-items');
+      if (itemsEl) {
+        itemsEl.innerHTML = rowsHtml;
+        wireSnapshotItems(itemsEl, actions);
+      }
+      applySnapshotSideCartChrome(context, items, actions);
+    }
+
+    if (dom.cartDrawer) dom.cartDrawer.setAttribute('data-mode', 'shared-list');
+    if (dom.cartBody) {
+      dom.cartBody.innerHTML = rowsHtml;
+      wireSnapshotItems(dom.cartBody, actions);
+    }
+    applySnapshotDrawerFooter(context, items, actions);
+
+    if (dom.cartHeaderTitle) dom.cartHeaderTitle.textContent = context.headerTitle;
+  }
+
+  /**
+   * Nettoyage DOM commun au contexte snapshot — retire les traces
+   * visuelles du mode liste des surfaces canoniques. Ne touche jamais
+   * `.has-items` sur #k-side-cart (pipeline du panier personnel, se
+   * resynchronise seul juste après via renderSideCart).
+   */
+export function cleanupCartSnapshotDom() {
+    document.body.classList.remove('is-shared-list-context');
+    cleanupSnapshotSideCartChrome();
+    dom.cartDrawer?.removeAttribute('data-mode');
+    cleanupSnapshotDrawerFooter();
+    dom.cartFooter?.classList.remove('u-hidden');
   }
 
   /**
@@ -1269,11 +1655,30 @@ function renderSideCart() {
 // Appelé par updateCartBadge (b-cart-core.js) et les surfaces qui
 // ont besoin de forcer un re-rendu du side-cart desktop.
 bus.on('side-cart:render', renderSideCart);
-// Amendement V2 §A — group-side-cart.js::setCartSurface() émet cet
-// événement pour re-rendre le drawer/panier depuis le sélecteur desktop
-// [Panier] [Liste] sans importer b-cart.js (mandat §5, pas de dépendance
-// inverse — voir docblock b-bus.js).
-bus.on('cart-body:render', () => renderCartBody());
+// Amendement V2 §A — le sélecteur desktop [Panier] [Liste]
+// (group-side-cart.js::setCartSurface()) est atteignable uniquement sur
+// desktop (isDesktop() dans renderCartSurfaceSwitch()), où seul le side
+// cart (#k-side-cart) est visible : 'side-cart:render' ci-dessus suffit,
+// sans dépendance statique vers b-cart.js (mandat §5).
+
+// Lot D+ (correctif cycle d'import) — group-side-cart.js émettait
+// auparavant un import direct de renderCartSnapshot/cleanupCartSnapshotDom,
+// fermant un cycle A↔B avec b-cart.js (signalé par check-js-imports.js,
+// point ouvert #2 du rapport de clôture Lot D). b-cart.js reste l'unique
+// propriétaire du rendu (doctrine un_renderer_panier) ; il écoute
+// simplement ces deux signaux au lieu d'être appelé en import direct —
+// group-side-cart.js n'importe plus rien de ce fichier.
+bus.on('cart-snapshot:render', ({ context, items, actions }) => renderCartSnapshot(context, items, actions));
+bus.on('cart-snapshot:cleanup', () => cleanupCartSnapshotDom());
+//
+// Lot D (correction — audit de clôture) : l'écoute du signal "corps rendu
+// depuis bascule de surface" a été retirée ci-dessous. b-cart.js n'appelle
+// jamais setCartSurface() sans enchaîner un appel direct à renderCartBody()
+// dans la même fonction (openCart(), openCartWithHighlight(), CTA
+// #k-sc-cta) — le relais par bus n'avait donc plus d'appelant réel une
+// fois son unique point d'émission retiré de group-side-cart.js par Lot A.
+// boutique:360 le signalait comme écouteur orphelin ; retrait symétrique
+// côté group-library-remove.js.
 
 /* ── MUTATIONS CENTRALISÉES ─────────────────────────────────
  * Toute écriture sur state.cart doit passer par ces fonctions

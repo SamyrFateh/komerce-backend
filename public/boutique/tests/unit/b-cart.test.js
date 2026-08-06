@@ -1,36 +1,54 @@
-'use strict';
-
-
 /**
  * @test-kind unit
  * @test-runner jest
  * @test-requires none
  */
+
 /**
- * tests/unit/b-cart.test.js
+ * @komerce-arch-lite
+ * @role          canonical-cart-renderer-tests
+ * @domain        shared-cart
+ * @layer         test
+ * @status        production
+ * @owner         public/boutique/tests/unit/b-cart.test.js
+ * @purpose       Tests unitaires de js/b-cart.js — panier personnel (inchangé,
+ *                conservé du Lot B) et rendu canonique du snapshot shared-cart
+ *                (Lot A/D : b-cart.js est l'unique propriétaire des lignes, y
+ *                compris pour un contexte de liste partagée). Couvre le rendu
+ *                snapshot, claimed/grisé + « Déjà acheté », lecture seule
+ *                participant, mode édition organisateur, ouverture fiche
+ *                produit, drawer mobile — sans reconstruire le panneau
+ *                parallèle démantelé.
+ * @impact-areas  shared-cart, cart, boutique
+ * @version       2026-08-lotD
+ */
+'use strict';
+
+/**
+ * tests/unit/b-cart.test.js — Lot D (refactor soustractif shared-cart, clôture)
  *
- * Module #2 du plan d'attaque frontend — js/b-cart.js (1562L), 0% → couverture
- * de la logique métier critique du panier (§7 CART INTERACTIONS + §10 CART
- * PANEL, hors partage WhatsApp / long-press stepper / fly animation détaillée
- * qui restent en dette assumée pour ce lot — cf. plan point 2).
+ * Reclassification du set hérité du Lot B (46 échecs contre l'implémentation
+ * actuelle) suivant la décision de clôture :
  *
- * Périmètre couvert :
- *   - addToCart (nouvel article, incrément existant, feedback bouton, modal-add,
- *     buy-now, toast)
- *   - setQty (update, suppression si < 1, item introuvable)
- *   - removeFromCart
- *   - quickAdd / quickRemove
- *   - toggleFav
- *   - markAllCartButtons
- *   - openCart / closeCart / openCartWithHighlight (dont bascule desktop)
- *   - clearCart / pruneObsoleteCart
- *   - renderCartBody est exercée indirectement (appelée par setQty/removeFromCart/
- *     openCart) : on vérifie son rendu de surface (vide vs rempli) sans dupliquer
- *     tout le détail DOM déjà couvert ailleurs.
+ *   A. Supprimés  : tout ce qui vérifiait le panneau parallèle abandonné
+ *      (#k-shared-list-panel, .k-shared-list-header, sélection Sélectionner/
+ *      Sélectionné, is-selected, progression/footer dédiés). Rien de tel ne
+ *      subsiste dans ce fichier.
+ *   B. Réécrits   : le bloc "Amendement V2 §A" (coexistence panier/liste) de
+ *      l'ancien fichier, qui assertait sur `.k-shared-list-header`, est
+ *      remplacé par la section "Snapshot canonique (Lot A/B — renderCartSnapshot)"
+ *      ci-dessous, qui vérifie les mêmes invariants métier via le chrome
+ *      canonique réel (#k-sc-items, #k-cart-body, #k-cart-footer-btns,
+ *      .k-sc-header) et des helpers texte/rôle (voir helpers/query-helpers.js).
+ *   — : tout le reste (addToCart, setQty, removeFromCart, quickAdd/quickRemove,
+ *      toggleFav, markAllCartButtons, openCart/closeCart/openCartWithHighlight,
+ *      clearCart/pruneObsoleteCart) est conservé à l'identique : ces tests ne
+ *      dépendaient déjà d'aucun sélecteur de l'ancien panneau.
  *
- * state/dom viennent du vrai b-store.js (objets mutables partagés, pattern déjà
- * utilisé pour b-paypal.test.js / b-modal-cart.test.js). Les modules périphériques
- * lourds (réseau, scroll, catalogue, schéma catégories) sont mockés.
+ * Répartition (Lot D, point C du mandat) : ce fichier ne teste que le rendu
+ * et l'interaction avec les lignes (panier personnel + snapshot canonique).
+ * Le contrôleur (chargement, capacités, absence de boucle/sélection) est
+ * couvert par group-side-cart.test.js.
  */
 
 jest.mock('../../js/b-catalog.js', () => ({
@@ -38,7 +56,7 @@ jest.mock('../../js/b-catalog.js', () => ({
 }));
 
 jest.mock('../../js/b-utils.js', () => ({
-  sanitize: jest.fn((s) => s),
+  sanitize: jest.fn((s) => (s === null || s === undefined ? '' : String(s))),
   fmt: jest.fn((n) => String(n) + ' KMF'),
   fmtPrice: jest.fn((n) => String(n)),
   optimizeImgUrl: jest.fn((url) => url),
@@ -68,11 +86,13 @@ jest.mock('../../js/shop-schema.js', () => ({
   normalizeCategoryKey: jest.fn((k) => k),
 }));
 
-const { state, dom, scroll } = require('../../js/b-store.js');
+const { state, dom, scroll, initDom } = require('../../js/b-store.js');
 const { showToast, updateCartBadge, saveCart, cartQty, saveFavs } =
   require('../../js/b-cart-core.js');
 const { isDesktop, getScrollY, scrollToPosition } = require('../../js/b-scroll-owner.js');
 const { bus } = require('../../js/b-bus.js');
+const { buildCartDom } = require('./helpers/cart-dom-fixture.js');
+const { findButtonByText, byClass } = require('./helpers/query-helpers.js');
 
 const {
   addToCart, quickAdd, quickRemove, toggleFav, setQty,
@@ -83,32 +103,8 @@ const {
 const {
   activateSharedListContext,
   clearSharedListContext,
+  toggleEditMode: toggleEditModeCtrl,
 } = require('../../js/group/group-side-cart.js');
-
-/**
- * Reconstruit les refs DOM minimales attendues par b-cart.js.
- * Pas de fixture HTML globale dans ce projet (contrairement à b-modal-cart) :
- * on peuple `dom` directement, comme le fait initDom() en prod.
- */
-function resetDom() {
-  // jsdom ne fournit pas scrollIntoView : b-cart.js l'appelle (highlight scroll,
-  // clic image/nom → réouverture modal). Stub global sur Element.prototype.
-  if (!Element.prototype.scrollIntoView) {
-    Element.prototype.scrollIntoView = jest.fn();
-  }
-  dom.cartBody = document.createElement('div');
-  dom.cartFooter = document.createElement('div');
-  dom.cartHeaderTitle = document.createElement('div');
-  dom.cartHeader = document.createElement('div');
-  dom.cartOverlay = document.createElement('div');
-  dom.cartDrawer = document.createElement('div');
-  dom.cartTotalVal = document.createElement('div');
-  dom.cartTotalConv = document.createElement('div');
-  dom.cartBtn = document.createElement('button');
-  dom.addCartBtn = document.createElement('button');
-  document.body.innerHTML = '';
-  document.body.classList.remove('cart-open', 'cart-empty');
-}
 
 function makeProduct(overrides) {
   return Object.assign({
@@ -119,6 +115,22 @@ function makeProduct(overrides) {
   }, overrides);
 }
 
+function freshSharedListContext() {
+  return {
+    sharedCartId: null, token: null, status: 'open', isCreator: false,
+    creatorFirstName: null, title: null, message: null, items: [],
+  };
+}
+
+function resetDom() {
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = jest.fn();
+  }
+  buildCartDom();
+  initDom();
+  document.body.classList.remove('cart-open', 'cart-empty');
+}
+
 describe('b-cart', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -126,16 +138,11 @@ describe('b-cart', () => {
     state.cart = [];
     state.favs = [];
     state.products = [];
-    state.editSharedCart = null;
-    // Amendement V2 §A — isolation entre tests : group-side-cart.js (réel,
-    // non mocké dans cette suite) partage state.sharedListContext/
-    // sharedListSelection/cartSurface avec b-cart.js.
-    state.sharedListContext = {
-      sharedCartId: null, token: null, status: 'open', isCreator: false,
-      creatorFirstName: null, title: null, message: null, items: [],
-    };
-    state.sharedListSelection = new Set();
+    state.sharedListContext = freshSharedListContext();
+    state.sharedListEditMode = false;
     state.cartSurface = 'personal';
+    state.savedListTokensThisSession = new Set();
+    state.modalReturnSurface = null;
     scroll.savedY = 0;
     isDesktop.mockReturnValue(false);
     saveCart.mockImplementation(() => {
@@ -170,7 +177,6 @@ describe('b-cart', () => {
 
     it('complète les champs manquants (id/name/price/image) sur un item existant incomplet', () => {
       state.cart = [{ product: null, id: null, name: null, price: null, image: '', qty: 1 }];
-      // Simule un item pré-existant retrouvé par id via product?.id ?? id → id doit matcher
       state.cart[0].id = 1;
       const product = makeProduct({ image_url: 'https://img/x.jpg' });
       addToCart(product, 1);
@@ -215,7 +221,6 @@ describe('b-cart', () => {
       jest.useFakeTimers();
       addToCart(makeProduct(), 1, dom.addCartBtn);
 
-      // Pas de feedback "grid" pour le bouton modal
       expect(dom.addCartBtn.classList.contains('added')).toBe(false);
       expect(showToast).not.toHaveBeenCalled();
 
@@ -286,7 +291,7 @@ describe('b-cart', () => {
 
     it('même produit, un rail explicite et un rail null → deux lignes distinctes (null est une valeur de rail à part entière)', () => {
       const product = makeProduct();
-      addToCart(product, 1); // pas d'options → rail null
+      addToCart(product, 1);
       addToCart(product, 1, null, { requested_transport_rail: 'AIR_EXPRESS' });
 
       expect(state.cart).toHaveLength(2);
@@ -506,75 +511,7 @@ describe('b-cart', () => {
     });
   });
 
-  describe('Amendement V2 §A — avatar/action panier personnel force cartSurface="personal"', () => {
-    function activateBackgroundList() {
-      activateSharedListContext(
-        {
-          cart: { id: 'sc-1', token: 'tok-1', status: 'open', creator_first_name: 'Samsam' },
-          items: [{ id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false }],
-          is_creator: false,
-        },
-        'tok-1',
-      );
-    }
-
-    it("openCart() bascule cartSurface sur 'personal' même si une liste est active en arrière-plan", () => {
-      activateBackgroundList();
-      expect(state.cartSurface).toBe('shared-list');
-
-      openCart();
-
-      expect(state.cartSurface).toBe('personal');
-      expect(state.sharedListContext.token).toBe('tok-1'); // contexte conservé
-    });
-
-    it("openCartWithHighlight() bascule cartSurface sur 'personal'", () => {
-      activateBackgroundList();
-      state.cart = [{ product: { id: 9, price_kmf: 100 }, qty: 1 }];
-
-      openCartWithHighlight(9);
-
-      expect(state.cartSurface).toBe('personal');
-      expect(state.sharedListContext.token).toBe('tok-1');
-    });
-
-    it("renderCartBody() rend le panier personnel quand cartSurface='personal', même contexte liste actif (coexistence)", () => {
-      activateBackgroundList();
-      state.cartSurface = 'personal';
-      state.cart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];
-
-      renderCartBody();
-
-      expect(dom.cartBody.querySelectorAll('.k-cart-item')).toHaveLength(1);
-      expect(dom.cartBody.querySelector('.k-shared-list-header')).toBeNull();
-    });
-
-    it("renderCartBody() rend la liste quand cartSurface='shared-list' et laisse state.cart intact", () => {
-      const personalCart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];
-      state.cart = personalCart;
-      activateBackgroundList(); // force cartSurface='shared-list'
-
-      renderCartBody();
-
-      expect(dom.cartBody.querySelector('.k-shared-list-header')).not.toBeNull();
-      expect(state.cart).toBe(personalCart);
-    });
-
-    it("quitter le contexte (clearSharedListContext) puis ouvrir le panier reste cohérent", () => {
-      activateBackgroundList();
-      clearSharedListContext();
-      state.cart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];
-
-      openCart();
-      renderCartBody();
-
-      expect(state.cartSurface).toBe('personal');
-      expect(dom.cartBody.querySelector('.k-shared-list-header')).toBeNull();
-      expect(dom.cartBody.querySelectorAll('.k-cart-item')).toHaveLength(1);
-    });
-  });
-
-  describe('renderCartBody (rendu de surface)', () => {
+  describe('renderCartBody (rendu de surface, panier personnel)', () => {
     it('panier vide → message vide affiché, footer masqué, body marqué cart-empty', () => {
       state.cart = [];
       renderCartBody();
@@ -629,6 +566,146 @@ describe('b-cart', () => {
       state.cart = [{ product: { id: 1 }, qty: 1 }];
       pruneObsoleteCart(new Set(['1']));
       expect(saveCart).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * ── Snapshot canonique (Lot A/B — renderCartSnapshot) ─────────────────
+   * Remplace l'ancien bloc "Amendement V2 §A" (coexistence), qui assertait
+   * sur `.k-shared-list-header` (panneau parallèle, supprimé). Ici on active
+   * un vrai contexte de liste via group-side-cart.js (réel, non mocké) et on
+   * vérifie le rendu produit par b-cart.js dans le chrome canonique.
+   */
+  describe('Snapshot canonique — rendu et interactions de liste partagée', () => {
+    function activateList(overrides = {}) {
+      activateSharedListContext(
+        {
+          cart: Object.assign({
+            id: 'sc-1', token: 'tok-1', status: 'open', creator_first_name: 'Samsam',
+          }, overrides.cart),
+          items: overrides.items || [
+            { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
+            { id: 'i2', product_id: 'p2', name: 'Huile', image: null, quantity: 2, unit_price_kmf: 3000, claimed: true },
+          ],
+          is_creator: overrides.isCreator ?? false,
+        },
+        'tok-1',
+      );
+    }
+
+    it('rend une ligne par article snapshot dans le side cart et le drawer, avec les données préservées', () => {
+      activateList();
+      const scItems = document.getElementById('k-sc-items').querySelectorAll('.k-cart-snapshot-item');
+      const drawerItems = dom.cartBody.querySelectorAll('.k-cart-snapshot-item');
+      expect(scItems).toHaveLength(2);
+      expect(drawerItems).toHaveLength(2);
+      expect(dom.cartBody.textContent).toContain('Riz');
+      expect(dom.cartBody.textContent).toContain('6500 KMF');
+    });
+
+    it('ligne réclamée : grisée (is-cart-item-claimed) et libellée "Déjà acheté"', () => {
+      activateList();
+      const claimedRow = dom.cartBody.querySelector('[data-item-id="i2"]');
+      expect(claimedRow.classList.contains('is-cart-item-claimed')).toBe(true);
+      expect(claimedRow.textContent).toContain('Déjà acheté');
+    });
+
+    it('le CTA Acheter ne compte que les lignes disponibles (réclamées exclues)', () => {
+      activateList();
+      const buyBtn = findButtonByText('Acheter (');
+      expect(buyBtn).not.toBeNull();
+      expect(buyBtn.textContent).toContain('Acheter (1)');
+      expect(buyBtn.disabled).toBe(false);
+    });
+
+    it('tout est réclamé → CTA désactivé, libellé "Tout est acheté"', () => {
+      activateList({ items: [
+        { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: true },
+      ] });
+      const buyBtn = findButtonByText('Tout est acheté');
+      expect(buyBtn).not.toBeNull();
+      expect(buyBtn.disabled).toBe(true);
+    });
+
+    it('participant (non organisateur) : lecture seule, aucun contrôle d\'édition ni bouton Modifier', () => {
+      activateList({ isCreator: false });
+      expect(findButtonByText('Modifier')).toBeNull();
+      expect(findButtonByText('Fermer la liste')).toBeNull();
+      expect(byClass('k-cart-item-remove', dom.cartBody)).toHaveLength(0);
+      expect(byClass('k-qty-btn', dom.cartBody)).toHaveLength(0);
+    });
+
+    it('organisateur : bouton global "Modifier"/"Terminer" présent, contrôles invisibles avant le clic', () => {
+      activateList({ isCreator: true });
+      const editBtn = findButtonByText('Modifier');
+      expect(editBtn).not.toBeNull();
+      expect(byClass('k-cart-item-remove', dom.cartBody)).toHaveLength(0);
+      expect(byClass('k-qty-btn', dom.cartBody)).toHaveLength(0);
+    });
+
+    it('organisateur, après activation du mode édition : contrôles visibles uniquement sur les lignes non réclamées', () => {
+      activateList({ isCreator: true });
+      toggleEditModeCtrl();
+
+      const removeButtons = byClass('k-cart-item-remove', dom.cartBody);
+      const qtyGroups = byClass('k-cart-item-qty', dom.cartBody);
+      expect(removeButtons).toHaveLength(1);
+      expect(qtyGroups).toHaveLength(1);
+      expect(removeButtons[0].dataset.itemId).toBe('i1');
+
+      const editBtn = findButtonByText('Terminer');
+      expect(editBtn).not.toBeNull();
+    });
+
+    it('ouvre la fiche produit canonique depuis une ligne de liste (bus modal:open)', () => {
+      state.products = [{ id: 'p1', name: 'Riz' }];
+      activateList();
+      const busSpy = jest.spyOn(bus, 'emit');
+
+      const openBtn = dom.cartBody.querySelector('.k-cart-snapshot-item-open[data-item-id="i1"]');
+      expect(openBtn).not.toBeNull();
+      openBtn.click();
+
+      expect(busSpy).toHaveBeenCalledWith('modal:open', expect.objectContaining({
+        id: 'p1', source: 'shared-list', sharedCartItemId: 'i1',
+      }));
+      busSpy.mockRestore();
+    });
+
+    it('fermeture puis réouverture du drawer mobile restent cohérentes en mode snapshot', () => {
+      isDesktop.mockReturnValue(false);
+      activateList();
+      expect(dom.cartDrawer.classList.contains('open')).toBe(true);
+
+      closeCart();
+      expect(dom.cartDrawer.classList.contains('open')).toBe(false);
+
+      openCart();
+      expect(dom.cartDrawer.classList.contains('open')).toBe(true);
+      expect(state.cartSurface).toBe('personal');
+    });
+
+    it('panier personnel restauré après clearSharedListContext : plus aucune trace snapshot dans le chrome', () => {
+      activateList();
+      clearSharedListContext();
+      state.cart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];
+
+      renderCartBody();
+
+      expect(state.cartSurface).toBe('personal');
+      expect(dom.cartBody.querySelectorAll('.k-cart-snapshot-item')).toHaveLength(0);
+      expect(dom.cartBody.querySelectorAll('.k-cart-item')).toHaveLength(1);
+      expect(document.body.classList.contains('is-shared-list-context')).toBe(false);
+    });
+
+    it('preuve de non-régression : aucun panneau parallèle recréé', () => {
+      activateList({ isCreator: true });
+      toggleEditModeCtrl();
+      expect(document.getElementById('k-shared-list-panel')).toBeNull();
+      expect(document.querySelector('.k-shared-list-item')).toBeNull();
+      expect(document.querySelector('.k-shared-list-header')).toBeNull();
+      expect(document.querySelector('.k-shared-item-open')).toBeNull();
+      expect(document.querySelector('.k-shared-item-qty-btn')).toBeNull();
     });
   });
 });

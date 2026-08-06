@@ -1,12 +1,12 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-06T02:11:59.963Z.
+> Régénéré le 2026-08-06T09:32:28.656Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **76** (76 headés) · Événements bus : **25** · Bundles CSS : **3**
+- Modules JS : **76** (76 headés) · Événements bus : **26** · Bundles CSS : **3**
 - Endpoints appelés : **47** — 🔴 0 hors contrat · ⚪ 33 non prouvés · 🔵 16 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
 
@@ -67,7 +67,8 @@
 | Événement | Émetteurs | Écouteurs | Statut |
 |---|---|---|---|
 | `carousel:changed` | b-modal-product | b-modal-image-ux | 🟡 non déclaré |
-| `cart-body:render` | group-side-cart | b-cart, group-library-remove | 🟢 sain |
+| `cart-snapshot:cleanup` | group-side-cart | b-cart | 🟢 sain |
+| `cart-snapshot:render` | group-side-cart | b-cart | 🟢 sain |
 | `cart:update` | b-cart-core | b-cart, b-cart-core, b-cart-pill, b-mini-cart, b-modal-suggestions, b-nav | 🟢 sain |
 | `cat:select` | b-catalog | b-catalog | 🟢 sain |
 | `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
@@ -119,8 +120,8 @@ graph LR
   group_side_cart["group-side-cart"] -->|modal:open| b_modal_core["b-modal-core"]
   group_side_cart["group-side-cart"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
   b_cart["b-cart"] -->|checkout:open| boutique["boutique"]
-  group_side_cart["group-side-cart"] -->|cart-body:render| b_cart["b-cart"]
-  group_side_cart["group-side-cart"] -->|cart-body:render| group_library_remove["group-library-remove"]
+  group_side_cart["group-side-cart"] -->|cart-snapshot:render| b_cart["b-cart"]
+  group_side_cart["group-side-cart"] -->|cart-snapshot:cleanup| b_cart["b-cart"]
   b_nav["b-nav"] -->|view:changed| b_catalog_desktop_enhancers["b-catalog-desktop-enhancers"]
   b_nav["b-nav"] -->|view:changed| b_home_premium_v1["b-home-premium-v1"]
   b_catalog["b-catalog"] -->|catalog:cat-changed| b_home_premium_v1["b-home-premium-v1"]
@@ -166,7 +167,7 @@ graph LR
 | Bundle | Sources |
 |---|---|
 | `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
-| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `modal-product-polish`, `hero-cart-proxy`, `shared-list-side-cart`, `shared-list-side-cart-responsive`, `shared-list-library-remove`, `share-cart`, `identity`, `paypal`, `wallet`, `komerce`, `checkout-vertical-rail` |
+| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `modal-product-polish`, `hero-cart-proxy`, `shared-list-side-cart`, `shared-list-side-cart-responsive`, `shared-list-library-remove`, `shared-list-lists-tab`, `share-cart`, `identity`, `paypal`, `wallet`, `komerce`, `checkout-vertical-rail` |
 | `css/dist/desktop.css` | `boutique-desktop` |
 
 ---

@@ -14,7 +14,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 770
-- Edges: 4127
+- Edges: 4136
 - DB tables: 109
 - Doctrines: 167
 - Impact areas: 130
@@ -627,7 +627,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-utils.js -> fetch (fetch)
 - depends: public/boutique/js/b-utils.js -> Intl (Intl)
 - depends: public/boutique/js/group/group-api.js -> fetch (fetch)
-- depends: public/boutique/js/group/group-library-remove.js -> group-side-cart.js(dynamic) (group-side-cart.js(dynamic))
+- depends: public/boutique/js/group/group-library-remove.js -> ../b-tracking.js(dynamic) (../b-tracking.js(dynamic))
 - depends: public/boutique/js/komerce-api.js -> backend_api (backend_api)
 - depends: public/boutique/js/product-store.js -> localStorage (localStorage)
 - depends: public/boutique/js/test-modal-view-model-redirect.js -> browser-location-api (browser-location-api)

@@ -27,11 +27,9 @@
  *   modal:open       { id }              — ouvrir fiche produit
  *   modal:close      —                  — fermer modal
  *   cart:update      —                  — panier mis à jour (badge sync) [émis par updateCartBadge]
- *   side-cart:render —                  — forcer un re-rendu du side-cart desktop [ARCH-1]
- *   cart-body:render —                  — re-rendre le corps du drawer/side-cart après un
- *     bascule de state.cartSurface [group-side-cart.js → b-cart.js, amendement V2 §A
- *     PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART ; évite un import statique
- *     de b-cart.js depuis group-side-cart.js (mandat §5, pas de dépendance inverse)]
+ *   side-cart:render —                  — forcer un re-rendu du side-cart desktop [ARCH-1] ;
+ *     couvre aussi la bascule desktop [Panier]/[Liste] (group-side-cart.js::setCartSurface(),
+ *     amendement V2 §A), seule surface où ce sélecteur est atteignable (isDesktop())
  *   checkout:open    —                  — ouvrir la modale de commande [ARCH-1]
  *   product:open-from-cart { id }        — ouvrir fiche depuis le panier [ARCH-1]
  *   view:switch      { view }           — changer d'onglet (home/favs/suivi)
@@ -51,6 +49,13 @@
  *   modal:opened     { product }        — fait : la modal vient de s'ouvrir sur ce produit (≠ modal:open, qui est la commande d'ouverture)
  *   modal:closed     —                  — fait : la modal vient de se fermer (≠ modal:close, qui est la commande de fermeture)
  *   modal:composition-synced —          — fait : la composition responsive de la modal ouverte vient d'être réconciliée après un resize
+ *   cart-snapshot:render { context, items, actions } — rendre le snapshot liste
+ *     partagée dans les surfaces canoniques (side cart + drawer) [group-side-cart.js
+ *     → b-cart.js::renderCartSnapshot, correctif cycle d'import, point ouvert #2
+ *     rapport clôture Lot D — remplace l'ancien import direct]
+ *   cart-snapshot:cleanup —             — retirer les traces DOM du mode liste des
+ *     surfaces canoniques [group-side-cart.js → b-cart.js::cleanupCartSnapshotDom,
+ *     même correctif]
  *
  * Propriété des contrats (P3b, 2026-07) — owner = feature manifeste propriétaire du
  * contrat ; producer = seul module autorisé à émettre ; payload = arité attendue
