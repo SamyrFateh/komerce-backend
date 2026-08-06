@@ -173,6 +173,10 @@ router.post('/from-basket', authenticate, async (req, res, next) => {
       items_count:    result.items.length,
     });
   } catch (err) {
+    // GAP-07 §9.4 — sellable_unit_identity_missing (refus explicite SKU)
+    // porte déjà err.status/err.code, prioritaire sur le matching textuel
+    // legacy ci-dessous.
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
     if (err.message.includes('Limite atteinte') ||
         err.message.includes('vide') ||
         err.message.includes('introuvable')) {
@@ -249,6 +253,10 @@ router.get('/:id/as-cart-items', authenticate, async (req, res, next) => {
       product_name:     it.product_name_snapshot,
       product_image:    it.product_image_snapshot,
       product_category: it.product_category_snapshot,
+      // GAP-07 §7/§12 — la combinaison doit survivre à un rechargement du
+      // panier créateur (réédition), sinon un remplacement intégral via
+      // PUT /:id/items perdrait silencieusement la variante déjà choisie.
+      variant_combo:     it.variant_combo_snapshot || null,
       line_total_kmf:   Number(it.line_total_kmf_snapshot),
     }));
 
@@ -284,8 +292,8 @@ router.put('/:id/items', authenticate, async (req, res, next) => {
 // nouvelle, pas une réinterprétation de PUT /:id/items ci-dessus.
 router.post('/:id/items', authenticate, async (req, res, next) => {
   try {
-    const { product_id, quantity } = req.body || {};
-    const { cart, item } = await addSharedCartItem(req.params.id, req.user.id, product_id, quantity);
+    const { product_id, quantity, variant_combo } = req.body || {};
+    const { cart, item } = await addSharedCartItem(req.params.id, req.user.id, product_id, quantity, variant_combo);
     res.json({ ok: true, cart, item });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });

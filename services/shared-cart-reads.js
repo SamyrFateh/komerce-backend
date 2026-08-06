@@ -102,6 +102,7 @@ async function getSharedCartForPublic(token, viewerUserId) {
             sci.product_id,
             sci.product_name_snapshot AS name,
             sci.product_image_snapshot AS image,
+            sci.variant_combo_snapshot AS variant_combo,
             sci.quantity,
             sci.unit_price_kmf_snapshot AS unit_price_kmf,
             sci.line_total_kmf_snapshot AS line_total_kmf,
@@ -142,6 +143,11 @@ async function getSharedCartForPublic(token, viewerUserId) {
       product_id: item.product_id,
       name: item.name,
       image: item.image,
+      // GAP-07 §10/§11 — la combinaison doit être disponible côté public
+      // pour afficher la variante et distinguer deux lignes du même
+      // produit (renderer panier partagé). sku_id interne n'a pas besoin
+      // d'être exposé (§10) — seule la combinaison l'est.
+      variant_combo: item.variant_combo || null,
       quantity: item.quantity,
       unit_price_kmf: item.unit_price_kmf,
       line_total_kmf: item.line_total_kmf,

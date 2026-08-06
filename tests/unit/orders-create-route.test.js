@@ -471,6 +471,92 @@ describe('orders/create — SKU (Lot 3, inventory_model="SKU")', () => {
     expect(itemInsert.params).toContain('sku-1');
   });
 
+  // GAP-07 (lot préalable Lot 3) — défaut critique corrigé : le SKU résolu
+  // porte un prix spécifique (15000) distinct du prix générique du produit
+  // (10000, PRODUCT.price_kmf). Avant correction, total_kmf et
+  // order_items.price_kmf utilisaient encore product.price_kmf — ce test
+  // aurait échoué sur l'ancien code (total/price = 10000 au lieu de 15000).
+  it('GAP-07 : le total de commande et order_items.price_kmf utilisent le prix du SKU, jamais le prix générique produit', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT_SKU] }, // PRODUCT_SKU.price_kmf === 10000 (prix générique)
+      { rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 5, price_kmf: 15000 }] }, // prix SKU spécifique
+      { rows: [orderRow({ total_kmf: 15000 })] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, variant_combo: { couleur: 'Noir' } }] })
+    );
+
+    expect(res.status).toBe(201);
+
+    // total_kmf envoyé à l'INSERT INTO orders (7ᵉ paramètre positionnel, $7)
+    // = prix SKU (15000) + devis transport commercial (65, fallback SEA
+    // par défaut pour poids 1kg — cf. defaultMocks/getRule ci-dessus).
+    const orderInsert = client.calls.find(c => /INSERT INTO orders/.test(c.sql));
+    expect(orderInsert.params[6]).toBe(15065); // total_kmf
+
+    const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
+    expect(itemInsert.params).toContain(15000); // order_items.price_kmf
+    expect(itemInsert.params).not.toContain(10000); // jamais le prix générique produit
+  });
+
+  // GAP-07 — fallback explicite : SKU sans price_kmf propre (nullable) →
+  // le prix générique du produit s'applique, comme documenté §5.
+  it('GAP-07 : fallback vers le prix produit quand product_skus.price_kmf est null', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT_SKU] }, // price_kmf: 10000
+      { rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 5, price_kmf: null }] },
+      { rows: [orderRow({ total_kmf: 10000 })] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, variant_combo: { couleur: 'Noir' } }] })
+    );
+
+    expect(res.status).toBe(201);
+    const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
+    expect(itemInsert.params).toContain(10000);
+  });
+
+  // GAP-07 — politique promo canonique appliquée une seule fois, y compris
+  // sur le chemin SKU (promo portée par products, pas par product_skus).
+  it('GAP-07 : la promo produit s\'applique une seule fois sur le prix effectif SKU', async () => {
+    const promoProductSku = {
+      ...PRODUCT_SKU,
+      is_promo: true, promo_pct: 10, promo_until: null,
+    };
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [promoProductSku] },
+      { rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 5, price_kmf: 10000 }] },
+      { rows: [orderRow({ total_kmf: 9000 })] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, variant_combo: { couleur: 'Noir' } }] })
+    );
+
+    expect(res.status).toBe(201);
+    const orderInsert = client.calls.find(c => /INSERT INTO orders/.test(c.sql));
+    expect(orderInsert.params[6]).toBe(9065); // 10000*(1-10/100) + 65 transport
+    const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
+    expect(itemInsert.params).toContain(9000);
+  });
+
   it('409 si aucune combinaison active ne correspond', async () => {
     const client = makeClient([
       { rows: [RELAIS] },

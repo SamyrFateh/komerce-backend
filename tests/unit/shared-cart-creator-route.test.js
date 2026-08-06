@@ -356,7 +356,21 @@ describe('POST /:id/items', () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.item.id).toBe('sci-new');
-    expect(itemsService.addSharedCartItem).toHaveBeenCalledWith('cart-1', 'user-1', 'p1', 2);
+    expect(itemsService.addSharedCartItem).toHaveBeenCalledWith('cart-1', 'user-1', 'p1', 2, undefined);
+  });
+
+  // GAP-07 §9.2 — variant_combo transmis tel quel au service, résolution
+  // serveur exclusive (aucune autorité côté route/client).
+  it('transmet variant_combo du body au service quand fourni', async () => {
+    itemsService.addSharedCartItem.mockResolvedValue({
+      cart: { id: 'cart-1' }, item: { id: 'sci-new', product_id: 'p-sku' },
+    });
+    const res = await request(app).post('/api/shared-carts/cart-1/items')
+      .send({ product_id: 'p-sku', quantity: 1, variant_combo: { couleur: 'Noir' } });
+    expect(res.status).toBe(200);
+    expect(itemsService.addSharedCartItem).toHaveBeenCalledWith(
+      'cart-1', 'user-1', 'p-sku', 1, { couleur: 'Noir' }
+    );
   });
 
   it('erreur avec status custom (ex : produit inactif) → propagée', async () => {

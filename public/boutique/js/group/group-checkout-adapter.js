@@ -49,7 +49,7 @@ import { checkoutCart } from '../b-checkout.js';
  * pour un achat personnel. Le panier personnel est sauvegardé avant l'appel
  * et restauré dès la fermeture du modal de commande (tout chemin de sortie).
  *
- * @param {Array<{shared_cart_item_id: string, product: object, quantity: number}>} selectedItems
+ * @param {Array<{shared_cart_item_id: string, product: object, quantity: number, variant_combo?: object|null}>} selectedItems
  * @returns {boolean} true si le checkout a été déclenché, false si la
  *   sélection était vide/invalide (aucun effet de bord dans ce cas).
  */
@@ -64,6 +64,12 @@ export function checkoutSharedListSelection(selectedItems) {
       product: it.product,
       qty: it.quantity || 1,
       shared_cart_item_id: it.shared_cart_item_id,
+      // GAP-07 §12 — propagé tel quel jusqu'à b-checkout.js (qui lit
+      // line.variant_combo directement, jamais line.product.variant_combo)
+      // puis jusqu'à POST /api/orders → resolveActiveSku côté serveur.
+      // null pour un produit non-SKU ou une ligne sans combinaison —
+      // jamais un objet vide fabriqué ici.
+      variant_combo: it.variant_combo || null,
     };
     // Correctif V2-E §2 — propager le contexte snapshot (prix/nom/image au
     // moment du partage) uniquement quand fourni par l'appelant, pour le

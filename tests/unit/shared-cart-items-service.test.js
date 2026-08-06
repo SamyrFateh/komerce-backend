@@ -103,6 +103,69 @@ describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
     await expect(updateOpenSharedCartItems('cart-1', 'user-1', [{ product_id: 'p1', quantity: 1 }]))
       .rejects.toMatchObject({ code: 'no_active_items', status: 400 });
   });
+
+  // GAP-07 §9.3 — remplacement intégral, unité vendable SKU-safe.
+  describe('GAP-07 — unité vendable SKU', () => {
+    const skuProduct = {
+      id: 'p-sku', name: 'Chemise', image_url: 'chemise.jpg', category: 'vetements',
+      price_kmf: 10000, is_active: true, is_promo: false, promo_pct: 0, promo_until: null,
+      inventory_model: 'SKU', has_variants: true, stock: null,
+    };
+
+    it('resout le SKU actif et snapshot sku_id + variant_combo_snapshot (jamais product-first)', async () => {
+      const cart = { id: 'cart-1', status: 'open' };
+      const inserted = { id: 'item-1', product_id: 'p-sku' };
+      const updatedCart = { id: 'cart-1', status: 'open' };
+      const client = makeClient([
+        { rows: [cart] },
+        { rows: [skuProduct] },
+        { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
+        { rows: [], rowCount: 1 },
+        { rows: [inserted] },
+        { rows: [updatedCart] },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      const result = await updateOpenSharedCartItems('cart-1', 'user-1', [
+        { product_id: 'p-sku', quantity: 1, variant_combo: { couleur: 'Noir', taille: 'M' } },
+      ]);
+
+      expect(result.cart.total_kmf).toBe(15000);
+      const insertCall = client.calls.find(c => /INSERT INTO shared_cart_items/.test(c.sql));
+      expect(insertCall.params[2]).toBe('sku-noir-m');
+      expect(insertCall.params[3]).toBe(JSON.stringify({ couleur: 'Noir', taille: 'M' }));
+      expect(insertCall.params[8]).toBe(15000); // unit_price_kmf_snapshot = prix SKU
+    });
+
+    it('409 sellable_unit_not_found si la combinaison ne resout aucun SKU actif', async () => {
+      const client = makeClient([
+        { rows: [{ id: 'cart-1', status: 'open' }] },
+        { rows: [skuProduct] },
+        { rows: [] },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(updateOpenSharedCartItems('cart-1', 'user-1', [
+        { product_id: 'p-sku', quantity: 1, variant_combo: { couleur: 'Rose' } },
+      ])).rejects.toMatchObject({ status: 409, code: 'sellable_unit_not_found' });
+      expectTransactionRolledBack(client);
+    });
+
+    it('409 sellable_unit_out_of_stock si le stock du SKU resolu est insuffisant', async () => {
+      const client = makeClient([
+        { rows: [{ id: 'cart-1', status: 'open' }] },
+        { rows: [skuProduct] },
+        { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 1, price_kmf: 15000 }] },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(updateOpenSharedCartItems('cart-1', 'user-1', [
+        { product_id: 'p-sku', quantity: 5, variant_combo: { couleur: 'Noir', taille: 'M' } },
+      ])).rejects.toMatchObject({ status: 409, code: 'sellable_unit_out_of_stock' });
+      expectTransactionRolledBack(client);
+    });
+  });
 });
 
 describe('addSharedCartItem (Contrat API §2/§5 point 4 — ajout unitaire, immédiat)', () => {
@@ -176,6 +239,66 @@ describe('addSharedCartItem (Contrat API §2/§5 point 4 — ajout unitaire, imm
     expect(result.item).toEqual(inserted);
     expect(result.cart).toEqual(cart);
     expectTransactionCommitted(client);
+  });
+
+  // GAP-07 §9.2 — accepte la combinaison canonique, résolution serveur.
+  describe('GAP-07 — unité vendable SKU', () => {
+    const skuProduct = {
+      id: 'p-sku', name: 'Chemise', image_url: 'chemise.jpg', category: 'vetements',
+      price_kmf: 10000, is_active: true, is_promo: false, promo_pct: 0, promo_until: null,
+      inventory_model: 'SKU', has_variants: true, stock: null,
+    };
+
+    it('resout le SKU et snapshot sku_id + variant_combo_snapshot — jamais un prix/sku_id fourni par le client', async () => {
+      const cart = { id: 'cart-1', status: 'open' };
+      const inserted = { id: 'item-1', product_id: 'p-sku' };
+      const client = makeClient([
+        { rows: [cart] },
+        { rows: [skuProduct] },
+        { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
+        { rows: [inserted] },
+        { rows: [], rowCount: 1 },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      const result = await addSharedCartItem(
+        'cart-1', 'user-1', 'p-sku', 1, { couleur: 'Noir', taille: 'M' }
+      );
+
+      expect(result.item).toEqual(inserted);
+      const insertCall = client.calls.find(c => /INSERT INTO shared_cart_items/.test(c.sql));
+      expect(insertCall.params).toEqual([
+        'cart-1', 'p-sku', 'sku-noir-m', JSON.stringify({ couleur: 'Noir', taille: 'M' }),
+        'Chemise', 'chemise.jpg', 'vetements', 1, 15000, 15000,
+      ]);
+    });
+
+    it('409 sellable_unit_not_found si la combinaison ne resout aucun SKU actif', async () => {
+      const client = makeClient([
+        { rows: [{ id: 'cart-1', status: 'open' }] },
+        { rows: [skuProduct] },
+        { rows: [] },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(addSharedCartItem('cart-1', 'user-1', 'p-sku', 1, { couleur: 'Rose' }))
+        .rejects.toMatchObject({ status: 409, code: 'sellable_unit_not_found' });
+      expectTransactionRolledBack(client);
+    });
+
+    it('409 sellable_unit_out_of_stock si le stock du SKU resolu est insuffisant', async () => {
+      const client = makeClient([
+        { rows: [{ id: 'cart-1', status: 'open' }] },
+        { rows: [skuProduct] },
+        { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 1, price_kmf: 15000 }] },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(addSharedCartItem('cart-1', 'user-1', 'p-sku', 5, { couleur: 'Noir', taille: 'M' }))
+        .rejects.toMatchObject({ status: 409, code: 'sellable_unit_out_of_stock' });
+      expectTransactionRolledBack(client);
+    });
   });
 });
 

@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        shared_cart_id, cart_items, product_id, item_id, actor_identity
  * @outputs       updated_cart_items
- * @depends       db.js, services/shared-cart-internals.js
+ * @depends       db.js, services/shared-cart-internals.js, services/product-admin-service.js
  * @used-by       routes/shared-cart.js, public/boutique/js/b-cart.js
- * @db-read       order_items, products, shared_cart_items, shared_carts
+ * @db-read       order_items, product_skus, products, shared_cart_items, shared_carts
  * @db-write      shared_cart_events, shared_cart_items, shared_carts
  * @db-txn        open_cart_only
  * @doctrine      panier_ouvert_modifiable, domaine_minimal_boutique_first
@@ -47,6 +47,7 @@
 
 const db = require('../db');
 const { r, withTransaction, addEvent } = require('./shared-cart-internals');
+const productAdminService = require('./product-admin-service');
 
 function httpError(message, status = 400, code = null) {
   const e = new Error(message);
@@ -55,22 +56,55 @@ function httpError(message, status = 400, code = null) {
   return e;
 }
 
+/**
+ * GAP-07 §9.3 — Le remplacement intégral historique agrégeait par
+ * product_id, ce qui pour un produit SKU perdait silencieusement la
+ * variante choisie (deux lignes "Chemise Noir M" + "Chemise Blanc L"
+ * auraient fusionné en une seule ligne "Chemise" au prix générique).
+ *
+ * Décision retenue après audit (§9.3, option choisie parmi les trois
+ * proposées) : migrer vers l'identité vendable plutôt que retirer ce
+ * contrat existant ou le limiter aveuglément — routes/shared-cart.js et
+ * public/boutique/js/b-cart.js en dépendent toujours (remplacement
+ * complet du panier local lors d'une réédition). On ne fusionne plus par
+ * product_id seul : la clé de dédoublonnage devient
+ * (product_id, variant_combo canonicalisé), et chaque groupe passe par
+ * la même résolution SKU que les autres writers (resolveActiveSku +
+ * computeSellablePricing) — jamais une sémantique product-first pour un
+ * produit SKU.
+ */
 function normalizeItems(cartItems) {
   if (!Array.isArray(cartItems) || cartItems.length === 0) {
     throw httpError('cart_items requis (panier vide)', 400, 'cart_items_required');
   }
 
-  const qtyByProduct = new Map();
+  const qtyByKey = new Map();
+  const comboByKey = new Map();
   for (const raw of cartItems) {
     const productId = raw?.product_id;
     if (!productId) continue;
     const qty = r(raw.quantity ?? 1);
     if (qty <= 0) continue;
-    qtyByProduct.set(productId, (qtyByProduct.get(productId) || 0) + qty);
+    const combo = (raw.variant_combo && typeof raw.variant_combo === 'object' && !Array.isArray(raw.variant_combo))
+      ? raw.variant_combo
+      : null;
+    // Clé = product_id + combo sérialisé avec tri des clés côté appelant
+    // n'est pas garanti ici — la canonicalisation exacte (tri des clés)
+    // est déléguée à resolveActiveSku/canonicalizeVariantCombo plus bas,
+    // pris en compte une fois par groupe. Ici on ne fait que regrouper
+    // par la forme brute reçue : deux appels avec le même combo mais des
+    // clés dans un ordre différent produiraient deux clés de map
+    // distinctes, donc potentiellement deux lignes non fusionnées — un
+    // sur-comptage prudent (jamais une perte silencieuse de quantité),
+    // acceptable pour cet endpoint de remplacement intégral rarement
+    // utilisé avec des combos multi-clés désordonnées côté client.
+    const key = productId + '::' + (combo ? JSON.stringify(combo) : '');
+    qtyByKey.set(key, (qtyByKey.get(key) || 0) + qty);
+    if (!comboByKey.has(key)) comboByKey.set(key, { product_id: productId, variant_combo: combo });
   }
 
-  const normalized = Array.from(qtyByProduct.entries()).map(([product_id, quantity]) => ({
-    product_id,
+  const normalized = Array.from(qtyByKey.entries()).map(([key, quantity]) => ({
+    ...comboByKey.get(key),
     quantity,
   }));
 
@@ -97,30 +131,55 @@ async function updateOpenSharedCartItems(sharedCartId, userId, cartItems = []) {
       throw httpError(`Ce panier n'est plus modifiable (statut : ${cart.status})`, 409, 'cart_not_editable');
     }
 
-    const productIds = normalized.map(i => i.product_id);
+    const productIds = [...new Set(normalized.map(i => i.product_id))];
     const { rows: products } = await client.query(
       `SELECT id, name, image_url, category, price_kmf,
-              promo_pct, is_promo, promo_until, is_active
+              promo_pct, is_promo, promo_until, is_active,
+              inventory_model, has_variants, stock
          FROM products
         WHERE id = ANY($1)`,
       [productIds]
     );
     const productsById = new Map(products.map(p => [p.id, p]));
 
-    const now = new Date();
     const enrichedItems = [];
     for (const item of normalized) {
       const p = productsById.get(item.product_id);
       if (!p || !p.is_active) continue;
-      const promoActive = p.is_promo &&
-        p.promo_pct > 0 &&
-        (!p.promo_until || new Date(p.promo_until) >= now);
-      const unitPrice = promoActive
-        ? r(p.price_kmf * (1 - p.promo_pct / 100))
-        : r(p.price_kmf || 0);
+
+      let resolvedSku = null;
+      let skuId = null;
+      let snapshotCombo = null;
+
+      if (p.inventory_model === 'SKU') {
+        // GAP-07 — jamais de sémantique product-first pour un SKU : une
+        // combinaison inconnue ou un stock insuffisant est un refus
+        // explicite, pas un skip silencieux qui ferait disparaître
+        // l'article de la liste sans le dire au créateur.
+        resolvedSku = await productAdminService.resolveActiveSku(client, p.id, item.variant_combo);
+        if (!resolvedSku) {
+          throw httpError(`Combinaison indisponible pour ${p.name}`, 409, 'sellable_unit_not_found');
+        }
+        if (resolvedSku.stock < item.quantity) {
+          throw httpError(
+            `Stock insuffisant pour ${p.name} — disponible : ${resolvedSku.stock}`,
+            409, 'sellable_unit_out_of_stock'
+          );
+        }
+        skuId = resolvedSku.id;
+        snapshotCombo = productAdminService.canonicalizeVariantCombo(item.variant_combo);
+      } else if (item.variant_combo && p.has_variants) {
+        snapshotCombo = item.variant_combo;
+      }
+
+      const { effective_unit_price_kmf: unitPrice } =
+        productAdminService.computeSellablePricing({ product: p, resolvedSku });
       if (unitPrice <= 0) continue;
+
       enrichedItems.push({
         product_id: p.id,
+        sku_id: skuId,
+        variant_combo: snapshotCombo,
         name: p.name,
         image_url: p.image_url,
         category: p.category,
@@ -143,13 +202,14 @@ async function updateOpenSharedCartItems(sharedCartId, userId, cartItems = []) {
     for (const it of enrichedItems) {
       const { rows } = await client.query(
         `INSERT INTO shared_cart_items (
-           shared_cart_id, product_id,
+           shared_cart_id, product_id, sku_id, variant_combo_snapshot,
            product_name_snapshot, product_image_snapshot, product_category_snapshot,
            quantity, unit_price_kmf_snapshot, line_total_kmf_snapshot
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
         [
-          sharedCartId, it.product_id,
+          sharedCartId, it.product_id, it.sku_id,
+          it.variant_combo ? JSON.stringify(it.variant_combo) : null,
           it.name, it.image_url, it.category,
           it.quantity, it.unit_price_kmf, it.line_total_kmf,
         ]
@@ -179,8 +239,15 @@ async function updateOpenSharedCartItems(sharedCartId, userId, cartItems = []) {
  * un appel, écriture immédiate (Invariant 20). N'existait pas avant :
  * PUT /:id/items (ci-dessus) reste inchangé, remplace toute la liste, et
  * sert un autre usage — on ne détourne pas son contrat pour ce besoin.
+ *
+ * GAP-07 §9.2 — accepte désormais la combinaison canonique
+ * (variant_combo). Validation serveur → résolution sellable unit →
+ * snapshot → insertion. Aucun prix, média ou sku_id fourni par le client
+ * n'est jamais utilisé comme autorité — resolveActiveSku()/
+ * computeSellablePricing() (services/product-admin-service.js) restent
+ * la seule source.
  */
-async function addSharedCartItem(sharedCartId, userId, productId, quantity = 1) {
+async function addSharedCartItem(sharedCartId, userId, productId, quantity = 1, variantCombo = null) {
   if (!productId) throw httpError('product_id requis', 400, 'product_id_required');
   const qty = r(quantity);
   if (qty <= 0) throw httpError('Quantité invalide', 400, 'invalid_quantity');
@@ -201,7 +268,8 @@ async function addSharedCartItem(sharedCartId, userId, productId, quantity = 1) 
 
     const { rows: productRows } = await client.query(
       `SELECT id, name, image_url, category, price_kmf,
-              promo_pct, is_promo, promo_until, is_active
+              promo_pct, is_promo, promo_until, is_active,
+              inventory_model, has_variants, stock
          FROM products WHERE id = $1`,
       [productId]
     );
@@ -210,20 +278,47 @@ async function addSharedCartItem(sharedCartId, userId, productId, quantity = 1) 
       throw httpError('Produit introuvable ou inactif', 400, 'product_not_found');
     }
 
-    const now = new Date();
-    const promoActive = p.is_promo && p.promo_pct > 0 && (!p.promo_until || new Date(p.promo_until) >= now);
-    const unitPrice = promoActive ? r(p.price_kmf * (1 - p.promo_pct / 100)) : r(p.price_kmf || 0);
+    const variantComboRaw = (variantCombo && typeof variantCombo === 'object' && !Array.isArray(variantCombo))
+      ? variantCombo
+      : null;
+
+    let resolvedSku = null;
+    let skuId = null;
+    let snapshotCombo = null;
+
+    if (p.inventory_model === 'SKU') {
+      resolvedSku = await productAdminService.resolveActiveSku(client, p.id, variantComboRaw);
+      if (!resolvedSku) {
+        throw httpError(`Combinaison indisponible pour ${p.name}`, 409, 'sellable_unit_not_found');
+      }
+      if (resolvedSku.stock < qty) {
+        throw httpError(
+          `Stock insuffisant pour ${p.name} — disponible : ${resolvedSku.stock}`,
+          409, 'sellable_unit_out_of_stock'
+        );
+      }
+      skuId = resolvedSku.id;
+      snapshotCombo = productAdminService.canonicalizeVariantCombo(variantComboRaw);
+    } else if (variantComboRaw && p.has_variants) {
+      snapshotCombo = variantComboRaw;
+    }
+
+    const { effective_unit_price_kmf: unitPrice } =
+      productAdminService.computeSellablePricing({ product: p, resolvedSku });
     if (unitPrice <= 0) throw httpError('Prix produit invalide', 400, 'invalid_price');
 
     const lineTotal = unitPrice * qty;
     const { rows: inserted } = await client.query(
       `INSERT INTO shared_cart_items (
-         shared_cart_id, product_id,
+         shared_cart_id, product_id, sku_id, variant_combo_snapshot,
          product_name_snapshot, product_image_snapshot, product_category_snapshot,
          quantity, unit_price_kmf_snapshot, line_total_kmf_snapshot
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [sharedCartId, p.id, p.name, p.image_url, p.category, qty, unitPrice, lineTotal]
+      [
+        sharedCartId, p.id, skuId, snapshotCombo ? JSON.stringify(snapshotCombo) : null,
+        p.name, p.image_url, p.category, qty, unitPrice, lineTotal,
+      ]
     );
 
     await client.query(`UPDATE shared_carts SET updated_at = NOW() WHERE id = $1`, [sharedCartId]);

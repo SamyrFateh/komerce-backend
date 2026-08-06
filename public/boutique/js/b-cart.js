@@ -693,6 +693,21 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     return { open: 'Ouverte', closed: 'Fermée', cancelled: 'Annulée' }[status] || status;
   }
 
+  /**
+   * GAP-07 §11 — formate variant_combo ({couleur:'Noir', taille:'M'}) en
+   * "Noir · Taille M" pour l'affichage sous le nom du produit. Purement
+   * cosmétique (capitalise chaque valeur) — la valeur elle-même vient
+   * intégralement du snapshot serveur (variant_combo_snapshot), jamais
+   * reconstruite depuis une heuristique locale.
+   */
+  function snapshotVariantComboText(variantCombo) {
+    if (!variantCombo || typeof variantCombo !== 'object') return null;
+    const parts = Object.values(variantCombo)
+      .filter((v) => typeof v === 'string' && v.trim().length > 0)
+      .map((v) => v.trim());
+    return parts.length ? parts.join(' · ') : null;
+  }
+
   function snapshotQuantityControlHtml(item, context) {
     // Lot B — contrôles d'édition invisibles hors du mode édition explicite,
     // même pour l'organisateur. Réutilise .k-cart-item-qty/.k-qty-btn/
@@ -747,12 +762,20 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       : '';
 
     const openLabel = `Voir la fiche produit — ${item.name || 'cet article'}`;
+    // GAP-07 §11 — la variante s'affiche sous le nom, jamais fusionnée
+    // avec une autre ligne du même produit (deux combinaisons distinctes
+    // = deux .k-cart-snapshot-item séparées, chacune sa propre variante).
+    const variantText = snapshotVariantComboText(item.variant_combo);
+    const variantHtml = variantText
+      ? `<div class="k-cart-snapshot-item-variant">${sanitize(variantText)}</div>`
+      : '';
     return (
       `<div class="${classes.join(' ')}" data-item-id="${sanitize(String(item.id))}">` +
         `<button type="button" class="k-cart-snapshot-item-open" data-item-id="${sanitize(String(item.id))}" aria-label="${sanitize(openLabel)}">` +
           `<div class="k-cart-item-img${imgWrapClass}">${img}</div>` +
           `<div class="k-cart-item-info">` +
             `<div class="k-cart-item-name">${sanitize(item.name || '')}</div>` +
+            variantHtml +
             `<div class="k-cart-snapshot-item-meta k-cart-item-context-note">${priceText} · <span class="k-cart-snapshot-item-status">${statusText}</span></div>` +
           `</div>` +
         `</button>` +

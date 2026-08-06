@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        user_id, basket_id, cart_items, options
  * @outputs       shared_cart, items, token
- * @depends       db.js, services/shared-cart-internals.js
+ * @depends       db.js, services/shared-cart-internals.js, services/product-admin-service.js
  * @used-by       routes/shared-cart.js
- * @db-read       basket_items, baskets, products, shared_carts, users
+ * @db-read       basket_items, baskets, product_skus, products, shared_carts, users
  * @db-write      basket_items, baskets, shared_cart_events, shared_cart_items, shared_carts
  * @db-txn        required_for_state_transition, snapshot_consistency
  * @doctrine      domaine_minimal_boutique_first, snapshot_fige
@@ -41,7 +41,30 @@
 
 const db = require('../db');
 const { CONFIG, generateToken, r, withTransaction, addEvent } = require('./shared-cart-internals');
+const productAdminService = require('./product-admin-service');
 
+function httpError(message, status = 400, code = null) {
+  const e = new Error(message);
+  e.status = status;
+  if (code) e.code = code;
+  return e;
+}
+
+/**
+ * Pont de compatibilité `/from-basket` (GAP-07 §9.4).
+ *
+ * Le domaine `baskets` est tombstoné — ce endpoint n'est qu'un pont de
+ * compatibilité descendante, jamais une invitation à réintroduire ce
+ * moteur dans le modèle canonique. basket_items ne porte AUCUNE colonne
+ * de variante (audité : schéma basket_items = id, basket_id, product_id,
+ * added_by, quantity, price_kmf, note, created_at) — impossible d'y
+ * conserver un variant_combo qui n'y a jamais existé.
+ *
+ * Comportement : produit simple sans identité ambiguë → compatibilité
+ * possible. Produit SKU (inventory_model = 'SKU') → refus explicite,
+ * jamais de fallback vers un SKU deviné (premier SKU, SKU par défaut,
+ * variante devinée).
+ */
 async function createSharedCartFromBasket(userId, basketId, options = {}) {
   return withTransaction(async (client) => {
     const { rows: activeCount } = await client.query(
@@ -67,13 +90,25 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
 
     const { rows: items } = await client.query(
       `SELECT bi.product_id, bi.quantity,
-              p.name, p.image_url, p.category, p.price_kmf
+              p.name, p.image_url, p.category, p.price_kmf, p.inventory_model
          FROM basket_items bi
          JOIN products p ON p.id = bi.product_id
         WHERE bi.basket_id = $1`,
       [basketId]
     );
     if (!items.length) throw new Error('Le panier est vide, impossible de partager');
+
+    // GAP-07 §9.4 — refus explicite plutôt qu'une ligne SKU-incomplète
+    // silencieuse (variante perdue, prix générique potentiellement faux).
+    const skuItem = items.find((it) => it.inventory_model === 'SKU');
+    if (skuItem) {
+      throw httpError(
+        'Ce panier ancien ne conserve pas la variante choisie. ' +
+        'Ajoutez de nouveau ce produit depuis la Boutique avant de partager la liste.',
+        409,
+        'sellable_unit_identity_missing'
+      );
+    }
 
     let token;
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -192,7 +227,8 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
 
     const { rows: products } = await client.query(
       `SELECT id, name, image_url, category, price_kmf,
-              promo_pct, is_promo, promo_until, is_active
+              promo_pct, is_promo, promo_until, is_active,
+              inventory_model, has_variants, stock
          FROM products
         WHERE id = ANY($1)`,
       [productIds]
@@ -200,22 +236,60 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
     const productsById = {};
     products.forEach(p => { productsById[p.id] = p; });
 
+    // GAP-07 §9.1 — l'unité vendable est l'identité canonique, pas
+    // seulement product_id. Deux lignes du même produit avec des
+    // combinaisons différentes (Chemise·Noir·M vs Chemise·Blanc·L)
+    // restent deux lignes distinctes : on n'agrège jamais par
+    // product_id ci-dessous, chaque entrée cartItems produit sa propre
+    // ligne shared_cart_items.
     const enrichedItems = [];
-    const now = new Date();
     for (const item of cartItems) {
       const p = productsById[item.product_id];
       if (!p || !p.is_active) continue;
       const qty = r(item.quantity || 1);
       if (qty <= 0) continue;
-      const promoActive = p.is_promo &&
-        p.promo_pct > 0 &&
-        (!p.promo_until || new Date(p.promo_until) >= now);
-      const unitPrice = promoActive
-        ? r(p.price_kmf * (1 - p.promo_pct / 100))
-        : r(p.price_kmf || 0);
+
+      const variantComboRaw = (item.variant_combo && typeof item.variant_combo === 'object' && !Array.isArray(item.variant_combo))
+        ? item.variant_combo
+        : null;
+
+      let resolvedSku = null;
+      let skuId = null;
+      let variantCombo = null;
+
+      if (p.inventory_model === 'SKU') {
+        // Boundary canonique (GAP-07 §5) — jamais de fallback vers un
+        // premier SKU ou une variante devinée : combinaison inconnue ou
+        // stock insuffisant → refus explicite (rollback), jamais un
+        // skip silencieux qui perdrait l'article sans le dire.
+        resolvedSku = await productAdminService.resolveActiveSku(client, p.id, variantComboRaw);
+        if (!resolvedSku) {
+          throw httpError(`Combinaison indisponible pour ${p.name}`, 409, 'sellable_unit_not_found');
+        }
+        if (resolvedSku.stock < qty) {
+          throw httpError(
+            `Stock insuffisant pour ${p.name} — disponible : ${resolvedSku.stock}`,
+            409, 'sellable_unit_out_of_stock'
+          );
+        }
+        skuId = resolvedSku.id;
+        variantCombo = productAdminService.canonicalizeVariantCombo(variantComboRaw);
+      } else if (variantComboRaw && p.has_variants) {
+        // Legacy : combinaison conservée telle quelle pour l'affichage/
+        // historique (§5), jamais utilisée pour distinguer un prix — un
+        // produit non-SKU n'a qu'un seul price_kmf pour toutes ses
+        // variantes.
+        variantCombo = variantComboRaw;
+      }
+
+      const { effective_unit_price_kmf: unitPrice } =
+        productAdminService.computeSellablePricing({ product: p, resolvedSku });
       if (unitPrice <= 0) continue;
+
       enrichedItems.push({
         product_id: p.id,
+        sku_id: skuId,
+        variant_combo: variantCombo,
         name: p.name,
         image_url: p.image_url,
         category: p.category,
@@ -265,13 +339,14 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
     for (const it of enrichedItems) {
       const { rows: itemRows } = await client.query(
         `INSERT INTO shared_cart_items (
-           shared_cart_id, product_id,
+           shared_cart_id, product_id, sku_id, variant_combo_snapshot,
            product_name_snapshot, product_image_snapshot, product_category_snapshot,
            quantity, unit_price_kmf_snapshot, line_total_kmf_snapshot
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
         [
-          sharedCart.id, it.product_id,
+          sharedCart.id, it.product_id, it.sku_id,
+          it.variant_combo ? JSON.stringify(it.variant_combo) : null,
           it.name, it.image_url, it.category,
           it.quantity, it.unit_price_kmf, it.line_total_kmf,
         ]

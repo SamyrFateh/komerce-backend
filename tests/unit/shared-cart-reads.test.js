@@ -67,6 +67,24 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     expect(result.items[0].unit_price_kmf).toBe(1000);
   });
 
+  // GAP-07 §10/§11 — la combinaison doit être disponible côté public pour
+  // afficher la variante et distinguer deux lignes du même produit.
+  it('getSharedCartForPublic expose variant_combo par article (GAP-07)', async () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
+    const items = [
+      { id: 'sci-1', product_id: 'prod-42', name: 'Veste saharienne', image: null, variant_combo: { couleur: 'Noir', taille: 'M' }, quantity: 1, unit_price_kmf: 15000, line_total_kmf: 15000, claimed: false },
+      { id: 'sci-2', product_id: 'prod-99', name: 'Sac', image: null, variant_combo: null, quantity: 1, unit_price_kmf: 5000, line_total_kmf: 5000, claimed: false },
+    ];
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
+
+    const result = await getSharedCartForPublic('tok-1');
+
+    expect(result.items[0].variant_combo).toEqual({ couleur: 'Noir', taille: 'M' });
+    expect(result.items[1].variant_combo).toBeNull();
+    // sku_id interne n'est jamais exposé côté public (§10).
+    expect(result.items[0].sku_id).toBeUndefined();
+  });
+
   it('getSharedCartForPublic creator_first_name est null si le créateur n\'a pas de nom exploitable', async () => {
     const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer', organizer_full_name: null };
     db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: [] });

@@ -6509,6 +6509,10 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-item-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 .k-cart-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px; }
 .k-cart-item-name  { font-weight: 700; font-size: .8rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; cursor: pointer; } /* S3.2 */
+/* GAP-07 §11 — variante d'une ligne panier snapshot (« Noir · Taille M »),
+   sous le nom du produit. Même poids visuel que .k-cart-item-unit
+   (existant) : information secondaire, jamais confondue avec le nom. */
+.k-cart-snapshot-item-variant { font-size: .68rem; color: var(--text-muted); margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .k-cart-item-unit  { font-size: .68rem; color: var(--text-muted); margin-top: 0; }
 .k-cart-item-price { font-size: .82rem; color: var(--coral); font-weight: 700; margin-top: 0; }
 .k-cart-item-qty   { display: flex; align-items: center; gap: 0; margin-top: 3px; background: var(--sand); border-radius: 20px; width: fit-content; border: 1px solid var(--border); }

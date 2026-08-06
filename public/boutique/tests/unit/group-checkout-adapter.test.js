@@ -72,7 +72,27 @@ describe('checkoutSharedListSelection', () => {
     expect(result).toBe(true);
     expect(checkoutCart).toHaveBeenCalledTimes(1);
     expect(state.cart).toEqual([
-      { product: { id: 42, name: 'Riz' }, qty: 2, shared_cart_item_id: 'sci-1' },
+      { product: { id: 42, name: 'Riz' }, qty: 2, shared_cart_item_id: 'sci-1', variant_combo: null },
+    ]);
+  });
+
+  // GAP-07 §12 — l'unité vendable (variant_combo) doit survivre jusqu'au
+  // payload de commande via la ligne éphémère, jamais nichée sous
+  // it.product (le catalogue générique, pas la combinaison choisie).
+  it('propage variant_combo tel quel dans la ligne éphémère (GAP-07)', () => {
+    const result = checkoutSharedListSelection([
+      {
+        shared_cart_item_id: 'sci-2', product: { id: 43, name: 'Chemise' },
+        quantity: 1, variant_combo: { couleur: 'Noir', taille: 'M' },
+      },
+    ]);
+
+    expect(result).toBe(true);
+    expect(state.cart).toEqual([
+      {
+        product: { id: 43, name: 'Chemise' }, qty: 1,
+        shared_cart_item_id: 'sci-2', variant_combo: { couleur: 'Noir', taille: 'M' },
+      },
     ]);
   });
 

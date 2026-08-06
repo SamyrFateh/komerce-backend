@@ -785,6 +785,13 @@ function handleBuyAvailableItems() {
       shared_cart_item_id: it.id,
       product,
       quantity: it.quantity || 1,
+      // GAP-07 §12 — l'unité vendable choisie (SKU) doit survivre jusqu'au
+      // payload de commande. it.variant_combo vient du snapshot liste
+      // (services/shared-cart-reads.js) : b-checkout.js lit i.variant_combo
+      // directement (jamais depuis it.product, qui ne porte que le
+      // catalogue générique) pour résoudre le même product_skus côté
+      // serveur que celui affiché dans la modale au moment du partage.
+      variant_combo: it.variant_combo || null,
       // Correctif V2-E §2 — métadonnées snapshot conservées pour le seul
       // rendu du checkout (variation de prix, doctrine §3). Ne sert jamais
       // au calcul du total ni au payload envoyé au backend : cartTotal()

@@ -104,7 +104,7 @@ describe('shared-cart-creation', () => {
       expect(result.token).toEqual(expect.any(String));
       expect(client.calls[5].sql).toContain('INSERT INTO shared_carts');
       expect(client.calls[5].params).toEqual([expect.any(String), 'user-001', 'Course groupe', 'Merci', null]);
-      expect(client.calls[6].params).toEqual(['cart-001', 'product-001', 'Riz', 'riz.jpg', 'maison', 2, 900, 1800]);
+      expect(client.calls[6].params).toEqual(['cart-001', 'product-001', null, null, 'Riz', 'riz.jpg', 'maison', 2, 900, 1800]);
       expect(client.calls[7].sql).toContain('INSERT INTO shared_cart_events');
       expectTransactionCommitted(client);
     });
@@ -188,7 +188,7 @@ describe('shared-cart-creation', () => {
 
       expect(result.items).toEqual([item]);
       // ligne items insérée avec prix plein 2000 (pas de reduction promo expirée)
-      expect(client.calls[6].params).toEqual(['cart-002', 'p1', 'Prod', 'x.jpg', 'cat', 1, 2000, 2000]);
+      expect(client.calls[6].params).toEqual(['cart-002', 'p1', null, null, 'Prod', 'x.jpg', 'cat', 1, 2000, 2000]);
     });
 
     it('ignore shareMode : le statut initial est toujours open (ASSUMPTION documentée dans le service réel — plus de fenêtre de paiement propre à la liste)', async () => {
@@ -238,6 +238,123 @@ describe('shared-cart-creation', () => {
       const result = await createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }]);
 
       expect(result.token).toEqual(expect.any(String));
+    });
+
+    // GAP-07 §9.1 — le chemin vivant depuis le panier local doit préserver
+    // l'unité vendable SKU : sku_id + variant_combo_snapshot, jamais
+    // agrégé uniquement par product_id.
+    describe('GAP-07 — unité vendable SKU', () => {
+      const skuProduct = {
+        id: 'prod-sku', name: 'Chemise', image_url: 'chemise.jpg', category: 'vetements',
+        price_kmf: 10000, promo_pct: null, is_promo: false, promo_until: null,
+        is_active: true, inventory_model: 'SKU', has_variants: true, stock: null,
+      };
+
+      it('resout le SKU actif, snapshot sku_id + variant_combo_snapshot, prix SKU (pas prix generique)', async () => {
+        const sharedCart = { id: 'cart-sku', status: 'open' };
+        const item = { id: 'sci-sku' };
+        const client = makeClient([
+          { rows: [{ n: 0 }] },
+          { rows: [skuProduct] },                                            // SELECT products
+          { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] }, // resolveActiveSku
+          { rows: [{ full_name: 'Creator', phone: '000' }] },
+          { rows: [] },
+          { rows: [sharedCart] },
+          { rows: [item] },
+          { rows: [], rowCount: 1 },
+        ]);
+        db.getClient.mockResolvedValue(client);
+
+        const result = await createSharedCartFromCartItems('user-001', [
+          { product_id: 'prod-sku', quantity: 1, variant_combo: { couleur: 'Noir', taille: 'M' } },
+        ]);
+
+        expect(result.items).toEqual([item]);
+        const insertCall = client.calls.find(c => /INSERT INTO shared_cart_items/.test(c.sql));
+        expect(insertCall.params).toEqual([
+          'cart-sku', 'prod-sku', 'sku-noir-m', JSON.stringify({ couleur: 'Noir', taille: 'M' }),
+          'Chemise', 'chemise.jpg', 'vetements', 1, 15000, 15000,
+        ]);
+      });
+
+      it('deux variantes du meme produit restent deux lignes distinctes', async () => {
+        const sharedCart = { id: 'cart-sku-2', status: 'open' };
+        const client = makeClient([
+          { rows: [{ n: 0 }] },
+          { rows: [skuProduct] },
+          { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
+          { rows: [{ id: 'sku-blanc-l', sku: 'CHEM-B-L', stock: 3, price_kmf: 16000 }] },
+          { rows: [{ full_name: 'Creator', phone: '000' }] },
+          { rows: [] },
+          { rows: [sharedCart] },
+          { rows: [{ id: 'sci-a' }] },
+          { rows: [{ id: 'sci-b' }] },
+          { rows: [], rowCount: 1 },
+        ]);
+        db.getClient.mockResolvedValue(client);
+
+        const result = await createSharedCartFromCartItems('user-001', [
+          { product_id: 'prod-sku', quantity: 1, variant_combo: { couleur: 'Noir', taille: 'M' } },
+          { product_id: 'prod-sku', quantity: 1, variant_combo: { couleur: 'Blanc', taille: 'L' } },
+        ]);
+
+        expect(result.items).toHaveLength(2);
+        const inserts = client.calls.filter(c => /INSERT INTO shared_cart_items/.test(c.sql));
+        expect(inserts).toHaveLength(2);
+        expect(inserts[0].params[2]).toBe('sku-noir-m');
+        expect(inserts[1].params[2]).toBe('sku-blanc-l');
+      });
+
+      it('409 sellable_unit_not_found si la combinaison ne resout aucun SKU actif (jamais de skip silencieux)', async () => {
+        const client = makeClient([
+          { rows: [{ n: 0 }] },
+          { rows: [skuProduct] },
+          { rows: [] }, // resolveActiveSku → rien
+        ]);
+        db.getClient.mockResolvedValue(client);
+
+        await expect(createSharedCartFromCartItems('user-001', [
+          { product_id: 'prod-sku', quantity: 1, variant_combo: { couleur: 'Rose' } },
+        ])).rejects.toMatchObject({ status: 409, code: 'sellable_unit_not_found' });
+        expectTransactionRolledBack(client);
+      });
+
+      it('409 sellable_unit_out_of_stock si le stock du SKU resolu est insuffisant', async () => {
+        const client = makeClient([
+          { rows: [{ n: 0 }] },
+          { rows: [skuProduct] },
+          { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 1, price_kmf: 15000 }] },
+        ]);
+        db.getClient.mockResolvedValue(client);
+
+        await expect(createSharedCartFromCartItems('user-001', [
+          { product_id: 'prod-sku', quantity: 5, variant_combo: { couleur: 'Noir', taille: 'M' } },
+        ])).rejects.toMatchObject({ status: 409, code: 'sellable_unit_out_of_stock' });
+        expectTransactionRolledBack(client);
+      });
+
+      it('fallback vers le prix produit quand product_skus.price_kmf est null', async () => {
+        const sharedCart = { id: 'cart-sku-3', status: 'open' };
+        const item = { id: 'sci-sku-3' };
+        const client = makeClient([
+          { rows: [{ n: 0 }] },
+          { rows: [skuProduct] },
+          { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: null }] },
+          { rows: [{ full_name: 'Creator', phone: '000' }] },
+          { rows: [] },
+          { rows: [sharedCart] },
+          { rows: [item] },
+          { rows: [], rowCount: 1 },
+        ]);
+        db.getClient.mockResolvedValue(client);
+
+        const result = await createSharedCartFromCartItems('user-001', [
+          { product_id: 'prod-sku', quantity: 1, variant_combo: { couleur: 'Noir', taille: 'M' } },
+        ]);
+        expect(result.items).toEqual([item]);
+        const insertCall = client.calls.find(c => /INSERT INTO shared_cart_items/.test(c.sql));
+        expect(insertCall.params[8]).toBe(10000); // unit_price_kmf_snapshot = prix produit générique (fallback)
+      });
     });
   });
 
@@ -334,6 +451,28 @@ describe('shared-cart-creation', () => {
       // Le total est vérifié APRÈS la boucle d'insertion des items : la ligne
       // à prix 0 est bien insérée avant que la transaction ne soit rejetée.
       await expect(createSharedCartFromBasket('user-001', 'basket-001')).rejects.toThrow('Total panier invalide');
+      expectTransactionRolledBack(client);
+    });
+
+    // GAP-07 §9.4 — basket_items ne porte aucune colonne de variante :
+    // un produit SKU dans un basket legacy doit être refusé explicitement,
+    // jamais silencieusement dégradé vers un SKU deviné.
+    it('refuse explicitement un produit SKU (basket_items ne conserve pas la variante)', async () => {
+      const items = [
+        { product_id: 'p1', quantity: 1, name: 'Robe', image_url: 'robe.jpg', category: 'vetements', price_kmf: 10000, inventory_model: 'SKU' },
+      ];
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [{ id: 'user-001' }] },
+        { rows: [{ id: 'basket-001', user_id: 'user-001' }] },
+        { rows: items },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(createSharedCartFromBasket('user-001', 'basket-001')).rejects.toMatchObject({
+        status: 409,
+        code: 'sellable_unit_identity_missing',
+      });
       expectTransactionRolledBack(client);
     });
 

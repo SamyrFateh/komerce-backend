@@ -251,6 +251,15 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
 
         item.variant_combo = comboRaw;
         item._resolved_sku_id = resolvedSku.id;
+        // GAP-07 (lot préalable) — le prix facturé DOIT être celui de
+        // l'unité vendable résolue (SKU), jamais le prix générique du
+        // produit. computeSellablePricing() est la même fonction pure que
+        // shared-cart / catalogue : un SKU au prix spécifique produit le
+        // même prix quel que soit le point d'entrée. Pas de requête DB
+        // supplémentaire ici : `product` (SELECT *) porte déjà promo_pct/
+        // is_promo/promo_until.
+        item._effective_unit_price_kmf =
+          productAdminService.computeSellablePricing({ product, resolvedSku }).effective_unit_price_kmf;
       } else {
         // ── Chemin legacy (LEGACY_VARIANTS, défaut) — inchangé ──────────
         if (product.stock !== null && product.stock < qty) {
@@ -299,9 +308,18 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
             }
           }
         }
+
+        // GAP-07 — même politique de prix que le chemin SKU ci-dessus :
+        // aucun produit acheté n'échappe à la boundary de prix canonique.
+        // Pour un produit legacy, product_skus n'existe pas — resolvedSku
+        // est simplement absent, computeSellablePricing retombe sur
+        // product.price_kmf comme base, puis applique la même politique
+        // promo que le catalogue et le shared-cart (§5/§6).
+        item._effective_unit_price_kmf =
+          productAdminService.computeSellablePricing({ product, resolvedSku: null }).effective_unit_price_kmf;
       }
 
-      total_kmf += product.price_kmf * qty;
+      total_kmf += item._effective_unit_price_kmf * qty;
 
       const fret_kmf = (product.weight_kg || 0.5) * qty * fretPerKg;
       const base_aed_kmf = (product.price_aed || 0) * aedFallback * qty;
@@ -483,7 +501,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           order.id,
           item.product_id,
           qty,
-          product.price_kmf,
+          item._effective_unit_price_kmf,
           item.module_type || null,
           item.module_fabric_id || null,
           item.module_fabric_type || null,
@@ -613,10 +631,14 @@ if (payment_mode === 'cash_relais') {
 const emailItems = items.map(i => {
   const p = productMap[i.product_id] || {};
   const qty = parseInt(i.quantity, 10) || 1;
+  // GAP-07 — l'email de confirmation doit refléter le même prix effectif
+  // que order_items/total_kmf, jamais le prix générique product.price_kmf
+  // (sinon un SKU en promo affiche un prix différent de celui facturé).
+  const unitPrice = i._effective_unit_price_kmf != null ? i._effective_unit_price_kmf : (p.price_kmf || 0);
   return {
     name: p.name || 'Produit',
     qty,
-    price_kmf: (p.price_kmf || 0) * qty,
+    price_kmf: unitPrice * qty,
   };
 });
 

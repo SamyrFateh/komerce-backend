@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 770,
-    "edges": 4137,
+    "edges": 4143,
     "dbTables": 109,
     "doctrines": 167,
     "impactAreas": 130,
@@ -13427,8 +13427,10 @@
         "boutique_categories",
         "boutique_subcategories",
         "catalog_field_overrides",
+        "catalog_media",
         "order_items",
         "orders",
+        "product_sku_media",
         "product_skus",
         "product_variants",
         "products"
@@ -14322,7 +14324,8 @@
       ],
       "depends": [
         "db.js",
-        "services/shared-cart-internals.js"
+        "services/shared-cart-internals.js",
+        "services/product-admin-service.js"
       ],
       "usedBy": [
         "routes/shared-cart.js"
@@ -14330,6 +14333,7 @@
       "dbRead": [
         "basket_items",
         "baskets",
+        "product_skus",
         "products",
         "shared_carts",
         "users"
@@ -14484,7 +14488,8 @@
       ],
       "depends": [
         "db.js",
-        "services/shared-cart-internals.js"
+        "services/shared-cart-internals.js",
+        "services/product-admin-service.js"
       ],
       "usedBy": [
         "routes/shared-cart.js",
@@ -14492,6 +14497,7 @@
       ],
       "dbRead": [
         "order_items",
+        "product_skus",
         "products",
         "shared_cart_items",
         "shared_carts"
@@ -38419,6 +38425,12 @@
     },
     {
       "from": "services/product-admin-service.js",
+      "to": "db:catalog_media",
+      "type": "db-read",
+      "label": "catalog_media"
+    },
+    {
+      "from": "services/product-admin-service.js",
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
@@ -38428,6 +38440,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/product-admin-service.js",
+      "to": "db:product_sku_media",
+      "type": "db-read",
+      "label": "product_sku_media"
     },
     {
       "from": "services/product-admin-service.js",
@@ -39750,6 +39768,12 @@
       "label": "services/shared-cart-internals.js"
     },
     {
+      "from": "services/shared-cart-creation.js",
+      "to": "services/product-admin-service.js",
+      "type": "depends",
+      "label": "services/product-admin-service.js"
+    },
+    {
       "from": "routes/shared-cart.js",
       "to": "services/shared-cart-creation.js",
       "type": "uses",
@@ -39766,6 +39790,12 @@
       "to": "db:baskets",
       "type": "db-read",
       "label": "baskets"
+    },
+    {
+      "from": "services/shared-cart-creation.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
     },
     {
       "from": "services/shared-cart-creation.js",
@@ -40026,6 +40056,12 @@
       "label": "services/shared-cart-internals.js"
     },
     {
+      "from": "services/shared-cart-items-service.js",
+      "to": "services/product-admin-service.js",
+      "type": "depends",
+      "label": "services/product-admin-service.js"
+    },
+    {
       "from": "routes/shared-cart.js",
       "to": "services/shared-cart-items-service.js",
       "type": "uses",
@@ -40042,6 +40078,12 @@
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
+    },
+    {
+      "from": "services/shared-cart-items-service.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
     },
     {
       "from": "services/shared-cart-items-service.js",
@@ -57011,8 +57053,10 @@
         "boutique_categories",
         "boutique_subcategories",
         "catalog_field_overrides",
+        "catalog_media",
         "order_items",
         "orders",
+        "product_sku_media",
         "product_skus",
         "product_variants",
         "products"
@@ -57037,8 +57081,10 @@
         "db:boutique_categories",
         "db:boutique_subcategories",
         "db:catalog_field_overrides",
+        "db:catalog_media",
         "db:order_items",
         "db:orders",
+        "db:product_sku_media",
         "db:product_skus",
         "db:product_variants",
         "db:products",
@@ -57052,6 +57098,8 @@
         "services/catalog-overrides.js",
         "services/product-price-audit.js",
         "services/product-publication-guard.js",
+        "services/shared-cart-creation.js",
+        "services/shared-cart-items-service.js",
         "utils/logger.js"
       ]
     },
@@ -57856,7 +57904,8 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "services/shared-cart-internals.js"
+        "services/shared-cart-internals.js",
+        "services/product-admin-service.js"
       ],
       "directUsedBy": [
         "routes/shared-cart.js"
@@ -57865,6 +57914,7 @@
       "dbRead": [
         "basket_items",
         "baskets",
+        "product_skus",
         "products",
         "shared_carts",
         "users"
@@ -57887,6 +57937,7 @@
       "mustCheck": [
         "db:basket_items",
         "db:baskets",
+        "db:product_skus",
         "db:products",
         "db:shared_cart_events",
         "db:shared_cart_items",
@@ -57896,6 +57947,7 @@
         "doctrine:snapshot_fige",
         "impact:creator-flow",
         "routes/shared-cart.js",
+        "services/product-admin-service.js",
         "services/shared-cart-internals.js"
       ]
     },
@@ -58014,7 +58066,8 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "services/shared-cart-internals.js"
+        "services/shared-cart-internals.js",
+        "services/product-admin-service.js"
       ],
       "directUsedBy": [
         "routes/shared-cart.js",
@@ -58023,6 +58076,7 @@
       "ownedFiles": [],
       "dbRead": [
         "order_items",
+        "product_skus",
         "products",
         "shared_cart_items",
         "shared_carts"
@@ -58043,6 +58097,7 @@
       ],
       "mustCheck": [
         "db:order_items",
+        "db:product_skus",
         "db:products",
         "db:shared_cart_events",
         "db:shared_cart_items",
@@ -58053,6 +58108,7 @@
         "impact:shared-cart-editing",
         "public/boutique/js/b-cart.js",
         "routes/shared-cart.js",
+        "services/product-admin-service.js",
         "services/shared-cart-internals.js"
       ]
     },

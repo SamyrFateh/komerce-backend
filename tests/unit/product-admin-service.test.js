@@ -447,4 +447,179 @@ describe('product-admin-service', () => {
       expect(db.query).not.toHaveBeenCalled();
     });
   });
+
+  // GAP-07 (lot préalable Lot 3) — boundary canonique d'unité vendable.
+  describe('applyCanonicalPromotion', () => {
+    it('renvoie le prix de base si is_promo est faux', () => {
+      expect(svc.applyCanonicalPromotion(10000, { is_promo: false, promo_pct: 50 })).toBe(10000);
+    });
+
+    it('renvoie le prix de base si promo_pct <= 0', () => {
+      expect(svc.applyCanonicalPromotion(10000, { is_promo: true, promo_pct: 0 })).toBe(10000);
+    });
+
+    it('applique la remise si promo active sans date limite', () => {
+      expect(svc.applyCanonicalPromotion(10000, { is_promo: true, promo_pct: 10 })).toBe(9000);
+    });
+
+    it('applique la remise si promo_until est dans le futur', () => {
+      const future = new Date(Date.now() + 86400000).toISOString();
+      expect(svc.applyCanonicalPromotion(10000, { is_promo: true, promo_pct: 20, promo_until: future })).toBe(8000);
+    });
+
+    it('ignore la remise si promo_until est dans le passe', () => {
+      const past = new Date(Date.now() - 86400000).toISOString();
+      expect(svc.applyCanonicalPromotion(10000, { is_promo: true, promo_pct: 20, promo_until: past })).toBe(10000);
+    });
+
+    it('arrondit le resultat', () => {
+      expect(svc.applyCanonicalPromotion(9999, { is_promo: true, promo_pct: 33 })).toBe(Math.round(9999 * 0.67));
+    });
+  });
+
+  describe('computeSellablePricing', () => {
+    const product = { price_kmf: 10000, is_promo: false, promo_pct: null, promo_until: null };
+
+    it('utilise product_skus.price_kmf comme prix de base quand renseigne', () => {
+      const result = svc.computeSellablePricing({ product, resolvedSku: { price_kmf: 15000 } });
+      expect(result.base_unit_price_kmf).toBe(15000);
+      expect(result.effective_unit_price_kmf).toBe(15000);
+    });
+
+    it('retombe sur products.price_kmf quand product_skus.price_kmf est null (nullable, §5)', () => {
+      const result = svc.computeSellablePricing({ product, resolvedSku: { price_kmf: null } });
+      expect(result.base_unit_price_kmf).toBe(10000);
+    });
+
+    it('utilise products.price_kmf pour un produit sans SKU resolu (legacy)', () => {
+      const result = svc.computeSellablePricing({ product, resolvedSku: null });
+      expect(result.base_unit_price_kmf).toBe(10000);
+    });
+
+    it('applique la promo canonique une seule fois sur le prix de base resolu', () => {
+      const promoProduct = { ...product, is_promo: true, promo_pct: 10 };
+      const result = svc.computeSellablePricing({ product: promoProduct, resolvedSku: { price_kmf: 20000 } });
+      expect(result.base_unit_price_kmf).toBe(20000);
+      expect(result.effective_unit_price_kmf).toBe(18000);
+    });
+  });
+
+  describe('resolveSellableUnit (GAP-07 §5) — boundary canonique', () => {
+    const productSku = {
+      id: 'prod-1', name: 'Robe', image_url: 'https://img/generic.jpg', category: 'vetements',
+      price_kmf: 10000, is_active: true, inventory_model: 'SKU', has_variants: true, stock: null,
+      promo_pct: null, is_promo: false, promo_until: null,
+    };
+    const productLegacy = {
+      id: 'prod-2', name: 'Sac', image_url: 'https://img/sac.jpg', category: 'accessoires',
+      price_kmf: 5000, is_active: true, inventory_model: 'LEGACY_VARIANTS', has_variants: true, stock: 20,
+      promo_pct: null, is_promo: false, promo_until: null,
+    };
+
+    it('404 product_not_found si le produit est introuvable ou inactif', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+      await expect(svc.resolveSellableUnit(db, { productId: 'nope', variantCombo: null }))
+        .rejects.toMatchObject({ status: 404, code: 'product_not_found' });
+    });
+
+    it('SKU nominal : resout sku_id/prix/media, priorite au media explicite SKU', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [productSku] }) // products
+        .mockResolvedValueOnce({ rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 5, price_kmf: 15000 }] }) // resolveActiveSku
+        .mockResolvedValueOnce({ rows: [{ url: 'https://img/sku-noir.jpg' }] }) }; // product_sku_media JOIN catalog_media
+
+      const result = await svc.resolveSellableUnit(db, {
+        productId: 'prod-1', variantCombo: { couleur: 'Noir' }, quantity: 2,
+      });
+
+      expect(result).toMatchObject({
+        product_id: 'prod-1', inventory_model: 'SKU',
+        sku_id: 'sku-1', sku: 'ROBE-N', variant_combo: { couleur: 'Noir' },
+        stock: 5, base_unit_price_kmf: 15000, effective_unit_price_kmf: 15000,
+        name: 'Robe', image_url: 'https://img/sku-noir.jpg', category: 'vetements',
+      });
+    });
+
+    it('SKU : fallback vers products.image_url si aucun media explicite rattache au SKU', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [productSku] })
+        .mockResolvedValueOnce({ rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 5, price_kmf: 15000 }] })
+        .mockResolvedValueOnce({ rows: [] }) }; // aucune association product_sku_media
+
+      const result = await svc.resolveSellableUnit(db, { productId: 'prod-1', variantCombo: null, quantity: 1 });
+      expect(result.image_url).toBe('https://img/generic.jpg');
+    });
+
+    it('SKU : 409 sellable_unit_not_found si la combinaison ne resout aucun SKU actif', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [productSku] })
+        .mockResolvedValueOnce({ rows: [] }) };
+      await expect(svc.resolveSellableUnit(db, { productId: 'prod-1', variantCombo: { couleur: 'Rose' } }))
+        .rejects.toMatchObject({ status: 409, code: 'sellable_unit_not_found' });
+    });
+
+    it('SKU : 409 sellable_unit_out_of_stock si le stock du SKU resolu est insuffisant', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [productSku] })
+        .mockResolvedValueOnce({ rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 1, price_kmf: 15000 }] }) };
+      await expect(svc.resolveSellableUnit(db, { productId: 'prod-1', variantCombo: { couleur: 'Noir' }, quantity: 5 }))
+        .rejects.toMatchObject({ status: 409, code: 'sellable_unit_out_of_stock', available_stock: 1 });
+    });
+
+    it('legacy nominal : combo valide, prix produit, pas de sku_id', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [productLegacy] }) // products
+        .mockResolvedValueOnce({ rows: [{ stock: 10 }] }) }; // product_variants (couleur=Rouge)
+
+      const result = await svc.resolveSellableUnit(db, {
+        productId: 'prod-2', variantCombo: { couleur: 'Rouge' }, quantity: 1,
+      });
+      expect(result).toMatchObject({
+        product_id: 'prod-2', inventory_model: 'LEGACY_VARIANTS',
+        sku_id: null, sku: null, variant_combo: { couleur: 'Rouge' },
+        base_unit_price_kmf: 5000, effective_unit_price_kmf: 5000,
+        image_url: 'https://img/sac.jpg',
+      });
+    });
+
+    it('legacy : 400 variant_unknown si la variante n\'existe pas', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [productLegacy] })
+        .mockResolvedValueOnce({ rows: [] }) };
+      await expect(svc.resolveSellableUnit(db, { productId: 'prod-2', variantCombo: { couleur: 'Turquoise' } }))
+        .rejects.toMatchObject({ status: 400, code: 'variant_unknown' });
+    });
+
+    it('legacy : 409 sellable_unit_out_of_stock si le stock de la variante est insuffisant', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [productLegacy] })
+        .mockResolvedValueOnce({ rows: [{ stock: 1 }] }) };
+      await expect(svc.resolveSellableUnit(db, { productId: 'prod-2', variantCombo: { couleur: 'Rouge' }, quantity: 3 }))
+        .rejects.toMatchObject({ status: 409, code: 'sellable_unit_out_of_stock', available_stock: 1 });
+    });
+
+    it('legacy sans combo : 409 sellable_unit_out_of_stock sur products.stock', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [{ ...productLegacy, stock: 1 }] }) };
+      await expect(svc.resolveSellableUnit(db, { productId: 'prod-2', variantCombo: null, quantity: 5 }))
+        .rejects.toMatchObject({ status: 409, code: 'sellable_unit_out_of_stock', available_stock: 1 });
+    });
+
+    it('meme unite (meme SKU) produit le meme prix quel que soit le point d\'entree (parite §18)', async () => {
+      const promoSku = { ...productSku, is_promo: true, promo_pct: 10 };
+      const dbA = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [promoSku] })
+        .mockResolvedValueOnce({ rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 5, price_kmf: 20000 }] })
+        .mockResolvedValueOnce({ rows: [] }) };
+      const dbB = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [promoSku] })
+        .mockResolvedValueOnce({ rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 5, price_kmf: 20000 }] })
+        .mockResolvedValueOnce({ rows: [] }) };
+
+      const a = await svc.resolveSellableUnit(dbA, { productId: 'prod-1', variantCombo: { couleur: 'Noir' } });
+      const b = await svc.resolveSellableUnit(dbB, { productId: 'prod-1', variantCombo: { couleur: 'Noir' } });
+      expect(a.effective_unit_price_kmf).toBe(18000);
+      expect(a.effective_unit_price_kmf).toBe(b.effective_unit_price_kmf);
+      expect(a.sku_id).toBe(b.sku_id);
+    });
+  });
 });
