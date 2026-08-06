@@ -38,10 +38,10 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-checkout.js` | 51 | 4 | 0/4 | Bottom-nav mobile |
 | `b-modal-product.js` | 25 | 11 | 0/1 | Modal produit |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
+| `b-modal-buybox-shared.js` | 26 | 0 | 0/0 | Modal produit |
 | `b-cart-pill.js` | 6 | 18 | 3/0 | Grille produits, Section catalogue |
 | `b-wallet.js` | 24 | 0 | 0/0 | Section catalogue |
 | `b-mini-cart.js` | 4 | 19 | 2/0 | Panier |
-| `b-modal-buybox-shared.js` | 22 | 0 | 0/0 | Modal produit |
 | `b-modal-nav.js` | 10 | 10 | 1/4 | Modal produit |
 | `b-pager.js` | 3 | 16 | 2/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
 | `b-tracking.js` | 19 | 0 | 0/0 | Section catalogue |

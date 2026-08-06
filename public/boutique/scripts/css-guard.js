@@ -258,18 +258,43 @@ const result = scan();
 const perKey = result.perKey;
 const total  = result.total;
 
+// FIX (dette identifiée en session — flake ~20% de
+// tests/unit/css-guard-compact-line.test.js, reproduit hors Jest en pur
+// Node.js séquentiel, aucune concurrence en cause) :
+//
+//   process.exit(N) appelé juste après une rafale de console.log() tronque
+//   la sortie quand stdout est un pipe (jamais un TTY) — cas systématique
+//   ici puisque ce script n'est utilisé QUE via child_process
+//   (execFileSync/execSync) par les tests et par predeploy-gate.js/
+//   npm scripts. Sur Linux, l'écriture d'un pipe est non-bloquante côté
+//   Node ; process.exit() ne draine JAMAIS le buffer stdout en attente
+//   avant de tuer le process — avec ~170 conflits (~28 Ko), le buffer du
+//   pipe dépasse régulièrement ce qui a eu le temps d'être flush avant le
+//   exit(), et la fin du rapport (jusqu'à la ligne "Total : …") disparaît
+//   silencieusement. Reproduit et confirmé par diff de longueur de sortie
+//   entre runs identiques (28092 caractères vs des runs tronqués à
+//   9564-26240, toujours coupés avant la fin, jamais corrompus).
+//
+// Fix : process.exitCode + return au lieu de process.exit() partout dans
+// ce script (return top-level valide : Node enveloppe chaque module CJS
+// dans une fonction). Le process se termine alors naturellement en fin de
+// script, après drain complet de stdout par l'event loop — jamais tué en
+// plein flush.
+
 if (save) {
   const keys = Object.keys(perKey).sort();
   fs.writeFileSync(BASELINE, JSON.stringify({ total, keys, savedAt: new Date().toISOString() }, null, 2));
   console.log(`${GRN}${BLD}✔ Baseline css-guard figée à ${total} conflit(s) de cascade.${R}`);
-  process.exit(0);
+  process.exitCode = 0;
+  return;
 }
 
 console.log(`${BLD}CSS Guardian — conflits de cascade (css/dist/)${R}`);
 
 if (total === 0) {
   console.log(`${GRN}${BLD}✔ Aucun conflit de cascade.${R}`);
-  process.exit(0);
+  process.exitCode = 0;
+  return;
 }
 
 const sortedKeys = Object.keys(perKey).sort();
@@ -284,12 +309,16 @@ for (const key of sortedKeys) {
 }
 console.log(`\n${BLD}Total : ${total} conflit(s)${R} (baseline : ${(loadBaseline() || {}).total ?? 'aucune'})`);
 
-if (!strict) process.exit(0);
+if (!strict) {
+  process.exitCode = 0;
+  return;
+}
 
 const baseline = loadBaseline();
 if (!baseline) {
   console.error(`${RED}${BLD}✖ Aucune baseline css-guard.${R} Lance d'abord : node scripts/css-guard.js --save`);
-  process.exit(1);
+  process.exitCode = 1;
+  return;
 }
 
 const known = new Set(baseline.keys || []);
@@ -303,7 +332,8 @@ if (drops.length) {
 
 if (regressions.length === 0) {
   console.log(`\n${GRN}${BLD}✔ Aucune hausse hors baseline.${R}`);
-  process.exit(0);
+  process.exitCode = 0;
+  return;
 }
 
 console.log(`\n${RED}${BLD}✖ ${regressions.length} nouveau(x) conflit(s) hors baseline :${R}`);
@@ -313,4 +343,4 @@ regressions.forEach(k => {
 });
 console.log(`${DIM}  Corrige le(s) conflit(s) ajouté(s), ou — si la hausse est légitime${R}`);
 console.log(`${DIM}  — fige le nouvel état : npm run check:css-guard:save${R}`);
-process.exit(1);
+process.exitCode = 1;

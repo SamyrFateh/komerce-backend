@@ -32,7 +32,7 @@
 | `modal-product-lot4-hybrid.css` | 502 | 🔴 **ORPHELIN** |
 | `modal-product-polish.css` | 322 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1512 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 1240 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 1263 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 888 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
