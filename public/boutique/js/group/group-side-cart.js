@@ -36,6 +36,7 @@ import {
   removeItemFromSharedList,
   closeCart as apiCloseSharedCart,
   updateSharedListItemQuantity as apiUpdateSharedListItemQuantity,
+  addItemToSharedList,
 } from './group-api.js';
 import { checkoutSharedListSelection } from './group-checkout-adapter.js';
 
@@ -620,25 +621,71 @@ export function renderCartSurfaceSwitch() {
 }
 
 /* ── Actions propriétaire (mandat §9) ─────────────────────────────────
- * V2-F nettoyage final : le bouton "+ Ajouter un article" et son handler
- * handleAddItemClick() ont été retirés — ils ne faisaient que renvoyer
- * l'utilisateur vers un CTA "Ajouter à cette liste" qui n'a jamais été
- * construit sur la fiche produit (parcours mort, jamais atteignable). La
- * fonction addItemToSharedList(productId, quantity) qui aurait effectué
- * l'ajout réel est retirée avec eux (zéro appelant réel après retrait du
- * bouton, confirmé par grep exhaustif).
- *
- * L'ajout d'un nouvel article à une liste existante n'est pas exposé dans
- * l'interface actuelle. Le propriétaire peut modifier les quantités et
- * retirer des lignes existantes. Un futur lot pourra introduire une action
- * explicite "Ajouter à cette liste" depuis le catalogue ou la fiche
- * produit, sans modifier le panier personnel.
- *
- * La route backend POST /api/shared-carts/:id/items et son service restent
- * en place (capacité métier valide, réutilisable par un futur parcours) —
- * seul le client front group-api.js::addItemToSharedList, désormais sans
- * appelant, a été retiré avec ce lot.
+ * Lot 3 GAP-07 — CTA "Ajouter à cette liste" depuis la fiche produit.
+ * Remplace le handler handleAddItemClick() retiré en V2-F (qui pointait
+ * vers un CTA jamais construit) : le parcours produit existe désormais
+ * (b-modal-buybox-shared.js::wireAddToListButton, câblé dans
+ * renderActions() des deux compositions mobile/desktop).
  */
+
+/**
+ * Le CTA "Ajouter à cette liste" (fiche produit) ne doit être visible que
+ * dans exactement les mêmes conditions où l'ajout serait accepté par
+ * addProductToActiveSharedList ci-dessous — même garde, exposée séparément
+ * pour que le rendu (b-modal-buybox-shared.js) n'ait pas à dupliquer la
+ * condition ni à tenter un appel pour découvrir qu'il est refusé.
+ * @returns {boolean}
+ */
+export function canAddToActiveSharedList() {
+  return isActiveContext() && !!state.sharedListContext.isCreator && !isReadOnly();
+}
+
+/**
+ * Ajoute un produit catalogue à la liste active, uniquement si l'appelant
+ * en est le créateur et que la liste est encore ouverte — mêmes garde-fous
+ * que les autres actions propriétaire ci-dessous (handleRemoveItem,
+ * handleQuantityStep, toggleEditMode). N'ouvre ni ne modifie jamais
+ * state.cart (panier personnel) : c'est une écriture directe sur la liste
+ * active via POST /api/shared-carts/:id/items.
+ *
+ * Le serveur (services/shared-cart-items-service.js::addSharedCartItem,
+ * GAP-07 lot préalable) reste seul autoritaire sur le prix, le SKU
+ * résolu et la disponibilité — aucune valeur fournie ici n'est jamais
+ * traitée comme une vérité.
+ *
+ * Même convention que handleRemoveItem/handleQuantityStep ci-dessous :
+ * toast de retour posé ici (succès et erreur), pas délégué à l'appelant.
+ *
+ * @param {{id: string}} product — produit catalogue (state.products),
+ *   jamais un objet reconstruit côté modale.
+ * @param {number} [quantity=1]
+ * @param {object|null} [variantCombo] — combinaison canonique
+ *   ({axisKey: value}) pour un produit SKU entièrement sélectionné,
+ *   sinon null. Jamais un objet vide fabriqué par ce module.
+ * @returns {Promise<boolean>} true si l'ajout a réussi
+ */
+export async function addProductToActiveSharedList(product, quantity = 1, variantCombo = null) {
+  if (!product || !product.id) return false;
+  if (!isActiveContext()) return false;
+  if (!state.sharedListContext.isCreator || isReadOnly()) return false;
+
+  try {
+    await addItemToSharedList(state.sharedListContext.sharedCartId, product.id, quantity, variantCombo);
+  } catch (err) {
+    // window.K.request (komerce-api.js) rejette avec une Error dont
+    // .message est déjà le texte serveur (json.error) — ex. "Combinaison
+    // indisponible pour Chemise", "Stock insuffisant pour Chemise —
+    // disponible : 1", "Ce panier n'est plus modifiable". On l'affiche
+    // tel quel, jamais un message générique qui masquerait la vraie
+    // cause (ex. combinaison épuisée entre-temps par un autre acheteur).
+    showToast(`Erreur : ${err.message}`, 'error');
+    return false;
+  }
+
+  await refreshSharedListContext();
+  showToast(`« ${sanitize(product.name || 'Article')} » ajouté à la liste.`, 'success');
+  return true;
+}
 
 async function handleRemoveItem(itemId) {
   if (!state.sharedListContext.isCreator || isReadOnly()) return;

@@ -56,7 +56,7 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { wireBuyNowButton } from './b-modal-buybox-shared.js';
+import { wireBuyNowButton, wireAddToListButton } from './b-modal-buybox-shared.js';
 import { reconcileDeliverySelection } from './view-models/delivery-mode-model.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
 import { renderTrust, renderShare } from './b-modal-desktop-product.js';
@@ -466,6 +466,9 @@ function renderActions(detail, selection) {
   });
 
   wireBuyNowButton(document.getElementById('k-buy-now-btn'));
+  // Lot 3 GAP-07 — visible uniquement si une liste ouverte appartenant au
+  // créateur courant est active (canAddToActiveSharedList côté module).
+  wireAddToListButton(document.getElementById('k-add-to-list-btn'));
 }
 
 /* ── MDM-7 : Below-fold enriched content ─────────────────────── */

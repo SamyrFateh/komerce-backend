@@ -19,14 +19,11 @@
  * @owner Boutique First — couche réseau minimale pour la liste partageable
  *
  * Le checkout canonique (POST /api/orders) reste le seul acte engageant.
- * Ce module transporte uniquement les lectures de liste et de bibliothèque,
- * la sauvegarde explicite d'une liste reçue, son retrait explicite de la
- * bibliothèque, ainsi que les actions unitaires encore exposées au
- * propriétaire : modifier une quantité, retirer une ligne et fermer la liste.
- *
- * L'ajout d'un nouvel article à une liste existante n'est pas exposé dans
- * l'interface actuelle. La capacité backend POST /api/shared-carts/:id/items
- * reste hors de ce client jusqu'à la conception d'un parcours produit dédié.
+ * Ce module transporte les lectures de liste et de bibliothèque, la
+ * sauvegarde explicite d'une liste reçue, son retrait explicite de la
+ * bibliothèque, ainsi que les actions unitaires exposées au propriétaire :
+ * ajouter un article (Lot 3 GAP-07), modifier une quantité, retirer une
+ * ligne et fermer la liste.
  *
  * Conventions :
  *   - Endpoints créateur (/api/shared-carts/:id/*) → apiGet / apiPost /
@@ -119,6 +116,33 @@ export function removeSavedSharedCart(sharedCartId) {
  */
 export function removeItemFromSharedList(cartId, itemId) {
   return apiDelete(`/api/shared-carts/${cartId}/items/${itemId}`);
+}
+
+/**
+ * Ajoute un nouvel article à une liste existante (Lot 3 GAP-07 — CTA
+ * "Ajouter à cette liste" depuis la fiche produit). Une intention, un
+ * appel, écriture immédiate (routes/shared-cart.js POST /:id/items,
+ * services/shared-cart-items-service.js::addSharedCartItem).
+ *
+ * `variant_combo` est transmis tel quel — jamais transformé ici. Pour un
+ * produit SKU, c'est `state.modalSelection.selected_options` (toutes les
+ * clés d'axe résolues) ; pour un produit non-SKU/sans variante, `null`.
+ * Le serveur reste seul autoritaire sur le prix, le SKU et la
+ * disponibilité (resolveActiveSku côté services/product-admin-service.js
+ * — jamais un prix/sku_id fourni par le client).
+ *
+ * @param {string|number} cartId
+ * @param {string} productId
+ * @param {number} quantity
+ * @param {object|null} [variantCombo]
+ * @returns {Promise<{ok: boolean, cart, item}>}
+ */
+export function addItemToSharedList(cartId, productId, quantity, variantCombo = null) {
+  return apiPost(`/api/shared-carts/${cartId}/items`, {
+    product_id: productId,
+    quantity,
+    variant_combo: variantCombo || null,
+  });
 }
 
 /**

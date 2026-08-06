@@ -74,6 +74,7 @@ jest.mock('../../js/group/group-api.js', () => ({
   removeItemFromSharedList: jest.fn(),
   closeCart: jest.fn(),
   updateSharedListItemQuantity: jest.fn(),
+  addItemToSharedList: jest.fn(),
 }));
 
 jest.mock('../../js/group/group-checkout-adapter.js', () => ({
@@ -86,6 +87,7 @@ const { showToast } = require('../../js/b-utils.js');
 const { isDesktop } = require('../../js/b-scroll-owner.js');
 const {
   getSharedCartPublic,
+  addItemToSharedList,
 } = require('../../js/group/group-api.js');
 const { checkoutSharedListSelection } = require('../../js/group/group-checkout-adapter.js');
 
@@ -107,6 +109,8 @@ const {
   setCartSurface,
   toggleEditMode,
   renderSharedListInCart,
+  canAddToActiveSharedList,
+  addProductToActiveSharedList,
 } = require('../../js/group/group-side-cart.js');
 
 function mountShell() {
@@ -570,5 +574,95 @@ describe('group-side-cart — temps réel (fraîcheur du snapshot, lot 2026-08)'
     jest.advanceTimersByTime(4000);
 
     expect(getSharedCartPublic).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Lot 3 GAP-07 — CTA "Ajouter à cette liste" depuis la fiche produit.
+describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)', () => {
+  it('canAddToActiveSharedList : false si aucun contexte actif', () => {
+    expect(canAddToActiveSharedList()).toBe(false);
+  });
+
+  it('canAddToActiveSharedList : false pour un participant (isCreator=false)', () => {
+    activateSharedListContext(payload({ is_creator: false }), 'tok-1');
+    expect(canAddToActiveSharedList()).toBe(false);
+  });
+
+  it('canAddToActiveSharedList : false si la liste est fermée', () => {
+    activateSharedListContext(
+      payload({ is_creator: true, cart: { ...payload().cart, status: 'closed' } }),
+      'tok-1'
+    );
+    expect(canAddToActiveSharedList()).toBe(false);
+  });
+
+  it('canAddToActiveSharedList : true pour le créateur avec une liste ouverte', () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    expect(canAddToActiveSharedList()).toBe(true);
+  });
+
+  it('addProductToActiveSharedList : false et aucun appel réseau si produit invalide', async () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    const ok = await addProductToActiveSharedList(null, 1, null);
+    expect(ok).toBe(false);
+    expect(addItemToSharedList).not.toHaveBeenCalled();
+  });
+
+  it('addProductToActiveSharedList : false et aucun appel réseau si participant (garde-fou serveur reflété côté front)', async () => {
+    activateSharedListContext(payload({ is_creator: false }), 'tok-1');
+    const ok = await addProductToActiveSharedList({ id: 'prod-1', name: 'Robe' }, 1, null);
+    expect(ok).toBe(false);
+    expect(addItemToSharedList).not.toHaveBeenCalled();
+  });
+
+  it('addProductToActiveSharedList : false et aucun appel réseau si liste fermée', async () => {
+    activateSharedListContext(
+      payload({ is_creator: true, cart: { ...payload().cart, status: 'closed' } }),
+      'tok-1'
+    );
+    const ok = await addProductToActiveSharedList({ id: 'prod-1', name: 'Robe' }, 1, null);
+    expect(ok).toBe(false);
+    expect(addItemToSharedList).not.toHaveBeenCalled();
+  });
+
+  it('addProductToActiveSharedList : succès → POST avec sharedCartId + variant_combo, refresh, toast succès', async () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    addItemToSharedList.mockResolvedValueOnce({ ok: true, item: { id: 'sci-new' } });
+    getSharedCartPublic.mockResolvedValueOnce(payload({ is_creator: true }));
+
+    const ok = await addProductToActiveSharedList(
+      { id: 'prod-sku', name: 'Chemise' }, 1, { couleur: 'Noir', taille: 'M' }
+    );
+
+    expect(ok).toBe(true);
+    expect(addItemToSharedList).toHaveBeenCalledWith('sc1', 'prod-sku', 1, { couleur: 'Noir', taille: 'M' });
+    expect(getSharedCartPublic).toHaveBeenCalled(); // refreshSharedListContext
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Chemise'), 'success');
+  });
+
+  it('addProductToActiveSharedList : échec serveur (ex. combinaison indisponible) → false, toast erreur, jamais de refresh', async () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    const err = new Error('Combinaison indisponible pour Chemise');
+    err.code = 'sellable_unit_not_found';
+    addItemToSharedList.mockRejectedValueOnce(err);
+    getSharedCartPublic.mockClear();
+
+    const ok = await addProductToActiveSharedList(
+      { id: 'prod-sku', name: 'Chemise' }, 1, { couleur: 'Rose' }
+    );
+
+    expect(ok).toBe(false);
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Combinaison indisponible'), 'error');
+    expect(getSharedCartPublic).not.toHaveBeenCalled();
+  });
+
+  it('addProductToActiveSharedList : variant_combo absent → transmis tel quel (null), jamais un objet fabriqué', async () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    addItemToSharedList.mockResolvedValueOnce({ ok: true, item: { id: 'sci-new' } });
+    getSharedCartPublic.mockResolvedValueOnce(payload({ is_creator: true }));
+
+    await addProductToActiveSharedList({ id: 'prod-simple', name: 'Sac' }, 2);
+
+    expect(addItemToSharedList).toHaveBeenCalledWith('sc1', 'prod-simple', 2, null);
   });
 });

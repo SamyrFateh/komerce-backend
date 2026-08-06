@@ -123,9 +123,15 @@ describe('MDM-8: Mobile renderer extinction rules', () => {
     expect(source).not.toMatch(/startGroupCartFlow/);
   });
 
-  test('delegates scalar fields to product-fields and keeps only the buy-now wiring locally', () => {
+  test('delegates scalar fields to product-fields and keeps only the buy-now (+ Lot 3 add-to-list) wiring locally', () => {
     expect(source).toMatch(/import\s*\{\s*paintDetailFields\s*\}\s*from\s*['"]\.\/b-modal-product-fields/);
-    expect(source).toMatch(/import\s*\{\s*wireBuyNowButton\s*\}\s*from\s*['"]\.\/b-modal-buybox-shared/);
+    // Lot 3 GAP-07 — wireAddToListButton (CTA "Ajouter à cette liste")
+    // rejoint wireBuyNowButton dans le même import buybox-shared : c'est
+    // la même famille de câblage local (idempotent, .onclick=) que
+    // l'extinction MDM-8 autorise déjà, pas une réintroduction de
+    // renderSubtotal/renderPaymentModes/startGroupCartFlow (interdits
+    // ci-dessus, toujours vérifiés séparément).
+    expect(source).toMatch(/import\s*\{\s*wireBuyNowButton\s*,\s*wireAddToListButton\s*\}\s*from\s*['"]\.\/b-modal-buybox-shared/);
     expect(source).not.toMatch(/getCurrentPrice/);
   });
 

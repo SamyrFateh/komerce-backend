@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-06T18:28:11.201Z",
+  "generatedAt": "2026-08-06T18:49:08.301Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
@@ -7,13 +7,13 @@
     "declaredActive": 28,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 47,
+    "endpoints": 48,
     "orphanEmit": 0,
     "orphanListen": 1,
     "undeclared": 4,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 33,
-    "dynamicEndpoints": 16,
+    "dynamicEndpoints": 17,
     "ownedEvents": 3,
     "ownershipRed": 0,
     "ownershipOrange": 0
@@ -839,7 +839,8 @@
         "b-cart",
         "b-share-cart",
         "b-store",
-        "modal-cart-product-model"
+        "modal-cart-product-model",
+        "group-side-cart"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -3072,6 +3073,13 @@
     },
     {
       "module": "group-api",
+      "route": "/api/shared-carts/{id}/items",
+      "raw": "/api/shared-carts/${cartId}/items",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
       "route": "/api/shared-carts/{id}/close",
       "raw": "/api/shared-carts/${cartId}/close",
       "dynamic": true,
@@ -3468,6 +3476,7 @@
       "/api/shared-carts/public/{id}",
       "/api/shared-carts/saved/{id}",
       "/api/shared-carts/{id}/close",
+      "/api/shared-carts/{id}/items",
       "/api/shared-carts/{id}/items/{id}",
       "/api/shares"
     ],
@@ -3647,6 +3656,7 @@
     "/api/shared-carts/save",
     "/api/shared-carts/saved/{id}",
     "/api/shared-carts/{id}/close",
+    "/api/shared-carts/{id}/items",
     "/api/shared-carts/{id}/items/{id}",
     "/api/shares",
     "/api/wallet",

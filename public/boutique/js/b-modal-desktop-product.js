@@ -27,7 +27,7 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { renderSubtotalInto, renderPaymentModes, startGroupCartFlow, wireBuyNowButton } from './b-modal-buybox-shared.js';
+import { renderSubtotalInto, renderPaymentModes, startGroupCartFlow, wireBuyNowButton, wireAddToListButton } from './b-modal-buybox-shared.js';
 import { deriveDeliveryMode, reconcileDeliverySelection } from './view-models/delivery-mode-model.js';
 import { showToast } from './b-cart-core.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
@@ -185,6 +185,9 @@ function renderActions(detail, selection) {
   });
 
   wireBuyNowButton(document.getElementById('k-buy-now-btn'));
+  // Lot 3 GAP-07 — visible uniquement si une liste ouverte appartenant au
+  // créateur courant est active (canAddToActiveSharedList côté module).
+  wireAddToListButton(document.getElementById('k-add-to-list-btn'));
 
   // T-023/D11 : layout AVAILABLE_EMPTY (Ajouter + Acheter côte à côte) vs
   // AVAILABLE_FILLED (stepper + Acheter) — porté par modal-shell.css via
