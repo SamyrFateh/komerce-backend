@@ -19,8 +19,7 @@
  *     panier, ouverture différée via requestAnimationFrame → openModal.
  *   - setupProductOpenContract : idempotence (_installed), listener click
  *     document (image panier drawer / side-cart → ouverture, contrôle
- *     interactif → ignoré), listener bus product:open-from-cart, filet de
- *     sécurité bus modal:open.
+ *     interactif → ignoré), filet de sécurité bus modal:open.
  *
  * state/dom viennent du vrai b-store.js. openModal et bus sont mockés
  * (bus reste le vrai module pour pouvoir bus.emit() dans les tests — seul
@@ -213,28 +212,10 @@ describe('b-product-open-contract', () => {
       });
     });
 
-    describe('listener bus product:open-from-cart', () => {
-      beforeEach(() => {
-        setupProductOpenContract();
-      });
-
-      it('ouvre la fiche produit pour l\'id fourni', () => {
-        state.products = [makeProduct({ id: 3 })];
-        bus.emit('product:open-from-cart', { id: 3 });
-        expect(openModal).toHaveBeenCalledWith(3, false);
-      });
-
-      it('id = 0 est un id valide (pas confondu avec absence de payload)', () => {
-        state.products = [makeProduct({ id: 0 })];
-        bus.emit('product:open-from-cart', { id: 0 });
-        expect(openModal).toHaveBeenCalledWith(0, false);
-      });
-
-      it('payload sans id : ignoré, pas de crash', () => {
-        expect(() => bus.emit('product:open-from-cart', {})).not.toThrow();
-        expect(openModal).not.toHaveBeenCalled();
-      });
-    });
+    // Bloc "listener bus product:open-from-cart" retiré (2026-08) : le
+    // listener lui-même a été supprimé de b-product-open-contract.js —
+    // jamais déclenché en production, aucun appelant réel. Voir
+    // setupProductOpenContract() pour l'historique complet.
 
     describe('filet de sécurité bus modal:open', () => {
       beforeEach(() => {

@@ -180,10 +180,12 @@ export function setupProductOpenContract() {
   document.addEventListener('click', _onDocumentClick, true);
   _installBusSafetyNet();
 
-  // ARCH-1 : remplace window.__kmrcOpenProductFromCart par un listener bus.
-  // Les appelants doivent émettre bus.emit('product:open-from-cart', { id }).
-  bus.on('product:open-from-cart', function(payload) {
-    if (!payload?.id && payload?.id !== 0) return;
-    openProductFromCart(payload.id);
-  });
+  // ARCH-1, listener bus product:open-from-cart retiré (2026-08) : aucun
+  // appelant réel ne l'a jamais déclenché — le chemin "ouvrir la fiche
+  // depuis le panier" passe en pratique par le click-delegation DOM direct
+  // ci-dessus (_onDocumentClick -> openProductFromCart(), même fichier).
+  // Démasqué comme orphelin réel après correction du scanner boutique:360
+  // (le commentaire précédent citait la syntaxe d'appel du bus, ce qui le
+  // faisait passer pour un émetteur existant, cf. faux positif
+  // nav:goto-group, même session).
 }

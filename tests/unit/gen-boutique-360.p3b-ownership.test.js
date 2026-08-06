@@ -22,8 +22,17 @@
  *
  * Une passe d'intégration fait tourner le générateur réel sur le dépôt et
  * vérifie que les anomalies hors scope documentées dans la note de
- * réconciliation (sidebar:built, modal:product-changed) restent visibles —
- * pas masquées par une baseline.
+ * réconciliation (modal:product-changed) restent visibles — pas masquées
+ * par une baseline.
+ *
+ * `sidebar:built` a été retiré de cette liste (2026-08) : strip() ignorait
+ * les commentaires ligne (//), donc le commentaire historique
+ * "bus.emit('sidebar:built') n'avait aucun listener" en b-desktop-sidebar.js
+ * était lu comme un vrai émetteur — exactement le même défaut que celui qui
+ * causait le faux orphelin nav:goto-group. Une fois les commentaires
+ * correctement ignorés, sidebar:built n'a plus aucune trace réelle dans le
+ * code (ni emit ni listen) : il ne doit plus apparaître dans le rapport du
+ * tout, ce n'est plus une anomalie mais un événement effectivement disparu.
  */
 
 const { busStatus, build } = require('../../scripts/gen-boutique-360');
@@ -112,8 +121,12 @@ describe('P3b — intégration sur le dépôt réel : rendu et anomalies hors sc
     }
   });
 
-  test('anomalies hors scope documentées restent visibles (non masquées par baseline) : sidebar:built, modal:product-changed', () => {
-    expect(md).toMatch(/sidebar:built/);
+  test('anomalie hors scope documentée reste visible (non masquée par baseline) : modal:product-changed', () => {
     expect(md).toMatch(/modal:product-changed/);
+  });
+
+  test('sidebar:built (comment-only depuis son retrait) n\'apparaît plus du tout : aucun emit ni listen réel restant', () => {
+    expect(model.events['sidebar:built']).toBeUndefined();
+    expect(md).not.toMatch(/sidebar:built/);
   });
 });

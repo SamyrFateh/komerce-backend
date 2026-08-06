@@ -48,7 +48,40 @@ const args = process.argv.slice(2);
 const CHECK = args.includes('--check'), SAVE = args.includes('--save');
 const RED='\x1b[31m',GRN='\x1b[32m',YLW='\x1b[33m',CYN='\x1b[36m',BLD='\x1b[1m',DIM='\x1b[2m',R='\x1b[0m';
 
-const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, '');
+// Retire les commentaires (bloc /* */ ET ligne //) avant toute détection par
+// regex sur bus.on/bus.emit/etc., sans casser les chaînes ni les template
+// literals — sinon un commentaire d'historique qui *mentionne* littéralement
+// bus.on('event') est lu comme un vrai listener (cf. faux positif
+// nav:goto-group, 2026-08). Ne gère pas les littéraux regex (non requis :
+// aucun cas de ce type dans public/boutique/js à ce jour).
+function strip(src) {
+  let out = '';
+  let quote = null;      // guillemet ouvrant courant : ' " `
+  let blockComment = false;
+  let lineComment = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i], next = src[i + 1];
+    if (lineComment) {
+      if (c === '\n') { lineComment = false; out += c; }
+      continue;
+    }
+    if (blockComment) {
+      if (c === '*' && next === '/') { blockComment = false; i++; }
+      continue;
+    }
+    if (quote) {
+      out += c;
+      if (c === '\\') { out += next || ''; i++; continue; }
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') { quote = c; out += c; continue; }
+    if (c === '/' && next === '/') { lineComment = true; i++; continue; }
+    if (c === '/' && next === '*') { blockComment = true; i++; continue; }
+    out += c;
+  }
+  return out;
+}
 const normPath = p => p.replace(/[?#].*$/, '').replace(/\$\{[^}]+\}/g, '{id}').replace(/\{[^}]+\}/g, '{id}').replace(/\/+$/,'') || '/';
 
 function walk(dir, acc) {

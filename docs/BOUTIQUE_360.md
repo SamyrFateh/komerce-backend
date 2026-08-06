@@ -1,14 +1,14 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-06T10:46:24.123Z.
+> Régénéré le 2026-08-06T11:09:33.449Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **76** (76 headés) · Événements bus : **25** · Bundles CSS : **3**
+- Modules JS : **76** (76 headés) · Événements bus : **22** · Bundles CSS : **3**
 - Endpoints appelés : **47** — 🔴 0 hors contrat · ⚪ 33 non prouvés · 🔵 16 dynamiques
-- Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 5 non déclaré(s)
+- Santé bus : 0 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 4 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
 
@@ -69,8 +69,7 @@
 | `carousel:changed` | b-modal-product | b-modal-image-ux | 🟡 non déclaré |
 | `cart-snapshot:cleanup` | group-side-cart | b-cart | 🟢 sain |
 | `cart-snapshot:render` | group-side-cart | b-cart | 🟢 sain |
-| `cart:update` | b-cart-core | b-cart, b-cart-core, b-cart-pill, b-mini-cart, b-modal-suggestions, b-nav | 🟢 sain |
-| `cat:select` | b-catalog | b-catalog | 🟢 sain |
+| `cart:update` | b-cart-core | b-cart, b-cart-pill, b-mini-cart, b-modal-suggestions | 🟢 sain |
 | `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
 | `checkout:open` | b-cart | boutique | 🟢 sain |
 | `checkout:order-failed` | b-checkout | group-side-cart | 🟢 sain |
@@ -87,9 +86,7 @@
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
 | `nav:goto-komerce-wallet` | b-checkout | b-nav | 🟢 sain |
 | `nav:goto-track` | b-checkout | b-nav | 🟢 sain |
-| `product:open-from-cart` | b-product-open-contract | b-product-open-contract | 🟢 sain |
 | `side-cart:render` | b-cart, b-cart-core, group-side-cart | b-cart, group-library-remove, group-side-cart | 🟢 sain |
-| `sidebar:built` | b-desktop-sidebar | — | 🔴 émission orpheline |
 | `view:changed` | b-nav | b-catalog-desktop-enhancers, b-home-premium-v1 | 🟡 non déclaré |
 
 ### Diagramme
@@ -107,7 +104,6 @@ graph LR
   b_cart_core["b-cart-core"] -->|cart:update| b_cart_pill["b-cart-pill"]
   b_cart_core["b-cart-core"] -->|cart:update| b_mini_cart["b-mini-cart"]
   b_cart_core["b-cart-core"] -->|cart:update| b_modal_suggestions["b-modal-suggestions"]
-  b_cart_core["b-cart-core"] -->|cart:update| b_nav["b-nav"]
   b_cart["b-cart"] -->|modal:close| b_modal_core["b-modal-core"]
   b_checkout["b-checkout"] -->|modal:close| b_modal_core["b-modal-core"]
   b_cart["b-cart"] -->|modal:open| b_modal_core["b-modal-core"]

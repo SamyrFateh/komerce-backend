@@ -31,7 +31,6 @@
  *     couvre aussi la bascule desktop [Panier]/[Liste] (group-side-cart.js::setCartSurface(),
  *     amendement V2 §A), seule surface où ce sélecteur est atteignable (isDesktop())
  *   checkout:open    —                  — ouvrir la modale de commande [ARCH-1]
- *   product:open-from-cart { id }        — ouvrir fiche depuis le panier [ARCH-1]
  *   view:switch      { view }           — changer d'onglet (home/favs/suivi)
  *   chip:center      { chip }           — centrer chip active dans le pager [b-pager → b-catalog]
  *   catalog:cat-changed { cat }         — catégorie active changée [b-catalog → b-desktop-upgrade]

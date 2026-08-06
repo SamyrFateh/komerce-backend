@@ -56,7 +56,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
 | `hero-bootstrap.js` | 0 | 9 | 0/0 | Grille produits, Hero, Section catalogue |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
-| `b-nav.js` | 5 | 1 | 6/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
+| `b-nav.js` | 5 | 1 | 4/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
 | `b-favs.js` | 5 | 0 | 1/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
 | `b-paypal.js` | 5 | 0 | 0/0 | — |
 | `b-home-premium-v1.js` | 4 | 0 | 2/0 | Hero, Chips catégories |

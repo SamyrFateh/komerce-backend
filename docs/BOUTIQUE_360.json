@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-08-06T10:46:24.123Z",
+  "generatedAt": "2026-08-06T11:09:33.449Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
-    "events": 25,
-    "declaredActive": 29,
+    "events": 22,
+    "declaredActive": 28,
     "declaredDead": 9,
     "cssBundles": 3,
     "endpoints": 47,
-    "orphanEmit": 1,
+    "orphanEmit": 0,
     "orphanListen": 1,
-    "undeclared": 5,
+    "undeclared": 4,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 33,
     "dynamicEndpoints": 16,
@@ -138,9 +138,7 @@
         "side-cart:render",
         "cart:update"
       ],
-      "listens": [
-        "cart:update"
-      ],
+      "listens": [],
       "imports": [
         "b-store",
         "b-bus",
@@ -399,13 +397,11 @@
         "b-nav.js"
       ],
       "emits": [
-        "cat:select",
         "catalog:cat-changed",
         "favorites:view-refresh"
       ],
       "listens": [
         "chip:center",
-        "cat:select",
         "catalog:cat-changed"
       ],
       "imports": [
@@ -426,10 +422,6 @@
       ],
       "bodyClasses": [],
       "emitCalls": [
-        {
-          "name": "cat:select",
-          "hasArg": true
-        },
         {
           "name": "catalog:cat-changed",
           "hasArg": true
@@ -569,9 +561,7 @@
       "doctrine": [],
       "depends": [],
       "usedBy": [],
-      "emits": [
-        "sidebar:built"
-      ],
+      "emits": [],
       "listens": [],
       "imports": [
         "b-store",
@@ -582,12 +572,7 @@
         "shop-schema"
       ],
       "bodyClasses": [],
-      "emitCalls": [
-        {
-          "name": "sidebar:built",
-          "hasArg": false
-        }
-      ]
+      "emitCalls": []
     },
     {
       "file": "public/boutique/js/b-desktop-upgrade.js",
@@ -1378,7 +1363,6 @@
         "view:changed"
       ],
       "listens": [
-        "cart:update",
         "nav:goto-track",
         "nav:goto-komerce-wallet",
         "komerce:show"
@@ -1536,12 +1520,9 @@
       "doctrine": [],
       "depends": [],
       "usedBy": [],
-      "emits": [
-        "product:open-from-cart"
-      ],
+      "emits": [],
       "listens": [
-        "modal:open",
-        "product:open-from-cart"
+        "modal:open"
       ],
       "imports": [
         "b-bus",
@@ -1551,12 +1532,7 @@
       "bodyClasses": [
         "cart-open"
       ],
-      "emitCalls": [
-        {
-          "name": "product:open-from-cart",
-          "hasArg": true
-        }
-      ]
+      "emitCalls": []
     },
     {
       "file": "public/boutique/js/b-scroll-owner.js",
@@ -2574,11 +2550,9 @@
       ],
       "listeners": [
         "b-cart",
-        "b-cart-core",
         "b-cart-pill",
         "b-mini-cart",
-        "b-modal-suggestions",
-        "b-nav"
+        "b-modal-suggestions"
       ]
     },
     "modal:close": {
@@ -2635,14 +2609,6 @@
         "b-home-premium-v1"
       ]
     },
-    "cat:select": {
-      "emitters": [
-        "b-catalog"
-      ],
-      "listeners": [
-        "b-catalog"
-      ]
-    },
     "catalog:cat-changed": {
       "emitters": [
         "b-catalog",
@@ -2692,12 +2658,6 @@
       "listeners": [
         "b-nav"
       ]
-    },
-    "sidebar:built": {
-      "emitters": [
-        "b-desktop-sidebar"
-      ],
-      "listeners": []
     },
     "komerce:show": {
       "emitters": [
@@ -2766,14 +2726,6 @@
       ],
       "listeners": [
         "b-pdp-curation-suggestions"
-      ]
-    },
-    "product:open-from-cart": {
-      "emitters": [
-        "b-product-open-contract"
-      ],
-      "listeners": [
-        "b-product-open-contract"
       ]
     }
   },
@@ -3373,7 +3325,6 @@
       "couvre",
       "amendement",
       "checkout:open",
-      "product:open-from-cart",
       "view:switch",
       "chip:center",
       "catalog:cat-changed",
@@ -3444,9 +3395,7 @@
     }
   },
   "diagnostics": {
-    "orphanEmit": [
-      "sidebar:built"
-    ],
+    "orphanEmit": [],
     "orphanListen": [
       "modal:product-changed"
     ],
@@ -3454,7 +3403,6 @@
       "carousel:changed",
       "favorites:view-refresh",
       "modal:product-changed",
-      "sidebar:built",
       "view:changed"
     ],
     "declaredUnused": [
