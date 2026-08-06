@@ -40,6 +40,34 @@
 
 const db = require('../db');
 
+/**
+ * Lot 2026-08 (GAP-05) — Contributeurs agrégés.
+ *
+ * Dérive [{first_name, items_count}] depuis les lignes déjà jointes
+ * (buyer_user_id/buyer_full_name par ligne, cf. requête ci-dessous).
+ * Agrégation en JS plutôt qu'en SQL : la jointure existe déjà par ligne,
+ * une requête GROUP BY séparée n'apporterait rien qu'une itération sur un
+ * tableau déjà en mémoire, et ce module fait déjà tout son travail de
+ * dérivation (creator_first_name, buyer_first_name) en JS. Groupé par
+ * buyer_user_id (jamais par prénom seul) pour ne jamais fusionner deux
+ * acheteurs distincts qui partagent un prénom.
+ */
+function aggregateContributors(items) {
+  const order = [];
+  const byBuyer = new Map();
+  for (const item of items) {
+    if (!item.claimed) continue;
+    const key = item.buyer_user_id || item.buyer_full_name || 'inconnu';
+    if (!byBuyer.has(key)) {
+      const firstName = (item.buyer_full_name || '').trim().split(/\s+/)[0] || 'Un participant';
+      byBuyer.set(key, { first_name: firstName, items_count: 0 });
+      order.push(key);
+    }
+    byBuyer.get(key).items_count += 1;
+  }
+  return order.map((key) => byBuyer.get(key));
+}
+
 const ORGANIZER_ID_SQL = `COALESCE(
   NULLIF(to_jsonb(sc)->>'organizer_user_id', '')::uuid,
   NULLIF(to_jsonb(sc)->>'beneficiary_user_id', '')::uuid
@@ -78,6 +106,7 @@ async function getSharedCartForPublic(token, viewerUserId) {
             sci.unit_price_kmf_snapshot AS unit_price_kmf,
             sci.line_total_kmf_snapshot AS line_total_kmf,
             (oi.id IS NOT NULL) AS claimed,
+            bu.id AS buyer_user_id,
             bu.full_name AS buyer_full_name
        FROM shared_cart_items sci
        LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
@@ -92,6 +121,10 @@ async function getSharedCartForPublic(token, viewerUserId) {
   const creatorFirstName = (cart.organizer_full_name || '')
     .trim()
     .split(/\s+/)[0] || null;
+  // GAP-05 — résumé agrégé, jamais mappé si !isCreator (même gating que
+  // buyer_first_name par ligne, ci-dessous) : indétectable côté participant,
+  // quel que soit l'état du frontend.
+  const contributors = isCreator ? aggregateContributors(items) : undefined;
 
   return {
     cart: {
@@ -121,6 +154,7 @@ async function getSharedCartForPublic(token, viewerUserId) {
     items_count: items.length,
     claimed_count: claimedCount,
     is_creator: isCreator,
+    contributors,
   };
 }
 

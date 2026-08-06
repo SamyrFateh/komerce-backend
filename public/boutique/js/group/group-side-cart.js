@@ -203,6 +203,9 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
     status: cart.status || 'open',
     isCreator: !!data.is_creator,
     creatorFirstName: cart.creator_first_name || null,
+    // GAP-05 (Lot 2) — [{first_name, items_count}], jamais présent côté
+    // participant (gating server-side exclusif, shared-cart-reads.js).
+    contributors: Array.isArray(data.contributors) ? data.contributors : [],
     title: cart.title || null,
     message: cart.message || null,
     items,
@@ -395,6 +398,9 @@ function buildSnapshotRenderContext() {
     status: ctx.status,
     organizerName: ctx.creatorFirstName,
     isOrganizer: ctx.isCreator,
+    // GAP-05 (Lot 2) — toujours [] si !isCreator (payload backend gaté),
+    // ne dépend jamais d'un filtrage frontend supplémentaire.
+    contributors: ctx.contributors,
     editMode: ctx.isCreator && state.sharedListEditMode,
     headerTitle: ctx.isCreator ? 'Votre liste' : title,
     availableCount: availableItems().length,

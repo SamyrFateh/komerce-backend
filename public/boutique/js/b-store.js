@@ -166,6 +166,10 @@ export const state = {
     status: 'open', // open | closed | cancelled
     isCreator: false,
     creatorFirstName: null,
+    // GAP-05 (Lot 2) — [{first_name, items_count}], peuplé par
+    // activateSharedListContext depuis data.contributors (payload gaté
+    // isCreator côté backend, shared-cart-reads.js).
+    contributors: [],
     title: null,
     message: null,
     items: [],

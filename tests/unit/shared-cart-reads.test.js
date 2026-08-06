@@ -149,6 +149,56 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     expect(Object.keys(result.items[0])).not.toContain('buyer_full_name');
   });
 
+  it('getSharedCartForPublic agrège les contributeurs pour le créateur (GAP-05, lot 2026-08) : plusieurs lignes du même acheteur → une seule entrée', async () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer', organizer_full_name: 'Aïcha Said' };
+    const items = [
+      { id: 'sci-1', name: 'Riz', image: null, quantity: 2, unit_price_kmf: 1000, line_total_kmf: 2000, claimed: true, buyer_user_id: 'user-karim', buyer_full_name: 'Karim Ali' },
+      { id: 'sci-2', name: 'Sucre', image: null, quantity: 1, unit_price_kmf: 500, line_total_kmf: 500, claimed: true, buyer_user_id: 'user-karim', buyer_full_name: 'Karim Ali' },
+      { id: 'sci-3', name: 'Huile', image: null, quantity: 1, unit_price_kmf: 3000, line_total_kmf: 3000, claimed: true, buyer_user_id: 'user-fatima', buyer_full_name: 'Fatima Boina' },
+      { id: 'sci-4', name: 'Thé', image: null, quantity: 1, unit_price_kmf: 800, line_total_kmf: 800, claimed: false, buyer_user_id: null, buyer_full_name: null },
+    ];
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
+
+    const result = await getSharedCartForPublic('tok-1', 'user-organizer');
+
+    expect(result.contributors).toEqual([
+      { first_name: 'Karim', items_count: 2 },
+      { first_name: 'Fatima', items_count: 1 },
+    ]);
+  });
+
+  it('getSharedCartForPublic ne mappe jamais contributors pour un participant (doctrine : jamais dans le payload participant)', async () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
+    const items = [
+      { id: 'sci-1', name: 'Riz', image: null, quantity: 2, unit_price_kmf: 1000, line_total_kmf: 2000, claimed: true, buyer_user_id: 'user-karim', buyer_full_name: 'Karim Ali' },
+    ];
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
+
+    const result = await getSharedCartForPublic('tok-1', 'user-autre-visiteur');
+
+    expect(result.is_creator).toBe(false);
+    expect(result.contributors).toBeUndefined();
+    expect(Object.keys(result)).not.toContain('contributors' in result && result.contributors !== undefined ? '' : 'contributors-absent-check');
+  });
+
+  it('getSharedCartForPublic contributeur sans nom exploitable → "Un participant" ; deux acheteurs distincts partageant un prénom restent distincts', async () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
+    const items = [
+      { id: 'sci-1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 1000, line_total_kmf: 1000, claimed: true, buyer_user_id: 'user-x', buyer_full_name: null },
+      { id: 'sci-2', name: 'Sucre', image: null, quantity: 1, unit_price_kmf: 500, line_total_kmf: 500, claimed: true, buyer_user_id: 'user-ali-1', buyer_full_name: 'Ali Msa' },
+      { id: 'sci-3', name: 'Huile', image: null, quantity: 1, unit_price_kmf: 3000, line_total_kmf: 3000, claimed: true, buyer_user_id: 'user-ali-2', buyer_full_name: 'Ali Bacar' },
+    ];
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
+
+    const result = await getSharedCartForPublic('tok-1', 'user-organizer');
+
+    expect(result.contributors).toEqual([
+      { first_name: 'Un participant', items_count: 1 },
+      { first_name: 'Ali', items_count: 1 },
+      { first_name: 'Ali', items_count: 1 },
+    ]);
+  });
+
   it('getSharedCartForOwner retourne null si la liste ne correspond pas à l\'organisateur', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
     await expect(getSharedCartForOwner('cart-1', 'user-1')).resolves.toBeNull();

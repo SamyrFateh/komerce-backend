@@ -127,6 +127,19 @@
   text-overflow: ellipsis;
 }
 
+/* ── Résumé contributeurs (GAP-05, Lot 2) ─────────────────────────────────
+ * Inséré juste après .k-cart-snapshot-status dans le même conteneur
+ * canonique — voir b-cart.js::applySnapshotContributorsSummary. Visible
+ * uniquement organisateur (payload backend gaté, jamais un filtrage CSS).
+ */
+.k-cart-snapshot-contributors {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: normal;
+  overflow-wrap: break-word;
+  margin-top: 2px;
+}
+
 /* ── Indicateur mobile flottant "Liste · N" (mandat §7, conservé) ────────
  * Toujours produit par group-side-cart.js::updateSharedListIndicator().
  */

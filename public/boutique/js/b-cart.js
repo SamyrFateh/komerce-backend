@@ -808,6 +808,49 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     badge.textContent = snapshotStatusText(context);
   }
 
+  /**
+   * GAP-05 (Lot 2) — résumé "Contributeurs : Ali · 2 articles, Fatima ·
+   * 1 article" dans le header canonique. Vide (donc invisible) si non
+   * organisateur ou si aucune ligne réclamée : context.contributors est
+   * déjà gaté côté backend (jamais peuplé pour un participant), ce test
+   * frontend est une seconde barrière défensive, pas la source de vérité.
+   */
+  function contributorsSummaryText(context) {
+    if (!context.isOrganizer) return '';
+    const contributors = context.contributors;
+    if (!Array.isArray(contributors) || !contributors.length) return '';
+    const parts = contributors.map((c) => {
+      const count = Number(c.items_count) || 0;
+      return `${sanitize(c.first_name || 'Un participant')} · ${count} article${count > 1 ? 's' : ''}`;
+    });
+    return `Contributeurs : ${parts.join(', ')}`;
+  }
+
+  /**
+   * Insère (une fois) puis met à jour la ligne de résumé contributeurs,
+   * juste après le badge de statut existant dans le même conteneur
+   * canonique. Retire l'élément quand le texte devient vide (jamais un
+   * élément vide laissé dans le DOM).
+   */
+  function applySnapshotContributorsSummary(container, statusBadgeId, id, context) {
+    if (!container) return;
+    const text = contributorsSummaryText(context);
+    let el = container.querySelector('#' + id);
+    if (!text) {
+      el?.remove();
+      return;
+    }
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.className = 'k-cart-snapshot-contributors';
+      const badge = container.querySelector('#' + statusBadgeId);
+      if (badge) badge.insertAdjacentElement('afterend', el);
+      else container.appendChild(el);
+    }
+    el.textContent = text;
+  }
+
   function removeSnapshotButtons(container) {
     container?.querySelectorAll('[data-snapshot-button="1"]').forEach((el) => el.remove());
   }
@@ -849,6 +892,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
   function applySnapshotDrawerFooter(context, items, actions) {
     const header = document.getElementById('k-cart-header');
     applySnapshotStatusBadge(header, 'k-cart-snapshot-status', context, '#k-cart-close');
+    applySnapshotContributorsSummary(header, 'k-cart-snapshot-status', 'k-cart-snapshot-contributors', context);
 
     if (!dom.cartFooter) return;
     dom.cartFooter.classList.remove('u-hidden');
@@ -898,6 +942,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
 
   function cleanupSnapshotDrawerFooter() {
     document.getElementById('k-cart-header')?.querySelector('#k-cart-snapshot-status')?.remove();
+    document.getElementById('k-cart-header')?.querySelector('#k-cart-snapshot-contributors')?.remove();
     DRAWER_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => document.getElementById(id)?.classList.remove('u-hidden'));
     removeSnapshotButtons(document.getElementById('k-cart-footer-btns'));
   }
@@ -916,6 +961,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     const titleLabel = sc.querySelector('.k-sc-title-label');
     if (titleLabel) titleLabel.textContent = context.title || 'Liste partagée';
     applySnapshotStatusBadge(titleBar, 'k-sc-snapshot-status', context, null);
+    applySnapshotContributorsSummary(titleBar, 'k-sc-snapshot-status', 'k-sc-snapshot-contributors', context);
 
     SIDECART_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => sc.querySelector('#' + id)?.classList.add('u-hidden'));
 
@@ -959,6 +1005,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     sc.removeAttribute('data-mode');
     SIDECART_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => sc.querySelector('#' + id)?.classList.remove('u-hidden'));
     sc.querySelector('.k-sc-title-bar')?.querySelector('#k-sc-snapshot-status')?.remove();
+    sc.querySelector('.k-sc-title-bar')?.querySelector('#k-sc-snapshot-contributors')?.remove();
     removeSnapshotButtons(sc.querySelector('.k-sc-header'));
     // #k-sc-items n'est pas vidé ici : renderSideCart() le resynchronise
     // seul juste après (pipeline panier personnel), comme avant ce fix.

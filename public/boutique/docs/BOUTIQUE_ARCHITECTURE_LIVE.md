@@ -38,7 +38,7 @@
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 29 | 🔴 **ORPHELIN** |
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
-| `shared-list-lists-tab.css` | 207 | 🔴 **ORPHELIN** |
+| `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart-responsive.css` | 174 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart.css` | 198 | 🔴 **ORPHELIN** |
 | `tokens.css` | 516 | 🔴 **ORPHELIN** |
@@ -49,8 +49,8 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=159
- 2. /boutique/css/dist/components.css?v=386
+ 1. /boutique/css/dist/base.css?v=160
+ 2. /boutique/css/dist/components.css?v=387
  3. /boutique/css/dist/desktop.css?v=85
 ```
 
