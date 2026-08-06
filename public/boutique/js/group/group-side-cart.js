@@ -580,24 +580,29 @@ export function setCartSurface(surface) {
 }
 
 /**
- * Sélecteur desktop [Panier (n)] [Liste (n)] — permet de revenir au panier
- * personnel sans jamais fermer le contexte de liste actif. Visible
- * seulement sur desktop, quand le panier personnel n'est pas vide ET qu'un
- * contexte de liste est actif (hors de ce cas, une seule surface existe :
- * rien à basculer, mandat §3 — ne pas ajouter de chrome inutile).
+ * Action secondaire "← Revenir à mon panier" — permet de quitter le
+ * contexte liste sans jamais le fermer côté métier (mandat §1.1). Ne
+ * construit JAMAIS de double onglet [Panier | Liste] : une seule surface
+ * est visible à la fois (doctrine un_seul_composant), l'autre reste en
+ * mémoire (state.cart) sans être exposée. Visible uniquement quand la
+ * surface active EST la liste et qu'un panier personnel existe en
+ * arrière-plan (rien à "revenir à" sinon).
+ *
+ * Correctif 2026-08 — remplace l'ancien sélecteur bidirectionnel
+ * [Panier (n)] [Liste (n)] qui affichait les deux surfaces simultanément
+ * (cause racine de l'écran de production "Panier (1) | Votre liste (1)",
+ * interdit explicitement par le mandat §1.1 et §19).
  */
 export function renderCartSurfaceSwitch() {
   const sc = document.getElementById('k-side-cart');
-  const shouldShow = isDesktop() && isActiveContext() && state.cart.length > 0;
+  const shouldShow = isActiveContext()
+    && state.cartSurface === 'shared-list'
+    && state.cart.length > 0;
 
   if (!shouldShow) {
     document.getElementById('k-cart-surface-switch')?.remove();
     return;
   }
-
-  const personalQty = state.cart.reduce((n, it) => n + (Number(it.qty) || 0), 0);
-  const listTitle = headerCopy().title || 'Liste';
-  const surface = state.cartSurface;
 
   let switcher = document.getElementById('k-cart-surface-switch');
   if (!switcher) {
@@ -610,14 +615,10 @@ export function renderCartSurfaceSwitch() {
   }
 
   switcher.innerHTML =
-    `<button type="button" class="k-cart-surface-btn" data-surface="personal" ` +
-      `aria-pressed="${surface === 'personal'}">Panier (${personalQty})</button>` +
-    `<button type="button" class="k-cart-surface-btn" data-surface="shared-list" ` +
-      `aria-pressed="${surface === 'shared-list'}">${sanitize(listTitle)} (${state.sharedListContext.items.length})</button>`;
+    `<button type="button" class="k-cart-surface-btn k-cart-surface-btn--return" ` +
+      `data-surface="personal">← Revenir à mon panier</button>`;
 
-  switcher.querySelectorAll('.k-cart-surface-btn').forEach((btn) => {
-    btn.onclick = () => setCartSurface(btn.dataset.surface);
-  });
+  switcher.querySelector('.k-cart-surface-btn').onclick = () => setCartSurface('personal');
 }
 
 /* ── Actions propriétaire (mandat §9) ─────────────────────────────────
@@ -637,7 +638,16 @@ export function renderCartSurfaceSwitch() {
  * @returns {boolean}
  */
 export function canAddToActiveSharedList() {
-  return isActiveContext() && !!state.sharedListContext.isCreator && !isReadOnly();
+  // Mandat §3.1 — les quatre conditions doivent TOUTES être vraies. Avant
+  // ce correctif, cartSurface et sharedListEditMode n'étaient pas vérifiés
+  // ici : le CTA restait visible hors mode édition et même quand la
+  // surface active était 'personal', provoquant sa coexistence avec
+  // "Ajouter au panier"/"Acheter maintenant" (capture production, §19).
+  return state.cartSurface === 'shared-list'
+    && isActiveContext()
+    && !!state.sharedListContext.isCreator
+    && state.sharedListContext.status === 'open'
+    && state.sharedListEditMode === true;
 }
 
 /**
@@ -666,8 +676,10 @@ export function canAddToActiveSharedList() {
  */
 export async function addProductToActiveSharedList(product, quantity = 1, variantCombo = null) {
   if (!product || !product.id) return false;
-  if (!isActiveContext()) return false;
-  if (!state.sharedListContext.isCreator || isReadOnly()) return false;
+  // Mandat §3.1 — garde défensive répétée à l'écriture, mêmes 4 conditions
+  // que canAddToActiveSharedList() (jamais dupliquée en substance, jamais
+  // affaiblie). Le serveur reste seul autoritaire en dernier ressort.
+  if (!canAddToActiveSharedList()) return false;
 
   try {
     await addItemToSharedList(state.sharedListContext.sharedCartId, product.id, quantity, variantCombo);

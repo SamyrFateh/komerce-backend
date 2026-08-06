@@ -57,6 +57,7 @@ import {
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { wireBuyNowButton, wireAddToListButton } from './b-modal-buybox-shared.js';
+import { canAddToActiveSharedList } from './group/group-side-cart.js';
 import { reconcileDeliverySelection } from './view-models/delivery-mode-model.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
 import { renderTrust, renderShare } from './b-modal-desktop-product.js';
@@ -448,9 +449,13 @@ function renderInfoStrip(detail, selection, root) {
 function renderActions(detail, selection) {
   const isSku = detail.inventory_model === 'SKU';
   const enabled = !isSku || Boolean(selection.selected_sku_id);
+  // Mandat §3.2 — remplacement, jamais coexistence (voir b-modal-desktop-product.js
+  // pour le même correctif côté desktop).
+  const replacedBySharedListCta = canAddToActiveSharedList();
   [dom.addCartBtn, document.getElementById('k-buy-now-btn')].forEach(
     (button) => {
       if (!button) return;
+      button.hidden = replacedBySharedListCta;
       button.disabled = !enabled;
       if (!enabled)
         button.setAttribute('aria-describedby', 'k-modal-selection-message');

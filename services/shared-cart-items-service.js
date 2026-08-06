@@ -28,19 +28,24 @@
  *
  * SUPPRIMÉ (Boutique First) : adjustAwaitingCartItems — le statut
  * 'awaiting_choice' n'existe plus (shared_cart_status réduit à
- * open/closed/cancelled par la migration 124). Un article déjà réclamé
- * par une commande (order_items.shared_cart_item_id) n'est PAS protégé
- * ici contre une modification de liste par le créateur — c'est un choix
- * assumé : DELETE+INSERT recrée les lignes shared_cart_items avec de
- * nouveaux id, ce qui détacherait un item déjà réclamé de sa commande.
- * ASSUMPTION (toujours ouverte pour updateOpenSharedCartItems / PUT
- * /:id/items) : cet endpoint garde sa sémantique historique inchangée par
- * décision explicite (Contrat API §5 point 4, option A — un contrat
- * existant ne se détourne jamais, on crée une nouvelle capacité à côté).
- * Il reste donc sans garde-fou contre le détachement d'un item déjà
- * réclamé, exactement comme avant.
+ * open/closed/cancelled par la migration 124).
  *
- * Ce risque est en revanche traité pour le retrait unitaire
+ * CORRECTIF mandat §7 (2026-08) — updateOpenSharedCartItems refuse
+ * désormais explicitement (409 shared_cart_contains_claimed_items) tant
+ * qu'au moins une ligne de la liste est déjà réclamée par une commande
+ * (order_items.shared_cart_item_id). Avant ce correctif, le remplacement
+ * intégral (DELETE puis INSERT) recréait les lignes shared_cart_items avec
+ * de nouveaux id, ce qui faisait passer cette FK à NULL via
+ * ON DELETE SET NULL et détruisait silencieusement le claim, le
+ * contributeur, l'historique et la protection d'unicité — l'ASSUMPTION
+ * documentée ici auparavant est levée. L'édition vivante (POST unitaire,
+ * PATCH quantité, DELETE unitaire ci-dessous) reste le seul chemin valide
+ * une fois la liste partiellement réclamée ; PUT /:id/items garde sa
+ * sémantique de remplacement intégral uniquement pour les listes encore
+ * intactes (Contrat API §5 point 4, option A — contrat existant non
+ * détourné, capacité de garde ajoutée à côté, pas de réinterprétation).
+ *
+ * Ce risque était déjà traité pour le retrait unitaire
  * (removeSharedCartItem, ci-dessous) : un article déjà réclamé ne peut
  * pas être retiré — 409 explicite plutôt qu'un détachement silencieux.
  */
@@ -129,6 +134,32 @@ async function updateOpenSharedCartItems(sharedCartId, userId, cartItems = []) {
 
     if (cart.status !== 'open') {
       throw httpError(`Ce panier n'est plus modifiable (statut : ${cart.status})`, 409, 'cart_not_editable');
+    }
+
+    // Mandat §7 — un remplacement DELETE+INSERT intégral recréerait avec de
+    // nouveaux id toute ligne déjà rattachée à une commande
+    // (order_items.shared_cart_item_id), ce qui ferait passer cette FK à
+    // NULL via ON DELETE SET NULL et détruirait silencieusement le claim,
+    // le contributeur, l'historique et la protection d'unicité. Interdit
+    // explicitement (§19 "Aucun DELETE/recreate de ligne claimed") : dès
+    // qu'au moins une ligne existante de CETTE liste est claimed, l'endpoint
+    // refuse avec 409 plutôt que de détacher une commande historique sans le
+    // dire. L'édition vivante (POST/PATCH/DELETE unitaires) reste le seul
+    // chemin valide dans ce cas.
+    const { rows: claimedRows } = await client.query(
+      `SELECT 1
+         FROM shared_cart_items sci
+         JOIN order_items oi ON oi.shared_cart_item_id = sci.id
+        WHERE sci.shared_cart_id = $1
+        LIMIT 1`,
+      [sharedCartId]
+    );
+    if (claimedRows.length) {
+      throw httpError(
+        'Cette liste contient des articles déjà achetés : utilisez les mutations unitaires (ajout/retrait/quantité), pas le remplacement intégral.',
+        409,
+        'shared_cart_contains_claimed_items'
+      );
     }
 
     const productIds = [...new Set(normalized.map(i => i.product_id))];

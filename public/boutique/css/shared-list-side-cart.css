@@ -168,13 +168,15 @@
 /* ── Amendement V2 §A — sélecteur desktop [Panier] [Liste] (coexistence,
  * conservé — feature légitime distincte du panneau démantelé). Prépendu
  * dans #k-side-cart par group-side-cart.js::renderCartSurfaceSwitch().
- * Desktop uniquement (l'indicateur mobile reste le chip ci-dessus, §7).
+ *
+ * Correctif 2026-08 (mandat §1.1) — une seule action de sortie
+ * ("← Revenir à mon panier"), plus un sélecteur bidirectionnel à deux
+ * onglets : les deux surfaces ne doivent jamais être visibles ensemble.
  */
 
 .k-cart-surface-switch {
   flex-shrink: 0;
   display: flex;
-  gap: 4px;
   padding: 10px 12px 0;
 }
 
@@ -194,10 +196,8 @@
   text-overflow: ellipsis;
 }
 
-.k-cart-surface-btn[aria-pressed="true"] {
-  background: var(--ocean);
-  border-color: var(--ocean);
-  color: var(--white);
+.k-cart-surface-btn:hover {
+  background: var(--sand-hover);
 }
 
 /* ── Drawer mobile : léger resserrement en mode snapshot ─────────────────

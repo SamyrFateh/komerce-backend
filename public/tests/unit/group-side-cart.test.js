@@ -617,7 +617,7 @@ describe('Amendement V2 §A — cartSurface (coexistence panier personnel / list
     expect(document.getElementById('k-shared-list-panel')).toBeNull();
   });
 
-  describe('sélecteur desktop [Panier] [Liste] (§A — coexistence)', () => {
+  describe('action "← Revenir à mon panier" (mandat §1.1 — une seule surface visible, jamais d\'onglet double)', () => {
     it('absent si le panier personnel est vide, même en contexte liste actif', () => {
       mockIsDesktop.mockReturnValue(true);
       state.cart = [];
@@ -632,7 +632,15 @@ describe('Amendement V2 §A — cartSurface (coexistence panier personnel / list
       expect(document.getElementById('k-cart-surface-switch')).toBeNull();
     });
 
-    it('présent sur desktop quand panier non vide + contexte liste actif ; absent sur mobile', () => {
+    it('absent une fois qu\'on a basculé sur cartSurface=personal, même contexte liste toujours actif', () => {
+      mockIsDesktop.mockReturnValue(true);
+      state.cart = [{ product: { id: 'x' }, qty: 2 }];
+      activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
+      setCartSurface('personal');
+      expect(document.getElementById('k-cart-surface-switch')).toBeNull();
+    });
+
+    it('présent, un seul bouton, jamais un onglet double [Panier | Liste] (régression capture production §1.1/§19)', () => {
       mockIsDesktop.mockReturnValue(true);
       state.cart = [{ product: { id: 'x' }, qty: 2 }];
       activateSharedListContext(publicPayload({ items: [availableItem({ id: 'i1' })] }), 'tok-1');
@@ -640,18 +648,11 @@ describe('Amendement V2 §A — cartSurface (coexistence panier personnel / list
       const switcher = document.getElementById('k-cart-surface-switch');
       expect(switcher).not.toBeNull();
       const buttons = switcher.querySelectorAll('.k-cart-surface-btn');
-      expect(buttons).toHaveLength(2);
-      expect(buttons[0].textContent).toContain('Panier (2)');
-      expect(buttons[0].getAttribute('aria-pressed')).toBe('false'); // surface = shared-list
-      expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
-
-      mockIsDesktop.mockReturnValue(false);
-      buttons[0].click(); // relance un rendu qui recalcule shouldShow via renderCartSurfaceSwitch
-      // setCartSurface('personal') ré-émet side-cart:render -> renderCartSurfaceSwitch() le retire.
-      expect(document.getElementById('k-cart-surface-switch')).toBeNull();
+      expect(buttons).toHaveLength(1);
+      expect(buttons[0].textContent).toContain('Revenir à mon panier');
     });
 
-    it('cliquer le bouton "Panier" bascule cartSurface sans quitter le contexte', () => {
+    it('cliquer "Revenir à mon panier" bascule cartSurface=personal sans jamais fermer le contexte liste', () => {
       mockIsDesktop.mockReturnValue(true);
       state.cart = [{ product: { id: 'x' }, qty: 1 }];
       activateSharedListContext(publicPayload({ items: [availableItem()] }), 'tok-1');
@@ -660,6 +661,8 @@ describe('Amendement V2 §A — cartSurface (coexistence panier personnel / list
 
       expect(state.cartSurface).toBe('personal');
       expect(state.sharedListContext.token).toBe('tok-1');
+      // Le bouton disparaît car il n'est visible que quand la liste est la surface active.
+      expect(document.getElementById('k-cart-surface-switch')).toBeNull();
     });
   });
 });

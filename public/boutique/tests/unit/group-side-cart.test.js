@@ -596,13 +596,28 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
     expect(canAddToActiveSharedList()).toBe(false);
   });
 
-  it('canAddToActiveSharedList : true pour le créateur avec une liste ouverte', () => {
+  it('canAddToActiveSharedList : false pour le créateur avec une liste ouverte HORS mode édition (mandat §3.1, régression capture production)', () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    expect(state.sharedListEditMode).toBe(false);
+    expect(canAddToActiveSharedList()).toBe(false);
+  });
+
+  it('canAddToActiveSharedList : false si cartSurface !== "shared-list" même en édition (mandat §3.1)', () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    state.sharedListEditMode = true;
+    state.cartSurface = 'personal';
+    expect(canAddToActiveSharedList()).toBe(false);
+  });
+
+  it('canAddToActiveSharedList : true pour le créateur, liste ouverte, surface shared-list, mode édition', () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    state.sharedListEditMode = true;
     expect(canAddToActiveSharedList()).toBe(true);
   });
 
   it('addProductToActiveSharedList : false et aucun appel réseau si produit invalide', async () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    state.sharedListEditMode = true;
     const ok = await addProductToActiveSharedList(null, 1, null);
     expect(ok).toBe(false);
     expect(addItemToSharedList).not.toHaveBeenCalled();
@@ -610,6 +625,7 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
 
   it('addProductToActiveSharedList : false et aucun appel réseau si participant (garde-fou serveur reflété côté front)', async () => {
     activateSharedListContext(payload({ is_creator: false }), 'tok-1');
+    state.sharedListEditMode = true;
     const ok = await addProductToActiveSharedList({ id: 'prod-1', name: 'Robe' }, 1, null);
     expect(ok).toBe(false);
     expect(addItemToSharedList).not.toHaveBeenCalled();
@@ -620,6 +636,15 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
       payload({ is_creator: true, cart: { ...payload().cart, status: 'closed' } }),
       'tok-1'
     );
+    state.sharedListEditMode = true;
+    const ok = await addProductToActiveSharedList({ id: 'prod-1', name: 'Robe' }, 1, null);
+    expect(ok).toBe(false);
+    expect(addItemToSharedList).not.toHaveBeenCalled();
+  });
+
+  it('addProductToActiveSharedList : false et aucun appel réseau HORS mode édition (mandat §3.1, régression capture production)', async () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    expect(state.sharedListEditMode).toBe(false);
     const ok = await addProductToActiveSharedList({ id: 'prod-1', name: 'Robe' }, 1, null);
     expect(ok).toBe(false);
     expect(addItemToSharedList).not.toHaveBeenCalled();
@@ -627,6 +652,7 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
 
   it('addProductToActiveSharedList : succès → POST avec sharedCartId + variant_combo, refresh, toast succès', async () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    state.sharedListEditMode = true;
     addItemToSharedList.mockResolvedValueOnce({ ok: true, item: { id: 'sci-new' } });
     getSharedCartPublic.mockResolvedValueOnce(payload({ is_creator: true }));
 
@@ -642,6 +668,7 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
 
   it('addProductToActiveSharedList : échec serveur (ex. combinaison indisponible) → false, toast erreur, jamais de refresh', async () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    state.sharedListEditMode = true;
     const err = new Error('Combinaison indisponible pour Chemise');
     err.code = 'sellable_unit_not_found';
     addItemToSharedList.mockRejectedValueOnce(err);
@@ -658,6 +685,7 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
 
   it('addProductToActiveSharedList : variant_combo absent → transmis tel quel (null), jamais un objet fabriqué', async () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    state.sharedListEditMode = true;
     addItemToSharedList.mockResolvedValueOnce({ ok: true, item: { id: 'sci-new' } });
     getSharedCartPublic.mockResolvedValueOnce(payload({ is_creator: true }));
 

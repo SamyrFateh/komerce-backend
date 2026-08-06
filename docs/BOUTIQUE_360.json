@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-06T19:41:52.400Z",
+  "generatedAt": "2026-08-06T21:37:48.084Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
@@ -1001,6 +1001,7 @@
         "b-modal-product",
         "b-modal-image-ux",
         "b-modal-buybox-shared",
+        "group-side-cart",
         "delivery-mode-model",
         "b-cart-core",
         "b-modal-product-fields",
@@ -1070,6 +1071,7 @@
         "b-modal-product",
         "b-modal-image-ux",
         "b-modal-buybox-shared",
+        "group-side-cart",
         "delivery-mode-model",
         "b-modal-product-fields",
         "b-modal-desktop-product",

@@ -58,6 +58,7 @@ describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
     const updatedCart = { id: 'cart-1', status: 'open', updated_at: '2026-08-01' };
     const client = makeClient([
       { rows: [cart] },          // SELECT ... FOR UPDATE
+      { rows: [] },               // mandat §7 : SELECT lignes claimed (aucune)
       { rows: [product] },       // SELECT products
       { rows: [], rowCount: 1 }, // DELETE shared_cart_items
       { rows: [inserted] },      // INSERT shared_cart_items
@@ -96,6 +97,7 @@ describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
   it('aucun produit actif valide → 400 no_active_items', async () => {
     const client = makeClient([
       { rows: [{ id: 'cart-1', status: 'open' }] },
+      { rows: [] }, // mandat §7 : SELECT lignes claimed (aucune)
       { rows: [{ id: 'p1', name: 'X', price_kmf: 1000, is_active: false }] },
     ]);
     db.getClient.mockResolvedValue(client);
@@ -118,6 +120,7 @@ describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
       const updatedCart = { id: 'cart-1', status: 'open' };
       const client = makeClient([
         { rows: [cart] },
+        { rows: [] }, // mandat §7 : SELECT lignes claimed (aucune)
         { rows: [skuProduct] },
         { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
         { rows: [], rowCount: 1 },
@@ -141,6 +144,7 @@ describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
     it('409 sellable_unit_not_found si la combinaison ne resout aucun SKU actif', async () => {
       const client = makeClient([
         { rows: [{ id: 'cart-1', status: 'open' }] },
+        { rows: [] }, // mandat §7 : SELECT lignes claimed (aucune)
         { rows: [skuProduct] },
         { rows: [] },
       ]);
@@ -155,6 +159,7 @@ describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
     it('409 sellable_unit_out_of_stock si le stock du SKU resolu est insuffisant', async () => {
       const client = makeClient([
         { rows: [{ id: 'cart-1', status: 'open' }] },
+        { rows: [] }, // mandat §7 : SELECT lignes claimed (aucune)
         { rows: [skuProduct] },
         { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 1, price_kmf: 15000 }] },
       ]);
@@ -164,6 +169,52 @@ describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
         { product_id: 'p-sku', quantity: 5, variant_combo: { couleur: 'Noir', taille: 'M' } },
       ])).rejects.toMatchObject({ status: 409, code: 'sellable_unit_out_of_stock' });
       expectTransactionRolledBack(client);
+    });
+  });
+
+  // Mandat §7 — PUT /:id/items ne doit jamais pouvoir détacher une ligne
+  // déjà réclamée par une commande (order_items.shared_cart_item_id) via le
+  // DELETE+INSERT du remplacement intégral. Régression : avant ce correctif,
+  // aucune vérification n'existait ici (voir docstring en tête de fichier
+  // source, ASSUMPTION désormais levée).
+  describe('§7 — refus si la liste contient une ligne déjà réclamée (claimed)', () => {
+    it('409 shared_cart_contains_claimed_items si au moins une ligne existante est claimed, avant toute lecture produit', async () => {
+      const cart = { id: 'cart-1', status: 'open' };
+      const client = makeClient([
+        { rows: [cart] },        // SELECT ... FOR UPDATE
+        { rows: [{ 1: 1 }] },    // SELECT claimed JOIN order_items -> au moins une ligne
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(updateOpenSharedCartItems('cart-1', 'user-1', [{ product_id: 'p1', quantity: 1 }]))
+        .rejects.toMatchObject({ status: 409, code: 'shared_cart_contains_claimed_items' });
+
+      // Jamais de DELETE ni de lecture produits une fois le refus posé.
+      expect(client.calls.some(c => /DELETE FROM shared_cart_items/.test(c.sql))).toBe(false);
+      expect(client.calls.some(c => /SELECT id, name, image_url/.test(c.sql))).toBe(false);
+      expectTransactionRolledBack(client);
+    });
+
+    it('procède normalement si aucune ligne existante n\'est claimed (liste vide ou 100% disponible)', async () => {
+      const cart = { id: 'cart-1', status: 'open' };
+      const product = { id: 'p1', name: 'Riz', image_url: 'riz.jpg', category: 'food', price_kmf: 1000, is_active: true, is_promo: false, promo_pct: 0, promo_until: null };
+      const inserted = { id: 'item-1', product_id: 'p1', quantity: 1 };
+      const updatedCart = { id: 'cart-1', status: 'open' };
+      const client = makeClient([
+        { rows: [cart] },
+        { rows: [] }, // aucune ligne claimed
+        { rows: [product] },
+        { rows: [], rowCount: 1 },
+        { rows: [inserted] },
+        { rows: [updatedCart] },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      const result = await updateOpenSharedCartItems('cart-1', 'user-1', [{ product_id: 'p1', quantity: 1 }]);
+
+      expect(result.items).toEqual([inserted]);
+      expectTransactionCommitted(client);
     });
   });
 });
