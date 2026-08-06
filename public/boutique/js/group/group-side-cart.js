@@ -104,6 +104,63 @@ function isReadOnly() {
  */
 const pendingQuantityItemIds = new Set();
 
+/* ── Temps réel (lot 2026-08, fraîcheur du snapshot) ─────────────────────
+ * Aucune réservation, aucun verrou frontend, aucun WebSocket : une simple
+ * boucle de polling détenue exclusivement par ce contrôleur, qui rejoue le
+ * même chemin que les rafraîchissements existants (refreshSharedListContext,
+ * source de vérité = GET public/:token). Le claim reste arbitré uniquement
+ * par la contrainte unique order_items.shared_cart_item_id (migration 123)
+ * côté backend — cette boucle ne fait qu'observer, jamais arbitrer.
+ */
+let pollIntervalId = null;
+let lastSnapshotSignature = null;
+
+/**
+ * Signature stable dérivée du snapshot — statut, identifiants de lignes,
+ * quantités, états claimed, ordre des lignes (ordre déjà stable, dérivé de
+ * l'ORDER BY sci.created_at côté backend). Ne dépend d'aucune colonne
+ * updated_at/version côté DB — aucune migration nécessaire pour ce lot.
+ */
+function computeSnapshotSignature(cart, items) {
+  const itemsSig = (items || [])
+    .map((it) => `${it.id}:${it.quantity}:${it.claimed ? 1 : 0}`)
+    .join(',');
+  return `${cart.status || 'open'}|${itemsSig}`;
+}
+
+function isPollableNow() {
+  return state.cartSurface === 'shared-list'
+    && isActiveContext()
+    && document.visibilityState === 'visible';
+}
+
+/**
+ * Garantit une seule boucle vivante (mandat "une seule boucle existe").
+ * Idempotent : un appel répété (ex. à chaque activation/refresh) est un
+ * no-op si la boucle tourne déjà.
+ */
+function ensureSnapshotPollingLoop() {
+  if (pollIntervalId) return;
+  pollIntervalId = setInterval(() => {
+    if (!isPollableNow()) return;
+    refreshSharedListContext();
+  }, 4000);
+}
+
+function stopSnapshotPollingLoop() {
+  if (!pollIntervalId) return;
+  clearInterval(pollIntervalId);
+  pollIntervalId = null;
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && isPollableNow()) {
+      refreshSharedListContext();
+    }
+  });
+}
+
 /* ── Activation / rafraîchissement / nettoyage du contexte ──────────── */
 
 /**
@@ -112,8 +169,15 @@ const pendingQuantityItemIds = new Set();
  * state.cart (Invariant mandat §3).
  * @param {{cart:object, items:Array, is_creator:boolean}} data
  * @param {string} token
+ * @param {{silent?: boolean}} [opts] - silent=true pour un rafraîchissement
+ *   en arrière-plan (poll, mutation, visibilitychange) : ne rouvre jamais un
+ *   drawer mobile que l'utilisateur a fermé, et n'émet aucun rerender si le
+ *   snapshot n'a pas changé (stabilité visuelle, mandat temps réel §"Ne
+ *   rerendre que si cette signature change"). false (défaut) = activation
+ *   explicite (clic sur une liste, orchestration de navigation) : rend
+ *   toujours et rouvre le drawer mobile comme avant.
  */
-export function activateSharedListContext(data, token) {
+export function activateSharedListContext(data, token, { silent = false } = {}) {
   if (!data || !data.cart) return;
 
   const cart = data.cart;
@@ -127,31 +191,46 @@ export function activateSharedListContext(data, token) {
   const nextToken = cart.token || token;
   if (previousToken !== nextToken) state.sharedListEditMode = false;
 
+  const items = Array.isArray(data.items) ? data.items : [];
+  const signature = computeSnapshotSignature(cart, items);
+  const unchanged = silent && previousToken === nextToken && signature === lastSnapshotSignature;
+  lastSnapshotSignature = signature;
+
   state.sharedListContext = {
     sharedCartId: cart.id ?? state.sharedListContext.sharedCartId,
-    token: cart.token || token,
+    token: nextToken,
     status: cart.status || 'open',
     isCreator: !!data.is_creator,
     creatorFirstName: cart.creator_first_name || null,
     title: cart.title || null,
     message: cart.message || null,
-    items: Array.isArray(data.items) ? data.items : [],
+    items,
   };
   state.cartSurface = 'shared-list';
 
+  ensureSnapshotPollingLoop();
+
+  if (unchanged) return;
+
   renderSharedListInCart();
 
-  if (isDesktop()) {
+  if (isDesktop() || silent) {
     // Desktop : le side cart persistant suffit, pas de drawer à ouvrir.
+    // Silent (mobile) : mettre à jour le contenu déjà rendu ci-dessus sans
+    // jamais rouvrir un drawer que l'utilisateur vient de fermer.
     return;
   }
-  // Mobile : ouvrir automatiquement le drawer après le rendu (mandat §4/§7).
+  // Mobile, activation explicite : ouvrir automatiquement le drawer après
+  // le rendu (mandat §4/§7).
   reopenSharedListCart();
 }
 
 /**
  * Recharge la liste depuis le backend (source de vérité) — utilisé après
- * ajout/retrait/fermeture et après un conflit d'achat (mandat §8/§9).
+ * ajout/retrait/fermeture, après un conflit d'achat (mandat §8/§9), et par
+ * la boucle de polling / le retour de visibilité (temps réel, lot 2026-08).
+ * Toujours silencieux : un simple refresh de fraîcheur n'est jamais une
+ * activation explicite.
  */
 export async function refreshSharedListContext() {
   if (!isActiveContext()) return null;
@@ -162,7 +241,7 @@ export async function refreshSharedListContext() {
     clearSharedListContext();
     return null;
   }
-  activateSharedListContext(data, state.sharedListContext.token);
+  activateSharedListContext(data, state.sharedListContext.token, { silent: true });
   return data;
 }
 
@@ -197,6 +276,8 @@ export function exitSharedListRenderMode() {
  * restaure le rendu du panier personnel normal dans les mêmes surfaces.
  */
 export function clearSharedListContext() {
+  stopSnapshotPollingLoop();
+  lastSnapshotSignature = null;
   state.sharedListContext = {
     sharedCartId: null,
     token: null,

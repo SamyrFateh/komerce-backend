@@ -158,6 +158,15 @@ beforeEach(() => {
   isDesktop.mockReturnValue(false);
 });
 
+afterEach(() => {
+  // Toute activation démarre potentiellement la boucle de polling
+  // (setInterval réel) : la détruire systématiquement évite un handle qui
+  // fuite d'un test à l'autre (mandat "une seule boucle, détruite hors
+  // contexte", lot temps réel 2026-08).
+  clearSharedListContext();
+  jest.useRealTimers();
+});
+
 describe('group-side-cart — chargement du snapshot', () => {
   it('activateSharedListContext peuple state.sharedListContext depuis le payload et bascule cartSurface', () => {
     activateSharedListContext(payload(), 'tok-1');
@@ -443,5 +452,95 @@ describe('group-side-cart — absence de sélection locale', () => {
 
     const [cartItems] = checkoutSharedListSelection.mock.calls[0];
     expect(cartItems).toHaveLength(2);
+  });
+});
+
+describe('group-side-cart — temps réel (fraîcheur du snapshot, lot 2026-08)', () => {
+  it('démarre une seule boucle de polling même si le contexte est activé plusieurs fois', () => {
+    jest.useFakeTimers();
+    activateSharedListContext(payload(), 'tok-1');
+    activateSharedListContext(payload(), 'tok-1');
+    activateSharedListContext(payload(), 'tok-1');
+    getSharedCartPublic.mockResolvedValue(payload());
+
+    jest.advanceTimersByTime(4000);
+
+    // Une seule boucle → un seul tick → un seul appel réseau déclenché par
+    // le polling (les 3 activations initiales n'appellent pas
+    // getSharedCartPublic elles-mêmes, seul le refresh en dépend).
+    expect(getSharedCartPublic).toHaveBeenCalledTimes(1);
+  });
+
+  it("n'interroge pas le backend quand l'onglet est masqué ou hors surface shared-list", () => {
+    jest.useFakeTimers();
+    activateSharedListContext(payload(), 'tok-1');
+    getSharedCartPublic.mockClear();
+
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    jest.advanceTimersByTime(4000);
+    expect(getSharedCartPublic).not.toHaveBeenCalled();
+
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    state.cartSurface = 'personal'; // ex. bascule vers le panier perso, contexte toujours actif en arrière-plan
+    jest.advanceTimersByTime(4000);
+    expect(getSharedCartPublic).not.toHaveBeenCalled();
+  });
+
+  it('la boucle est détruite quand le contexte est nettoyé — aucun tick ultérieur', () => {
+    jest.useFakeTimers();
+    activateSharedListContext(payload(), 'tok-1');
+    clearSharedListContext();
+    getSharedCartPublic.mockClear();
+
+    jest.advanceTimersByTime(20000);
+
+    expect(getSharedCartPublic).not.toHaveBeenCalled();
+  });
+
+  it('visibilitychange (retour visible) déclenche un refresh immédiat sans attendre le prochain tick', async () => {
+    activateSharedListContext(payload(), 'tok-1');
+    getSharedCartPublic.mockClear();
+    getSharedCartPublic.mockResolvedValueOnce(payload());
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    await Promise.resolve();
+
+    expect(getSharedCartPublic).toHaveBeenCalledWith('tok-1');
+  });
+
+  it('un refresh silencieux (poll/mutation) ne rouvre jamais un drawer mobile que l\'utilisateur a fermé', async () => {
+    isDesktop.mockReturnValue(false);
+    activateSharedListContext(payload(), 'tok-1');
+    dom.cartDrawer.classList.remove('open'); // l'utilisateur ferme le drawer manuellement
+    getSharedCartPublic.mockResolvedValueOnce(payload({ items: [{ id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 3, claimed: false }] }));
+
+    await refreshSharedListContext();
+
+    expect(dom.cartDrawer.classList.contains('open')).toBe(false);
+    // Le contenu, lui, doit être à jour.
+    expect(state.sharedListContext.items[0].quantity).toBe(3);
+  });
+
+  it('signature inchangée entre deux refresh silencieux → aucun second appel à renderCartSnapshot', async () => {
+    activateSharedListContext(payload(), 'tok-1');
+    renderCartSnapshot.mockClear();
+    getSharedCartPublic.mockResolvedValueOnce(payload()); // exactement les mêmes lignes/statut
+
+    await refreshSharedListContext();
+
+    expect(renderCartSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('signature changée (quantité modifiée) entre deux refresh silencieux → rerend bien', async () => {
+    activateSharedListContext(payload(), 'tok-1');
+    renderCartSnapshot.mockClear();
+    getSharedCartPublic.mockResolvedValueOnce(
+      payload({ items: [{ id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 9, claimed: false }] })
+    );
+
+    await refreshSharedListContext();
+
+    expect(renderCartSnapshot).toHaveBeenCalled();
   });
 });

@@ -119,6 +119,36 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     expect(result.items_count).toBe(0);
   });
 
+  it('getSharedCartForPublic expose buyer_first_name par ligne réclamée au créateur (temps réel, lot 2026-08)', async () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer', organizer_full_name: 'Aïcha Said' };
+    const items = [
+      { id: 'sci-1', name: 'Riz', image: null, quantity: 2, unit_price_kmf: 1000, line_total_kmf: 2000, claimed: true, buyer_full_name: 'Karim Ali' },
+      { id: 'sci-2', name: 'Sucre', image: null, quantity: 1, unit_price_kmf: 500, line_total_kmf: 500, claimed: false, buyer_full_name: null },
+    ];
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
+
+    const result = await getSharedCartForPublic('tok-1', 'user-organizer');
+
+    expect(result.is_creator).toBe(true);
+    expect(result.items[0].buyer_first_name).toBe('Karim');
+    expect(result.items[1].buyer_first_name).toBeNull();
+  });
+
+  it('getSharedCartForPublic ne mappe jamais buyer_first_name pour un participant, même si la jointure renvoie une identité (doctrine : jamais dans le payload participant)', async () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
+    const items = [
+      { id: 'sci-1', name: 'Riz', image: null, quantity: 2, unit_price_kmf: 1000, line_total_kmf: 2000, claimed: true, buyer_full_name: 'Karim Ali' },
+    ];
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
+
+    // Participant (viewerUserId absent ou différent de l'organisateur).
+    const result = await getSharedCartForPublic('tok-1', 'user-autre-visiteur');
+
+    expect(result.is_creator).toBe(false);
+    expect(result.items[0].buyer_first_name).toBeUndefined();
+    expect(Object.keys(result.items[0])).not.toContain('buyer_full_name');
+  });
+
   it('getSharedCartForOwner retourne null si la liste ne correspond pas à l\'organisateur', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
     await expect(getSharedCartForOwner('cart-1', 'user-1')).resolves.toBeNull();

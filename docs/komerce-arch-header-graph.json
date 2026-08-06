@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 770,
-    "edges": 4136,
+    "edges": 4137,
     "dbTables": 109,
     "doctrines": 167,
     "impactAreas": 130,
@@ -14695,6 +14695,7 @@
       ],
       "dbRead": [
         "order_items",
+        "orders",
         "shared_cart_items",
         "shared_carts",
         "users"
@@ -40362,6 +40363,12 @@
     },
     {
       "from": "services/shared-cart-reads.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/shared-cart-reads.js",
       "to": "db:shared_cart_items",
       "type": "db-read",
       "label": "shared_cart_items"
@@ -58213,6 +58220,7 @@
       "ownedFiles": [],
       "dbRead": [
         "order_items",
+        "orders",
         "shared_cart_items",
         "shared_carts",
         "users"
@@ -58229,6 +58237,7 @@
       ],
       "mustCheck": [
         "db:order_items",
+        "db:orders",
         "db:shared_cart_items",
         "db:shared_carts",
         "db:users",

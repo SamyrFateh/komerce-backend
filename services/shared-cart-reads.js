@@ -8,7 +8,7 @@
  * @outputs       shared_cart, items
  * @depends       db.js
  * @used-by       routes/shared-cart.js
- * @db-read       order_items, shared_cart_items, shared_carts, users
+ * @db-read       order_items, orders, shared_cart_items, shared_carts, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      domaine_minimal_boutique_first, lecture_derivee
@@ -59,6 +59,16 @@ async function getSharedCartForPublic(token, viewerUserId) {
   if (!cartRows.length) return null;
   const cart = cartRows[0];
 
+  const isCreator = Boolean(viewerUserId)
+    && String(viewerUserId) === String(cart.organizer_user_id);
+
+  // L'identité de l'acheteur (buyer_full_name) n'est jamais nécessaire ni
+  // lue pour un viewer non-créateur : la jointure orders/users ci-dessous
+  // n'est faite que côté requête (coût négligeable, LEFT JOIN), mais le
+  // champ n'est mappé dans la réponse que si isCreator est vrai (cf.
+  // items.map ci-dessous) — jamais exposé au payload participant, quel
+  // que soit l'état du frontend (temps réel confirmé, doctrine identité
+  // acheteur jamais accessible aux participants).
   const { rows: items } = await db.query(
     `SELECT sci.id,
             sci.product_id,
@@ -67,17 +77,18 @@ async function getSharedCartForPublic(token, viewerUserId) {
             sci.quantity,
             sci.unit_price_kmf_snapshot AS unit_price_kmf,
             sci.line_total_kmf_snapshot AS line_total_kmf,
-            (oi.id IS NOT NULL) AS claimed
+            (oi.id IS NOT NULL) AS claimed,
+            bu.full_name AS buyer_full_name
        FROM shared_cart_items sci
        LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
+       LEFT JOIN orders bo ON bo.id = oi.order_id
+       LEFT JOIN users bu ON bu.id = bo.user_id
       WHERE sci.shared_cart_id = $1
       ORDER BY sci.created_at`,
     [cart.id]
   );
 
   const claimedCount = items.filter((item) => item.claimed).length;
-  const isCreator = Boolean(viewerUserId)
-    && String(viewerUserId) === String(cart.organizer_user_id);
   const creatorFirstName = (cart.organizer_full_name || '')
     .trim()
     .split(/\s+/)[0] || null;
@@ -102,6 +113,10 @@ async function getSharedCartForPublic(token, viewerUserId) {
       unit_price_kmf: item.unit_price_kmf,
       line_total_kmf: item.line_total_kmf,
       claimed: item.claimed,
+      // Jamais mappé si !isCreator — pas de fuite possible côté participant.
+      buyer_first_name: isCreator
+        ? ((item.buyer_full_name || '').trim().split(/\s+/)[0] || null)
+        : undefined,
     })),
     items_count: items.length,
     claimed_count: claimedCount,

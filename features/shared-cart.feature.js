@@ -155,6 +155,7 @@ module.exports = {
       'baskets: RW',
       'cart_shares: RW',
       'order_items: R',            // lecture pour le statut "réclamé" dérivé (migration 123)
+      'orders: R',                 // lecture user_id de la commande réclamante — nom acheteur, créateur uniquement
       'products: R',
       'shared_cart_events: RW',
       'shared_cart_items: RW',

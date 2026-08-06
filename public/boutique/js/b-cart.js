@@ -718,7 +718,17 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
 
     const { html: img, wrapClass: imgWrapClass } = snapshotItemImageParts(item);
 
-    const statusText = claimed ? 'Déjà acheté' : 'Disponible';
+    // Temps réel (lot 2026-08) — buyer_first_name n'est jamais présent dans
+    // le payload d'un participant (gating server-side exclusif, cf.
+    // shared-cart-reads.js) : ce ternaire ne peut donc jamais fuiter
+    // l'identité de l'acheteur à un participant, quel que soit un bug
+    // frontend éventuel.
+    const buyerFirstName = claimed && item.buyer_first_name
+      ? sanitize(item.buyer_first_name)
+      : null;
+    const statusText = claimed
+      ? (buyerFirstName ? `Déjà acheté par ${buyerFirstName}` : 'Déjà acheté')
+      : 'Disponible';
     const priceText = fmt(item.unit_price_kmf, 'KMF');
 
     // Lot B (doctrine snapshot + lecture simple) — plus de sélection par
@@ -728,7 +738,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     // de CTA). Réutilise .k-cart-item-remove (cart.css, panier personnel)
     // pour le retrait — aucune classe dédiée.
     const control = claimed
-      ? `<span class="k-cart-snapshot-item-status-badge is-claimed">Déjà acheté</span>`
+      ? `<span class="k-cart-snapshot-item-status-badge is-claimed">${buyerFirstName ? `Déjà acheté par ${buyerFirstName}` : 'Déjà acheté'}</span>`
       : '';
 
     // Lot B — même garde editMode que le contrôle de quantité.
