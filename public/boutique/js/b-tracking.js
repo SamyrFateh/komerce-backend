@@ -358,7 +358,7 @@ function renderCreatedSection(carts) {
       : '';
     return (
       '<div class="k-library-item-row">' +
-        '<button type="button" class="k-library-item" data-token="' + sanitize(cart.token || '') + '">' +
+        '<button type="button" class="k-library-item" data-token="' + sanitize(cart.token || '') + '" data-status="' + sanitize(cart.status || '') + '"' + (cart.status !== 'open' ? ' disabled' : '') + '>' +
           libraryItemInnerHtml(cart) +
         '</button>' +
         closeBtn +
@@ -373,7 +373,7 @@ function renderSavedSection(carts) {
   }
   // Pas de wrapper .k-library-item-row ici — voir libraryItemInnerHtml() ci-dessus.
   return carts.map((cart) =>
-    '<button type="button" class="k-library-item" data-token="' + sanitize(cart.token || '') + '">' +
+    '<button type="button" class="k-library-item" data-token="' + sanitize(cart.token || '') + '" data-status="' + sanitize(cart.status || '') + '"' + (cart.status !== 'open' ? ' disabled' : '') + '>' +
       libraryItemInnerHtml(cart) +
     '</button>'
   ).join('');
@@ -384,8 +384,19 @@ function wireLibraryItemOpen(el) {
     btn.addEventListener('click', async () => {
       const token = btn.dataset.token;
       if (!token) return;
+
+      // GAP-02 — les listes fermées ne chargent jamais le side cart.
+      // Le bouton porte déjà disabled (renderCreatedSection/renderSavedSection),
+      // mais ce guard couvre le cas d'un statut modifié après le rendu.
+      if (btn.dataset.status && btn.dataset.status !== 'open') return;
+
       btn.disabled = true;
       try {
+        // GAP-01 — basculer vers la Boutique AVANT d'activer le contexte
+        // de liste. Import dynamique pour éviter le cycle
+        // b-tracking.js → b-nav.js → b-tracking.js.
+        const { switchView } = await import('./b-nav.js');
+        switchView('shop');
         const { activateFromParticipantUrl } = await import('./group/group-side-cart.js');
         await activateFromParticipantUrl(token);
       } finally {

@@ -171,6 +171,14 @@ export const state = {
     items: [],
   },
   /**
+   * Mode édition explicite de l'organisateur sur la liste active.
+   * Géré par group-side-cart.js (toggleEditMode), consommé par
+   * buildSnapshotRenderContext et b-cart.js via le contexte de rendu.
+   * false = lecture seule (défaut), true = contrôles quantité/retrait
+   * visibles sur les lignes non achetées.
+   */
+  sharedListEditMode: false,
+  /**
    * Amendement V2 §A (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_
    * CART_V2) — quelle surface est projetée dans le side cart / drawer
    * canonique : 'personal' | 'shared-list'. Distinct de sharedListContext

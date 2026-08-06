@@ -9825,6 +9825,12 @@ body.cart-open  #k-section-index { display:none; }
   opacity: 0.65;
 }
 
+.k-library-item[disabled] {
+  opacity: 0.6;
+  cursor: default;
+  pointer-events: none;
+}
+
 @media (max-width: 899px) {
   .k-library-item-row {
     grid-template-columns: minmax(0, 1fr);

@@ -131,7 +131,8 @@ function computeSnapshotSignature(cart, items) {
 function isPollableNow() {
   return state.cartSurface === 'shared-list'
     && isActiveContext()
-    && document.visibilityState === 'visible';
+    && document.visibilityState === 'visible'
+    && document.body.classList.contains('k-view-shop');
 }
 
 /**

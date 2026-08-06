@@ -121,6 +121,10 @@ function mountShell() {
     <div id="k-order-modal"></div>
     <div id="k-toast"></div>
   `;
+  // GAP-04 — isPollableNow() exige body.k-view-shop. Le shell de test
+  // simule la vue Boutique par défaut, précondition réaliste pour tout
+  // scénario de rafraîchissement/polling de liste partagée.
+  document.body.classList.add('k-view-shop');
   initDom();
 }
 
@@ -542,5 +546,29 @@ describe('group-side-cart — temps réel (fraîcheur du snapshot, lot 2026-08)'
     await refreshSharedListContext();
 
     expect(renderCartSnapshot).toHaveBeenCalled();
+  });
+
+  it("n'interroge pas le backend hors de la vue Boutique (body sans k-view-shop)", () => {
+    jest.useFakeTimers();
+    activateSharedListContext(payload(), 'tok-1');
+    document.body.classList.remove('k-view-shop');
+    getSharedCartPublic.mockClear();
+
+    jest.advanceTimersByTime(4000);
+
+    expect(getSharedCartPublic).not.toHaveBeenCalled();
+  });
+
+  it('reprend le polling dès que la vue Boutique redevient active (body.k-view-shop)', () => {
+    jest.useFakeTimers();
+    activateSharedListContext(payload(), 'tok-1');
+    document.body.classList.remove('k-view-shop');
+    getSharedCartPublic.mockClear();
+    getSharedCartPublic.mockResolvedValue(payload());
+
+    document.body.classList.add('k-view-shop');
+    jest.advanceTimersByTime(4000);
+
+    expect(getSharedCartPublic).toHaveBeenCalledTimes(1);
   });
 });

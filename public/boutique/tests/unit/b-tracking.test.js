@@ -57,10 +57,23 @@ jest.mock('../../js/b-phone.js', () => ({
   digitsOnly: jest.fn((v) => (v || '').replace(/\D/g, '')),
   normalizeLocal: jest.fn((code, digits) => digits),
 }));
+jest.mock('../../js/group/group-api.js', () => ({
+  getSharedCartLibrary: jest.fn(),
+  closeCart: jest.fn(),
+}));
+jest.mock('../../js/group/group-side-cart.js', () => ({
+  activateFromParticipantUrl: jest.fn(),
+}));
+jest.mock('../../js/b-nav.js', () => ({
+  switchView: jest.fn(),
+}));
 
 const { apiGet, apiPost } = require('../../js/b-utils.js');
 const { showToast } = require('../../js/b-cart-core.js');
 const { flush } = require('./helpers/boutiqueTestKit');
+const { getSharedCartLibrary } = require('../../js/group/group-api.js');
+const { activateFromParticipantUrl } = require('../../js/group/group-side-cart.js');
+const { switchView } = require('../../js/b-nav.js');
 const {
   buildTimeline,
   getStatusDisplay,
@@ -70,6 +83,7 @@ const {
   renderMyOrdersList,
   renderTrackView,
   renderTrackViewSearchMode,
+  renderListsTab,
 } = require('../../js/b-tracking.js');
 
 beforeEach(() => {
@@ -572,5 +586,75 @@ describe('renderTrackViewSearchMode', () => {
       apiGet.mockResolvedValue({ orders: [] });
       expect(() => el.querySelector('#k-otp-back-btn').click()).not.toThrow();
     });
+  });
+});
+
+describe('renderListsTab — bibliothèque de listes (GAP-01/02)', () => {
+  function mountListsPanel() {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it('rend les cartes de listes fermées avec l\'attribut disabled', async () => {
+    getSharedCartLibrary.mockResolvedValue({
+      created: [{ id: 1, token: 'tok-closed', status: 'closed', title: 'Liste fermée', total_kmf: 1000, items_count: 2, claimed_count: 1 }],
+      saved: [],
+    });
+    const el = mountListsPanel();
+    await renderListsTab(el);
+    await flush();
+
+    const btn = el.querySelector('.k-library-item[data-token="tok-closed"]');
+    expect(btn).not.toBeNull();
+    expect(btn.disabled).toBe(true);
+    expect(btn.dataset.status).toBe('closed');
+  });
+
+  it('clic sur une liste fermée ne bascule pas la vue et n\'active pas le contexte de liste', async () => {
+    getSharedCartLibrary.mockResolvedValue({
+      created: [{ id: 1, token: 'tok-closed', status: 'closed', title: 'Liste fermée', total_kmf: 1000, items_count: 2, claimed_count: 1 }],
+      saved: [],
+    });
+    const el = mountListsPanel();
+    await renderListsTab(el);
+    await flush();
+
+    switchView.mockClear();
+    activateFromParticipantUrl.mockClear();
+
+    const btn = el.querySelector('.k-library-item[data-token="tok-closed"]');
+    // Le guard dataset.status doit tenir même si `disabled` était retiré après coup.
+    btn.disabled = false;
+    btn.click();
+    await flush();
+
+    expect(switchView).not.toHaveBeenCalled();
+    expect(activateFromParticipantUrl).not.toHaveBeenCalled();
+  });
+
+  it('clic sur une liste ouverte bascule vers la Boutique puis active le contexte de liste', async () => {
+    getSharedCartLibrary.mockResolvedValue({
+      created: [{ id: 2, token: 'tok-open', status: 'open', title: 'Liste ouverte', total_kmf: 5000, items_count: 3, claimed_count: 1 }],
+      saved: [],
+    });
+    const el = mountListsPanel();
+    await renderListsTab(el);
+    await flush();
+
+    switchView.mockClear();
+    activateFromParticipantUrl.mockClear();
+
+    const btn = el.querySelector('.k-library-item[data-token="tok-open"]');
+    expect(btn.disabled).toBe(false);
+    btn.click();
+    await flush();
+
+    expect(switchView).toHaveBeenCalledWith('shop');
+    expect(activateFromParticipantUrl).toHaveBeenCalledWith('tok-open');
+    // GAP-01 : la Boutique doit être activée avant le contexte de liste.
+    const switchOrder = switchView.mock.invocationCallOrder[0];
+    const activateOrder = activateFromParticipantUrl.mock.invocationCallOrder[0];
+    expect(switchOrder).toBeLessThan(activateOrder);
   });
 });
