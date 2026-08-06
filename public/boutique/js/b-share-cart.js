@@ -272,7 +272,13 @@ function openSharedListInCanonicalCart(cart) {
     const data = await api.getSharedCartPublic(cart.token);
     if (!data) return;
     sideCart.activateSharedListContext(data, cart.token);
-    document.getElementById('k-cart-btn')?.click();
+    // Ne PAS simuler de clic sur #k-cart-btn ici : ça déclenche openCart()
+    // (b-cart.js), qui fait setCartSurface('personal') et écrase le
+    // contexte de liste qu'on vient d'activer — sur desktop ça ouvre même
+    // le checkout direct sur le panier personnel vide (bug #4). Le drawer
+    // s'ouvre déjà tout seul sur mobile via reopenSharedListCart(); sur
+    // desktop le side cart en mode snapshot est visible sans action
+    // supplémentaire.
   });
 }
 

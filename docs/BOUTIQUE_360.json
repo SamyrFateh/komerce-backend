@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-08-06T09:32:28.656Z",
+  "generatedAt": "2026-08-06T10:46:24.123Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
-    "events": 26,
+    "events": 25,
     "declaredActive": 29,
     "declaredDead": 9,
     "cssBundles": 3,
     "endpoints": 47,
     "orphanEmit": 1,
     "orphanListen": 1,
-    "undeclared": 6,
+    "undeclared": 5,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 33,
     "dynamicEndpoints": 16,
@@ -772,7 +772,6 @@
         "boutique.js"
       ],
       "emits": [
-        "nav:goto-group",
         "komerce:show"
       ],
       "listens": [],
@@ -784,10 +783,6 @@
       ],
       "bodyClasses": [],
       "emitCalls": [
-        {
-          "name": "nav:goto-group",
-          "hasArg": false
-        },
         {
           "name": "komerce:show",
           "hasArg": false
@@ -1386,8 +1381,7 @@
         "cart:update",
         "nav:goto-track",
         "nav:goto-komerce-wallet",
-        "komerce:show",
-        "nav:goto-group"
+        "komerce:show"
       ],
       "imports": [
         "b-bus",
@@ -2705,14 +2699,6 @@
       ],
       "listeners": []
     },
-    "nav:goto-group": {
-      "emitters": [
-        "b-komerce"
-      ],
-      "listeners": [
-        "b-nav"
-      ]
-    },
     "komerce:show": {
       "emitters": [
         "b-komerce"
@@ -3468,7 +3454,6 @@
       "carousel:changed",
       "favorites:view-refresh",
       "modal:product-changed",
-      "nav:goto-group",
       "sidebar:built",
       "view:changed"
     ],

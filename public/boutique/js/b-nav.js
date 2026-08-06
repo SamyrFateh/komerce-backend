@@ -232,22 +232,12 @@ bus.on('nav:goto-komerce-wallet', () => { openMonKomerce({ focus: 'wallet' }); }
 bus.on('komerce:show', () => { switchView('komerce'); });
 
 // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2_D — l'onglet
-// Groupe de niveau 1 a disparu ; « Mes listes » (b-komerce.js) ouvre la
-// bibliothèque dans le side cart/drawer canonique via
-// group-side-cart.js::activateFromParticipantUrl() (amendement V2 §D).
-// Lot C a retiré activateOwnerLibrary() de group-side-cart.js — la
-// bibliothèque est projetée par l'onglet « Listes » de js/b-tracking.js
-// (renderListsView(), construit après la clôture Lot D, voir point ouvert
-// #1 du rapport). L'onglet « Suivi » reste utilisé comme conteneur DOM
-// (aucun switchView('group') dédié, mandat §2/§4/§16) mais bascule
-// immédiatement sur son sous-onglet Listes plutôt que Commandes.
-bus.on('nav:goto-group', () => {
-  document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
-    i.classList.toggle('active', i.dataset.tab === 'track');
-  });
-  renderListsView();
-  switchView('track');
-});
+// L'écouteur bus de l'événement nav:goto-group a été retiré (2026-08) : c'était l'unique
+// consommateur du raccourci "Mes listes" de Mon Komerce (b-komerce.js), qui
+// redirigeait vers l'onglet Suivi > Listes. Ce raccourci a été supprimé
+// (deux entrées pour un seul et même endroit) — Suivi reste l'unique entrée
+// vers la bibliothèque de listes, via renderListsView() (js/b-tracking.js)
+// ou le deep-link ?tab=group ci-dessous (compat liens existants).
 
 /**
  * Branche la bottom nav mobile + les boutons nav desktop.
@@ -328,7 +318,7 @@ function handleTabDeepLink() {
     if (resolvedTab === 'track')   { renderTrackView(); switchView('track'); }
     // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2_D — ?tab=group
     // legacy : ouvre directement le sous-onglet Listes de l'onglet Suivi
-    // (voir bus.on('nav:goto-group') plus haut, même logique).
+    // (voir l'historique de l'événement nav:goto-group plus haut, même logique).
     if (resolvedTab === 'group')   { renderListsView(); switchView('track'); }
     if (resolvedTab === 'komerce') { openMonKomerce(tab === 'wallet' ? { focus: 'wallet' } : {}); }
   } catch (_) {}

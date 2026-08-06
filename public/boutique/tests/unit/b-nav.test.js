@@ -349,17 +349,10 @@ describe('setupBnav', () => {
     expect(renderTrackView).toHaveBeenCalled();
   });
 
-  test("bus 'nav:goto-group' (émis par Mon Komerce > Mes listes) -> ouvre l'onglet Listes de Suivi, aucun switchView('group')", () => {
-    mountNavButtons();
-    setupBnav();
-    bus.emit('nav:goto-group');
-    // Point ouvert #1 du rapport de clôture Lot D, résolu : renderListsTab()
-    // a été construit dans b-tracking.js. nav:goto-group ouvre désormais le
-    // sous-onglet Listes de l'onglet Suivi (renderListsView()) plutôt que
-    // de replier sur Commandes (renderTrackView()).
-    expect(renderListsView).toHaveBeenCalled();
-    expect(document.querySelector('[data-tab="track"]').classList.contains('active')).toBe(true);
-  });
+  // bus 'nav:goto-group' retiré (2026-08) avec le raccourci "Mes listes" de
+  // Mon Komerce (b-komerce.js) : c'était son unique émetteur. La bibliothèque
+  // de listes reste accessible via l'onglet Suivi (renderListsView()) et le
+  // deep-link ?tab=group ci-dessous — voir le test dédié plus bas.
 
   test('tab=komerce -> renderKomerceView()', () => {
     mountNavButtons();

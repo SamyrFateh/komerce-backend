@@ -23,7 +23,7 @@
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
 | `komerce.css` | 252 | 🔴 **ORPHELIN** |
-| `layout.css` | 1173 | 🔴 **ORPHELIN** |
+| `layout.css` | 1178 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 340 | 🔴 **ORPHELIN** |
@@ -49,7 +49,7 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=158
+ 1. /boutique/css/dist/base.css?v=159
  2. /boutique/css/dist/components.css?v=386
  3. /boutique/css/dist/desktop.css?v=85
 ```
@@ -104,11 +104,11 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js/b-pager.js` (×1) |
-| `--pager-h` | `js/b-pager.js` (×1)<br>`js/b-subcat.js` (×1) ⚠️ multi-owner |
-| `--pager-w` | `js/b-pager.js` (×1) |
-| `--bnav-h` | `js/b-pager.js` (×1) |
-| `--modal-scroll-y` | `js/b-modal-core.js` (×1) |
+| `--pager-top` | `js\b-pager.js` (×1) |
+| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1) ⚠️ multi-owner |
+| `--pager-w` | `js\b-pager.js` (×1) |
+| `--bnav-h` | `js\b-pager.js` (×1) |
+| `--modal-scroll-y` | `js\b-modal-core.js` (×1) |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 

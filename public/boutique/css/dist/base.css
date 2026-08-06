@@ -1499,9 +1499,14 @@ body:has(#k-page-scroll.k-pager-active) {
 
 /* ── Side cart masqué hors onglet boutique ── */
 /* switchView() pose data-tab sur #k-page-scroll — on en profite pour cacher
-   le side cart sur les onglets suivi et favoris sans toucher au JS. */
-#k-page-scroll[data-tab="track"] .k-side-cart,
-#k-page-scroll[data-tab="fav"]   .k-side-cart {
+   le side cart sur les onglets suivi et favoris sans toucher au JS.
+   Exception : l'onglet Suivi héberge aussi l'onglet Listes, qui rend le
+   contenu d'une liste ouverte dans #k-side-cart en mode snapshot
+   (data-mode="shared-list", posé par b-cart.js). Sans cette exception,
+   cette règle masque le side cart avant même qu'il ait une chance de
+   s'afficher — la liste cliquée paraît vide (bug #1). */
+#k-page-scroll[data-tab="track"] .k-side-cart:not([data-mode="shared-list"]),
+#k-page-scroll[data-tab="fav"]   .k-side-cart:not([data-mode="shared-list"]) {
   display: none;
 }
 

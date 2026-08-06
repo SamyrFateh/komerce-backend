@@ -299,7 +299,7 @@ export function renderTrackView() {
  * Point d'entrée onglet « Listes » — ouvre directement sur la bibliothèque
  * sans déclencher le fetch /api/orders du panneau Commandes (mandat §D :
  * les deux onglets restent des lectures indépendantes, jamais couplées).
- * Consommateurs : b-nav.js (bus.on('nav:goto-group'), deep-link ?tab=group).
+ * Consommateurs : b-nav.js (deep-link ?tab=group, compat liens existants).
  */
 export function renderListsView() {
   ensureTrackShell();

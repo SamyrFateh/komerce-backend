@@ -1,14 +1,14 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-06T09:32:28.656Z.
+> Régénéré le 2026-08-06T10:46:24.123Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **76** (76 headés) · Événements bus : **26** · Bundles CSS : **3**
+- Modules JS : **76** (76 headés) · Événements bus : **25** · Bundles CSS : **3**
 - Endpoints appelés : **47** — 🔴 0 hors contrat · ⚪ 33 non prouvés · 🔵 16 dynamiques
-- Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
+- Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 5 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
 
@@ -85,7 +85,6 @@
 | `modal:opened` | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | 🟢 sain (propriétaire: modal-product) |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
-| `nav:goto-group` | b-komerce | b-nav | 🟡 non déclaré |
 | `nav:goto-komerce-wallet` | b-checkout | b-nav | 🟢 sain |
 | `nav:goto-track` | b-checkout | b-nav | 🟢 sain |
 | `product:open-from-cart` | b-product-open-contract | b-product-open-contract | 🟢 sain |
@@ -132,7 +131,6 @@ graph LR
   b_checkout["b-checkout"] -->|nav:goto-komerce-wallet| b_nav["b-nav"]
   b_checkout["b-checkout"] -->|checkout:order-failed| group_side_cart["group-side-cart"]
   b_checkout["b-checkout"] -->|nav:goto-track| b_nav["b-nav"]
-  b_komerce["b-komerce"] -->|nav:goto-group| b_nav["b-nav"]
   b_komerce["b-komerce"] -->|komerce:show| b_nav["b-nav"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:detail-ready| b_modal_cart["b-modal-cart"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]

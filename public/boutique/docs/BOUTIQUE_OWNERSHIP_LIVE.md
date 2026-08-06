@@ -44,13 +44,13 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-buybox-shared.js` | 22 | 0 | 0/0 | Modal produit |
 | `b-modal-nav.js` | 10 | 10 | 1/4 | Modal produit |
 | `b-pager.js` | 3 | 16 | 2/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
-| `b-tracking.js` | 19 | 0 | 1/0 | Section catalogue |
+| `b-tracking.js` | 19 | 0 | 0/0 | Section catalogue |
 | `b-identity.js` | 11 | 5 | 0/0 | — |
 | `b-catalog.js` | 11 | 2 | 3/3 | Carte produit, Grille produits, Chips catégories, Section catalogue |
 | `b-modal-image-ux.js` | 8 | 5 | 1/1 | Modal produit |
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
 | `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
-| `b-komerce.js` | 11 | 0 | 0/2 | Section catalogue |
+| `b-komerce.js` | 11 | 0 | 0/1 | Section catalogue |
 | `boutique.js` | 0 | 11 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/2 | Modal produit |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
@@ -97,7 +97,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | modal-shell.css | 900px, 899px, 1200px | 🔴 899px |
 | products.css | 900px, 1200px, 899px | 🔴 899px |
 | shared-list-library-remove.css | 430px | 🔴 430px |
-| shared-list-lists-tab.css | 430px | 🔴 430px |
+| shared-list-lists-tab.css | 899px | 🔴 899px |
 | boutique-desktop.css | 900px, 1200px | ✅ |
 | hero-cart-proxy.css | 900px | ✅ |
 | identity.css | 900px | ✅ |
