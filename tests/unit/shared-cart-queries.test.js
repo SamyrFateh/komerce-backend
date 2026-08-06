@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * shared-cart-queries.js (Boutique First, domaine minimal)
  * adminExpireCart est conservé (renommé en substance : force-annulation

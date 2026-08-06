@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/group-flow.spec.js
  * @feature shared-cart, group
  * @brief Flux métier liste partageable : partage immédiat → vérification backend.

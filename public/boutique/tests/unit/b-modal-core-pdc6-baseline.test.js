@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../js/b-bus.js', () => ({
   bus: { on: jest.fn(), emit: jest.fn() },
 }));

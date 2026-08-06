@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : cash-operations + routes/cash (R5)
  *
  * Couvre :

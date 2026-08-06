@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/stock-after-order.spec.js
  * @feature orders, inventory
  * @brief F07 — Le stock d'un produit est décrémenté après confirmation de paiement.

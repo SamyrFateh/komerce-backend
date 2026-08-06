@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : bootstrap/api-routes.js (Lot 0)
  *
  * `bootstrap/api-routes.js` était absent de `collectCoverageFrom` (angle

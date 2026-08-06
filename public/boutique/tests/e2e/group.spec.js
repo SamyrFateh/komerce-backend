@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   group.spec.js
  * @feature shared-cart
  * @brief Groupe / panier partagé : créateur, participant public, timeout retry

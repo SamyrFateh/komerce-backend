@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   tracking.spec.js
  * @feature orders
  * @brief Suivi commandes : chargement, erreur + retry, mode recherche, 401

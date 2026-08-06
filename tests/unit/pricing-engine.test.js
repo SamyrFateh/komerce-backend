@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../services/pricing-cdr', () => ({
   loadGlobalConfig: jest.fn(),

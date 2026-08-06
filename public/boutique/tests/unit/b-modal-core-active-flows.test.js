@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /** Couverture active de b-modal-core.js : setup, recherche, pager et fullscreen. */
 
 const mockAddToCart = jest.fn();

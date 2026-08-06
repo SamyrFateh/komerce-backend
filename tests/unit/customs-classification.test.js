@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { resolveFrozenClassification } = require('../../services/customs-classification');
 
 describe('customs-classification', () => {

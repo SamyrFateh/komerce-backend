@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/group-library.spec.js
  * @feature shared-cart, group
  * @brief F23 — Bibliothèque "Mes listes" (mandat §10 BIBLIOTHÈQUE, amendement V2 §D).

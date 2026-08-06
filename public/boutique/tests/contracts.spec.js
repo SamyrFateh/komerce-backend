@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * contracts.spec.js — Étage DYNAMIQUE de l'audit feature-par-feature.
  *
  * Le `feature-audit.js` (statique) vérifie que la RÈGLE est présente dans le

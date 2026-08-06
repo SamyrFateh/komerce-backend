@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * tests/integration/sourcing-flow-g5.test.js
  *

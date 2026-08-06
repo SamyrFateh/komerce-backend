@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const VALID_ORDER_ID = '3f1a9b2c-1234-4abc-89ab-1234567890ab';
 const OTHER_ORDER_ID = '7e2b8c3d-5678-4def-9abc-abcdef012345';
 

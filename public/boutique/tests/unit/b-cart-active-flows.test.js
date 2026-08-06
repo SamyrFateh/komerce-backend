@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Couverture des flux actifs avancés de b-cart.js : variantes, drawer,
  * side-cart, édition collective, partage reçu et longue pression.

@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/normalized-product.test.js
  * Couvre services/suppliers/normalized-product.js

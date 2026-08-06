@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../js/b-cart.js', () => ({
   addToCart: jest.fn(),
   quickAdd: jest.fn(),

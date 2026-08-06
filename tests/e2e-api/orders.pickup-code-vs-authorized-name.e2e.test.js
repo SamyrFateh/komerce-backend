@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind e2e
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * E2E-LOT5-PICKUP-RACE
  *
@@ -117,12 +123,15 @@ describeE2E(
       );
 
       cleanup.trackSql(
-        'DELETE FROM order_status_history WHERE order_id = $1',
+        'DELETE FROM scans WHERE order_id = $1',
         [orderId]
       );
 
+      // order_status_history référence scans (FK scan_id) : enregistré après
+      // scans pour être dépilé (supprimé) avant, sans quoi la suppression de
+      // scans viole order_status_history_scan_id_fkey.
       cleanup.trackSql(
-        'DELETE FROM scans WHERE order_id = $1',
+        'DELETE FROM order_status_history WHERE order_id = $1',
         [orderId]
       );
 

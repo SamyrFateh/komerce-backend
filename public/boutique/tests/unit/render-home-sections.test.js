@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/render-home-sections.test.js
  * Source: js/render/render-home-sections.js (2026-06)

@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   product-detail-pdc.spec.js
  * @feature catalog, modal-product
  * @brief Clôture PDC-8 : catalogue canonique réel → contrat détail → sélection SKU → parité responsive

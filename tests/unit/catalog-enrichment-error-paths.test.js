@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Tests unitaires — services/catalog-enrichment.js, branches d'erreur
  * résiduelles (suite à AUDIT_KOMERCE_2026-07-09.md §5/§6).

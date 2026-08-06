@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   search.spec.js
  * @feature catalog-search
  * @brief Recherche catalogue : saisie, dropdown résultats, clic → modale,

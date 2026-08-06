@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Vue Favoris. Les interactions carte sont désormais possédées par la
  * délégation unique de b-catalog.js ; ce module ne réinstalle aucun listener

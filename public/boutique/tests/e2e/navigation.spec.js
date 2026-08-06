@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   navigation.spec.js
  * @feature navigation, deep-links
  * @brief Navigation inter-onglets, deep-links ?tab=, retour boutique,

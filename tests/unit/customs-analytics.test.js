@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/customs-analytics.test.js
  * Couvre services/customs-analytics.js

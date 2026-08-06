@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires: order-status-machine.js (V2.5)
  *
  * Couvre:

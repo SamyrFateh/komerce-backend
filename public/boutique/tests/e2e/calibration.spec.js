@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   calibration.spec.js
  * @brief Spec de calibration — tourne EN PREMIER pour valider que les
  *        sélecteurs et les hypothèses des tests correspondent au site réel.

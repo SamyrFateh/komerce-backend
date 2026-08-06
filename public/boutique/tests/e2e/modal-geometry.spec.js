@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   modal-geometry.spec.js
  * @feature modal-product, mobile-canonical
  * @brief Volet 3.2 — mesures géométriques RÉELLES (getBoundingClientRect,

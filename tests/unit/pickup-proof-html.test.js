@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/pickup-proof-html.test.js
  * Couvre utils/documents/pickup-proof-html.js

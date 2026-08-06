@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const mockLogFn = () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() });
 jest.mock('../../utils/logger', () => { const f = jest.fn(mockLogFn); return { child: f, forModule: f, info: jest.fn(), warn: jest.fn(), error: jest.fn() }; });
 

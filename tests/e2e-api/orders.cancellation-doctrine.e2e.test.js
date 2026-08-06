@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind e2e
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * E2E-P0-ORDERS — orders · doctrine d'annulation, référence, snapshot de coût
  *

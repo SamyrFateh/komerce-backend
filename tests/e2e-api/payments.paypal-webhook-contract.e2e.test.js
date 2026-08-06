@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind e2e
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * E2E-P0-PAYPAL — payments · contrat de la frontière webhook PayPal
  *

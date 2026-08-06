@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/admin-risk-provisions.test.js
  * Couvre routes/admin-risk-provisions.js

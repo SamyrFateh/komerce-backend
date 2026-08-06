@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../js/b-scroll-owner.js', () => ({ isDesktop: jest.fn(() => true) }));
 
 describe('b-modal-desktop-enhancers — D-P1 : panneau commercial allégé', () => {

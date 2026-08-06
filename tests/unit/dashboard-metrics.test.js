@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Tests de caractérisation — services/dashboard-metrics.js (Lot C3)
  *

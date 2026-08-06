@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : bootstrap/security.js (Lot 0)
  *
  * `bootstrap/security.js` était absent de `collectCoverageFrom` (angle mort

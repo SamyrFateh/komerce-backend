@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../services/pricing-engine', () => ({
   loadGlobalConfig: jest.fn(),
   recommend: jest.fn(),

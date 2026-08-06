@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * P3b — propriété des contrats bus de la modale (réconciliation 2026-07-27, §4.3).
  *

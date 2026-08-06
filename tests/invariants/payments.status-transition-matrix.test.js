@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Invariant (P5-N2/N3) — transcrit depuis la revue N2, non redéduit du code :
  *

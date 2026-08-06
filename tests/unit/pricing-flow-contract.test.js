@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * Tests unitaires — contrat de sortie du moteur (vue carte /flow).
  * Vérifie la présence de tous les champs doctrinaux + cohérence loss_leader.
  */

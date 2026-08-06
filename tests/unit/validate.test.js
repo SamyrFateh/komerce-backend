@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const Joi = require('joi');
 const { validate, sanitize, sanitizeString, sanitizeDeep } = require('../../middleware/validate');
 

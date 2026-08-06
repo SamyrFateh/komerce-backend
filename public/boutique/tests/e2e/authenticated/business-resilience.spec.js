@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/business-resilience.spec.js
  * @feature checkout, orders, wallet
  * @brief Robustesse des flux business réels : scénarios d'erreur qu'un vrai

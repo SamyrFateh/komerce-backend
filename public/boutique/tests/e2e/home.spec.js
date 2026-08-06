@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   home.spec.js
  * @feature home, hero, categories
  * @brief Page d'accueil : hero visible, chips catégories, proverbe/greeting,

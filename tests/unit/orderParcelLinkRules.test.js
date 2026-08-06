@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/orderParcelLinkRules.test.js
  * Couvre utils/orderParcelLinkRules.js

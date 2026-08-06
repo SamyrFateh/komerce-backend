@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * @unit  r5-prod-guard.test.js
  * @brief [R5] Preuve du fail-closed : assertNotProdIfMutant() lève une erreur

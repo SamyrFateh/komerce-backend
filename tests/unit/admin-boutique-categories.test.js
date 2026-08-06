@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/admin-boutique-categories.test.js
  * Couvre routes/admin-boutique-categories.js

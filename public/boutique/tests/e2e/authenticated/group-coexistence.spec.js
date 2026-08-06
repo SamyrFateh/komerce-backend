@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/group-coexistence.spec.js
  * @feature shared-cart, group
  * @brief F22 — Isolation panier personnel / liste partagée (mandat §4/§10).

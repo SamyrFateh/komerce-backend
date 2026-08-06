@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   cross-browser.spec.js
  * @feature cross-browser
  * @brief Régressions spécifiques navigateur : Safari iOS (dvh, safe-area,

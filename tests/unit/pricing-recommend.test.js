@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const mockDbQuery = jest.fn();
 jest.mock('../../db', () => ({
   query: (...args) => mockDbQuery(...args),

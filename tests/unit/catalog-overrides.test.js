@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Tests unitaires — K-4 module partagé overrides tracés (DOCTRINE_CATALOGUE.md §5, §7)
  *

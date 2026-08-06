@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * @komerce-arch
  * @role          notification-routes-tests-branches
  * @domain        notification

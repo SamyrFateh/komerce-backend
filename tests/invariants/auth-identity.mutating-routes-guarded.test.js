@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Invariant #1 (P1) — transcrit tel quel depuis features/auth-identity.feature.js :
  *

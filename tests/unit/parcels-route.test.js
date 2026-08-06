@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/parcels (Lot B3)
  *
  * Sécurité logistique v1.0 (S1-S7) : external_code/seal_code à la création,

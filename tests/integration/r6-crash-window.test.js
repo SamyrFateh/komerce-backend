@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * @integration  r6-crash-window.test.js
  * @brief [R6] Prouve la fenêtre crash post-COMMIT (DEBT-07) et valide le

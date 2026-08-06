@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const mockIsDesktop = jest.fn(() => false);
 const mockRenderGrid = jest.fn();
 const mockOpenModal = jest.fn();

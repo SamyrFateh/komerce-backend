@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Tests unitaires — K-3 enrichissement FR (DOCTRINE_CATALOGUE §4, §5, §8)
  *

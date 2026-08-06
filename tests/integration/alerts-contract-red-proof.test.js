@@ -1,4 +1,10 @@
 /**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
+
+/**
  * ALERTS CONTRACT RECOVERY — RED PROOFS (REAL_DB_INTEGRATION).
  *
  * Mission §4 : "ne pas coder avant les preuves rouges P0". Ce fichier

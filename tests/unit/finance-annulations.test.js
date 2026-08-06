@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../db', () => ({ query: jest.fn() }));
 const mockCache = { value: null };
 jest.mock('../../routes/dashboard-shared', () => ({

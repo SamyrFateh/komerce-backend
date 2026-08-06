@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : payments-webhook (REFACTO-PAYMENTS)
  *
  * Couvre les 8 chemins de sortie de _handleStripeSucceeded

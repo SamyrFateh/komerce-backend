@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/wallet.spec.js
  * @feature wallet
  * @brief Porte-monnaie avec une VRAIE session (storageState posé par

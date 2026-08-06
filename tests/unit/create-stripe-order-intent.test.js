@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : create-stripe-order-intent (P0 payments)
  *
  * Couvre createStripeOrderIntent : validation des entrées, contrôle d'accès,

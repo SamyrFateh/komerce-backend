@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Smoke test de boutique.js. Le but n'est pas de retester chaque module mais
  * de protéger le câblage du boot, les événements globaux et le reset desktop.

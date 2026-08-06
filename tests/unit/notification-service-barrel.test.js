@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 describe('notification-service barrels', () => {
   it('services/notification-service re-exporte lAPI publique notification sans casser les appelants historiques', () => {
     const legacy = require('../../services/notification-service');

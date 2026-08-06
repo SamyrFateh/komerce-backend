@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires: validators/index.js (V2.6)
  *
  * Couvre les schémas Joi critiques.

@@ -16,6 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { checkPostgresPreflight } = require('./lib/pg-preflight');
 
 const ROOT = path.resolve(__dirname, '..');
 const INTEGRATION_DIR = path.join(ROOT, 'tests', 'integration');
@@ -50,7 +51,21 @@ function runSuite(suite) {
   return passed;
 }
 
-function main() {
+async function main() {
+  // Campagne integration explicitement demandée (cette commande n'existe
+  // que pour ça) : PostgreSQL absent/mal configuré est une ENVIRONMENT
+  // FAILURE, jamais une liste de suites FAIL fabriquée par des timeouts de
+  // connexion (mission §5). Un seul preflight, avant la première suite.
+  const preflight = await checkPostgresPreflight();
+  if (!preflight.ready) {
+    console.error('ENVIRONMENT NOT READY: PostgreSQL unavailable');
+    console.error('0 tests executed');
+    console.error(`Reason (${preflight.stage}): ${preflight.reason}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(`POSTGRES: available — ${preflight.reason}`);
+
   const suites = listSuites();
   const failures = [];
 
@@ -73,3 +88,4 @@ function main() {
 }
 
 main();
+

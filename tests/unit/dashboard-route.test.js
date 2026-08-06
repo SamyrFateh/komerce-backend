@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/dashboard (Lot B4)
  *
  * Point d'entrée dashboard v12.0 — applique le guard admin une seule fois

@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind e2e
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * E2E-P0-COLLECT — orders · une commande ne peut être remise qu'une seule fois
  *

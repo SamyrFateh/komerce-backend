@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../db');
 jest.mock('../../services/supplier-catalog-scanner');
 jest.mock('../../services/pricing-engine');

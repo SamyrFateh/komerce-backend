@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Invariant #4 (P1) — transcrit tel quel depuis features/wallet.feature.js :
  *

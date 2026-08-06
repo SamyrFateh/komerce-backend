@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   golden-product-gpm.spec.js
  * @feature modal-product, catalog
  * @brief Chantier GOLDEN PRODUCT — modal mobile enrichie (GPM-2, GPM-3 DOM,

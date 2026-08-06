@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * @komerce-arch-lite
  * @role          test-mobile-modal-canonical-composition
  * @domain        catalog

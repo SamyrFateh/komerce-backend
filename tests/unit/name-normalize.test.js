@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { normalizeName, namesMatch } = require('../../utils/name-normalize');
 
 describe('normalizeName', () => {

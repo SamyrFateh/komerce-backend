@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/tracking-public.spec.js
  * @feature orders, logistics
  * @brief F31 — Tracking public par référence, sans session.

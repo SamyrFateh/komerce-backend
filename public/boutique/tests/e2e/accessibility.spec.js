@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   accessibility.spec.js
  * @feature accessibility
  * @brief Accessibilité de base : navigation clavier, focus trap modale,

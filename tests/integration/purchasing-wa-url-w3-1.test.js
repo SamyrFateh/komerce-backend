@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * LOT R3 — DEBT-03 / FSF-03 — preuve W3-1 (REAL_DB_INTEGRATION)
  *

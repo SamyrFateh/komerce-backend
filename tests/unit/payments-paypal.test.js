@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/payments-paypal.test.js
  * Couvre routes/payments-paypal.js — endpoints create-order, capture, refund.

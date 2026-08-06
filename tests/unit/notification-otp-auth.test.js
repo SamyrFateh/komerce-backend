@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const mockInternals = {
   log: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
   callAuthKey: jest.fn(),

@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Invariant #3 (P1) — transcrit tel quel depuis features/payments.feature.js :
  *

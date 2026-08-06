@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { planSkuReconciliation } = require('../../services/catalog-promotion/sku');
 
 function manualSku(overrides = {}) {

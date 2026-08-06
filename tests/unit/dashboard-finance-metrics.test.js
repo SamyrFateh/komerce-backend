@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/dashboard-finance-metrics.test.js
  * Tests de caractérisation — services/dashboard-finance-metrics.js (Lot B7 — 2026-06-28)

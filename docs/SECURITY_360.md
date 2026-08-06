@@ -1,12 +1,12 @@
 # Security 360 — couverture des gardes (hybride runtime + statique)
 
-> 2026-07-31T18:16:50.870Z — 486 endpoints
+> 2026-08-06T02:00:38.796Z — 480 endpoints
 
 | Niveau | Compte |
 |---|---|
-| 🟢 PROTECTED | 430 |
+| 🟢 PROTECTED | 431 |
 | ⚪ PUBLIC (légitime) | 5 |
-| 🟠 UNPROTECTED | 49 |
+| 🟠 UNPROTECTED | 42 |
 | 🔴 ADMIN_NO_GUARD | 0 |
 | ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 2 |
 
@@ -45,13 +45,6 @@
 - 🟠 `GET /api/relais/{id}` — UNPROTECTED
 - 🟠 `GET /api/relais/public` — UNPROTECTED
 - 🟠 `GET /api/relais` — UNPROTECTED
-- 🟠 `POST /api/shared-carts/public/{token}/contributions/cash` — UNPROTECTED
-- 🟠 `POST /api/shared-carts/public/{token}/contributions` — UNPROTECTED
-- 🟠 `DELETE /api/shared-carts/public/{token}/estimations/{estimationId}` — UNPROTECTED
-- 🟠 `GET /api/shared-carts/public/{token}/estimations/by-phone` — UNPROTECTED
-- 🟠 `GET /api/shared-carts/public/{token}/estimations` — UNPROTECTED
-- 🟠 `POST /api/shared-carts/public/{token}/estimations` — UNPROTECTED
-- 🟠 `GET /api/shared-carts/public/{token}` — UNPROTECTED
 - 🟠 `PATCH /api/shares/{token}/contributions/{id}` — UNPROTECTED
 - 🟠 `POST /api/shares/{token}/contributions` — UNPROTECTED
 - 🟠 `GET /api/shares/{token}` — UNPROTECTED

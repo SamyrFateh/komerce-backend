@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/group-price-variation.spec.js
  * @feature shared-cart, group, checkout
  * @brief F26 — Variation de prix entre le partage et le checkout (mandat §3/§10).

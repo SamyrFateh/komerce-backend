@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * POST-O8 — Contract test: invoice-ready → AuthKey transport routing.
  *
  * Evidence level: MOCK_INTEGRATION (fetch mocked; DB access to invoice
@@ -46,6 +52,17 @@ function fixtureInvoice(overrides = {}) {
 
 function loadFreshModules() {
   jest.resetModules();
+  // Cases A/B/C/D flip NODE_ENV to 'production'/'staging' to exercise the
+  // WID/whitelist branching in authkey-client. db.js schedules a real
+  // setInterval pool-monitor whenever NODE_ENV !== 'test' — harmless in prod,
+  // but a genuine Jest open handle here since we only care about the
+  // notification-transport routing, never about DB access (getOrCreateInvoice
+  // is stubbed below). Mock db.js so the fresh require of invoice-service
+  // never constructs the real pg Pool / interval under the simulated env.
+  jest.doMock('../../db', () => ({
+    query: jest.fn(),
+    getClient: jest.fn(),
+  }));
   // invoice-service is a singleton instance; authkey-client computes WID /
   // IS_PRODUCTION / _allowedPhones at load — must be required fresh per env.
   const invoiceService = require('../../services/invoice-service');

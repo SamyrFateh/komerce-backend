@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/group-conflict.spec.js
  * @feature shared-cart, group
  * @brief F24 — Conflit d'achat sur une ligne de liste partagée (mandat §5/§10).

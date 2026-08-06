@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/invoice-public.spec.js
  * @feature orders, documents
  * @brief F05 — La facture publique est accessible sans auth après une commande payée.

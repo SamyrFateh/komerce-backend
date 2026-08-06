@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { classifyPair } = require('../../scripts/lib/feature-dependency-disposition');
 
 const ctx = {

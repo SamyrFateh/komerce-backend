@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   modal-backtop-zindex.spec.js
  * @feature modal-product
  * @brief P0-A #4 — verrouille l'atteignabilité du bouton « retour en haut »

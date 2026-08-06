@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : bootstrap/env.js (Lot 0)
  *
  * `bootstrap/env.js` était absent de `collectCoverageFrom` (angle mort

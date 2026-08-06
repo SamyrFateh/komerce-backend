@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/hub-dashboard (Lot B3)
  *
  * Centre de contrôle opérateur hub (Dubai). Lectures déléguées à

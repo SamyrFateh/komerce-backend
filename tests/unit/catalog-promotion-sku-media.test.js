@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { resolveSkuMediaLinks } = require('../../services/catalog-promotion/sku-media');
 
 describe('catalog-promotion/sku-media — resolveSkuMediaLinks (PDC-8 Lot 5)', () => {

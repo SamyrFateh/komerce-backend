@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/sourcing-analysis-density.test.js
  * Tests de caractérisation — lot V-2 (densité de valeur dans analyzeProduct)

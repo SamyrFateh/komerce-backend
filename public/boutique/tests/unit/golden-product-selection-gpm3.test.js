@@ -1,3 +1,9 @@
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
 import {
   OPTION_STATE,
   createModalSelection,

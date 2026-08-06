@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * [P0-A #5] Verrouille le correctif du parser css-guard sur les règles
  * compactes (cf. scripts/css-guard.js — commentaire "FIX 2026-07").

@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : bootstrap/startup-migrations.js (Lot 0)
  *
  * `bootstrap/startup-migrations.js` était absent de `collectCoverageFrom`

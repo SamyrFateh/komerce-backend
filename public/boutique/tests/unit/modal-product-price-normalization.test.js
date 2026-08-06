@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * @feature catalog, modal-product
  * Régression UI — les prix mobiles longs ne doivent plus être rognés et la promo

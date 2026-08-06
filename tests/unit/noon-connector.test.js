@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/noon-connector.test.js
  * Couvre services/suppliers/connectors/noon-connector.js

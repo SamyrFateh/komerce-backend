@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/order-history.spec.js
  * @feature orders
  * @brief F06 — L'historique de commande reflète les transitions de statut.

@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Tests unitaires — services/catalog-eligibility.js (K-2, DOCTRINE_CATALOGUE §3)
  *

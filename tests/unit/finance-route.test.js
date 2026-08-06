@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/finance (Lot B2)
  *
  * Couvre la façade HTTP finance : guard admin, sanitizePeriod (bornes

@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/shares (P0 shared-cart)
  *
  * Couvre le système "cart_shares" v2 (event shares + contributions) :

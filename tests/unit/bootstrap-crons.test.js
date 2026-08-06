@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : bootstrap/crons.js (Lot 0)
  *
  * `bootstrap/crons.js` était absent de `collectCoverageFrom` (angle mort

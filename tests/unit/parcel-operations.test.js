@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/parcel-operations.test.js
  * Tests unitaires du lot R4 — parcel-operations.js

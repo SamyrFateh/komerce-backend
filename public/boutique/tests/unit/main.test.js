@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Smoke test du point d'entrée main.js : branchement du runtime immédiat puis
  * activation desktop différée après resize. Les modules appelés ont leurs

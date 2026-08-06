@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/admin-status-transition.spec.js
  * @feature orders, logistics
  * @brief F30 — Un admin change le statut d'une commande → la page tracking

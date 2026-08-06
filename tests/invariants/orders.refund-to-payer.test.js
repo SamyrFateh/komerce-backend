@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Invariant #5 (P1) — transcrit tel quel depuis features/orders.feature.js :
  *

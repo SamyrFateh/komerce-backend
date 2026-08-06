@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : utils/logger (Lot D4)
  *
  * pino est installé dans ce projet → la branche "try" (pino actif) est

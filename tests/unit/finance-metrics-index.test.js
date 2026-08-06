@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 describe('finance-metrics/index', () => {
   it('re-exporte les quatre fonctions publiques du dashboard finance', () => {
     const metrics = require('../../services/finance-metrics');

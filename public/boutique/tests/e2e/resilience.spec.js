@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   resilience.spec.js
  * @feature infrastructure
  * @brief Résilience transversale : timeout API → aucune vue en chargement

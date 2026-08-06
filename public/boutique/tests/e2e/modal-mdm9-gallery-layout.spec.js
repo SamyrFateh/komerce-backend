@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   modal-mdm9-gallery-layout.spec.js
  * @feature modal-product, mobile-canonical
  * @brief MDM-9 — Mesures réelles navigateur (getBoundingClientRect) de la zone

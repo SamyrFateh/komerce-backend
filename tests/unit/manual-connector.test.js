@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/manual-connector.test.js
  * Couvre services/suppliers/connectors/manual-connector.js

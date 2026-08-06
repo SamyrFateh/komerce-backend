@@ -1,4 +1,10 @@
 /**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
+
+/**
  * POST-O8 — Payments seams (REAL_DB_INTEGRATION).
  *
  * Central lifecycle (confirmPaymentCycle, order-status-machine, stock,

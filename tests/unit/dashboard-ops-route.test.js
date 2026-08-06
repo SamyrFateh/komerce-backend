@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/dashboard-ops (Lot B4)
  *
  * Façade R9 : lectures déléguées à services/dashboard-ops-queries.js

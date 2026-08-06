@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/wallet-flow.spec.js
  * @feature wallet
  * @brief Flux métier wallet authentifié : session → solde → historique.

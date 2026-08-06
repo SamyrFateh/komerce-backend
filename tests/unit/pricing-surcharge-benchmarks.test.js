@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * Tests unitaires — calibration de la surcharge par benchmark (doctrine §6).
  * Sans benchmark → heuristique ; avec → calibré ; précédence catégorie.
  */

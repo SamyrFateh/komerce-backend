@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/order-flow.spec.js
  * @feature checkout, orders
  * @brief Flux métier COMPLET : parcours → panier → checkout → commande.

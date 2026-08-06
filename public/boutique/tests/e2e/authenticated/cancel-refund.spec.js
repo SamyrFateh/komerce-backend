@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/cancel-refund.spec.js
  * @feature orders, refunds, wallet
  * @brief F03 — Annulation d'une commande payée → wallet re-crédité.

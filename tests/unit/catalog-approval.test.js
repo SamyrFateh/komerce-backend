@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Tests unitaires — K-4 file d'approbation (DOCTRINE_CATALOGUE.md §6, §5)
  *

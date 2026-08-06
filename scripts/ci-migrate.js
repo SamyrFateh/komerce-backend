@@ -74,6 +74,116 @@ const STRUCTURAL_PROBES = Object.freeze({
     `);
     return row?.represented === true;
   },
+  '118_transport_pricing.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public'
+             AND table_name = 'orders'
+             AND column_name = 'transport_price_kmf'
+        )
+        AND EXISTS (
+          SELECT 1 FROM business_rules
+           WHERE category = 'logistics'
+             AND key = 'SEA_KMF_PER_KG_COMMERCIAL'
+        )
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+  '112_add_series_to_products.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'series'
+      ) AS represented
+    `);
+    return row?.represented === true;
+  },
+  '113_air_express_opt_out.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'air_excluded'
+      ) AS represented
+    `);
+    return row?.represented === true;
+  },
+  '114_order_items_delivery_mode.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'order_items' AND column_name = 'delivery_mode'
+      ) AS represented
+    `);
+    return row?.represented === true;
+  },
+  '116_air_eligibility_status.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'air_eligibility_status'
+        )
+        AND EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'air_exclusion_reason'
+        )
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+  '117_requested_transport_rail.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'order_items' AND column_name = 'requested_transport_rail'
+      ) AS represented
+    `);
+    return row?.represented === true;
+  },
+  '121_exceptional_pickup_authorization.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        to_regclass('public.user_pickup_authorizations') IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'exceptional_pickup_attempts'
+        )
+        AND EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'pickup_collected_via'
+        )
+        AND EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'scans' AND column_name = 'pickup_method'
+        )
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+  '123_shared_cart_item_claim_bridge.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'order_items' AND column_name = 'shared_cart_item_id'
+        )
+        AND EXISTS (
+          SELECT 1 FROM pg_indexes
+           WHERE schemaname = 'public' AND indexname = 'order_items_shared_cart_item_id_unique'
+        )
+        AS represented
+    `);
+    return row?.represented === true;
+  },
+  '127_shared_cart_saved_access.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT to_regclass('public.shared_cart_saved_access') IS NOT NULL AS represented
+    `);
+    return row?.represented === true;
+  },
 });
 
 function baselineFromDumpCommit() {

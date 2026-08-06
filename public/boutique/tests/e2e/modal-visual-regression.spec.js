@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   modal-visual-regression.spec.js
  * @feature modal-product, mobile-canonical
  * @brief Volet 3.3 — régression visuelle des 4 états de la modale produit

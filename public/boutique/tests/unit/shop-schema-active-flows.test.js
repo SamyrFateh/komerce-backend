@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 function requireFallbackSchema() {
   jest.resetModules();
   window.KOMERCE_FORCE_FALLBACK_CATEGORIES = true;

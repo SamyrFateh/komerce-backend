@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-07-31T18:16:50.870Z",
+  "generatedAt": "2026-08-06T02:00:38.796Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 486,
-    "protected": 430,
+    "total": 480,
+    "protected": 431,
     "public": 5,
-    "unprotected": 49,
+    "unprotected": 42,
     "admin_no_guard": 0,
     "unknown": 2
   },
@@ -204,48 +204,6 @@
     },
     {
       "key": "GET /api/relais",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/public/{token}/contributions/cash",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/public/{token}/contributions",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "DELETE /api/shared-carts/public/{token}/estimations/{estimationId}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "GET /api/shared-carts/public/{token}/estimations/by-phone",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "GET /api/shared-carts/public/{token}/estimations",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/public/{token}/estimations",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "GET /api/shared-carts/public/{token}",
       "level": "UNPROTECTED",
       "severity": "medium",
       "roles": []
@@ -698,13 +656,6 @@
     },
     {
       "key": "GET /api/admin/dashboard/costing",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "GET /api/admin/dashboard/event-workspaces",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -1201,13 +1152,6 @@
       ]
     },
     {
-      "key": "POST /api/admin/shared-carts/{id}/extend",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
       "key": "POST /api/admin/shared-carts/{id}/note",
       "level": "PROTECTED",
       "roles": [
@@ -1216,20 +1160,6 @@
     },
     {
       "key": "GET /api/admin/shared-carts/{id}",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "POST /api/admin/shared-carts/refund-queue/{contributionId}/mark-refunded",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "GET /api/admin/shared-carts/refund-queue",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -1532,6 +1462,21 @@
     {
       "key": "POST /api/auth/magic-link",
       "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/auth/me/pickup-authorization",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/me/pickup-authorization",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/auth/me/pickup-authorization",
+      "level": "PROTECTED",
       "roles": []
     },
     {
@@ -2543,6 +2488,16 @@
       "roles": []
     },
     {
+      "key": "POST /api/pickup/exceptional-pickup/{orderId}/collect",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/pickup/exceptional-pickup/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "POST /api/pickup/pay-cash/{orderId}",
       "level": "PROTECTED",
       "roles": []
@@ -2986,21 +2941,6 @@
       "roles": []
     },
     {
-      "key": "POST /api/shared-carts/{id}/awaiting-choice/adjust",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/{id}/awaiting-choice/cancel",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/{id}/awaiting-choice/complete",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
       "key": "POST /api/shared-carts/{id}/cancel",
       "level": "PROTECTED",
       "roles": []
@@ -3011,12 +2951,17 @@
       "roles": []
     },
     {
-      "key": "POST /api/shared-carts/{id}/extend-window",
+      "key": "DELETE /api/shared-carts/{id}/items/{itemId}",
       "level": "PROTECTED",
       "roles": []
     },
     {
-      "key": "POST /api/shared-carts/{id}/finalize",
+      "key": "PATCH /api/shared-carts/{id}/items/{itemId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/items",
       "level": "PROTECTED",
       "roles": []
     },
@@ -3031,14 +2976,6 @@
       "roles": []
     },
     {
-      "key": "POST /api/shared-carts/contributions/{id}/confirm-cash",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_relais"
-      ]
-    },
-    {
       "key": "POST /api/shared-carts/from-basket",
       "level": "PROTECTED",
       "roles": []
@@ -3049,7 +2986,7 @@
       "roles": []
     },
     {
-      "key": "POST /api/shared-carts/from-order",
+      "key": "GET /api/shared-carts/library",
       "level": "PROTECTED",
       "roles": []
     },
@@ -3059,38 +2996,18 @@
       "roles": []
     },
     {
-      "key": "POST /api/shared-carts/public/{token}/contributions/cash",
-      "level": "UNPROTECTED",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/public/{token}/contributions",
-      "level": "UNPROTECTED",
-      "roles": []
-    },
-    {
-      "key": "DELETE /api/shared-carts/public/{token}/estimations/{estimationId}",
-      "level": "UNPROTECTED",
-      "roles": []
-    },
-    {
-      "key": "GET /api/shared-carts/public/{token}/estimations/by-phone",
-      "level": "UNPROTECTED",
-      "roles": []
-    },
-    {
-      "key": "GET /api/shared-carts/public/{token}/estimations",
-      "level": "UNPROTECTED",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/public/{token}/estimations",
-      "level": "UNPROTECTED",
-      "roles": []
-    },
-    {
       "key": "GET /api/shared-carts/public/{token}",
-      "level": "UNPROTECTED",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/shared-carts/saved/{sharedCartId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/save",
+      "level": "PROTECTED",
       "roles": []
     },
     {

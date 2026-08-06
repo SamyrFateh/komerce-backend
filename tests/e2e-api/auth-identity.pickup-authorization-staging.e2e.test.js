@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind e2e
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * E2E-LOT7-PICKUP-AUTHORIZATION-STAGING
  *

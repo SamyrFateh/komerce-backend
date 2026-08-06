@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../db', () => ({ query: jest.fn(), pool: { connect: jest.fn() } }));
 jest.mock('../../utils/rules', () => ({ getRuleNumber: jest.fn() }));
 jest.mock('../../services/order-status-machine', () => ({ transitionOrderStatus: jest.fn() }));

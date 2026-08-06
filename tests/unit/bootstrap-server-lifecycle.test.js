@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : bootstrap/server-lifecycle.js (Lot 0)
  *
  * `bootstrap/server-lifecycle.js` était absent de `collectCoverageFrom`

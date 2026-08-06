@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/wallet-lifecycle.spec.js
  * @feature wallet, orders, refunds
  * @brief Cycle de vie complet wallet : F02 (paiement) → F03 (annulation) → F11 (solde vérifié).

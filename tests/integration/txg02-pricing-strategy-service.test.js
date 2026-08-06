@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * TXG-02 — preuve de régression SAVEPOINT (REAL_DB_INTEGRATION)
  * Cible: services/pricing-strategy-service.js — applyStrategy() (~l.386-395)
@@ -22,6 +28,14 @@
  * désormais le comportement GREEN contre le fichier tel que commité, sans
  * jamais l'écrire.
  */
+const hasIntegrationEnv = Boolean(process.env.DATABASE_URL);
+
+if (!hasIntegrationEnv) {
+  describe.skip('TXG-02 pricing strategy service (needs DATABASE_URL)', () => {
+    test('skipped — DATABASE_URL not configured', () => {});
+  });
+} else {
+
 const path = require('path');
 const { Pool } = require('pg');
 
@@ -124,3 +138,5 @@ describe('TXG-02 — applyStrategy price_history SAVEPOINT', () => {
     }
   });
 });
+
+} // end hasIntegrationEnv guard

@@ -961,7 +961,7 @@ async function collectByPickupCode({ code, user, ip = null, userAgent = null }) 
     // correspondance exacte se fait ensuite par comparaison de hash salé —
     // jamais par égalité directe sur le secret.
     const { rows: candidates } = await client.query(`
-      SELECT o.id, o.reference, o.relais_id, o.recipient_name, o.status,
+      SELECT o.id, o.reference, o.relais_id, o.payer_name, o.status,
              r.name AS relais_name,
              o.pickup_secret_hash, o.pickup_secret_salt, o.pickup_secret_last4,
              o.pickup_secret_expires_at, o.pickup_secret_attempts, o.pickup_secret_blocked_until
@@ -969,7 +969,7 @@ async function collectByPickupCode({ code, user, ip = null, userAgent = null }) 
       LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.pickup_secret_last4 = $1
         AND o.status = 'available'
-      FOR UPDATE
+      FOR UPDATE OF o
     `, [last4]);
 
     const order = candidates.find(c =>
@@ -1022,7 +1022,7 @@ async function collectByPickupCode({ code, user, ip = null, userAgent = null }) 
       success:      true,
       order_id:     order.id,
       reference:    order.reference,
-      recipient:    order.recipient_name,
+      recipient:    order.payer_name,
       relais:       order.relais_name,
       collected_at: collection.collectedAt.toISOString(),
     }};
@@ -1181,7 +1181,7 @@ async function collectByAuthorizedName({
       LEFT JOIN relais r ON r.id = o.relais_id
       LEFT JOIN users u ON u.id = o.user_id
       WHERE o.id = $1
-      FOR UPDATE
+      FOR UPDATE OF o
     `, [orderId]);
 
     if (!order) {

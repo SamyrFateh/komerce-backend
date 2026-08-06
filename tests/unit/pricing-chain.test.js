@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * Tests unitaires — chaîne économique (moteur de pricing)
  * Invariants doctrine : N1/N2/N3, frontières, plancher, allocations, proportions.
  * Aucune DB requise (config injectée).

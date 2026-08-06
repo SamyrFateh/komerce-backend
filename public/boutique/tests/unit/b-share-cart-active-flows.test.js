@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /** Couverture du partage immédiat et du POST actif de b-share-cart.js. */
 
 const mockShowToast = jest.fn();

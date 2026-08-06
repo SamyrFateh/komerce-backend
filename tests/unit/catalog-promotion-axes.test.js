@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { mapOptionAxesToDescriptiveRows } = require('../../services/catalog-promotion/axes');
 
 describe('catalog-promotion/axes — mapOptionAxesToDescriptiveRows (PDC-8 Lot 3)', () => {

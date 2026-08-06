@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * LOT GPM-1 — Preuve du Product Detail Contract sur le Golden Product.
  *

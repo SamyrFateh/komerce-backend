@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * P2 — Tests de détection des gates boutique.
  *

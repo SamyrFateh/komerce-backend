@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * Tests unitaires — pricing-dashboard relaie le moteur (vérité unique).
  * DB et moteur mockés : on vérifie que les KPI/distributions dérivent de recommend().
  *

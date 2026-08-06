@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : façades de montage (Lot B4)
  *
  * routes/admin.js, routes/admin/index.js et routes/parcel-api-v2.js sont de

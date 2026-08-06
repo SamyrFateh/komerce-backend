@@ -1,4 +1,10 @@
 /**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
+
+/**
  * WAVE 1 — Wallet & Refund seams (REAL_DB_INTEGRATION).
  *
  * Lot R4 — Partie 2/2 — W1-5 / W1-6 / W1-8 (docs/E2E_MASTER_VALIDATION_PLAN.md WAVE 1).

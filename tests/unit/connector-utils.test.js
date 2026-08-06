@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/connector-utils.test.js
  * Couverture des parseurs de _connector-utils.js (feature catalog)

@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   modal.spec.js
  * @feature catalog, modal-product
  * @brief Modale produit : ouverture, contenu, carousel, fermetures, scroll

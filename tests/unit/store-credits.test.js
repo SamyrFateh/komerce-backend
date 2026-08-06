@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../utils/logger', () => ({
   child: () => ({ warn: jest.fn(), error: jest.fn(), info: jest.fn() }),
 }));

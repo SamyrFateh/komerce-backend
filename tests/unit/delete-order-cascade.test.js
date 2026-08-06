@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { deleteOrderCascade } = require('../../routes/admin/delete-order-cascade');
 
 describe('admin/delete-order-cascade', () => {

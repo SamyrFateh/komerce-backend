@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/admin/customs (Lot B4)
  *
  * Stub statique (customs_history non implémenté). Couvre le guard de rôle

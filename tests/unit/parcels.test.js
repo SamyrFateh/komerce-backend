@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../utils/rules', () => ({ getRule: jest.fn(), getRuleNumber: jest.fn() }));
 jest.mock('../../utils/reference', () => ({ generateParcelRef: jest.fn() }));
 jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })) }));

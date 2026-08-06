@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * Double garantie (côté tests) de l'invariant DENSITÉ-ROBUSTE de la modale :
  * aucune hauteur fixe (px) sur les zones de flux — un seul conteneur qui scrolle.
  * Miroir de scripts/audit-modal-layout.js ; échoue si un `height:Npx` réapparaît

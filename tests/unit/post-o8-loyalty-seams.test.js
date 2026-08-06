@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * POST-O8 — Loyalty seams (mission §12).
  *
  * O7.3 extracted getLoyaltyDiscount(db, userId) and recalculateLoyalty(db, userId)
@@ -8,16 +14,19 @@
  * module-level pool). This file proves that claim rather than accepting it.
  *
  * Evidence levels in this file, per test:
- *   LOYALTY-1  UNIT            (real DB read, but a single deterministic query)
  *   LOYALTY-2  UNIT            (fake db object — no network)
  *   LOYALTY-3  UNIT            (fake transaction client — no network)
- *   LOYALTY-4  REAL_DB_INTEGRATION (guarded on DATABASE_URL)
  *   LOYALTY-5  STATIC/CODE_INSPECTION — NOT a runtime proof. It greps each
  *              real payment-path source file for the handleOrderConfirmed
  *              call site so a future removal breaks CI. The Stripe/Cash/
  *              PayPal REAL_DB seams in post-o8-payments-seams.test.js are
  *              the actual runtime proof for those three paths (hooks fire
  *              exactly once). Do not confuse the two.
+ *
+ * LOYALTY-1 (real DB read) and LOYALTY-4 (real DB recalc smoke) were
+ * extracted to tests/integration/post-o8-loyalty-real-db.test.js — this
+ * file mixed two incompatible execution contexts (mission §12, Étape 2 de
+ * la classification des tests). Zero coverage lost in the split.
  */
 
 'use strict';
@@ -29,19 +38,6 @@ const loyaltyService = require('../../services/loyalty-service');
 const { getLoyaltyDiscount, recalculateLoyalty } = loyaltyService;
 
 describe('POST-O8 — Loyalty extraction seams (mission §12)', () => {
-  // ── LOYALTY-1 — no tier ──────────────────────────────────────────────────
-  it('LOYALTY-1 — a user absent from v_loyalty_summary yields { discountPct: 0, discountLabel: null }', async () => {
-    const hasIntegrationEnv = Boolean(process.env.DATABASE_URL);
-    if (!hasIntegrationEnv) {
-      // Loud, explicit skip — never silent (mission §26).
-      return;
-    }
-    const db = require('../../db');
-    // A random UUID that cannot match any row in v_loyalty_summary.
-    const result = await getLoyaltyDiscount(db, '00000000-0000-0000-0000-000000000000');
-    expect(result).toEqual({ discountPct: 0, discountLabel: null });
-  });
-
   // ── LOYALTY-2 — DB error does not block the order ───────────────────────
   it('LOYALTY-2 — a DB error in getLoyaltyDiscount is swallowed and returns the zero-discount fallback', async () => {
     const brokenDb = { query: jest.fn().mockRejectedValue(new Error('connection terminated')) };
@@ -69,86 +65,6 @@ describe('POST-O8 — Loyalty extraction seams (mission §12)', () => {
     );
     const fnBody = src.slice(src.indexOf('async function recalculateLoyalty'));
     expect(fnBody).toMatch(/await\s+db\.query\('SELECT recalculate_loyalty/);
-  });
-
-  // ── LOYALTY-4 — real DB recalc smoke ─────────────────────────────────────
-  describe('LOYALTY-4 — real DB recalc smoke (REAL_DB_INTEGRATION)', () => {
-    const hasIntegrationEnv = Boolean(process.env.DATABASE_URL);
-    if (!hasIntegrationEnv) {
-      it.skip('requires DATABASE_URL — SKIPPED, not silently omitted from the report', () => {});
-      return;
-    }
-
-    const db = require('../../db');
-    const { createUser, cleanup } = require('../integration/test-harness/seed-helpers');
-    const TIER_LABEL = `itest-post-o8-tier-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    let tierId;
-    let tierMinOrders;
-    let relaisId;
-    let user;
-
-    beforeAll(async () => {
-      // Le dump de test contient déjà des paliers. recalculate_loyalty() trie
-      // uniquement par min_orders DESC : deux paliers au même seuil rendent
-      // le résultat indéterministe. On crée donc un seuil strictement supérieur
-      // à tous les seuils existants et exactement le nombre de commandes requis.
-      const { rows: [threshold] } = await db.query(
-        `SELECT (COALESCE(MAX(min_orders), 0) + 1)::int AS min_orders
-         FROM loyalty_tiers`
-      );
-      tierMinOrders = Number(threshold.min_orders);
-
-      const { rows: [tier] } = await db.query(
-        `INSERT INTO loyalty_tiers (label, badge, min_orders, discount_pct)
-         VALUES ($1, '★', $2, 5.00) RETURNING id`,
-        [TIER_LABEL, tierMinOrders]
-      );
-      tierId = tier.id;
-
-      const { rows: [relais] } = await db.query(
-        `INSERT INTO relais (name, agent_name, phone, address, island)
-         VALUES ($1, 'ITest Loyalty', $2, 'Adresse test loyalty', 'Anjouan')
-         RETURNING id`,
-        [`ITest Loyalty ${Date.now()}`, `+2693${Math.floor(1000000 + Math.random() * 8999999)}`]
-      );
-      relaisId = relais.id;
-      user = await createUser({ role: 'client' });
-
-      // Une insertion ensembliste garde le test rapide même si plusieurs
-      // commandes sont nécessaires pour dépasser le plus haut palier existant.
-      await db.query(
-        `INSERT INTO orders
-           (reference, user_id, relais_id, total_kmf, total_eur,
-            payment_mode, payment_status, status)
-         SELECT
-           'ITEST-LOYALTY-' || gen_random_uuid()::text,
-           $1, $2, 10000, 20,
-           'cash_relais', 'paid', 'collected'
-         FROM generate_series(1, $3::int)`,
-        [user.id, relaisId, tierMinOrders]
-      );
-    });
-
-    afterAll(async () => {
-      if (user?.id) await db.query(`DELETE FROM orders WHERE user_id = $1`, [user.id]).catch(() => {});
-      await cleanup();
-      if (relaisId) await db.query(`DELETE FROM relais WHERE id = $1`, [relaisId]).catch(() => {});
-      if (tierId) await db.query(`DELETE FROM loyalty_tiers WHERE id = $1`, [tierId]).catch(() => {});
-    });
-
-    it('recalculateLoyalty(db, userId) assigns the tier and is reflected in v_loyalty_summary', async () => {
-      await recalculateLoyalty(db, user.id);
-
-      const { rows: [row] } = await db.query(
-        `SELECT orders_count, loyalty_tier_id FROM users WHERE id = $1`, [user.id]
-      );
-      expect(row.orders_count).toBe(tierMinOrders);
-      expect(row.loyalty_tier_id).toBe(tierId);
-
-      const { discountPct, discountLabel } = await getLoyaltyDiscount(db, user.id);
-      expect(discountPct).toBeCloseTo(5.0);
-      expect(discountLabel).toBe(TIER_LABEL);
-    });
   });
 
   // ── LOYALTY-5 — payment hook matrix (STATIC/CODE_INSPECTION) ─────────────

@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/stress-business.spec.js
  * @feature orders, wallet, shared-cart
  * @brief Stress tests — Scénarios réalistes qu'aucun happy path ne couvre.

@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/relay-dashboard (Lot B3)
  *
  * Façade R9 : lectures déléguées à services/relay-dashboard-queries.js

@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/check-sku-coverage.test.js
  * Lot 5 + rattrapage PDC-8 — scripts/check-sku-coverage.js

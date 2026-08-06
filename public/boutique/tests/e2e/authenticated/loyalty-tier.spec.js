@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/loyalty-tier.spec.js
  * @feature wallet-loyalty
  * @brief F12 (partiel) — Lecture du palier fidélité du compte de test et

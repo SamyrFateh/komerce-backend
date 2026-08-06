@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * TXG-05 — Preuve du fix bug préexistant (hors RC-TX, signalé pendant RC-TX) :
  * routes/hub-dashboard.js — 3 sites INSERT INTO parcel_items omettaient

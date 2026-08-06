@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/hub-operations-volume.test.js
  * Tests de caractérisation — lots V-4 (densité de valeur) et Q-1 (non-conformité)

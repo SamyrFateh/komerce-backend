@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   catalog.spec.js
  * @feature catalog
  * @brief Catalogue boutique : grille, filtres, cache offline, scroll infini

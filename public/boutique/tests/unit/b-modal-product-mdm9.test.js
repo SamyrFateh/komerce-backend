@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 // Fixtures canvas déterministes : le test protège la densité visuelle, sans réseau ni image externe.
 jest.mock('../../js/b-utils.js', () => ({
   optimizeImgUrl: jest.fn((url) => url),

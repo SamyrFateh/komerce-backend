@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * tests/integration/isweep-invariants.test.js
  *
@@ -151,15 +157,22 @@ describe('I-SWEEP invariants regression net', () => {
 
   test('I-DOUANE-1: tous les sites INSERT order_items gèlent la classification douanière', () => {
     const create   = read('routes/orders/create.js');
-    const engine   = read('services/shared-cart-lifecycle.js'); // Lot C1 (2026-06-28) : INSERT order_items déplacé hors du barrel shared-cart-engine.js
     const adminSys = read('routes/admin/system.js');
     const clf      = read('services/customs-classification.js');
 
+    // Migrations 123/124 (Boutique First) : le panier partagé n'insère plus
+    // order_items — chaque participant achète via POST /api/orders. Les deux
+    // seuls sites d'INSERT INTO order_items du repo sont create.js et
+    // routes/admin/system.js (vérifié par grep exhaustif). On garde une
+    // sentinelle négative pour détecter toute régression qui réintroduirait
+    // un INSERT order_items côté shared-cart sans classification gelée.
+    const sharedCartLifecycle = read('services/shared-cart-lifecycle.js');
+    expect(sharedCartLifecycle).not.toContain('INSERT INTO order_items');
+
     expect(create).toContain('resolveFrozenClassification');
-    expect(engine).toContain('resolveFrozenClassification');
     expect(adminSys).toContain('resolveFrozenClassification');
 
-    for (const src of [create, engine, adminSys]) {
+    for (const src of [create, adminSys]) {
       expect(src).toContain('customs_category_key');
       expect(src).toContain('classification_defaulted');
       expect(src).toContain('sh_code');

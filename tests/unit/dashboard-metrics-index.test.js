@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 describe('dashboard-metrics/index', () => {
   it('re-exporte linterface publique canonique du dashboard', () => {
     const metrics = require('../../services/dashboard-metrics');

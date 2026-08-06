@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   hero-geometry.spec.js
  * @feature home-curation
  * @brief P0-A #3 — verrouille le plafond du hero de repli (sans classe

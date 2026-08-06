@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/scan-engine-extras.test.js
  * Tests de caractérisation complémentaires — services/scan-engine.js (Lot C6)

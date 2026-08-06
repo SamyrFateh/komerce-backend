@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Tests unitaires payment-service — déterministes, sans DB (client factice).
  * Valident la forme du SQL et les paramètres de chaque mutation.

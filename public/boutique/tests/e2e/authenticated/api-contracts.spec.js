@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/api-contracts.spec.js
  * @feature orders, shared-cart, wallet
  * @brief Contrats essentiels entre la boutique et le backend.

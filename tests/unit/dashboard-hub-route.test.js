@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/dashboard-hub (Lot B4)
  *
  * Contrairement aux autres routes B4, celle-ci contient de la vraie

@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/pricing (Lot B2)
  *
  * Façade mince (REFACTO-R1) : auth + validation + appel service + réponse.

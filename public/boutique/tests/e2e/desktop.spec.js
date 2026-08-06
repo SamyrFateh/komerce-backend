@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   desktop.spec.js
  * @feature desktop-layout
  * @brief Layout desktop : sidebar, side-cart permanent, header nav,

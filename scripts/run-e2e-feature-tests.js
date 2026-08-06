@@ -33,6 +33,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { checkPostgresPreflight } = require('./lib/pg-preflight');
 
 const ROOT = path.resolve(__dirname, '..');
 const E2E_DIR = path.join(ROOT, 'tests', 'e2e-api');
@@ -106,7 +107,7 @@ function runSuite(suite) {
   return passed;
 }
 
-function main() {
+async function main() {
   let args;
   try {
     args = parseArgs(process.argv);
@@ -116,12 +117,18 @@ function main() {
     return;
   }
 
-  if (!process.env.DATABASE_URL) {
-    console.warn(
-      '[e2e] DATABASE_URL absent — les suites se skipperont. ' +
-      'Voir .github/workflows/ci.yml pour la base de test canonique.'
-    );
+  // Campagne E2E-API explicitement demandée : même doctrine que
+  // run-integration-tests.js — PostgreSQL absent/mal configuré est une
+  // ENVIRONMENT FAILURE, jamais une liste de suites FAIL (mission §5).
+  const preflight = await checkPostgresPreflight();
+  if (!preflight.ready) {
+    console.error('ENVIRONMENT NOT READY: PostgreSQL unavailable');
+    console.error('0 tests executed');
+    console.error(`Reason (${preflight.stage}): ${preflight.reason}`);
+    process.exitCode = 1;
+    return;
   }
+  console.log(`POSTGRES: available — ${preflight.reason}`);
 
   const all = listSuites();
   let suites;

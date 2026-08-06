@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/wallet-payment.spec.js
  * @feature checkout, wallet, payments
  * @brief F02 — Commande payée 100% wallet → payment_status='paid' immédiat.

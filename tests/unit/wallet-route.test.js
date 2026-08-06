@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/wallet (Lot B2)
  *
  * Couvre la façade HTTP wallet : auth, guards IDOR/statuts (NEW-01, NEW-02,

@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   render-integrity.spec.js
  * @brief Garde-fou anti-régression : détecte le cas où la boutique est servie
  *        depuis le mauvais dossier racine HTTP (public/boutique au lieu de

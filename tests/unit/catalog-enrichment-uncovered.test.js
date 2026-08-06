@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * Tests ciblés — trous de couverture branches restants de catalog-enrichment.js
  * (services/catalog-enrichment.js, lignes 98-142, 167, 276, 304 — cf. audit

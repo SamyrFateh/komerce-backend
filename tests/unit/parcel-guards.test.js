@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/parcel-guards.test.js
  * Tests unitaires des validations pures (sans DB) du lot R4.

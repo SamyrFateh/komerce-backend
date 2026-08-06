@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   checkout.spec.js
  * @feature orders, payments
  * @brief Checkout : formulaire bénéficiaire, state machine relais, chips

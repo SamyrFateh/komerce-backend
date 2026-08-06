@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/pricing-strategy (Lot B2)
  *
  * Façade mince (ADR-013) : couvre auth/validation/dispatch vers

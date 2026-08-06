@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/group-full-cycle.spec.js
  * @feature shared-cart, group
  * @brief F21 — Créateur partage une sélection puis un participant anonyme

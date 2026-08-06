@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   cart.spec.js
  * @feature cart
  * @brief Panier : ajout depuis modale, badge, drawer, quantités, suppression

@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../js/controllers/home-controller.js', () => ({
   syncRailActiveState: jest.fn(),
   renderSubcatRail: jest.fn(),

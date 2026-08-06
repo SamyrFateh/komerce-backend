@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * Tests unitaires — services/otp-test-mode.js
  * FRESH-071 / FRESH-111
  *

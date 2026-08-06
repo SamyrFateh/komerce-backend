@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * tests/unit/notification-whatsapp-meta.test.js
  *
  * Tests du module services/whatsapp-meta.js (adaptateur Meta Graph API,

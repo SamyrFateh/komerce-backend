@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 describe('cost-allocation/index', () => {
   it('re-exporte linterface publique doctrine du cost allocation', () => {
     const svc = require('../../services/cost-allocation');

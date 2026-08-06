@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/payments (Lot D4)
  *
  * tests/unit/payments-webhook.test.js couvre déjà en profondeur le chemin

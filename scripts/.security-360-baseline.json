@@ -1,6 +1,5 @@
 {
   "flagged": [
-    "DELETE /api/shared-carts/public/{token}/estimations/{estimationId}",
     "GET /api/auth/magic-link/validate",
     "GET /api/boutique/suggestions",
     "GET /api/categories",
@@ -21,9 +20,6 @@
     "GET /api/relais",
     "GET /api/relais/public",
     "GET /api/relais/{id}",
-    "GET /api/shared-carts/public/{token}",
-    "GET /api/shared-carts/public/{token}/estimations",
-    "GET /api/shared-carts/public/{token}/estimations/by-phone",
     "GET /api/shares/{token}",
     "GET /api/tracking/{token}",
     "GET /health",
@@ -44,9 +40,6 @@
     "POST /api/payments/paypal/create-order",
     "POST /api/pricing/calculate",
     "POST /api/pricing/couture",
-    "POST /api/shared-carts/public/{token}/contributions",
-    "POST /api/shared-carts/public/{token}/contributions/cash",
-    "POST /api/shared-carts/public/{token}/estimations",
     "POST /api/shares",
     "POST /api/shares/{token}/contributions",
     "POST /api/tracking/{token}/verify-pickup",

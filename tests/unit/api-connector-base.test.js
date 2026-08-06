@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : services/suppliers/connectors/api-connector.base (Lot D4)
  *
  * Classe abstraite (interface) instanciée directement pour tester ses

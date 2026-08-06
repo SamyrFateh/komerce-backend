@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const catalogue = require('../fixtures/modal-v3-enriched-catalogue.js');
 
 function unitFor(detail, selection) {

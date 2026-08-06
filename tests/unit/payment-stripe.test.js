@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : payment-stripe (R5)
  *
  * Couvre createStripeIntent et handleStripePaymentFailed.

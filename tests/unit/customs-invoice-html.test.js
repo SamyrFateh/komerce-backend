@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../utils/documents/logo-base64', () => ({ LOGO_KOMERCE_DATA_URI: 'data:image/png;base64,LOGO' }));
 
 const { buildInvoiceHTML, escapeHTML } = require('../../utils/documents/customs-invoice-html');

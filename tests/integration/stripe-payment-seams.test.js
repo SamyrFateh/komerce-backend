@@ -1,4 +1,10 @@
 /**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
+
+/**
  * WAVE 1 — Stripe payment seams (REAL_DB_INTEGRATION).
  *
  * Lot R4 — W1-1 / W1-2 / W1-3 (docs/E2E_MASTER_VALIDATION_PLAN.md WAVE 1).

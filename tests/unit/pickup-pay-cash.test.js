@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/pickup-pay-cash (P0 payments)
  *
  * Couvre POST /:orderId : garde de rôle (agent_relais/admin uniquement),

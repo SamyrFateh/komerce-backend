@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * tests/integration/catalog-approval-queue-contract.test.js
  *

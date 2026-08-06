@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const handlers = {};
 
 jest.mock('../../js/b-bus.js', () => ({

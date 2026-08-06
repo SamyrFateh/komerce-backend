@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/cost-allocation.test.js
  * Tests de caractérisation — services/cost-allocation.js (Lot C5)

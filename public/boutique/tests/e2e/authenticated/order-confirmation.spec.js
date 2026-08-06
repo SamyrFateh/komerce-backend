@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   authenticated/order-confirmation.spec.js
  * @feature checkout, orders, tracking
  * @brief F04 (partiel) + écran de confirmation — Après commande, vérifier

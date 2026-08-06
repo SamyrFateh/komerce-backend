@@ -1,4 +1,10 @@
 'use strict';
+
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * TXG-01 / TXG-01b — preuve de régression SAVEPOINT (REAL_DB_INTEGRATION)
  * Cible: routes/admin-pricing-matrices.js — PUT /dims/:category (TXG-01,
@@ -19,6 +25,14 @@
  * uniquement le comportement GREEN contre le fichier tel que commité,
  * sans jamais l'écrire.
  */
+const hasIntegrationEnv = Boolean(process.env.DATABASE_URL);
+
+if (!hasIntegrationEnv) {
+  describe.skip('TXG-01 pricing matrices (needs DATABASE_URL)', () => {
+    test('skipped — DATABASE_URL not configured', () => {});
+  });
+} else {
+
 const path = require('path');
 const request = require('supertest');
 const express = require('express');
@@ -147,3 +161,5 @@ describe('TXG-01b — taxes route (twin instance, meme fichier)', () => {
     }
   });
 });
+
+} // end hasIntegrationEnv guard

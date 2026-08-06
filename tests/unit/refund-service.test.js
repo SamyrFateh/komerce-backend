@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 const { makeClient } = require('../integration/test-harness/mock-db');
 
 const mockStripeRefundsCreate = jest.fn();

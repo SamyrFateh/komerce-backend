@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * KOMERCE — Fiche produit enrichie, Commit 1 : contrat public v1 + content.
  *

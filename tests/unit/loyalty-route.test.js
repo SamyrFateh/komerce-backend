@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/loyalty (P0 wallet-loyalty)
  *
  * Couvre les routes paliers/fidélité (tiers, me, users, stats, update, recalculate)

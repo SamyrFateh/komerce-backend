@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : routes/admin/dashboard (Lot B4)
  *
  * Redirections rétro-compatibles pures (301 + payload informatif), aucune

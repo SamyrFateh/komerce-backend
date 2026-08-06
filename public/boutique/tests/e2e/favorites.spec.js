@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   favorites.spec.js
  * @feature favorites
  * @brief Favoris : ajout depuis la grille catalogue, apparition dans l'onglet

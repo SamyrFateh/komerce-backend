@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   csp-fronts.spec.js
  * @feature boutique
  * @brief P0-E — ancre `harnais/geometry/audit-fronts-csp.js` comme test de

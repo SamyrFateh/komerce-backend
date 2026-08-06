@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 jest.mock('../../services/notifications/internals', () => ({
   log: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
   callAuthKeyText: jest.fn(),

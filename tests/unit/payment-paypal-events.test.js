@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : payment-paypal-events (P0 payments)
  *
  * Couvre markPaypalEventProcessed : insertion idempotente (ON CONFLICT DO NOTHING)

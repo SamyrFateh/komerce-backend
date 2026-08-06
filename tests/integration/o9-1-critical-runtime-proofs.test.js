@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 /**
  * O9.1 — Critical Runtime Proofs (REAL_DB_INTEGRATION)
  *

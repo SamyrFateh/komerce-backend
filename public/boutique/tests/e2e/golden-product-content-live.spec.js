@@ -1,4 +1,10 @@
 /**
+ * @test-kind e2e
+ * @test-runner playwright
+ * @test-requires webapp
+ */
+
+/**
  * @e2e   golden-product-content-live.spec.js
  * @feature catalog, modal-product
  * @brief Preuve de LIVRAISON du contenu enrichi : le Golden Product servi par

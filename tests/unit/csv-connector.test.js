@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/csv-connector.test.js
  * Couvre services/suppliers/connectors/csv-connector.js (ING-2)

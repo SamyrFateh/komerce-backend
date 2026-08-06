@@ -1,4 +1,10 @@
 /**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
+
+/**
  * KOMERCE — Tests d'Intégration: Routes API (V2.7)
  *
  * Couvre les routes critiques avec supertest.

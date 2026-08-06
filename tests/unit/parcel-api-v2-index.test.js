@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/parcel-api-v2-index.test.js
  * Tests unitaires de routes/parcel-api-v2/index.js — Bloc 7.

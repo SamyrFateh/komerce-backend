@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * KOMERCE — Tests Unitaires : shared-cart-internals (P0 shared-cart)
  *
  * Couvre les helpers internes partagés par creation/reads/contributions/lifecycle :

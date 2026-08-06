@@ -1,5 +1,11 @@
 'use strict';
 
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 /**
  * tests/unit/cost-allocation-allocate.test.js
  * Tests de caractérisation — fonctions allocate* de cost-allocation.js

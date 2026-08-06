@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * Tests unitaires — services/notification-service.js
  * FRESH-103 : couverture minimale des fonctions critiques modifiées
  */

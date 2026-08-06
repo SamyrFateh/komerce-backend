@@ -1,4 +1,10 @@
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * Tests unitaires — services/authkey-client.js
  * FRESH-070 (guard staging) + Lot B (couverture complète)
  *
