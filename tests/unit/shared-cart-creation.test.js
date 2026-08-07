@@ -109,7 +109,24 @@ describe('shared-cart-creation', () => {
       expectTransactionCommitted(client);
     });
 
-    it('leve si la limite de paniers actifs est atteinte', async () => {
+    it("P0 — le compteur de quota ne filtre que status = 'open' (jamais 'closed'), independamment de la position de la requete", async () => {
+      // Variante robuste-au-refactor de l'assertion ci-dessus/ci-dessous
+      // (client.calls[1] suppose un ordre de requêtes précis) : retrouve la
+      // requête de comptage par son motif COUNT(*) plutôt que par index, pour
+      // rester valide même si une requête est ajoutée/réordonnée avant elle.
+      const client = makeClient([{ rows: [{ n: 0 }] }]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(createSharedCartFromCartItems('user-001', [])).rejects.toThrow('Le panier est vide');
+
+      const quotaCall = client.calls.find((c) => /COUNT\(\*\)/.test(c.sql));
+      const normalizedSql = quotaCall.sql.replace(/\s+/g, ' ').trim();
+      expect(normalizedSql).toContain("status = 'open'");
+      expect(normalizedSql).not.toContain("IN ('open'");
+      expect(normalizedSql).not.toContain('closed');
+    });
+
+    it('leve si la limite de paniers actifs est atteinte (5 open)', async () => {
       const client = makeClient([{ rows: [{ n: 5 }] }]);
       db.getClient.mockResolvedValue(client);
 
@@ -117,6 +134,71 @@ describe('shared-cart-creation', () => {
         createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }])
       ).rejects.toThrow('Limite atteinte');
       expectTransactionRolledBack(client);
+      // P0 — le check de quota ne doit compter QUE les listes 'open'. Une
+      // liste 'closed' n'est plus active (doctrine §9) et ne doit jamais
+      // remonter dans ce COUNT.
+      expect(client.calls[1].sql).toMatch(/status\s*=\s*'open'/);
+      expect(client.calls[1].sql).not.toMatch(/status\s+IN\s*\(/i);
+    });
+
+    it('P0 — 4 listes open + N listes closed : la creation reste autorisee (la query ne compte que open)', async () => {
+      // Le mock ne filtre pas réellement le SQL (c'est une DB en mémoire de
+      // façade) : la garantie que les listes 'closed' ne sont pas comptées
+      // vient de la requête elle-même (assertion ci-dessous), pas de ce
+      // retour n=4 qui simule le résultat déjà filtré côté serveur réel.
+      const product = {
+        id: 'product-001', name: 'Riz', image_url: 'riz.jpg', category: 'maison',
+        price_kmf: 1000, is_active: true,
+      };
+      const sharedCart = { id: 'cart-002', status: 'open' };
+      const item = { id: 'sci-002', shared_cart_id: 'cart-002', product_id: 'product-001' };
+      const client = makeClient([
+        { rows: [{ n: 4 }] },
+        { rows: [product] },
+        { rows: [{ full_name: 'Creator', phone: '000000' }] },
+        { rows: [] },
+        { rows: [sharedCart] },
+        { rows: [item] },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(
+        createSharedCartFromCartItems('user-001', [{ product_id: 'product-001', quantity: 1 }])
+      ).resolves.toMatchObject({ sharedCart });
+      expect(client.calls[1].sql).toMatch(/status\s*=\s*'open'/);
+      expectTransactionCommitted(client);
+    });
+
+    it('P0 — fermeture d\'une liste open puis nouvelle creation : le quota redevient disponible immediatement', async () => {
+      // Simule le scenario bout-en-bout : 5 open (bloque), puis une des 5
+      // passe a 'closed' (via closeCart, teste separement dans
+      // shared-cart-lifecycle.test.js), donc le prochain COUNT(*) ne doit
+      // plus la voir -> n=4 -> creation autorisee sans attente ni delai.
+      const blockedClient = makeClient([{ rows: [{ n: 5 }] }]);
+      db.getClient.mockResolvedValue(blockedClient);
+      await expect(
+        createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }])
+      ).rejects.toThrow('Limite atteinte');
+
+      jest.clearAllMocks();
+      const product = { id: 'p1', name: 'Riz', image_url: null, category: null, price_kmf: 1000, is_active: true };
+      const sharedCart = { id: 'cart-003', status: 'open' };
+      const item = { id: 'sci-003', shared_cart_id: 'cart-003', product_id: 'p1' };
+      const freedClient = makeClient([
+        { rows: [{ n: 4 }] }, // une des 5 vient d'être fermée -> plus dans le COUNT
+        { rows: [product] },
+        { rows: [{ full_name: 'Creator', phone: '000000' }] },
+        { rows: [] },
+        { rows: [sharedCart] },
+        { rows: [item] },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(freedClient);
+
+      await expect(
+        createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }])
+      ).resolves.toMatchObject({ sharedCart });
     });
 
     it('leve si cartItems vide', async () => {
@@ -394,12 +476,16 @@ describe('shared-cart-creation', () => {
   });
 
   describe('createSharedCartFromBasket', () => {
-    it('leve si limite de paniers actifs atteinte', async () => {
+    it('leve si limite de paniers actifs atteinte (5 open)', async () => {
       const client = makeClient([{ rows: [{ n: 5 }] }]);
       db.getClient.mockResolvedValue(client);
 
       await expect(createSharedCartFromBasket('user-001', 'basket-001')).rejects.toThrow('Limite atteinte');
       expectTransactionRolledBack(client);
+      // P0 — même garantie que createSharedCartFromCartItems : uniquement
+      // 'open' compte pour le quota, jamais 'closed'.
+      expect(client.calls[1].sql).toMatch(/status\s*=\s*'open'/);
+      expect(client.calls[1].sql).not.toMatch(/status\s+IN\s*\(/i);
     });
 
     it('leve si utilisateur introuvable', async () => {

@@ -832,7 +832,18 @@ async function handleCloseClick() {
 
   try {
     await apiCloseSharedCart(state.sharedListContext.sharedCartId);
-    await refreshSharedListContext();
+    // P0 (audit — la liste fermée restait "active") — une liste CLOSED
+    // n'est plus la liste active (doctrine §9) : elle doit être totalement
+    // démontée du side cart / drawer canonique, pas simplement rafraîchie
+    // en place avec un nouveau statut. refreshSharedListContext() rappelait
+    // ici activateSharedListContext() avec le MÊME token -> cartSurface
+    // restait 'shared-list', isActiveContext() restait true (token non
+    // nul), et openCart() (b-cart.js, gardé par isSharedListSurfaceActive())
+    // continuait donc de projeter cette liste fermée au lieu de revenir au
+    // panier personnel. clearSharedListContext() est le seul chemin qui
+    // remet cartSurface='personal', token=null et arrête le polling
+    // (voir aussi son propre commentaire, plus haut dans ce fichier).
+    clearSharedListContext();
     showToast('Liste fermée.', 'success');
   } catch (err) {
     showToast(`Erreur : ${err.message}`, 'error');
@@ -930,11 +941,19 @@ function handleBuyAllAvailable() {
   });
 
   if (unavailableCount > 0) {
-    renderSharedListInCart();
+    // P1 (audit — message trompeur) : ces lignes ne sont PAS retirées de la
+    // liste (ni de state.sharedListContext.items, ni côté serveur) — elles
+    // sont seulement exclues de CET achat groupé parce que leur product_id
+    // ne résout plus dans le catalogue (state.products). Elles restent
+    // visibles et rachetables individuellement dès que le produit redevient
+    // actif. "a été retiré" / "ont été retirés" affirmait une suppression
+    // qui n'a jamais eu lieu — ancien wording, jamais réintroduire "retiré"
+    // ici pour ce cas précis (réservé au vrai retrait, cf. handleRemoveItem
+    // ci-dessus, qui appelle réellement removeItemFromSharedList()).
     showToast(
       unavailableCount === 1
-        ? 'Un article de la liste n’est plus disponible et a été retiré.'
-        : `${unavailableCount} articles de la liste ne sont plus disponibles et ont été retirés.`,
+        ? "Un article de la liste n'est plus disponible et n'a pas été inclus dans cet achat."
+        : `${unavailableCount} articles de la liste ne sont plus disponibles et n'ont pas été inclus dans cet achat.`,
       'info'
     );
   }

@@ -88,6 +88,8 @@ const { isDesktop } = require('../../js/b-scroll-owner.js');
 const {
   getSharedCartPublic,
   addItemToSharedList,
+  closeCart,
+  removeItemFromSharedList,
 } = require('../../js/group/group-api.js');
 const { checkoutSharedListSelection } = require('../../js/group/group-checkout-adapter.js');
 
@@ -110,6 +112,7 @@ const {
   renderSharedListInCart,
   canAddToActiveSharedList,
   addProductToActiveSharedList,
+  reopenSharedListCart,
 } = require('../../js/group/group-side-cart.js');
 
 function mountShell() {
@@ -381,6 +384,205 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
     const [cartItems] = checkoutSharedListSelection.mock.calls[0];
     expect(cartItems).toHaveLength(2);
+  });
+
+  it('P1 (audit) — "Tout acheter" avec une ligne dont le produit catalogue est introuvable : message honnête, jamais "retiré" (la ligne reste dans la liste)', () => {
+    activateSharedListContext(
+      payload({
+        items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
+          // p-ghost n'existe pas dans state.products (mounté ci-dessus avec
+          // seulement p1/p2) — simule un produit désactivé/supprimé.
+          { id: 'i-ghost', product_id: 'p-ghost', name: 'Fantôme', unit_price_kmf: 500, quantity: 1, claimed: false },
+        ],
+      }),
+      'tok-1'
+    );
+    const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+    actions.onBuyAll();
+
+    // La ligne indisponible n'entre pas dans CE checkout...
+    expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
+    const [cartItems] = checkoutSharedListSelection.mock.calls[0];
+    expect(cartItems).toHaveLength(1);
+    expect(cartItems[0].shared_cart_item_id).toBe('i1');
+
+    // ...mais elle n'est JAMAIS retirée de la liste elle-même : ni de
+    // state.sharedListContext.items, ni d'aucun appel réseau de
+    // suppression. Le message ne doit donc jamais prétendre "retiré".
+    expect(state.sharedListContext.items.find((it) => it.id === 'i-ghost')).toBeTruthy();
+    expect(removeItemFromSharedList).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith(
+      expect.not.stringMatching(/retiré/i),
+      'info',
+    );
+    expect(showToast).toHaveBeenCalledWith(
+      expect.stringContaining("n'a pas été inclus dans cet achat"),
+      'info',
+    );
+  });
+
+  it('P1 — "Tout acheter" avec plusieurs lignes indisponibles : message au pluriel, toujours sans "retiré"', () => {
+    activateSharedListContext(
+      payload({
+        items: [
+          { id: 'i-ghost-1', product_id: 'p-ghost-1', name: 'Fantôme 1', unit_price_kmf: 500, quantity: 1, claimed: false },
+          { id: 'i-ghost-2', product_id: 'p-ghost-2', name: 'Fantôme 2', unit_price_kmf: 700, quantity: 1, claimed: false },
+        ],
+      }),
+      'tok-1'
+    );
+    const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+    actions.onBuyAll();
+
+    expect(checkoutSharedListSelection).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith(
+      expect.stringContaining('2 articles de la liste'),
+      'info',
+    );
+    expect(showToast).toHaveBeenCalledWith(
+      expect.not.stringMatching(/retiré/i),
+      'info',
+    );
+  });
+
+  it('P1 — articles déjà réclamés (claimed) : exclus du calcul disponible/checkout sans déclencher le message "indisponible" (ce n\'est pas le même cas qu\'un produit introuvable)', () => {
+    activateSharedListContext(
+      payload({
+        items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
+          { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: true },
+        ],
+      }),
+      'tok-1'
+    );
+    showToast.mockClear();
+    const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+    actions.onBuyAll();
+
+    // availableItems() exclut déjà les lignes claimed en amont (calcul
+    // "disponible" = non réclamé, cf. describe dédié plus haut) : seule i1
+    // atteint handleBuyAllAvailable, i2 n'est jamais vue comme
+    // "indisponible/exclue" — ce n'est pas un cas d'échec, donc aucun toast
+    // "n'a pas été inclus" ne doit être émis pour elle.
+    expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
+    const [cartItems] = checkoutSharedListSelection.mock.calls[0];
+    expect(cartItems).toHaveLength(1);
+    expect(cartItems[0].shared_cart_item_id).toBe('i1');
+    expect(showToast).not.toHaveBeenCalledWith(
+      expect.stringContaining('retiré'),
+      expect.anything(),
+    );
+    expect(showToast).not.toHaveBeenCalledWith(
+      expect.stringContaining("n'a pas été inclus"),
+      expect.anything(),
+    );
+  });
+
+
+  describe('onClose — fermeture d\'une liste (P0, audit)', () => {
+    let confirmSpy;
+
+    beforeEach(() => {
+      confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+      closeCart.mockResolvedValue({});
+    });
+
+    afterEach(() => {
+      confirmSpy.mockRestore();
+    });
+
+    it('après succès API, démonte intégralement le contexte (token=null, cartSurface=personal), jamais un simple refresh', async () => {
+      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+      await actions.onClose();
+
+      expect(closeCart).toHaveBeenCalledWith('sc1');
+      // P0 — la régression auditée : l'ancien code rappelait
+      // refreshSharedListContext() (même token, cartSurface toujours
+      // 'shared-list') au lieu de démonter le contexte. getSharedCartPublic
+      // ne doit donc JAMAIS être appelé ici (ce serait la signature d'un
+      // refresh, pas d'un démontage).
+      expect(getSharedCartPublic).not.toHaveBeenCalled();
+      expect(state.sharedListContext.token).toBeNull();
+      expect(state.sharedListContext.sharedCartId).toBeNull();
+      expect(state.cartSurface).toBe('personal');
+      expect(cleanupCartSnapshotDom).toHaveBeenCalled();
+    });
+
+    it('après fermeture, le prochain openCart (isSharedListSurfaceActive) revient au panier personnel', async () => {
+      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+      await actions.onClose();
+
+      // isSharedListSurfaceActive() est le garde utilisé par b-cart.js::
+      // openCart() pour décider de projeter la liste ou le panier
+      // personnel — après fermeture il doit être faux.
+      const { isSharedListSurfaceActive } = require('../../js/group/group-side-cart.js');
+      expect(isSharedListSurfaceActive()).toBe(false);
+    });
+
+    it("après fermeture, reopenSharedListCart() (drawer mobile) ne réaffiche pas la liste fermée — no-op car isActiveContext() est faux", async () => {
+      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+      await actions.onClose();
+
+      renderCartSnapshot.mockClear();
+      reopenSharedListCart();
+
+      expect(renderCartSnapshot).not.toHaveBeenCalled();
+      expect(state.cartSurface).toBe('personal');
+    });
+
+    it('après fermeture, aucun contrôle d\'édition ne reste actif (editMode retombe, plus de token à éditer)', async () => {
+      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      state.sharedListEditMode = true;
+      const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+      await actions.onClose();
+
+      expect(state.sharedListEditMode).toBe(false);
+      expect(state.sharedListContext.isCreator).toBe(false);
+    });
+
+    it('confirmation refusée par l\'utilisateur : aucun appel API, contexte inchangé', async () => {
+      confirmSpy.mockReturnValue(false);
+      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+      await actions.onClose();
+
+      expect(closeCart).not.toHaveBeenCalled();
+      expect(state.sharedListContext.token).toBe('tok-1');
+    });
+
+    it('participant (non organisateur) : onClose est un no-op, jamais de confirm ni d\'appel API', async () => {
+      activateSharedListContext(payload({ is_creator: false }), 'tok-1');
+      const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+      await actions.onClose();
+
+      expect(confirmSpy).not.toHaveBeenCalled();
+      expect(closeCart).not.toHaveBeenCalled();
+      expect(state.sharedListContext.token).toBe('tok-1');
+    });
+
+    it('erreur API : le contexte reste actif (pas de démontage sur échec), toast d\'erreur affiché', async () => {
+      closeCart.mockRejectedValueOnce(new Error('boom'));
+      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+      await actions.onClose();
+
+      expect(state.sharedListContext.token).toBe('tok-1');
+      expect(state.cartSurface).toBe('shared-list');
+      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('boom'), 'error');
+    });
   });
 });
 

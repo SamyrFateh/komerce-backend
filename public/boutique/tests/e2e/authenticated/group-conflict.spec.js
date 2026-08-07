@@ -150,12 +150,10 @@ test.describe('FLOW — Conflit d\'achat sur une liste partagée (F24)', () => {
       // ── PHASE 3 — Sélectionner l'article et ouvrir "Acheter la sélection"
       //    sur les deux comptes ────────────────────────────────────────────
       async function prepareCheckout(p) {
-        const selectBtn = p.locator('#k-side-cart .k-shared-item-select').first();
-        await expect(selectBtn).toBeVisible({ timeout: 10_000 });
-        await selectBtn.click();
-
-        const buyBtn = p.locator('#k-side-cart #k-shared-list-buy');
-        await expect(buyBtn).toBeEnabled({ timeout: 5_000 });
+        // Doctrine finale — plus de sélection + "Acheter la sélection" : un
+        // bouton "Acheter" dédié par ligne (.k-cart-item-buy).
+        const buyBtn = p.locator('#k-side-cart .k-cart-item-buy').first();
+        await expect(buyBtn).toBeEnabled({ timeout: 10_000 });
         await buyBtn.click();
 
         await p.waitForSelector('#k-order-modal.open, .k-order-modal.open', { timeout: 10_000 });
@@ -207,15 +205,15 @@ test.describe('FLOW — Conflit d\'achat sur une liste partagée (F24)', () => {
       await expect(conflictToast).toBeVisible({ timeout: 10_000 }).catch(() => {});
 
       // handleSharedListPurchaseConflict() rafraîchit la liste automatiquement.
-      const claimedItem = loserPage.locator('#k-side-cart .k-shared-list-item.is-claimed').first();
+      const claimedItem = loserPage.locator('#k-side-cart .k-cart-snapshot-item.is-cart-item-claimed').first();
       await expect(claimedItem).toBeVisible({ timeout: 15_000 });
-      await expect(claimedItem.locator('.k-shared-item-status')).toHaveText('Déjà acheté');
+      await expect(claimedItem.locator('.k-cart-snapshot-item-status-badge.is-claimed')).toContainText('Déjà acheté');
 
-      // Le contrôle de sélection doit disparaître pour une ligne déjà réclamée
-      // (bouton "Sélectionner" remplacé par "Déjà acheté" désactivé — voir
-      // itemRowHtml()).
-      const disabledControl = claimedItem.locator('.k-shared-item-select[disabled]');
-      await expect(disabledControl).toHaveCount(1);
+      // Le contrôle d'achat doit disparaître pour une ligne déjà réclamée
+      // (bouton "Acheter" remplacé par le badge "Déjà acheté [par X]" — voir
+      // itemRowHtml()/renderCartSnapshot() dans js/b-cart.js).
+      const buyBtnOnClaimedRow = claimedItem.locator('.k-cart-item-buy');
+      await expect(buyBtnOnClaimedRow).toHaveCount(0);
 
       // ── PHASE 6 — Vérification backend : aucun doublon order_items ──────
       const finalCheck = await verifySharedCart(page, token);

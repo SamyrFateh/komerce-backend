@@ -17,8 +17,8 @@
  *      (snapshot figé à 6 500 KMF au moment du partage).
  *   3. Le prix catalogue du produit est modifié à 7 200 KMF via l'API
  *      admin (simule une hausse après le partage).
- *   4. Le compte de test rouvre sa propre liste, sélectionne l'article et
- *      clique "Acheter la sélection" → le checkout doit afficher l'ancien
+ *   4. Le compte de test rouvre sa propre liste et clique le bouton
+ *      "Acheter" de cette ligne → le checkout doit afficher l'ancien
  *      prix (6 500) barré/référencé et le nouveau (7 200) comme dominant,
  *      avec le message "Le prix d'un article a été actualisé depuis le
  *      partage."
@@ -234,21 +234,16 @@ test.describe('FLOW — Variation de prix au checkout (F26)', () => {
       await publicResp;
 
       const sharedListPanel = page.locator(
-        '#k-side-cart .k-shared-list-items',
-      );
+        '#k-side-cart .k-cart-snapshot-item',
+      ).first();
 
       await expect(sharedListPanel).toBeVisible({ timeout: 10_000 });
 
-      const selectBtn = page
-        .locator('#k-side-cart .k-shared-item-select')
-        .first();
+      // Doctrine finale — plus de sélection + "Acheter la sélection" : un
+      // bouton "Acheter" dédié par ligne (.k-cart-item-buy).
+      const buyBtn = page.locator('#k-side-cart .k-cart-item-buy').first();
 
-      await expect(selectBtn).toBeVisible({ timeout: 10_000 });
-      await selectBtn.click();
-
-      const buyBtn = page.locator('#k-side-cart #k-shared-list-buy');
-
-      await expect(buyBtn).toBeEnabled({ timeout: 5_000 });
+      await expect(buyBtn).toBeEnabled({ timeout: 10_000 });
       await buyBtn.click();
 
       await page.waitForSelector(

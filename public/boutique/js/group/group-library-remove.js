@@ -64,7 +64,17 @@ function scheduleDecoration() {
 function syncActiveListSaveButton() {
   const saved = state.libraryContext?.saved;
   const token = state.sharedListContext?.token;
-  const button = document.getElementById('k-shared-list-save');
+  // P1 (audit sélecteurs obsolètes, même cause que l'audit E2E group-*) —
+  // 'k-shared-list-save' n'existe plus dans aucun rendu depuis la
+  // migration vers le side cart / drawer canonique : le bouton réel est
+  // 'k-sc-snap-save' (desktop) ou 'k-cart-snap-save' (mobile), voir
+  // js/b-cart.js::getOrCreateSnapshotButton(). Avec l'ancien id, ce lookup
+  // retournait toujours null et la synchro ci-dessous ne s'appliquait
+  // jamais : après avoir retiré une liste de « Mes listes » pendant
+  // qu'elle restait la liste active du side cart, le bouton Sauvegarder
+  // restait bloqué sur "✓ Sauvegardée" jusqu'au prochain rendu complet.
+  const button = document.getElementById('k-sc-snap-save')
+    || document.getElementById('k-cart-snap-save');
 
   if (!button || !token) return;
 
@@ -84,8 +94,13 @@ function syncActiveListSaveButton() {
 
   if (!stillSaved) {
     if (button.disabled) button.disabled = false;
-    if (button.textContent !== '☆ Sauvegarder cette liste') {
-      button.textContent = '☆ Sauvegarder cette liste';
+    // Aligné sur le texte réellement posé par b-cart.js::renderCartSnapshot
+    // ('☆ Sauvegarder' / '✓ Sauvegardée', getOrCreateSnapshotButton) — ne
+    // jamais réintroduire un libellé divergent ('...cette liste') qui ne
+    // correspondrait plus à ce que le rendu complet afficherait au
+    // prochain cycle.
+    if (button.textContent !== '☆ Sauvegarder') {
+      button.textContent = '☆ Sauvegarder';
     }
   }
 }

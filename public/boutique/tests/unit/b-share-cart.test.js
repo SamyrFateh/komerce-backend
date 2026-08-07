@@ -255,12 +255,43 @@ describe('b-share-cart', () => {
       mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload);
 
       await restoreSharedCartFromBackend();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
 
       expect(mockGetSharedCartPublic).toHaveBeenCalledWith('tok-open');
       expect(mockActivateSharedListContext).toHaveBeenCalledWith(
         publicPayload,
         'tok-open',
+        { silent: true },
+      );
+    });
+
+    test('P0 — restoreSharedCartFromBackend() attend l\'activation de la surface canonique avant de resoudre (pas de course)', async () => {
+      // Régression du bug audité : activateCartInCanonicalSurface() n'était
+      // pas awaited -> la promesse de restoreSharedCartFromBackend()
+      // resolvait AVANT que activateSharedListContext() ait été appelée.
+      // Ce test échoue si le await est retiré de b-share-cart.js, car il
+      // n'y a ici AUCUN tick de microtask supplémentaire après le await
+      // de la fonction testée elle-même.
+      const openCart = {
+        id: 'sc-open-2', token: 'tok-open-2', status: 'open',
+        title: 'Liste immediate', created_at: '2026-06-01T00:00:00Z',
+      };
+      global.fetch.mockResolvedValue({ ok: true, json: async () => ({ carts: [openCart] }) });
+      let resolveGetPublic;
+      mockGetSharedCartPublic.mockReturnValueOnce(new Promise((resolve) => { resolveGetPublic = resolve; }));
+
+      const restorePromise = restoreSharedCartFromBackend();
+      // Laisse le fetch /mine se résoudre, mais getSharedCartPublic reste
+      // en attente tant qu'on n'a pas appelé resolveGetPublic().
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(mockActivateSharedListContext).not.toHaveBeenCalled();
+
+      resolveGetPublic({ cart: { id: 'sc-open-2', token: 'tok-open-2', status: 'open' }, items: [], is_creator: true });
+      await restorePromise;
+
+      expect(mockActivateSharedListContext).toHaveBeenCalledWith(
+        expect.objectContaining({ cart: expect.objectContaining({ token: 'tok-open-2' }) }),
+        'tok-open-2',
         { silent: true },
       );
     });

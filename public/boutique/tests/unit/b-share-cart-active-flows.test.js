@@ -78,6 +78,20 @@ beforeEach(() => {
   state.cartName = '';
   state.shareStatus = null;
   state.shareUrl = null;
+  // Isolation — sharedListContext est la source de vérité prioritaire de
+  // activeShareTarget() : un test qui le pose (ex. « ouverture de B via
+  // Mes listes ») ne doit jamais fuiter dans les tests suivants.
+  state.sharedListContext = {
+    sharedCartId: null,
+    token: null,
+    status: 'open',
+    isCreator: false,
+    creatorFirstName: null,
+    contributors: [],
+    title: null,
+    message: null,
+    items: [],
+  };
 
   mockRequireIdentity.mockResolvedValue({ id: 'user-1' });
   mockGetSharedCartPublic.mockResolvedValue({
@@ -262,6 +276,39 @@ test('P0-D — transmet variant_combo au payload de création, sans le perdre', 
       { product_id: 'p-3', quantity: 2, variant_combo: { couleur: 'Noir', taille: 'M' } },
     ],
   });
+});
+
+test('P0 — liste A active/restaurée puis ouverture de B via « Mes listes » : Partager repartage B, jamais A, aucune création', async () => {
+  // A a été créée/restaurée par CE module : ses métadonnées vivent encore
+  // dans state.shareToken/shareUrl/cartName (chemin historique).
+  state.shareToken = 'tok-A';
+  state.shareStatus = 'open';
+  state.shareUrl = 'https://komerce.test/boutique/?p=tok-A';
+  state.cartName = 'Liste A';
+
+  // L'organisateur ouvre ensuite B depuis « Mes listes » : seul
+  // group-side-cart.js écrit state.sharedListContext (pas state.shareToken).
+  state.sharedListContext = {
+    sharedCartId: 'sc-B',
+    token: 'tok-B',
+    status: 'open',
+    isCreator: true,
+    creatorFirstName: null,
+    title: 'Liste B',
+    message: null,
+    items: [],
+  };
+
+  await startShareFlow();
+
+  expect(global.fetch).not.toHaveBeenCalled();
+  expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
+    text: expect.stringContaining('Liste B'),
+    url: `${window.location.origin}/boutique/?p=tok-B`,
+  }));
+  expect(navigator.share).not.toHaveBeenCalledWith(expect.objectContaining({
+    url: expect.stringContaining('tok-A'),
+  }));
 });
 
 test('le repartage fonctionne sans panier local et sans nouvelle création', async () => {

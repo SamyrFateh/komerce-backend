@@ -550,6 +550,80 @@ describe('transitionOrderStatus() — effets annulation : restauration stock', (
   });
 });
 
+describe('transitionOrderStatus() — effets annulation : libération du claim liste partagée (D2)', () => {
+  // Gap identifié à l'audit CLAIM (2026-08) : le test « pending → cancelled »
+  // ci-dessus vérifie déjà l'APPEL de la requête UPDATE order_items SET
+  // shared_cart_item_id = NULL, mais aucun test n'affirmait jusqu'ici le
+  // contenu de cancelEffects.sharedListClaimsReleased (ni le cas rowCount>0,
+  // ni la branche catch en cas d'échec de la requête). Or c'est exactement
+  // ce champ qu'un appelant (route/admin) inspecterait pour savoir si la
+  // libération a réellement eu lieu — un bug silencieux ici (ex. rowCount
+  // toujours retourné à 0 même quand une ligne est libérée) serait invisible
+  // sans cette assertion dédiée.
+  test('rowCount > 0 → cancelEffects.sharedListClaimsReleased reflète le nombre de lignes libérées', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'pending' }] }) // SELECT order
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
+      .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-CLAIM' }] }) // SELECT wallet
+      .mockResolvedValueOnce({ rows: [], rowCount: 2 }) // UPDATE order_items SET shared_cart_item_id = NULL (D2) — 2 lignes libérées
+      .mockResolvedValueOnce({ rows: [] }); // INSERT history
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.cancelEffects.sharedListClaimsReleased).toBe(2);
+    expect(mockQuery).toHaveBeenNthCalledWith(4,
+      expect.stringContaining('UPDATE order_items'),
+      [mockOrder.id]
+    );
+  });
+
+  test('rowCount = 0 (commande hors contexte liste partagée) → sharedListClaimsReleased vaut 0', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'pending' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-NOCLAIM' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.cancelEffects.sharedListClaimsReleased).toBe(0);
+  });
+
+  test('échec de la requête de libération → catch défensif, cancelEffects.sharedListClaimsReleased.error posé, annulation non bloquée', async () => {
+    // La libération du claim est protégée par son propre try/catch
+    // (services/order-status-machine.js) : une panne isolée de cette étape
+    // ne doit jamais faire échouer toute l'annulation (stock déjà restauré,
+    // wallet déjà remboursé à ce stade). On vérifie ici que l'échec est
+    // capturé plutôt que propagé, et que l'INSERT history a quand même lieu.
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'pending' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-ERR' }] })
+      .mockRejectedValueOnce(new Error('connection lost')) // UPDATE order_items SET shared_cart_item_id = NULL échoue
+      .mockResolvedValueOnce({ rows: [] }); // INSERT history — doit quand même s'exécuter
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.cancelEffects.sharedListClaimsReleased).toMatchObject({
+      error: 'connection lost',
+    });
+    // 5 appels attendus : SELECT, UPDATE status, SELECT wallet, UPDATE claim
+    // (échoue mais est comptée), INSERT history — l'échec n'a pas coupé la
+    // chaîne.
+    expect(mockQuery).toHaveBeenCalledTimes(5);
+  });
+});
+
 describe('transitionOrderStatus() — effets annulation : sync purchase orders', () => {
   test('sync réussie → cancelEffects.purchaseOrders reflète le résultat', async () => {
     mockQuery

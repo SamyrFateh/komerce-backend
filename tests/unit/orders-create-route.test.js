@@ -1040,4 +1040,67 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
     const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
     expect(itemInsert.params).toContain(null); // shared_cart_item_id NULL
   });
+
+  // Gap identifié à l'audit CLAIM (2026-08) : le check FOR UPDATE (déjà
+  // testé ci-dessus, ligne 876) et la contrainte unique en base sont deux
+  // filets DISTINCTS ("ceinture et bretelles", cf. commentaire §6 en tête
+  // de routes/orders/create.js) — mais seul le premier avait un test.
+  // Ce test couvre le second filet isolément : le SELECT ... FOR UPDATE
+  // OF sci voit encore la ligne comme libre (already_claimed: false), mais
+  // l'INSERT order_items échoue quand même sur la contrainte unique
+  // order_items_shared_cart_item_id_unique — le scénario que cette
+  // contrainte existe précisément pour couvrir (ex. deux transactions
+  // concurrentes ayant chacune passé leur propre verrou FOR UPDATE avant
+  // que l'autre ne commite). Sans ce test, une régression qui remplacerait
+  // le catch ciblé (err.code === '23505' && err.constraint === '...')
+  // par un rollback générique 500 passerait inaperçue.
+  it('23505 sur order_items_shared_cart_item_id_unique pendant l\'INSERT → 409 shared_cart_item_already_claimed (filet contrainte unique, indépendant du verrou FOR UPDATE)', async () => {
+    const raceError = new Error(
+      'duplicate key value violates unique constraint "order_items_shared_cart_item_id_unique"'
+    );
+    raceError.code = '23505';
+    raceError.constraint = 'order_items_shared_cart_item_id_unique';
+
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+      { rows: [SCI_ROW_BASE] }, // FOR UPDATE OF sci voit encore la ligne comme libre
+      { rows: [orderRow()] }, // INSERT orders réussit
+      { error: raceError }, // INSERT order_items échoue sur la contrainte unique
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, shared_cart_item_id: 'sci-1' }] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'shared_cart_item_already_claimed' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('un code 23505 sur une AUTRE contrainte n\'est pas confondu avec le conflit de claim (propagé en 500)', async () => {
+    // Garde-fou de non-régression : le catch vérifie explicitement
+    // err.constraint, pas seulement err.code === '23505'. Une violation
+    // unique sur une contrainte non liée au claim ne doit jamais être
+    // mal-étiquetée "shared_cart_item_already_claimed".
+    const otherError = new Error('duplicate key value violates unique constraint "orders_reference_unique"');
+    otherError.code = '23505';
+    otherError.constraint = 'orders_reference_unique';
+
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+      { error: otherError },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(validBody());
+
+    expect(res.status).toBe(500);
+    expect(res.body).not.toMatchObject({ code: 'shared_cart_item_already_claimed' });
+    expectTransactionRolledBack(client);
+  });
 });

@@ -67,10 +67,15 @@ function httpError(message, status = 400, code = null) {
  */
 async function createSharedCartFromBasket(userId, basketId, options = {}) {
   return withTransaction(async (client) => {
+    // P0/§9 — une liste CLOSED n'est plus "active" : elle ne doit plus
+    // consommer le quota de paniers partagés actifs. Seul 'open' compte
+    // (avant correction, ce check comptait encore ('open','closed') — bug
+    // confirmé : un utilisateur avec MAX_ACTIVE_CARTS_PER_USER listes
+    // toutes fermées ne pouvait plus jamais en recréer une seule).
     const { rows: activeCount } = await client.query(
       `SELECT COUNT(*)::int AS n FROM shared_carts
         WHERE organizer_user_id = $1
-          AND status IN ('open', 'closed')`,
+          AND status = 'open'`,
       [userId]
     );
     if (activeCount[0].n >= CONFIG.MAX_ACTIVE_CARTS_PER_USER) {
@@ -208,10 +213,12 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
   return withTransaction(async (client) => {
     if (!userId) throw new Error('user_id requis');
 
+    // P0/§9 — même correction que createSharedCartFromBasket ci-dessus :
+    // seul 'open' consomme le quota des listes actives.
     const { rows: activeCount } = await client.query(
       `SELECT COUNT(*)::int AS n FROM shared_carts
         WHERE organizer_user_id = $1
-          AND status IN ('open', 'closed')`,
+          AND status = 'open'`,
       [userId]
     );
     if (activeCount[0].n >= CONFIG.MAX_ACTIVE_CARTS_PER_USER) {

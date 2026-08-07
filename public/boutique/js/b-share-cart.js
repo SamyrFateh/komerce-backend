@@ -163,7 +163,17 @@ export async function restoreSharedCartFromBackend({ silent = true } = {}) {
     // visible (state.cartSurface = 'shared-list'), pas seulement une
     // métadonnée de session (token/bandeau/badges ci-dessus). silent=true :
     // ne rouvre jamais un drawer mobile au simple chargement de la page.
-    activateCartInCanonicalSurface(cart, { silent: true });
+    // P0 — cette activation DOIT être awaited : restoreSharedCartFromBackend()
+    // est utilisé comme garantie synchrone (_restorePromise dans install(),
+    // attendu par startShareFlow() avant toute décision de partage/création).
+    // Sans ce await, la promesse se résolvait avant que le side cart/drawer
+    // canonique soit réellement activé — une racecondition, pas seulement un
+    // détail de timing : tout code qui attend restoreSharedCartFromBackend()
+    // pour considérer l'état UI restauré pouvait agir sur un state.cartSurface
+    // encore 'personal' alors que le cart existe déjà côté serveur (silent=
+    // true : n'ouvre jamais de drawer, mais DOIT avoir posé
+    // state.sharedListContext/state.cartSurface avant le resolve).
+    await activateCartInCanonicalSurface(cart, { silent: true });
 
     return cart;
   } catch (err) {
@@ -343,11 +353,63 @@ function reopenOwnSharedListInCanonicalCart() {
  * cf. P0-A) sert de repli pendant la fenêtre où activateCartInCanonicalSurface()
  * n'a pas encore résolu.
  */
-function hasActiveList() {
-  if (state.sharedListContext?.token) {
-    return state.sharedListContext.status === 'open';
+/**
+ * P0 (audit — le partage repartageait A alors que B venait d'être ouverte
+ * via « Mes listes ») — hasActiveList() savait déjà détecter la bonne liste
+ * active via state.sharedListContext, mais startShareFlow() repartageait
+ * ensuite state.shareToken/shareUrl/cartName sans jamais consulter ce
+ * contexte : deux sources d'information, une seule consultée pour la
+ * décision, l'autre pour l'action → mismatch. activeShareTarget() est
+ * désormais l'unique source de vérité, utilisée à la fois pour détecter
+ * QU'IL y a une liste active et pour fournir SES token/titre/URL.
+ *
+ * Priorité à state.sharedListContext : c'est la surface canonique vivante
+ * (mise à jour par group-side-cart.js à chaque activation/rafraîchissement,
+ * y compris après ouverture d'une liste tierce via « Mes listes »).
+ * state.shareToken/shareUrl/cartName ne sert de repli que pendant la
+ * fenêtre où activateCartInCanonicalSurface() n'a pas encore résolu après
+ * une création/restauration par CE module.
+ */
+function activeShareTarget() {
+  const ctx = state.sharedListContext;
+  if (ctx?.token && ctx.status === 'open') {
+    return {
+      token: ctx.token,
+      title: ctx.title || DEFAULT_LIST_TITLE,
+      shareUrl: `${window.location.origin}/boutique/?p=${ctx.token}`,
+    };
   }
-  return !!state.shareToken && state.shareStatus === 'open';
+
+  if (state.shareToken && state.shareStatus === 'open') {
+    return {
+      token: state.shareToken,
+      title: state.cartName || DEFAULT_LIST_TITLE,
+      shareUrl: state.shareUrl || `${window.location.origin}/boutique/?p=${state.shareToken}`,
+    };
+  }
+
+  return null;
+}
+
+function hasActiveList() {
+  return !!activeShareTarget();
+}
+
+/**
+ * Repli utilisé UNIQUEMENT pour un reshare explicite (bouton
+ * « Re-partager », visible seulement sur une liste déjà connue de
+ * l'utilisateur) : fonctionne même si shareStatus n'a pas encore été
+ * peuplé côté state.shareToken (comportement historique préservé). Ne
+ * jamais utiliser ce repli pour la détection implicite hasActiveList() —
+ * il ne vérifie pas que le token appartient à une liste encore 'open'.
+ */
+function legacyShareTarget() {
+  if (!state.shareToken) return null;
+  return {
+    token: state.shareToken,
+    title: state.cartName || DEFAULT_LIST_TITLE,
+    shareUrl: state.shareUrl || `${window.location.origin}/boutique/?p=${state.shareToken}`,
+  };
 }
 
 /* ── Flow principal ─────────────────────────────────────────────── */
@@ -362,13 +424,17 @@ export async function startShareFlow({ reshare = false } = {}) {
   // Le repartage porte sur la liste existante et ne dépend pas du panier
   // local — déclenché explicitement (bouton « Re-partager ») ou implicitement
   // dès qu'une liste ouverte est déjà active (doctrine §4/§9 : Partager =
-  // repartager, jamais recréer).
-  if ((reshare || hasActiveList()) && state.shareToken) {
-    const shareUrl = state.shareUrl
-      || `${window.location.origin}/boutique/?p=${state.shareToken}`;
-    await shareList(state.cartName || DEFAULT_LIST_TITLE, shareUrl);
+  // repartager, jamais recréer). activeShareTarget() est la seule source de
+  // vérité : jamais de lecture directe de state.shareToken/shareUrl/cartName
+  // ici (voir commentaire sur activeShareTarget/hasActiveList ci-dessus).
+  const target = activeShareTarget() || (reshare ? legacyShareTarget() : null);
+  if (target) {
+    await shareList(target.title, target.shareUrl);
     return;
   }
+  // reshare=true explicite mais aucun token connu : on tombe dans la
+  // création ci-dessous (comportement historique — un reshare sans aucune
+  // liste connue se comporte comme une création).
 
   if (!state.cart?.length) {
     showToast("Ajoutez d'abord des produits au panier.", 'error');

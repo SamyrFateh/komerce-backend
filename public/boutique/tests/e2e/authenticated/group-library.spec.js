@@ -97,8 +97,9 @@ test.describe('FLOW — Bibliothèque "Mes listes" (F23)', () => {
 
     // ── PHASE 2 — Le créateur ne voit jamais de bouton "Sauvegarder" ──────
     // Le rendu fire-and-forget après création (openSharedListInCanonicalCart)
-    // s'est révélé pas assez fiable pour un test (voir commentaire détaillé
-    // dans group-coexistence.spec.js). On navigue explicitement vers son
+    // s'est révélé pas assez fiable pour un test (voir F22-1/F22-2 dans
+    // group-shared-list.spec.js, qui a remplacé group-coexistence.spec.js
+    // et couvre ce même contrat). On navigue explicitement vers son
     // propre lien de partage — le même mécanisme déjà prouvé fiable par F21
     // (group-full-cycle.spec.js) pour un participant, ici avec
     // is_creator=true puisque même compte.
@@ -109,9 +110,9 @@ test.describe('FLOW — Bibliothèque "Mes listes" (F23)', () => {
     await page.goto(getSharePageUrl(token));
     await publicResponsePromise;
 
-    const sharedListPanel = page.locator('#k-cart-body .k-shared-list-items, #k-side-cart .k-shared-list-items').first();
+    const sharedListPanel = page.locator('#k-cart-body .k-cart-snapshot-item, #k-side-cart .k-cart-snapshot-item').first();
     await expect(sharedListPanel).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('#k-side-cart #k-shared-list-save')).toHaveCount(0);
+    await expect(page.locator('#k-side-cart #k-sc-snap-save, #k-side-cart #k-cart-snap-save')).toHaveCount(0);
 
     // ── PHASE 3 — La liste apparaît dans "Créées par moi" ─────────────────
     const library = await page.evaluate(async (base) => {
@@ -144,9 +145,9 @@ test.describe('FLOW — Bibliothèque "Mes listes" (F23)', () => {
 
       // Pas de sauvegarde automatique à l'ouverture : le bouton doit
       // apparaître dans son état initial "à sauvegarder", jamais appelé tout seul.
-      const saveBtn = anonPage.locator('#k-side-cart #k-shared-list-save');
+      const saveBtn = anonPage.locator('#k-side-cart #k-sc-snap-save, #k-side-cart #k-cart-snap-save').first();
       await expect(saveBtn).toBeVisible({ timeout: 10_000 });
-      await expect(saveBtn).toHaveText(/Sauvegarder cette liste/);
+      await expect(saveBtn).toHaveText(/Sauvegarder/);
 
       // L'écouteur est posé juste avant le clic, pas en tête de bloc : créé
       // trop tôt, son timeout interne (15s) peut expirer avant même d'être
@@ -165,7 +166,8 @@ test.describe('FLOW — Bibliothèque "Mes listes" (F23)', () => {
       expect(saveResponse.status(), 'POST /save sans identité doit être refusé (401)').toBe(401);
 
       // Le bouton ne doit JAMAIS basculer en "Liste sauvegardée" suite à un refus backend.
-      await expect(saveBtn).toHaveText(/Sauvegarder cette liste/);
+      await expect(saveBtn).toHaveText(/Sauvegarder/);
+      await expect(saveBtn).not.toHaveText(/Sauvegardée/);
     } finally {
       await anonContext.close();
     }

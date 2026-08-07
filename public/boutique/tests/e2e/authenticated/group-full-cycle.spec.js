@@ -140,8 +140,8 @@ test.describe('FLOW — Liste partageable, découverte publique (F21)', () => {
       // (viewport de ce contexte participant), le contenu est rendu dans
       // #k-cart-body via panelHtml() (js/group/group-side-cart.js) et le
       // drawer s'ouvre automatiquement (reopenSharedListCart()).
-      const sharedListItems = participantPage.locator('#k-cart-body .k-shared-list-items');
-      await expect(sharedListItems).toBeVisible({ timeout: 10_000 });
+      const sharedListItems = participantPage.locator('#k-cart-body .k-cart-snapshot-item');
+      await expect(sharedListItems.first()).toBeVisible({ timeout: 10_000 });
 
       const cartDrawer = participantPage.locator('#k-cart-drawer');
       await expect(cartDrawer).toHaveAttribute('data-mode', 'shared-list');
