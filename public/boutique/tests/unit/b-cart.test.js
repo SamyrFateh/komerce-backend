@@ -603,6 +603,39 @@ describe('b-cart', () => {
       expect(dom.cartBody.textContent).toContain('6500 KMF');
     });
 
+    it('image manquante (null) : fallback visuel affiché, aucun <img> avec src invalide', () => {
+      activateList(); // items i1/i2 ont déjà image: null
+      const row = dom.cartBody.querySelector('[data-item-id="i1"]');
+      expect(row.querySelector('img')).toBeNull();
+      expect(row.querySelector('.k-cart-item-img-fallback')).not.toBeNull();
+      expect(row.querySelector('.k-cart-item-img').classList.contains('is-img-error')).toBe(true);
+    });
+
+    // Mandat §9 — une URL snapshotée invalide (chaîne non-URL, protocole non
+    // http/https) ne doit jamais produire un <img src="..."> cassé : le même
+    // garde-fou que l'image manquante s'applique, avant même toute tentative
+    // de chargement réseau (isRenderableSnapshotImageUrl, pas seulement
+    // onerror après coup).
+    it('URL image invalide (non-URL) : même fallback que l\'image manquante, aucun <img> émis', () => {
+      activateList({ items: [
+        { id: 'i1', product_id: 'p1', name: 'Riz', image: 'ges.unsplash.com/photo-cassee', quantity: 1, unit_price_kmf: 6500, claimed: false },
+      ] });
+      const row = dom.cartBody.querySelector('[data-item-id="i1"]');
+      expect(row.querySelector('img')).toBeNull();
+      expect(row.querySelector('.k-cart-item-img-fallback')).not.toBeNull();
+    });
+
+    it('URL image valide : <img> émis avec un onerror de secours vers le fallback', () => {
+      activateList({ items: [
+        { id: 'i1', product_id: 'p1', name: 'Riz', image: 'https://cdn.komerce.co/riz.jpg', quantity: 1, unit_price_kmf: 6500, claimed: false },
+      ] });
+      const row = dom.cartBody.querySelector('[data-item-id="i1"]');
+      const img = row.querySelector('img');
+      expect(img).not.toBeNull();
+      expect(img.getAttribute('src')).toBe('https://cdn.komerce.co/riz.jpg');
+      expect(img.getAttribute('onerror')).toContain('is-img-error');
+    });
+
     it('ligne réclamée : grisée (is-cart-item-claimed) et libellée "Déjà acheté"', () => {
       activateList();
       const claimedRow = dom.cartBody.querySelector('[data-item-id="i2"]');
@@ -625,6 +658,61 @@ describe('b-cart', () => {
       const buyBtn = findButtonByText('Tout est acheté');
       expect(buyBtn).not.toBeNull();
       expect(buyBtn.disabled).toBe(true);
+    });
+
+    // Mandat §5 — sélection locale des articles à acheter.
+    describe('sélection locale (mandat §5)', () => {
+      it('une case de sélection est rendue sur chaque ligne disponible, jamais sur une ligne réclamée', () => {
+        activateList(); // i1 disponible, i2 réclamé
+        expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select')).not.toBeNull();
+        expect(dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-select')).toBeNull();
+      });
+
+      it('les lignes disponibles sont présélectionnées par défaut (case cochée, CTA = total disponible)', () => {
+        activateList({ items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
+          { id: 'i2', product_id: 'p2', name: 'Huile', image: null, quantity: 1, unit_price_kmf: 3000, claimed: false },
+        ] });
+        const cb1 = dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select');
+        const cb2 = dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-select');
+        expect(cb1.checked).toBe(true);
+        expect(cb2.checked).toBe(true);
+        expect(findButtonByText('Acheter (')?.textContent).toContain('Acheter (2)');
+      });
+
+      it('décocher une ligne réduit le CTA "Acheter (N)" sans faire disparaître la ligne', () => {
+        activateList({ items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
+          { id: 'i2', product_id: 'p2', name: 'Huile', image: null, quantity: 1, unit_price_kmf: 3000, claimed: false },
+        ] });
+        const cb2 = dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-select');
+        cb2.checked = false;
+        cb2.dispatchEvent(new Event('change', { bubbles: true }));
+
+        expect(dom.cartBody.querySelectorAll('.k-cart-snapshot-item')).toHaveLength(2); // toujours 2 lignes
+        expect(findButtonByText('Acheter (')?.textContent).toContain('Acheter (1)');
+      });
+
+      it('tout décocher désactive le CTA Acheter, sans afficher "Tout est acheté" (des lignes restent disponibles)', () => {
+        activateList({ items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
+        ] });
+        const cb1 = dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select');
+        cb1.checked = false;
+        cb1.dispatchEvent(new Event('change', { bubbles: true }));
+
+        const buyBtn = findButtonByText('Acheter (');
+        expect(buyBtn).not.toBeNull();
+        expect(buyBtn.textContent).toContain('Acheter (0)');
+        expect(buyBtn.disabled).toBe(true);
+      });
+
+      it("l'organisateur voit aussi la case de sélection, hors mode édition (§5 : achète comme tout participant)", () => {
+        activateList({ isCreator: true, items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
+        ] });
+        expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select')).not.toBeNull();
+      });
     });
 
     it('participant (non organisateur) : lecture seule, aucun contrôle d\'édition ni bouton Modifier', () => {

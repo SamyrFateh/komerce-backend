@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 770,
-    "edges": 4143,
+    "edges": 4145,
     "dbTables": 109,
     "doctrines": 167,
     "impactAreas": 130,
@@ -6940,7 +6940,9 @@
         "product_variants",
         "products",
         "recipients",
-        "relais"
+        "relais",
+        "shared_cart_items",
+        "shared_carts"
       ],
       "dbWrite": [
         "cart_shares",
@@ -17301,6 +17303,16 @@
       "table": "refunds"
     },
     {
+      "id": "db:shared_cart_items",
+      "type": "db-table",
+      "table": "shared_cart_items"
+    },
+    {
+      "id": "db:shared_carts",
+      "type": "db-table",
+      "table": "shared_carts"
+    },
+    {
       "id": "db:cart_shares",
       "type": "db-table",
       "table": "cart_shares"
@@ -17486,19 +17498,9 @@
       "table": "pricing_strategy_history"
     },
     {
-      "id": "db:shared_carts",
-      "type": "db-table",
-      "table": "shared_carts"
-    },
-    {
       "id": "db:shared_cart_events",
       "type": "db-table",
       "table": "shared_cart_events"
-    },
-    {
-      "id": "db:shared_cart_items",
-      "type": "db-table",
-      "table": "shared_cart_items"
     },
     {
       "id": "db:shared_cart_saved_access",
@@ -28671,6 +28673,18 @@
       "to": "db:relais",
       "type": "db-read",
       "label": "relais"
+    },
+    {
+      "from": "routes/orders/create.js",
+      "to": "db:shared_cart_items",
+      "type": "db-read",
+      "label": "shared_cart_items"
+    },
+    {
+      "from": "routes/orders/create.js",
+      "to": "db:shared_carts",
+      "type": "db-read",
+      "label": "shared_carts"
     },
     {
       "from": "routes/orders/create.js",
@@ -50741,7 +50755,9 @@
         "product_variants",
         "products",
         "recipients",
-        "relais"
+        "relais",
+        "shared_cart_items",
+        "shared_carts"
       ],
       "dbWrite": [
         "cart_shares",
@@ -50770,6 +50786,8 @@
         "db:products",
         "db:recipients",
         "db:relais",
+        "db:shared_cart_items",
+        "db:shared_carts",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:orders",

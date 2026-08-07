@@ -77,18 +77,75 @@ function findItem(itemId) {
 }
 
 /**
- * Lot B (doctrine snapshot + lecture simple) — lignes éligibles à l'achat :
- * tous les articles non réclamés du snapshot, sans sélection locale.
- * Remplace selectedItems()/selectionTotal() (mécanique de sélection
- * multi-articles V2, abandonnée par arbitrage produit — voir rapport de
- * clôture Lot B).
+ * Mandat §5 — sélection locale des articles à acheter. Ensemble d'IDs
+ * (shared_cart_items.id) présélectionnés par défaut à l'apparition d'une
+ * ligne disponible, ajustable par l'utilisateur (case à cocher par ligne).
+ * Frontend uniquement : "sélection locale ≠ mutation de la liste" — ne
+ * réserve rien, ne crée aucun claim, ne modifie aucune quantité de liste,
+ * sert seulement à construire le panier éphémère du checkout
+ * (handleBuySelectedItems ci-dessous).
+ */
+const selectedItemIds = new Set();
+
+/**
+ * Concilie la sélection locale avec le snapshot fraîchement reçu :
+ *  - une ligne qui vient d'être réclamée (claimed) ou a disparu (retrait)
+ *    sort de la sélection — elle n'est de toute façon plus achetable ;
+ *  - une ligne disponible qui n'existait pas dans l'ancien snapshot
+ *    (ajout via le mode édition, ou première activation) entre
+ *    pré-sélectionnée par défaut, pour ne jamais forcer un geste
+ *    supplémentaire sur le cas le plus courant (une seule ligne) ;
+ *  - une ligne déjà présente et déjà (dé)sélectionnée par l'utilisateur
+ *    n'est jamais touchée ici.
+ * @param {Array} oldItems - snapshot précédent (vide si nouvelle liste).
+ * @param {Array} newItems - snapshot reçu.
+ */
+function syncSelectionWithAvailability(oldItems, newItems) {
+  const newAvailableIds = new Set((newItems || []).filter((it) => !it.claimed).map((it) => String(it.id)));
+  const oldAvailableIds = new Set((oldItems || []).filter((it) => !it.claimed).map((it) => String(it.id)));
+  for (const id of [...selectedItemIds]) {
+    if (!newAvailableIds.has(id)) selectedItemIds.delete(id);
+  }
+  for (const id of newAvailableIds) {
+    if (!oldAvailableIds.has(id)) selectedItemIds.add(id);
+  }
+}
+
+/**
+ * Lignes disponibles (non réclamées) du snapshot — éligibles à la
+ * sélection, jamais elles-mêmes "la sélection" (cf. selectedItems()).
  */
 function availableItems() {
   return state.sharedListContext.items.filter((it) => !it.claimed);
 }
 
-function availableTotal() {
-  return availableItems().reduce((sum, it) => sum + (Number(it.unit_price_kmf) || 0) * (Number(it.quantity) || 1), 0);
+/**
+ * Mandat §5 — sous-ensemble de availableItems() effectivement sélectionné
+ * localement. C'est CE tableau, jamais availableItems() en entier, qui
+ * alimente le CTA "Acheter (N)" et le panier éphémère du checkout
+ * (handleBuySelectedItems).
+ */
+function selectedItems() {
+  return availableItems().filter((it) => selectedItemIds.has(String(it.id)));
+}
+
+function selectedTotal() {
+  return selectedItems().reduce((sum, it) => sum + (Number(it.unit_price_kmf) || 0) * (Number(it.quantity) || 1), 0);
+}
+
+/**
+ * Bascule la sélection locale d'une ligne. Garde métier défensive : une
+ * ligne claimed ou introuvable ne peut jamais être sélectionnée, même par
+ * un appel direct qui contournerait la case à cocher (jamais grisée côté
+ * DOM que par CSS — cette fonction reste la vraie barrière).
+ */
+function toggleItemSelection(itemId) {
+  const id = String(itemId);
+  const item = findItem(id);
+  if (!item || item.claimed) return;
+  if (selectedItemIds.has(id)) selectedItemIds.delete(id);
+  else selectedItemIds.add(id);
+  renderSharedListInCart();
 }
 
 function isActiveContext() {
@@ -117,16 +174,39 @@ let pollIntervalId = null;
 let lastSnapshotSignature = null;
 
 /**
- * Signature stable dérivée du snapshot — statut, identifiants de lignes,
- * quantités, états claimed, ordre des lignes (ordre déjà stable, dérivé de
- * l'ORDER BY sci.created_at côté backend). Ne dépend d'aucune colonne
+ * Signature stable dérivée du snapshot — mandat §12 : doit couvrir TOUTES
+ * les données visibles susceptibles de changer (statut, titre, message,
+ * IDs et ordre des lignes, quantités, prix, variante, image, claimed,
+ * prénom acheteur visible propriétaire, contributeurs), pas seulement le
+ * sous-ensemble initial (statut/id/quantité/claimed) qui aurait laissé un
+ * changement de prix, de média, de titre ou de contributeur invisible tant
+ * qu'aucune ligne n'était ajoutée/retirée. Ne dépend d'aucune colonne
  * updated_at/version côté DB — aucune migration nécessaire pour ce lot.
  */
-function computeSnapshotSignature(cart, items) {
+function computeSnapshotSignature(cart, items, contributors) {
   const itemsSig = (items || [])
-    .map((it) => `${it.id}:${it.quantity}:${it.claimed ? 1 : 0}`)
+    .map((it) => [
+      it.id,
+      it.quantity,
+      it.claimed ? 1 : 0,
+      it.unit_price_kmf,
+      it.image || '',
+      it.variant_combo ? JSON.stringify(it.variant_combo) : '',
+      // Undefined côté participant (jamais mappé par le backend) : ''
+      // stable plutôt que la chaîne littérale "undefined".
+      it.buyer_first_name || '',
+    ].join(':'))
     .join(',');
-  return `${cart.status || 'open'}|${itemsSig}`;
+  const contributorsSig = (contributors || [])
+    .map((c) => `${c.first_name}:${c.items_count}`)
+    .join(',');
+  return [
+    cart.status || 'open',
+    cart.title || '',
+    cart.message || '',
+    contributorsSig,
+    itemsSig,
+  ].join('|');
 }
 
 function isPollableNow() {
@@ -194,7 +274,17 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
   if (previousToken !== nextToken) state.sharedListEditMode = false;
 
   const items = Array.isArray(data.items) ? data.items : [];
-  const signature = computeSnapshotSignature(cart, items);
+  // Mandat §5 — concilier la sélection locale AVANT d'écraser
+  // state.sharedListContext.items (syncSelectionWithAvailability a besoin
+  // de l'ancien ET du nouveau snapshot). Changement de liste (token
+  // différent) = ancien snapshot vide : tout redevient "nouveau", donc
+  // tout ce qui est disponible est présélectionné par défaut.
+  syncSelectionWithAvailability(
+    previousToken === nextToken ? state.sharedListContext.items : [],
+    items
+  );
+  const contributors = Array.isArray(data.contributors) ? data.contributors : [];
+  const signature = computeSnapshotSignature(cart, items, contributors);
   const unchanged = silent && previousToken === nextToken && signature === lastSnapshotSignature;
   lastSnapshotSignature = signature;
 
@@ -206,7 +296,7 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
     creatorFirstName: cart.creator_first_name || null,
     // GAP-05 (Lot 2) — [{first_name, items_count}], jamais présent côté
     // participant (gating server-side exclusif, shared-cart-reads.js).
-    contributors: Array.isArray(data.contributors) ? data.contributors : [],
+    contributors,
     title: cart.title || null,
     message: cart.message || null,
     items,
@@ -283,6 +373,7 @@ export function exitSharedListRenderMode() {
 export function clearSharedListContext() {
   stopSnapshotPollingLoop();
   lastSnapshotSignature = null;
+  selectedItemIds.clear();
   state.sharedListContext = {
     sharedCartId: null,
     token: null,
@@ -383,9 +474,10 @@ async function handleSaveList() {
  * Construit le contexte contextuel attendu par b-cart.js::renderCartSnapshot
  * (contrat {source, readOnly, title, status, organizerName, isOrganizer, ...})
  * à partir de state.sharedListContext. Ce contrôleur ne produit plus aucun
- * HTML — il adapte uniquement les données. Lot B (doctrine snapshot +
- * lecture simple) : plus de sélection locale — availableCount/availableTotal
- * dérivés directement des lignes non réclamées du snapshot.
+ * HTML — il adapte uniquement les données. Mandat §5 (correctif 2026-08) —
+ * selectedCount/selectedTotal dérivés de la sélection locale
+ * (selectedItemIds), pas simplement de toutes les lignes disponibles :
+ * un participant choisit quels articles disponibles acheter.
  */
 function buildSnapshotRenderContext() {
   const ctx = state.sharedListContext;
@@ -404,8 +496,15 @@ function buildSnapshotRenderContext() {
     contributors: ctx.contributors,
     editMode: ctx.isCreator && state.sharedListEditMode,
     headerTitle: ctx.isCreator ? 'Votre liste' : title,
+    // Mandat §5 — availableCount reste "tout ce qui n'est pas encore
+    // réclamé" (utilisé uniquement pour distinguer l'état "Tout est
+    // acheté" de 0 disponible). selectedCount/selectedTotal, dérivés de la
+    // sélection locale, alimentent le CTA "Acheter (N)" et le sous-total —
+    // jamais availableCount/availableTotal pour ces deux-là.
     availableCount: availableItems().length,
-    availableTotal: availableTotal(),
+    selectedCount: selectedItems().length,
+    selectedTotal: selectedTotal(),
+    selectedItemIds: new Set(selectedItemIds),
     showSaveAction,
     saved: showSaveAction && savedListTokensThisSession.has(ctx.token),
     pendingQuantityItemIds,
@@ -424,8 +523,9 @@ function buildSnapshotRenderActions() {
     onOpenProduct: handleOpenItemProduct,
     onShare: handleShareClick,
     onClose: handleCloseClick,
-    onBuy: handleBuyAvailableItems,
+    onBuy: handleBuySelectedItems,
     onSave: handleSaveList,
+    onToggleSelect: toggleItemSelection,
   };
 }
 
@@ -816,8 +916,13 @@ async function handleShareClick() {
 
 /* ── Checkout (mandat §8) ────────────────────────────────────────────── */
 
-function handleBuyAvailableItems() {
-  const items = availableItems();
+/**
+ * Mandat §5 — construit le panier éphémère à partir de la SÉLECTION locale
+ * (selectedItems()), jamais de availableItems() en entier : un participant
+ * ne doit pas être obligé d'acheter automatiquement tout le reliquat.
+ */
+function handleBuySelectedItems() {
+  const items = selectedItems();
   if (!items.length) return;
 
   // Correctif V2-E — le panier canonique éphémère doit référencer le vrai

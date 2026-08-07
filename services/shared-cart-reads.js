@@ -52,6 +52,12 @@ const db = require('../db');
  * buyer_user_id (jamais par prénom seul) pour ne jamais fusionner deux
  * acheteurs distincts qui partagent un prénom.
  */
+// Mandat §11 — items_count doit représenter des UNITÉS achetées, pas des
+// lignes. Une ligne de liste peut porter quantity > 1 (ex. "2 × Cadre
+// photo") ; compter +1 par ligne réclamée sous-représenterait alors le
+// nombre réel d'articles achetés par ce contributeur ("Ali · 1 article"
+// au lieu de "Ali · 2 articles"). first_name reste dérivé uniquement de
+// buyer_full_name — jamais buyer_user_id, jamais d'email/téléphone.
 function aggregateContributors(items) {
   const order = [];
   const byBuyer = new Map();
@@ -63,7 +69,7 @@ function aggregateContributors(items) {
       byBuyer.set(key, { first_name: firstName, items_count: 0 });
       order.push(key);
     }
-    byBuyer.get(key).items_count += 1;
+    byBuyer.get(key).items_count += Math.max(1, Number(item.quantity) || 1);
   }
   return order.map((key) => byBuyer.get(key));
 }
@@ -208,8 +214,13 @@ async function listMySharedCarts(userId) {
        FROM shared_carts sc
        LEFT JOIN LATERAL (
          SELECT SUM(sci.line_total_kmf_snapshot) AS total_kmf,
-                COUNT(*) AS items_count,
-                COUNT(oi.id) AS claimed_count
+                -- Mandat §11 — items_count/claimed_count doivent représenter
+                -- des UNITÉS achetées (le libellé frontend affiche
+                -- "X/Y articles"), pas des lignes. Une ligne peut porter
+                -- quantity > 1 : COUNT(*) sous-représenterait alors le
+                -- nombre réel d'articles de la liste.
+                COALESCE(SUM(sci.quantity), 0) AS items_count,
+                COALESCE(SUM(sci.quantity) FILTER (WHERE oi.id IS NOT NULL), 0) AS claimed_count
            FROM shared_cart_items sci
            LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
           WHERE sci.shared_cart_id = sc.id

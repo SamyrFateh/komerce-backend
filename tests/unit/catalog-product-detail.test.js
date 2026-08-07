@@ -45,6 +45,8 @@ function skuProduct(overrides = {}) {
     series: null,
     price_kmf: 12500,
     promo_pct: 10,
+    is_promo: true,
+    promo_until: null,
     image_url: 'https://cdn.example.com/main.jpg',
     images: [
       'https://cdn.example.com/main.jpg',
@@ -182,8 +184,8 @@ describe('catalog product detail contract v1', () => {
       series: null,
     });
     expect(detail.pricing).toEqual({
-      price_kmf: 12500,
-      old_price_kmf: null,
+      price_kmf: 11250,
+      old_price_kmf: 12500,
       promo_pct: 10,
     });
 
@@ -213,7 +215,7 @@ describe('catalog product detail contract v1', () => {
       option_values: { Couleur: 'Marron', Taille: 'M' },
       stock_status: 'AVAILABLE',
       available_quantity: 4,
-      price_kmf: 12500,
+      price_kmf: 11250,
     });
     expect(detail.sellable_units[1]).toMatchObject({
       sku_id: SKU_L,
@@ -221,7 +223,7 @@ describe('catalog product detail contract v1', () => {
       option_values: { Couleur: 'Marron', Taille: 'L' },
       stock_status: 'OUT_OF_STOCK',
       available_quantity: 0,
-      price_kmf: 13000,
+      price_kmf: 11700,
     });
 
     // Beige existe comme valeur d'axe, mais aucune unité Beige n'est fabriquée.
@@ -373,6 +375,50 @@ describe('catalog product detail contract v1', () => {
     expect(detail.pricing.price_kmf).toBeNull();
     expect(detail.pricing.promo_pct).toBeNull();
     expect(detail.sellable_units[0].price_kmf).toBeNull();
+  });
+
+  // Mandat §10 — le PDC ne doit jamais exposer un prix de base accompagné
+  // d'un badge de promotion que le backend ne facture pas réellement (même
+  // gating que services/product-admin-service.js::applyCanonicalPromotion,
+  // consommée à la commande). Ces tests couvrent les 3 façons dont une
+  // promo peut être "inactive" malgré promo_pct > 0.
+  describe('§10 — cohérence prix effectif / badge promo', () => {
+    test('promo_pct > 0 mais is_promo faux → prix de base facturé, aucun badge, aucun old_price', async () => {
+      const product = skuProduct({ price_kmf: 12500, promo_pct: 10, is_promo: false });
+      const detail = await getProductDetail(dbFor({ product }), PRODUCT_ID);
+
+      expect(detail.pricing).toEqual({ price_kmf: 12500, old_price_kmf: null, promo_pct: null });
+      expect(detail.sellable_units[0].price_kmf).toBe(12500);
+    });
+
+    test('is_promo vrai mais promo_until dépassé → prix de base facturé, aucun badge', async () => {
+      const past = new Date(Date.now() - 86400000).toISOString();
+      const product = skuProduct({ price_kmf: 12500, promo_pct: 10, is_promo: true, promo_until: past });
+      const detail = await getProductDetail(dbFor({ product }), PRODUCT_ID);
+
+      expect(detail.pricing).toEqual({ price_kmf: 12500, old_price_kmf: null, promo_pct: null });
+    });
+
+    test('is_promo vrai, promo_until futur → prix effectif remisé, old_price_kmf = prix de base, badge exact', async () => {
+      const future = new Date(Date.now() + 86400000).toISOString();
+      const product = skuProduct({ price_kmf: 12500, promo_pct: 20, is_promo: true, promo_until: future });
+      const detail = await getProductDetail(dbFor({ product }), PRODUCT_ID);
+
+      expect(detail.pricing).toEqual({ price_kmf: 10000, old_price_kmf: 12500, promo_pct: 20 });
+    });
+
+    // Même unité, même prix quel que soit le point d'entrée (parité avec le
+    // lot préalable GAP-07 — computeSellablePricing côté commande) : la
+    // fonction pure est partagée, pas seulement le résultat coïncidemment
+    // identique.
+    test('le prix effectif SKU utilise exactement applyCanonicalPromotion, pas une réimplémentation locale', async () => {
+      const { applyCanonicalPromotion } = require('../../services/product-admin-service');
+      const product = skuProduct({ price_kmf: 12500, promo_pct: 15, is_promo: true, promo_until: null });
+      const detail = await getProductDetail(dbFor({ product }), PRODUCT_ID);
+
+      const expected = applyCanonicalPromotion(13000, product); // prix SKU_L
+      expect(detail.sellable_units[1].price_kmf).toBe(expected);
+    });
   });
 });
 

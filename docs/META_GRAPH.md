@@ -1,7 +1,7 @@
 # Méta-graphe des coutures — les 3 territoires
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-06T21:37:48.401Z.
+> Régénéré le 2026-08-07T00:07:21.909Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
@@ -16,13 +16,13 @@
 - Endpoints consommés par au moins un front : **87**
 - 🔗 Endpoints **partagés** (boutique + dashboards) : **2** — rayon de casse amplifié
 - 🔴 Coutures **fantômes** (front → hors contrat) : **0**
-- ⚠️ Tables touchées par **les deux** fronts : **14**
+- ⚠️ Tables touchées par **les deux** fronts : **16**
 
 ## 1. Endpoints partagés — toucher = casse double
 
 | Endpoint | Route backend | Boutique | Dashboards | Tables |
 |---|---|---|---|---|
-| `/api/orders` | `routes/orders/create.js` | b-checkout, b-tracking, komerce-api | OrdersLogisticsView, ProblemsView | `orders`, `product_skus`, `product_variants`, `products`, `recipients`, `relais`, `cart_shares`, `order_items`, `order_status_history` |
+| `/api/orders` | `routes/orders/create.js` | b-checkout, b-tracking, komerce-api | OrdersLogisticsView, ProblemsView | `orders`, `product_skus`, `product_variants`, `products`, `recipients`, `relais`, `shared_cart_items`, `shared_carts`, `cart_shares`, `order_items`, `order_status_history` |
 | `/api/products` | `routes/products.js` | komerce-api | EconomicFlowView, PricingStrategyView | `product_skus`, `product_variants`, `products` |
 
 ## 3. Tables à rayon de casse maximal (lues/écrites pour les 2 fronts)
@@ -42,6 +42,8 @@
 | `recipients` | 1 | 3 | 2 |
 | `relais` | 9 | 4 | 7 |
 | `scan_events` | 3 | 1 | 3 |
+| `shared_cart_items` | 1 | 3 | 2 |
+| `shared_carts` | 1 | 3 | 2 |
 | `users` | 10 | 7 | 6 |
 
 ## 4. Carte des coutures (partagés + fantômes)

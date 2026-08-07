@@ -9272,6 +9272,18 @@ body.cart-open  #k-section-index { display:none; }
   opacity: .55;
 }
 
+/* Mandat §5 — case de sélection locale (jamais affichée sur une ligne
+   claimed, cf. b-cart.js::snapshotItemRowHtml). Taille tactile confortable
+   (18px) cohérente avec les autres contrôles de la ligne. */
+.k-cart-item-select {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--coral, var(--cta-green));
+}
+
 .k-cart-snapshot-item-open {
   flex: 1 1 auto;
   min-width: 0;

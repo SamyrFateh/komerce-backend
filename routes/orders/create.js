@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*, services/product-admin-service.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       orders, product_skus, product_variants, products, recipients, relais
+ * @db-read       orders, product_skus, product_variants, products, recipients, relais, shared_cart_items, shared_carts
  * @db-write      cart_shares, order_items, order_status_history, orders, recipients
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -317,6 +317,98 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
         // promo que le catalogue et le shared-cart (§5/§6).
         item._effective_unit_price_kmf =
           productAdminService.computeSellablePricing({ product, resolvedSku: null }).effective_unit_price_kmf;
+      }
+
+      // ── Mandat §6 — intégrité du claim en commande ──────────────────
+      // La contrainte unique order_items_shared_cart_item_id_unique
+      // (migration 123, catch plus bas) arbitre uniquement la concurrence
+      // (deux acheteurs sur la même ligne). Elle ne garantit RIEN sur la
+      // cohérence produit/SKU/statut : sans ce bloc, un client pourrait
+      // envoyer un product_id/sku différent tout en portant le
+      // shared_cart_item_id d'une autre ligne, et la commande serait créée
+      // avec un claim incohérent (achat du produit B en réclamant la ligne
+      // partagée du produit A — interdiction explicite §19).
+      //
+      // FOR UPDATE sur shared_cart_items sérialise aussi les tentatives de
+      // claim concurrentes sur la MÊME ligne : une deuxième transaction
+      // visant le même shared_cart_item_id bloque ici jusqu'au commit/
+      // rollback de la première, puis relit un état à jour — ceinture et
+      // bretelles avec la contrainte unique, jamais un remplacement.
+      if (item.shared_cart_item_id) {
+        const { rows: sciRows } = await client.query(
+          `SELECT sci.id, sci.product_id, sci.sku_id, sci.variant_combo_snapshot,
+                  sci.quantity, sc.status AS cart_status,
+                  EXISTS (
+                    SELECT 1 FROM order_items oi WHERE oi.shared_cart_item_id = sci.id
+                  ) AS already_claimed
+             FROM shared_cart_items sci
+             JOIN shared_carts sc ON sc.id = sci.shared_cart_id
+            WHERE sci.id = $1
+            FOR UPDATE OF sci`,
+          [item.shared_cart_item_id]
+        );
+
+        if (!sciRows.length) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            error: 'Article de liste partagée introuvable.',
+            code: 'shared_cart_item_mismatch',
+          });
+        }
+        const sci = sciRows[0];
+
+        if (sci.cart_status !== 'open') {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            error: 'Cette liste partagée est fermée, l\'article ne peut plus être acheté.',
+            code: 'shared_cart_closed',
+          });
+        }
+
+        if (sci.already_claimed) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            error: 'Cet article de la liste a déjà été acheté.',
+            code: 'shared_cart_item_already_claimed',
+          });
+        }
+
+        if (String(sci.product_id) !== String(item.product_id)) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            error: 'L\'article de la liste partagée ne correspond pas au produit commandé.',
+            code: 'shared_cart_item_mismatch',
+          });
+        }
+
+        if (product.inventory_model === 'SKU') {
+          if (String(sci.sku_id || '') !== String(item._resolved_sku_id || '')) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+              error: 'Le SKU de la liste partagée ne correspond pas au SKU commandé.',
+              code: 'shared_cart_item_mismatch',
+            });
+          }
+          const orderedCombo = JSON.stringify(productAdminService.canonicalizeVariantCombo(item.variant_combo));
+          const snapshotCombo = JSON.stringify(
+            productAdminService.canonicalizeVariantCombo(sci.variant_combo_snapshot || null)
+          );
+          if (orderedCombo !== snapshotCombo) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+              error: 'La combinaison de la liste partagée ne correspond pas à celle commandée.',
+              code: 'shared_cart_item_mismatch',
+            });
+          }
+        }
+
+        if (qty > sci.quantity) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            error: `Quantité demandée supérieure à la ligne de liste partagée — disponible : ${sci.quantity}`,
+            code: 'shared_cart_item_mismatch',
+          });
+        }
       }
 
       total_kmf += item._effective_unit_price_kmf * qty;

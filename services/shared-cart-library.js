@@ -80,8 +80,12 @@ async function getSharedCartLibrary(userId) {
        LEFT JOIN users u ON u.id = sc.organizer_user_id
        LEFT JOIN LATERAL (
          SELECT SUM(sci.line_total_kmf_snapshot) AS total_kmf,
-                COUNT(*) AS items_count,
-                COUNT(oi.id) AS claimed_count
+                -- Mandat §11 — même correctif que listMySharedCarts
+                -- (services/shared-cart-reads.js) : items_count/claimed_count
+                -- en unités (SUM(quantity)), pas en lignes (COUNT(*)), pour
+                -- correspondre au libellé "X/Y articles" affiché ici aussi.
+                COALESCE(SUM(sci.quantity), 0) AS items_count,
+                COALESCE(SUM(sci.quantity) FILTER (WHERE oi.id IS NOT NULL), 0) AS claimed_count
            FROM shared_cart_items sci
            LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
           WHERE sci.shared_cart_id = sc.id

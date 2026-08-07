@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-06T21:37:48.401Z",
+  "generatedAt": "2026-08-07T00:07:21.909Z",
   "sources": {
     "backend": {
       "nodes": 770
@@ -20,7 +20,7 @@
     "endpointsConsumed": 87,
     "sharedEndpoints": 2,
     "phantomSeams": 0,
-    "sharedTables": 14
+    "sharedTables": 16
   },
   "endpoints": {
     "/api/shares": {
@@ -113,6 +113,8 @@
         "products",
         "recipients",
         "relais",
+        "shared_cart_items",
+        "shared_carts",
         "cart_shares",
         "order_items",
         "order_status_history"
@@ -1549,6 +1551,8 @@
       "recipients",
       "relais",
       "scan_events",
+      "shared_cart_items",
+      "shared_carts",
       "users"
     ]
   },
@@ -1797,6 +1801,34 @@
       ]
     },
     "recipients": {
+      "routes": [
+        "routes/orders/create.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "OrdersLogisticsView",
+        "ProblemsView"
+      ]
+    },
+    "shared_cart_items": {
+      "routes": [
+        "routes/orders/create.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "OrdersLogisticsView",
+        "ProblemsView"
+      ]
+    },
+    "shared_carts": {
       "routes": [
         "routes/orders/create.js"
       ],

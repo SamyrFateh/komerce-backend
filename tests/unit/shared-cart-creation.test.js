@@ -257,6 +257,7 @@ describe('shared-cart-creation', () => {
           { rows: [{ n: 0 }] },
           { rows: [skuProduct] },                                            // SELECT products
           { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] }, // resolveActiveSku
+          { rows: [] },                                                      // media (product_sku_media/catalog_media) — aucune, fallback image produit
           { rows: [{ full_name: 'Creator', phone: '000' }] },
           { rows: [] },
           { rows: [sharedCart] },
@@ -277,13 +278,46 @@ describe('shared-cart-creation', () => {
         ]);
       });
 
+      // Mandat §8/§9 — createSharedCartFromCartItems doit désormais consommer
+      // resolveSellableUnit() en entier (pas seulement resolveActiveSku +
+      // computeSellablePricing) : le média SKU explicite doit primer sur
+      // products.image_url quand une association product_sku_media existe,
+      // exactement comme addSharedCartItem/updateOpenSharedCartItems.
+      it('média SKU explicite prioritaire sur products.image_url (mandat §8/§9)', async () => {
+        const sharedCart = { id: 'cart-sku-media', status: 'open' };
+        const item = { id: 'sci-sku-media' };
+        const client = makeClient([
+          { rows: [{ n: 0 }] },
+          { rows: [skuProduct] },
+          { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
+          { rows: [{ url: 'https://cdn/chemise-noir-m-canonique.jpg' }] }, // média SKU explicite
+          { rows: [{ full_name: 'Creator', phone: '000' }] },
+          { rows: [] },
+          { rows: [sharedCart] },
+          { rows: [item] },
+          { rows: [], rowCount: 1 },
+        ]);
+        db.getClient.mockResolvedValue(client);
+
+        await createSharedCartFromCartItems('user-001', [
+          { product_id: 'prod-sku', quantity: 1, variant_combo: { couleur: 'Noir', taille: 'M' } },
+        ]);
+
+        const insertCall = client.calls.find(c => /INSERT INTO shared_cart_items/.test(c.sql));
+        expect(insertCall.params[5]).toBe('https://cdn/chemise-noir-m-canonique.jpg'); // product_image_snapshot
+        expect(insertCall.params[5]).not.toBe('chemise.jpg'); // jamais l'image générique quand un média SKU explicite existe
+      });
+
       it('deux variantes du meme produit restent deux lignes distinctes', async () => {
         const sharedCart = { id: 'cart-sku-2', status: 'open' };
         const client = makeClient([
           { rows: [{ n: 0 }] },
           { rows: [skuProduct] },
           { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
+          { rows: [] },                          // media item 1 — fallback image produit
+          { rows: [skuProduct] },                // SELECT products, item 2 (resolveSellableUnit — pas de fetch groupé)
           { rows: [{ id: 'sku-blanc-l', sku: 'CHEM-B-L', stock: 3, price_kmf: 16000 }] },
+          { rows: [] },                          // media item 2 — fallback image produit
           { rows: [{ full_name: 'Creator', phone: '000' }] },
           { rows: [] },
           { rows: [sharedCart] },
@@ -340,6 +374,7 @@ describe('shared-cart-creation', () => {
           { rows: [{ n: 0 }] },
           { rows: [skuProduct] },
           { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: null }] },
+          { rows: [] },                          // media — aucune, fallback image produit
           { rows: [{ full_name: 'Creator', phone: '000' }] },
           { rows: [] },
           { rows: [sharedCart] },

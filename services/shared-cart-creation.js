@@ -225,77 +225,48 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
     const productIds = [...new Set(cartItems.map(i => i.product_id).filter(Boolean))];
     if (productIds.length === 0) throw new Error('Aucun produit valide dans le panier');
 
-    const { rows: products } = await client.query(
-      `SELECT id, name, image_url, category, price_kmf,
-              promo_pct, is_promo, promo_until, is_active,
-              inventory_model, has_variants, stock
-         FROM products
-        WHERE id = ANY($1)`,
-      [productIds]
-    );
-    const productsById = {};
-    products.forEach(p => { productsById[p.id] = p; });
-
-    // GAP-07 §9.1 — l'unité vendable est l'identité canonique, pas
-    // seulement product_id. Deux lignes du même produit avec des
-    // combinaisons différentes (Chemise·Noir·M vs Chemise·Blanc·L)
-    // restent deux lignes distinctes : on n'agrège jamais par
-    // product_id ci-dessous, chaque entrée cartItems produit sa propre
-    // ligne shared_cart_items.
+    // Mandat §8 — boundary canonique. Ce writer ne reconstruit plus
+    // manuellement resolveActiveSku + contrôle stock + computeSellablePricing
+    // + products.image_url : resolveSellableUnit() (product-admin-service.js)
+    // est l'unique point d'entrée, y compris pour le média (SKU canonique via
+    // product_sku_media → catalog_media, fallback products.image_url — §9).
+    // Un produit introuvable/inactif reste un skip silencieux (comportement
+    // historique de ce writer, cohérent avec updateOpenSharedCartItems) ;
+    // une combinaison/stock invalide reste un refus explicite (rollback),
+    // jamais un skip qui ferait disparaître l'article sans le dire (GAP-07
+    // §9.1 — "ne jamais agréger uniquement par product_id").
     const enrichedItems = [];
     for (const item of cartItems) {
-      const p = productsById[item.product_id];
-      if (!p || !p.is_active) continue;
       const qty = r(item.quantity || 1);
-      if (qty <= 0) continue;
+      if (!item.product_id || qty <= 0) continue;
 
       const variantComboRaw = (item.variant_combo && typeof item.variant_combo === 'object' && !Array.isArray(item.variant_combo))
         ? item.variant_combo
         : null;
 
-      let resolvedSku = null;
-      let skuId = null;
-      let variantCombo = null;
-
-      if (p.inventory_model === 'SKU') {
-        // Boundary canonique (GAP-07 §5) — jamais de fallback vers un
-        // premier SKU ou une variante devinée : combinaison inconnue ou
-        // stock insuffisant → refus explicite (rollback), jamais un
-        // skip silencieux qui perdrait l'article sans le dire.
-        resolvedSku = await productAdminService.resolveActiveSku(client, p.id, variantComboRaw);
-        if (!resolvedSku) {
-          throw httpError(`Combinaison indisponible pour ${p.name}`, 409, 'sellable_unit_not_found');
-        }
-        if (resolvedSku.stock < qty) {
-          throw httpError(
-            `Stock insuffisant pour ${p.name} — disponible : ${resolvedSku.stock}`,
-            409, 'sellable_unit_out_of_stock'
-          );
-        }
-        skuId = resolvedSku.id;
-        variantCombo = productAdminService.canonicalizeVariantCombo(variantComboRaw);
-      } else if (variantComboRaw && p.has_variants) {
-        // Legacy : combinaison conservée telle quelle pour l'affichage/
-        // historique (§5), jamais utilisée pour distinguer un prix — un
-        // produit non-SKU n'a qu'un seul price_kmf pour toutes ses
-        // variantes.
-        variantCombo = variantComboRaw;
+      let unit;
+      try {
+        unit = await productAdminService.resolveSellableUnit(client, {
+          productId: item.product_id,
+          variantCombo: variantComboRaw,
+          quantity: qty,
+        });
+      } catch (err) {
+        if (err.code === 'product_not_found') continue;
+        throw err;
       }
-
-      const { effective_unit_price_kmf: unitPrice } =
-        productAdminService.computeSellablePricing({ product: p, resolvedSku });
-      if (unitPrice <= 0) continue;
+      if (unit.effective_unit_price_kmf <= 0) continue;
 
       enrichedItems.push({
-        product_id: p.id,
-        sku_id: skuId,
-        variant_combo: variantCombo,
-        name: p.name,
-        image_url: p.image_url,
-        category: p.category,
+        product_id: unit.product_id,
+        sku_id: unit.sku_id,
+        variant_combo: unit.variant_combo,
+        name: unit.name,
+        image_url: unit.image_url,
+        category: unit.category,
         quantity: qty,
-        unit_price_kmf: unitPrice,
-        line_total_kmf: unitPrice * qty,
+        unit_price_kmf: unit.effective_unit_price_kmf,
+        line_total_kmf: unit.effective_unit_price_kmf * qty,
       });
     }
 

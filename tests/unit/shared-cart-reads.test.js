@@ -179,10 +179,27 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
 
     const result = await getSharedCartForPublic('tok-1', 'user-organizer');
 
+    // Mandat §11 — items_count représente des unités achetées (SUM quantity),
+    // pas des lignes : Karim a 2 lignes claimed mais quantity 2+1 = 3 unités.
     expect(result.contributors).toEqual([
-      { first_name: 'Karim', items_count: 2 },
+      { first_name: 'Karim', items_count: 3 },
       { first_name: 'Fatima', items_count: 1 },
     ]);
+  });
+
+  // Mandat §11 — preuve directe et minimale : une SEULE ligne claimed avec
+  // quantity > 1 doit compter pour plusieurs articles, pas pour 1. Isole le
+  // bug (avant correctif : items_count += 1 par ligne, jamais par quantité).
+  it('une ligne claimed avec quantity > 1 compte pour sa quantité, pas pour 1 (mandat §11)', async () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
+    const items = [
+      { id: 'sci-1', name: 'Cadre photo', image: null, quantity: 4, unit_price_kmf: 500, line_total_kmf: 2000, claimed: true, buyer_user_id: 'user-samsam', buyer_full_name: 'Samsam Attoumani' },
+    ];
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
+
+    const result = await getSharedCartForPublic('tok-1', 'user-organizer');
+
+    expect(result.contributors).toEqual([{ first_name: 'Samsam', items_count: 4 }]);
   });
 
   it('getSharedCartForPublic ne mappe jamais contributors pour un participant (doctrine : jamais dans le payload participant)', async () => {

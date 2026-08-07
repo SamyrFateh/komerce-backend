@@ -24,6 +24,7 @@ const detailSchema = require('../schemas/catalog/product-detail.v1.schema.json')
 const { listCommercialTransportRails } = require('./transport-rails');
 const { getRule } = require('../utils/rules');
 const { quoteTransportPriceForItem, TransportPricingError } = require('./transport-pricing');
+const { applyCanonicalPromotion } = require('./product-admin-service');
 
 const CONTRACT_VERSION = '1';
 
@@ -303,6 +304,15 @@ function buildSellableUnits(product, skuRows, media, explicitSkuMediaMap = new M
           .filter((item) => mediaMatchesOptions(item.option_values, optionValues))
           .map((item) => item.id);
     const quantity = Math.max(0, Number(sku.stock) || 0);
+    // Mandat §10 — le prix exposé au frontend DOIT être le prix effectif
+    // (celui réellement facturé par computeSellablePricing() à la commande),
+    // jamais le prix de base brut. Même fonction pure (applyCanonicalPromotion,
+    // services/product-admin-service.js), même gating (is_promo ET promo_pct>0
+    // ET promo_until absent/futur), pour ne jamais dupliquer cette règle côté
+    // catalogue avec un risque de divergence (badge -X% affiché alors que la
+    // commande ne remise pas, ou l'inverse).
+    const baseSkuPrice = asNullableInteger(sku.price_kmf) ?? asNullableInteger(product.price_kmf);
+    const effectiveSkuPrice = baseSkuPrice != null ? applyCanonicalPromotion(baseSkuPrice, product) : null;
 
     return {
       sku_id: sku.id,
@@ -310,7 +320,7 @@ function buildSellableUnits(product, skuRows, media, explicitSkuMediaMap = new M
       option_values: optionValues,
       stock_status: quantity > 0 ? 'AVAILABLE' : 'OUT_OF_STOCK',
       available_quantity: quantity,
-      price_kmf: asNullableInteger(sku.price_kmf) ?? asNullableInteger(product.price_kmf),
+      price_kmf: effectiveSkuPrice,
       media_ids: [...new Set(mediaIds)],
     };
   });
@@ -398,7 +408,7 @@ function assertContract(detail) {
 async function getProductDetail(dbClient, productId) {
   const { rows: [product] } = await dbClient.query(
     `SELECT id, product_ref, sku, name, description, category, subcategory, series,
-            price_kmf, promo_pct, image_url, images, has_variants, inventory_model,
+            price_kmf, promo_pct, is_promo, promo_until, image_url, images, has_variants, inventory_model,
             air_eligibility_status, weight_kg, volume_cm3
        FROM products
       WHERE id = $1 AND is_active = TRUE`,
@@ -510,12 +520,24 @@ async function getProductDetail(dbClient, productId) {
       subcategory: product.subcategory || null,
       series: product.series || null,
     },
-    pricing: {
-      price_kmf: asNullableInteger(product.price_kmf),
-      // Le catalogue ne reconstruit pas un ancien prix depuis promo_pct.
-      old_price_kmf: null,
-      promo_pct: asNullableNumber(product.promo_pct),
-    },
+    pricing: (() => {
+      // Mandat §10 — même principe qu'au niveau SKU juste au-dessus : le
+      // prix affiché est le prix effectif (post-promotion canonique),
+      // jamais le prix de base brut accompagné d'un badge -X% qui pourrait
+      // ne rien remiser réellement à la commande. old_price_kmf n'est
+      // renseigné QUE si une remise est réellement appliquée (promo active
+      // au sens applyCanonicalPromotion) — jamais reconstruit depuis un
+      // promo_pct qui ne serait pas actif (is_promo faux ou promo_until
+      // dépassé), pour ne jamais afficher un badge de promotion mensonger.
+      const basePriceKmf = asNullableInteger(product.price_kmf);
+      const effectivePriceKmf = basePriceKmf != null ? applyCanonicalPromotion(basePriceKmf, product) : null;
+      const promoActuallyApplied = effectivePriceKmf != null && basePriceKmf != null && effectivePriceKmf < basePriceKmf;
+      return {
+        price_kmf: effectivePriceKmf,
+        old_price_kmf: promoActuallyApplied ? basePriceKmf : null,
+        promo_pct: promoActuallyApplied ? asNullableNumber(product.promo_pct) : null,
+      };
+    })(),
     media,
     option_axes: buildOptionAxes(variantRows),
     sellable_units: buildSellableUnits(product, skuRows, media, explicitSkuMediaMap),

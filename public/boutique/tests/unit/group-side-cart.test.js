@@ -256,13 +256,15 @@ describe('group-side-cart — adaptation du payload (contrat contextuel)', () =>
   });
 });
 
-describe('group-side-cart — calcul des capacités', () => {
-  it('availableCount/availableTotal excluent les lignes réclamées', () => {
+describe('group-side-cart — calcul des capacités (mandat §5 — sélection locale)', () => {
+  it('availableCount total les lignes non réclamées ; selectedCount/selectedTotal reflètent la sélection (tout sélectionné par défaut à la première activation)', () => {
     activateSharedListContext(payload(), 'tok-1');
     const [context] = renderCartSnapshot.mock.calls.at(-1);
     // i1 (2 x 1000, non réclamé) compte ; i2 (réclamé) exclu.
     expect(context.availableCount).toBe(1);
-    expect(context.availableTotal).toBe(2000);
+    expect(context.selectedCount).toBe(1);
+    expect(context.selectedTotal).toBe(2000);
+    expect(context.selectedItemIds.has('i1')).toBe(true);
   });
 
   it('tout est réclamé → capacités à zéro', () => {
@@ -272,7 +274,77 @@ describe('group-side-cart — calcul des capacités', () => {
     );
     const [context] = renderCartSnapshot.mock.calls.at(-1);
     expect(context.availableCount).toBe(0);
-    expect(context.availableTotal).toBe(0);
+    expect(context.selectedCount).toBe(0);
+    expect(context.selectedTotal).toBe(0);
+  });
+
+  // Mandat §5 — "sélection locale ≠ mutation de la liste" : désélectionner
+  // une ligne réduit selectedCount/selectedTotal sans jamais toucher
+  // availableCount (le nombre réel de lignes disponibles ne change pas).
+  it('désélectionner une ligne réduit selectedCount/selectedTotal, jamais availableCount', () => {
+    const twoAvailable = payload({
+      items: [
+        { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
+        { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: false },
+      ],
+    });
+    activateSharedListContext(twoAvailable, 'tok-1');
+    let [context, , actions] = renderCartSnapshot.mock.calls.at(-1);
+    expect(context.selectedCount).toBe(2);
+
+    renderCartSnapshot.mockClear();
+    actions.onToggleSelect('i2');
+
+    [context] = renderCartSnapshot.mock.calls.at(-1);
+    expect(context.availableCount).toBe(2);
+    expect(context.selectedCount).toBe(1);
+    expect(context.selectedTotal).toBe(1000);
+    expect(context.selectedItemIds.has('i2')).toBe(false);
+  });
+
+  // Mandat §5 — une ligne fraîchement disponible après un refresh (ajout
+  // en mode édition, ou déblocage) est présélectionnée par défaut ; une
+  // ligne déjà désélectionnée par l'utilisateur le reste après un refresh
+  // qui ne change rien d'autre.
+  it('une nouvelle ligne disponible après refresh est présélectionnée ; une désélection existante survit au refresh', async () => {
+    const twoAvailable = payload({
+      items: [
+        { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
+        { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: false },
+      ],
+    });
+    activateSharedListContext(twoAvailable, 'tok-1');
+    const [, , actionsBeforeRefresh] = renderCartSnapshot.mock.calls.at(-1);
+    actionsBeforeRefresh.onToggleSelect('i2'); // désélectionne i2
+
+    getSharedCartPublic.mockResolvedValueOnce(payload({
+      items: [
+        { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
+        { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: false },
+        { id: 'i3', product_id: 'p3', name: 'Thé', unit_price_kmf: 500, quantity: 1, claimed: false },
+      ],
+    }));
+    await refreshSharedListContext();
+
+    const [context] = renderCartSnapshot.mock.calls.at(-1);
+    expect(context.selectedItemIds.has('i1')).toBe(true);  // inchangé
+    expect(context.selectedItemIds.has('i2')).toBe(false); // désélection préservée
+    expect(context.selectedItemIds.has('i3')).toBe(true);  // nouvelle ligne, présélectionnée
+  });
+
+  // Mandat §5 — une ligne réclamée entre-temps sort de la sélection (elle
+  // n'est de toute façon plus achetable), sans jamais planter.
+  it('une ligne réclamée entre-temps sort silencieusement de la sélection', async () => {
+    activateSharedListContext(payload(), 'tok-1'); // i1 disponible, présélectionné
+
+    getSharedCartPublic.mockResolvedValueOnce(payload({
+      items: [{ id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 2, claimed: true, buyer_first_name: 'Ali' }],
+    }));
+    await refreshSharedListContext();
+
+    const [context] = renderCartSnapshot.mock.calls.at(-1);
+    expect(context.selectedItemIds.has('i1')).toBe(false);
+    expect(context.selectedCount).toBe(0);
   });
 });
 
@@ -550,6 +622,75 @@ describe('group-side-cart — temps réel (fraîcheur du snapshot, lot 2026-08)'
     await refreshSharedListContext();
 
     expect(renderCartSnapshot).toHaveBeenCalled();
+  });
+
+  // Mandat §12 — la signature doit couvrir TOUTES les données visibles
+  // susceptibles de changer, pas seulement id/quantité/claimed. Ces 5 tests
+  // isolent chacun un seul champ pour prouver qu'il est bien couvert
+  // (avant correctif, aucun des 5 n'aurait déclenché de rerender).
+  describe('§12 — signature couvre tous les champs visibles', () => {
+    it('prix modifié (même quantité/claimed) → rerend', async () => {
+      activateSharedListContext(payload(), 'tok-1');
+      renderCartSnapshot.mockClear();
+      getSharedCartPublic.mockResolvedValueOnce(
+        payload({ items: [{ id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1500, quantity: 2, claimed: false }] })
+      );
+
+      await refreshSharedListContext();
+
+      expect(renderCartSnapshot).toHaveBeenCalled();
+    });
+
+    it('image modifiée → rerend', async () => {
+      activateSharedListContext(payload({ items: [{ id: 'i1', product_id: 'p1', name: 'Riz', image: 'https://cdn/a.jpg', unit_price_kmf: 1000, quantity: 2, claimed: false }] }), 'tok-1');
+      renderCartSnapshot.mockClear();
+      getSharedCartPublic.mockResolvedValueOnce(
+        payload({ items: [{ id: 'i1', product_id: 'p1', name: 'Riz', image: 'https://cdn/b.jpg', unit_price_kmf: 1000, quantity: 2, claimed: false }] })
+      );
+
+      await refreshSharedListContext();
+
+      expect(renderCartSnapshot).toHaveBeenCalled();
+    });
+
+    it('variant_combo modifié → rerend', async () => {
+      activateSharedListContext(payload({ items: [{ id: 'i1', product_id: 'p1', name: 'Chemise', variant_combo: { couleur: 'Noir' }, unit_price_kmf: 1000, quantity: 1, claimed: false }] }), 'tok-1');
+      renderCartSnapshot.mockClear();
+      getSharedCartPublic.mockResolvedValueOnce(
+        payload({ items: [{ id: 'i1', product_id: 'p1', name: 'Chemise', variant_combo: { couleur: 'Blanc' }, unit_price_kmf: 1000, quantity: 1, claimed: false }] })
+      );
+
+      await refreshSharedListContext();
+
+      expect(renderCartSnapshot).toHaveBeenCalled();
+    });
+
+    it('titre de la liste modifié (mêmes lignes) → rerend', async () => {
+      activateSharedListContext(payload({ cart: { ...payload().cart, title: 'Ancien titre' } }), 'tok-1');
+      renderCartSnapshot.mockClear();
+      getSharedCartPublic.mockResolvedValueOnce(
+        payload({ cart: { ...payload().cart, title: 'Nouveau titre' } })
+      );
+
+      await refreshSharedListContext();
+
+      expect(renderCartSnapshot).toHaveBeenCalled();
+    });
+
+    it('contributeurs modifiés (mêmes lignes) → rerend', async () => {
+      activateSharedListContext(
+        payload({ is_creator: true, contributors: [{ first_name: 'Ali', items_count: 2 }] }),
+        'tok-1'
+      );
+      renderCartSnapshot.mockClear();
+      getSharedCartPublic.mockResolvedValueOnce(
+        payload({ is_creator: true, contributors: [{ first_name: 'Ali', items_count: 3 }] })
+      );
+
+      await refreshSharedListContext();
+
+      expect(renderCartSnapshot).toHaveBeenCalled();
+    });
   });
 
   it("n'interroge pas le backend hors de la vue Boutique (body sans k-view-shop)", () => {

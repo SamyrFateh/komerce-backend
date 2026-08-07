@@ -653,8 +653,10 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
    * @property {boolean} isOrganizer
    * @property {boolean} editMode - Lot B, mode édition explicite (quantité/retrait visibles seulement si true)
    * @property {string} headerTitle
-   * @property {number} availableCount
-   * @property {number} availableTotal
+   * @property {number} availableCount - total de lignes non réclamées (distingue "Tout est acheté" de 0 disponible)
+   * @property {number} selectedCount - mandat §5, sous-ensemble sélectionné localement — alimente le CTA "Acheter (N)"
+   * @property {number} selectedTotal - mandat §5, sous-total de la sélection locale, jamais de availableTotal
+   * @property {Set<string>} selectedItemIds - mandat §5, pour cocher la case de chaque ligne sélectionnée
    * @property {boolean} showSaveAction
    * @property {boolean} saved
    * @property {Set<string>} pendingQuantityItemIds
@@ -668,7 +670,12 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     const trimmed = raw.trim();
     if (!trimmed) return false;
     try {
-      const resolved = new URL(trimmed, window.location.origin);
+      // Mandat §9 — jamais de résolution avec base : une chaîne sans schéma
+      // explicite (ex. "ges.unsplash.com/photo-cassee", bug de données
+      // confirmé en production) serait sinon acceptée comme chemin relatif
+      // à window.location.origin et produirait quand même un <img> cassé.
+      // Seule une URL absolue http(s) est renderable.
+      const resolved = new URL(trimmed);
       return resolved.protocol === 'http:' || resolved.protocol === 'https:';
     } catch (_) {
       return false;
@@ -761,6 +768,19 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       ? `<button type="button" class="k-cart-item-remove" data-item-id="${sanitize(String(item.id))}" aria-label="Retirer cet article" title="Retirer">✕</button>`
       : '';
 
+    // Mandat §5 — case de sélection locale, visible pour toute ligne
+    // disponible, y compris HORS mode édition (un participant, ou
+    // l'organisateur "comme tout participant", doit pouvoir choisir quels
+    // articles acheter sans entrer en mode édition). Jamais affichée sur
+    // une ligne claimed — verrouillée, non sélectionnable par construction
+    // (pas seulement grisée en CSS : voir group-side-cart.js::
+    // toggleItemSelection, garde métier défensive identique).
+    const selected = !claimed && !!(context.selectedItemIds && context.selectedItemIds.has(String(item.id)));
+    const selectCheckbox = !claimed
+      ? `<input type="checkbox" class="k-cart-item-select" data-item-id="${sanitize(String(item.id))}" ` +
+          `aria-label="Sélectionner « ${sanitize(item.name || 'cet article')} » pour l'achat" ${selected ? 'checked' : ''}>`
+      : '';
+
     const openLabel = `Voir la fiche produit — ${item.name || 'cet article'}`;
     // GAP-07 §11 — la variante s'affiche sous le nom, jamais fusionnée
     // avec une autre ligne du même produit (deux combinaisons distinctes
@@ -771,6 +791,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       : '';
     return (
       `<div class="${classes.join(' ')}" data-item-id="${sanitize(String(item.id))}">` +
+        selectCheckbox +
         `<button type="button" class="k-cart-snapshot-item-open" data-item-id="${sanitize(String(item.id))}" aria-label="${sanitize(openLabel)}">` +
           `<div class="k-cart-item-img${imgWrapClass}">${img}</div>` +
           `<div class="k-cart-item-info">` +
@@ -802,6 +823,12 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     });
     root.querySelectorAll('.k-cart-snapshot-item-open').forEach((btn) => {
       btn.addEventListener('click', () => actions.onOpenProduct(btn.dataset.itemId));
+    });
+    // Mandat §5 — sélection locale, jamais une mutation de la liste :
+    // 'change' (pas 'click', pour rester cohérent avec la sémantique
+    // native d'une case à cocher, y compris navigation clavier).
+    root.querySelectorAll('.k-cart-item-select').forEach((cb) => {
+      cb.addEventListener('change', () => actions.onToggleSelect(cb.dataset.itemId));
     });
   }
 
@@ -927,8 +954,8 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     const subtotalEl = document.getElementById('k-cart-subtotal-val');
     if (itemCountEl) itemCountEl.textContent = `${claimedCount}/${items.length}`;
     if (itemPluralEl) itemPluralEl.textContent = ' déjà achetés';
-    if (subtotalEl) subtotalEl.textContent = fmt(context.availableTotal, 'KMF');
-    if (dom.cartTotalVal) dom.cartTotalVal.textContent = fmt(context.availableTotal, 'KMF');
+    if (subtotalEl) subtotalEl.textContent = fmt(context.selectedTotal, 'KMF');
+    if (dom.cartTotalVal) dom.cartTotalVal.textContent = fmt(context.selectedTotal, 'KMF');
     if (dom.cartTotalConv) dom.cartTotalConv.textContent = '';
 
     const btnRow = document.getElementById('k-cart-footer-btns');
@@ -958,8 +985,13 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       closeBtn.onclick = () => actions.onClose();
     }
     const buyBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-buy', 'kcf-btn kcf-full');
-    buyBtn.textContent = context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.availableCount})`;
-    buyBtn.disabled = context.availableCount === 0;
+    // Mandat §5 — le CTA reflète la sélection locale (selectedCount), pas
+    // le total disponible : "Tout est acheté" reste gaté sur
+    // availableCount (aucune ligne restante), mais sinon le nombre affiché
+    // et l'activation du bouton dépendent de ce que l'utilisateur a
+    // effectivement coché.
+    buyBtn.textContent = context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.selectedCount})`;
+    buyBtn.disabled = context.availableCount === 0 || context.selectedCount === 0;
     buyBtn.onclick = () => actions.onBuy();
   }
 
@@ -989,7 +1021,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     SIDECART_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => sc.querySelector('#' + id)?.classList.add('u-hidden'));
 
     const totalEl = sc.querySelector('#k-sc-total');
-    if (totalEl) totalEl.textContent = fmt(context.availableTotal, 'KMF');
+    if (totalEl) totalEl.textContent = fmt(context.selectedTotal, 'KMF');
 
     const scHeader = sc.querySelector('.k-sc-header');
     removeSnapshotButtons(scHeader);
@@ -1017,8 +1049,9 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       closeBtn.onclick = () => actions.onClose();
     }
     const buyBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-buy', 'k-sc-btn-checkout');
-    buyBtn.textContent = context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.availableCount})`;
-    buyBtn.disabled = context.availableCount === 0;
+    // Mandat §5 — même règle que la version drawer ci-dessus (selectedCount).
+    buyBtn.textContent = context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.selectedCount})`;
+    buyBtn.disabled = context.availableCount === 0 || context.selectedCount === 0;
     buyBtn.onclick = () => actions.onBuy();
   }
 
