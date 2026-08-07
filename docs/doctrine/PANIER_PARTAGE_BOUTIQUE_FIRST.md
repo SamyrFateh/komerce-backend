@@ -1,162 +1,150 @@
-# Komerce — Panier partagé
+# Komerce — Liste partagée · Doctrine Boutique First
 
-> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+> **Canonique — août 2026**
+>
+> Une liste publiée est un snapshot figé. Les proches achètent des articles ; Komerce ne gère ni cagnotte, ni engagement, ni contribution collective.
 
-## Doctrine intemporelle · Boutique First
+## 1. Principe
 
-> **Chacun gère sa négo. Komerce sait matérialiser l'achat.**
+**La liste active est le panier visible.**
 
-Ce document n'est pas une spécification. Les specs vieillissent, les routes changent, les statuts techniques se renomment. Ceci est la direction. Quand un choix se présente et qu'on hésite, on revient ici.
+Il n'existe pas de seconde surface concurrente, de panier collectif financier ou de checkout de groupe.
 
----
+La liste partage des articles réels. Chaque achat reste un achat Komerce normal.
 
-## 1. La phrase
+## 2. Création = publication
 
-**Un panier partagé n'est pas un checkout partagé.**
+Le créateur prépare librement son panier personnel.
 
-C'est une vue boutique partageable, avec un suivi minimum. Tout lien partagé ouvre d'abord la boutique. Le paiement n'est jamais le point d'entrée : il est une action possible *à l'intérieur* de la vue panier.
+Lorsqu'il crée la liste, son contenu publié devient structurellement immuable : produits, variantes et quantités sont figés.
 
-**La négociation appartient aux humains. La matérialisation appartient à Komerce.**
+`OPEN` signifie **achetable**, jamais **éditable**.
 
-Qui paie, combien, pourquoi, avec quelle culpabilité ou quelle générosité, dans quel ordre, après quel coup de téléphone : c'est la famille, la diaspora, les liens qui existaient déjà avant nous. Komerce n'arbitre pas, ne relance pas, ne tient pas de cagnotte, ne gère pas de campagne. Komerce s'arrête là où commence l'intime, et reprend là où commence l'achat.
+Une erreur après publication se corrige en fermant la liste puis en en publiant une nouvelle. L'ancien lien ne change pas silencieusement.
 
-Komerce sait faire une chose : **transformer une intention en un objet réel, visible, et livré.**
+## 3. Une seule surface
 
----
+Quand une liste est active, elle occupe la surface panier/side-cart.
 
-## 2. Ce que c'est — et ce que ce n'est pas
+Le panier personnel continue d'exister en état isolé mais ne concurrence jamais la liste dans l'interface.
 
-C'est une boutique qu'on partage avec ceux qui nous aiment.
+Fermer le contexte de liste restitue le panier personnel. Aucune bascule manuelle panier/liste n'est nécessaire.
 
-Ce n'est pas une plateforme de financement. Pas un portefeuille. Pas une cagnotte. Pas un transfert d'argent. Pas un arbitre des comptes familiaux.
+## 4. Une ligne = une décision d'achat
 
-Le panier montre des choses vraies, à des prix vrais, qui arriveront vraiment. On ne paie pas un concept ni une promesse : on règle sa part d'un panier réel.
+Chaque ligne disponible expose l'article, son prix, son état et l'action `Acheter`.
 
-Komerce ne collecte pas pour atteindre un objectif abstrait. Komerce encaisse une part d'un panier réel, plafonnée au reste dû.
+`Acheter` ouvre le checkout standard avec cette ligne uniquement.
 
----
+Une ligne achetée reste visible mais devient verrouillée : `Déjà acheté`.
 
-## 3. La personne au centre
+Le snapshot structurel ne change pas ; seul son état transactionnel évolue.
 
-Tout se décide dans un seul instant.
+## 5. Organisateur et participant
 
-Quelqu'un qui n'a jamais entendu parler de Komerce ouvre un lien reçu par WhatsApp, sur un téléphone modeste, sur un réseau lent, et on lui demande de sortir de l'argent pour un pays à l'autre bout du monde.
+L'organisateur voit `Déjà acheté par <nom>` lorsqu'une ligne a été achetée. Ses actions de liste sont `Partager`, `Fermer la liste` et `Payer` lorsqu'il reste des lignes disponibles.
 
-C'est le creuset. La confiance se gagne ou se perd là. Toute décision de design, de copie, d'architecture se juge à cette aune : **est-ce que ça rassure l'inconnu au moment où il s'apprête à payer ?**
+Il n'existe plus de stepper, de suppression, de mode Modifier ni de CTA `Ajouter à cette liste`.
 
-C'est pour cette personne qu'on ouvre la boutique en premier. On ne la met pas devant un formulaire de paiement : on la met devant un magasin. Le magasin est le mécanisme de confiance.
+Le participant voit `Déjà acheté`, peut `Sauvegarder`, acheter une ligne disponible ou utiliser `Payer`.
 
----
+Sauvegarder crée un signet d'accès. Cela ne copie ni ne modifie la liste.
+## 6. Payer
 
-## 4. Le voyage du lien
+Le CTA global s'appelle `Payer · X KMF`.
 
-Toujours le même chemin :
+Il achète en une seule commande toutes les lignes encore disponibles.
 
-1. **Le lien ouvre la boutique.** Une vraie vue, claire, rapide, rassurante.
-2. **La preuve.** On voit le créateur, les articles, les images, les prix, le total, et ce qui reste à régler.
-3. **La lecture seule.** On peut explorer, ouvrir les fiches produits, comprendre. On ne peut jamais casser ni modifier le panier partagé.
-4. **Régler ma part.** Une vérité simple sur un bouton. Le montant ne dépasse jamais le reste.
-5. **Le retour.** Après le paiement, retour dans la boutique, panier mis à jour, reste diminué, message clair. Jamais de page morte.
+Il ne signifie jamais contribuer d'un montant libre, promettre une somme, financer un objectif ou compléter une cagnotte.
 
----
+S'il ne reste aucune ligne achetable, le CTA disparaît.
 
-## 5. Les deux natures du panier
+## 7. Concurrence et vérité d'achat
 
-Au moment de partager, le créateur répond à une question humaine :
+Le frontend informe. Le backend décide.
 
-**Ce panier est-il prêt à être payé ?**
+Deux personnes ne doivent jamais pouvoir acheter la même ligne.
 
-- **Prêt à payer** — le panier est décidé, évident. Les proches consultent et règlent leur part tout de suite. C'est le choix par défaut.
-- **À valider ensemble** — le panier est important, cher, à mûrir. Les proches consultent, voient les articles et le total, mais ne paient pas encore. Le créateur ouvrira les paiements quand le panier sera confirmé.
+Le rattachement de la ligne partagée à la commande et la contrainte d'unicité en base protègent contre les achats concurrents.
 
-Deux natures. Aucune n'est un workflow. Le créateur choisit la nature de son geste, pas un état de machine.
+Après confirmation : `Disponible → Déjà acheté`.
 
----
+## 8. Fiche produit et panier personnel
 
-## 6. Flexibilité et invariants
+Ouvrir une fiche produit depuis une liste ne donne jamais le droit de modifier cette liste.
 
-Boutique First ne veut pas dire rigide. Ça veut dire : flexible dans l'usage, strict dans les invariants.
+`Ajouter au panier` vise le panier personnel de l'utilisateur, organisateur comme participant.
 
-Flexible :
+Ce panier reste isolé tant que la liste occupe la surface canonique.
 
-- le créateur choisit `Prêt à payer` ou `À valider ensemble` ;
-- il choisit une date limite raisonnable ;
-- il peut ouvrir les paiements plus tard ;
-- il peut ajuster tant qu'aucun paiement n'a verrouillé le panier ;
-- le proche règle le montant qu'il veut, dans la limite du reste.
+## 9. Partager
 
-Non négociable :
+Partager une liste active réutilise toujours son lien.
 
-- le lien ouvre toujours la boutique ;
-- le participant ne modifie jamais le panier partagé ;
-- le montant ne dépasse jamais le reste ;
-- le paiement n'est réussi qu'après confirmation bancaire ;
-- aucun statut technique ne remonte aux humains.
+Repartager ne crée jamais une nouvelle liste.
 
----
+Une nouvelle liste naît uniquement d'une intention explicite de publication depuis un panier personnel.
 
-## 7. Irréprochable
+Le partage simple `/api/shares`, utilisé notamment pour les favoris, n'est pas une liste collective : il ne porte ni engagement, ni contribution, ni paiement collectif.
 
-Comme on ne fait qu'une seule chose, cette chose porte tout. Irréprochable ne veut pas dire tout faire. Ça veut dire, sans exception :
+## 10. Fermer
 
-- aucun doute ;
-- aucune fausse promesse ;
-- aucun statut bizarre ;
-- aucun bouton mort ;
-- aucune surprise au paiement ;
-- aucun écran qui fait peur.
+Fermer une liste interdit les nouveaux achats, libère son quota actif et restitue le panier personnel.
 
-Net, fiable, premium, sans ambiguïté. Pas plus large, pas plus financier, pas plus ambitieux que nos moyens — mais parfaitement tenu.
+Pour corriger une liste publiée :
 
----
+**Fermer → préparer le bon panier → publier une nouvelle liste.**
 
-## 8. Les invariants qui protègent
+Jamais : publier puis modifier silencieusement le snapshot partagé.
 
-- On n'accepte un paiement que lorsque le panier est réellement payable.
-- On ne prélève jamais plus que le reste à couvrir.
-- La liste est un instantané structurel figé dès sa publication : produits, variantes et quantités ne changent plus ; seuls disponibilité et statut d'achat peuvent évoluer.
-- Un paiement n'est tenu pour réussi qu'une fois confirmé par la banque.
-- Ni le participant ni l'organisateur ne modifient une liste publiée ; une erreur se corrige en fermant la liste puis en en publiant une nouvelle.
-- Tout geste qui touche à l'argent laisse une trace.
+## 11. États métier minimaux
 
----
+Le domaine de la liste reste volontairement petit :
 
-## 9. La langue qu'on parle aux humains
+- `OPEN` : publiée et achetable ;
+- `CLOSED` : fermée aux nouveaux achats ;
+- `CANCELLED` : annulée.
 
-Le produit visible ne raconte qu'une histoire :
+Commandes et paiements gardent leurs propres états. La liste ne recrée pas une machine financière parallèle.
 
-> Voici le panier.  
-> Voici ce qui reste.  
-> Tu peux régler ta part.  
-> Merci, c'est pris en compte.
+## 12. Ce qui n'existe plus
 
-Les seuls états qu'un humain voit sont :
+La liste partagée ne possède plus :
 
-- **En préparation** — on peut consulter, pas encore payer.
-- **Ouvert au paiement** — on peut régler sa part.
-- **Fermé** — la période de paiement est passée.
-- **Finalisé** — la commande est faite.
-- **Annulé** — terminé, rien n'est dû.
+- engagement indicatif ;
+- contribution ;
+- montant libre participant ;
+- passage collectif au règlement ;
+- panier sur-couvert ;
+- fenêtre de collecte ;
+- modification post-publication ;
+- reconstruction du snapshot en panier éditable ;
+- routes `as-cart-items` ou mutations `/items` ;
+- moteur `event + contributions` sous `/api/shares`.
 
-Toute la mécanique d'état qui vit sous le capot peut rester dans le moteur, mais **elle ne parle jamais aux humains**.
+Ces concepts ne doivent pas réapparaître sous un nouveau nom.
 
----
+## 13. Retrait — décision produit actée
 
-## 10. La ligne à ne jamais franchir
+Le code de retrait reste produit par le mécanisme canonique. La liste ne génère jamais un second secret.
 
-Komerce matérialise un achat. Komerce ne financiarise pas l'aide.
+Décision produit à implémenter et certifier dans le lot checkout/retrait :
 
-À l'instant où l'on se met à gérer des fonds collectifs vers un objectif, à arbitrer un financement incomplet, à détenir de l'argent en attente, à relancer des contributeurs, on cesse d'être un commerçant qui se fait payer pour devenir autre chose : un établissement de paiement.
+- le participant doit pouvoir choisir que Komerce adresse le code de retrait à l'organisateur ;
+- sinon le participant reçoit ou conserve le code et peut le transmettre lui-même.
 
-Ce n'est pas notre métier, ce n'est pas à notre portée, et ce n'est pas ce dont nos clients ont besoin.
+Cette option réutilise le mécanisme canonique existant, sans nouveau système de codes.
 
-Si un jour ce pari change — devenir le rail de la diaspora à grande échelle — il se décidera les yeux ouverts, avec un juriste dans la pièce et de quoi tenir. Pas par accumulation de petites décisions techniques. Jusque-là : **Boutique First.**
+## 14. Invariant de conception
 
----
+Si une évolution semble nécessiter un nouveau composant collectif, une route financière ou un état de groupe, demander d'abord :
+
+> Peut-on résoudre ce besoin avec la liste figée + checkout standard + commande standard ?
+
+La réponse par défaut est oui.
 
 ## Le serment
 
-> La négociation est à eux. L'achat est à nous.  
-> On ouvre une boutique, pas un guichet.  
-> On montre du vrai, on plafonne au juste, on confirme avant de promettre.  
-> On ne fait qu'une chose — et on la tient parfaitement.
+> La liste dit ce qui a été décidé.
+> L'achat dit qui l'a acheté.
+> Komerce vend des objets ; il ne tient pas les comptes de la famille.

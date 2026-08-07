@@ -138,8 +138,6 @@ module.exports = {
     // Les documents suivants décrivent l'ancien domaine V4/V4.1 et doivent
     // être mis à jour ou archivés (hors périmètre de ce lot, code-only) :
     // docs/doctrine/DOCTRINE_PANIER_COLLECTIF.md,
-    // docs/doctrine/DOCTRINE_PANIER_PARTAGE.md,
-    // docs/doctrine/DOCTRINE_PANIER_PARTAGE_SURCOUVERTURE.md
   ],
 
   // ── Tables DB ────────────────────────────────────────────────────────────
