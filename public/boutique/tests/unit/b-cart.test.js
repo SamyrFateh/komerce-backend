@@ -607,6 +607,26 @@ describe('b-cart', () => {
       expect(dom.cartBody.textContent).toContain('6500 KMF');
     });
 
+    it('P0 (audit terrain — F22-6/F22-7) : un side-cart:render externe (panier personnel vide) ne vide jamais le panneau pendant qu\'une liste est active', () => {
+      // Régression du bug réel : renderSideCart() (rendu du panier
+      // PERSONNEL) était câblée sur 'side-cart:render' sans aucune garde.
+      // Cet événement est émis pour de multiples raisons pendant qu'une
+      // liste partagée est active (ex. group-side-cart.js après une mutation
+      // de la liste, ou tout autre code qui rafraîchit juste le badge). Sans
+      // garde, chaque émission réécrivait #k-side-cart selon state.cart (le
+      // panier personnel) — vide dans ce scénario — vidant #k-sc-items et
+      // retirant .has-items, donc cachant tout le panneau de liste.
+      activateList();
+      state.cart = []; // panier personnel vide, scénario reproduit en conditions réelles
+
+      bus.emit('side-cart:render');
+
+      const sc = document.getElementById('k-side-cart');
+      expect(sc.classList.contains('has-items')).toBe(true);
+      expect(sc.querySelectorAll('.k-cart-snapshot-item')).toHaveLength(2);
+      expect(document.getElementById('k-sc-items').innerHTML).not.toBe('');
+    });
+
     it('image manquante (null) : fallback visuel affiché, aucun <img> avec src invalide', () => {
       activateList(); // items i1/i2 ont déjà image: null
       const row = dom.cartBody.querySelector('[data-item-id="i1"]');

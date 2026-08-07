@@ -326,6 +326,14 @@ export function clearSharedListContext() {
   bus.emit('cart-snapshot:cleanup');
 
   updateSharedListIndicator();
+  // P0 (audit terrain — F22-9) : le listener 'side-cart:render' qui
+  // appellerait renderCartSurfaceSwitch() est gardé par isActiveContext(),
+  // qui est désormais false (token remis à null ci-dessus) — cette
+  // condition empêche structurellement ce listener de jamais déclencher le
+  // nettoyage de #k-cart-surface-switch une fois le contexte démonté.
+  // Appel direct ici, au point de démontage, plutôt que de compter sur un
+  // aller-retour par le bus qui ne peut plus fonctionner à cet instant.
+  renderCartSurfaceSwitch();
   bus.emit('side-cart:render');
 }
 

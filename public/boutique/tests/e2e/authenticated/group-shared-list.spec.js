@@ -51,6 +51,7 @@ const {
   cancelOrder,
   spyOnApi,
 } = require('../helpers/api.helpers');
+const { getSharePageUrl } = require('../helpers/business.helpers');
 
 /* ── Helpers locaux à ce fichier ──────────────────────────────────────
  * Volontairement non promus dans helpers/boutique.helpers.js : contrat
@@ -124,6 +125,19 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     page.on('dialog', (dialog) => dialog.accept());
     await page.goto(BASE_URL);
     await cancelAnyActiveSharedCart(page);
+    // P0 (audit terrain — F22-2/F22-13) : au moment de ce page.goto(), l'app
+    // a déjà démarré restoreSharedCartFromBackend() en tâche de fond
+    // (b-share-cart.js::install(), jamais awaited par lui-même). Si un test
+    // précédent a laissé une liste 'open' (nettoyée par cancelAnyActiveSharedCart
+    // ci-dessus, mais APRÈS coup), cette restauration en vol peut se résoudre
+    // avec l'ancien statut 'open' et poser state.cartSurface='shared-list' en
+    // mémoire — alors même que le serveur vient d'annuler la liste. Résultat
+    // observé : #k-add-cart-btn restait caché (remplacé par "Ajouter à cette
+    // liste") pour tout le reste du test, sans qu'aucune liste réelle ne soit
+    // active. Un reload() ICI, une fois l'annulation serveur confirmée
+    // terminée, élimine la course : le prochain restoreSharedCartFromBackend()
+    // ne trouvera plus rien.
+    await page.reload();
   });
 
   test.afterEach(async ({ page }) => {
@@ -152,43 +166,71 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     await expect(page.locator('#k-side-cart .k-cart-item-buy')).toHaveCount(2);
   });
 
-  test('F22-2 — ouvrir la fiche produit d\'une ligne ajoute au panier PERSONNEL, jamais à la liste, puis restaure la liste à la fermeture', async ({ page }) => {
-    await createSharedList(page, 1);
+  test('F22-2 — un participant qui ouvre la fiche produit d\'une ligne ajoute au panier PERSONNEL (jamais à la liste, dont il n\'est pas créateur), puis retrouve la liste à la fermeture', async ({ page, browser }) => {
+    // P0 (audit terrain) — réécrit après échec réel : ce scénario testait
+    // à tort l'ORGANISATEUR ouvrant sa propre ligne de liste. Or
+    // canAddToActiveSharedList() (group-side-cart.js) est vrai dès qu'une
+    // liste ouverte est active ET que l'utilisateur en est le créateur —
+    // condition qui ne dépend PAS de la provenance de l'ouverture (depuis
+    // une ligne de la liste ou depuis la navigation normale). Pour
+    // l'organisateur, la fiche produit affiche donc TOUJOURS "Ajouter à
+    // cette liste" (jamais "Ajouter au panier") tant que sa liste est
+    // active — c'est la doctrine "remplacement, jamais coexistence"
+    // (mandat §3.2, b-modal-desktop-product.js::renderActions()). Le
+    // contrat "ajoute au panier PERSONNEL" ne s'applique qu'à un
+    // PARTICIPANT (non créateur), qui n'a par définition aucun droit
+    // d'écriture sur la liste — c'est ce que ce test vérifie désormais.
+    const { token } = await createSharedList(page, 1);
 
-    const panel = snapshotPanel(page);
-    await expect(panel.locator('.k-cart-snapshot-item')).toHaveCount(1);
-    const snapshotBefore = await panel.innerHTML();
+    const participantContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const participantPage = await participantContext.newPage();
 
-    const cartBadgeBefore = parseInt(
-      (await page.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
-      10,
-    );
+    try {
+      const publicResp = participantPage.waitForResponse(
+        (r) => r.url().includes(`/api/shared-carts/public/${token}`) && r.request().method() === 'GET',
+        { timeout: 15_000 },
+      );
+      await participantPage.goto(getSharePageUrl(token));
+      await publicResp;
 
-    const patchSpy = await spyOnApi(page, '/api/shared-carts/', 'PATCH');
-    const postSpy = await spyOnApi(page, '/api/shared-carts/', 'POST');
-    const deleteSpy = await spyOnApi(page, '/api/shared-carts/', 'DELETE');
+      const panel = participantPage.locator('#k-side-cart .k-cart-snapshot-item, #k-cart-body .k-cart-snapshot-item').first();
+      await expect(panel).toBeVisible({ timeout: 10_000 });
 
-    const openBtn = page.locator('#k-side-cart .k-cart-snapshot-item-open').first();
-    await expect(openBtn).toBeVisible({ timeout: 10_000 });
-    await openBtn.click();
-    await page.waitForSelector('#k-modal-overlay.open, .k-modal-overlay.open', { timeout: 6_000 });
+      const cartBadgeBefore = parseInt(
+        (await participantPage.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
+        10,
+      );
 
-    await addToCartFromModal(page); // panier personnel par défaut
-    await closeModal(page);
+      const patchSpy = await spyOnApi(participantPage, '/api/shared-carts/*/items/*', 'PATCH');
+      const postSpy = await spyOnApi(participantPage, '/api/shared-carts/*/items', 'POST');
+      const deleteSpy = await spyOnApi(participantPage, '/api/shared-carts/*/items/*', 'DELETE');
 
-    const panelAfter = snapshotPanel(page);
-    await expect(panelAfter).toBeVisible({ timeout: 10_000 });
-    await expect(panelAfter.innerHTML()).resolves.toBe(snapshotBefore);
+      const openBtn = participantPage.locator('.k-cart-snapshot-item-open').first();
+      await expect(openBtn).toBeVisible({ timeout: 10_000 });
+      await openBtn.click();
+      await participantPage.waitForSelector('#k-modal-overlay.open, .k-modal-overlay.open', { timeout: 6_000 });
 
-    const cartBadgeAfter = parseInt(
-      (await page.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
-      10,
-    );
-    expect(cartBadgeAfter, 'Le badge panier personnel doit refléter le nouvel article').toBeGreaterThan(cartBadgeBefore);
+      // Participant (non créateur) : jamais de CTA "Ajouter à cette
+      // liste" — seul "Ajouter au panier" (personnel) est disponible.
+      await expect(participantPage.locator('#k-add-to-list-btn')).toHaveCount(0);
+      await addToCartFromModal(participantPage);
+      await closeModal(participantPage);
 
-    expect(patchSpy.calls().length, 'Aucun PATCH shared-carts déclenché par un ajout au panier perso').toBe(0);
-    expect(postSpy.calls().length, 'Aucun POST shared-carts déclenché par un ajout au panier perso').toBe(0);
-    expect(deleteSpy.calls().length, 'Aucun DELETE shared-carts déclenché par un ajout au panier perso').toBe(0);
+      const panelAfter = participantPage.locator('#k-side-cart .k-cart-snapshot-item, #k-cart-body .k-cart-snapshot-item').first();
+      await expect(panelAfter).toBeVisible({ timeout: 10_000 });
+
+      const cartBadgeAfter = parseInt(
+        (await participantPage.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
+        10,
+      );
+      expect(cartBadgeAfter, 'Le badge panier personnel doit refléter le nouvel article').toBeGreaterThan(cartBadgeBefore);
+
+      expect(patchSpy.calls().length, 'Aucun PATCH shared-carts déclenché par un ajout au panier perso').toBe(0);
+      expect(postSpy.calls().length, 'Aucun POST shared-carts déclenché par un ajout au panier perso').toBe(0);
+      expect(deleteSpy.calls().length, 'Aucun DELETE shared-carts déclenché par un ajout au panier perso').toBe(0);
+    } finally {
+      await participantContext.close();
+    }
   });
 
   test('F22-3 — le CTA "Ajouter à cette liste" (organisateur, liste ouverte) écrit réellement sur la liste, jamais sur le panier personnel', async ({ page }) => {
@@ -204,7 +246,7 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     await expect(addToListBtn).toBeVisible({ timeout: 10_000 });
     await expect(addToListBtn).toBeEnabled();
 
-    const itemsPostSpy = await spyOnApi(page, '/api/shared-carts/', 'POST');
+    const itemsPostSpy = await spyOnApi(page, '/api/shared-carts/*/items', 'POST');
     const cartBadgeBefore = parseInt(
       (await page.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
       10,
@@ -240,7 +282,7 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     // group-api.js::updateSharedListItemQuantity — PATCH par ligne, plus
     // l'ancien PUT groupé (voir commentaire source : "sans passer par
     // l'ancien PUT groupé").
-    const patchSpy = await spyOnApi(page, '/api/shared-carts/', 'PATCH');
+    const patchSpy = await spyOnApi(page, '/api/shared-carts/*/items/*', 'PATCH');
     await qtyControl.locator('[data-qty-step="1"]').click();
     const call = await patchSpy.waitForCall(10_000);
     expect(call).not.toBeNull();
@@ -258,7 +300,7 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
       10,
     );
 
-    const deleteSpy = await spyOnApi(page, '/api/shared-carts/', 'DELETE');
+    const deleteSpy = await spyOnApi(page, '/api/shared-carts/*/items/*', 'DELETE');
     const row = page.locator('#k-side-cart .k-cart-snapshot-item').first();
     await row.locator('.k-cart-item-remove').click();
 
@@ -429,7 +471,6 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
         (r) => r.url().includes(`/api/shared-carts/public/${token}`) && r.request().method() === 'GET',
         { timeout: 15_000 },
       );
-      const { getSharePageUrl } = require('../helpers/business.helpers');
       await participantPage.goto(getSharePageUrl(token));
       await publicResp;
 

@@ -1620,6 +1620,20 @@ export function cleanupCartSnapshotDom() {
 // SIDE CART — Aperçu permanent desktop + total mobile bnav
 // ══════════════════════════════════════════════════════════════════
 function renderSideCart() {
+  // P0 (audit terrain — F22-6/F22-7) : renderSideCart() est câblée sur
+  // 'side-cart:render' SANS garde. Cet événement est émis pour de multiples
+  // raisons (mutation du panier personnel, mais aussi simple rafraîchissement
+  // du badge/indicateur pendant qu'une liste partagée est la surface active
+  // — cf. group-side-cart.js). Sans cette garde, chaque émission pendant
+  // qu'une liste est active réécrivait #k-side-cart selon le panier
+  // PERSONNEL (souvent vide dans ce contexte), vidant #k-sc-items et
+  // retirant .has-items — cachant tout le panneau alors que la liste, elle,
+  // a des données correctes en mémoire (badge "Déjà acheté", contributeurs,
+  // etc., posés séparément par applySnapshotSideCartChrome). Reproduit en
+  // conditions réelles : après l'achat d'une ligne de liste avec un panier
+  // personnel vide, #k-side-cart disparaissait silencieusement.
+  if (isSharedListSurfaceActive()) return;
+
   const sc       = document.getElementById('k-side-cart');
   const bnavLbl  = document.getElementById('k-bnav-cart-label');
   const items    = state.cart;

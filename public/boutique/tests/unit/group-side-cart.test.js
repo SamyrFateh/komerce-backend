@@ -113,6 +113,7 @@ const {
   canAddToActiveSharedList,
   addProductToActiveSharedList,
   reopenSharedListCart,
+  renderCartSurfaceSwitch,
 } = require('../../js/group/group-side-cart.js');
 
 function mountShell() {
@@ -336,6 +337,22 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     expect(state.sharedListContext.token).toBeNull();
     expect(state.cartSurface).toBe('personal');
     expect(document.getElementById('k-shared-list-panel')).toBeNull();
+  });
+
+  it('P0 (audit terrain — F22-9) : clearSharedListContext retire #k-cart-surface-switch du DOM, ne le laisse jamais orphelin', () => {
+    // Régression du bug réel : le listener bus qui appelle
+    // renderCartSurfaceSwitch() (seul chemin qui RETIRE le switcher) est
+    // gardé par isActiveContext(), devenu faux juste après le démontage —
+    // ce listener ne pouvait donc plus jamais déclencher le nettoyage.
+    // clearSharedListContext() doit désormais appeler renderCartSurfaceSwitch()
+    // directement, sans compter sur cet aller-retour par le bus.
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    renderCartSurfaceSwitch();
+    expect(document.getElementById('k-cart-surface-switch')).not.toBeNull();
+
+    clearSharedListContext();
+
+    expect(document.getElementById('k-cart-surface-switch')).toBeNull();
   });
 
   it('exitSharedListRenderMode : no-op tant que le contexte est actif, nettoie sinon', () => {
