@@ -19,9 +19,9 @@ module.exports = {
   canonicalFeature: 'shared-cart',
   sliceKind: 'frontend-slice',
 
-  service: 'Panier partagé et flux groupe : création, gestion et rendu créateur/participant, projeté dans le side cart / drawer canonique (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART).',
+  service: 'Liste partagée publiée comme snapshot immuable, projetée dans le side cart / drawer canonique ; achat et paiement passent exclusivement par le checkout canonique.',
   perimeter: {
-    in: ['panier partagé Boutique First et vues groupe'],
+    in: ['création, activation et rendu d’une liste publiée immuable dans la surface panier canonique'],
     out: ['panier personnel, catalogue vivant et paiement hors contrat partagé'],
   },
 
@@ -43,6 +43,7 @@ module.exports = {
       '../css/shared-list-side-cart.css',
       '../css/shared-list-side-cart-responsive.css',
       '../css/shared-list-library-remove.css',
+      '../css/shared-list-lists-tab.css',
     ],
     tests: [
       '../tests/unit/group-checkout-adapter.test.js',
@@ -73,9 +74,10 @@ module.exports = {
   },
   authority: 'boutique — shared-cart possède seul le cycle groupe et la vue participant.',
   invariants: [
+    'contenu, quantités et variantes sont figés dès publication ; seuls les claims évoluent',
     'visiteur en lecture seule hors actions explicitement autorisées',
     'aucun appel au catalogue vivant pour une fiche snapshot partagée',
-    'panier personnel et panier partagé restent distincts',
+    'une liste active est l’unique surface panier visible ; le panier personnel reste isolé en état',
     'retirer une liste sauvegardée ne supprime jamais la liste ni son token public',
   ],
 };

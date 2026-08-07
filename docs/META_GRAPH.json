@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-08-07T16:56:03.515Z",
+  "generatedAt": "2026-08-07T21:05:53.509Z",
   "sources": {
     "backend": {
-      "nodes": 770
+      "nodes": 767
     },
     "boutique": {
       "modules": 76,
-      "endpoints": 48
+      "endpoints": 46
     },
     "dashboards": {
       "modules": 40,
       "callEdges": 111
     },
     "contract": {
-      "endpoints": 427
+      "endpoints": 423
     }
   },
   "summary": {
@@ -23,24 +23,6 @@
     "sharedTables": 16
   },
   "endpoints": {
-    "/api/shares": {
-      "boutique": [
-        "b-cart",
-        "b-favs"
-      ],
-      "dashboards": [],
-      "inContract": true,
-      "status": "UNKNOWN",
-      "routeFile": "routes/shares.js",
-      "services": [
-        "services/*"
-      ],
-      "tables": [
-        "cart_contributions",
-        "cart_shares",
-        "products"
-      ]
-    },
     "/api/public/config": {
       "boutique": [
         "b-checkout",
@@ -135,6 +117,22 @@
       "tables": [
         "orders",
         "stripe_events_processed"
+      ]
+    },
+    "/api/shares": {
+      "boutique": [
+        "b-favs"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/shares.js",
+      "services": [
+        "services/*"
+      ],
+      "tables": [
+        "cart_shares",
+        "products"
       ]
     },
     "/api/auth/me": {
@@ -263,7 +261,6 @@
       "routeFile": "routes/shared-cart.js",
       "services": [
         "services/shared-cart-engine.js",
-        "services/shared-cart-items-service.js",
         "services/shared-cart-queries.js"
       ],
       "tables": []
@@ -279,7 +276,6 @@
       "routeFile": "routes/shared-cart.js",
       "services": [
         "services/shared-cart-engine.js",
-        "services/shared-cart-items-service.js",
         "services/shared-cart-queries.js"
       ],
       "tables": []
@@ -335,7 +331,6 @@
       "routeFile": "routes/shared-cart.js",
       "services": [
         "services/shared-cart-engine.js",
-        "services/shared-cart-items-service.js",
         "services/shared-cart-queries.js"
       ],
       "tables": []
@@ -350,7 +345,6 @@
       "routeFile": "routes/shared-cart.js",
       "services": [
         "services/shared-cart-engine.js",
-        "services/shared-cart-items-service.js",
         "services/shared-cart-queries.js"
       ],
       "tables": []
@@ -1557,66 +1551,6 @@
     ]
   },
   "tableBlast": {
-    "cart_contributions": {
-      "routes": [
-        "routes/shares.js"
-      ],
-      "boutique": [
-        "b-cart",
-        "b-favs"
-      ],
-      "dashboards": []
-    },
-    "cart_shares": {
-      "routes": [
-        "routes/orders/create.js",
-        "routes/shares.js"
-      ],
-      "boutique": [
-        "b-cart",
-        "b-checkout",
-        "b-favs",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "OrdersLogisticsView",
-        "ProblemsView"
-      ]
-    },
-    "products": {
-      "routes": [
-        "routes/admin-costing.js",
-        "routes/client-tracking.js",
-        "routes/orders/create.js",
-        "routes/parcel-api-v2/read.js",
-        "routes/parcels.js",
-        "routes/pricing.js",
-        "routes/products.js",
-        "routes/scans.js",
-        "routes/shares.js",
-        "routes/sourcing-scanner.js",
-        "routes/sourcing.js"
-      ],
-      "boutique": [
-        "b-cart",
-        "b-checkout",
-        "b-favs",
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "CostingView",
-        "EconomicFlowView",
-        "EconomicView",
-        "HubRelaisView",
-        "OrdersLogisticsView",
-        "PricingStrategyView",
-        "ProblemsView",
-        "SourcingScannerView",
-        "SourcingView"
-      ]
-    },
     "relais": {
       "routes": [
         "routes/admin-costing.js",
@@ -1800,6 +1734,38 @@
         "SourcingView"
       ]
     },
+    "products": {
+      "routes": [
+        "routes/admin-costing.js",
+        "routes/client-tracking.js",
+        "routes/orders/create.js",
+        "routes/parcel-api-v2/read.js",
+        "routes/parcels.js",
+        "routes/pricing.js",
+        "routes/products.js",
+        "routes/scans.js",
+        "routes/shares.js",
+        "routes/sourcing-scanner.js",
+        "routes/sourcing.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-favs",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "CostingView",
+        "EconomicFlowView",
+        "EconomicView",
+        "HubRelaisView",
+        "OrdersLogisticsView",
+        "PricingStrategyView",
+        "ProblemsView",
+        "SourcingScannerView",
+        "SourcingView"
+      ]
+    },
     "recipients": {
       "routes": [
         "routes/orders/create.js"
@@ -1834,6 +1800,22 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "OrdersLogisticsView",
+        "ProblemsView"
+      ]
+    },
+    "cart_shares": {
+      "routes": [
+        "routes/orders/create.js",
+        "routes/shares.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-favs",
         "b-tracking",
         "komerce-api"
       ],

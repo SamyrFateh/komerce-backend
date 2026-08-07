@@ -54,7 +54,6 @@ jest.mock('../../js/b-cart.js', () => ({
   closeCart: jest.fn(),
   renderCart: jest.fn(),
   clearCart: jest.fn(),
-  shareCartWhatsApp: jest.fn(),
   loadSharedCart: jest.fn(),
 }));
 jest.mock('../../js/b-checkout.js', () => ({
@@ -82,7 +81,7 @@ jest.mock('../../js/b-scroll-owner.js', () => ({ scrollPageToTop: jest.fn() }));
 const { bus } = require('../../js/b-bus.js');
 const { state, dom } = require('../../js/b-store.js');
 const { showToast } = require('../../js/b-cart-core.js');
-const { openCart, closeCart, clearCart, shareCartWhatsApp, loadSharedCart } = require('../../js/b-cart.js');
+const { openCart, closeCart, clearCart, loadSharedCart } = require('../../js/b-cart.js');
 const { checkoutCart, closeOrderModal } = require('../../js/b-checkout.js');
 const { renderGrid } = require('../../js/b-catalog.js');
 const { renderFavView } = require('../../js/b-favs.js');
@@ -158,14 +157,11 @@ describe('setupDrawer', () => {
     expect(clearCart).not.toHaveBeenCalled();
   });
 
-  test('cartWhatsapp -> shareCartWhatsApp, cartCheckout -> checkoutCart', () => {
+  test('cartCheckout -> checkoutCart', () => {
     dom.cartBtn = document.createElement('button');
-    dom.cartWhatsapp = document.createElement('button');
     dom.cartCheckout = document.createElement('button');
     setupDrawer();
-    dom.cartWhatsapp.click();
     dom.cartCheckout.click();
-    expect(shareCartWhatsApp).toHaveBeenCalled();
     expect(checkoutCart).toHaveBeenCalled();
   });
 

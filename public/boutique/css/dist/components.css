@@ -2052,13 +2052,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 /* ── ACTIONS (mobile : sticky bas, flex-shrink:0) ────────────── */
 .k-modal-actions {
   box-sizing: border-box; max-width: 100%; /* S2.1 — garantit que la barre CTA ne déborde jamais */
-  /* Lot 3 GAP-07 — 3e ligne "auto" ajoutée pour #k-add-to-list-btn (grid-row: 3,
-     grid-column: 1/-1). Élément [hidden] par défaut : ne participe pas à la
-     grille tant qu'aucune liste active n'appartient au créateur courant —
-     la ligne "auto" reste alors à hauteur 0, aucun changement visuel pour
-     le cas majoritaire (aucune liste active). Seule déclaration de
-     grid-template-columns/rows pour .k-modal-actions (invariant B-M-11). */
-  display: grid; grid-template-columns: 1fr 1.6fr; grid-template-rows: auto auto auto;
+  display: grid; grid-template-columns: 1fr 1.6fr; grid-template-rows: auto auto;
   gap: 10px; align-items: center;
   padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 12px));
   border-top: 1px solid var(--sand-dark);
@@ -2157,41 +2151,8 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-actions .k-buy-now-btn { grid-column: 2; grid-row: 1; width: 100%; height: 44px; padding: 0 16px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; /* P0-fix : overflow:hidden retiré */ }
 .k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
 .k-modal-subtotal strong { color: var(--text); font-weight: 500; font-size: 13px; }
-/* Lot 3 GAP-07 — CTA "Ajouter à cette liste", 3e ligne pleine largeur.
-   [hidden] par défaut (posé dans le HTML) : b-modal-buybox-shared.js::
-   wireAddToListButton lève hidden uniquement pour le créateur d'une liste
-   ouverte active. Style outline discret (même famille que .k-add-cart-btn)
-   pour ne jamais rivaliser visuellement avec Acheter maintenant. */
-.k-add-to-list-btn {
-  grid-column: 1 / -1; grid-row: 3;
-  height: 40px; width: 100%;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  background: var(--white); color: var(--coral, var(--cta-green));
-  border: 1.5px dashed var(--coral, var(--cta-green)); border-radius: 50px;
-  font-size: 13px; font-weight: 500;
-  transition: background .15s, transform .1s;
-  white-space: nowrap;
-}
-.k-add-to-list-btn:active { transform: scale(.98); }
-.k-add-to-list-btn:disabled { opacity: .55; cursor: default; }
-
-/* Correctif capture production (mandat §3.2 — remplacement, jamais
- * coexistence) — même classe de bug que le side cart (voir
- * css/shared-list-side-cart.css) : `.k-add-cart-btn`/`.k-buy-now-btn`
- * déclarent `display: flex` sans qualification (specificité 0,0,1,0), ce
- * qui bat la règle UA par défaut `[hidden] { display: none }` (une
- * feuille de style auteur gagne toujours contre la feuille UA à
- * spécificité égale, quel que soit l'ordre). Résultat vérifié en
- * navigateur réel : b-modal-desktop-product.js::renderActions() posait
- * bien `button.hidden = true` en mode édition liste (JS 100% correct,
- * confirmé), mais les boutons "Ajouter au panier"/"Acheter maintenant"
- * restaient visuellement affichés à côté de "Ajouter à cette liste" —
- * capture production exacte.
- * Fix — SANS !important (doctrine §1, injections dures = 0) : qualifier
- * `[hidden]` porte la specificité à 0,0,2,0 (classe + attribut), qui bat
- * `.k-add-cart-btn`/`.k-buy-now-btn` seules (0,0,1,0) sans avoir besoin
- * de forcer la cascade. */
-.k-add-to-list-btn[hidden],
+/* Les actions produit peuvent être masquées par leurs propres états ;
+   une liste active ne les remplace plus. */
 .k-add-cart-btn[hidden],
 .k-buy-now-btn[hidden] {
   display: none;

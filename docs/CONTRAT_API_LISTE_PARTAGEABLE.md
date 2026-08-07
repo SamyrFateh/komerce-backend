@@ -97,19 +97,24 @@ Testé (`tests/unit/shared-cart-reads.test.js`, `tests/unit/shared-cart-public-r
 
 Édition du titre et du message après création : retiré du périmètre de cette première version, sauf besoin démontré ultérieurement. Le bloc titre/message (Contrat UX §1) reste donc **en lecture seule pour tout le monde, y compris le créateur**, dans cette version. Le crayon d'édition inline mentionné au storyboard n'est pas construit maintenant — à traiter comme une extension future, pas comme un manque de cette livraison.
 
-### Point 4 — corrigé
+### Point 4 — supersédé : liste publiée structurellement immuable
 
-Découle directement de l'invariant d'écriture immédiate (Invariant 20/21). Le seul endpoint d'écriture existant (`PUT /:id/items`) remplace la liste entière ; il ne convenait pas à « un ajout, un appel » ni à « un retrait, un appel, avec confirmation ». **Option A retenue** (deux routes unitaires dédiées, plutôt que de détourner la sémantique de `PUT /:id/items`) :
+La doctrine produit a été simplifiée : la publication crée le snapshot définitif de la liste. `OPEN` signifie **achetable**, jamais **éditable**.
 
-- `POST /:id/items` — ajout unitaire, immédiat (`addSharedCartItem`, `services/shared-cart-items-service.js`).
-- `DELETE /:id/items/:itemId` — retrait unitaire (`removeSharedCartItem`, même fichier). Un garde-fou non explicitement demandé par ce contrat mais nécessaire à l'intégrité des données y a été ajouté : un article déjà acheté (`order_items.shared_cart_item_id` non-NULL) ne peut pas être retiré — 409 `item_already_claimed` plutôt qu'un détachement silencieux de la commande liée (`ON DELETE SET NULL`).
+Les capacités historiques de réédition post-publication sont donc supprimées, et non désactivées dans l'interface :
 
-`PUT /:id/items` reste inchangé, sémantique historique conservée (aucun garde-fou ajouté dessus par décision explicite — voir l'ASSUMPTION documentée dans `shared-cart-items-service.js`) ; il pourra être retiré dans un lot ultérieur quand il n'aura plus d'utilité.
+- `GET /:id/as-cart-items` — supprimé ;
+- `PUT /:id/items` — supprimé ;
+- `POST /:id/items` — supprimé ;
+- `DELETE /:id/items/:itemId` — supprimé ;
+- `PATCH /:id/items/:itemId` — supprimé ;
+- `services/shared-cart-items-service.js` — supprimé.
 
-Testé (`tests/unit/shared-cart-items-service.test.js`, `tests/unit/shared-cart-creator-route.test.js`), suite complète validée (5806/5812, 0 échec).
+Une correction par l'organisateur suit désormais un seul parcours : **fermer la liste erronée puis publier une nouvelle liste**. L'ancien lien reste associé à son snapshot fermé.
 
+Les changements transactionnels restent autorisés : achat d'une ligne, claim dérivé de la commande, paiement des lignes disponibles et fermeture de la liste.
 ---
 
 ## 6. Statut
 
-Ce contrat est désormais considéré comme la source de vérité pour l'Étape 3. Les quatre points de l'écart §5 sont clos : le point 1 (`shared_cart_item_id`) et le point 2 (`is_creator` via `soft-auth`) sont résolus et testés ; le point 4 (endpoints unitaires `POST`/`DELETE /:id/items`) est implémenté et testé ; le point 3 (édition inline titre/message) reste explicitement retiré du périmètre de cette version. Aucune réserve technique ne bloque plus l'Étape 3 (implémentation front).
+Ce contrat conserve l’historique des décisions ayant conduit à l’implémentation actuelle. La doctrine active est désormais celle du **snapshot immuable dès publication** : aucune API de réédition de ligne n’est exposée après création. Les tests de route garantissent explicitement que ces anciens endpoints répondent `404`.

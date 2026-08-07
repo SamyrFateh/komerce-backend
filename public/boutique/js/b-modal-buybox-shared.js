@@ -38,7 +38,6 @@ import { closeModal } from './b-modal.js';
 import { addToCart, openCart } from './b-cart.js';
 import { state, getRequestedTransportRail } from './b-store.js';
 import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
-import { canAddToActiveSharedList, addProductToActiveSharedList, reopenSharedListCart } from './group/group-side-cart.js';
 
 function currentCartProduct(product = state.modalProduct) {
   return buildModalCartProduct(
@@ -85,79 +84,6 @@ export function wireBuyNowButton(buyNowBtn) {
       buyNowBtn.classList.remove('buy-confirmed');
       closeModal();
       setTimeout(openCart, 400);
-    }, 1200);
-  };
-}
-
-/**
- * Lot 3 GAP-07 — câblage du CTA "Ajouter à cette liste" (#k-add-to-list-btn).
- *
- * Visible UNIQUEMENT quand le créateur navigue le catalogue avec sa propre
- * liste ouverte active (group/group-side-cart.js::canAddToActiveSharedList
- * — même condition serveur-alignée que le guard d'écriture réel, jamais
- * dupliquée ni approximée ici). Dans tous les autres cas (aucune liste
- * active, participant, liste fermée), le bouton reste `hidden` — jamais un
- * simple `disabled` qui laisserait deviner la capacité à un participant.
- *
- * Désactivé (mais visible) si la sélection SKU n'est pas encore complète
- * — même logique que renderActions() pour #k-add-cart-btn/#k-buy-now-btn.
- *
- * Idempotent par construction (`.onclick =`), même convention que
- * wireBuyNowButton ci-dessus : appelée à chaque rendu, y compris les
- * re-rendus déclenchés par un changement de sélection variante.
- */
-export function wireAddToListButton(addToListBtn) {
-  if (!addToListBtn) return;
-
-  if (!canAddToActiveSharedList()) {
-    addToListBtn.hidden = true;
-    addToListBtn.onclick = null;
-    return;
-  }
-  addToListBtn.hidden = false;
-
-  const selection = state.modalSelection;
-  const isSku = selection?.inventory_model === 'SKU';
-  const ready = !isSku || Boolean(selection?.selected_sku_id);
-  addToListBtn.disabled = !ready;
-  if (!ready) {
-    addToListBtn.onclick = null;
-    return;
-  }
-
-  addToListBtn.onclick = async () => {
-    if (!state.modalProduct) return;
-
-    // variant_combo canonique : {axisKey: value} pour un SKU entièrement
-    // sélectionné, null sinon. Jamais fabriqué ici au-delà de ce que la
-    // sélection modale porte déjà (view-models/modal-selection-model.js).
-    const variantCombo = isSku ? (selection?.selected_options || null) : null;
-    const qty = state.modalQty || 1;
-
-    const originalContent = addToListBtn.innerHTML;
-    addToListBtn.disabled = true;
-    addToListBtn.innerHTML = '<span aria-hidden="true">…</span> Ajout…';
-
-    const ok = await addProductToActiveSharedList(state.modalProduct, qty, variantCombo);
-
-    if (!ok) {
-      // Le toast d'erreur (message serveur exact — combinaison indisponible,
-      // stock insuffisant, liste fermée entre-temps...) est déjà posé par
-      // addProductToActiveSharedList. Ce module ne le duplique pas.
-      addToListBtn.innerHTML = originalContent;
-      addToListBtn.disabled = false;
-      return;
-    }
-
-    addToListBtn.innerHTML = '<span aria-hidden="true">✓</span> Ajouté à la liste !';
-    setTimeout(() => {
-      addToListBtn.innerHTML = originalContent;
-      addToListBtn.disabled = false;
-      closeModal();
-      // reopenSharedListCart() — jamais openCart() : openCart() force
-      // state.cartSurface = 'personal' (b-cart.js), ce qui masquerait la
-      // liste partagée qu'on vient précisément de mettre à jour.
-      setTimeout(reopenSharedListCart, 400);
     }, 1200);
   };
 }

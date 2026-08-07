@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T16:56:02.341Z",
+  "generatedAt": "2026-08-07T21:05:53.159Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
@@ -7,13 +7,13 @@
     "declaredActive": 28,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 48,
+    "endpoints": 46,
     "orphanEmit": 0,
     "orphanListen": 1,
     "undeclared": 4,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 33,
-    "dynamicEndpoints": 17,
+    "dynamicEndpoints": 15,
     "ownedEvents": 3,
     "ownershipRed": 0,
     "ownershipOrange": 0
@@ -834,8 +834,7 @@
         "b-modal",
         "b-cart",
         "b-store",
-        "modal-cart-product-model",
-        "group-side-cart"
+        "modal-cart-product-model"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -996,7 +995,6 @@
         "b-modal-product",
         "b-modal-image-ux",
         "b-modal-buybox-shared",
-        "group-side-cart",
         "delivery-mode-model",
         "b-cart-core",
         "b-modal-product-fields",
@@ -1066,7 +1064,6 @@
         "b-modal-product",
         "b-modal-image-ux",
         "b-modal-buybox-shared",
-        "group-side-cart",
         "delivery-mode-model",
         "b-modal-product-fields",
         "b-modal-desktop-product",
@@ -2777,13 +2774,6 @@
     {
       "module": "b-cart",
       "route": "/api/shares",
-      "raw": "/api/shares",
-      "dynamic": false,
-      "contractStatus": "UNKNOWN"
-    },
-    {
-      "module": "b-cart",
-      "route": "/api/shares",
       "raw": "/api/shares/",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
@@ -3063,29 +3053,8 @@
     },
     {
       "module": "group-api",
-      "route": "/api/shared-carts/{id}/items/{id}",
-      "raw": "/api/shared-carts/${cartId}/items/${itemId}",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/{id}/items",
-      "raw": "/api/shared-carts/${cartId}/items",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
       "route": "/api/shared-carts/{id}/close",
       "raw": "/api/shared-carts/${cartId}/close",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "group-api",
-      "route": "/api/shared-carts/{id}/items/{id}",
-      "raw": "/api/shared-carts/${cartId}/items/${itemId}",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
     },
@@ -3473,8 +3442,6 @@
       "/api/shared-carts/public/{id}",
       "/api/shared-carts/saved/{id}",
       "/api/shared-carts/{id}/close",
-      "/api/shared-carts/{id}/items",
-      "/api/shared-carts/{id}/items/{id}",
       "/api/shares"
     ],
     "ownershipRed": [],
@@ -3653,8 +3620,6 @@
     "/api/shared-carts/save",
     "/api/shared-carts/saved/{id}",
     "/api/shared-carts/{id}/close",
-    "/api/shared-carts/{id}/items",
-    "/api/shared-carts/{id}/items/{id}",
     "/api/shares",
     "/api/wallet",
     "/api/wallet/transactions"

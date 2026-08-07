@@ -65,7 +65,7 @@ import {
 import {
   addToCart, openCart, closeCart, renderCartBody as renderCart,
   quickAdd, quickRemove, setQty,
-  shareCartWhatsApp, showShareChoiceModal, loadSharedCart,
+  loadSharedCart,
 }                              from './b-cart.js';
 import {
   checkoutCart, closeOrderModal, renderCheckout,

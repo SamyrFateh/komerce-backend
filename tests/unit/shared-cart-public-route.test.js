@@ -39,9 +39,6 @@ jest.mock('../../middleware/soft-auth', () => ({
   },
 }));
 
-jest.mock('../../services/shared-cart-items-service', () => ({
-  updateOpenSharedCartItems: jest.fn(),
-}));
 
 jest.mock('../../services/shared-cart-queries', () => ({
   getSharedCartByToken: jest.fn(),

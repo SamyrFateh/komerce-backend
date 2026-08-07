@@ -364,7 +364,7 @@ describe('shared-cart-creation', () => {
       // resolveSellableUnit() en entier (pas seulement resolveActiveSku +
       // computeSellablePricing) : le média SKU explicite doit primer sur
       // products.image_url quand une association product_sku_media existe,
-      // exactement comme addSharedCartItem/updateOpenSharedCartItems.
+      // exactement comme lors de la création du snapshot partagé.
       it('média SKU explicite prioritaire sur products.image_url (mandat §8/§9)', async () => {
         const sharedCart = { id: 'cart-sku-media', status: 'open' };
         const item = { id: 'sci-sku-media' };

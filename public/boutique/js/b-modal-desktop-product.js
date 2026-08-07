@@ -27,8 +27,7 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { renderSubtotalInto, renderPaymentModes, wireBuyNowButton, wireAddToListButton } from './b-modal-buybox-shared.js';
-import { canAddToActiveSharedList } from './group/group-side-cart.js';
+import { renderSubtotalInto, renderPaymentModes, wireBuyNowButton } from './b-modal-buybox-shared.js';
 import { deriveDeliveryMode, reconcileDeliverySelection } from './view-models/delivery-mode-model.js';
 import { showToast } from './b-cart-core.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
@@ -173,10 +172,9 @@ function renderActions(detail, selection) {
   // "Acheter maintenant" doivent disparaître (pas seulement se désactiver)
   // pendant que "Ajouter à cette liste" est affiché : avant ce correctif
   // les trois CTA restaient visibles simultanément (capture production).
-  const replacedBySharedListCta = canAddToActiveSharedList();
   [dom.addCartBtn, document.getElementById('k-buy-now-btn')].forEach((button) => {
     if (!button) return;
-    button.hidden = replacedBySharedListCta;
+    button.hidden = false;
     button.disabled = !enabled;
     if (!enabled) button.setAttribute('aria-describedby', 'k-modal-selection-message');
     else button.removeAttribute('aria-describedby');
@@ -193,9 +191,6 @@ function renderActions(detail, selection) {
   });
 
   wireBuyNowButton(document.getElementById('k-buy-now-btn'));
-  // Lot 3 GAP-07 — visible uniquement si une liste ouverte appartenant au
-  // créateur courant est active (canAddToActiveSharedList côté module).
-  wireAddToListButton(document.getElementById('k-add-to-list-btn'));
 
   // T-023/D11 : layout AVAILABLE_EMPTY (Ajouter + Acheter côte à côte) vs
   // AVAILABLE_FILLED (stepper + Acheter) — porté par modal-shell.css via

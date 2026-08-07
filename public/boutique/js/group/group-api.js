@@ -35,7 +35,7 @@
  * Aucune logique métier ici — uniquement transport + parsing minimal.
  */
 
-import { apiGet, apiPost, apiDelete, apiPatch } from '../b-utils.js';
+import { apiGet, apiPost, apiDelete } from '../b-utils.js';
 
 /* ── fetchWithTimeout ──────────────────────────────────────────────
  * L'endpoint public passe par fetch() nu : si l'API pend (pool DB
@@ -108,61 +108,11 @@ export function removeSavedSharedCart(sharedCartId) {
 }
 
 /**
- * Retire un article de la liste après confirmation côté interface.
- * Le serveur refuse l'opération si la ligne a déjà été achetée.
- * @param {string|number} cartId
- * @param {string} itemId
- * @returns {Promise<{ok: boolean, cart}>}
- */
-export function removeItemFromSharedList(cartId, itemId) {
-  return apiDelete(`/api/shared-carts/${cartId}/items/${itemId}`);
-}
-
-/**
- * Ajoute un nouvel article à une liste existante (Lot 3 GAP-07 — CTA
- * "Ajouter à cette liste" depuis la fiche produit). Une intention, un
- * appel, écriture immédiate (routes/shared-cart.js POST /:id/items,
- * services/shared-cart-items-service.js::addSharedCartItem).
- *
- * `variant_combo` est transmis tel quel — jamais transformé ici. Pour un
- * produit SKU, c'est `state.modalSelection.selected_options` (toutes les
- * clés d'axe résolues) ; pour un produit non-SKU/sans variante, `null`.
- * Le serveur reste seul autoritaire sur le prix, le SKU et la
- * disponibilité (resolveActiveSku côté services/product-admin-service.js
- * — jamais un prix/sku_id fourni par le client).
- *
- * @param {string|number} cartId
- * @param {string} productId
- * @param {number} quantity
- * @param {object|null} [variantCombo]
- * @returns {Promise<{ok: boolean, cart, item}>}
- */
-export function addItemToSharedList(cartId, productId, quantity, variantCombo = null) {
-  return apiPost(`/api/shared-carts/${cartId}/items`, {
-    product_id: productId,
-    quantity,
-    variant_combo: variantCombo || null,
-  });
-}
-
-/**
  * Ferme la liste : aucun nouvel achat ne peut démarrer, tandis que les
  * commandes déjà créées restent des commandes normales inchangées.
  */
 export function closeCart(cartId) {
   return apiPost(`/api/shared-carts/${cartId}/close`, {});
-}
-
-/**
- * Modifie la quantité d'une ligne existante sans passer par l'ancien PUT
- * groupé. Le serveur refuse l'opération si la ligne a déjà été achetée.
- * @param {string|number} cartId
- * @param {string} itemId
- * @param {number} quantity
- * @returns {Promise<{ok: boolean, cart, item}>}
- */
-export function updateSharedListItemQuantity(cartId, itemId, quantity) {
-  return apiPatch(`/api/shared-carts/${cartId}/items/${itemId}`, { quantity });
 }
 
 /* ── Endpoint public (fetch direct, credentials:include) ──────────── */

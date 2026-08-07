@@ -694,12 +694,6 @@ const KNOWN_RESPONSES = {
   '/api/shared-carts/{id}': {
     get: { fields: ['cart','share_url'], source: 'route-read' }
   },
-  '/api/shared-carts/{id}/as-cart-items': {
-    get: { fields: ['shared_cart_id','title','total_kmf','cart_items'], source: 'route-read' }
-  },
-  '/api/shared-carts/{id}/items': {
-    put: { fields: ['ok','cart','items','items_count'], source: 'route-read' }
-  },
   '/api/shared-carts/{id}/close': {
     post: { fields: ['ok','label','message','cart'], source: 'route-read' }
   },
@@ -1668,13 +1662,7 @@ const KNOWN_RESPONSES = {
     post: { fields: ['token','url','redirect'], source: 'route-read' }
   },
   '/api/shares/{token}': {
-    get: { fields: ['token','type','event_label'], source: 'route-read' }
-  },
-  '/api/shares/{token}/contributions': {
-    post: { fields: ['contribution'], source: 'route-read' }
-  },
-  '/api/shares/{token}/contributions/{id}': {
-    patch: { fields: ['ok'], source: 'route-read' }
+    get: { fields: ['token','sharer_name','status','expires_at','items','total_kmf'], source: 'route-read' }
   },
 
   // relais.js

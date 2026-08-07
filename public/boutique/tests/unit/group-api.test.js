@@ -34,69 +34,36 @@ const { mockWindowK } = require('./helpers/boutiqueTestKit');
 
 const {
   getOwnerSharedCarts,
-  removeItemFromSharedList,
   closeCart,
   getSharedCartPublic,
-  updateSharedListItemQuantity,
-  addItemToSharedList,
 } = require('../../js/group/group-api.js');
 
-describe('group-api — endpoints créateur (window.K.request)', () => {
+describe('group-api — liste publiée immuable', () => {
   let K;
 
   beforeEach(() => {
     K = mockWindowK();
   });
 
-  test('getOwnerSharedCarts() -> GET /api/shared-carts/mine, timeoutMs transmis', async () => {
+  test('getOwnerSharedCarts() -> GET /api/shared-carts/mine', async () => {
     await getOwnerSharedCarts();
     expect(K.request).toHaveBeenCalledWith(
       '/api/shared-carts/mine', 'GET', null, 2, { timeoutMs: 10_000 }
     );
   });
 
-  test('removeItemFromSharedList(cartId, itemId) -> DELETE /api/shared-carts/:id/items/:itemId', async () => {
-    await removeItemFromSharedList(7, 'item-9');
-    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/7/items/item-9', 'DELETE', null, 0, {});
-  });
-
-  test('closeCart(cartId) -> POST /api/shared-carts/:id/close avec body vide', async () => {
+  test('closeCart(cartId) -> POST /api/shared-carts/:id/close', async () => {
     await closeCart(7);
-    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/7/close', 'POST', {}, 2, {});
+    expect(K.request).toHaveBeenCalledWith(
+      '/api/shared-carts/7/close', 'POST', {}, 2, {}
+    );
   });
 
-  test('propage le rejet si window.K.request échoue (pas de catch silencieux)', async () => {
+  test('propage les erreurs réseau', async () => {
     K.request.mockRejectedValueOnce(new Error('network down'));
     await expect(getOwnerSharedCarts()).rejects.toThrow('network down');
   });
-
-  test('updateSharedListItemQuantity(cartId, itemId, quantity) -> PATCH /api/shared-carts/:id/items/:itemId', async () => {
-    await updateSharedListItemQuantity(7, 'item-9', 3);
-    expect(K.request).toHaveBeenCalledWith(
-      '/api/shared-carts/7/items/item-9', 'PATCH', { quantity: 3 }, 0, {}
-    );
-  });
-
-  // Lot 3 GAP-07 — CTA "Ajouter à cette liste".
-  test('addItemToSharedList(cartId, productId, quantity, variantCombo) -> POST /api/shared-carts/:id/items', async () => {
-    await addItemToSharedList(7, 'prod-1', 2, { couleur: 'Noir', taille: 'M' });
-    expect(K.request).toHaveBeenCalledWith(
-      '/api/shared-carts/7/items', 'POST',
-      { product_id: 'prod-1', quantity: 2, variant_combo: { couleur: 'Noir', taille: 'M' } },
-      2, {}
-    );
-  });
-
-  test('addItemToSharedList sans variant_combo -> variant_combo: null (jamais un objet vide fabriqué)', async () => {
-    await addItemToSharedList(7, 'prod-2', 1);
-    expect(K.request).toHaveBeenCalledWith(
-      '/api/shared-carts/7/items', 'POST',
-      { product_id: 'prod-2', quantity: 1, variant_combo: null },
-      2, {}
-    );
-  });
 });
-
 describe('group-api — endpoint public (fetch direct)', () => {
   afterEach(() => { delete global.fetch; });
 

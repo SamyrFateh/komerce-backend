@@ -19,7 +19,7 @@
  * Extrait de boutique.js Sprint 2F — Option C
  *
  * §7  : addToCart, setQty, fly animation, cart badge sync
- * §10 : tiroir panier, partage WhatsApp, shareCartWhatsApp, showShareChoiceModal
+ * §10 : tiroir panier et chargement des liens de partage simples
  * §14 : stepper +/- inline sur les cartes
  */
 
@@ -675,13 +675,11 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
    * @property {string|null} status
    * @property {string|null} organizerName
    * @property {boolean} isOrganizer
-   * @property {boolean} editMode - toujours vrai pour l'organisateur tant que la liste est ouverte (doctrine finale 2026-08) : steppers/✕ toujours visibles, jamais derrière une bascule
    * @property {string} headerTitle
    * @property {number} availableCount - total de lignes non réclamées (distingue "Tout est acheté" de 0 disponible)
    * @property {number} availableTotal - valeur totale des lignes disponibles — affichage informatif + base du CTA discret "Tout acheter"
    * @property {boolean} showSaveAction
    * @property {boolean} saved
-   * @property {Set<string>} pendingQuantityItemIds
    */
 
   const SNAPSHOT_ITEM_IMG_WIDTH = 100; // aligné sur optimizeImgUrl(p.image_url, 100) pour .k-cart-item-img
@@ -737,24 +735,6 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     return parts.length ? parts.join(' · ') : null;
   }
 
-  function snapshotQuantityControlHtml(item, context) {
-    // Lot B — contrôles d'édition invisibles hors du mode édition explicite,
-    // même pour l'organisateur. Réutilise .k-cart-item-qty/.k-qty-btn/
-    // .k-qty-val (cart.css, panier personnel) — aucune classe dédiée.
-    if (!context.isOrganizer || !context.editMode || context.readOnly || item.claimed) return '';
-    const locked = context.pendingQuantityItemIds && context.pendingQuantityItemIds.has(String(item.id));
-    const qty = Number(item.quantity) || 1;
-    return (
-      `<div class="k-cart-item-qty" data-item-id="${sanitize(String(item.id))}">` +
-        `<button type="button" class="k-qty-btn" data-qty-step="-1" data-item-id="${sanitize(String(item.id))}" ` +
-          `aria-label="Diminuer la quantité" ${locked ? 'disabled' : ''}>−</button>` +
-        `<span class="k-qty-val">${qty}</span>` +
-        `<button type="button" class="k-qty-btn" data-qty-step="1" data-item-id="${sanitize(String(item.id))}" ` +
-          `aria-label="Augmenter la quantité" ${locked ? 'disabled' : ''}>+</button>` +
-      `</div>`
-    );
-  }
-
   function snapshotItemRowHtml(item, context) {
     const claimed = !!item.claimed;
     const classes = ['k-cart-snapshot-item', 'is-cart-snapshot'];
@@ -774,6 +754,8 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       ? (buyerFirstName ? `Déjà acheté par ${buyerFirstName}` : 'Déjà acheté')
       : 'Disponible';
     const priceText = fmt(item.unit_price_kmf, 'KMF');
+    const quantity = Number(item.quantity) || 1;
+    const quantityText = quantity > 1 ? ` · ×${quantity}` : '';
 
     // Doctrine finale — chaque ligne affiche exactement UN slot d'action à
     // droite : soit le badge "Déjà acheté [par X]" (claimed), soit le
@@ -786,12 +768,6 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     const control = claimed
       ? `<span class="k-cart-snapshot-item-status-badge is-claimed">${buyerFirstName ? `Déjà acheté par ${buyerFirstName}` : 'Déjà acheté'}</span>`
       : buyBtnHtml;
-
-    // Steppers quantité + ✕ — toujours visibles pour l'organisateur tant
-    // que la liste est ouverte (context.editMode, cf. buildSnapshotRenderContext).
-    const removeBtn = context.isOrganizer && context.editMode && !claimed
-      ? `<button type="button" class="k-cart-item-remove" data-item-id="${sanitize(String(item.id))}" aria-label="Retirer cet article" title="Retirer">✕</button>`
-      : '';
 
     const openLabel = `Voir la fiche produit — ${item.name || 'cet article'}`;
     // GAP-07 §11 — la variante s'affiche sous le nom, jamais fusionnée
@@ -808,11 +784,10 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
           `<div class="k-cart-item-info">` +
             `<div class="k-cart-item-name">${sanitize(item.name || '')}</div>` +
             variantHtml +
-            `<div class="k-cart-snapshot-item-meta k-cart-item-context-note">${priceText} · <span class="k-cart-snapshot-item-status">${statusText}</span></div>` +
+            `<div class="k-cart-snapshot-item-meta k-cart-item-context-note">${priceText}${quantityText} · <span class="k-cart-snapshot-item-status">${statusText}</span></div>` +
           `</div>` +
         `</button>` +
-        snapshotQuantityControlHtml(item, context) +
-        `<div class="k-cart-snapshot-item-controls">${control}${removeBtn}</div>` +
+        `<div class="k-cart-snapshot-item-controls">${control}</div>` +
       `</div>`
     );
   }
@@ -826,12 +801,6 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
    */
   function wireSnapshotItems(root, actions) {
     if (!root || !actions) return;
-    root.querySelectorAll('.k-cart-item-remove').forEach((btn) => {
-      btn.addEventListener('click', () => actions.onRemove(btn.dataset.itemId));
-    });
-    root.querySelectorAll('.k-qty-btn').forEach((btn) => {
-      btn.addEventListener('click', () => actions.onQuantityStep(btn.dataset.itemId, Number(btn.dataset.qtyStep)));
-    });
     root.querySelectorAll('.k-cart-snapshot-item-open').forEach((btn) => {
       btn.addEventListener('click', () => actions.onOpenProduct(btn.dataset.itemId));
     });
@@ -999,7 +968,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     // au moins une ligne disponible et que la liste est ouverte.
     if (!context.readOnly && context.availableCount > 0) {
       const buyAllBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-buyall', 'k-cart-continue-shop');
-      buyAllBtn.textContent = `Tout acheter · ${fmt(context.availableTotal, 'KMF')}`;
+      buyAllBtn.textContent = `Payer · ${fmt(context.availableTotal, 'KMF')}`;
       buyAllBtn.onclick = () => actions.onBuyAll();
     }
   }
@@ -1063,7 +1032,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     // option discrète, pour organisateur ET participant.
     if (!context.readOnly && context.availableCount > 0) {
       const buyAllBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-buyall', 'k-sc-btn-snapshot-action');
-      buyAllBtn.textContent = `Tout acheter · ${fmt(context.availableTotal, 'KMF')}`;
+      buyAllBtn.textContent = `Payer · ${fmt(context.availableTotal, 'KMF')}`;
       buyAllBtn.onclick = () => actions.onBuyAll();
     }
   }
@@ -1316,65 +1285,7 @@ export function cleanupCartSnapshotDom() {
     }
   }
 
-  /* ── SHARE CART WHATSAPP ────────────────────────────────── */
-  /* ── SHARED CART — API v2 ──────────────────────────────────── */
-
-  /**
- * Construit l'URL de partage du panier via l'API.
- * @param {Object} opts - { type: 'simple'|'event', eventLabel? }
- * @returns {Promise<string>} URL de partage
- */
-  async function buildCartShareURL(opts) {
-    opts = opts || {};
-    const payload = {
-      cart_items: state.cart.map(function(item) {
-        return {
-          product_id: item.product.id,
-          qty: item.qty,
-          price_kmf: item.product.promo_price_kmf || item.product.price_kmf || 0
-        };
-      }),
-      type:        opts.type        || 'simple',
-      event_label: opts.event_label || null,
-      sharer_name: opts.sharer_name || null
-    };
-    const res = await apiPost('/api/shares', payload);
-    if (res && (res.url || res.share_url)) return res.url || res.share_url;
-    throw new Error('url manquante');
-  }
-
-  /**
-   * Construit l'URL de partage de secours si l'API share échoue.
-   * Encode les items du panier en query string.
-   * @returns {string} URL de partage fallback
-   */
-  function _buildFallbackCartURL() {
-    // Fallback legacy URL si l'API échoue
-    const items = state.cart.map(function(item) {
-      return item.product.id + ':' + item.qty;
-    });
-    return window.location.origin + '/Komerce_Boutique.html?cart=' + encodeURIComponent(items.join(','));
-  }
-
-  /* ======= SHARE CHOICE MODAL — DEPRECATED PR-1 =======
-     Remplacé par b-share-cart.js (owner exclusif du flow "📤 Partager").
-     Stubs conservés pour compatibilité exports. À supprimer en nettoyage PR-event. */
-
-  /** @deprecated PR-1 — stub, flow géré par b-share-cart.js */
-  function showShareChoiceModal() {
-    // no-op — b-share-cart.js prend en charge le flow "📤 Partager"
-  }
-
-  /** @deprecated PR-1 — stub */
-  function _showEventForm() { /* no-op */ }
-  /** @deprecated PR-1 — stub */
-  async function _doEventShare() { /* no-op */ }
-  /** @deprecated PR-1 — stub */
-  async function shareCartWhatsApp() {
-    // no-op — b-share-cart.js prend en charge le flow "📤 Partager"
-  }
-
-    /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
+  /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
   /**
  * Charge et affiche un panier partagé depuis un token URL.
  * @param {string} token - Token de partage
@@ -1873,7 +1784,7 @@ export {
   openCart, closeCart, openCartWithHighlight,
   renderCartBody,
   removeFromCart, markAllCartButtons,
-  shareCartWhatsApp, showShareChoiceModal, loadSharedCart,
+  loadSharedCart,
 };
 // Alias pour boutique.js qui importe 'renderCart'
 export { renderCartBody as renderCart };

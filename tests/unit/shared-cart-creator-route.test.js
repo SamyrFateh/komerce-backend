@@ -20,13 +20,7 @@
  *   POST /from-basket       : 400 sans basket_id, succès, erreurs métier → 400
  *   GET  /mine              : succès (share_url calculé)
  *   GET  /:id               : 404, succès
- *   GET  /:id/as-cart-items : 404, succès (mapping avec shared_cart_item_id + claimed)
- *   PUT  /:id/items         : 400 si cart_items vide, succès, erreur custom status
- *   POST /:id/items         : succès, erreur custom status, erreur inconnue → next
- *   DELETE /:id/items/:itemId : succès, item déjà acheté → 409, introuvable → 404,
- *                             erreur inconnue → next
- *   PATCH /:id/items/:itemId : succès (transmet quantity), item déjà acheté → 409,
- *                             quantité invalide → 400, erreur inconnue → next
+ *   routes structurelles legacy (as-cart-items, PUT/POST/DELETE/PATCH items) : 404
  *   POST /:id/close         : succès, erreur custom status
  *   POST /:id/cancel        : succès, erreur custom status
  *
@@ -65,12 +59,6 @@ jest.mock('../../middleware/soft-auth', () => ({
   },
 }));
 
-jest.mock('../../services/shared-cart-items-service', () => ({
-  updateOpenSharedCartItems: jest.fn(),
-  addSharedCartItem: jest.fn(),
-  removeSharedCartItem: jest.fn(),
-  updateSharedCartItemQuantity: jest.fn(),
-}));
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
@@ -90,7 +78,6 @@ jest.mock('../../services/shared-cart-queries', () => ({
 }));
 
 const engine = require('../../services/shared-cart-engine');
-const itemsService = require('../../services/shared-cart-items-service');
 const whatsapp = require('../../services/whatsapp-meta');
 const queries = require('../../services/shared-cart-queries');
 
@@ -281,198 +268,20 @@ describe('GET /:id', () => {
   });
 });
 
-// ── GET /:id/as-cart-items ────────────────────────────────────────────
+// ── Liste publiée = snapshot structurellement immuable ────────────────
 
-describe('GET /:id/as-cart-items', () => {
-  it('404 si liste introuvable', async () => {
-    engine.getSharedCartForOwner.mockResolvedValue(null);
-    const res = await request(app).get('/api/shared-carts/cart-x/as-cart-items');
+describe('liste publiée — aucune route de réédition', () => {
+  it.each([
+    ['get',    '/api/shared-carts/cart-1/as-cart-items'],
+    ['put',    '/api/shared-carts/cart-1/items'],
+    ['post',   '/api/shared-carts/cart-1/items'],
+    ['delete', '/api/shared-carts/cart-1/items/sci-1'],
+    ['patch',  '/api/shared-carts/cart-1/items/sci-1'],
+  ])('%s %s → 404', async (method, path) => {
+    const res = await request(app)[method](path);
     expect(res.status).toBe(404);
   });
-
-  it('succès → items avec shared_cart_item_id et claimed', async () => {
-    engine.getSharedCartForOwner.mockResolvedValue({
-      cart: {
-        id: 'cart-1', title: 'Liste', total_kmf: 2000,
-      },
-      items: [{
-        id: 'sci-1', product_id: 'p1', quantity: 2,
-        product_name_snapshot: 'Riz', product_image_snapshot: null, product_category_snapshot: 'epicerie',
-        unit_price_kmf_snapshot: 1000, line_total_kmf_snapshot: 2000,
-      }],
-    });
-    const res = await request(app).get('/api/shared-carts/cart-1/as-cart-items');
-    expect(res.status).toBe(200);
-    expect(res.body.total_kmf).toBe(2000);
-    expect(res.body.cart_items[0].product_id).toBe('p1');
-    expect(res.body.cart_items[0].line_total_kmf).toBe(2000);
-    // Gap réel constaté dans le code actuel : ce endpoint ne reprend PAS
-    // shared_cart_item_id / claimed (migration 123) — le pont vers le
-    // checkout canonique n'est donc pas encore branché sur cette route.
-    // Documenté ici plutôt que masqué, à corriger avant d'exposer un
-    // parcours participant réel sur cet endpoint.
-    expect(res.body.cart_items[0].shared_cart_item_id).toBeUndefined();
-  });
 });
-
-// ── PUT /:id/items ────────────────────────────────────────────────────
-
-describe('PUT /:id/items', () => {
-  it('400 si cart_items vide', async () => {
-    const res = await request(app).put('/api/shared-carts/cart-1/items').send({ cart_items: [] });
-    expect(res.status).toBe(400);
-  });
-
-  it('succès → 200', async () => {
-    itemsService.updateOpenSharedCartItems.mockResolvedValue({
-      cart: { id: 'cart-1' }, items: [{ id: 'sci-1' }],
-    });
-    const res = await request(app).put('/api/shared-carts/cart-1/items')
-      .send({ cart_items: [{ product_id: 'p1', quantity: 1 }] });
-    expect(res.status).toBe(200);
-    expect(res.body.items_count).toBe(1);
-  });
-
-  it('erreur avec status custom → propagée', async () => {
-    const err = new Error('non éditable');
-    err.status = 409; err.code = 'cart_not_editable';
-    itemsService.updateOpenSharedCartItems.mockRejectedValue(err);
-    const res = await request(app).put('/api/shared-carts/cart-1/items')
-      .send({ cart_items: [{ product_id: 'p1', quantity: 1 }] });
-    expect(res.status).toBe(409);
-    expect(res.body.code).toBe('cart_not_editable');
-  });
-});
-
-// ── POST /:id/items (ajout unitaire — Contrat API §2/§5 point 4) ───────
-
-describe('POST /:id/items', () => {
-  it('succès → 200, transmet product_id/quantity du body au service', async () => {
-    itemsService.addSharedCartItem.mockResolvedValue({
-      cart: { id: 'cart-1' }, item: { id: 'sci-new', product_id: 'p1', quantity: 2 },
-    });
-    const res = await request(app).post('/api/shared-carts/cart-1/items')
-      .send({ product_id: 'p1', quantity: 2 });
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
-    expect(res.body.item.id).toBe('sci-new');
-    expect(itemsService.addSharedCartItem).toHaveBeenCalledWith('cart-1', 'user-1', 'p1', 2, undefined);
-  });
-
-  // GAP-07 §9.2 — variant_combo transmis tel quel au service, résolution
-  // serveur exclusive (aucune autorité côté route/client).
-  it('transmet variant_combo du body au service quand fourni', async () => {
-    itemsService.addSharedCartItem.mockResolvedValue({
-      cart: { id: 'cart-1' }, item: { id: 'sci-new', product_id: 'p-sku' },
-    });
-    const res = await request(app).post('/api/shared-carts/cart-1/items')
-      .send({ product_id: 'p-sku', quantity: 1, variant_combo: { couleur: 'Noir' } });
-    expect(res.status).toBe(200);
-    expect(itemsService.addSharedCartItem).toHaveBeenCalledWith(
-      'cart-1', 'user-1', 'p-sku', 1, { couleur: 'Noir' }
-    );
-  });
-
-  it('erreur avec status custom (ex : produit inactif) → propagée', async () => {
-    const err = new Error('Produit introuvable ou inactif');
-    err.status = 400; err.code = 'product_not_found';
-    itemsService.addSharedCartItem.mockRejectedValue(err);
-    const res = await request(app).post('/api/shared-carts/cart-1/items')
-      .send({ product_id: 'p-inconnu' });
-    expect(res.status).toBe(400);
-    expect(res.body.code).toBe('product_not_found');
-  });
-
-  it('erreur inconnue (pas de .status) → next(err) → 500', async () => {
-    itemsService.addSharedCartItem.mockRejectedValue(new Error('boom'));
-    const res = await request(app).post('/api/shared-carts/cart-1/items').send({ product_id: 'p1' });
-    expect(res.status).toBe(500);
-  });
-});
-
-// ── DELETE /:id/items/:itemId (retrait unitaire — Contrat API §2/§5 point 4) ──
-
-describe('DELETE /:id/items/:itemId', () => {
-  it('succès → 200, transmet itemId au service', async () => {
-    itemsService.removeSharedCartItem.mockResolvedValue({ cart: { id: 'cart-1' } });
-    const res = await request(app).delete('/api/shared-carts/cart-1/items/sci-1');
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
-    expect(itemsService.removeSharedCartItem).toHaveBeenCalledWith('cart-1', 'user-1', 'sci-1');
-  });
-
-  it('article déjà acheté → 409, code item_already_claimed propagé', async () => {
-    const err = new Error('Cet article a déjà été acheté, il ne peut plus être retiré');
-    err.status = 409; err.code = 'item_already_claimed';
-    itemsService.removeSharedCartItem.mockRejectedValue(err);
-    const res = await request(app).delete('/api/shared-carts/cart-1/items/sci-1');
-    expect(res.status).toBe(409);
-    expect(res.body.code).toBe('item_already_claimed');
-  });
-
-  it('article introuvable → 404', async () => {
-    const err = new Error('Article introuvable');
-    err.status = 404; err.code = 'item_not_found';
-    itemsService.removeSharedCartItem.mockRejectedValue(err);
-    const res = await request(app).delete('/api/shared-carts/cart-1/items/sci-inconnu');
-    expect(res.status).toBe(404);
-  });
-
-  it('erreur inconnue (pas de .status) → next(err) → 500', async () => {
-    itemsService.removeSharedCartItem.mockRejectedValue(new Error('boom'));
-    const res = await request(app).delete('/api/shared-carts/cart-1/items/sci-1');
-    expect(res.status).toBe(500);
-  });
-});
-
-// ── PATCH /:id/items/:itemId (quantité unitaire — amendement V2 §B) ────
-
-describe('PATCH /:id/items/:itemId', () => {
-  it('succès → 200, transmet quantity du body au service', async () => {
-    itemsService.updateSharedCartItemQuantity.mockResolvedValue({
-      cart: { id: 'cart-1' }, item: { id: 'sci-1', quantity: 3, line_total_kmf_snapshot: 3000 },
-    });
-    const res = await request(app).patch('/api/shared-carts/cart-1/items/sci-1')
-      .send({ quantity: 3 });
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
-    expect(res.body.item.quantity).toBe(3);
-    expect(itemsService.updateSharedCartItemQuantity).toHaveBeenCalledWith('cart-1', 'user-1', 'sci-1', 3);
-  });
-
-  it('article déjà acheté → 409, code item_already_claimed propagé', async () => {
-    const err = new Error('Cet article a déjà été acheté, sa quantité ne peut plus être modifiée');
-    err.status = 409; err.code = 'item_already_claimed';
-    itemsService.updateSharedCartItemQuantity.mockRejectedValue(err);
-    const res = await request(app).patch('/api/shared-carts/cart-1/items/sci-1').send({ quantity: 2 });
-    expect(res.status).toBe(409);
-    expect(res.body.code).toBe('item_already_claimed');
-  });
-
-  it('quantité invalide → 400, code invalid_quantity propagé', async () => {
-    const err = new Error('Quantité invalide');
-    err.status = 400; err.code = 'invalid_quantity';
-    itemsService.updateSharedCartItemQuantity.mockRejectedValue(err);
-    const res = await request(app).patch('/api/shared-carts/cart-1/items/sci-1').send({ quantity: 0 });
-    expect(res.status).toBe(400);
-    expect(res.body.code).toBe('invalid_quantity');
-  });
-
-  it('article introuvable → 404', async () => {
-    const err = new Error('Article introuvable');
-    err.status = 404; err.code = 'item_not_found';
-    itemsService.updateSharedCartItemQuantity.mockRejectedValue(err);
-    const res = await request(app).patch('/api/shared-carts/cart-1/items/sci-inconnu').send({ quantity: 1 });
-    expect(res.status).toBe(404);
-  });
-
-  it('erreur inconnue (pas de .status) → next(err) → 500', async () => {
-    itemsService.updateSharedCartItemQuantity.mockRejectedValue(new Error('boom'));
-    const res = await request(app).patch('/api/shared-carts/cart-1/items/sci-1').send({ quantity: 1 });
-    expect(res.status).toBe(500);
-  });
-});
-
 // ── POST /:id/close ───────────────────────────────────────────────────
 
 describe('POST /:id/close', () => {

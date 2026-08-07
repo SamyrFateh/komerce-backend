@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-07T16:56:02.341Z.
+> Régénéré le 2026-08-07T21:05:53.159Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
 - Modules JS : **76** (76 headés) · Événements bus : **22** · Bundles CSS : **3**
-- Endpoints appelés : **48** — 🔴 0 hors contrat · ⚪ 33 non prouvés · 🔵 17 dynamiques
+- Endpoints appelés : **46** — 🔴 0 hors contrat · ⚪ 33 non prouvés · 🔵 15 dynamiques
 - Santé bus : 0 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 4 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -57,9 +57,7 @@
 | `/api/shared-carts/save` | group-api | ⚪ non prouvé |
 | `/api/shared-carts/saved/{id}` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/close` | group-api | 🔵 dynamique |
-| `/api/shared-carts/{id}/items` | group-api | 🔵 dynamique |
-| `/api/shared-carts/{id}/items/{id}` | group-api | 🔵 dynamique |
-| `/api/shares` | b-cart, b-favs | ⚪ non prouvé |
+| `/api/shares` | b-cart, b-favs | 🔵 dynamique |
 | `/api/wallet` | b-checkout, b-wallet | ⚪ non prouvé |
 | `/api/wallet/transactions` | b-wallet | ⚪ non prouvé |
 

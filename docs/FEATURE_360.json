@@ -51,15 +51,15 @@
     "ambiguousOwnershipSignals": 68,
     "ontologyGaps": 0,
     "debtItemsTotal": 125,
-    "gateHealthy": 14,
+    "gateHealthy": 15,
     "gateBlocked": 1
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 22,
-    "attributedFindings": 22,
+    "totalFindings": 21,
+    "attributedFindings": 21,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -7389,7 +7389,7 @@
             ]
           },
           "ci": {
-            "count": 16,
+            "count": 20,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -7459,6 +7459,26 @@
               {
                 "declared": ".github/workflows/impact-check.yml",
                 "resolvedPath": ".github/workflows/impact-check.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/lot7-finalize-governance-once.yml",
+                "resolvedPath": ".github/workflows/lot7-finalize-governance-once.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/lot7-staging-business-qualification.yml",
+                "resolvedPath": ".github/workflows/lot7-staging-business-qualification.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/lot8-pre-go-live-certification.yml",
+                "resolvedPath": ".github/workflows/lot8-pre-go-live-certification.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/lot8-reconcile-current-main-once.yml",
+                "resolvedPath": ".github/workflows/lot8-reconcile-current-main-once.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8574,7 +8594,7 @@
             ]
           }
         },
-        "totalFiles": 272,
+        "totalFiles": 276,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -13974,7 +13994,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "↳ Référencé en CSS : css\\cart.css:1989, css\\cart.css:2000 … — sélecteur legacy ou JS manquant"
+            "message": "↳ Référencé en CSS : css\\cart.css:1908, css\\cart.css:1919 … — sélecteur legacy ou JS manquant"
           },
           {
             "gate": "check:body-classes",
@@ -14524,8 +14544,15 @@
         "totalFiles": 4,
         "boutiqueManifest": "recommendations",
         "boutiqueFiles": {
-          "count": 2,
+          "count": 3,
           "files": [
+            {
+              "declared": "../css/modal-product-polish.css",
+              "resolvedPath": "public/boutique/css/modal-product-polish.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
             {
               "declared": "../js/b-modal-suggestions.js",
               "resolvedPath": "public/boutique/js/b-modal-suggestions.js",
@@ -14965,7 +14992,7 @@
       "service": "Permettre à un créateur de composer une liste de produits partageable par lien public ; chaque participant réclame un article en l'achetant individuellement via le checkout canonique.",
       "perimeter": {
         "in": [
-          "création, édition (statut open), fermeture, annulation de la liste partagée",
+          "création puis publication immuable, fermeture et annulation de la liste partagée",
           "lecture publique et propriétaire (avec statut de réclamation dérivé par jointure)"
         ],
         "out": [
@@ -14977,6 +15004,7 @@
       },
       "authority": "backend-core — tout changement de statut (open/closed/cancelled) doit être validé par le propriétaire de shared-cart-lifecycle.js",
       "invariants": [
+        "une liste publiée est un snapshot structurellement immuable : OPEN signifie achetable, jamais éditable",
         "un article de liste n'est jamais réclamable deux fois — arbitré par index unique, pas par verrou applicatif (migration 123)",
         "aucune donnée financière n'est stockée sur shared_carts — le total se calcule toujours par SUM() sur shared_cart_items",
         "lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)",
@@ -15140,11 +15168,16 @@
             ]
           },
           "routes": {
-            "count": 3,
+            "count": 4,
             "files": [
               {
                 "declared": "routes/baskets.js",
                 "resolvedPath": "routes/baskets.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/shared-cart-saved.js",
+                "resolvedPath": "routes/shared-cart-saved.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -15160,7 +15193,7 @@
             ]
           },
           "services": {
-            "count": 8,
+            "count": 7,
             "files": [
               {
                 "declared": "services/shared-cart-creation.js",
@@ -15175,11 +15208,6 @@
               {
                 "declared": "services/shared-cart-internals.js",
                 "resolvedPath": "services/shared-cart-internals.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/shared-cart-items-service.js",
-                "resolvedPath": "services/shared-cart-items-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -15205,7 +15233,7 @@
             ]
           },
           "tests": {
-            "count": 12,
+            "count": 11,
             "files": [
               {
                 "declared": "tests/unit/baskets.test.js",
@@ -15230,11 +15258,6 @@
               {
                 "declared": "tests/unit/shared-cart-internals.test.js",
                 "resolvedPath": "tests/unit/shared-cart-internals.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/shared-cart-items-service.test.js",
-                "resolvedPath": "tests/unit/shared-cart-items-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -15270,7 +15293,7 @@
             ]
           }
         },
-        "totalFiles": 51,
+        "totalFiles": 50,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
           "count": 17,
@@ -15478,6 +15501,10 @@
             "lifecycleOwner": null
           },
           {
+            "table": "orders",
+            "lifecycleOwner": null
+          },
+          {
             "table": "products",
             "lifecycleOwner": null
           },
@@ -15568,6 +15595,10 @@
             "lifecycleOwner": null
           },
           {
+            "table": "orders",
+            "lifecycleOwner": null
+          },
+          {
             "table": "products",
             "lifecycleOwner": null
           },
@@ -15580,7 +15611,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 15
+          "count": 16
         }
       },
       "businessDependencies": [
@@ -15676,22 +15707,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "SIDEEFFECT-NO-INVARIANT",
-            "verdict": "warn",
-            "file": null,
-            "message": "externalSideEffect \"payment\" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 3,

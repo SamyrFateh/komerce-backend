@@ -4,9 +4,9 @@
  * @domain        shared-cart
  * @layer         route
  * @criticality   critical
- * @inputs        public_token, auth_user, creator_actions
+ * @inputs        public_token, auth_user, lifecycle_actions
  * @outputs       shared_cart_api, admin_views
- * @depends       services/shared-cart-engine.js, services/shared-cart-items-service.js, services/shared-cart-queries.js, middleware/soft-auth.js, middleware/auth.js
+ * @depends       services/shared-cart-engine.js, services/shared-cart-queries.js, middleware/soft-auth.js, middleware/auth.js
  * @used-by       server.js, public/boutique/js/b-group-view.js, public/boutique/js/b-share-cart.js, public/boutique/js/b-cart.js
  * @db-read       none
  * @db-write      none
@@ -44,14 +44,8 @@
  *   POST   /api/shared-carts/save     (sauvegarde explicite d'une liste reçue
  *          par token — amendement V2 §D, jamais implicite)
  *   GET    /api/shared-carts/:id
- *   GET    /api/shared-carts/:id/as-cart-items
- *   PUT    /api/shared-carts/:id/items    (statut OPEN uniquement)
  *   POST   /api/shared-carts/:id/close    (OPEN → CLOSED)
  *   POST   /api/shared-carts/:id/cancel   (OPEN|CLOSED → CANCELLED)
- *   POST   /api/shared-carts/:id/items                (ajout unitaire)
- *   DELETE /api/shared-carts/:id/items/:itemId         (retrait unitaire)
- *   PATCH  /api/shared-carts/:id/items/:itemId         (quantité unitaire —
- *          amendement V2 §B, ligne non réclamée uniquement)
  *
  *   ── Admin ──
  *   GET    /api/admin/shared-carts
@@ -73,7 +67,7 @@ const engine  = require('../services/shared-cart-engine');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const { softAuthenticate } = require('../middleware/soft-auth');
-const { updateOpenSharedCartItems, addSharedCartItem, removeSharedCartItem, updateSharedCartItemQuantity } = require('../services/shared-cart-items-service');
+
 const log = require('../utils/logger').child({ module: 'shared-cart' });
 const { sendTemplateWhatsApp } = require('../services/whatsapp-meta');
 const queries = require('../services/shared-cart-queries');
@@ -240,98 +234,9 @@ router.get('/:id', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Recharge panier créateur depuis le snapshot (pour localStorage boutique)
-router.get('/:id/as-cart-items', authenticate, async (req, res, next) => {
-  try {
-    const data = await engine.getSharedCartForOwner(req.params.id, req.user.id);
-    if (!data) return res.status(404).json({ error: 'Panier introuvable' });
-
-    const cartItems = data.items.map(it => ({
-      product_id:       it.product_id,
-      quantity:         Number(it.quantity),
-      unit_price_kmf:   Number(it.unit_price_kmf_snapshot),
-      product_name:     it.product_name_snapshot,
-      product_image:    it.product_image_snapshot,
-      product_category: it.product_category_snapshot,
-      // GAP-07 §7/§12 — la combinaison doit survivre à un rechargement du
-      // panier créateur (réédition), sinon un remplacement intégral via
-      // PUT /:id/items perdrait silencieusement la variante déjà choisie.
-      variant_combo:     it.variant_combo_snapshot || null,
-      line_total_kmf:   Number(it.line_total_kmf_snapshot),
-    }));
-
-    res.json({
-      shared_cart_id: data.cart.id,
-      title:          data.cart.title,
-      total_kmf:      Number(data.cart.total_kmf),
-      cart_items:     cartItems,
-    });
-  } catch (err) { next(err); }
-});
-
-// S2-06 — Modifier les articles du panier (statut OPEN uniquement)
-// Sémantique historique inchangée : remplace la liste entière. Conservé
-// tel quel — Contrat API §5 point 4, option A. Sera retiré quand il n'aura
-// plus d'utilité, pas réinterprété.
-router.put('/:id/items', authenticate, async (req, res, next) => {
-  try {
-    const { cart_items } = req.body;
-    if (!Array.isArray(cart_items) || cart_items.length === 0) {
-      return res.status(400).json({ error: 'cart_items requis', code: 'cart_items_required' });
-    }
-
-    const { cart, items } = await updateOpenSharedCartItems(req.params.id, req.user.id, cart_items);
-    res.json({ ok: true, cart, items, items_count: items.length });
-  } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
-    next(err);
-  }
-});
-
-// Une intention, un appel, écriture immédiate (Invariant 20). Capacité
-// nouvelle, pas une réinterprétation de PUT /:id/items ci-dessus.
-router.post('/:id/items', authenticate, async (req, res, next) => {
-  try {
-    const { product_id, quantity, variant_combo } = req.body || {};
-    const { cart, item } = await addSharedCartItem(req.params.id, req.user.id, product_id, quantity, variant_combo);
-    res.json({ ok: true, cart, item });
-  } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
-    next(err);
-  }
-});
-
-// Confirmation exigée côté client avant l'appel (Invariant 21) ; côté
-// serveur, exécution immédiate dès réception, sans confirmation
-// supplémentaire.
-router.delete('/:id/items/:itemId', authenticate, async (req, res, next) => {
-  try {
-    const { cart } = await removeSharedCartItem(req.params.id, req.user.id, req.params.itemId);
-    res.json({ ok: true, cart });
-  } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
-    next(err);
-  }
-});
-
-// Modification unitaire de la quantité d'une ligne — amendement V2 §B
-// (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2). Capacité
-// nouvelle, distincte du PUT /:id/items ci-dessus : ne touche qu'une ligne,
-// jamais toute la liste. Aucun recours à PUT /:id/items pour ce besoin.
-router.patch('/:id/items/:itemId', authenticate, async (req, res, next) => {
-  try {
-    const { quantity } = req.body || {};
-    const { cart, item } = await updateSharedCartItemQuantity(req.params.id, req.user.id, req.params.itemId, quantity);
-    res.json({ ok: true, cart, item });
-  } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
-    next(err);
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════════════
-// ── FERMETURE DU PANIER : OPEN → CLOSED ─────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════
+// Liste publiée = snapshot structurellement immuable.
+// OPEN signifie « achetable », jamais « éditable ».
+// Toute correction passe par fermeture puis création d'une nouvelle liste.
 router.post('/:id/close', authenticate, async (req, res, next) => {
   try {
     const cart = await engine.closeCart(req.params.id, req.user.id);

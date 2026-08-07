@@ -14,13 +14,13 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Ambiguous ownership signals : **68**
 - Ontology gaps : **0**
 - Debt items (total) : **125**
-- Gate health — healthy : **14** · blocked : **1**
+- Gate health — healthy : **15** · blocked : **1**
 
 ## Gate findings — intégrité de projection
 
 - Source : `docs/GATE_FINDINGS.json` (version GF-2.1)
 - Sources de gates : **18** (0 en échec)
-- Findings : **22** total, **22** attribué(s), **0** sans attribution exploitable
+- Findings : **21** total, **21** attribué(s), **0** sans attribution exploitable
 - Fichiers non projetables : **0**
 - Fichiers multi-projetés : **0**
 
@@ -744,10 +744,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `UNRESOLVED_INTERNAL_API` (medium) — utils/reference.js — génération de références commande/colis (null) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — validators/index.js — barrel des schémas Joi (null) — statut: undeclared-in-graph
 
-**Implementation** : 272 fichier(s) déclaré(s)
+**Implementation** : 276 fichier(s) déclaré(s)
   - assets : 37
   - bootstrap : 9
-  - ci : 16
+  - ci : 20
   - config : 12
   - db : 16
   - docs : 60
@@ -1232,7 +1232,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 2, ontology gaps: 0
 **Gate health** : 🟡 ATTENTION — gates: check:body-classes, fail: 0, warn: 6
-  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ↳ Référencé en CSS : css\cart.css:1989, css\cart.css:2000 … — sélecteur legacy ou JS manquant
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ↳ Référencé en CSS : css\cart.css:1908, css\cart.css:1919 … — sélecteur legacy ou JS manquant
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ 0 erreur, 5 avertissement(s) — exit 0
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-group' retirée mais jamais ajoutée dans le JS ou HTML inline
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-komerce' retirée mais jamais ajoutée dans le JS ou HTML inline
@@ -1349,7 +1349,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "logistics" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
-**Implementation** : 4 fichier(s) déclaré(s), boutique: 2 fichier(s)
+**Implementation** : 4 fichier(s) déclaré(s), boutique: 3 fichier(s)
   - routes : 1
   - services : 1
   - tests : 2
@@ -1409,7 +1409,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Perimeter** :
 - _in_ :
-  - création, édition (statut open), fermeture, annulation de la liste partagée
+  - création puis publication immuable, fermeture et annulation de la liste partagée
   - lecture publique et propriétaire (avec statut de réclamation dérivé par jointure)
 - _out_ :
   - paiement carte/PayPal/cash (feature payments, consommée en sortie)
@@ -1420,6 +1420,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Authority** : backend-core — tout changement de statut (open/closed/cancelled) doit être validé par le propriétaire de shared-cart-lifecycle.js
 
 **Invariants** :
+- une liste publiée est un snapshot structurellement immuable : OPEN signifie achetable, jamais éditable
 - un article de liste n'est jamais réclamable deux fois — arbitré par index unique, pas par verrou applicatif (migration 123)
 - aucune donnée financière n'est stockée sur shared_carts — le total se calcule toujours par SUM() sur shared_cart_items
 - lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)
@@ -1427,7 +1428,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
 
-**Exposes** : 0 internal API(s), 15 HTTP interface(s)
+**Exposes** : 0 internal API(s), 16 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), notifications (BUSINESS_TRANSVERSAL_SERVICE), orders (DECLARED_AND_OBSERVED), recommendations (BUSINESS_FEATURE_INTERFACE)
 **Consumed by** : catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), orders (BUSINESS_FEATURE_INTERFACE)
@@ -1438,21 +1439,20 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🔴 BLOCKED — cross-feature imports: 3, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 2, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
-  - [gate:feature-classification-check] 🟠 SIDEEFFECT-NO-INVARIANT — externalSideEffect "payment" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** (3) :
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "notification (émission uniquement — WhatsApp création de liste)" — ne correspond à aucun nom de feature connu
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "products (lecture seule)" — ne correspond à aucun nom de feature connu
 - `DIRECT_CROSS_FEATURE_IMPORT` (high) — 3 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
-**Implementation** : 51 fichier(s) déclaré(s), boutique: 17 fichier(s)
+**Implementation** : 50 fichier(s) déclaré(s), boutique: 17 fichier(s)
   - boutique : 10
   - dash : 1
   - migrations : 17
-  - routes : 3
-  - services : 8
-  - tests : 12
+  - routes : 4
+  - services : 7
+  - tests : 11
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="shared-cart"]_
 

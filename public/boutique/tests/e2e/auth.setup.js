@@ -107,9 +107,22 @@ setup('authentifie le compte de test et sauvegarde la session', async ({ page, b
   // ── Étape OTP ─────────────────────────────────────────────────────────────
   const otpBoxes = page.locator('.k-id-otp-box');
   const digits = TEST_ACCOUNT_OTP.split('');
-  for (let i = 0; i < digits.length; i += 1) {
-    await otpBoxes.nth(i).fill(digits[i]);
+
+  await expect(otpBoxes).toHaveCount(6);
+
+  // enterOtpStep() programme encore un focus sur la première case à +50 ms.
+  // Attendre sa fin évite qu'il vole le focus pendant la saisie Playwright.
+  await page.waitForTimeout(150);
+
+  // Chaque case est ciblée explicitement et vérifiée avant de continuer.
+  // La dernière saisie déclenche automatiquement verifyCode().
+  for (let i = 0; i < digits.length - 1; i += 1) {
+    const box = otpBoxes.nth(i);
+    await box.fill(digits[i]);
+    await expect(box).toHaveValue(digits[i]);
   }
+
+  await otpBoxes.nth(digits.length - 1).fill(digits.at(-1));
   // La 6e case déclenche verifyCode() automatiquement via son handler 'input'
   // (voir b-identity.js:292,313 — otpCta.click() interne dès que les 6 chiffres
   // sont saisis). NE PAS recliquer #k-id-otp-cta ici : à ce stade il est déjà

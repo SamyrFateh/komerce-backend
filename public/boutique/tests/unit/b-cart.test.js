@@ -676,20 +676,20 @@ describe('b-cart', () => {
       expect(buyBtn2).toBeNull();
     });
 
-    it('"Tout acheter" affiche la valeur totale des lignes disponibles (réclamées exclues)', () => {
+    it('"Payer" affiche la valeur totale des lignes disponibles (réclamées exclues)', () => {
       activateList(); // i1 disponible (6500), i2 réclamé (exclu du total)
-      const buyAllBtn = findButtonByText('Tout acheter');
+      const buyAllBtn = findButtonByText('Payer');
       expect(buyAllBtn).not.toBeNull();
       expect(buyAllBtn.textContent).toContain('6500 KMF');
       expect(buyAllBtn.disabled).toBeFalsy();
     });
 
-    it('tout est réclamé → aucun bouton "Acheter" par ligne, "Tout acheter" absent', () => {
+    it('tout est réclamé → aucun bouton "Acheter" par ligne, "Payer" absent', () => {
       activateList({ items: [
         { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: true },
       ] });
       expect(dom.cartBody.querySelector('.k-cart-item-buy')).toBeNull();
-      expect(findButtonByText('Tout acheter')).toBeNull();
+      expect(findButtonByText('Payer')).toBeNull();
     });
 
     // Mandat §4 — une liste fermée est entièrement non opérationnelle :
@@ -697,7 +697,7 @@ describe('b-cart', () => {
     // réel trouvé en test Playwright contre un serveur/DB réel (invisible
     // aux tests jsdom précédents) : un CTA restait affiché et cliquable
     // sur une liste fermée.
-    it('liste fermée (readOnly) → aucun bouton "Acheter" par ligne, "Tout acheter" absent, même avec des lignes disponibles', () => {
+    it('liste fermée (readOnly) → aucun bouton "Acheter" par ligne, "Payer" absent, même avec des lignes disponibles', () => {
       activateList({
         isCreator: true,
         cart: { status: 'closed' },
@@ -706,7 +706,7 @@ describe('b-cart', () => {
         ],
       });
       expect(dom.cartBody.querySelector('.k-cart-item-buy')).toBeNull();
-      expect(findButtonByText('Tout acheter')).toBeNull();
+      expect(findButtonByText('Payer')).toBeNull();
       expect(document.getElementById('k-cart-snap-closelist').textContent.trim()).toBe('Liste fermée');
     });
 
@@ -717,22 +717,33 @@ describe('b-cart', () => {
       expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-buy')).not.toBeNull();
     });
 
-    // Doctrine finale (2026-08) — plus de bascule "✎ Modifier / Terminer" :
-    // les steppers quantité et le ✕ sont TOUJOURS visibles pour
-    // l'organisateur sur les lignes disponibles, tant que la liste reste
-    // ouverte. Rien à activer, rien à désactiver.
-    it('organisateur : steppers quantité et ✕ toujours visibles sur les lignes disponibles, sans bascule Modifier/Terminer', () => {
-      activateList({ isCreator: true });
+    // Une liste publiée est un snapshot structurel : même l'organisateur
+    // ne peut plus modifier ses lignes.
+    it('organisateur : aucune édition post-publication, quantité figée lisible', () => {
+      activateList({
+        isCreator: true,
+        items: [
+          {
+            id: 'i1',
+            product_id: 'p1',
+            name: 'Riz',
+            image: null,
+            quantity: 2,
+            unit_price_kmf: 6500,
+            claimed: false,
+          },
+        ],
+      });
+
       expect(findButtonByText('Modifier')).toBeNull();
       expect(findButtonByText('Terminer')).toBeNull();
+      expect(byClass('k-cart-item-remove', dom.cartBody)).toHaveLength(0);
+      expect(byClass('k-qty-btn', dom.cartBody)).toHaveLength(0);
 
-      const removeButtons = byClass('k-cart-item-remove', dom.cartBody);
-      const qtyGroups = byClass('k-cart-item-qty', dom.cartBody);
-      expect(removeButtons).toHaveLength(1); // seulement i1 (disponible) ; i2 est réclamé
-      expect(qtyGroups).toHaveLength(1);
-      expect(removeButtons[0].dataset.itemId).toBe('i1');
+      const row = dom.cartBody.querySelector('[data-item-id="i1"]');
+      expect(row.textContent).toContain('×2');
+      expect(row.querySelector('.k-cart-item-buy')).not.toBeNull();
     });
-
     it('ouvre la fiche produit canonique depuis une ligne de liste (bus modal:open)', () => {
       state.products = [{ id: 'p1', name: 'Riz' }];
       activateList();

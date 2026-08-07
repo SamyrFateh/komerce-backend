@@ -238,7 +238,7 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
     // est l'unique point d'entrée, y compris pour le média (SKU canonique via
     // product_sku_media → catalog_media, fallback products.image_url — §9).
     // Un produit introuvable/inactif reste un skip silencieux (comportement
-    // historique de ce writer, cohérent avec updateOpenSharedCartItems) ;
+    // historique de ce writer lors de la création du snapshot) ;
     // une combinaison/stock invalide reste un refus explicite (rollback),
     // jamais un skip qui ferait disparaître l'article sans le dire (GAP-07
     // §9.1 — "ne jamais agréger uniquement par product_id").

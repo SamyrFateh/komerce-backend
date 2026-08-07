@@ -12,23 +12,12 @@ jest.mock('../../js/b-utils.js', () => ({
 
 jest.mock('../../js/b-modal.js', () => ({ closeModal: jest.fn() }));
 jest.mock('../../js/b-cart.js', () => ({ addToCart: jest.fn(), openCart: jest.fn() }));
-jest.mock('../../js/group/group-side-cart.js', () => ({
-  canAddToActiveSharedList: jest.fn(() => false),
-  addProductToActiveSharedList: jest.fn(),
-  reopenSharedListCart: jest.fn(),
-}));
 
 const { state } = require('../../js/b-store.js');
 const { closeModal } = require('../../js/b-modal.js');
 const { addToCart, openCart } = require('../../js/b-cart.js');
 const {
-  canAddToActiveSharedList,
-  addProductToActiveSharedList,
-  reopenSharedListCart,
-} = require('../../js/group/group-side-cart.js');
-const {
   wireBuyNowButton,
-  wireAddToListButton,
   getCurrentPrice,
   computeSubtotal,
   renderSubtotalInto,
@@ -66,7 +55,6 @@ beforeEach(() => {
   state.modalProductDetail = null;
   state.modalSelection = null;
   state.modalQty = 1;
-  canAddToActiveSharedList.mockReturnValue(false);
 });
 
 afterEach(() => {
@@ -224,132 +212,5 @@ describe('b-modal-buybox-shared — modes de paiement', () => {
     const detail = _buyboxSharedTestApi.buildPaymentDetail('unknown');
     expect(detail.dataset.payDetail).toBe('unknown');
     expect(detail.querySelector('.k-buybox-payment-copy strong').textContent).toBe('Carte bancaire');
-  });
-});
-
-// P1-B — startGroupCartFlow() a été supprimé du module source (group/pot
-// retirés, doctrine finale §8/§14) : ce describe testait exclusivement cet
-// ancien chemin ("panier partagé" en tant que mode de paiement déclenché
-// depuis la buy-box) et n'a plus de sujet à couvrir. Le CTA de substitution
-// ("Ajouter à cette liste") est déjà couvert par le describe GAP-07
-// ci-dessus.
-
-// Lot 3 GAP-07 — CTA "Ajouter à cette liste" depuis la fiche produit.
-describe('b-modal-buybox-shared — Ajouter à cette liste (Lot 3 GAP-07)', () => {
-  test('bouton absent : no-op', () => {
-    expect(() => wireAddToListButton(null)).not.toThrow();
-  });
-
-  test('aucune liste active/créateur : bouton hidden, onclick désarmé', () => {
-    canAddToActiveSharedList.mockReturnValue(false);
-    const btn = document.createElement('button');
-    btn.onclick = () => {}; // simulateur d'un handler posé par un rendu précédent
-    wireAddToListButton(btn);
-
-    expect(btn.hidden).toBe(true);
-    expect(btn.onclick).toBeNull();
-  });
-
-  test('liste active + créateur, produit non-SKU : bouton visible et actif', () => {
-    canAddToActiveSharedList.mockReturnValue(true);
-    state.modalSelection = null; // pas de sélection SKU (produit legacy)
-    const btn = document.createElement('button');
-    wireAddToListButton(btn);
-
-    expect(btn.hidden).toBe(false);
-    expect(btn.disabled).toBe(false);
-    expect(typeof btn.onclick).toBe('function');
-  });
-
-  test('liste active + créateur, produit SKU sans sélection complète : visible mais désactivé', () => {
-    canAddToActiveSharedList.mockReturnValue(true);
-    state.modalSelection = { inventory_model: 'SKU', selected_sku_id: null, selected_options: {} };
-    const btn = document.createElement('button');
-    wireAddToListButton(btn);
-
-    expect(btn.hidden).toBe(false);
-    expect(btn.disabled).toBe(true);
-    expect(btn.onclick).toBeNull();
-  });
-
-  test('clic : appelle addProductToActiveSharedList avec le produit/qty/variant_combo, ferme la modale et rouvre la liste', () => {
-    jest.useFakeTimers();
-    canAddToActiveSharedList.mockReturnValue(true);
-    addProductToActiveSharedList.mockResolvedValue(true);
-    state.modalProduct = { id: 'prod-sku', name: 'Chemise' };
-    state.modalQty = 2;
-    state.modalSelection = {
-      inventory_model: 'SKU',
-      selected_sku_id: 'sku-1',
-      selected_options: { couleur: 'Noir', taille: 'M' },
-    };
-
-    const btn = document.createElement('button');
-    btn.innerHTML = 'Ajouter à cette liste';
-    wireAddToListButton(btn);
-    btn.click();
-
-    expect(btn.disabled).toBe(true);
-
-    return Promise.resolve().then(() => {
-      expect(addProductToActiveSharedList).toHaveBeenCalledWith(
-        { id: 'prod-sku', name: 'Chemise' }, 2, { couleur: 'Noir', taille: 'M' }
-      );
-      jest.advanceTimersByTime(1200);
-      expect(closeModal).toHaveBeenCalled();
-      jest.advanceTimersByTime(400);
-      expect(reopenSharedListCart).toHaveBeenCalled();
-      expect(openCart).not.toHaveBeenCalled();
-    });
-  });
-
-  test('produit non-SKU : variant_combo transmis null (jamais un objet fabriqué)', () => {
-    jest.useFakeTimers();
-    canAddToActiveSharedList.mockReturnValue(true);
-    addProductToActiveSharedList.mockResolvedValue(true);
-    state.modalProduct = { id: 'prod-simple', name: 'Sac' };
-    state.modalQty = 1;
-    state.modalSelection = null;
-
-    const btn = document.createElement('button');
-    wireAddToListButton(btn);
-    btn.click();
-
-    return Promise.resolve().then(() => {
-      expect(addProductToActiveSharedList).toHaveBeenCalledWith(
-        { id: 'prod-simple', name: 'Sac' }, 1, null
-      );
-    });
-  });
-
-  test('échec serveur : bouton réactivé, contenu restauré, jamais de fermeture de modale (le toast erreur est déjà posé par group-side-cart.js)', () => {
-    canAddToActiveSharedList.mockReturnValue(true);
-    addProductToActiveSharedList.mockResolvedValue(false);
-    state.modalProduct = { id: 'prod-sku', name: 'Chemise' };
-    state.modalSelection = null;
-
-    const btn = document.createElement('button');
-    btn.innerHTML = 'Ajouter à cette liste';
-    wireAddToListButton(btn);
-    btn.click();
-
-    return Promise.resolve().then(() => {
-      expect(btn.disabled).toBe(false);
-      expect(btn.innerHTML).toBe('Ajouter à cette liste');
-      expect(closeModal).not.toHaveBeenCalled();
-      expect(reopenSharedListCart).not.toHaveBeenCalled();
-    });
-  });
-
-  test('clic sans state.modalProduct : no-op, aucun appel réseau', () => {
-    canAddToActiveSharedList.mockReturnValue(true);
-    state.modalProduct = null;
-    state.modalSelection = null;
-
-    const btn = document.createElement('button');
-    wireAddToListButton(btn);
-    btn.click();
-
-    expect(addProductToActiveSharedList).not.toHaveBeenCalled();
   });
 });

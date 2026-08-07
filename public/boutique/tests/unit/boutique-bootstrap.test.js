@@ -68,7 +68,7 @@ jest.mock('../../js/b-modal.js', () => ({
 jest.mock('../../js/b-cart.js', () => ({
   addToCart: jest.fn(), openCart: jest.fn(), closeCart: jest.fn(), renderCartBody: jest.fn(),
   quickAdd: jest.fn(), quickRemove: jest.fn(), setQty: mockSetQty,
-  shareCartWhatsApp: jest.fn(), showShareChoiceModal: jest.fn(), loadSharedCart: jest.fn(),
+  loadSharedCart: jest.fn(),
 }));
 jest.mock('../../js/b-checkout.js', () => ({
   checkoutCart: mockCheckoutCart, closeOrderModal: jest.fn(), renderCheckout: jest.fn(),

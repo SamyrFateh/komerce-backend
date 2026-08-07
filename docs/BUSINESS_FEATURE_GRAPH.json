@@ -5215,6 +5215,34 @@
       {
         "feature": "infrastructure",
         "category": "ci",
+        "declared": ".github/workflows/lot7-finalize-governance-once.yml",
+        "resolvedPath": ".github/workflows/lot7-finalize-governance-once.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows/lot7-staging-business-qualification.yml",
+        "resolvedPath": ".github/workflows/lot7-staging-business-qualification.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows/lot8-pre-go-live-certification.yml",
+        "resolvedPath": ".github/workflows/lot8-pre-go-live-certification.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows/lot8-reconcile-current-main-once.yml",
+        "resolvedPath": ".github/workflows/lot8-reconcile-current-main-once.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
         "declared": ".github/workflows/pr-governance.yml",
         "resolvedPath": ".github/workflows/pr-governance.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7832,16 +7860,16 @@
       },
       {
         "feature": "shared-cart",
-        "category": "services",
-        "declared": "services/shared-cart-items-service.js",
-        "resolvedPath": "services/shared-cart-items-service.js",
+        "category": "routes",
+        "declared": "routes/shared-cart.js",
+        "resolvedPath": "routes/shared-cart.js",
         "status": "resolved-in-technical-graph"
       },
       {
         "feature": "shared-cart",
         "category": "routes",
-        "declared": "routes/shared-cart.js",
-        "resolvedPath": "routes/shared-cart.js",
+        "declared": "routes/shared-cart-saved.js",
+        "resolvedPath": "routes/shared-cart-saved.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -8010,13 +8038,6 @@
         "category": "tests",
         "declared": "tests/unit/shared-cart-internals.test.js",
         "resolvedPath": "tests/unit/shared-cart-internals.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "shared-cart",
-        "category": "tests",
-        "declared": "tests/unit/shared-cart-items-service.test.js",
-        "resolvedPath": "tests/unit/shared-cart-items-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12211,25 +12232,33 @@
       },
       {
         "feature": "shared-cart",
+        "entry": "DELETE /api/shared-carts/saved/:sharedCartId",
+        "method": "DELETE",
+        "path": "/api/shared-carts/saved/{id}",
+        "routeFile": "routes/shared-cart-saved.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "shared-cart",
+        "entry": "POST   /api/shares",
+        "method": "POST",
+        "path": "/api/shares",
+        "routeFile": "routes/shares.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "shared-cart",
+        "entry": "GET    /api/shares/:token",
+        "method": "GET",
+        "path": "/api/shares/{id}",
+        "routeFile": "routes/shares.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "shared-cart",
         "entry": "GET    /api/shared-carts/:id",
         "method": "GET",
         "path": "/api/shared-carts/{id}",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "GET    /api/shared-carts/:id/as-cart-items",
-        "method": "GET",
-        "path": "/api/shared-carts/{id}/as-cart-items",
-        "routeFile": "routes/shared-cart.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "shared-cart",
-        "entry": "PUT    /api/shared-carts/:id/items",
-        "method": "PUT",
-        "path": "/api/shared-carts/{id}/items",
         "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
@@ -14071,6 +14100,14 @@
       },
       {
         "boutiqueManifest": "checkout",
+        "category": "css",
+        "declared": "../css/checkout-vertical-rail.css",
+        "resolvedPath": "public/boutique/css/checkout-vertical-rail.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
         "category": "tests",
         "declared": "../tests/unit/b-checkout.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-checkout.test.js",
@@ -14622,6 +14659,14 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "recommendations",
+        "category": "css",
+        "declared": "../css/modal-product-polish.css",
+        "resolvedPath": "public/boutique/css/modal-product-polish.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "shared-cart",
         "category": "js",
         "declared": "../js/b-group-banner.js",
@@ -14650,6 +14695,14 @@
         "category": "js",
         "declared": "../js/group/group-checkout-adapter.js",
         "resolvedPath": "public/boutique/js/group/group-checkout-adapter.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
+        "declared": "../js/group/group-library-remove.js",
+        "resolvedPath": "public/boutique/js/group/group-library-remove.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -14711,6 +14764,30 @@
       },
       {
         "boutiqueManifest": "shared-cart",
+        "category": "css",
+        "declared": "../css/shared-list-side-cart-responsive.css",
+        "resolvedPath": "public/boutique/css/shared-list-side-cart-responsive.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "css",
+        "declared": "../css/shared-list-library-remove.css",
+        "resolvedPath": "public/boutique/css/shared-list-library-remove.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "css",
+        "declared": "../css/shared-list-lists-tab.css",
+        "resolvedPath": "public/boutique/css/shared-list-lists-tab.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
         "category": "tests",
         "declared": "../tests/unit/group-checkout-adapter.test.js",
         "resolvedPath": "public/boutique/tests/unit/group-checkout-adapter.test.js",
@@ -14738,6 +14815,14 @@
         "category": "tests",
         "declared": "../tests/unit/group-side-cart.test.js",
         "resolvedPath": "public/boutique/tests/unit/group-side-cart.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "tests",
+        "declared": "../tests/unit/shared-list-responsive-layout.test.js",
+        "resolvedPath": "public/boutique/tests/unit/shared-list-responsive-layout.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16361,10 +16446,6 @@
                 "targetFile": "public/boutique/js/b-modal.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-modal-buybox-shared.js",
-                "targetFile": "public/boutique/js/b-share-cart.js"
-              },
-              {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-desktop-product.test.js",
                 "targetFile": "public/boutique/js/b-modal-product.js"
               },
@@ -16375,10 +16456,6 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
                 "targetFile": "public/boutique/js/b-modal.js"
-              },
-              {
-                "sourceFileId": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
-                "targetFile": "public/boutique/js/b-share-cart.js"
               }
             ]
           },
@@ -18147,6 +18224,10 @@
                 "targetFile": "routes/shares.js"
               },
               {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/shared-cart-saved.js"
+              },
+              {
                 "sourceFileId": "scripts/contract-generate.js",
                 "targetFile": "routes/shared-cart.js"
               },
@@ -19793,7 +19874,15 @@
             "evidence": [
               {
                 "sourceFileId": "public/boutique/js/b-tracking.js",
+                "targetFile": "public/boutique/js/b-nav.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-tracking.js",
                 "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-tracking.js",
+                "targetFile": "public/boutique/js/b-store.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-cart-core.js",
@@ -19923,6 +20012,14 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/b-tracking.js",
+                "targetFile": "public/boutique/js/group/group-side-cart.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-tracking.js",
+                "targetFile": "public/boutique/js/group/group-api.js"
+              },
               {
                 "sourceFileId": "public/boutique/js/b-cart.js",
                 "targetFile": "public/boutique/js/group/group-side-cart.js"
@@ -21658,6 +21755,10 @@
               {
                 "sourceFileId": "routes/shared-cart.js",
                 "targetFile": "middleware/soft-auth.js"
+              },
+              {
+                "sourceFileId": "routes/shared-cart-saved.js",
+                "targetFile": "middleware/auth.js"
               }
             ]
           }
@@ -21698,6 +21799,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-modal-cart.js",
                 "targetFile": "public/boutique/js/view-models/modal-cart-product-model.js"
+              },
+              {
+                "sourceFileId": "services/shared-cart-creation.js",
+                "targetFile": "services/product-admin-service.js"
               }
             ]
           }
@@ -21732,10 +21837,6 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "services/shared-cart-items-service.js",
-                "targetFile": "db.js"
-              },
-              {
                 "sourceFileId": "routes/shared-cart.js",
                 "targetFile": "utils/logger.js"
               },
@@ -21761,14 +21862,6 @@
               },
               {
                 "sourceFileId": "tests/unit/shared-cart-creation.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-items-service.test.js",
-                "targetFile": "tests/integration/test-harness/mock-db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/shared-cart-items-service.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -21834,6 +21927,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-share-cart.js",
                 "targetFile": "public/boutique/js/b-cart.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/group/group-library-remove.js",
+                "targetFile": "public/boutique/js/b-tracking.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-core.test.js",
@@ -21968,6 +22065,18 @@
                 "targetFile": "public/boutique/js/b-store.js"
               },
               {
+                "sourceFileId": "public/boutique/js/group/group-library-remove.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/group/group-library-remove.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/group/group-library-remove.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
                 "sourceFileId": "public/boutique/tests/unit/group-checkout-adapter.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
@@ -21978,6 +22087,14 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/group-side-cart.test.js",
                 "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/group-side-cart.test.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/group-side-cart.test.js",
+                "targetFile": "public/boutique/js/b-scroll-owner.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-core.test.js",
@@ -22487,10 +22604,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 766
+        "filesObserved": 765
       },
       "boutique": {
-        "filesObserved": 126,
+        "filesObserved": 128,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -24017,6 +24134,7 @@
         "notifications",
         "recommendations",
         "refunds",
+        "shared-cart",
         "unsold-resolution"
       ],
       "lifecycleOwner": null,
@@ -25392,8 +25510,8 @@
       "boutique": {
         "manifestsDiscovered": 13,
         "manifestsConnected": 13,
-        "technicalNodesTotal": 76,
-        "technicalNodesOwned": 76,
+        "technicalNodesTotal": 77,
+        "technicalNodesOwned": 77,
         "technicalOrphans": 0
       }
     },
@@ -25807,12 +25925,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 23 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 25 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> shared-cart",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25902,12 +26020,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> catalog",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"catalog\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"catalog\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 18 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25922,7 +26040,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 45 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 50 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

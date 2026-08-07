@@ -25,7 +25,7 @@ import { bus }                           from './b-bus.js';
 import { state, dom, $, $$ }            from './b-store.js';
 import { apiGet }                        from './b-utils.js';
 import { showToast }           from './b-cart-core.js';
-import { openCart, closeCart, renderCart, clearCart, shareCartWhatsApp, loadSharedCart } from './b-cart.js';
+import { openCart, closeCart, renderCart, clearCart, loadSharedCart } from './b-cart.js';
 import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
@@ -81,10 +81,6 @@ export function setupDrawer() {
     dom.cartClear.dataset.drawerBound = '1';
   }
 
-  if (dom.cartWhatsapp && dom.cartWhatsapp.dataset.drawerBound !== '1') {
-    dom.cartWhatsapp.addEventListener('click', shareCartWhatsApp);
-    dom.cartWhatsapp.dataset.drawerBound = '1';
-  }
 
   if (dom.cartCheckout && dom.cartCheckout.dataset.drawerBound !== '1') {
     dom.cartCheckout.addEventListener('click', checkoutCart);
@@ -110,7 +106,6 @@ export function setupDrawer() {
     ['cartOverlay', dom.cartOverlay],
     ['cartContinue', dom.cartContinue],
     ['cartClear', dom.cartClear],
-    ['cartWhatsapp', dom.cartWhatsapp],
     ['cartCheckout', dom.cartCheckout],
     ['orderClose', dom.orderClose],
     ['orderModal', dom.orderModal],

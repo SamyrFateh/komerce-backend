@@ -124,11 +124,11 @@ describe('b-favs', () => {
     it('favoris présents → apiPost réussi, ouvre WhatsApp avec share_url', async () => {
       state.products = PRODUCTS;
       state.favs = [1, 2];
-      mockWindowK({ request: jest.fn().mockResolvedValue({ share_url: 'https://k.mr/s/abc' }) });
+      mockWindowK({ request: jest.fn().mockResolvedValue({ url: 'https://k.mr/s/abc' }) });
       window.open = jest.fn();
       await shareWishlistWhatsApp();
       await flush();
-      expect(window.K.request).toHaveBeenCalledWith('/api/shares', 'POST', { items: [{ product_id: 1, qty: 1 }, { product_id: 2, qty: 1 }] }, 2, {});
+      expect(window.K.request).toHaveBeenCalledWith('/api/shares', 'POST', { cart_items: [{ product_id: 1, qty: 1 }, { product_id: 2, qty: 1 }] }, 2, {});
       expect(window.open).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('https://k.mr/s/abc')), '_blank');
     });
 

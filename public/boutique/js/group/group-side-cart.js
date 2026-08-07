@@ -33,10 +33,7 @@ import { isDesktop } from '../b-scroll-owner.js';
 import {
   getSharedCartPublic,
   saveSharedCart,
-  removeItemFromSharedList,
   closeCart as apiCloseSharedCart,
-  updateSharedListItemQuantity as apiUpdateSharedListItemQuantity,
-  addItemToSharedList,
 } from './group-api.js';
 import { checkoutSharedListSelection } from './group-checkout-adapter.js';
 
@@ -101,12 +98,6 @@ function isActiveContext() {
 function isReadOnly() {
   return state.sharedListContext.status !== 'open';
 }
-
-/**
- * Amendement V2 §B — verrou local par ligne pendant un PATCH quantité en
- * vol. Purement transitoire (UI), jamais persisté.
- */
-const pendingQuantityItemIds = new Set();
 
 /* ── Temps réel (lot 2026-08, fraîcheur du snapshot) ─────────────────────
  * Aucune réservation, aucun verrou frontend, aucun WebSocket : une simple
@@ -439,7 +430,6 @@ function buildSnapshotRenderContext() {
     // Refonte UX — editMode toujours true pour l'organisateur tant que la
     // liste est ouverte : les steppers/✕ sont toujours visibles, pas
     // derrière un bouton "Modifier". Le participant n'a jamais editMode.
-    editMode: ctx.isCreator && !isReadOnly(),
     headerTitle: ctx.isCreator ? 'Votre liste' : title,
     availableCount: availableItems().length,
     // Refonte UX — affichage informatif + base du CTA discret "Tout
@@ -447,7 +437,6 @@ function buildSnapshotRenderContext() {
     availableTotal: availableTotal(),
     showSaveAction,
     saved: showSaveAction && savedListTokensThisSession.has(ctx.token),
-    pendingQuantityItemIds,
   };
 }
 
@@ -457,8 +446,6 @@ function buildSnapshotRenderContext() {
  */
 function buildSnapshotRenderActions() {
   return {
-    onRemove: handleRemoveItem,
-    onQuantityStep: handleQuantityStep,
     onOpenProduct: handleOpenItemProduct,
     onShare: handleShareClick,
     onClose: handleCloseClick,
@@ -661,140 +648,6 @@ export function renderCartSurfaceSwitch() {
   switcher.innerHTML =
     `<span class="k-list-indicator-dot" aria-hidden="true">${dot}</span> ` +
     `<span class="k-list-indicator-text">${label} · ${statusLabel}</span>`;
-}
-
-/* ── Actions propriétaire (mandat §9) ─────────────────────────────────
- * Lot 3 GAP-07 — CTA "Ajouter à cette liste" depuis la fiche produit.
- * Remplace le handler handleAddItemClick() retiré en V2-F (qui pointait
- * vers un CTA jamais construit) : le parcours produit existe désormais
- * (b-modal-buybox-shared.js::wireAddToListButton, câblé dans
- * renderActions() des deux compositions mobile/desktop).
- */
-
-/**
- * Le CTA "Ajouter à cette liste" (fiche produit) ne doit être visible que
- * dans exactement les mêmes conditions où l'ajout serait accepté par
- * addProductToActiveSharedList ci-dessous — même garde, exposée séparément
- * pour que le rendu (b-modal-buybox-shared.js) n'ait pas à dupliquer la
- * condition ni à tenter un appel pour découvrir qu'il est refusé.
- * @returns {boolean}
- */
-export function canAddToActiveSharedList() {
-  // Refonte UX — plus de condition sharedListEditMode (le mode édition
-  // n'existe plus en tant que bascule). Le CTA "Ajouter à cette liste" est
-  // disponible dès qu'une liste ouverte est active et que l'utilisateur en
-  // est le créateur.
-  return state.cartSurface === 'shared-list'
-    && isActiveContext()
-    && !!state.sharedListContext.isCreator
-    && state.sharedListContext.status === 'open';
-}
-
-/**
- * Ajoute un produit catalogue à la liste active, uniquement si l'appelant
- * en est le créateur et que la liste est encore ouverte — mêmes garde-fous
- * que les autres actions propriétaire ci-dessous (handleRemoveItem,
- * handleQuantityStep, toggleEditMode). N'ouvre ni ne modifie jamais
- * state.cart (panier personnel) : c'est une écriture directe sur la liste
- * active via POST /api/shared-carts/:id/items.
- *
- * Le serveur (services/shared-cart-items-service.js::addSharedCartItem,
- * GAP-07 lot préalable) reste seul autoritaire sur le prix, le SKU
- * résolu et la disponibilité — aucune valeur fournie ici n'est jamais
- * traitée comme une vérité.
- *
- * Même convention que handleRemoveItem/handleQuantityStep ci-dessous :
- * toast de retour posé ici (succès et erreur), pas délégué à l'appelant.
- *
- * @param {{id: string}} product — produit catalogue (state.products),
- *   jamais un objet reconstruit côté modale.
- * @param {number} [quantity=1]
- * @param {object|null} [variantCombo] — combinaison canonique
- *   ({axisKey: value}) pour un produit SKU entièrement sélectionné,
- *   sinon null. Jamais un objet vide fabriqué par ce module.
- * @returns {Promise<boolean>} true si l'ajout a réussi
- */
-export async function addProductToActiveSharedList(product, quantity = 1, variantCombo = null) {
-  if (!product || !product.id) return false;
-  // Mandat §3.1 — garde défensive répétée à l'écriture, mêmes 4 conditions
-  // que canAddToActiveSharedList() (jamais dupliquée en substance, jamais
-  // affaiblie). Le serveur reste seul autoritaire en dernier ressort.
-  if (!canAddToActiveSharedList()) return false;
-
-  try {
-    await addItemToSharedList(state.sharedListContext.sharedCartId, product.id, quantity, variantCombo);
-  } catch (err) {
-    // window.K.request (komerce-api.js) rejette avec une Error dont
-    // .message est déjà le texte serveur (json.error) — ex. "Combinaison
-    // indisponible pour Chemise", "Stock insuffisant pour Chemise —
-    // disponible : 1", "Ce panier n'est plus modifiable". On l'affiche
-    // tel quel, jamais un message générique qui masquerait la vraie
-    // cause (ex. combinaison épuisée entre-temps par un autre acheteur).
-    showToast(`Erreur : ${err.message}`, 'error');
-    return false;
-  }
-
-  await refreshSharedListContext();
-  showToast(`« ${sanitize(product.name || 'Article')} » ajouté à la liste.`, 'success');
-  return true;
-}
-
-async function handleRemoveItem(itemId) {
-  if (!state.sharedListContext.isCreator || isReadOnly()) return;
-  const item = findItem(itemId);
-  if (!item) return;
-  const ok = window.confirm(`Retirer « ${item.name || 'cet article'} » de la liste ?`);
-  if (!ok) return;
-
-  try {
-    await removeItemFromSharedList(state.sharedListContext.sharedCartId, itemId);
-    await refreshSharedListContext();
-    showToast('Article retiré de la liste.', 'success');
-  } catch (err) {
-    showToast(`Erreur : ${err.message}`, 'error');
-  }
-}
-
-/**
- * Amendement V2 §B §11 — pas +1/-1 sur la quantité d'une ligne. Verrouille
- * la ligne (pendingQuantityItemIds) pendant l'aller-retour réseau pour
- * empêcher un double-clic ou une réponse hors ordre de partir en double
- * appel. Le serveur reste la source de vérité : on rafraîchit depuis lui
- * plutôt que d'appliquer la nouvelle quantité de façon optimiste.
- * @param {string} itemId
- * @param {number} step -1 | 1
- */
-async function handleQuantityStep(itemId, step) {
-  if (!state.sharedListContext.isCreator || isReadOnly()) return;
-  const item = findItem(itemId);
-  if (!item || item.claimed) return;
-
-  const key = String(itemId);
-  if (pendingQuantityItemIds.has(key)) return;
-
-  const nextQty = (Number(item.quantity) || 1) + step;
-  if (nextQty < 0) return;
-  // Correctif V2-B.1 §4 — passer de 1 à 0 ne doit pas être bloqué
-  // silencieusement (aucun retour utilisateur auparavant) : c'est un
-  // retrait, traité par le même flux confirmé que le bouton ✕
-  // (handleRemoveItem, confirm() + DELETE), jamais une décrémentation
-  // silencieuse à 0 ni un appel PATCH quantity=0 (refusé par le serveur).
-  if (nextQty === 0) {
-    await handleRemoveItem(itemId);
-    return;
-  }
-
-  pendingQuantityItemIds.add(key);
-  renderSharedListInCart();
-  try {
-    await apiUpdateSharedListItemQuantity(state.sharedListContext.sharedCartId, itemId, nextQty);
-    await refreshSharedListContext();
-  } catch (err) {
-    showToast(`Erreur : ${err.message}`, 'error');
-  } finally {
-    pendingQuantityItemIds.delete(key);
-    renderSharedListInCart();
-  }
 }
 
 /**

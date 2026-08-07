@@ -364,7 +364,6 @@ export function initDom() {
     cartTotalConv:      $('#k-cart-total-conv'),
     cartContinue:       $('#k-cart-continue'),
     cartClear:          $('#k-cart-clear'),
-    cartWhatsapp:       $('#k-cart-whatsapp'),
     cartCheckout:       $('#k-cart-checkout'),
     // Order Modal
     orderModal:         $('#k-order-modal'),

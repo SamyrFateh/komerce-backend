@@ -641,7 +641,7 @@ async function resolveActiveSku(dbClient, productId, comboRaw) {
  *
  * Point de vérité UNIQUE pour transformer un prix de base en prix effectif.
  * Reprend exactement la règle déjà en vigueur dans
- * services/shared-cart-items-service.js / shared-cart-creation.js :
+ * services/shared-cart-creation.js :
  *   promo active ⇔ products.is_promo ET products.promo_pct > 0
  *                   ET (products.promo_until absent OU >= maintenant)
  *   prix effectif = round(prix_base * (1 - promo_pct / 100))

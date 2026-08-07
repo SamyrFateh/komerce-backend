@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-06T02:00:38.796Z",
+  "generatedAt": "2026-08-07T20:27:46.725Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 480,
-    "protected": 431,
+    "total": 475,
+    "protected": 426,
     "public": 5,
     "unprotected": 42,
     "admin_no_guard": 0,
@@ -2936,37 +2936,12 @@
       "roles": []
     },
     {
-      "key": "GET /api/shared-carts/{id}/as-cart-items",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
       "key": "POST /api/shared-carts/{id}/cancel",
       "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/{id}/close",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
-      "key": "DELETE /api/shared-carts/{id}/items/{itemId}",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
-      "key": "PATCH /api/shared-carts/{id}/items/{itemId}",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/{id}/items",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
-      "key": "PUT /api/shared-carts/{id}/items",
       "level": "PROTECTED",
       "roles": []
     },

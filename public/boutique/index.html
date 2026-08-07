@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -39,7 +39,7 @@
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=161">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=398">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=399">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=85">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
@@ -438,14 +438,6 @@
             <button class="k-add-cart-btn" id="k-add-cart-btn">
               <img src="/images/panier_tresse.png" width="20" height="20" alt="" aria-hidden="true">
               Ajouter au panier
-            </button>
-            <!-- Lot 3 GAP-07 — CTA "Ajouter à cette liste", visible uniquement
-                 quand le créateur navigue le catalogue avec sa propre liste
-                 ouverte active (state.sharedListContext). Caché par défaut
-                 (hidden), basculé par b-modal-buybox-shared.js::
-                 wireAddToListButton — jamais affiché par défaut au boot. -->
-            <button class="k-add-to-list-btn" id="k-add-to-list-btn" hidden>
-              <span aria-hidden="true">📋</span> Ajouter à cette liste
             </button>
             <button class="k-buy-now-btn" id="k-buy-now-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Acheter maintenant</button>
           </div>

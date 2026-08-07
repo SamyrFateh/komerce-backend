@@ -7,7 +7,7 @@
  * @inputs        runtime_context
  * @outputs       config, helpers, audit
  * @depends       db.js
- * @used-by       services/shared-cart-creation.js, services/shared-cart-reads.js, services/shared-cart-lifecycle.js, services/shared-cart-items-service.js
+ * @used-by       services/shared-cart-creation.js, services/shared-cart-reads.js, services/shared-cart-lifecycle.js
  * @db-read       shared_cart_events
  * @db-write      shared_cart_events
  * @db-txn        none

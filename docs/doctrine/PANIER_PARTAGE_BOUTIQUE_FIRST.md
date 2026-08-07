@@ -114,9 +114,9 @@ Net, fiable, premium, sans ambiguïté. Pas plus large, pas plus financier, pas 
 
 - On n'accepte un paiement que lorsque le panier est réellement payable.
 - On ne prélève jamais plus que le reste à couvrir.
-- Le panier est un instantané figé : son contenu et ses prix ne bougent plus une fois qu'un proche a commencé à payer.
+- La liste est un instantané structurel figé dès sa publication : produits, variantes et quantités ne changent plus ; seuls disponibilité et statut d'achat peuvent évoluer.
 - Un paiement n'est tenu pour réussi qu'une fois confirmé par la banque.
-- Le participant ne modifie jamais le panier partagé.
+- Ni le participant ni l'organisateur ne modifient une liste publiée ; une erreur se corrige en fermant la liste puis en en publiant une nouvelle.
 - Tout geste qui touche à l'argent laisse une trace.
 
 ---

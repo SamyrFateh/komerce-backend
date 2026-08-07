@@ -30,7 +30,7 @@ module.exports = {
   // ── Périmètre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
-      'création, édition (statut open), fermeture, annulation de la liste partagée',
+      'création puis publication immuable, fermeture et annulation de la liste partagée',
       'lecture publique et propriétaire (avec statut de réclamation dérivé par jointure)',
     ],
     out: [
@@ -55,7 +55,6 @@ module.exports = {
       'services/shared-cart-lifecycle.js',       // closeCart, cancelSharedCart
       'services/shared-cart-library.js',         // getSharedCartLibrary, saveSharedCartForUser (Amendement V2 §D)
       'services/shared-cart-queries.js',
-      'services/shared-cart-items-service.js',
     ],
     routes: [
       'routes/shared-cart.js',
@@ -88,7 +87,6 @@ module.exports = {
       'tests/unit/shared-cart-creator-route.test.js',
       'tests/unit/shared-cart-engine.test.js',
       'tests/unit/shared-cart-internals.test.js',
-      'tests/unit/shared-cart-items-service.test.js',
       'tests/unit/shared-cart-library.test.js',
       'tests/unit/shared-cart-public-route.test.js',
       'tests/unit/shared-cart-reads.test.js',
@@ -179,9 +177,10 @@ module.exports = {
       'GET    /api/shared-carts/mine',
       'GET    /api/shared-carts/library',     // Amendement V2 §D
       'POST   /api/shared-carts/save',        // Amendement V2 §D
+      'DELETE /api/shared-carts/saved/:sharedCartId',
+      'POST   /api/shares',
+      'GET    /api/shares/:token',
       'GET    /api/shared-carts/:id',
-      'GET    /api/shared-carts/:id/as-cart-items',
-      'PUT    /api/shared-carts/:id/items',
       'POST   /api/shared-carts/:id/close',
       'POST   /api/shared-carts/:id/cancel',
       'GET    /api/admin/shared-carts',
@@ -200,17 +199,6 @@ module.exports = {
   // ── Dette assumée / documentée ────────────────────────────────────────────
   debt: {
     knownGaps: [
-      { gap: 'PUT /:id/items ne bloque pas l\'édition d\'une liste ayant déjà des ' +
-             'articles réclamés (order_items.shared_cart_item_id non-NULL) : le ' +
-             'DELETE+INSERT recrée des lignes shared_cart_items avec de nouveaux id, ' +
-             'ce qui détache silencieusement une réclamation existante de sa ligne.',
-        risk: 'Un créateur qui édite sa liste après qu\'un participant a déjà acheté ' +
-              'un article casse le lien de traçabilité claimed→order pour cet article. ' +
-              'La commande déjà passée reste valide (order_items conserve sa ligne), ' +
-              'mais elle n\'apparaît plus liée à la liste. À trancher côté produit avant ' +
-              'merge prod : bloquer l\'édition si des réclamations existent, ou l\'accepter ' +
-              'comme comportement connu.',
-      },
       { gap: 'Frontend boutique (js/b-group-view.js, js/group/*) et dashboard admin ' +
              '(SharedCartsView.js) non réécrits dans ce lot — référencent encore ' +
              'contributed_kmf/remaining_kmf, colonnes supprimées par la migration 124.',
@@ -222,6 +210,7 @@ module.exports = {
 
   // ── Invariants propres ────────────────────────────────────────────────────
   invariants: [
+    'une liste publiée est un snapshot structurellement immuable : OPEN signifie achetable, jamais éditable',
     'un article de liste n\'est jamais réclamable deux fois — arbitré par index unique, pas par verrou applicatif (migration 123)',
     'aucune donnée financière n\'est stockée sur shared_carts — le total se calcule toujours par SUM() sur shared_cart_items',
     'lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)',

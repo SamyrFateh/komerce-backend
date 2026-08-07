@@ -38,10 +38,10 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-checkout.js` | 51 | 4 | 0/4 | Bottom-nav mobile |
 | `b-modal-product.js` | 25 | 11 | 0/1 | Modal produit |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
-| `b-modal-buybox-shared.js` | 26 | 0 | 0/0 | Modal produit |
 | `b-cart-pill.js` | 6 | 18 | 3/0 | Grille produits, Section catalogue |
 | `b-wallet.js` | 24 | 0 | 0/0 | Section catalogue |
 | `b-mini-cart.js` | 4 | 19 | 2/0 | Panier |
+| `b-modal-buybox-shared.js` | 22 | 0 | 0/0 | Modal produit |
 | `b-modal-nav.js` | 10 | 10 | 1/4 | Modal produit |
 | `b-pager.js` | 3 | 16 | 2/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
 | `b-tracking.js` | 19 | 0 | 0/0 | Section catalogue |
@@ -110,7 +110,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 
 ## 4. Dette CSS
 
-### `!important` — total : 21
+### `!important` — total : 20
 
 | Fichier | Occurrences |
 |---------|:-----------:|
@@ -121,7 +121,6 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | cart.css | 1 |
 | interactions.css | 1 |
 | layout.css | 1 |
-| modal-shell.css | 1 |
 | products.css | 1 |
 | shared-list-side-cart.css | 1 |
 
@@ -140,6 +139,6 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Modules JS écrivant le DOM | 35 | ≤ 5 |
 | Breakpoints distincts | 7 | ≤ 2 |
 | Violations breakpoint | 17 | 0 |
-| `!important` | 21 | < 5 |
+| `!important` | 20 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

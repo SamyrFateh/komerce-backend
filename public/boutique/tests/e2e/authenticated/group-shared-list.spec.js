@@ -194,19 +194,8 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
   });
 
   test('F22-2 — un participant qui ouvre la fiche produit d\'une ligne ajoute au panier PERSONNEL (jamais à la liste, dont il n\'est pas créateur), puis retrouve la liste à la fermeture', async ({ page, browser }) => {
-    // P0 (audit terrain) — réécrit après échec réel : ce scénario testait
-    // à tort l'ORGANISATEUR ouvrant sa propre ligne de liste. Or
-    // canAddToActiveSharedList() (group-side-cart.js) est vrai dès qu'une
-    // liste ouverte est active ET que l'utilisateur en est le créateur —
-    // condition qui ne dépend PAS de la provenance de l'ouverture (depuis
-    // une ligne de la liste ou depuis la navigation normale). Pour
-    // l'organisateur, la fiche produit affiche donc TOUJOURS "Ajouter à
-    // cette liste" (jamais "Ajouter au panier") tant que sa liste est
-    // active — c'est la doctrine "remplacement, jamais coexistence"
-    // (mandat §3.2, b-modal-desktop-product.js::renderActions()). Le
-    // contrat "ajoute au panier PERSONNEL" ne s'applique qu'à un
-    // PARTICIPANT (non créateur), qui n'a par définition aucun droit
-    // d'écriture sur la liste — c'est ce que ce test vérifie désormais.
+    // Participant : la fiche produit alimente uniquement son panier personnel ;
+    // la liste publiée reste structurellement immuable.
     const { token } = await createSharedList(page, 1);
 
     const participantContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
@@ -248,7 +237,7 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
       // liste" visible — le shell de modale conserve le bouton dans le DOM
       // avec l'attribut `hidden`. Seul "Ajouter au panier" (personnel) est
       // disponible pour l'utilisateur.
-      await expect(participantPage.locator('#k-add-to-list-btn')).not.toBeVisible();
+      await expect(participantPage.locator('#k-add-to-list-btn')).toHaveCount(0);
       await expect(participantPage.locator('#k-add-cart-btn')).toBeVisible();
       await addToCartFromModal(participantPage);
       await closeModal(participantPage);
@@ -270,90 +259,120 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     }
   });
 
-  test('F22-3 — le CTA "Ajouter à cette liste" (organisateur, liste ouverte) écrit réellement sur la liste, jamais sur le panier personnel', async ({ page }) => {
+  test('F22-3 — même l’organisateur ne peut plus ajouter à une liste publiée ; la fiche produit conserve le panier personnel', async ({ page }) => {
     await createSharedList(page, 1);
 
-    // Produit du catalogue distinct de celui déjà présent dans la liste.
+    const rows = page.locator('#k-side-cart .k-cart-snapshot-item');
+    await expect(rows).toHaveCount(1);
+
+    // L'espion démarre APRÈS la création de la liste : toute écriture
+    // observée ici serait donc une mutation post-publication interdite.
+    const postSpy = await spyOnApi(page, '/api/shared-carts/*/items', 'POST');
+
     const secondCard = page.locator('#k-grid .k-promo-card, #k-grid .k-card').nth(1);
     await expect(secondCard).toBeVisible({ timeout: 10_000 });
     await secondCard.click();
-    await page.waitForSelector('#k-modal-overlay.open, .k-modal-overlay.open', { timeout: 6_000 });
 
-    const addToListBtn = page.locator('#k-add-to-list-btn');
-    await expect(addToListBtn).toBeVisible({ timeout: 10_000 });
-    await expect(addToListBtn).toBeEnabled();
-
-    const itemsPostSpy = await spyOnApi(page, '/api/shared-carts/*/items', 'POST');
-    const cartBadgeBefore = parseInt(
-      (await page.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
-      10,
+    await page.waitForSelector(
+      '#k-modal-overlay.open, .k-modal-overlay.open',
+      { timeout: 6_000 },
     );
 
-    await addToListBtn.click();
-    const call = await itemsPostSpy.waitForCall(10_000);
-    expect(call, 'Un POST vers shared-carts/:id/items doit partir').not.toBeNull();
-    expect(call.url).toContain('/items');
+    await expect(page.locator('#k-add-to-list-btn')).toHaveCount(0);
+    await expect(page.locator('#k-add-cart-btn')).toBeVisible();
 
+    await addToCartFromModal(page);
     await closeModal(page);
 
-    await expect(page.locator('#k-side-cart .k-cart-snapshot-item')).toHaveCount(2, { timeout: 10_000 });
-
-    const cartBadgeAfter = parseInt(
-      (await page.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
-      10,
-    );
-    expect(cartBadgeAfter, 'Le panier personnel ne doit jamais recevoir cet ajout').toBe(cartBadgeBefore);
+    // Le snapshot partagé est strictement inchangé.
+    await expect(rows).toHaveCount(1);
+    expect(
+      postSpy.calls().length,
+      'Aucun POST shared-carts/:id/items ne doit exister après publication',
+    ).toBe(0);
   });
 
-  test('F22-4 — l\'organisateur peut modifier la quantité d\'une ligne non réclamée, steppers toujours visibles (pas de bascule "Modifier")', async ({ page }) => {
+  test('F22-4 — organisateur : snapshot OPEN achetable mais structurellement non éditable', async ({ page }) => {
     await createSharedList(page, 1);
 
     const row = page.locator('#k-side-cart .k-cart-snapshot-item').first();
-    const qtyControl = row.locator('.k-cart-item-qty');
-    // Toujours visible pour l'organisateur, aucun bouton "Modifier" à activer.
-    await expect(qtyControl).toBeVisible({ timeout: 10_000 });
+    await expect(row).toBeVisible({ timeout: 10_000 });
 
-    const qtyVal = qtyControl.locator('.k-qty-val');
-    const before = parseInt((await qtyVal.textContent()) || '1', 10);
+    // OPEN signifie "achetable", jamais "éditable".
+    await expect(row.locator('.k-cart-item-buy')).toBeVisible();
+    await expect(row.locator('.k-cart-item-qty')).toHaveCount(0);
+    await expect(row.locator('.k-qty-btn')).toHaveCount(0);
+    await expect(row.locator('.k-cart-item-remove')).toHaveCount(0);
 
-    // group-api.js::updateSharedListItemQuantity — PATCH par ligne, plus
-    // l'ancien PUT groupé (voir commentaire source : "sans passer par
-    // l'ancien PUT groupé").
-    const patchSpy = await spyOnApi(page, '/api/shared-carts/*/items/*', 'PATCH');
-    await qtyControl.locator('[data-qty-step="1"]').click();
-    const call = await patchSpy.waitForCall(10_000);
-    expect(call).not.toBeNull();
-
-    await expect(qtyVal).toHaveText(String(before + 1), { timeout: 10_000 });
+    await expect(
+      page.locator('#k-side-cart').getByRole('button', { name: /Modifier|Terminer/i }),
+    ).toHaveCount(0);
   });
 
-  test('F22-5 — l\'organisateur peut retirer une ligne non réclamée (✕), elle disparaît de la liste sans jamais toucher le panier personnel', async ({ page }) => {
-    await createSharedList(page, 2);
+  test('F22-5 — les anciennes routes de mutation post-publication sont réellement absentes (404)', async ({ page }) => {
+    const { sharedCartId } = await createSharedList(page, 1);
 
-    await expect(page.locator('#k-side-cart .k-cart-snapshot-item')).toHaveCount(2);
+    expect(
+      sharedCartId,
+      'createSharedList doit exposer le sharedCartId',
+    ).toBeTruthy();
 
-    const cartBadgeBefore = parseInt(
-      (await page.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
-      10,
-    );
+    const statuses = await page.evaluate(async ({ base, id }) => {
+      const attempts = [
+        { method: 'GET',    suffix: '/as-cart-items' },
+        { method: 'PUT',    suffix: '/items' },
+        { method: 'POST',   suffix: '/items' },
+        { method: 'DELETE', suffix: '/items/fake-item' },
+        { method: 'PATCH',  suffix: '/items/fake-item' },
+      ];
 
-    const deleteSpy = await spyOnApi(page, '/api/shared-carts/*/items/*', 'DELETE');
-    const row = page.locator('#k-side-cart .k-cart-snapshot-item').first();
-    await row.locator('.k-cart-item-remove').click();
+      const result = [];
 
-    const call = await deleteSpy.waitForCall(10_000);
-    expect(call).not.toBeNull();
+      for (const attempt of attempts) {
+        const url = new URL(
+          `/api/shared-carts/${encodeURIComponent(id)}${attempt.suffix}`,
+          base,
+        ).href;
 
-    await expect(page.locator('#k-side-cart .k-cart-snapshot-item')).toHaveCount(1, { timeout: 10_000 });
+        const options = {
+          method: attempt.method,
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        };
 
-    const cartBadgeAfter = parseInt(
-      (await page.locator('.k-cart-badge').first().textContent().catch(() => '0')) || '0',
-      10,
-    );
-    expect(cartBadgeAfter, 'Retirer une ligne de la liste ne doit jamais modifier le panier personnel').toBe(cartBadgeBefore);
+        if (!['GET', 'DELETE'].includes(attempt.method)) {
+          options.body = JSON.stringify({
+            cart_items: [{ product_id: 'forbidden', quantity: 2 }],
+            product_id: 'forbidden',
+            quantity: 2,
+          });
+        }
+
+        const response = await fetch(url, options);
+        result.push({
+          method: attempt.method,
+          suffix: attempt.suffix,
+          status: response.status,
+        });
+      }
+
+      return result;
+    }, { base: BASE_URL, id: sharedCartId });
+
+    expect(statuses).toEqual([
+      { method: 'GET',    suffix: '/as-cart-items',     status: 404 },
+      { method: 'PUT',    suffix: '/items',             status: 404 },
+      { method: 'POST',   suffix: '/items',             status: 404 },
+      { method: 'DELETE', suffix: '/items/fake-item',   status: 404 },
+      { method: 'PATCH',  suffix: '/items/fake-item',   status: 404 },
+    ]);
+
+    // Et la ligne initialement publiée existe toujours.
+    await expect(
+      page.locator('#k-side-cart .k-cart-snapshot-item'),
+    ).toHaveCount(1);
   });
-
-  test('F22-6 — acheter une ligne via son bouton "Acheter" dédié la passe "Déjà acheté" (badge, plus de quantité/retrait)', async ({ page }) => {
+  test('F22-6 — acheter une ligne via "Acheter" la passe "Déjà acheté" sans altérer le snapshot structurel', async ({ page }) => {
     const { token } = await createSharedList(page, 1);
 
     const row = page.locator('#k-side-cart .k-cart-snapshot-item').first();
@@ -434,7 +453,7 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     }
   });
 
-  test('F22-8 — "Tout acheter" achète en un seul passage toutes les lignes encore disponibles, puis disparaît', async ({ page }) => {
+  test('F22-8 — "Payer" règle en un seul passage toutes les lignes encore disponibles, puis disparaît', async ({ page }) => {
     const { token } = await createSharedList(page, 2);
 
     const buyAllBtn = page.locator('#k-side-cart #k-sc-snap-buyall');
