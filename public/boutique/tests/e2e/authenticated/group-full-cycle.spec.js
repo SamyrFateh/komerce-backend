@@ -111,6 +111,10 @@ test.describe('FLOW — Liste partageable, découverte publique (F21)', () => {
       viewport: { width: 390, height: 844 },
       locale: 'fr-FR',
     });
+    // Isolation explicite du visiteur public : le projet authenticated
+    // charge le storageState du créateur, qui ne doit jamais contaminer ce
+    // contexte participant (sinon GET /public/:token renvoie is_creator=true).
+    await participantContext.clearCookies();
     const participantPage = await participantContext.newPage();
 
     try {
@@ -130,6 +134,7 @@ test.describe('FLOW — Liste partageable, découverte publique (F21)', () => {
       expect(publicList).toBeTruthy();
       expect(Array.isArray(publicList.items)).toBe(true);
       expect(publicList.items.length).toBeGreaterThanOrEqual(1);
+      expect(publicList.is_creator, 'Le contexte participant doit rester anonyme/non créateur').toBe(false);
 
       // Le lien participant projette la liste dans le drawer panier canonique
       // (mandat §1/§4 — "la boutique reste affichée, la liste se projette dans

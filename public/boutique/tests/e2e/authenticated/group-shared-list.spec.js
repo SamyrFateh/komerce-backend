@@ -25,7 +25,7 @@
  *     texte "Liste de X · Ouverte/Fermée") — plus de boutons ni de bascule
  *     panier personnel/liste, plus jamais deux surfaces vivantes en parallèle.
  *
- * Les 11 scénarios ci-dessous couvrent l'ensemble du cycle de vie côté UI
+ * Les 13 scénarios ci-dessous couvrent l'ensemble du cycle de vie côté UI
  * (création → consultation → mutation organisateur → achat ligne/bloc →
  * clôture → repartage → sauvegarde participant), chacun isolé pour limiter
  * le blast radius d'un échec et faciliter le diagnostic.
@@ -35,6 +35,8 @@
  */
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { test, expect } = require('@playwright/test');
 const {
   BASE_URL,
@@ -46,12 +48,15 @@ const {
 } = require('../helpers/boutique.helpers');
 const {
   verifySharedCart,
+  getClientCart,
   getClientShareState,
   cancelAnyActiveSharedCart,
   cancelOrder,
   spyOnApi,
 } = require('../helpers/api.helpers');
 const { getSharePageUrl } = require('../helpers/business.helpers');
+
+const USER2_STATE_PATH = path.join(__dirname, '..', '..', '..', 'playwright', '.auth', 'user2.json');
 
 /* ── Helpers locaux à ce fichier ──────────────────────────────────────
  * Volontairement non promus dans helpers/boutique.helpers.js : contrat
@@ -103,6 +108,28 @@ async function createSharedList(page, count = 2) {
   const shareState = await getClientShareState(page);
   expect(shareState?.token, 'La liste doit être créée avec un token').toBeTruthy();
   return { token: shareState.token, sharedCartId: shareState.shareId || shareState.id || null };
+}
+
+/**
+ * Création directe utilisée uniquement par le scénario de quota F22-13.
+ * Le flow UI ne peut volontairement pas créer une nouvelle liste lorsqu'une
+ * liste open est déjà active (Partager = repartager) ; le quota backend doit
+ * donc être exercé directement, avec la vraie session et le vrai endpoint.
+ */
+async function createSharedListViaApi(page, cartItems) {
+  return page.evaluate(async ({ base, items }) => {
+    const resp = await fetch(new URL('/api/shared-carts/from-cart-items', base).href, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ cart_items: items }),
+    });
+    const body = await resp.json().catch(() => ({}));
+    return { status: resp.status, body };
+  }, {
+    base: BASE_URL.replace('/boutique/', ''),
+    items: cartItems,
+  });
 }
 
 function snapshotPanel(page) {
@@ -183,6 +210,11 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     const { token } = await createSharedList(page, 1);
 
     const participantContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    // Le projet "authenticated" charge storageState pour le compte créateur.
+    // Un contexte participant anonyme doit être explicitement vidé : en
+    // staging, on a observé kmrc_jwt présent dans un newContext() manuel,
+    // ce qui faisait remonter is_creator=true côté backend.
+    await participantContext.clearCookies();
     const participantPage = await participantContext.newPage();
 
     try {
@@ -191,7 +223,9 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
         { timeout: 15_000 },
       );
       await participantPage.goto(getSharePageUrl(token));
-      await publicResp;
+      const publicResponse = await publicResp;
+      const publicList = await publicResponse.json();
+      expect(publicList.is_creator, 'Le contexte participant doit rester anonyme/non créateur').toBe(false);
 
       const panel = participantPage.locator('#k-side-cart .k-cart-snapshot-item, #k-cart-body .k-cart-snapshot-item').first();
       await expect(panel).toBeVisible({ timeout: 10_000 });
@@ -338,6 +372,13 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     const body = await resp.json().catch(() => ({}));
 
     try {
+      // La commande réussie reste affichée dans la modale de checkout.
+      // Revenir explicitement à la boutique déclenche l'observer installé par
+      // handleBuySingleItem(), qui rafraîchit la liste avant de la réafficher.
+      const orderCloseBtn = page.locator('#k-order-close-btn');
+      await expect(orderCloseBtn).toBeVisible({ timeout: 10_000 });
+      await orderCloseBtn.click();
+
       const claimedRow = page.locator('#k-side-cart .k-cart-snapshot-item.is-cart-item-claimed').first();
       await expect(claimedRow).toBeVisible({ timeout: 15_000 });
       await expect(claimedRow.locator('.k-cart-snapshot-item-status-badge.is-claimed')).toBeVisible();
@@ -371,6 +412,13 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     const body = await resp.json().catch(() => ({}));
 
     try {
+      // Le résumé appartient au side cart, masqué tant que l'écran de succès
+      // checkout est ouvert. Fermer celui-ci fait aussi rafraîchir le contexte
+      // de liste via l'observer du flow d'achat unitaire.
+      const orderCloseBtn = page.locator('#k-order-close-btn');
+      await expect(orderCloseBtn).toBeVisible({ timeout: 10_000 });
+      await orderCloseBtn.click();
+
       const contributors = page.locator('#k-side-cart #k-sc-snapshot-contributors');
       await expect(contributors).toBeVisible({ timeout: 15_000 });
       await expect(contributors).toContainText('Contributeurs :');
@@ -460,10 +508,23 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
   });
 
   test('F22-11 — un participant (non organisateur) peut sauvegarder la liste dans "Mes listes" ; le bouton devient "Sauvegardée"', async ({ page, browser }) => {
+    test.skip(
+      !fs.existsSync(USER2_STATE_PATH),
+      'F22-11 exige un second compte authentifié non organisateur : playwright/.auth/user2.json absent.',
+    );
+
     const { token } = await createSharedList(page, 1);
 
-    // Contexte participant : nouvelle session anonyme, ouvre le lien public.
-    const participantContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    // Sauvegarder dans "Mes listes" est une écriture authentifiée
+    // (POST /api/shared-carts/save). Utiliser une session anonyme ici était
+    // contradictoire avec le contrat backend et, lorsque le cookie créateur
+    // fuyait dans newContext(), transformait le participant en organisateur.
+    // On utilise donc le second compte E2E dédié, déjà requis par F24.
+    const participantContext = await browser.newContext({
+      storageState: USER2_STATE_PATH,
+      viewport: { width: 1280, height: 800 },
+      locale: 'fr-FR',
+    });
     const participantPage = await participantContext.newPage();
 
     try {
@@ -472,13 +533,21 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
         { timeout: 15_000 },
       );
       await participantPage.goto(getSharePageUrl(token));
-      await publicResp;
+      const publicResponse = await publicResp;
+      const publicList = await publicResponse.json();
+      expect(publicList.is_creator, 'Le compte participant doit être distinct du créateur').toBe(false);
 
       const saveBtn = participantPage.locator('#k-sc-snap-save, #k-cart-snap-save').first();
       await expect(saveBtn).toBeVisible({ timeout: 10_000 });
       await expect(saveBtn).toContainText('Sauvegarder');
 
+      const saveResponsePromise = participantPage.waitForResponse(
+        (r) => r.url().includes('/api/shared-carts/save') && r.request().method() === 'POST',
+        { timeout: 15_000 },
+      );
       await saveBtn.click();
+      const saveResponse = await saveResponsePromise;
+      expect(saveResponse.status(), 'La sauvegarde du participant authentifié doit réussir côté backend').toBe(200);
       await expect(saveBtn).toContainText('Sauvegardée', { timeout: 10_000 });
       await expect(saveBtn).toBeDisabled();
 
@@ -529,56 +598,52 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     // atteindre la limite, fermer UNE liste, et vérifier qu'une nouvelle
     // création redevient immédiatement possible, sans délai ni attente.
     const MAX_ACTIVE_CARTS_PER_USER = 5;
-    const tokens = [];
 
+    // Obtenir un produit réellement vendable depuis le même parcours UI que
+    // les autres scénarios, puis réutiliser son identité canonique pour les
+    // créations API du test de quota.
+    await addNProductsToCart(page, 1);
+    const localCart = await getClientCart(page);
+    expect(localCart.length).toBeGreaterThan(0);
+    const seed = localCart[0];
+    const cartItems = [{
+      product_id: seed.product?.id || seed.id,
+      quantity: Number(seed.qty) || 1,
+      variant_combo: seed.variant_combo || null,
+    }];
+    expect(cartItems[0].product_id, 'Le produit seed du quota doit avoir un id').toBeTruthy();
+
+    const created = [];
     for (let i = 0; i < MAX_ACTIVE_CARTS_PER_USER; i += 1) {
-      const { token } = await createSharedList(page, 1);
-      tokens.push(token);
-      // Repartir d'un panier personnel vide pour la prochaine création —
-      // createSharedList() ajoute ses propres articles à chaque appel.
-      await page.reload();
+      const result = await createSharedListViaApi(page, cartItems);
+      expect(result.status, `Création ${i + 1}/${MAX_ACTIVE_CARTS_PER_USER}`).toBe(200);
+      expect(result.body?.shared_cart_id).toBeTruthy();
+      expect(result.body?.token).toBeTruthy();
+      created.push(result.body);
     }
 
-    // La limite est atteinte : une 6e création doit échouer avec le
-    // message de quota (jamais une création silencieuse au-delà de la
-    // limite).
-    await addNProductsToCart(page, 1);
-    await openCartDrawer(page);
-    const shareBtn = page.locator('#k-cart-share, #k-sc-share').first();
-    await expect(shareBtn).toBeVisible({ timeout: 10_000 });
-    await stubShareChannels(page);
-    const toastLocator = page.locator('#k-toast, .k-toast, [role="status"]').last();
-    await shareBtn.click();
-    await expect(toastLocator).toContainText(/Limite atteinte/i, { timeout: 10_000 });
+    // 5 open : la 6e est réellement refusée par le backend.
+    const blocked = await createSharedListViaApi(page, cartItems);
+    expect(blocked.status).toBe(400);
+    expect(blocked.body?.error || '').toMatch(/Limite atteinte/i);
 
-    // On ferme UNE des listes déjà créées (peu importe laquelle) puis on
-    // retente : la création doit désormais réussir sans aucune attente.
-    await cancelAnyActiveSharedCart(page); // cleanup défensif si le shareBtn a laissé un état incohérent
-    const closeCheck = await verifySharedCart(page, tokens[0]);
-    if (closeCheck.exists && closeCheck.cart?.status === 'open') {
-      // Fermeture directe via l'API (indépendant de l'UI, pour isoler ce
-      // scénario du test F22-9 qui couvre déjà la fermeture via l'UI).
-      await page.evaluate(async ({ id, base }) => {
-        await fetch(new URL(`/api/shared-carts/${id}/close`, base).href, {
-          method: 'POST', credentials: 'include',
-        });
-      }, { id: closeCheck.cart.id, base: BASE_URL.replace('/boutique/', '') });
-    }
+    // Fermer UNE liste seulement. Ne surtout pas appeler le helper de cleanup
+    // ici : il annulerait toutes les listes et invaliderait la précondition.
+    const closeStatus = await page.evaluate(async ({ id, base }) => {
+      const resp = await fetch(new URL(`/api/shared-carts/${id}/close`, base).href, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      return resp.status;
+    }, {
+      id: created[0].shared_cart_id,
+      base: BASE_URL.replace('/boutique/', ''),
+    });
+    expect(closeStatus).toBe(200);
 
-    await page.reload();
-    await addNProductsToCart(page, 1);
-    await openCartDrawer(page);
-    const retryShareBtn = page.locator('#k-cart-share, #k-sc-share').first();
-    await expect(retryShareBtn).toBeVisible({ timeout: 10_000 });
-    await stubShareChannels(page);
-    await retryShareBtn.click();
-
-    await page.waitForFunction(
-      () => !!sessionStorage.getItem('kmrc_share'),
-      { timeout: 15_000 },
-    ).catch(() => {});
-    const freedState = await getClientShareState(page);
-    expect(freedState?.token, 'Une nouvelle liste doit se créer dès qu\'un slot est libéré par la fermeture').toBeTruthy();
-    tokens.push(freedState.token);
+    // 4 open + 1 closed : un slot doit être disponible immédiatement.
+    const freed = await createSharedListViaApi(page, cartItems);
+    expect(freed.status).toBe(200);
+    expect(freed.body?.token, 'La fermeture doit libérer immédiatement un slot de liste active').toBeTruthy();
   });
 });

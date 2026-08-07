@@ -139,10 +139,10 @@ async function getClientShareState(page) {
 }
 
 /**
- * [DESTRUCTIF, mais no-op financier tant qu'aucune contribution 'paid'
- * n'existe] Annule un panier groupe via POST /api/shared-carts/:id/cancel.
- * Autorisé depuis open/closed/awaiting_choice (voir
- * services/cancel-shared-cart-with-refunds.js côté backend).
+ * [DESTRUCTIF sur la liste, sans effet financier] Annule une liste via
+ * POST /api/shared-carts/:id/cancel. Le domaine minimal n'accepte plus que
+ * open/closed (services/shared-cart-lifecycle.js) et aucune contribution
+ * financière ne transite par shared-cart.
  * Retourne true si l'annulation a réussi (ou si le panier n'existait déjà
  * plus — 400 "introuvable" traité comme un succès de nettoyage).
  */
@@ -203,14 +203,13 @@ async function cancelOrder(page, id, reason = 'e2e-cleanup') {
 }
 
 /**
- * Vérifie côté backend si le compte de test a déjà un panier groupe actif
+ * Vérifie côté backend si le compte de test a déjà une liste open/closed
  * (GET /api/shared-carts/mine) et l'annule le cas échéant. À appeler en
- * beforeEach ET en afterEach de tout test F20 : beforeEach couvre le cas
+ * beforeEach ET en afterEach des flows shared-cart : beforeEach couvre le cas
  * d'un run précédent interrompu avant son propre cleanup (crash, Ctrl+C),
- * afterEach couvre le cas nominal. Sans ça, F20 n'est PAS idempotent —
- * voir b-share-cart.js::install() qui restaure l'état actif au chargement
- * de page et fait bifurquer startShareFlow() vers promptActiveCartChoice()
- * au lieu de promptInit() dès qu'un panier 'open' traîne côté backend.
+ * afterEach couvre le cas nominal. Sans ça le run n'est pas idempotent :
+ * b-share-cart.js restaure une liste open au chargement, et Partager la
+ * repartage conformément à la doctrine au lieu d'en créer une nouvelle.
  */
 async function cancelAnyActiveSharedCart(page) {
   return page.evaluate(async (base) => {
@@ -219,7 +218,7 @@ async function cancelAnyActiveSharedCart(page) {
       if (!resp.ok) return false;
       const data = await resp.json().catch(() => ({}));
       const carts = data.carts || [];
-      const ACTIVE = new Set(['open', 'closed', 'awaiting_choice']);
+      const ACTIVE = new Set(['open', 'closed']);
       const active = carts.filter(c => ACTIVE.has(c.status));
       let allOk = true;
       for (const cart of active) {
