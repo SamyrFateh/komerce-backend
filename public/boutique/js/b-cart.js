@@ -1079,6 +1079,17 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     const sc = document.getElementById('k-side-cart');
     if (!sc) return;
     sc.removeAttribute('data-mode');
+    // Bug réel trouvé en test navigateur réel (§13, chrome résiduel) :
+    // applySnapshotSideCartChrome() écrit .k-sc-title-label avec le titre
+    // de la liste, mais rien ne le restaurait jamais au retour au panier
+    // personnel — le header du side cart affichait encore le titre de la
+    // liste ("Sync multi-client") alors que le contenu était déjà celui
+    // du panier personnel (Vider, Commander, articles corrects). Aucun
+    // pipeline panier personnel ne réécrit ce champ (contrairement au
+    // drawer mobile, dom.cartHeaderTitle, remis par renderSideCart()) —
+    // c'est ce nettoyage qui doit le faire.
+    const titleLabel = sc.querySelector('.k-sc-title-label');
+    if (titleLabel) titleLabel.textContent = 'Mon panier';
     SIDECART_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => sc.querySelector('#' + id)?.classList.remove('u-hidden'));
     sc.querySelector('.k-sc-title-bar')?.querySelector('#k-sc-snapshot-status')?.remove();
     sc.querySelector('.k-sc-title-bar')?.querySelector('#k-sc-snapshot-contributors')?.remove();

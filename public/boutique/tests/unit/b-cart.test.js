@@ -812,6 +812,24 @@ describe('b-cart', () => {
       expect(document.body.classList.contains('is-shared-list-context')).toBe(false);
     });
 
+    // Mandat §13 — bug réel trouvé en test navigateur réel : le titre du
+    // side cart desktop (.k-sc-title-label) restait bloqué sur le nom de
+    // la liste ("Sync multi-client") après un retour au panier personnel,
+    // alors que le reste du chrome (Vider, Commander, articles) affichait
+    // déjà bien le panier personnel. Aucun pipeline panier personnel ne
+    // réécrivait ce champ — seul le nettoyage snapshot devait le faire.
+    it('le titre du side cart ("Mon panier") est restauré après clearSharedListContext, pas seulement le contenu', () => {
+      activateList({ cart: { title: 'Sync multi-client' } });
+      const titleLabel = document.getElementById('k-side-cart').querySelector('.k-sc-title-label');
+      expect(titleLabel.textContent).toBe('Sync multi-client');
+
+      clearSharedListContext();
+      state.cart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];
+      renderCartBody();
+
+      expect(titleLabel.textContent).toBe('Mon panier');
+    });
+
     it('preuve de non-régression : aucun panneau parallèle recréé', () => {
       activateList({ isCreator: true });
       toggleEditModeCtrl();
