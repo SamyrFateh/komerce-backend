@@ -245,8 +245,11 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
       await participantPage.waitForSelector('#k-modal-overlay.open, .k-modal-overlay.open', { timeout: 6_000 });
 
       // Participant (non créateur) : jamais de CTA "Ajouter à cette
-      // liste" — seul "Ajouter au panier" (personnel) est disponible.
-      await expect(participantPage.locator('#k-add-to-list-btn')).toHaveCount(0);
+      // liste" visible — le shell de modale conserve le bouton dans le DOM
+      // avec l'attribut `hidden`. Seul "Ajouter au panier" (personnel) est
+      // disponible pour l'utilisateur.
+      await expect(participantPage.locator('#k-add-to-list-btn')).not.toBeVisible();
+      await expect(participantPage.locator('#k-add-cart-btn')).toBeVisible();
       await addToCartFromModal(participantPage);
       await closeModal(participantPage);
 
