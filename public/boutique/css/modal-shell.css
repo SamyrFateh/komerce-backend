@@ -298,6 +298,7 @@
  * `[hidden]` porte la specificité à 0,0,2,0 (classe + attribut), qui bat
  * `.k-add-cart-btn`/`.k-buy-now-btn` seules (0,0,1,0) sans avoir besoin
  * de forcer la cascade. */
+.k-add-to-list-btn[hidden],
 .k-add-cart-btn[hidden],
 .k-buy-now-btn[hidden] {
   display: none;
