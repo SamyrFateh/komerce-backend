@@ -2175,6 +2175,27 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-add-to-list-btn:active { transform: scale(.98); }
 .k-add-to-list-btn:disabled { opacity: .55; cursor: default; }
 
+/* Correctif capture production (mandat §3.2 — remplacement, jamais
+ * coexistence) — même classe de bug que le side cart (voir
+ * css/shared-list-side-cart.css) : `.k-add-cart-btn`/`.k-buy-now-btn`
+ * déclarent `display: flex` sans qualification (specificité 0,0,1,0), ce
+ * qui bat la règle UA par défaut `[hidden] { display: none }` (une
+ * feuille de style auteur gagne toujours contre la feuille UA à
+ * spécificité égale, quel que soit l'ordre). Résultat vérifié en
+ * navigateur réel : b-modal-desktop-product.js::renderActions() posait
+ * bien `button.hidden = true` en mode édition liste (JS 100% correct,
+ * confirmé), mais les boutons "Ajouter au panier"/"Acheter maintenant"
+ * restaient visuellement affichés à côté de "Ajouter à cette liste" —
+ * capture production exacte.
+ * Fix — SANS !important (doctrine §1, injections dures = 0) : qualifier
+ * `[hidden]` porte la specificité à 0,0,2,0 (classe + attribut), qui bat
+ * `.k-add-cart-btn`/`.k-buy-now-btn` seules (0,0,1,0) sans avoir besoin
+ * de forcer la cascade. */
+.k-add-cart-btn[hidden],
+.k-buy-now-btn[hidden] {
+  display: none;
+}
+
 /* ── PRODUIT RAPPELÉ TOPBAR AU SCROLL ───────────────────────── */
 .k-modal-topbar-product { display: none; align-items: center; gap: 8px; min-width: 0; flex: 1; margin-left: 8px; opacity: 0; transform: translateY(-4px); transition: opacity .2s var(--ease), transform .2s var(--ease); }
 /* ARCH-6 : règles is-scrolled rapatriées depuis interactions.css → owner unique ici */
@@ -6433,13 +6454,21 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
  * Pour un inventaire SKU, le stepper product-id-first n'est jamais une voie de
  * mutation valide : le bouton Ajouter doit rester la projection visible.
  * data-inventory-model est posé par b-modal-cart.js, owner de l'état panier.
+ *
+ * :not([hidden]) (mandat §3.2, correctif capture production) — ce garde
+ * force `.k-add-cart-btn` visible pour tout produit SKU, mais un CTA
+ * modale explicitement masqué (`button.hidden = true`, mode édition de
+ * liste — b-modal-desktop-product.js::renderActions) doit rester masqué
+ * MÊME pour un produit SKU. Sans cette clause, la garde (specificité
+ * 1,0,3,0) battait `.k-add-cart-btn[hidden]` (0,0,2,0, css/modal-
+ * shell.css) et "Ajouter au panier" restait visible à côté de "Ajouter à
+ * cette liste" pour tout produit SKU — trouvé en test navigateur réel.
  */
-
 #k-modal .k-modal-actions[data-inventory-model="SKU"] .k-qty {
   display: none;
 }
 
-#k-modal .k-modal-actions[data-inventory-model="SKU"] .k-add-cart-btn {
+#k-modal .k-modal-actions[data-inventory-model="SKU"] .k-add-cart-btn:not([hidden]) {
   display: flex;
 }
 
@@ -9440,6 +9469,80 @@ body.cart-open  #k-section-index { display:none; }
  */
 .k-cart-drawer[data-mode="shared-list"] #k-cart-body {
   padding: 0;
+}
+
+/* ── Correctif capture production — chrome personnel non masqué / actions
+ * organisateur invisibles (bug réel trouvé en test Playwright réel contre
+ * un serveur/DB local, invisible aux tests unitaires jsdom qui ne calculent
+ * jamais la cascade CSS réelle) ──────────────────────────────────────────
+ *
+ * Cause n°1 — .u-hidden (reset.css, specificité 0,0,1,0) perd contre des
+ * règles plus spécifiques qui re-déclarent `display` pour ces mêmes
+ * boutons natifs (ex. `.k-side-cart.has-items .k-sc-clear { display:
+ * inline-flex }` en boutique-desktop.css, specificité 0,0,3,0 — gagne
+ * contre `.u-hidden` seule quel que soit l'ordre). Résultat vérifié en
+ * navigateur réel : #k-sc-clear ("Vider") et #k-sc-share natif
+ * ("Partager") restaient visibles en contexte liste malgré la classe
+ * u-hidden posée par b-cart.js::applySnapshotSideCartChrome/
+ * applySnapshotDrawerFooter.
+ *
+ * Fix — SANS !important (doctrine §1, injections dures = 0) : un
+ * sélecteur ID+classe a la specificité (1,0,1,0) — un ID compte toujours
+ * avant n'importe quel nombre de classes dans la comparaison, donc ce
+ * sélecteur gagne contre `.k-side-cart.has-items .k-sc-clear` (0,0,3,0)
+ * sans avoir besoin de forcer la cascade. Couvre chacun des IDs listés
+ * dans DRAWER_NATIVE_BTN_IDS_TO_HIDE / SIDECART_NATIVE_BTN_IDS_TO_HIDE
+ * (b-cart.js), jamais un sous-ensemble.
+ */
+#k-cart-checkout.u-hidden,
+#k-cart-share.u-hidden,
+#k-cart-clear.u-hidden,
+#k-sc-checkout.u-hidden,
+#k-sc-cta.u-hidden,
+#k-sc-share.u-hidden,
+#k-sc-clear.u-hidden {
+  display: none;
+}
+
+/* Cause n°2 — les boutons d'action organisateur snapshot (Modifier /
+ * Partager / Fermer la liste) réutilisaient la classe .k-sc-btn-cart pour
+ * leur style desktop — une classe par ailleurs volontairement mise à
+ * `display: none` sur desktop (boutique-desktop.css) pour un bouton natif
+ * SANS RAPPORT ("Voir le panier", superflu quand le side cart persistant
+ * est déjà visible). Conséquence vérifiée en navigateur réel : les 3
+ * boutons snapshot desktop héritaient silencieusement ce display:none et
+ * n'apparaissaient jamais, quel que soit context.isOrganizer — cause
+ * racine exacte de la capture production (aucun Modifier/Fermer visible).
+ * Fix : classe dédiée, jamais partagée avec un bouton natif au rôle
+ * différent, avec un style visible propre (repris de .k-cart-continue-shop,
+ * déjà utilisée sans ce problème côté drawer mobile).
+ */
+.k-sc-btn-snapshot-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 14px;
+  margin-top: 4px;
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.k-sc-btn-snapshot-action:hover {
+  background: var(--sand);
+  border-style: solid;
+  color: var(--text);
+}
+.k-sc-btn-snapshot-action[aria-pressed="true"] {
+  border-color: var(--coral, var(--cta-green));
+  color: var(--coral, var(--cta-green));
 }
 
 

@@ -18,9 +18,13 @@ describe('modal-cart-sku-guard.css', () => {
     expect(css).toMatch(/data-inventory-model="SKU"[^}]*\.k-qty\s*\{[^}]*display:\s*none/m);
   });
 
-  test('un inventaire SKU conserve le bouton Ajouter visible', () => {
+  test('un inventaire SKU conserve le bouton Ajouter visible (sauf si explicitement masqué ailleurs, ex. mode édition liste)', () => {
     const css = fs.readFileSync(cssPath, 'utf8');
-    expect(css).toMatch(/data-inventory-model="SKU"[^}]*\.k-add-cart-btn\s*\{[^}]*display:\s*flex/m);
+    // Mandat §3.2 (correctif capture production) — :not([hidden]) ajouté
+    // pour que ce garde respecte un masquage JS explicite (mode édition
+    // de liste), sans quoi il gagnait toujours contre .k-add-cart-btn[hidden]
+    // (css/modal-shell.css) même pour un produit SKU.
+    expect(css).toMatch(/data-inventory-model="SKU"[^}]*\.k-add-cart-btn:not\(\[hidden\]\)\s*\{[^}]*display:\s*flex/m);
     expect(css).not.toMatch(/!important/);
   });
 

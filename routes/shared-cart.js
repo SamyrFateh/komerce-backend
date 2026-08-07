@@ -338,7 +338,13 @@ router.post('/:id/close', authenticate, async (req, res, next) => {
     res.json({
       ok:      true,
       label:   'panier_ferme',
-      message: "Le panier est fermé. Les articles restent réclamables via l'achat individuel.",
+      // Mandat §4 — ce message affirmait à tort que les articles restent
+      // réclamables après fermeture ("via l'achat individuel"), contraire
+      // à la doctrine : une liste fermée est entièrement non opérationnelle,
+      // le backend refuse toute nouvelle commande qui lui serait rattachée
+      // (routes/orders/create.js §6 — code shared_cart_closed). Trouvé et
+      // confirmé lors d'un test réel contre un serveur/DB local.
+      message: 'Le panier est fermé. Aucun nouvel achat ne peut plus lui être rattaché.',
       cart,
     });
   } catch (err) {

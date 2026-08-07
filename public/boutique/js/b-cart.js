@@ -990,8 +990,16 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     // availableCount (aucune ligne restante), mais sinon le nombre affiché
     // et l'activation du bouton dépendent de ce que l'utilisateur a
     // effectivement coché.
-    buyBtn.textContent = context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.selectedCount})`;
-    buyBtn.disabled = context.availableCount === 0 || context.selectedCount === 0;
+    // Mandat §4 — une liste fermée (context.readOnly) est entièrement non
+    // opérationnelle : le CTA d'achat doit être désactivé avec un libellé
+    // clair, jamais laissé actif (le backend refuse déjà la commande —
+    // shared_cart_closed — mais l'UI ne doit pas laisser croire que
+    // l'achat est possible). Trouvé en test réel : le bouton restait
+    // cliquable "Acheter (N)" sur une liste fermée.
+    buyBtn.textContent = context.readOnly
+      ? 'Liste fermée'
+      : (context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.selectedCount})`);
+    buyBtn.disabled = context.readOnly || context.availableCount === 0 || context.selectedCount === 0;
     buyBtn.onclick = () => actions.onBuy();
   }
 
@@ -1028,30 +1036,42 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     if (!scHeader) return;
 
     if (context.showSaveAction) {
-      const saveBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-save', 'k-sc-btn-cart');
+      // Correctif capture production — classe dédiée .k-sc-btn-snapshot-action,
+      // jamais .k-sc-btn-cart (display:none desktop pour un bouton natif sans
+      // rapport, "Voir le panier" — cf. css/shared-list-side-cart.css).
+      const saveBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-save', 'k-sc-btn-snapshot-action');
       saveBtn.textContent = context.saved ? '✓ Sauvegardée' : '☆ Sauvegarder';
       saveBtn.disabled = !!context.saved;
       saveBtn.onclick = () => actions.onSave();
     }
     if (context.isOrganizer && !context.readOnly) {
-      const editBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-edit', 'k-sc-btn-cart');
+      const editBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-edit', 'k-sc-btn-snapshot-action');
       editBtn.textContent = context.editMode ? 'Terminer' : '✎ Modifier';
+      editBtn.setAttribute('aria-pressed', String(!!context.editMode));
       editBtn.onclick = () => actions.onToggleEditMode();
     }
     if (context.isOrganizer) {
-      const shareBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-share', 'k-sc-btn-cart');
+      const shareBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-share', 'k-sc-btn-snapshot-action');
       shareBtn.textContent = '📤 Partager';
       shareBtn.onclick = () => actions.onShare();
 
-      const closeBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-closelist', 'k-sc-btn-cart');
+      const closeBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-closelist', 'k-sc-btn-snapshot-action');
       closeBtn.textContent = context.readOnly ? 'Liste fermée' : 'Fermer la liste';
       closeBtn.disabled = !!context.readOnly;
       closeBtn.onclick = () => actions.onClose();
     }
     const buyBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-buy', 'k-sc-btn-checkout');
     // Mandat §5 — même règle que la version drawer ci-dessus (selectedCount).
-    buyBtn.textContent = context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.selectedCount})`;
-    buyBtn.disabled = context.availableCount === 0 || context.selectedCount === 0;
+    // Mandat §4 — une liste fermée (context.readOnly) est entièrement non
+    // opérationnelle : le CTA d'achat doit être désactivé avec un libellé
+    // clair, jamais laissé actif (le backend refuse déjà la commande —
+    // shared_cart_closed — mais l'UI ne doit pas laisser croire que
+    // l'achat est possible). Trouvé en test réel : le bouton restait
+    // cliquable "Acheter (N)" sur une liste fermée.
+    buyBtn.textContent = context.readOnly
+      ? 'Liste fermée'
+      : (context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.selectedCount})`);
+    buyBtn.disabled = context.readOnly || context.availableCount === 0 || context.selectedCount === 0;
     buyBtn.onclick = () => actions.onBuy();
   }
 

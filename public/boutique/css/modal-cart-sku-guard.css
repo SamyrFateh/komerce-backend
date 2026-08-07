@@ -6,12 +6,20 @@
  * Pour un inventaire SKU, le stepper product-id-first n'est jamais une voie de
  * mutation valide : le bouton Ajouter doit rester la projection visible.
  * data-inventory-model est posé par b-modal-cart.js, owner de l'état panier.
+ *
+ * :not([hidden]) (mandat §3.2, correctif capture production) — ce garde
+ * force `.k-add-cart-btn` visible pour tout produit SKU, mais un CTA
+ * modale explicitement masqué (`button.hidden = true`, mode édition de
+ * liste — b-modal-desktop-product.js::renderActions) doit rester masqué
+ * MÊME pour un produit SKU. Sans cette clause, la garde (specificité
+ * 1,0,3,0) battait `.k-add-cart-btn[hidden]` (0,0,2,0, css/modal-
+ * shell.css) et "Ajouter au panier" restait visible à côté de "Ajouter à
+ * cette liste" pour tout produit SKU — trouvé en test navigateur réel.
  */
-
 #k-modal .k-modal-actions[data-inventory-model="SKU"] .k-qty {
   display: none;
 }
 
-#k-modal .k-modal-actions[data-inventory-model="SKU"] .k-add-cart-btn {
+#k-modal .k-modal-actions[data-inventory-model="SKU"] .k-add-cart-btn:not([hidden]) {
   display: flex;
 }

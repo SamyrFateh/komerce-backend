@@ -220,3 +220,77 @@
 .k-cart-drawer[data-mode="shared-list"] #k-cart-body {
   padding: 0;
 }
+
+/* ── Correctif capture production — chrome personnel non masqué / actions
+ * organisateur invisibles (bug réel trouvé en test Playwright réel contre
+ * un serveur/DB local, invisible aux tests unitaires jsdom qui ne calculent
+ * jamais la cascade CSS réelle) ──────────────────────────────────────────
+ *
+ * Cause n°1 — .u-hidden (reset.css, specificité 0,0,1,0) perd contre des
+ * règles plus spécifiques qui re-déclarent `display` pour ces mêmes
+ * boutons natifs (ex. `.k-side-cart.has-items .k-sc-clear { display:
+ * inline-flex }` en boutique-desktop.css, specificité 0,0,3,0 — gagne
+ * contre `.u-hidden` seule quel que soit l'ordre). Résultat vérifié en
+ * navigateur réel : #k-sc-clear ("Vider") et #k-sc-share natif
+ * ("Partager") restaient visibles en contexte liste malgré la classe
+ * u-hidden posée par b-cart.js::applySnapshotSideCartChrome/
+ * applySnapshotDrawerFooter.
+ *
+ * Fix — SANS !important (doctrine §1, injections dures = 0) : un
+ * sélecteur ID+classe a la specificité (1,0,1,0) — un ID compte toujours
+ * avant n'importe quel nombre de classes dans la comparaison, donc ce
+ * sélecteur gagne contre `.k-side-cart.has-items .k-sc-clear` (0,0,3,0)
+ * sans avoir besoin de forcer la cascade. Couvre chacun des IDs listés
+ * dans DRAWER_NATIVE_BTN_IDS_TO_HIDE / SIDECART_NATIVE_BTN_IDS_TO_HIDE
+ * (b-cart.js), jamais un sous-ensemble.
+ */
+#k-cart-checkout.u-hidden,
+#k-cart-share.u-hidden,
+#k-cart-clear.u-hidden,
+#k-sc-checkout.u-hidden,
+#k-sc-cta.u-hidden,
+#k-sc-share.u-hidden,
+#k-sc-clear.u-hidden {
+  display: none;
+}
+
+/* Cause n°2 — les boutons d'action organisateur snapshot (Modifier /
+ * Partager / Fermer la liste) réutilisaient la classe .k-sc-btn-cart pour
+ * leur style desktop — une classe par ailleurs volontairement mise à
+ * `display: none` sur desktop (boutique-desktop.css) pour un bouton natif
+ * SANS RAPPORT ("Voir le panier", superflu quand le side cart persistant
+ * est déjà visible). Conséquence vérifiée en navigateur réel : les 3
+ * boutons snapshot desktop héritaient silencieusement ce display:none et
+ * n'apparaissaient jamais, quel que soit context.isOrganizer — cause
+ * racine exacte de la capture production (aucun Modifier/Fermer visible).
+ * Fix : classe dédiée, jamais partagée avec un bouton natif au rôle
+ * différent, avec un style visible propre (repris de .k-cart-continue-shop,
+ * déjà utilisée sans ce problème côté drawer mobile).
+ */
+.k-sc-btn-snapshot-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 14px;
+  margin-top: 4px;
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.k-sc-btn-snapshot-action:hover {
+  background: var(--sand);
+  border-style: solid;
+  color: var(--text);
+}
+.k-sc-btn-snapshot-action[aria-pressed="true"] {
+  border-color: var(--coral, var(--cta-green));
+  color: var(--coral, var(--cta-green));
+}

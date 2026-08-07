@@ -282,6 +282,27 @@
 .k-add-to-list-btn:active { transform: scale(.98); }
 .k-add-to-list-btn:disabled { opacity: .55; cursor: default; }
 
+/* Correctif capture production (mandat §3.2 — remplacement, jamais
+ * coexistence) — même classe de bug que le side cart (voir
+ * css/shared-list-side-cart.css) : `.k-add-cart-btn`/`.k-buy-now-btn`
+ * déclarent `display: flex` sans qualification (specificité 0,0,1,0), ce
+ * qui bat la règle UA par défaut `[hidden] { display: none }` (une
+ * feuille de style auteur gagne toujours contre la feuille UA à
+ * spécificité égale, quel que soit l'ordre). Résultat vérifié en
+ * navigateur réel : b-modal-desktop-product.js::renderActions() posait
+ * bien `button.hidden = true` en mode édition liste (JS 100% correct,
+ * confirmé), mais les boutons "Ajouter au panier"/"Acheter maintenant"
+ * restaient visuellement affichés à côté de "Ajouter à cette liste" —
+ * capture production exacte.
+ * Fix — SANS !important (doctrine §1, injections dures = 0) : qualifier
+ * `[hidden]` porte la specificité à 0,0,2,0 (classe + attribut), qui bat
+ * `.k-add-cart-btn`/`.k-buy-now-btn` seules (0,0,1,0) sans avoir besoin
+ * de forcer la cascade. */
+.k-add-cart-btn[hidden],
+.k-buy-now-btn[hidden] {
+  display: none;
+}
+
 /* ── PRODUIT RAPPELÉ TOPBAR AU SCROLL ───────────────────────── */
 .k-modal-topbar-product { display: none; align-items: center; gap: 8px; min-width: 0; flex: 1; margin-left: 8px; opacity: 0; transform: translateY(-4px); transition: opacity .2s var(--ease), transform .2s var(--ease); }
 /* ARCH-6 : règles is-scrolled rapatriées depuis interactions.css → owner unique ici */

@@ -660,6 +660,32 @@ describe('b-cart', () => {
       expect(buyBtn.disabled).toBe(true);
     });
 
+    // Mandat §4 — une liste fermée est entièrement non opérationnelle : le
+    // CTA d'achat doit être désactivé avec un libellé clair, jamais laissé
+    // actif. Bug réel trouvé en test Playwright contre un serveur/DB réel
+    // (invisible aux tests jsdom précédents, aucun test ne couvrait ce cas) :
+    // "Acheter (N)" restait affiché et cliquable sur une liste fermée.
+    it('liste fermée (readOnly) → CTA "Liste fermée" désactivé, même avec des lignes disponibles et sélectionnées', () => {
+      activateList({
+        isCreator: true,
+        cart: { status: 'closed' },
+        items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
+        ],
+      });
+      // Deux boutons portent "Liste fermée" au même moment (Fermer la
+      // liste → "Liste fermée" désactivé, ET le CTA d'achat → même
+      // libellé) : viser le CTA d'achat par ID pour ne pas confondre les
+      // deux via findButtonByText (renvoie le premier match).
+      const buyBtn = document.getElementById('k-cart-snap-buy');
+      expect(buyBtn).not.toBeNull();
+      expect(buyBtn.textContent.trim()).toBe('Liste fermée');
+      expect(buyBtn.disabled).toBe(true);
+      // Jamais "Acheter (N)" ni "Tout est acheté" nulle part dans le panier.
+      expect(findButtonByText('Acheter (')).toBeNull();
+      expect(findButtonByText('Tout est acheté')).toBeNull();
+    });
+
     // Mandat §5 — sélection locale des articles à acheter.
     describe('sélection locale (mandat §5)', () => {
       it('une case de sélection est rendue sur chaque ligne disponible, jamais sur une ligne réclamée', () => {
