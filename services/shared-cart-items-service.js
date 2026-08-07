@@ -162,61 +162,40 @@ async function updateOpenSharedCartItems(sharedCartId, userId, cartItems = []) {
       );
     }
 
-    const productIds = [...new Set(normalized.map(i => i.product_id))];
-    const { rows: products } = await client.query(
-      `SELECT id, name, image_url, category, price_kmf,
-              promo_pct, is_promo, promo_until, is_active,
-              inventory_model, has_variants, stock
-         FROM products
-        WHERE id = ANY($1)`,
-      [productIds]
-    );
-    const productsById = new Map(products.map(p => [p.id, p]));
-
+    // Mandat §8 — boundary canonique. Ce writer ne reconstruit plus
+    // manuellement resolveActiveSku + contrôle stock + computeSellablePricing
+    // + products.image_url : resolveSellableUnit() (product-admin-service.js)
+    // est l'unique point d'entrée, y compris pour le média (SKU canonique via
+    // product_sku_media → catalog_media, fallback products.image_url — §9).
+    // Un produit introuvable/inactif reste un skip silencieux (comportement
+    // historique de ce remplacement intégral, contrairement à addSharedCartItem
+    // qui refuse) ; une combinaison/stock invalide reste un refus explicite,
+    // jamais un skip qui ferait disparaître l'article sans le dire (GAP-07).
     const enrichedItems = [];
     for (const item of normalized) {
-      const p = productsById.get(item.product_id);
-      if (!p || !p.is_active) continue;
-
-      let resolvedSku = null;
-      let skuId = null;
-      let snapshotCombo = null;
-
-      if (p.inventory_model === 'SKU') {
-        // GAP-07 — jamais de sémantique product-first pour un SKU : une
-        // combinaison inconnue ou un stock insuffisant est un refus
-        // explicite, pas un skip silencieux qui ferait disparaître
-        // l'article de la liste sans le dire au créateur.
-        resolvedSku = await productAdminService.resolveActiveSku(client, p.id, item.variant_combo);
-        if (!resolvedSku) {
-          throw httpError(`Combinaison indisponible pour ${p.name}`, 409, 'sellable_unit_not_found');
-        }
-        if (resolvedSku.stock < item.quantity) {
-          throw httpError(
-            `Stock insuffisant pour ${p.name} — disponible : ${resolvedSku.stock}`,
-            409, 'sellable_unit_out_of_stock'
-          );
-        }
-        skuId = resolvedSku.id;
-        snapshotCombo = productAdminService.canonicalizeVariantCombo(item.variant_combo);
-      } else if (item.variant_combo && p.has_variants) {
-        snapshotCombo = item.variant_combo;
+      let unit;
+      try {
+        unit = await productAdminService.resolveSellableUnit(client, {
+          productId: item.product_id,
+          variantCombo: item.variant_combo,
+          quantity: item.quantity,
+        });
+      } catch (err) {
+        if (err.code === 'product_not_found') continue;
+        throw err;
       }
-
-      const { effective_unit_price_kmf: unitPrice } =
-        productAdminService.computeSellablePricing({ product: p, resolvedSku });
-      if (unitPrice <= 0) continue;
+      if (unit.effective_unit_price_kmf <= 0) continue;
 
       enrichedItems.push({
-        product_id: p.id,
-        sku_id: skuId,
-        variant_combo: snapshotCombo,
-        name: p.name,
-        image_url: p.image_url,
-        category: p.category,
+        product_id: unit.product_id,
+        sku_id: unit.sku_id,
+        variant_combo: unit.variant_combo,
+        name: unit.name,
+        image_url: unit.image_url,
+        category: unit.category,
         quantity: r(item.quantity),
-        unit_price_kmf: unitPrice,
-        line_total_kmf: unitPrice * r(item.quantity),
+        unit_price_kmf: unit.effective_unit_price_kmf,
+        line_total_kmf: unit.effective_unit_price_kmf * r(item.quantity),
       });
     }
 
@@ -297,48 +276,32 @@ async function addSharedCartItem(sharedCartId, userId, productId, quantity = 1, 
       throw httpError(`Ce panier n'est plus modifiable (statut : ${cart.status})`, 409, 'cart_not_editable');
     }
 
-    const { rows: productRows } = await client.query(
-      `SELECT id, name, image_url, category, price_kmf,
-              promo_pct, is_promo, promo_until, is_active,
-              inventory_model, has_variants, stock
-         FROM products WHERE id = $1`,
-      [productId]
-    );
-    const p = productRows[0];
-    if (!p || !p.is_active) {
-      throw httpError('Produit introuvable ou inactif', 400, 'product_not_found');
-    }
-
     const variantComboRaw = (variantCombo && typeof variantCombo === 'object' && !Array.isArray(variantCombo))
       ? variantCombo
       : null;
 
-    let resolvedSku = null;
-    let skuId = null;
-    let snapshotCombo = null;
-
-    if (p.inventory_model === 'SKU') {
-      resolvedSku = await productAdminService.resolveActiveSku(client, p.id, variantComboRaw);
-      if (!resolvedSku) {
-        throw httpError(`Combinaison indisponible pour ${p.name}`, 409, 'sellable_unit_not_found');
+    // Mandat §8 — boundary canonique unique (product-admin-service.js::
+    // resolveSellableUnit) : plus de resolveActiveSku + contrôle stock +
+    // computeSellablePricing + products.image_url reconstruits ici. Le média
+    // résolu couvre désormais le SKU canonique (product_sku_media →
+    // catalog_media), fallback products.image_url uniquement si aucun média
+    // SKU (§9). Changement de contrat noté (§8, à confirmer) : product_not_found
+    // passe de 400 à 404, aligné sur le code documenté par la boundary elle-même
+    // (product-admin-service.js) plutôt que l'ancien statut ad hoc de ce fichier.
+    let unit;
+    try {
+      unit = await productAdminService.resolveSellableUnit(client, {
+        productId, variantCombo: variantComboRaw, quantity: qty,
+      });
+    } catch (err) {
+      if (err.code === 'product_not_found') {
+        throw httpError('Produit introuvable ou inactif', 404, 'product_not_found');
       }
-      if (resolvedSku.stock < qty) {
-        throw httpError(
-          `Stock insuffisant pour ${p.name} — disponible : ${resolvedSku.stock}`,
-          409, 'sellable_unit_out_of_stock'
-        );
-      }
-      skuId = resolvedSku.id;
-      snapshotCombo = productAdminService.canonicalizeVariantCombo(variantComboRaw);
-    } else if (variantComboRaw && p.has_variants) {
-      snapshotCombo = variantComboRaw;
+      throw err;
     }
+    if (unit.effective_unit_price_kmf <= 0) throw httpError('Prix produit invalide', 400, 'invalid_price');
 
-    const { effective_unit_price_kmf: unitPrice } =
-      productAdminService.computeSellablePricing({ product: p, resolvedSku });
-    if (unitPrice <= 0) throw httpError('Prix produit invalide', 400, 'invalid_price');
-
-    const lineTotal = unitPrice * qty;
+    const lineTotal = unit.effective_unit_price_kmf * qty;
     const { rows: inserted } = await client.query(
       `INSERT INTO shared_cart_items (
          shared_cart_id, product_id, sku_id, variant_combo_snapshot,
@@ -347,15 +310,16 @@ async function addSharedCartItem(sharedCartId, userId, productId, quantity = 1, 
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
-        sharedCartId, p.id, skuId, snapshotCombo ? JSON.stringify(snapshotCombo) : null,
-        p.name, p.image_url, p.category, qty, unitPrice, lineTotal,
+        sharedCartId, unit.product_id, unit.sku_id,
+        unit.variant_combo ? JSON.stringify(unit.variant_combo) : null,
+        unit.name, unit.image_url, unit.category, qty, unit.effective_unit_price_kmf, lineTotal,
       ]
     );
 
     await client.query(`UPDATE shared_carts SET updated_at = NOW() WHERE id = $1`, [sharedCartId]);
 
     await addEvent(client, sharedCartId, 'shared_cart_item_added', { type: 'user', id: userId }, {
-      product_id: p.id, quantity: qty,
+      product_id: unit.product_id, quantity: qty,
     });
 
     return { cart, item: inserted[0] };

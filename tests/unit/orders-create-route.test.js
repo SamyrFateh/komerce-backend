@@ -824,3 +824,220 @@ describe('orders/create — erreurs DB', () => {
     expectTransactionRolledBack(client);
   });
 });
+
+// Mandat §6 — intégrité du claim en commande. La contrainte unique
+// order_items_shared_cart_item_id_unique n'arbitre que la concurrence
+// (deux acheteurs sur la même ligne) ; ces tests couvrent la validation
+// autoritaire ajoutée en amont (produit/SKU/combo/statut/quantité/déjà
+// réclamé), qu'elle seule empêche — interdiction explicite §19 "acheter
+// le produit B tout en claimant la ligne partagée du produit A".
+describe('orders/create — §6 intégrité du claim shared_cart_item_id', () => {
+  const SCI_ROW_BASE = {
+    id: 'sci-1', product_id: 'prod-1', sku_id: null, variant_combo_snapshot: null,
+    quantity: 5, cart_status: 'open', already_claimed: false,
+  };
+
+  it('409 shared_cart_item_mismatch si le shared_cart_item_id est introuvable', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+      { rows: [] }, // SELECT sci JOIN sc ... FOR UPDATE OF sci → introuvable
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, shared_cart_item_id: 'sci-ghost' }] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'shared_cart_item_mismatch' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('409 shared_cart_closed si la liste n\'est plus open', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+      { rows: [{ ...SCI_ROW_BASE, cart_status: 'closed' }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, shared_cart_item_id: 'sci-1' }] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'shared_cart_closed' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('409 shared_cart_item_already_claimed si la ligne est déjà rattachée à une commande', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+      { rows: [{ ...SCI_ROW_BASE, already_claimed: true }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, shared_cart_item_id: 'sci-1' }] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'shared_cart_item_already_claimed' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('409 shared_cart_item_mismatch si product_id commandé ≠ product_id de la ligne de liste', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+      { rows: [{ ...SCI_ROW_BASE, product_id: 'prod-AUTRE' }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, shared_cart_item_id: 'sci-1' }] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'shared_cart_item_mismatch' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('409 shared_cart_item_mismatch si le sku_id commandé ≠ sku_id snapshoté sur la ligne (produit SKU)', async () => {
+    const PRODUCT_SKU = { ...PRODUCT, has_variants: true, inventory_model: 'SKU' };
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT_SKU] },
+      { rows: [{ id: 'sku-COMMANDE', sku: 'ROBE-N', stock: 5, price_kmf: 10000 }] }, // resolveActiveSku
+      { rows: [{ ...SCI_ROW_BASE, sku_id: 'sku-LISTE', variant_combo_snapshot: { couleur: 'Noir' } }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [
+        { product_id: 'prod-1', quantity: 1, variant_combo: { couleur: 'Noir' }, shared_cart_item_id: 'sci-1' },
+      ] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'shared_cart_item_mismatch' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('409 shared_cart_item_mismatch si la combinaison commandée ≠ combinaison snapshotée sur la ligne', async () => {
+    const PRODUCT_SKU = { ...PRODUCT, has_variants: true, inventory_model: 'SKU' };
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT_SKU] },
+      { rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 5, price_kmf: 10000 }] },
+      { rows: [{ ...SCI_ROW_BASE, sku_id: 'sku-1', variant_combo_snapshot: { couleur: 'Blanc' } }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [
+        { product_id: 'prod-1', quantity: 1, variant_combo: { couleur: 'Noir' }, shared_cart_item_id: 'sci-1' },
+      ] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'shared_cart_item_mismatch' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('409 shared_cart_item_mismatch si la quantité commandée dépasse la quantité de la ligne', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+      { rows: [{ ...SCI_ROW_BASE, quantity: 1 }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 3, shared_cart_item_id: 'sci-1' }] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'shared_cart_item_mismatch' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('nominal : produit legacy cohérent → order_items.shared_cart_item_id posé, verrou FOR UPDATE OF sci utilisé', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+      { rows: [SCI_ROW_BASE] },
+      { rows: [orderRow()] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, shared_cart_item_id: 'sci-1' }] })
+    );
+
+    expect(res.status).toBe(201);
+    const sciLookup = client.calls.find(c => /FROM shared_cart_items/.test(c.sql));
+    expect(sciLookup).toBeDefined();
+    expect(sciLookup.sql).toMatch(/FOR UPDATE OF sci/);
+    expect(sciLookup.params).toEqual(['sci-1']);
+
+    const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
+    expect(itemInsert.params).toContain('sci-1');
+  });
+
+  it('nominal : produit SKU cohérent (sku_id + combo canonique identiques) → commande créée', async () => {
+    const PRODUCT_SKU = { ...PRODUCT, has_variants: true, inventory_model: 'SKU' };
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT_SKU] },
+      { rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 5, price_kmf: 10000 }] },
+      { rows: [{ ...SCI_ROW_BASE, sku_id: 'sku-1', variant_combo_snapshot: { couleur: 'Noir' } }] },
+      { rows: [orderRow()] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [
+        { product_id: 'prod-1', quantity: 1, variant_combo: { couleur: 'Noir' }, shared_cart_item_id: 'sci-1' },
+      ] })
+    );
+
+    expect(res.status).toBe(201);
+    const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
+    expect(itemInsert.params).toContain('sci-1');
+  });
+
+  it('achat hors contexte liste (shared_cart_item_id absent) : aucune requête shared_cart_items, comportement inchangé', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+      { rows: [orderRow()] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(validBody());
+
+    expect(res.status).toBe(201);
+    expect(client.calls.some(c => /FROM shared_cart_items/.test(c.sql))).toBe(false);
+    const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
+    expect(itemInsert.params).toContain(null); // shared_cart_item_id NULL
+  });
+});

@@ -121,8 +121,9 @@ describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
       const client = makeClient([
         { rows: [cart] },
         { rows: [] }, // mandat §7 : SELECT lignes claimed (aucune)
-        { rows: [skuProduct] },
-        { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
+        { rows: [skuProduct] },       // resolveSellableUnit → SELECT products
+        { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] }, // resolveActiveSku
+        { rows: [] },                 // mandat §8/§9 : _resolveCanonicalImage (aucun média SKU → fallback products.image_url)
         { rows: [], rowCount: 1 },
         { rows: [inserted] },
         { rows: [updatedCart] },
@@ -139,6 +140,34 @@ describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
       expect(insertCall.params[2]).toBe('sku-noir-m');
       expect(insertCall.params[3]).toBe(JSON.stringify({ couleur: 'Noir', taille: 'M' }));
       expect(insertCall.params[8]).toBe(15000); // unit_price_kmf_snapshot = prix SKU
+    });
+
+    // Mandat §8/§9 — c'est la valeur réelle de la boundary : un média SKU
+    // canonique (product_sku_media → catalog_media) doit primer sur
+    // products.image_url, que ce fichier ne snapshottait jamais avant ce lot.
+    it('snapshot le média SKU canonique quand il existe, pas products.image_url', async () => {
+      const cart = { id: 'cart-1', status: 'open' };
+      const inserted = { id: 'item-1', product_id: 'p-sku' };
+      const updatedCart = { id: 'cart-1', status: 'open' };
+      const client = makeClient([
+        { rows: [cart] },
+        { rows: [] },
+        { rows: [skuProduct] },
+        { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
+        { rows: [{ url: 'https://cdn.komerce.co/sku/sku-noir-m/canonical.jpg' }] }, // média SKU trouvé
+        { rows: [], rowCount: 1 },
+        { rows: [inserted] },
+        { rows: [updatedCart] },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await updateOpenSharedCartItems('cart-1', 'user-1', [
+        { product_id: 'p-sku', quantity: 1, variant_combo: { couleur: 'Noir', taille: 'M' } },
+      ]);
+
+      const insertCall = client.calls.find(c => /INSERT INTO shared_cart_items/.test(c.sql));
+      expect(insertCall.params[5]).toBe('https://cdn.komerce.co/sku/sku-noir-m/canonical.jpg');
     });
 
     it('409 sellable_unit_not_found si la combinaison ne resout aucun SKU actif', async () => {
@@ -256,15 +285,18 @@ describe('addSharedCartItem (Contrat API §2/§5 point 4 — ajout unitaire, imm
     expectTransactionRolledBack(client);
   });
 
-  it('produit introuvable ou inactif → 400', async () => {
+  it('produit introuvable ou inactif → 404 (mandat §8, aligné sur resolveSellableUnit)', async () => {
     const client = makeClient([
       { rows: [{ id: 'cart-1', status: 'open' }] },
       { rows: [] },
     ]);
     db.getClient.mockResolvedValue(client);
 
+    // Mandat §8 — resolveSellableUnit() est désormais la boundary unique ;
+    // son code product_not_found documenté est 404 (product-admin-service.js),
+    // alignement volontaire remplaçant l'ancien statut ad hoc 400 de ce fichier.
     await expect(addSharedCartItem('cart-1', 'user-1', 'p1', 1)).rejects.toMatchObject({
-      code: 'product_not_found', status: 400,
+      code: 'product_not_found', status: 404,
     });
     expectTransactionRolledBack(client);
   });
@@ -305,8 +337,9 @@ describe('addSharedCartItem (Contrat API §2/§5 point 4 — ajout unitaire, imm
       const inserted = { id: 'item-1', product_id: 'p-sku' };
       const client = makeClient([
         { rows: [cart] },
-        { rows: [skuProduct] },
-        { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
+        { rows: [skuProduct] },       // resolveSellableUnit → SELECT products
+        { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] }, // resolveActiveSku
+        { rows: [] },                 // mandat §8/§9 : _resolveCanonicalImage (aucun média SKU → fallback products.image_url)
         { rows: [inserted] },
         { rows: [], rowCount: 1 },
         { rows: [], rowCount: 1 },
@@ -323,6 +356,29 @@ describe('addSharedCartItem (Contrat API §2/§5 point 4 — ajout unitaire, imm
         'cart-1', 'p-sku', 'sku-noir-m', JSON.stringify({ couleur: 'Noir', taille: 'M' }),
         'Chemise', 'chemise.jpg', 'vetements', 1, 15000, 15000,
       ]);
+    });
+
+    // Mandat §8/§9 — même garantie que côté updateOpenSharedCartItems : un
+    // média SKU canonique doit être snapshoté ici, plus jamais products.image_url
+    // en dur quand une image SKU explicite existe.
+    it('snapshot le média SKU canonique quand il existe, pas products.image_url', async () => {
+      const cart = { id: 'cart-1', status: 'open' };
+      const inserted = { id: 'item-1', product_id: 'p-sku' };
+      const client = makeClient([
+        { rows: [cart] },
+        { rows: [skuProduct] },
+        { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
+        { rows: [{ url: 'https://cdn.komerce.co/sku/sku-noir-m/canonical.jpg' }] }, // média SKU trouvé
+        { rows: [inserted] },
+        { rows: [], rowCount: 1 },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await addSharedCartItem('cart-1', 'user-1', 'p-sku', 1, { couleur: 'Noir', taille: 'M' });
+
+      const insertCall = client.calls.find(c => /INSERT INTO shared_cart_items/.test(c.sql));
+      expect(insertCall.params[5]).toBe('https://cdn.komerce.co/sku/sku-noir-m/canonical.jpg');
     });
 
     it('409 sellable_unit_not_found si la combinaison ne resout aucun SKU actif', async () => {
