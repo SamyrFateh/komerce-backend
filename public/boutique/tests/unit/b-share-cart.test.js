@@ -28,8 +28,21 @@ jest.mock('../../js/b-identity.js', () => ({
   requireIdentity: jest.fn().mockResolvedValue({ id: 'user-1' }),
 }));
 const mockActivateFromParticipantUrl = jest.fn().mockResolvedValue(true);
+const mockActivateSharedListContext = jest.fn();
 jest.mock('../../js/group/group-side-cart.js', () => ({
   activateFromParticipantUrl: mockActivateFromParticipantUrl,
+  activateSharedListContext: mockActivateSharedListContext,
+}));
+// P0-A — restoreSharedCartFromBackend() active désormais réellement la
+// liste dans le side cart canonique (activateCartInCanonicalSurface), pas
+// seulement le cache de session : ce chemin appelle getSharedCartPublic()
+// (group-api.js) en plus du GET /mine ci-dessous. fetchWithTimeout reste
+// réel (utilisé par le GET /mine lui-même, sur le même global.fetch mocké
+// par test).
+const mockGetSharedCartPublic = jest.fn().mockResolvedValue(null);
+jest.mock('../../js/group/group-api.js', () => ({
+  fetchWithTimeout: jest.requireActual('../../js/group/group-api.js').fetchWithTimeout,
+  getSharedCartPublic: mockGetSharedCartPublic,
 }));
 
 const { state } = require('../../js/b-store.js');
@@ -224,6 +237,48 @@ describe('b-share-cart', () => {
         title: 'Liste récente',
         status: 'open',
       }));
+    });
+
+    test('P0-A — active réellement la liste OPEN restaurée dans le side cart canonique, pas seulement le cache de session', async () => {
+      const openCart = {
+        id: 'sc-open',
+        token: 'tok-open',
+        status: 'open',
+        title: 'Liste du jour',
+        created_at: '2026-06-01T00:00:00Z',
+      };
+      global.fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ carts: [openCart] }),
+      });
+      const publicPayload = { cart: { id: 'sc-open', token: 'tok-open', status: 'open' }, items: [], is_creator: true };
+      mockGetSharedCartPublic.mockResolvedValueOnce(publicPayload);
+
+      await restoreSharedCartFromBackend();
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+
+      expect(mockGetSharedCartPublic).toHaveBeenCalledWith('tok-open');
+      expect(mockActivateSharedListContext).toHaveBeenCalledWith(
+        publicPayload,
+        'tok-open',
+        { silent: true },
+      );
+    });
+
+    test('P1-A/§9 — une liste CLOSED n\'est plus restaurée comme active au boot (ni cache, ni side cart)', async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          carts: [{ id: 'sc-closed', token: 'tok-closed', status: 'closed', created_at: '2026-06-01T00:00:00Z' }],
+        }),
+      });
+
+      const result = await restoreSharedCartFromBackend();
+      await Promise.resolve(); await Promise.resolve();
+
+      expect(result).toBeNull();
+      expect(state.shareToken).toBeNull();
+      expect(mockActivateSharedListContext).not.toHaveBeenCalled();
     });
   });
 

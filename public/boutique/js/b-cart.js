@@ -39,7 +39,7 @@ import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
 import { renderAddControl } from './render/render-product-card.js';
 import { getProductCartSummary, getCartItemProductId } from './cart-product-summary.js';
-import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRenderMode, setCartSurface } from './group/group-side-cart.js';
+import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRenderMode, setCartSurface, reopenSharedListCart } from './group/group-side-cart.js';
 
 'use strict';
 
@@ -555,6 +555,18 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
    * Met à jour le rendu complet + synchronise les badges.
    */
   function openCart() {
+    // Doctrine finale (2026-08) — « liste active = LE panier » : cliquer
+    // sur le panier/avatar pendant qu'une liste est active doit toujours
+    // remontrer LA LISTE, jamais réactiver le panier personnel comme
+    // surface concurrente (invariant §5 du mandat). reopenSharedListCart()
+    // gère déjà le rendu + la réouverture du drawer mobile ; sur desktop
+    // le side cart persistant suffit, d'où le même scroll-to-top que
+    // pour le panier personnel.
+    if (isSharedListSurfaceActive()) {
+      reopenSharedListCart();
+      if (isDesktop()) window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     setCartSurface('personal');
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
@@ -596,6 +608,14 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
    * @param {number|string} productId - ID du produit à mettre en avant
    */
   function openCartWithHighlight(productId) {
+    // Même invariant que openCart() ci-dessus : une liste active reste la
+    // surface visible même quand un ajout ambigu au panier personnel
+    // déclenche normalement ce highlight.
+    if (isSharedListSurfaceActive()) {
+      reopenSharedListCart();
+      if (isDesktop()) window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     setCartSurface('personal');
     renderCartBody(productId);
     // Celebrating header
@@ -1726,6 +1746,17 @@ function renderSideCart() {
   if (cta && !cta._wired) {
     cta._wired = true;
     cta.addEventListener('click', () => {
+      // Doctrine finale — même invariant que openCart() : si une liste est
+      // active, "Voir le panier" doit continuer à montrer LA LISTE, jamais
+      // le panier personnel comme surface concurrente.
+      if (isSharedListSurfaceActive()) {
+        reopenSharedListCart();
+        dom.cartOverlay.classList.add('open');
+        dom.cartDrawer.classList.add('open');
+        scroll.savedY = getScrollY();
+        document.body.classList.add('cart-open');
+        return;
+      }
       // Desktop : ouvrir le tiroir complet (le side cart est déjà visible,
       // "Voir le panier" = accéder aux détails complets + WhatsApp + Commander)
       setCartSurface('personal');

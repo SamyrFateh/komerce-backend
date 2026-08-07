@@ -36,7 +36,6 @@
 import { fmtPrice } from './b-utils.js';
 import { closeModal } from './b-modal.js';
 import { addToCart, openCart } from './b-cart.js';
-import { startShareFlow } from './b-share-cart.js';
 import { state, getRequestedTransportRail } from './b-store.js';
 import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
 import { canAddToActiveSharedList, addProductToActiveSharedList, reopenSharedListCart } from './group/group-side-cart.js';
@@ -204,11 +203,19 @@ export function renderSubtotalInto(el, detail, selection, qty) {
   el.appendChild(strong);
 }
 
+/**
+ * P1-B (audit — anciens modes « group / pot » encore accessibles) —
+ * doctrine finale (2026-08) : la liste partagée n'est PAS un mode de
+ * paiement, elle n'a plus sa place dans ce sélecteur. Modes retirés :
+ * `group` (« Panier partagé — Invitez des proches à contribuer ») et
+ * `pot` (« Cagnotte collective — Offrir ensemble, payer ensemble »).
+ * Le CTA contextualisé correct pour ajouter à une liste active est
+ * « Ajouter à cette liste » (wireAddToListButton ci-dessus), pas un
+ * mode de paiement.
+ */
 export const PAYMENT_MODES = Object.freeze({
   stripe: { icon: '💳', tab: 'Carte', title: 'Carte bancaire', sub: 'Visa, Mastercard — Stripe sécurisé', badge: 'Stripe' },
   cash:   { icon: '💵', tab: 'Livraison', title: 'Paiement à la livraison', sub: 'En espèces à la réception', badge: 'Cash' },
-  group:  { icon: '👥', tab: 'Partagé', title: 'Panier partagé', sub: 'Invitez des proches à contribuer', badge: 'Partage' },
-  pot:    { icon: '🎁', tab: 'Cagnotte', title: 'Cagnotte collective', sub: 'Offrir ensemble, payer ensemble', badge: 'Collectif' },
 });
 
 function buildPaymentDetail(key) {
@@ -243,33 +250,20 @@ function buildPaymentDetail(key) {
 }
 
 /**
- * Démarre le parcours "panier partagé" : ajoute le produit courant au
- * panier, ferme la modal, puis ouvre le flux de partage. Logique unique,
- * appelable depuis n'importe quelle composition (mobile ou desktop) sans la
- * réécrire.
- */
-export function startGroupCartFlow(product, qty, sourceEl) {
-  if (!product) return;
-  addToCart(currentCartProduct(product), qty || 1, sourceEl, {
-    requested_transport_rail: getRequestedTransportRail(),
-  });
-  closeModal();
-  setTimeout(() => startShareFlow(), 250);
-}
-
-/**
  * Rend le sélecteur de mode de paiement (tabs + détail du mode actif) dans
  * `el`. `el` est fourni par la composition appelante (mobile ou desktop) ;
  * ce module ne décide jamais de son emplacement dans le DOM ni de son style
  * — seulement de sa structure et de son comportement.
  *
+ * P1-B — plus de mode « group » : chaque tab bascule désormais simplement
+ * le détail affiché, jamais de branchement spécial.
+ *
  * @param {HTMLElement} el
  * @param {Object}   opts
  * @param {string}   [opts.activeMode]   mode actif ('stripe' par défaut)
- * @param {Function} [opts.onModeChange] (key) => void, appelé quand l'utilisateur change de mode (hors "group")
- * @param {Function} [opts.onGroupSelect] (tabEl) => void, appelé quand "Panier partagé" est choisi ; si absent, startGroupCartFlow n'est PAS déclenché automatiquement
+ * @param {Function} [opts.onModeChange] (key) => void, appelé quand l'utilisateur change de mode
  */
-export function renderPaymentModes(el, { activeMode, onModeChange, onGroupSelect } = {}) {
+export function renderPaymentModes(el, { activeMode, onModeChange } = {}) {
   if (!el) return;
   const active = (activeMode && PAYMENT_MODES[activeMode]) ? activeMode : 'stripe';
 
@@ -304,11 +298,6 @@ export function renderPaymentModes(el, { activeMode, onModeChange, onGroupSelect
     tab.append(icon, label);
 
     tab.addEventListener('click', () => {
-      if (key === 'group') {
-        onGroupSelect && onGroupSelect(tab);
-        return;
-      }
-
       tabs.querySelectorAll('.k-buybox-payment-tab').forEach((button) => {
         const isActive = button === tab;
         button.classList.toggle('is-active', isActive);

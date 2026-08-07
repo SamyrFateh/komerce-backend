@@ -126,8 +126,8 @@ test('crée immédiatement une liste, diffuse son lien et ouvre sa vue', async (
   );
   expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
     cart_items: [
-      { product_id: 'p-1', quantity: 2 },
-      { product_id: 'p-2', quantity: 1 },
+      { product_id: 'p-1', quantity: 2, variant_combo: null },
+      { product_id: 'p-2', quantity: 1, variant_combo: null },
     ],
   });
 
@@ -157,6 +157,7 @@ test('crée immédiatement une liste, diffuse son lien et ouvre sa vue', async (
   expect(mockActivateSharedListContext).toHaveBeenCalledWith(
     expect.objectContaining({ cart: expect.objectContaining({ token: 'tok-101' }) }),
     'tok-101',
+    { silent: false },
   );
   expect(document.getElementById('k-cart-share')).toMatchObject({
     disabled: false,
@@ -195,9 +196,33 @@ test('une erreur API remonte le message et réactive le bouton', async () => {
   });
 });
 
-test('un clic normal crée une nouvelle liste même si une autre liste est active', async () => {
+test('P0-B — un clic normal repartage le lien existant au lieu de recréer une liste tant qu\'une liste est active', async () => {
+  // Doctrine finale (§4/§9) : « Partager » repartage la liste active, il
+  // ne recrée JAMAIS silencieusement — corrige l'ancien comportement testé
+  // ici (« un clic normal crée une nouvelle liste même si une autre liste
+  // est active »), contraire au mandat.
   state.shareToken = 'tok-old';
+  state.shareStatus = 'open';
+  state.shareUrl = 'https://komerce.test/boutique/?p=tok-old';
   state.cartName = 'Ancienne liste';
+
+  await startShareFlow();
+
+  expect(global.fetch).not.toHaveBeenCalled();
+  expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
+    text: expect.stringContaining('Ancienne liste'),
+    url: 'https://komerce.test/boutique/?p=tok-old',
+  }));
+  expect(state.shareToken).toBe('tok-old');
+});
+
+test('P0-B — une liste FERMÉE n\'empêche pas un clic normal de créer une nouvelle liste', async () => {
+  // Une liste CLOSED n'est plus « active » (doctrine §9) : un token/session
+  // résiduel pointant vers une liste fermée ne doit pas bloquer la création
+  // d'une nouvelle liste ni la faire passer pour un repartage.
+  state.shareToken = 'tok-old-closed';
+  state.shareStatus = 'closed';
+  state.cartName = 'Liste fermée';
   global.fetch.mockResolvedValue({
     ok: true,
     json: async () => ({
@@ -211,10 +236,32 @@ test('un clic normal crée une nouvelle liste même si une autre liste est activ
 
   await startShareFlow();
 
-  expect(document.querySelector('.k-share-modal-overlay')).toBeNull();
   expect(global.fetch).toHaveBeenCalledTimes(1);
   expect(state.shareToken).toBe('tok-new');
-  expect(state.shareId).toBe('sc-new');
+});
+
+test('P0-D — transmet variant_combo au payload de création, sans le perdre', async () => {
+  state.cart = [
+    { product: { id: 'p-3', name: 'Chemise' }, qty: 2, variant_combo: { couleur: 'Noir', taille: 'M' } },
+  ];
+  global.fetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      shared_cart_id: 'sc-sku',
+      token: 'tok-sku',
+      share_url: 'https://komerce.test/boutique/?p=tok-sku',
+      status: 'open',
+      clear_local_cart: true,
+    }),
+  });
+
+  await startShareFlow();
+
+  expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
+    cart_items: [
+      { product_id: 'p-3', quantity: 2, variant_combo: { couleur: 'Noir', taille: 'M' } },
+    ],
+  });
 });
 
 test('le repartage fonctionne sans panier local et sans nouvelle création', async () => {

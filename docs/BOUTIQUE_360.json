@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T10:07:23.789Z",
+  "generatedAt": "2026-08-07T11:54:22.797Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
@@ -833,7 +833,6 @@
         "b-utils",
         "b-modal",
         "b-cart",
-        "b-share-cart",
         "b-store",
         "modal-cart-product-model",
         "group-side-cart"

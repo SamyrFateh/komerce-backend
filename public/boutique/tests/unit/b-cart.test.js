@@ -728,7 +728,12 @@ describe('b-cart', () => {
       busSpy.mockRestore();
     });
 
-    it('fermeture puis réouverture du drawer mobile restent cohérentes en mode snapshot', () => {
+    // P0-C/§5 — doctrine finale : « liste active = LE panier ». Réouvrir le
+    // drawer (avatar panier, CTA, etc.) pendant qu'une liste est active doit
+    // continuer à montrer LA LISTE, jamais rebasculer silencieusement sur le
+    // panier personnel comme surface concurrente. Inverse l'ancienne
+    // assertion ('personal'), qui protégeait exactement le bug P0-C.
+    it('fermeture puis réouverture du drawer mobile restent sur la liste active (jamais un retour implicite au panier personnel)', () => {
       isDesktop.mockReturnValue(false);
       activateList();
       expect(dom.cartDrawer.classList.contains('open')).toBe(true);
@@ -738,7 +743,7 @@ describe('b-cart', () => {
 
       openCart();
       expect(dom.cartDrawer.classList.contains('open')).toBe(true);
-      expect(state.cartSurface).toBe('personal');
+      expect(state.cartSurface).toBe('shared-list');
     });
 
     it('panier personnel restauré après clearSharedListContext : plus aucune trace snapshot dans le chrome', () => {

@@ -12,7 +12,6 @@ jest.mock('../../js/b-utils.js', () => ({
 
 jest.mock('../../js/b-modal.js', () => ({ closeModal: jest.fn() }));
 jest.mock('../../js/b-cart.js', () => ({ addToCart: jest.fn(), openCart: jest.fn() }));
-jest.mock('../../js/b-share-cart.js', () => ({ startShareFlow: jest.fn() }));
 jest.mock('../../js/group/group-side-cart.js', () => ({
   canAddToActiveSharedList: jest.fn(() => false),
   addProductToActiveSharedList: jest.fn(),
@@ -22,7 +21,6 @@ jest.mock('../../js/group/group-side-cart.js', () => ({
 const { state } = require('../../js/b-store.js');
 const { closeModal } = require('../../js/b-modal.js');
 const { addToCart, openCart } = require('../../js/b-cart.js');
-const { startShareFlow } = require('../../js/b-share-cart.js');
 const {
   canAddToActiveSharedList,
   addProductToActiveSharedList,
@@ -35,7 +33,6 @@ const {
   computeSubtotal,
   renderSubtotalInto,
   renderPaymentModes,
-  startGroupCartFlow,
   PAYMENT_MODES,
   _buyboxSharedTestApi,
 } = require('../../js/b-modal-buybox-shared.js');
@@ -174,13 +171,16 @@ describe('b-modal-buybox-shared — modes de paiement', () => {
     expect(() => renderPaymentModes(null)).not.toThrow();
   });
 
-  test('rend les quatre modes avec Carte actif par défaut et remplace un contenu existant', () => {
+  // P1-B — doctrine finale (2026-08) : la liste partagée n'est PAS un mode
+  // de paiement. Seuls stripe/cash subsistent (group/pot supprimés).
+  test('rend les deux modes (Carte, Livraison) avec Carte actif par défaut et remplace un contenu existant', () => {
     const previous = document.createElement('span');
     previous.textContent = 'ancien';
     el.appendChild(previous);
     renderPaymentModes(el);
     expect(el.textContent).not.toContain('ancien');
-    expect(el.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(Object.keys(PAYMENT_MODES).length);
+    expect(el.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(2);
+    expect(Object.keys(PAYMENT_MODES)).toEqual(['stripe', 'cash']);
     expect(el.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
     expect(el.querySelector('.k-buybox-payment-detail').dataset.payDetail).toBe('stripe');
   });
@@ -190,42 +190,34 @@ describe('b-modal-buybox-shared — modes de paiement', () => {
     expect(el.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
   });
 
+  test('P1-B — un mode "group" ou "pot" ne peut plus être sélectionné : absents du sélecteur', () => {
+    renderPaymentModes(el, { activeMode: 'group' });
+    // activeMode invalide (mode retiré) -> retombe sur stripe, comme tout
+    // autre mode inconnu.
+    expect(el.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
+    expect(el.querySelector('[data-pay="group"]')).toBeNull();
+    expect(el.querySelector('[data-pay="pot"]')).toBeNull();
+    expect(el.textContent).not.toContain('Panier partagé');
+    expect(el.textContent).not.toContain('Cagnotte');
+  });
+
   test('respecte le mode actif, bascule les aria et notifie le changement', () => {
     const onModeChange = jest.fn();
     renderPaymentModes(el, { activeMode: 'cash', onModeChange });
     expect(el.querySelector('[data-pay="cash"]').getAttribute('aria-selected')).toBe('true');
 
-    el.querySelector('[data-pay="pot"]').click();
+    el.querySelector('[data-pay="stripe"]').click();
 
-    expect(onModeChange).toHaveBeenCalledWith('pot');
+    expect(onModeChange).toHaveBeenCalledWith('stripe');
     expect(el.querySelector('[data-pay="cash"]').getAttribute('aria-selected')).toBe('false');
-    expect(el.querySelector('[data-pay="pot"]').getAttribute('aria-selected')).toBe('true');
-    expect(el.querySelector('.k-buybox-payment-detail').dataset.payDetail).toBe('pot');
-    expect(el.querySelector('.k-buybox-payment-badge').textContent).toBe('Collectif');
+    expect(el.querySelector('[data-pay="stripe"]').getAttribute('aria-selected')).toBe('true');
+    expect(el.querySelector('.k-buybox-payment-detail').dataset.payDetail).toBe('stripe');
   });
 
   test('changement sans callback reste fonctionnel', () => {
     renderPaymentModes(el);
     expect(() => el.querySelector('[data-pay="cash"]').click()).not.toThrow();
     expect(el.querySelector('.k-buybox-payment-detail').dataset.payDetail).toBe('cash');
-  });
-
-  test('group appelle le callback sans modifier l actif', () => {
-    const onModeChange = jest.fn();
-    const onGroupSelect = jest.fn();
-    renderPaymentModes(el, { onModeChange, onGroupSelect });
-    const groupTab = el.querySelector('[data-pay="group"]');
-    groupTab.click();
-
-    expect(onGroupSelect).toHaveBeenCalledWith(groupTab);
-    expect(onModeChange).not.toHaveBeenCalled();
-    expect(el.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
-  });
-
-  test('group sans callback reste un no-op sûr', () => {
-    renderPaymentModes(el);
-    expect(() => el.querySelector('[data-pay="group"]').click()).not.toThrow();
-    expect(el.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
   });
 
   test('buildPaymentDetail utilise le fallback Carte pour une clé inconnue', () => {
@@ -235,45 +227,12 @@ describe('b-modal-buybox-shared — modes de paiement', () => {
   });
 });
 
-describe('b-modal-buybox-shared — panier partagé', () => {
-  test('legacy ajoute le produit inchangé et borne la quantité vide à 1', () => {
-    jest.useFakeTimers();
-    const product = { id: 1 };
-    startGroupCartFlow(product, 0, null);
-
-    expect(addToCart).toHaveBeenCalledWith(product, 1, null, { requested_transport_rail: null });
-    expect(closeModal).toHaveBeenCalled();
-    jest.advanceTimersByTime(250);
-    expect(startShareFlow).toHaveBeenCalled();
-  });
-
-  test('SKU ajoute le snapshot au prix sélectionné', () => {
-    jest.useFakeTimers();
-    installSkuState();
-
-    startGroupCartFlow(state.modalProduct, 2, null);
-
-    expect(addToCart).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 1,
-        price_kmf: 9000,
-        sku_id: 'sku-1',
-        image_url: '/sku-1.jpg',
-      }),
-      2,
-      null,
-      { requested_transport_rail: null }
-    );
-    jest.advanceTimersByTime(250);
-    expect(startShareFlow).toHaveBeenCalled();
-  });
-
-  test('sans produit : no-op', () => {
-    startGroupCartFlow(null, 2, null);
-    expect(addToCart).not.toHaveBeenCalled();
-    expect(closeModal).not.toHaveBeenCalled();
-  });
-});
+// P1-B — startGroupCartFlow() a été supprimé du module source (group/pot
+// retirés, doctrine finale §8/§14) : ce describe testait exclusivement cet
+// ancien chemin ("panier partagé" en tant que mode de paiement déclenché
+// depuis la buy-box) et n'a plus de sujet à couvrir. Le CTA de substitution
+// ("Ajouter à cette liste") est déjà couvert par le describe GAP-07
+// ci-dessus.
 
 // Lot 3 GAP-07 — CTA "Ajouter à cette liste" depuis la fiche produit.
 describe('b-modal-buybox-shared — Ajouter à cette liste (Lot 3 GAP-07)', () => {

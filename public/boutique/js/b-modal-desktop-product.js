@@ -27,7 +27,7 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { renderSubtotalInto, renderPaymentModes, startGroupCartFlow, wireBuyNowButton, wireAddToListButton } from './b-modal-buybox-shared.js';
+import { renderSubtotalInto, renderPaymentModes, wireBuyNowButton, wireAddToListButton } from './b-modal-buybox-shared.js';
 import { canAddToActiveSharedList } from './group/group-side-cart.js';
 import { deriveDeliveryMode, reconcileDeliverySelection } from './view-models/delivery-mode-model.js';
 import { showToast } from './b-cart-core.js';
@@ -706,9 +706,6 @@ function renderPaymentSection(detail, selection) {
   renderPaymentModes(el, {
     activeMode: state.modalPaymentMode,
     onModeChange: (key) => { state.modalPaymentMode = key; },
-    onGroupSelect: () => {
-      startGroupCartFlow(state.modalProduct, state.modalQty, el);
-    },
   });
 }
 

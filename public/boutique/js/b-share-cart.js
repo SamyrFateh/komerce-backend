@@ -35,7 +35,12 @@ import { fetchWithTimeout } from './group/group-api.js';
 
 const API_CREATE = '/api/shared-carts/from-cart-items';
 const API_MINE = '/api/shared-carts/mine';
-const ACTIVE_STATUSES = new Set(['open', 'closed']);
+// Doctrine finale (§9) — une liste CLOSED (ou CANCELLED) n'est plus la
+// liste active opérationnelle : elle reste consultable depuis « Mes
+// listes » mais ne doit ni se restaurer automatiquement comme panier au
+// prochain boot, ni bloquer la création d'une nouvelle liste, ni
+// afficher le badge/bandeau « actif ». Seul 'open' qualifie.
+const ACTIVE_STATUSES = new Set(['open']);
 const DEFAULT_LIST_TITLE = 'Liste partagée';
 const SHARE_BUTTON_LABEL = '📤 Partager cette liste';
 
@@ -154,6 +159,12 @@ export async function restoreSharedCartFromBackend({ silent = true } = {}) {
       status: cart.status,
     });
 
+    // P0-A — une liste OPEN restaurée doit redevenir LE panier canonique
+    // visible (state.cartSurface = 'shared-list'), pas seulement une
+    // métadonnée de session (token/bandeau/badges ci-dessus). silent=true :
+    // ne rouvre jamais un drawer mobile au simple chargement de la page.
+    activateCartInCanonicalSurface(cart, { silent: true });
+
     return cart;
   } catch (err) {
     if (!silent) showToast(`Liste non restaurée : ${err.message}`, 'error');
@@ -204,6 +215,13 @@ async function createSharedCart() {
     .map((item) => ({
       product_id: item.product?.id || item.id,
       quantity: Number(item.qty) || 1,
+      // P0-D (audit — variant_combo perdu à la création) : le panier local
+      // capture déjà variant_combo au moment de l'ajout (b-cart.js §Lot 2,
+      // ligne ~292) ; createSharedCartFromCartItems()/resolveSellableUnit()
+      // (services/shared-cart-creation.js) savent déjà le résoudre et le
+      // valident côté serveur (aucun fallback vers un SKU arbitraire) — il
+      // ne manquait que sa transmission dans ce payload.
+      variant_combo: item.variant_combo || null,
     }))
     .filter((item) => item.product_id);
 
@@ -264,22 +282,36 @@ async function shareList(title, shareUrl) {
  * dans le side cart / drawer canonique, exactement comme pour un
  * destinataire, avec isCreator = true.
  */
-function openSharedListInCanonicalCart(cart) {
-  Promise.all([
+/**
+ * P0-A (audit — reload ne réactivait pas la liste) — active réellement une
+ * liste comme panier canonique visible (state.cartSurface = 'shared-list'
+ * dans group-side-cart.js), pas seulement comme métadonnée de session
+ * (token/bandeau/badges). Partagée par le flux de création explicite
+ * (silent=false, ouvre le drawer mobile) et par la restauration au boot
+ * (silent=true, ne rouvre jamais un drawer que l'utilisateur n'a pas
+ * demandé — seul le rendu, déjà visible dans le side cart persistant sur
+ * desktop, est mis à jour).
+ */
+function activateCartInCanonicalSurface(cart, { silent = false } = {}) {
+  return Promise.all([
     import('./group/group-side-cart.js'),
     import('./group/group-api.js'),
   ]).then(async ([sideCart, api]) => {
     const data = await api.getSharedCartPublic(cart.token);
     if (!data) return;
-    sideCart.activateSharedListContext(data, cart.token);
+    sideCart.activateSharedListContext(data, cart.token, { silent });
     // Ne PAS simuler de clic sur #k-cart-btn ici : ça déclenche openCart()
-    // (b-cart.js), qui fait setCartSurface('personal') et écrase le
-    // contexte de liste qu'on vient d'activer — sur desktop ça ouvre même
-    // le checkout direct sur le panier personnel vide (bug #4). Le drawer
-    // s'ouvre déjà tout seul sur mobile via reopenSharedListCart(); sur
-    // desktop le side cart en mode snapshot est visible sans action
-    // supplémentaire.
+    // (b-cart.js), qui écraserait le contexte de liste qu'on vient
+    // d'activer si openCart() n'était pas déjà gardé par
+    // isSharedListSurfaceActive() (voir P0-C, b-cart.js). Le drawer
+    // s'ouvre déjà tout seul sur mobile via reopenSharedListCart() (sauf
+    // en mode silencieux) ; sur desktop le side cart en mode snapshot est
+    // visible sans action supplémentaire.
   });
+}
+
+function openSharedListInCanonicalCart(cart) {
+  activateCartInCanonicalSurface(cart, { silent: false });
 }
 
 /**
@@ -300,6 +332,24 @@ function reopenOwnSharedListInCanonicalCart() {
   });
 }
 
+/**
+ * P0-B (audit — le partage recréait une liste alors qu'une liste existait)
+ * — « une liste active = LE panier » : tant qu'une liste ouverte existe,
+ * TOUT clic sur « Partager » (bouton normal ou « Re-partager ») repartage
+ * son lien existant, jamais une création silencieuse. state.sharedListContext
+ * (group-side-cart.js) est la source vivante la plus à jour — mise à jour
+ * par refreshSharedListContext() y compris après une fermeture — donc
+ * prioritaire ; state.shareToken/shareStatus (restauration synchrone,
+ * cf. P0-A) sert de repli pendant la fenêtre où activateCartInCanonicalSurface()
+ * n'a pas encore résolu.
+ */
+function hasActiveList() {
+  if (state.sharedListContext?.token) {
+    return state.sharedListContext.status === 'open';
+  }
+  return !!state.shareToken && state.shareStatus === 'open';
+}
+
 /* ── Flow principal ─────────────────────────────────────────────── */
 
 export async function startShareFlow({ reshare = false } = {}) {
@@ -309,8 +359,11 @@ export async function startShareFlow({ reshare = false } = {}) {
     _restorePromise = null;
   }
 
-  // Le repartage porte sur la liste existante et ne dépend pas du panier local.
-  if (reshare && state.shareToken) {
+  // Le repartage porte sur la liste existante et ne dépend pas du panier
+  // local — déclenché explicitement (bouton « Re-partager ») ou implicitement
+  // dès qu'une liste ouverte est déjà active (doctrine §4/§9 : Partager =
+  // repartager, jamais recréer).
+  if ((reshare || hasActiveList()) && state.shareToken) {
     const shareUrl = state.shareUrl
       || `${window.location.origin}/boutique/?p=${state.shareToken}`;
     await shareList(state.cartName || DEFAULT_LIST_TITLE, shareUrl);
