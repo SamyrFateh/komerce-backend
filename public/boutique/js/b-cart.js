@@ -558,12 +558,16 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     setCartSurface('personal');
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
-    // Desktop : le panier EST le side-cart inline (liste + total toujours visibles
-    // à droite). Cliquer la dame n'ouvre donc pas un drawer-liste en doublon :
-    // ça lance DIRECTEMENT le checkout, même flux que le bouton « Commander » du
-    // side-cart (bus 'checkout:open' → checkoutCart(), qui gère le panier vide).
     if (isDesktop()) {
-      bus.emit('checkout:open');
+      // Correctif UX — l'avatar (petite dame) doit montrer le résumé des
+      // articles AVANT le checkout, pas sauter directement au formulaire
+      // de paiement. Sur desktop le side-cart est un panneau persistant à
+      // droite : on scroll simplement vers le haut pour qu'il soit visible
+      // (l'utilisateur voit ses articles, peut modifier les quantités,
+      // puis clique "Commander" quand il est prêt). L'ancien comportement
+      // (bus.emit('checkout:open') directement) privait l'utilisateur de
+      // toute visibilité sur ce qu'il s'apprêtait à payer.
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     // ── Mobile uniquement (le return desktop est passé avant) ──
@@ -651,12 +655,10 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
    * @property {string|null} status
    * @property {string|null} organizerName
    * @property {boolean} isOrganizer
-   * @property {boolean} editMode - Lot B, mode édition explicite (quantité/retrait visibles seulement si true)
+   * @property {boolean} editMode - toujours vrai pour l'organisateur tant que la liste est ouverte (doctrine finale 2026-08) : steppers/✕ toujours visibles, jamais derrière une bascule
    * @property {string} headerTitle
    * @property {number} availableCount - total de lignes non réclamées (distingue "Tout est acheté" de 0 disponible)
-   * @property {number} selectedCount - mandat §5, sous-ensemble sélectionné localement — alimente le CTA "Acheter (N)"
-   * @property {number} selectedTotal - mandat §5, sous-total de la sélection locale, jamais de availableTotal
-   * @property {Set<string>} selectedItemIds - mandat §5, pour cocher la case de chaque ligne sélectionnée
+   * @property {number} availableTotal - valeur totale des lignes disponibles — affichage informatif + base du CTA discret "Tout acheter"
    * @property {boolean} showSaveAction
    * @property {boolean} saved
    * @property {Set<string>} pendingQuantityItemIds
@@ -753,32 +755,22 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       : 'Disponible';
     const priceText = fmt(item.unit_price_kmf, 'KMF');
 
-    // Lot B (doctrine snapshot + lecture simple) — plus de sélection par
-    // ligne : une ligne non réclamée est simplement disponible, achetée
-    // avec le reste de la liste via le bouton global du footer canonique.
-    // Le seul statut affiché par ligne est claimed/disponible (badge, pas
-    // de CTA). Réutilise .k-cart-item-remove (cart.css, panier personnel)
-    // pour le retrait — aucune classe dédiée.
+    // Doctrine finale — chaque ligne affiche exactement UN slot d'action à
+    // droite : soit le badge "Déjà acheté [par X]" (claimed), soit le
+    // bouton "Acheter" individuel (disponible, liste ouverte). Jamais les
+    // deux, jamais aucun (liste fermée → ni bouton ni CTA d'achat, la ligne
+    // reste juste consultable).
+    const buyBtnHtml = !context.readOnly
+      ? `<button type="button" class="k-cart-item-buy" data-item-id="${sanitize(String(item.id))}">Acheter</button>`
+      : '';
     const control = claimed
       ? `<span class="k-cart-snapshot-item-status-badge is-claimed">${buyerFirstName ? `Déjà acheté par ${buyerFirstName}` : 'Déjà acheté'}</span>`
-      : '';
+      : buyBtnHtml;
 
-    // Lot B — même garde editMode que le contrôle de quantité.
+    // Steppers quantité + ✕ — toujours visibles pour l'organisateur tant
+    // que la liste est ouverte (context.editMode, cf. buildSnapshotRenderContext).
     const removeBtn = context.isOrganizer && context.editMode && !claimed
       ? `<button type="button" class="k-cart-item-remove" data-item-id="${sanitize(String(item.id))}" aria-label="Retirer cet article" title="Retirer">✕</button>`
-      : '';
-
-    // Mandat §5 — case de sélection locale, visible pour toute ligne
-    // disponible, y compris HORS mode édition (un participant, ou
-    // l'organisateur "comme tout participant", doit pouvoir choisir quels
-    // articles acheter sans entrer en mode édition). Jamais affichée sur
-    // une ligne claimed — verrouillée, non sélectionnable par construction
-    // (pas seulement grisée en CSS : voir group-side-cart.js::
-    // toggleItemSelection, garde métier défensive identique).
-    const selected = !claimed && !!(context.selectedItemIds && context.selectedItemIds.has(String(item.id)));
-    const selectCheckbox = !claimed
-      ? `<input type="checkbox" class="k-cart-item-select" data-item-id="${sanitize(String(item.id))}" ` +
-          `aria-label="Sélectionner « ${sanitize(item.name || 'cet article')} » pour l'achat" ${selected ? 'checked' : ''}>`
       : '';
 
     const openLabel = `Voir la fiche produit — ${item.name || 'cet article'}`;
@@ -791,7 +783,6 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       : '';
     return (
       `<div class="${classes.join(' ')}" data-item-id="${sanitize(String(item.id))}">` +
-        selectCheckbox +
         `<button type="button" class="k-cart-snapshot-item-open" data-item-id="${sanitize(String(item.id))}" aria-label="${sanitize(openLabel)}">` +
           `<div class="k-cart-item-img${imgWrapClass}">${img}</div>` +
           `<div class="k-cart-item-info">` +
@@ -824,11 +815,9 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     root.querySelectorAll('.k-cart-snapshot-item-open').forEach((btn) => {
       btn.addEventListener('click', () => actions.onOpenProduct(btn.dataset.itemId));
     });
-    // Mandat §5 — sélection locale, jamais une mutation de la liste :
-    // 'change' (pas 'click', pour rester cohérent avec la sémantique
-    // native d'une case à cocher, y compris navigation clavier).
-    root.querySelectorAll('.k-cart-item-select').forEach((cb) => {
-      cb.addEventListener('change', () => actions.onToggleSelect(cb.dataset.itemId));
+    // Refonte UX — bouton "Acheter" individuel par ligne.
+    root.querySelectorAll('.k-cart-item-buy').forEach((btn) => {
+      btn.addEventListener('click', () => actions.onBuySingle(btn.dataset.itemId));
     });
   }
 
@@ -954,8 +943,11 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     const subtotalEl = document.getElementById('k-cart-subtotal-val');
     if (itemCountEl) itemCountEl.textContent = `${claimedCount}/${items.length}`;
     if (itemPluralEl) itemPluralEl.textContent = ' déjà achetés';
-    if (subtotalEl) subtotalEl.textContent = fmt(context.selectedTotal, 'KMF');
-    if (dom.cartTotalVal) dom.cartTotalVal.textContent = fmt(context.selectedTotal, 'KMF');
+    // Doctrine finale — plus de sélection locale : le sous-total affiché
+    // est la valeur de tout ce qui reste disponible (informatif), pas une
+    // sélection. Le CTA d'achat, lui, est désormais par ligne.
+    if (subtotalEl) subtotalEl.textContent = fmt(context.availableTotal, 'KMF');
+    if (dom.cartTotalVal) dom.cartTotalVal.textContent = fmt(context.availableTotal, 'KMF');
     if (dom.cartTotalConv) dom.cartTotalConv.textContent = '';
 
     const btnRow = document.getElementById('k-cart-footer-btns');
@@ -968,12 +960,9 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       saveBtn.disabled = !!context.saved;
       saveBtn.onclick = () => actions.onSave();
     }
-    if (context.isOrganizer && !context.readOnly) {
-      const editBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-edit', 'k-cart-continue-shop');
-      editBtn.textContent = context.editMode ? 'Terminer' : '✎ Modifier';
-      editBtn.setAttribute('aria-pressed', String(!!context.editMode));
-      editBtn.onclick = () => actions.onToggleEditMode();
-    }
+    // Doctrine finale — plus de bascule "✎ Modifier / Terminer" : les
+    // steppers et ✕ sont toujours visibles pour l'organisateur tant que la
+    // liste est ouverte (context.editMode déjà toujours vrai dans ce cas).
     if (context.isOrganizer) {
       const shareBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-share', 'k-cart-continue-shop');
       shareBtn.textContent = '📤 Partager';
@@ -984,23 +973,15 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       closeBtn.disabled = !!context.readOnly;
       closeBtn.onclick = () => actions.onClose();
     }
-    const buyBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-buy', 'kcf-btn kcf-full');
-    // Mandat §5 — le CTA reflète la sélection locale (selectedCount), pas
-    // le total disponible : "Tout est acheté" reste gaté sur
-    // availableCount (aucune ligne restante), mais sinon le nombre affiché
-    // et l'activation du bouton dépendent de ce que l'utilisateur a
-    // effectivement coché.
-    // Mandat §4 — une liste fermée (context.readOnly) est entièrement non
-    // opérationnelle : le CTA d'achat doit être désactivé avec un libellé
-    // clair, jamais laissé actif (le backend refuse déjà la commande —
-    // shared_cart_closed — mais l'UI ne doit pas laisser croire que
-    // l'achat est possible). Trouvé en test réel : le bouton restait
-    // cliquable "Acheter (N)" sur une liste fermée.
-    buyBtn.textContent = context.readOnly
-      ? 'Liste fermée'
-      : (context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.selectedCount})`);
-    buyBtn.disabled = context.readOnly || context.availableCount === 0 || context.selectedCount === 0;
-    buyBtn.onclick = () => actions.onBuy();
+    // Doctrine finale — plus de CTA global "Acheter (N)" : chaque ligne a
+    // son propre bouton "Acheter". "Tout acheter" reste disponible en
+    // option discrète, pour organisateur ET participant, tant qu'il reste
+    // au moins une ligne disponible et que la liste est ouverte.
+    if (!context.readOnly && context.availableCount > 0) {
+      const buyAllBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-buyall', 'k-cart-continue-shop');
+      buyAllBtn.textContent = `Tout acheter · ${fmt(context.availableTotal, 'KMF')}`;
+      buyAllBtn.onclick = () => actions.onBuyAll();
+    }
   }
 
   function cleanupSnapshotDrawerFooter() {
@@ -1029,7 +1010,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
     SIDECART_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => sc.querySelector('#' + id)?.classList.add('u-hidden'));
 
     const totalEl = sc.querySelector('#k-sc-total');
-    if (totalEl) totalEl.textContent = fmt(context.selectedTotal, 'KMF');
+    if (totalEl) totalEl.textContent = fmt(context.availableTotal, 'KMF');
 
     const scHeader = sc.querySelector('.k-sc-header');
     removeSnapshotButtons(scHeader);
@@ -1044,12 +1025,9 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       saveBtn.disabled = !!context.saved;
       saveBtn.onclick = () => actions.onSave();
     }
-    if (context.isOrganizer && !context.readOnly) {
-      const editBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-edit', 'k-sc-btn-snapshot-action');
-      editBtn.textContent = context.editMode ? 'Terminer' : '✎ Modifier';
-      editBtn.setAttribute('aria-pressed', String(!!context.editMode));
-      editBtn.onclick = () => actions.onToggleEditMode();
-    }
+    // Doctrine finale — plus de bascule "✎ Modifier / Terminer" : les
+    // steppers et ✕ sont toujours visibles pour l'organisateur tant que la
+    // liste est ouverte (context.editMode déjà toujours vrai dans ce cas).
     if (context.isOrganizer) {
       const shareBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-share', 'k-sc-btn-snapshot-action');
       shareBtn.textContent = '📤 Partager';
@@ -1060,19 +1038,14 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       closeBtn.disabled = !!context.readOnly;
       closeBtn.onclick = () => actions.onClose();
     }
-    const buyBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-buy', 'k-sc-btn-checkout');
-    // Mandat §5 — même règle que la version drawer ci-dessus (selectedCount).
-    // Mandat §4 — une liste fermée (context.readOnly) est entièrement non
-    // opérationnelle : le CTA d'achat doit être désactivé avec un libellé
-    // clair, jamais laissé actif (le backend refuse déjà la commande —
-    // shared_cart_closed — mais l'UI ne doit pas laisser croire que
-    // l'achat est possible). Trouvé en test réel : le bouton restait
-    // cliquable "Acheter (N)" sur une liste fermée.
-    buyBtn.textContent = context.readOnly
-      ? 'Liste fermée'
-      : (context.availableCount === 0 ? 'Tout est acheté' : `Acheter (${context.selectedCount})`);
-    buyBtn.disabled = context.readOnly || context.availableCount === 0 || context.selectedCount === 0;
-    buyBtn.onclick = () => actions.onBuy();
+    // Doctrine finale — plus de CTA global "Acheter (N)" : chaque ligne a
+    // son propre bouton "Acheter". "Tout acheter" reste disponible en
+    // option discrète, pour organisateur ET participant.
+    if (!context.readOnly && context.availableCount > 0) {
+      const buyAllBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-buyall', 'k-sc-btn-snapshot-action');
+      buyAllBtn.textContent = `Tout acheter · ${fmt(context.availableTotal, 'KMF')}`;
+      buyAllBtn.onclick = () => actions.onBuyAll();
+    }
   }
 
   function cleanupSnapshotSideCartChrome() {
@@ -1106,7 +1079,7 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
    * pilote le chrome canonique (header/footer) au lieu de le masquer.
    * @param {SnapshotRenderContext} context
    * @param {Array<object>} items - lignes shared_cart_items brutes
-   * @param {object} actions - callbacks fournis par le contrôleur (onToggleEditMode, onRemove, onQuantityStep, onOpenProduct, onShare, onClose, onBuy, onSave)
+   * @param {object} actions - callbacks fournis par le contrôleur (onRemove, onQuantityStep, onOpenProduct, onShare, onClose, onBuySingle, onBuyAll, onSave)
    */
 export function renderCartSnapshot(context, items, actions) {
     document.body.classList.add('is-shared-list-context');

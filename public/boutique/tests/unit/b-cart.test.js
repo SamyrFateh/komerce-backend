@@ -103,7 +103,6 @@ const {
 const {
   activateSharedListContext,
   clearSharedListContext,
-  toggleEditMode: toggleEditModeCtrl,
 } = require('../../js/group/group-side-cart.js');
 
 function makeProduct(overrides) {
@@ -453,11 +452,16 @@ describe('b-cart', () => {
       expect(scroll.savedY).toBe(123);
     });
 
-    it('openCart (desktop) : n\'ouvre pas de drawer, émet checkout:open', () => {
+    it('openCart (desktop) : n\'ouvre pas de drawer, scrolle vers le side cart persistant (montre les articles avant tout checkout)', () => {
       isDesktop.mockReturnValue(true);
+      window.scrollTo = jest.fn();
       const busSpy = jest.spyOn(bus, 'emit');
       openCart();
-      expect(busSpy).toHaveBeenCalledWith('checkout:open');
+      // Correctif UX — l'avatar ne doit plus sauter directement au
+      // formulaire de paiement (checkout:open) : il doit d'abord montrer
+      // le résumé des articles dans le side cart persistant.
+      expect(busSpy).not.toHaveBeenCalledWith('checkout:open');
+      expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
       expect(dom.cartOverlay.classList.contains('open')).toBe(false);
       busSpy.mockRestore();
     });
@@ -643,29 +647,37 @@ describe('b-cart', () => {
       expect(claimedRow.textContent).toContain('Déjà acheté');
     });
 
-    it('le CTA Acheter ne compte que les lignes disponibles (réclamées exclues)', () => {
-      activateList();
-      const buyBtn = findButtonByText('Acheter (');
-      expect(buyBtn).not.toBeNull();
-      expect(buyBtn.textContent).toContain('Acheter (1)');
-      expect(buyBtn.disabled).toBe(false);
+    it('chaque ligne disponible affiche son propre bouton "Acheter" ; jamais sur une ligne réclamée', () => {
+      activateList(); // i1 disponible, i2 réclamé
+      const buyBtn1 = dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-buy');
+      const buyBtn2 = dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-buy');
+      expect(buyBtn1).not.toBeNull();
+      expect(buyBtn1.textContent.trim()).toBe('Acheter');
+      expect(buyBtn2).toBeNull();
     });
 
-    it('tout est réclamé → CTA désactivé, libellé "Tout est acheté"', () => {
+    it('"Tout acheter" affiche la valeur totale des lignes disponibles (réclamées exclues)', () => {
+      activateList(); // i1 disponible (6500), i2 réclamé (exclu du total)
+      const buyAllBtn = findButtonByText('Tout acheter');
+      expect(buyAllBtn).not.toBeNull();
+      expect(buyAllBtn.textContent).toContain('6500 KMF');
+      expect(buyAllBtn.disabled).toBeFalsy();
+    });
+
+    it('tout est réclamé → aucun bouton "Acheter" par ligne, "Tout acheter" absent', () => {
       activateList({ items: [
         { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: true },
       ] });
-      const buyBtn = findButtonByText('Tout est acheté');
-      expect(buyBtn).not.toBeNull();
-      expect(buyBtn.disabled).toBe(true);
+      expect(dom.cartBody.querySelector('.k-cart-item-buy')).toBeNull();
+      expect(findButtonByText('Tout acheter')).toBeNull();
     });
 
-    // Mandat §4 — une liste fermée est entièrement non opérationnelle : le
-    // CTA d'achat doit être désactivé avec un libellé clair, jamais laissé
-    // actif. Bug réel trouvé en test Playwright contre un serveur/DB réel
-    // (invisible aux tests jsdom précédents, aucun test ne couvrait ce cas) :
-    // "Acheter (N)" restait affiché et cliquable sur une liste fermée.
-    it('liste fermée (readOnly) → CTA "Liste fermée" désactivé, même avec des lignes disponibles et sélectionnées', () => {
+    // Mandat §4 — une liste fermée est entièrement non opérationnelle :
+    // aucun CTA d'achat, ni par ligne ni global, jamais laissé actif. Bug
+    // réel trouvé en test Playwright contre un serveur/DB réel (invisible
+    // aux tests jsdom précédents) : un CTA restait affiché et cliquable
+    // sur une liste fermée.
+    it('liste fermée (readOnly) → aucun bouton "Acheter" par ligne, "Tout acheter" absent, même avec des lignes disponibles', () => {
       activateList({
         isCreator: true,
         cart: { status: 'closed' },
@@ -673,102 +685,32 @@ describe('b-cart', () => {
           { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
         ],
       });
-      // Deux boutons portent "Liste fermée" au même moment (Fermer la
-      // liste → "Liste fermée" désactivé, ET le CTA d'achat → même
-      // libellé) : viser le CTA d'achat par ID pour ne pas confondre les
-      // deux via findButtonByText (renvoie le premier match).
-      const buyBtn = document.getElementById('k-cart-snap-buy');
-      expect(buyBtn).not.toBeNull();
-      expect(buyBtn.textContent.trim()).toBe('Liste fermée');
-      expect(buyBtn.disabled).toBe(true);
-      // Jamais "Acheter (N)" ni "Tout est acheté" nulle part dans le panier.
-      expect(findButtonByText('Acheter (')).toBeNull();
-      expect(findButtonByText('Tout est acheté')).toBeNull();
+      expect(dom.cartBody.querySelector('.k-cart-item-buy')).toBeNull();
+      expect(findButtonByText('Tout acheter')).toBeNull();
+      expect(document.getElementById('k-cart-snap-closelist').textContent.trim()).toBe('Liste fermée');
     });
 
-    // Mandat §5 — sélection locale des articles à acheter.
-    describe('sélection locale (mandat §5)', () => {
-      it('une case de sélection est rendue sur chaque ligne disponible, jamais sur une ligne réclamée', () => {
-        activateList(); // i1 disponible, i2 réclamé
-        expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select')).not.toBeNull();
-        expect(dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-select')).toBeNull();
-      });
-
-      it('les lignes disponibles sont présélectionnées par défaut (case cochée, CTA = total disponible)', () => {
-        activateList({ items: [
-          { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
-          { id: 'i2', product_id: 'p2', name: 'Huile', image: null, quantity: 1, unit_price_kmf: 3000, claimed: false },
-        ] });
-        const cb1 = dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select');
-        const cb2 = dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-select');
-        expect(cb1.checked).toBe(true);
-        expect(cb2.checked).toBe(true);
-        expect(findButtonByText('Acheter (')?.textContent).toContain('Acheter (2)');
-      });
-
-      it('décocher une ligne réduit le CTA "Acheter (N)" sans faire disparaître la ligne', () => {
-        activateList({ items: [
-          { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
-          { id: 'i2', product_id: 'p2', name: 'Huile', image: null, quantity: 1, unit_price_kmf: 3000, claimed: false },
-        ] });
-        const cb2 = dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-select');
-        cb2.checked = false;
-        cb2.dispatchEvent(new Event('change', { bubbles: true }));
-
-        expect(dom.cartBody.querySelectorAll('.k-cart-snapshot-item')).toHaveLength(2); // toujours 2 lignes
-        expect(findButtonByText('Acheter (')?.textContent).toContain('Acheter (1)');
-      });
-
-      it('tout décocher désactive le CTA Acheter, sans afficher "Tout est acheté" (des lignes restent disponibles)', () => {
-        activateList({ items: [
-          { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
-        ] });
-        const cb1 = dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select');
-        cb1.checked = false;
-        cb1.dispatchEvent(new Event('change', { bubbles: true }));
-
-        const buyBtn = findButtonByText('Acheter (');
-        expect(buyBtn).not.toBeNull();
-        expect(buyBtn.textContent).toContain('Acheter (0)');
-        expect(buyBtn.disabled).toBe(true);
-      });
-
-      it("l'organisateur voit aussi la case de sélection, hors mode édition (§5 : achète comme tout participant)", () => {
-        activateList({ isCreator: true, items: [
-          { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
-        ] });
-        expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select')).not.toBeNull();
-      });
-    });
-
-    it('participant (non organisateur) : lecture seule, aucun contrôle d\'édition ni bouton Modifier', () => {
+    it('participant (non organisateur) : lecture seule, aucun contrôle d\'édition, mais garde son bouton "Acheter" par ligne', () => {
       activateList({ isCreator: false });
+      expect(byClass('k-cart-item-remove', dom.cartBody)).toHaveLength(0);
+      expect(byClass('k-qty-btn', dom.cartBody)).toHaveLength(0);
+      expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-buy')).not.toBeNull();
+    });
+
+    // Doctrine finale (2026-08) — plus de bascule "✎ Modifier / Terminer" :
+    // les steppers quantité et le ✕ sont TOUJOURS visibles pour
+    // l'organisateur sur les lignes disponibles, tant que la liste reste
+    // ouverte. Rien à activer, rien à désactiver.
+    it('organisateur : steppers quantité et ✕ toujours visibles sur les lignes disponibles, sans bascule Modifier/Terminer', () => {
+      activateList({ isCreator: true });
       expect(findButtonByText('Modifier')).toBeNull();
-      expect(findButtonByText('Fermer la liste')).toBeNull();
-      expect(byClass('k-cart-item-remove', dom.cartBody)).toHaveLength(0);
-      expect(byClass('k-qty-btn', dom.cartBody)).toHaveLength(0);
-    });
-
-    it('organisateur : bouton global "Modifier"/"Terminer" présent, contrôles invisibles avant le clic', () => {
-      activateList({ isCreator: true });
-      const editBtn = findButtonByText('Modifier');
-      expect(editBtn).not.toBeNull();
-      expect(byClass('k-cart-item-remove', dom.cartBody)).toHaveLength(0);
-      expect(byClass('k-qty-btn', dom.cartBody)).toHaveLength(0);
-    });
-
-    it('organisateur, après activation du mode édition : contrôles visibles uniquement sur les lignes non réclamées', () => {
-      activateList({ isCreator: true });
-      toggleEditModeCtrl();
+      expect(findButtonByText('Terminer')).toBeNull();
 
       const removeButtons = byClass('k-cart-item-remove', dom.cartBody);
       const qtyGroups = byClass('k-cart-item-qty', dom.cartBody);
-      expect(removeButtons).toHaveLength(1);
+      expect(removeButtons).toHaveLength(1); // seulement i1 (disponible) ; i2 est réclamé
       expect(qtyGroups).toHaveLength(1);
       expect(removeButtons[0].dataset.itemId).toBe('i1');
-
-      const editBtn = findButtonByText('Terminer');
-      expect(editBtn).not.toBeNull();
     });
 
     it('ouvre la fiche produit canonique depuis une ligne de liste (bus modal:open)', () => {
@@ -832,7 +774,6 @@ describe('b-cart', () => {
 
     it('preuve de non-régression : aucun panneau parallèle recréé', () => {
       activateList({ isCreator: true });
-      toggleEditModeCtrl();
       expect(document.getElementById('k-shared-list-panel')).toBeNull();
       expect(document.querySelector('.k-shared-list-item')).toBeNull();
       expect(document.querySelector('.k-shared-list-header')).toBeNull();

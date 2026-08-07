@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T08:18:38.451Z",
+  "generatedAt": "2026-08-07T10:07:23.789Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
@@ -313,10 +313,6 @@
         {
           "name": "modal:open",
           "hasArg": true
-        },
-        {
-          "name": "checkout:open",
-          "hasArg": false
         },
         {
           "name": "modal:open",

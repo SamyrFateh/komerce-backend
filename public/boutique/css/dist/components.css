@@ -9301,16 +9301,26 @@ body.cart-open  #k-section-index { display:none; }
   opacity: .55;
 }
 
-/* Mandat §5 — case de sélection locale (jamais affichée sur une ligne
-   claimed, cf. b-cart.js::snapshotItemRowHtml). Taille tactile confortable
-   (18px) cohérente avec les autres contrôles de la ligne. */
-.k-cart-item-select {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  margin: 0;
+/* Doctrine finale — bouton "Acheter" individuel par ligne disponible
+   (remplace le badge de statut dans le même slot .k-cart-snapshot-item-controls,
+   cf. b-cart.js::snapshotItemRowHtml). Même gabarit que le badge claimed
+   pour ne jamais faire sauter la mise en page ligne à ligne. */
+.k-cart-item-buy {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 20px;
+  background: var(--cta-green, var(--coral));
+  color: var(--white);
+  white-space: nowrap;
   cursor: pointer;
-  accent-color: var(--coral, var(--cta-green));
+  transition: filter .15s;
+}
+
+.k-cart-item-buy:hover {
+  filter: brightness(0.95);
 }
 
 .k-cart-snapshot-item-open {
@@ -9427,35 +9437,46 @@ body.cart-open  #k-section-index { display:none; }
   display: none;
 }
 
-/* ── Amendement V2 §A — sélecteur desktop [Panier] [Liste] (coexistence,
- * conservé — feature légitime distincte du panneau démantelé). Prépendu
- * dans #k-side-cart par group-side-cart.js::renderCartSurfaceSwitch().
- *
- * Correctif 2026-08 (mandat §1.1) — une seule action de sortie
- * ("← Revenir à mon panier"), plus un sélecteur bidirectionnel à deux
- * onglets : les deux surfaces ne doivent jamais être visibles ensemble.
+/* ── Doctrine finale (2026-08) — bandeau indicateur unique en tête du
+ * side cart, remplace l'ancien sélecteur bidirectionnel [Panier | Liste]
+ * et le bouton "← Revenir à mon panier" (mandat §1.1, correctif capture
+ * production "Panier (1) | Votre liste (1)"). La liste active EST le
+ * panier visible — pas de surface concurrente, juste un rappel visuel
+ * coloré de statut. Prépendu dans #k-side-cart par
+ * group-side-cart.js::renderCartSurfaceSwitch() (conserve l'ID historique
+ * #k-cart-surface-switch pour le conteneur, classe .k-list-indicator pour
+ * le style).
  */
 
-.k-cart-surface-switch {
+.k-list-indicator {
   flex-shrink: 0;
   display: flex;
-  padding: 10px 12px 0;
-}
-
-.k-cart-surface-btn {
-  flex: 1;
-  padding: 7px 10px;
-  border: 1px solid var(--border);
+  align-items: center;
+  gap: 6px;
+  margin: 10px 12px 0;
+  padding: 8px 12px;
   border-radius: var(--radius-sm);
-  background: var(--surface-sand-97);
-  color: var(--text-muted);
+  background: var(--cta-green-10);
+  color: var(--cta-green-dark, var(--cta-green));
   font-size: 12.5px;
   font-weight: 700;
-  cursor: pointer;
-  text-align: center;
-  white-space: nowrap;
+}
+
+.k-list-indicator.is-closed {
+  background: var(--sand-dark, var(--sand));
+  color: var(--text-muted);
+}
+
+.k-list-indicator-dot {
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.k-list-indicator-text {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .k-cart-surface-btn:hover {

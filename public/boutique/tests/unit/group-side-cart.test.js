@@ -107,7 +107,6 @@ const {
   clearSharedListContext,
   exitSharedListRenderMode,
   setCartSurface,
-  toggleEditMode,
   renderSharedListInCart,
   canAddToActiveSharedList,
   addProductToActiveSharedList,
@@ -194,21 +193,22 @@ describe('group-side-cart — chargement du snapshot', () => {
     expect(renderCartSnapshot).not.toHaveBeenCalled();
   });
 
-  it('changement de token → réinitialise le mode édition ; même token (refresh) → le préserve', () => {
+  // Doctrine finale (2026-08) — editMode n'est plus une bascule persistée :
+  // il est recalculé à chaque rendu depuis isCreator + statut de la liste
+  // (voir buildSnapshotRenderContext). Changer de token n'a donc plus
+  // besoin de "réinitialiser" quoi que ce soit : le contexte suivant est
+  // simplement recalculé pour la nouvelle liste.
+  it('editMode se recalcule à chaque activation depuis isCreator + statut, jamais depuis un état sticky', () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-    toggleEditMode();
-    expect(state.sharedListEditMode).toBe(true);
+    let [context] = renderCartSnapshot.mock.calls.at(-1);
+    expect(context.editMode).toBe(true);
 
-    // Même liste (refresh) : le mode édition survit.
-    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-    expect(state.sharedListEditMode).toBe(true);
-
-    // Lien différent ouvert : le mode édition ne doit pas fuiter sur l'autre liste.
     activateSharedListContext(
-      payload({ is_creator: true, cart: { ...payload().cart, token: 'tok-2' } }),
+      payload({ is_creator: false, cart: { ...payload().cart, token: 'tok-2' } }),
       'tok-2'
     );
-    expect(state.sharedListEditMode).toBe(false);
+    [context] = renderCartSnapshot.mock.calls.at(-1);
+    expect(context.editMode).toBe(false);
   });
 
   it('activateFromParticipantUrl : lien valide active le contexte, lien invalide affiche un toast et ne modifie rien', async () => {
@@ -256,15 +256,13 @@ describe('group-side-cart — adaptation du payload (contrat contextuel)', () =>
   });
 });
 
-describe('group-side-cart — calcul des capacités (mandat §5 — sélection locale)', () => {
-  it('availableCount total les lignes non réclamées ; selectedCount/selectedTotal reflètent la sélection (tout sélectionné par défaut à la première activation)', () => {
+describe('group-side-cart — calcul des capacités (disponible = non réclamé)', () => {
+  it('availableCount/availableTotal totalisent les lignes non réclamées uniquement', () => {
     activateSharedListContext(payload(), 'tok-1');
     const [context] = renderCartSnapshot.mock.calls.at(-1);
     // i1 (2 x 1000, non réclamé) compte ; i2 (réclamé) exclu.
     expect(context.availableCount).toBe(1);
-    expect(context.selectedCount).toBe(1);
-    expect(context.selectedTotal).toBe(2000);
-    expect(context.selectedItemIds.has('i1')).toBe(true);
+    expect(context.availableTotal).toBe(2000);
   });
 
   it('tout est réclamé → capacités à zéro', () => {
@@ -274,14 +272,10 @@ describe('group-side-cart — calcul des capacités (mandat §5 — sélection l
     );
     const [context] = renderCartSnapshot.mock.calls.at(-1);
     expect(context.availableCount).toBe(0);
-    expect(context.selectedCount).toBe(0);
-    expect(context.selectedTotal).toBe(0);
+    expect(context.availableTotal).toBe(0);
   });
 
-  // Mandat §5 — "sélection locale ≠ mutation de la liste" : désélectionner
-  // une ligne réduit selectedCount/selectedTotal sans jamais toucher
-  // availableCount (le nombre réel de lignes disponibles ne change pas).
-  it('désélectionner une ligne réduit selectedCount/selectedTotal, jamais availableCount', () => {
+  it('deux lignes disponibles → availableTotal cumule les deux, jamais une seule', () => {
     const twoAvailable = payload({
       items: [
         { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
@@ -289,53 +283,13 @@ describe('group-side-cart — calcul des capacités (mandat §5 — sélection l
       ],
     });
     activateSharedListContext(twoAvailable, 'tok-1');
-    let [context, , actions] = renderCartSnapshot.mock.calls.at(-1);
-    expect(context.selectedCount).toBe(2);
-
-    renderCartSnapshot.mockClear();
-    actions.onToggleSelect('i2');
-
-    [context] = renderCartSnapshot.mock.calls.at(-1);
-    expect(context.availableCount).toBe(2);
-    expect(context.selectedCount).toBe(1);
-    expect(context.selectedTotal).toBe(1000);
-    expect(context.selectedItemIds.has('i2')).toBe(false);
-  });
-
-  // Mandat §5 — une ligne fraîchement disponible après un refresh (ajout
-  // en mode édition, ou déblocage) est présélectionnée par défaut ; une
-  // ligne déjà désélectionnée par l'utilisateur le reste après un refresh
-  // qui ne change rien d'autre.
-  it('une nouvelle ligne disponible après refresh est présélectionnée ; une désélection existante survit au refresh', async () => {
-    const twoAvailable = payload({
-      items: [
-        { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
-        { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: false },
-      ],
-    });
-    activateSharedListContext(twoAvailable, 'tok-1');
-    const [, , actionsBeforeRefresh] = renderCartSnapshot.mock.calls.at(-1);
-    actionsBeforeRefresh.onToggleSelect('i2'); // désélectionne i2
-
-    getSharedCartPublic.mockResolvedValueOnce(payload({
-      items: [
-        { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
-        { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: false },
-        { id: 'i3', product_id: 'p3', name: 'Thé', unit_price_kmf: 500, quantity: 1, claimed: false },
-      ],
-    }));
-    await refreshSharedListContext();
-
     const [context] = renderCartSnapshot.mock.calls.at(-1);
-    expect(context.selectedItemIds.has('i1')).toBe(true);  // inchangé
-    expect(context.selectedItemIds.has('i2')).toBe(false); // désélection préservée
-    expect(context.selectedItemIds.has('i3')).toBe(true);  // nouvelle ligne, présélectionnée
+    expect(context.availableCount).toBe(2);
+    expect(context.availableTotal).toBe(4000);
   });
 
-  // Mandat §5 — une ligne réclamée entre-temps sort de la sélection (elle
-  // n'est de toute façon plus achetable), sans jamais planter.
-  it('une ligne réclamée entre-temps sort silencieusement de la sélection', async () => {
-    activateSharedListContext(payload(), 'tok-1'); // i1 disponible, présélectionné
+  it('une ligne réclamée entre-temps sort des capacités disponibles après refresh, sans planter', async () => {
+    activateSharedListContext(payload(), 'tok-1'); // i1 disponible
 
     getSharedCartPublic.mockResolvedValueOnce(payload({
       items: [{ id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 2, claimed: true, buyer_first_name: 'Ali' }],
@@ -343,8 +297,8 @@ describe('group-side-cart — calcul des capacités (mandat §5 — sélection l
     await refreshSharedListContext();
 
     const [context] = renderCartSnapshot.mock.calls.at(-1);
-    expect(context.selectedItemIds.has('i1')).toBe(false);
-    expect(context.selectedCount).toBe(0);
+    expect(context.availableCount).toBe(0);
+    expect(context.availableTotal).toBe(0);
   });
 });
 
@@ -360,13 +314,13 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     const [, items, actions] = renderCartSnapshot.mock.calls[0];
     expect(items).toBe(state.sharedListContext.items);
     expect(actions).toEqual(expect.objectContaining({
-      onToggleEditMode: expect.any(Function),
       onRemove: expect.any(Function),
       onQuantityStep: expect.any(Function),
       onOpenProduct: expect.any(Function),
       onShare: expect.any(Function),
       onClose: expect.any(Function),
-      onBuy: expect.any(Function),
+      onBuySingle: expect.any(Function),
+      onBuyAll: expect.any(Function),
       onSave: expect.any(Function),
     }));
   });
@@ -393,11 +347,11 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     expect(cleanupCartSnapshotDom).toHaveBeenCalled();
   });
 
-  it('shared_cart_item_id et le contexte de prix snapshot sont préservés vers le checkout canonique (achat des lignes disponibles)', () => {
+  it('shared_cart_item_id et le contexte de prix snapshot sont préservés vers le checkout canonique (achat d\'une ligne unique)', () => {
     activateSharedListContext(payload(), 'tok-1');
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onBuy();
+    actions.onBuySingle('i1');
 
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
     const [cartItems] = checkoutSharedListSelection.mock.calls[0];
@@ -408,6 +362,25 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
       product: { id: 'p1' },
       shared_list_context: expect.objectContaining({ snapshot_unit_price_kmf: 1000 }),
     });
+  });
+
+  it('onBuyAll achète systématiquement toutes les lignes disponibles en une seule commande', () => {
+    activateSharedListContext(
+      payload({
+        items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
+          { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: false },
+        ],
+      }),
+      'tok-1'
+    );
+    const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+    actions.onBuyAll();
+
+    expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
+    const [cartItems] = checkoutSharedListSelection.mock.calls[0];
+    expect(cartItems).toHaveLength(2);
   });
 });
 
@@ -516,7 +489,7 @@ describe('group-side-cart — absence de sélection locale', () => {
     expect(typeof mod.toggleSharedListItem).toBe('undefined');
   });
 
-  it('handleBuyAvailableItems achète systématiquement toutes les lignes disponibles, sans sous-ensemble sélectionné', () => {
+  it('onBuyAll achète toutes les lignes disponibles sans dépendre d\'un état de sélection quelconque', () => {
     activateSharedListContext(
       payload({
         items: [
@@ -528,7 +501,7 @@ describe('group-side-cart — absence de sélection locale', () => {
     );
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onBuy();
+    actions.onBuyAll();
 
     const [cartItems] = checkoutSharedListSelection.mock.calls[0];
     expect(cartItems).toHaveLength(2);
@@ -737,28 +710,19 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
     expect(canAddToActiveSharedList()).toBe(false);
   });
 
-  it('canAddToActiveSharedList : false pour le créateur avec une liste ouverte HORS mode édition (mandat §3.1, régression capture production)', () => {
+  it('canAddToActiveSharedList : true pour le créateur, liste ouverte, surface shared-list (plus de mode édition à activer)', () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-    expect(state.sharedListEditMode).toBe(false);
-    expect(canAddToActiveSharedList()).toBe(false);
+    expect(canAddToActiveSharedList()).toBe(true);
   });
 
-  it('canAddToActiveSharedList : false si cartSurface !== "shared-list" même en édition (mandat §3.1)', () => {
+  it('canAddToActiveSharedList : false si cartSurface !== "shared-list", même pour le créateur d\'une liste ouverte', () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-    state.sharedListEditMode = true;
     state.cartSurface = 'personal';
     expect(canAddToActiveSharedList()).toBe(false);
   });
 
-  it('canAddToActiveSharedList : true pour le créateur, liste ouverte, surface shared-list, mode édition', () => {
-    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-    state.sharedListEditMode = true;
-    expect(canAddToActiveSharedList()).toBe(true);
-  });
-
   it('addProductToActiveSharedList : false et aucun appel réseau si produit invalide', async () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-    state.sharedListEditMode = true;
     const ok = await addProductToActiveSharedList(null, 1, null);
     expect(ok).toBe(false);
     expect(addItemToSharedList).not.toHaveBeenCalled();
@@ -766,7 +730,6 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
 
   it('addProductToActiveSharedList : false et aucun appel réseau si participant (garde-fou serveur reflété côté front)', async () => {
     activateSharedListContext(payload({ is_creator: false }), 'tok-1');
-    state.sharedListEditMode = true;
     const ok = await addProductToActiveSharedList({ id: 'prod-1', name: 'Robe' }, 1, null);
     expect(ok).toBe(false);
     expect(addItemToSharedList).not.toHaveBeenCalled();
@@ -777,15 +740,6 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
       payload({ is_creator: true, cart: { ...payload().cart, status: 'closed' } }),
       'tok-1'
     );
-    state.sharedListEditMode = true;
-    const ok = await addProductToActiveSharedList({ id: 'prod-1', name: 'Robe' }, 1, null);
-    expect(ok).toBe(false);
-    expect(addItemToSharedList).not.toHaveBeenCalled();
-  });
-
-  it('addProductToActiveSharedList : false et aucun appel réseau HORS mode édition (mandat §3.1, régression capture production)', async () => {
-    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-    expect(state.sharedListEditMode).toBe(false);
     const ok = await addProductToActiveSharedList({ id: 'prod-1', name: 'Robe' }, 1, null);
     expect(ok).toBe(false);
     expect(addItemToSharedList).not.toHaveBeenCalled();
@@ -793,7 +747,6 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
 
   it('addProductToActiveSharedList : succès → POST avec sharedCartId + variant_combo, refresh, toast succès', async () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-    state.sharedListEditMode = true;
     addItemToSharedList.mockResolvedValueOnce({ ok: true, item: { id: 'sci-new' } });
     getSharedCartPublic.mockResolvedValueOnce(payload({ is_creator: true }));
 
@@ -809,7 +762,6 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
 
   it('addProductToActiveSharedList : échec serveur (ex. combinaison indisponible) → false, toast erreur, jamais de refresh', async () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-    state.sharedListEditMode = true;
     const err = new Error('Combinaison indisponible pour Chemise');
     err.code = 'sellable_unit_not_found';
     addItemToSharedList.mockRejectedValueOnce(err);
@@ -826,7 +778,6 @@ describe('canAddToActiveSharedList / addProductToActiveSharedList (Lot 3 GAP-07)
 
   it('addProductToActiveSharedList : variant_combo absent → transmis tel quel (null), jamais un objet fabriqué', async () => {
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-    state.sharedListEditMode = true;
     addItemToSharedList.mockResolvedValueOnce({ ok: true, item: { id: 'sci-new' } });
     getSharedCartPublic.mockResolvedValueOnce(payload({ is_creator: true }));
 

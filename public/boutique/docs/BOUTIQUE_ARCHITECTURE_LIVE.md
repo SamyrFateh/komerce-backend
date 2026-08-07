@@ -24,7 +24,7 @@
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
 | `komerce.css` | 252 | 🔴 **ORPHELIN** |
 | `layout.css` | 1178 | 🔴 **ORPHELIN** |
-| `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
+| `modal-cart-sku-guard.css` | 26 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 340 | 🔴 **ORPHELIN** |
 | `modal-mobile-canonical.css` | 682 | 🔴 **ORPHELIN** |
@@ -32,7 +32,7 @@
 | `modal-product-lot4-hybrid.css` | 502 | 🔴 **ORPHELIN** |
 | `modal-product-polish.css` | 322 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1512 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 1263 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 1284 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 888 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
@@ -40,8 +40,8 @@
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
 | `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart-responsive.css` | 174 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 211 | 🔴 **ORPHELIN** |
-| `tokens.css` | 516 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 318 | 🔴 **ORPHELIN** |
+| `tokens.css` | 517 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
@@ -49,8 +49,8 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=160
- 2. /boutique/css/dist/components.css?v=389
+ 1. /boutique/css/dist/base.css?v=161
+ 2. /boutique/css/dist/components.css?v=397
  3. /boutique/css/dist/desktop.css?v=85
 ```
 

@@ -21,6 +21,7 @@
   --ocean-dark:       #4A9040;
   --ocean-dark-deep:  #2e6b28;  /* gradient stop profond — kpill background, group-cart-flow funded */
   --cta-green:        #2a7a3e;
+  --cta-green-10:     rgba(46,160,90,.12);  /* bandeau indicateur liste partagée — shared-list-side-cart.css */
 
   /* ── Sauge — palette checkout (remplace ocean/coral trop saturés dans le flow commande) ──
      Sauge : vert désaturé, posé, lisible sur fond sable.

@@ -77,75 +77,21 @@ function findItem(itemId) {
 }
 
 /**
- * Mandat §5 — sélection locale des articles à acheter. Ensemble d'IDs
- * (shared_cart_items.id) présélectionnés par défaut à l'apparition d'une
- * ligne disponible, ajustable par l'utilisateur (case à cocher par ligne).
- * Frontend uniquement : "sélection locale ≠ mutation de la liste" — ne
- * réserve rien, ne crée aucun claim, ne modifie aucune quantité de liste,
- * sert seulement à construire le panier éphémère du checkout
- * (handleBuySelectedItems ci-dessous).
- */
-const selectedItemIds = new Set();
-
-/**
- * Concilie la sélection locale avec le snapshot fraîchement reçu :
- *  - une ligne qui vient d'être réclamée (claimed) ou a disparu (retrait)
- *    sort de la sélection — elle n'est de toute façon plus achetable ;
- *  - une ligne disponible qui n'existait pas dans l'ancien snapshot
- *    (ajout via le mode édition, ou première activation) entre
- *    pré-sélectionnée par défaut, pour ne jamais forcer un geste
- *    supplémentaire sur le cas le plus courant (une seule ligne) ;
- *  - une ligne déjà présente et déjà (dé)sélectionnée par l'utilisateur
- *    n'est jamais touchée ici.
- * @param {Array} oldItems - snapshot précédent (vide si nouvelle liste).
- * @param {Array} newItems - snapshot reçu.
- */
-function syncSelectionWithAvailability(oldItems, newItems) {
-  const newAvailableIds = new Set((newItems || []).filter((it) => !it.claimed).map((it) => String(it.id)));
-  const oldAvailableIds = new Set((oldItems || []).filter((it) => !it.claimed).map((it) => String(it.id)));
-  for (const id of [...selectedItemIds]) {
-    if (!newAvailableIds.has(id)) selectedItemIds.delete(id);
-  }
-  for (const id of newAvailableIds) {
-    if (!oldAvailableIds.has(id)) selectedItemIds.add(id);
-  }
-}
-
-/**
- * Lignes disponibles (non réclamées) du snapshot — éligibles à la
- * sélection, jamais elles-mêmes "la sélection" (cf. selectedItems()).
+ * Lignes disponibles (non réclamées) du snapshot — celles qui portent un
+ * bouton "Acheter" individuel et alimentent "Tout acheter".
  */
 function availableItems() {
   return state.sharedListContext.items.filter((it) => !it.claimed);
 }
 
 /**
- * Mandat §5 — sous-ensemble de availableItems() effectivement sélectionné
- * localement. C'est CE tableau, jamais availableItems() en entier, qui
- * alimente le CTA "Acheter (N)" et le panier éphémère du checkout
- * (handleBuySelectedItems).
+ * Refonte UX — valeur totale des lignes encore disponibles. Sert
+ * uniquement d'affichage informatif (sous-total footer) et de base au CTA
+ * discret "Tout acheter" (handleBuyAllAvailable). Plus de notion de
+ * sélection locale : soit on achète une ligne, soit on les achète toutes.
  */
-function selectedItems() {
-  return availableItems().filter((it) => selectedItemIds.has(String(it.id)));
-}
-
-function selectedTotal() {
-  return selectedItems().reduce((sum, it) => sum + (Number(it.unit_price_kmf) || 0) * (Number(it.quantity) || 1), 0);
-}
-
-/**
- * Bascule la sélection locale d'une ligne. Garde métier défensive : une
- * ligne claimed ou introuvable ne peut jamais être sélectionnée, même par
- * un appel direct qui contournerait la case à cocher (jamais grisée côté
- * DOM que par CSS — cette fonction reste la vraie barrière).
- */
-function toggleItemSelection(itemId) {
-  const id = String(itemId);
-  const item = findItem(id);
-  if (!item || item.claimed) return;
-  if (selectedItemIds.has(id)) selectedItemIds.delete(id);
-  else selectedItemIds.add(id);
-  renderSharedListInCart();
+function availableTotal() {
+  return availableItems().reduce((sum, it) => sum + (Number(it.unit_price_kmf) || 0) * (Number(it.quantity) || 1), 0);
 }
 
 function isActiveContext() {
@@ -274,15 +220,6 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
   if (previousToken !== nextToken) state.sharedListEditMode = false;
 
   const items = Array.isArray(data.items) ? data.items : [];
-  // Mandat §5 — concilier la sélection locale AVANT d'écraser
-  // state.sharedListContext.items (syncSelectionWithAvailability a besoin
-  // de l'ancien ET du nouveau snapshot). Changement de liste (token
-  // différent) = ancien snapshot vide : tout redevient "nouveau", donc
-  // tout ce qui est disponible est présélectionné par défaut.
-  syncSelectionWithAvailability(
-    previousToken === nextToken ? state.sharedListContext.items : [],
-    items
-  );
   const contributors = Array.isArray(data.contributors) ? data.contributors : [];
   const signature = computeSnapshotSignature(cart, items, contributors);
   const unchanged = silent && previousToken === nextToken && signature === lastSnapshotSignature;
@@ -367,13 +304,12 @@ export function exitSharedListRenderMode() {
 }
 
 /**
- * Efface intégralement le contexte de liste et la sélection locale, puis
- * restaure le rendu du panier personnel normal dans les mêmes surfaces.
+ * Efface intégralement le contexte de liste, puis restaure le rendu du
+ * panier personnel normal dans les mêmes surfaces.
  */
 export function clearSharedListContext() {
   stopSnapshotPollingLoop();
   lastSnapshotSignature = null;
-  selectedItemIds.clear();
   state.sharedListContext = {
     sharedCartId: null,
     token: null,
@@ -393,20 +329,18 @@ export function clearSharedListContext() {
   bus.emit('side-cart:render');
 }
 
-/* ── Mode édition organisateur ────────────────────────────────────── */
-
 /**
- * Lot B — bascule le mode édition explicite de l'organisateur. Les
- * contrôles de quantité/retrait restent invisibles hors de ce mode, même
- * pour l'organisateur (mandat Lot B) ; ce toggle est lui-même invisible
- * pour un participant ou une liste non ouverte (snapshotCreatorActionsHtml,
- * b-cart.js).
+ * Refonte UX (2026-08) — plus de mode édition à bascule. L'organisateur
+ * voit TOUJOURS les steppers et les boutons de retrait sur les lignes
+ * disponibles. Le participant voit les lignes en lecture seule. Pas
+ * besoin d'activer un "mode" pour modifier la liste — la liste est
+ * l'interface directe.
+ *
+ * toggleEditMode() retiré : l'ancienne bascule visible/invisible des
+ * contrôles de mutation n'a plus de sens quand ils sont toujours visibles.
+ * state.sharedListEditMode conservé uniquement pour ne pas casser les
+ * tests existants, mais forcé à true côté contexte (buildSnapshotRenderContext).
  */
-export function toggleEditMode() {
-  if (!state.sharedListContext.isCreator || isReadOnly()) return;
-  state.sharedListEditMode = !state.sharedListEditMode;
-  renderSharedListInCart();
-}
 
 /* ── Rendu ────────────────────────────────────────────────────────── */
 
@@ -474,10 +408,10 @@ async function handleSaveList() {
  * Construit le contexte contextuel attendu par b-cart.js::renderCartSnapshot
  * (contrat {source, readOnly, title, status, organizerName, isOrganizer, ...})
  * à partir de state.sharedListContext. Ce contrôleur ne produit plus aucun
- * HTML — il adapte uniquement les données. Mandat §5 (correctif 2026-08) —
- * selectedCount/selectedTotal dérivés de la sélection locale
- * (selectedItemIds), pas simplement de toutes les lignes disponibles :
- * un participant choisit quels articles disponibles acheter.
+ * HTML — il adapte uniquement les données. Doctrine finale (2026-08) —
+ * plus de sélection locale : availableCount/availableTotal couvrent tout
+ * ce qui n'est pas encore réclamé, achetable ligne par ligne ou en bloc
+ * ("Tout acheter").
  */
 function buildSnapshotRenderContext() {
   const ctx = state.sharedListContext;
@@ -494,17 +428,15 @@ function buildSnapshotRenderContext() {
     // GAP-05 (Lot 2) — toujours [] si !isCreator (payload backend gaté),
     // ne dépend jamais d'un filtrage frontend supplémentaire.
     contributors: ctx.contributors,
-    editMode: ctx.isCreator && state.sharedListEditMode,
+    // Refonte UX — editMode toujours true pour l'organisateur tant que la
+    // liste est ouverte : les steppers/✕ sont toujours visibles, pas
+    // derrière un bouton "Modifier". Le participant n'a jamais editMode.
+    editMode: ctx.isCreator && !isReadOnly(),
     headerTitle: ctx.isCreator ? 'Votre liste' : title,
-    // Mandat §5 — availableCount reste "tout ce qui n'est pas encore
-    // réclamé" (utilisé uniquement pour distinguer l'état "Tout est
-    // acheté" de 0 disponible). selectedCount/selectedTotal, dérivés de la
-    // sélection locale, alimentent le CTA "Acheter (N)" et le sous-total —
-    // jamais availableCount/availableTotal pour ces deux-là.
     availableCount: availableItems().length,
-    selectedCount: selectedItems().length,
-    selectedTotal: selectedTotal(),
-    selectedItemIds: new Set(selectedItemIds),
+    // Refonte UX — affichage informatif + base du CTA discret "Tout
+    // acheter" (plus de selectedTotal, il n'y a plus de sélection).
+    availableTotal: availableTotal(),
     showSaveAction,
     saved: showSaveAction && savedListTokensThisSession.has(ctx.token),
     pendingQuantityItemIds,
@@ -517,15 +449,17 @@ function buildSnapshotRenderContext() {
  */
 function buildSnapshotRenderActions() {
   return {
-    onToggleEditMode: toggleEditMode,
     onRemove: handleRemoveItem,
     onQuantityStep: handleQuantityStep,
     onOpenProduct: handleOpenItemProduct,
     onShare: handleShareClick,
     onClose: handleCloseClick,
-    onBuy: handleBuySelectedItems,
+    // Refonte UX — un bouton "Acheter" par ligne, pas un bouton global.
+    onBuySingle: handleBuySingleItem,
+    // Optionnel discret en bas de liste — achète tout le disponible en
+    // une seule commande (organisateur et participant).
+    onBuyAll: handleBuyAllAvailable,
     onSave: handleSaveList,
-    onToggleSelect: toggleItemSelection,
   };
 }
 
@@ -680,24 +614,16 @@ export function setCartSurface(surface) {
 }
 
 /**
- * Action secondaire "← Revenir à mon panier" — permet de quitter le
- * contexte liste sans jamais le fermer côté métier (mandat §1.1). Ne
- * construit JAMAIS de double onglet [Panier | Liste] : une seule surface
- * est visible à la fois (doctrine un_seul_composant), l'autre reste en
- * mémoire (state.cart) sans être exposée. Visible uniquement quand la
- * surface active EST la liste et qu'un panier personnel existe en
- * arrière-plan (rien à "revenir à" sinon).
- *
- * Correctif 2026-08 — remplace l'ancien sélecteur bidirectionnel
- * [Panier (n)] [Liste (n)] qui affichait les deux surfaces simultanément
- * (cause racine de l'écran de production "Panier (1) | Votre liste (1)",
- * interdit explicitement par le mandat §1.1 et §19).
+ * Refonte UX — plus de bouton "← Revenir à mon panier". La liste active
+ * EST le panier visible, pas une surface parallèle. Le panier personnel
+ * redevient accessible uniquement quand la liste est fermée ou quittée
+ * (clearSharedListContext). Le switcher est remplacé par un simple
+ * indicateur visuel coloré indiquant qu'on est dans une liste partagée.
  */
 export function renderCartSurfaceSwitch() {
   const sc = document.getElementById('k-side-cart');
-  const shouldShow = isActiveContext()
-    && state.cartSurface === 'shared-list'
-    && state.cart.length > 0;
+  const ctx = state.sharedListContext;
+  const shouldShow = isActiveContext() && state.cartSurface === 'shared-list';
 
   if (!shouldShow) {
     document.getElementById('k-cart-surface-switch')?.remove();
@@ -708,17 +634,25 @@ export function renderCartSurfaceSwitch() {
   if (!switcher) {
     switcher = document.createElement('div');
     switcher.id = 'k-cart-surface-switch';
-    switcher.className = 'k-cart-surface-switch';
+    switcher.className = 'k-list-indicator';
     sc?.prepend(switcher);
   } else if (sc && switcher.parentElement !== sc) {
     sc.prepend(switcher);
   }
 
+  // Doctrine finale (2026-08) — bandeau unique en tête de side cart :
+  // dot coloré + "Liste de <nom> · <Statut>". Même libellé pour
+  // l'organisateur et le participant (c'est toujours "la liste de X"),
+  // jamais un texte différent selon le rôle.
+  const isOpen = ctx.status === 'open';
+  const statusLabel = isOpen ? 'Ouverte' : 'Fermée';
+  const dot = isOpen ? '🟢' : '🔴';
+  const name = ctx.creatorFirstName || ctx.title || null;
+  const label = name ? `Liste de ${sanitize(name)}` : 'Liste partagée';
+  switcher.classList.toggle('is-closed', !isOpen);
   switcher.innerHTML =
-    `<button type="button" class="k-cart-surface-btn k-cart-surface-btn--return" ` +
-      `data-surface="personal">← Revenir à mon panier</button>`;
-
-  switcher.querySelector('.k-cart-surface-btn').onclick = () => setCartSurface('personal');
+    `<span class="k-list-indicator-dot" aria-hidden="true">${dot}</span> ` +
+    `<span class="k-list-indicator-text">${label} · ${statusLabel}</span>`;
 }
 
 /* ── Actions propriétaire (mandat §9) ─────────────────────────────────
@@ -738,16 +672,14 @@ export function renderCartSurfaceSwitch() {
  * @returns {boolean}
  */
 export function canAddToActiveSharedList() {
-  // Mandat §3.1 — les quatre conditions doivent TOUTES être vraies. Avant
-  // ce correctif, cartSurface et sharedListEditMode n'étaient pas vérifiés
-  // ici : le CTA restait visible hors mode édition et même quand la
-  // surface active était 'personal', provoquant sa coexistence avec
-  // "Ajouter au panier"/"Acheter maintenant" (capture production, §19).
+  // Refonte UX — plus de condition sharedListEditMode (le mode édition
+  // n'existe plus en tant que bascule). Le CTA "Ajouter à cette liste" est
+  // disponible dès qu'une liste ouverte est active et que l'utilisateur en
+  // est le créateur.
   return state.cartSurface === 'shared-list'
     && isActiveContext()
     && !!state.sharedListContext.isCreator
-    && state.sharedListContext.status === 'open'
-    && state.sharedListEditMode === true;
+    && state.sharedListContext.status === 'open';
 }
 
 /**
@@ -917,26 +849,65 @@ async function handleShareClick() {
 /* ── Checkout (mandat §8) ────────────────────────────────────────────── */
 
 /**
- * Mandat §5 — construit le panier éphémère à partir de la SÉLECTION locale
- * (selectedItems()), jamais de availableItems() en entier : un participant
- * ne doit pas être obligé d'acheter automatiquement tout le reliquat.
+ * Refonte UX — achète un article seul. Chaque ligne disponible a son
+ * propre bouton "Acheter" (pattern liste de cadeaux). L'adaptateur
+ * checkout construit un panier éphémère avec cette seule ligne.
+ * @param {string} itemId — shared_cart_items.id
  */
-function handleBuySelectedItems() {
-  const items = selectedItems();
+function handleBuySingleItem(itemId) {
+  const item = findItem(itemId);
+  if (!item || item.claimed) return;
+
+  const product = (state.products || []).find((p) => String(p.id) === String(item.product_id));
+  if (!product) {
+    showToast("Ce produit n'est plus disponible dans le catalogue.", 'info');
+    refreshSharedListContext();
+    return;
+  }
+
+  const cartItems = [{
+    shared_cart_item_id: item.id,
+    product,
+    quantity: item.quantity || 1,
+    variant_combo: item.variant_combo || null,
+    shared_list_context: {
+      snapshot_unit_price_kmf: Number(item.unit_price_kmf) || 0,
+      snapshot_name: item.name || null,
+      snapshot_image_url: item.image || null,
+    },
+  }];
+
+  const started = checkoutSharedListSelection(cartItems);
+  if (!started) {
+    showToast("Impossible de lancer l'achat, r\u00e9essayez.", 'error');
+    return;
+  }
+
+  const observer = new MutationObserver(() => {
+    if (dom.orderModal && !dom.orderModal.classList.contains('open')) {
+      observer.disconnect();
+      refreshSharedListContext();
+    }
+  });
+  if (dom.orderModal) {
+    observer.observe(dom.orderModal, { attributes: true, attributeFilter: ['class'] });
+  }
+}
+
+/**
+ * Doctrine finale — "Tout acheter" : construit un panier éphémère avec
+ * TOUTES les lignes encore disponibles et lance un unique checkout.
+ * Optionnel et discret (organisateur et participant) — jamais le CTA
+ * principal de la liste, qui reste le bouton "Acheter" par ligne.
+ * Même garde de catalogue que handleBuySingleItem (product_id résolu
+ * contre state.products, jamais construit depuis la ligne de liste) :
+ * toute ligne dont le produit catalogue est introuvable est simplement
+ * exclue et signalée, sans bloquer l'achat des autres.
+ */
+function handleBuyAllAvailable() {
+  const items = availableItems();
   if (!items.length) return;
 
-  // Correctif V2-E — le panier canonique éphémère doit référencer le vrai
-  // produit catalogue (it.product_id) et son prix courant (state.products),
-  // jamais it.id (shared_cart_items.id, une ligne de liste) ni
-  // unit_price_kmf (prix snapshot figé). routes/orders/create.js résout
-  // product_id contre la table products et facture toujours le prix
-  // courant du produit ; construire l'objet product à partir de la ligne
-  // de liste faisait échouer 100 % des achats (product_id introuvable,
-  // 404) et, même corrigé côté id seul, aurait affiché au checkout un
-  // montant (snapshot) différent du montant réellement facturé (prix
-  // courant). state.products (catalogue actif chargé côté boutique) est
-  // la même source que handleOpenItemProduct() utilise déjà pour détecter
-  // un produit supprimé/désactivé depuis le partage — même garde ici.
   const cartItems = [];
   let unavailableCount = 0;
   items.forEach((it) => {
@@ -949,18 +920,7 @@ function handleBuySelectedItems() {
       shared_cart_item_id: it.id,
       product,
       quantity: it.quantity || 1,
-      // GAP-07 §12 — l'unité vendable choisie (SKU) doit survivre jusqu'au
-      // payload de commande. it.variant_combo vient du snapshot liste
-      // (services/shared-cart-reads.js) : b-checkout.js lit i.variant_combo
-      // directement (jamais depuis it.product, qui ne porte que le
-      // catalogue générique) pour résoudre le même product_skus côté
-      // serveur que celui affiché dans la modale au moment du partage.
       variant_combo: it.variant_combo || null,
-      // Correctif V2-E §2 — métadonnées snapshot conservées pour le seul
-      // rendu du checkout (variation de prix, doctrine §3). Ne sert jamais
-      // au calcul du total ni au payload envoyé au backend : cartTotal()
-      // (b-cart-core.js) et le payload de commande (b-checkout.js) lisent
-      // exclusivement it.product.price_kmf, jamais ce snapshot.
       shared_list_context: {
         snapshot_unit_price_kmf: Number(it.unit_price_kmf) || 0,
         snapshot_name: it.name || null,
@@ -980,19 +940,16 @@ function handleBuySelectedItems() {
   }
 
   if (!cartItems.length) {
-    showToast("Liste invalide, réessayez.", 'error');
+    showToast('Plus rien à acheter dans cette liste.', 'info');
     return;
   }
 
   const started = checkoutSharedListSelection(cartItems);
   if (!started) {
-    showToast("Liste invalide, réessayez.", 'error');
+    showToast("Impossible de lancer l'achat, réessayez.", 'error');
     return;
   }
 
-  // Écoute un seul cycle de fermeture du modal de commande pour détecter un
-  // conflit d'achat (article réclamé entre-temps) et rafraîchir la liste
-  // (mandat §8 "Conflit").
   const observer = new MutationObserver(() => {
     if (dom.orderModal && !dom.orderModal.classList.contains('open')) {
       observer.disconnect();
