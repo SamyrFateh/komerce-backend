@@ -32,10 +32,14 @@ test.describe('FLOW — Wallet authentifié', () => {
     expect(session.authenticated, 'La session doit être active').toBe(true);
 
     // ── 2. Naviguer vers l'onglet wallet ──
-    await navigateToTab(page, 'wallet');
+    // Le tab s'appelle 'komerce' (Mon Komerce) depuis la refonte nav.
+    // Il contient #k-komerce-view qui initialise #k-wallet-view à l'intérieur.
+    await navigateToTab(page, 'komerce');
 
+    // Attendre d'abord #k-komerce-view (container), puis #k-wallet-view (wallet)
+    await page.waitForSelector('#k-komerce-view', { timeout: 5_000 });
     const walletView = page.locator('#k-wallet-view');
-    await expect(walletView).toBeAttached({ timeout: 5_000 });
+    await expect(walletView).toBeAttached({ timeout: 8_000 });
 
     await page.waitForFunction(
       () => {

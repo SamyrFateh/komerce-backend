@@ -28,6 +28,7 @@ const {
   openFirstCard,
   addToCartFromModal,
   openCartDrawer,
+  acceptConfirms,
 } = require('../helpers/boutique.helpers');
 const {
   verifySharedCart,
@@ -79,6 +80,7 @@ test.describe('FLOW — Liste partageable (créateur)', () => {
       'POST',
     );
 
+    acceptConfirms(page); // É5 — window.confirm avant création
     await shareBtn.click();
 
     // Aucun formulaire de création ne doit apparaître.

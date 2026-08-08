@@ -262,7 +262,7 @@ test.describe('STRESS — Gros panier (S2)', () => {
     await openCheckout(page);
 
     // Le checkout ne doit pas crasher avec un gros panier
-    const checkoutBody = page.locator('#k-order-modal, .k-order-modal');
+    const checkoutBody = page.locator('#k-order-modal, .k-order-modal').first();
     await expect(checkoutBody).toBeVisible({ timeout: 10_000 });
 
     // Vérifier que le total est > 0 et pas NaN

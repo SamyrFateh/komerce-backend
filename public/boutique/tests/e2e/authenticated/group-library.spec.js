@@ -47,6 +47,7 @@ const {
   addToCartFromModal,
   closeModal,
   openCartDrawer,
+  acceptConfirms,
 } = require('../helpers/boutique.helpers');
 const {
   getClientShareState,
@@ -86,6 +87,7 @@ test.describe('FLOW — Bibliothèque "Mes listes" (F23)', () => {
         Object.defineProperty(navigator, 'share', { configurable: true, value: async () => {} });
       } catch (_) {}
     });
+    acceptConfirms(page); // É5 — window.confirm avant création
     await shareBtn.click();
     await page.waitForFunction(
       () => !!sessionStorage.getItem('kmrc_share'),

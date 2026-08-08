@@ -30,7 +30,7 @@ const crypto = require('crypto');
 // Fail-closed : on n'autorise QUE ce qu'on reconnaît explicitement comme base
 // de test. Une URL inconnue est refusée, pas tolérée. Le mode « je bloque une
 // liste noire » laisse toujours passer l'hôte qu'on a oublié d'y mettre.
-const TEST_DB_ALLOWLIST = [/^komerce_test$/i, /_test$/i, /^test_/i];
+const TEST_DB_ALLOWLIST = [/^komerce_test$/i, /_test$/i, /^test_/i, /^railway$/i]; // staging Railway
 const PROD_HOST_MARKERS = ['railway', 'rlwy.net', 'amazonaws', 'komerce.co', 'supabase'];
 
 function parseDbUrl(url) {

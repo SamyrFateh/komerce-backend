@@ -62,6 +62,7 @@ const {
   addToCartFromModal,
   closeModal,
   openCartDrawer,
+  acceptConfirms,
 } = require('../helpers/boutique.helpers');
 const {
   getClientShareState,
@@ -113,7 +114,8 @@ test.describe('FLOW — Conflit d\'achat sur une liste partagée (F24)', () => {
           Object.defineProperty(navigator, 'share', { configurable: true, value: async () => {} });
         } catch (_) {}
       });
-      await shareBtn.click();
+      acceptConfirms(page); // É5 — window.confirm avant création
+    await shareBtn.click();
       await page.waitForFunction(
         () => !!sessionStorage.getItem('kmrc_share'),
         { timeout: 15_000 },

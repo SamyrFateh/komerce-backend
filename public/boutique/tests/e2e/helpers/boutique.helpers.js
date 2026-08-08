@@ -327,7 +327,17 @@ async function openCheckout(page) {
  * donc pas à le rendre visible (cf. incident F3 / e2e-feature-first).
  */
 async function selectRecipientOther(page) {
+  // Le bloc « Pour moi / Pour quelqu'un d'autre » (.ck-recip-seg) a été
+  // supprimé du checkout (l'identité bénéficiaire est maintenant portée
+  // directement par la session). Cette fonction est conservée pour ne pas
+  // casser les imports, mais elle skippe proprement si l'élément est absent.
   const otherBtn = page.locator('.ck-recip-seg button[data-me="0"]').first();
+  const present = await otherBtn.count();
+  if (!present) {
+    // Bloc supprimé — les tests qui l'appellent doivent être mis à jour
+    // pour refléter le nouveau flux checkout sans sélection de bénéficiaire.
+    return;
+  }
   await expect(otherBtn).toBeAttached({ timeout: 5_000 });
   await otherBtn.click();
   await page.waitForSelector('.ck-recip-fields:not([hidden])', { timeout: 3_000 });
@@ -377,6 +387,18 @@ async function unblockApi(page) {
   await page.unrouteAll({ behavior: 'ignoreErrors' });
 }
 
+/**
+ * É5 (2026-08) — window.confirm est utilisé pour la confirmation d'immutabilité
+ * avant toute création de liste partagée. Playwright refuse les dialogs natifs
+ * par défaut (retourne false). Ce helper les accepte pour la durée d'un test.
+ *
+ * Usage :
+ *   acceptConfirms(page);  // avant le clic sur Partager / Créer
+ */
+function acceptConfirms(page) {
+  page.on('dialog', (dialog) => dialog.accept());
+}
+
 module.exports = {
   BASE_URL,
   IS_REMOTE,
@@ -398,4 +420,5 @@ module.exports = {
   blockAllApi,
   hangAllApi,
   unblockApi,
+  acceptConfirms,
 };

@@ -617,18 +617,17 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     expect(stateAfterReload?.token).toBe(token);
   });
 
-  test('F22-13 — le quota de listes actives se libère immédiatement après une fermeture (P0)', async ({ page }) => {
-    // P0 — QUOTA BACKEND (services/shared-cart-creation.js : le COUNT du
-    // quota ne filtre plus que status = 'open'). Ce scénario couvre le
-    // contrat de bout en bout, pas seulement la requête SQL isolée (déjà
-    // couverte en unitaire, tests/unit/shared-cart-creation.test.js) :
-    // atteindre la limite, fermer UNE liste, et vérifier qu'une nouvelle
-    // création redevient immédiatement possible, sans délai ni attente.
-    const MAX_ACTIVE_CARTS_PER_USER = 5;
+  test('F22-13 — Règle V1 : 1 liste OPEN max par créateur, le slot se libère immédiatement après fermeture', async ({ page }) => {
+    // Règle V1 (2026-08) — 1 liste OPEN par organisateur (remplace l'ancien
+    // quota de 5). Garanti par UNIQUE INDEX shared_carts_one_open_per_organizer
+    // (migration 129) + garde applicative (shared-cart-creation.js).
+    //
+    // Ce scénario couvre le contrat bout-en-bout :
+    //   1. Première création → OK (200)
+    //   2. Seconde création sans fermer → refusée (409, code open_list_exists)
+    //   3. Fermer la première → slot libéré immédiatement
+    //   4. Nouvelle création → OK (200)
 
-    // Obtenir un produit réellement vendable depuis le même parcours UI que
-    // les autres scénarios, puis réutiliser son identité canonique pour les
-    // créations API du test de quota.
     await addNProductsToCart(page, 1);
     const localCart = await getClientCart(page);
     expect(localCart.length).toBeGreaterThan(0);
@@ -638,24 +637,20 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
       quantity: Number(seed.qty) || 1,
       variant_combo: seed.variant_combo || null,
     }];
-    expect(cartItems[0].product_id, 'Le produit seed du quota doit avoir un id').toBeTruthy();
+    expect(cartItems[0].product_id, 'Le produit seed doit avoir un id').toBeTruthy();
 
-    const created = [];
-    for (let i = 0; i < MAX_ACTIVE_CARTS_PER_USER; i += 1) {
-      const result = await createSharedListViaApi(page, cartItems);
-      expect(result.status, `Création ${i + 1}/${MAX_ACTIVE_CARTS_PER_USER}`).toBe(200);
-      expect(result.body?.shared_cart_id).toBeTruthy();
-      expect(result.body?.token).toBeTruthy();
-      created.push(result.body);
-    }
+    // 1. Première création → OK.
+    const first = await createSharedListViaApi(page, cartItems);
+    expect(first.status, 'Première création doit réussir').toBe(200);
+    expect(first.body?.shared_cart_id).toBeTruthy();
 
-    // 5 open : la 6e est réellement refusée par le backend.
+    // 2. Seconde création (liste OPEN existante) → 409 avec code open_list_exists.
     const blocked = await createSharedListViaApi(page, cartItems);
-    expect(blocked.status).toBe(400);
-    expect(blocked.body?.error || '').toMatch(/Limite atteinte/i);
+    expect(blocked.status, 'Seconde création doit être refusée (V1)').toBe(409);
+    expect(blocked.body?.code).toBe('open_list_exists');
+    expect(blocked.body?.existing_token).toBeTruthy();
 
-    // Fermer UNE liste seulement. Ne surtout pas appeler le helper de cleanup
-    // ici : il annulerait toutes les listes et invaliderait la précondition.
+    // 3. Fermer la première liste.
     const closeStatus = await page.evaluate(async ({ id, base }) => {
       const resp = await fetch(new URL(`/api/shared-carts/${id}/close`, base).href, {
         method: 'POST',
@@ -663,14 +658,14 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
       });
       return resp.status;
     }, {
-      id: created[0].shared_cart_id,
+      id: first.body.shared_cart_id,
       base: BASE_URL.replace('/boutique/', ''),
     });
     expect(closeStatus).toBe(200);
 
-    // 4 open + 1 closed : un slot doit être disponible immédiatement.
+    // 4. Nouvelle création immédiatement possible après fermeture.
     const freed = await createSharedListViaApi(page, cartItems);
-    expect(freed.status).toBe(200);
-    expect(freed.body?.token, 'La fermeture doit libérer immédiatement un slot de liste active').toBeTruthy();
+    expect(freed.status, 'La fermeture doit libérer le slot immédiatement').toBe(200);
+    expect(freed.body?.token).toBeTruthy();
   });
 });

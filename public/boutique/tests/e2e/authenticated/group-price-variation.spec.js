@@ -47,6 +47,7 @@ const {
   waitForGrid,
   closeModal,
   openCartDrawer,
+  acceptConfirms,
 } = require('../helpers/boutique.helpers');
 const {
   getClientShareState,
@@ -191,7 +192,8 @@ test.describe('FLOW — Variation de prix au checkout (F26)', () => {
         } catch (_) {}
       });
 
-      await shareBtn.click();
+      acceptConfirms(page); // É5 — window.confirm avant création
+    await shareBtn.click();
 
       await page.waitForFunction(
         () => !!sessionStorage.getItem('kmrc_share'),
