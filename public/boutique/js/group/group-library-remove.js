@@ -64,17 +64,18 @@ function scheduleDecoration() {
 function syncActiveListSaveButton() {
   const saved = state.libraryContext?.saved;
   const token = state.sharedListContext?.token;
-  // P1 (audit sélecteurs obsolètes, même cause que l'audit E2E group-*) —
-  // 'k-shared-list-save' n'existe plus dans aucun rendu depuis la
-  // migration vers le side cart / drawer canonique : le bouton réel est
-  // 'k-sc-snap-save' (desktop) ou 'k-cart-snap-save' (mobile), voir
-  // js/b-cart.js::getOrCreateSnapshotButton(). Avec l'ancien id, ce lookup
-  // retournait toujours null et la synchro ci-dessous ne s'appliquait
-  // jamais : après avoir retiré une liste de « Mes listes » pendant
-  // qu'elle restait la liste active du side cart, le bouton Sauvegarder
-  // restait bloqué sur "✓ Sauvegardée" jusqu'au prochain rendu complet.
-  const button = document.getElementById('k-sc-snap-save')
-    || document.getElementById('k-cart-snap-save');
+  // P2 (LOT 13, même cause que P1 ci-dessus, réapparue avec la refonte du
+  // footer) — b-cart.js::snapCreateEl() a remplacé le pattern par id
+  // réutilisable (getOrCreateSnapshotButton, 'k-sc-snap-save' /
+  // 'k-cart-snap-save') par des boutons jetables marqués uniquement
+  // data-snapshot-button="1" (reconstruits à chaque rendu, aucun id
+  // stable). Ce lookup par id retournait donc de nouveau toujours null.
+  // On cible désormais le bouton par son marqueur + son texte (aligné sur
+  // b-cart.js::applySnapshotDrawerFooter/applySnapshotSideCartChrome —
+  // 'Sauvegarder' / '✓ Sauvegardée', jamais '☆ Sauvegarder').
+  const button = Array.from(
+    document.querySelectorAll('[data-snapshot-button="1"]')
+  ).find((el) => /^(Sauvegarder|✓ Sauvegardée)$/.test((el.textContent || '').trim()));
 
   if (!button || !token) return;
 
@@ -94,13 +95,11 @@ function syncActiveListSaveButton() {
 
   if (!stillSaved) {
     if (button.disabled) button.disabled = false;
-    // Aligné sur le texte réellement posé par b-cart.js::renderCartSnapshot
-    // ('☆ Sauvegarder' / '✓ Sauvegardée', getOrCreateSnapshotButton) — ne
-    // jamais réintroduire un libellé divergent ('...cette liste') qui ne
-    // correspondrait plus à ce que le rendu complet afficherait au
-    // prochain cycle.
-    if (button.textContent !== '☆ Sauvegarder') {
-      button.textContent = '☆ Sauvegarder';
+    // Aligné sur le texte réellement posé par b-cart.js (§D/§E, LOT 13) —
+    // ne jamais réintroduire un libellé divergent qui ne correspondrait
+    // plus à ce que le rendu complet afficherait au prochain cycle.
+    if (button.textContent !== 'Sauvegarder') {
+      button.textContent = 'Sauvegarder';
     }
   }
 }

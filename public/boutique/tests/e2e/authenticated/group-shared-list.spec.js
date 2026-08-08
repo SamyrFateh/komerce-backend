@@ -20,7 +20,11 @@
  *   - ouverture fiche produit → `.k-cart-snapshot-item-open`
  *   - statut ligne → `.k-cart-snapshot-item-status` / badge `.is-claimed`
  *   - achat  → un bouton `.k-cart-item-buy` PAR ligne (plus de sélection +
- *     CTA global), option discrète `#k-cart-snap-buyall` / `#k-sc-snap-buyall`
+ *     CTA global), option discrète `.k-snap-btn-primary` ("Acheter le
+ *     reste", LOT 13 — remplace les anciens id `#k-cart-snap-buyall` /
+ *     `#k-sc-snap-buyall`, retirés par la refonte du footer : les boutons
+ *     du footer snapshot sont désormais jetables, sans id stable, ciblés
+ *     par classe + texte, cf. b-cart.js::snapCreateEl)
  *   - `#k-cart-surface-switch` est le conteneur `.k-cart-tabs` des deux
  *     onglets [ Mon panier ] [ Liste partagée ] (É4, 2026-08). L'onglet
  *     liste porte la classe `.k-cart-tab--active` quand une OPEN est affichée.
@@ -457,10 +461,14 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     }
   });
 
-  test('F22-8 — "Payer" règle en un seul passage toutes les lignes encore disponibles, puis disparaît', async ({ page }) => {
+  test('F22-8 — "Acheter le reste" achète explicitement en une commande toutes les lignes encore disponibles, puis disparaît', async ({ page }) => {
     const { token } = await createSharedList(page, 2);
 
-    const buyAllBtn = page.locator('#k-side-cart #k-sc-snap-buyall');
+    // P1 (LOT 13) — le footer snapshot n'a plus d'id stable sur ses
+    // boutons (b-cart.js::snapCreateEl, boutons jetables reconstruits à
+    // chaque rendu) : on cible par rôle + texte exact, comme les tests
+    // unitaires (helpers/query-helpers.js::findButtonByText).
+    const buyAllBtn = page.locator('#k-side-cart').getByRole('button', { name: 'Acheter le reste', exact: true });
     await expect(buyAllBtn).toBeVisible({ timeout: 10_000 });
 
     await buyAllBtn.click();
@@ -480,7 +488,7 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     try {
       await expect(page.locator('#k-side-cart .k-cart-snapshot-item.is-cart-item-claimed')).toHaveCount(2, { timeout: 15_000 });
       // Plus rien de disponible → le CTA discret disparaît.
-      await expect(page.locator('#k-side-cart #k-sc-snap-buyall')).toHaveCount(0);
+      await expect(page.locator('#k-side-cart').getByRole('button', { name: 'Acheter le reste', exact: true })).toHaveCount(0);
 
       const check = await verifySharedCart(page, token);
       expect(check.exists).toBe(true);
@@ -501,14 +509,14 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     // liste désormais fermée.
     const { token } = await createSharedList(page, 1);
 
-    const closeBtn = page.locator('#k-side-cart #k-sc-snap-closelist');
+    const closeBtn = page.locator('#k-side-cart').getByRole('button', { name: 'Fermer la liste', exact: true });
     await expect(closeBtn).toBeVisible({ timeout: 10_000 });
     await expect(closeBtn).toBeEnabled();
     await closeBtn.click();
 
     await expect(page.locator('#k-side-cart .k-cart-snapshot-item')).toHaveCount(0, { timeout: 10_000 });
     await expect(page.locator('#k-cart-surface-switch')).toHaveCount(0);
-    await expect(page.locator('#k-side-cart #k-sc-snap-closelist')).toHaveCount(0);
+    await expect(page.locator('#k-side-cart').getByRole('button', { name: /Fermer la liste|Liste fermée/ })).toHaveCount(0);
 
     const check = await verifySharedCart(page, token);
     expect(check.exists).toBe(true);
@@ -521,7 +529,7 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     const postSpy = await spyOnApi(page, '/api/shared-carts/from-cart-items', 'POST');
     await stubShareChannels(page);
 
-    const reshareBtn = page.locator('#k-side-cart #k-sc-snap-share');
+    const reshareBtn = page.locator('#k-side-cart').getByRole('button', { name: 'Partager', exact: true });
     await expect(reshareBtn).toBeVisible({ timeout: 10_000 });
     await reshareBtn.click();
 

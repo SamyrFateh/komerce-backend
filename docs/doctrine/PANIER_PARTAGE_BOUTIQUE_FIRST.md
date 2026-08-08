@@ -124,9 +124,11 @@ dans le slot Liste partagée
 
 `PERSONAL_CART` ou `SHARED_LIST`. Un checkout liste n'absorbe jamais le panier personnel. Les deux intentions restent séparées jusqu'à la création de commande.
 
-**Acheter** = une ligne seulement.
+**Acheter** = acheter une ligne disponible choisie.
 
-**Payer** = toutes les lignes encore disponibles de cette liste.
+**Acheter le reste** = raccourci volontaire permettant d'acheter en une commande toutes les lignes encore disponibles.
+
+**Reste disponible** = valeur informative des lignes non encore achetées. Ce montant n'est jamais une somme due.
 
 ---
 

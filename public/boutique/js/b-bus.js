@@ -39,8 +39,10 @@
  *   nav:goto-track   —                  — ouvrir l'onglet Suivi depuis la confirmation de commande [b-checkout.js → b-nav.js, FIX 2026-07-11]
  *   checkout:order-failed { code, status } — fait : la commande vient d'échouer côté
  *     backend (code métier optionnel, ex. 'shared_cart_item_already_claimed'). Signal
- *     générique et neutre : b-checkout.js ne connaît jamais la liste partagée
- *     (doctrine checkout_ne_connait_jamais_la_liste, group-checkout-adapter.js) — à
+ *     générique et neutre : b-checkout.js reste agnostique de la logique métier
+ *     de la liste partagée (doctrine checkout_logic_agnostic_of_shared_list,
+ *     group-checkout-adapter.js — seul lien métier réel : shared_cart_item_id
+ *     pour le claim atomique) — à
  *     charge de l'écouteur de filtrer sur `code` s'il est concerné
  *     [b-checkout.js → group-side-cart.js, correctif V2-B.1 §5]
  *   komerce:show { focus } — ouvrir Mon Komerce après authentification ; focus=wallet depuis le checkout [b-checkout.js → b-nav.js/b-komerce.js, LOT4B]

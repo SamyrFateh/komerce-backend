@@ -142,7 +142,7 @@ function findItem(itemId) {
 
 /**
  * Lignes disponibles (non réclamées) du snapshot — celles qui portent un
- * bouton "Acheter" individuel et alimentent "Tout acheter".
+ * bouton "Acheter" individuel et alimentent "Acheter le reste".
  */
 function availableItems() {
   return state.sharedListContext.items.filter((it) => !it.claimed);
@@ -151,7 +151,7 @@ function availableItems() {
 /**
  * Refonte UX — valeur totale des lignes encore disponibles. Sert
  * uniquement d'affichage informatif (sous-total footer) et de base au CTA
- * discret "Tout acheter" (handleBuyAllAvailable). Plus de notion de
+ * discret "Acheter le reste" (handleBuyAllAvailable). Plus de notion de
  * sélection locale : soit on achète une ligne, soit on les achète toutes.
  */
 function availableTotal() {
@@ -423,7 +423,7 @@ export function clearSharedListContext() {
  * liste publiée, ni pour l'organisateur ni pour le participant (doctrine
  * §1.B — snapshot immutable dès publication : pas de stepper, pas de
  * retrait, pas de mode édition). Chaque ligne disponible porte uniquement
- * un bouton "Acheter" individuel ; "Tout acheter" agit sur l'ensemble des
+ * un bouton "Acheter" individuel ; "Acheter le reste" agit sur l'ensemble des
  * lignes encore disponibles. Les anciens handleQuantityStep/handleRemoveItem
  * et le mode édition à bascule (toggleEditMode) ont été supprimés — ne pas
  * les réintroduire dans les commentaires ou le code sans décision produit
@@ -442,6 +442,19 @@ function headerCopy() {
     title: ctx.title || (first ? `Liste de ${first}` : 'Liste partagée'),
     sub: first ? `${first} a préparé cette liste pour vous` : 'Cette liste a été partagée avec vous',
   };
+}
+
+/**
+ * LOT 13 §F — titre du bandeau d'affichage checkout, purement décoratif
+ * (voir group-checkout-adapter.js::checkoutSharedListSelection). Distinct
+ * de headerCopy() ci-dessus (qui alimente le chrome du drawer/side cart,
+ * pas le checkout) : gabarit imposé "Achat pour la liste de X" / fallback
+ * "Achat pour une liste partagée" — jamais réutilisé pour une décision.
+ */
+function checkoutContextTitle() {
+  const ctx = state.sharedListContext;
+  const first = ctx.creatorFirstName;
+  return first ? `Achat pour la liste de ${first}` : 'Achat pour une liste partagée';
 }
 
 /**
@@ -499,7 +512,7 @@ async function handleSaveList() {
  * HTML — il adapte uniquement les données. Doctrine finale (2026-08) —
  * plus de sélection locale : availableCount/availableTotal couvrent tout
  * ce qui n'est pas encore réclamé, achetable ligne par ligne ou en bloc
- * ("Tout acheter").
+ * ("Acheter le reste").
  */
 function buildSnapshotRenderContext() {
   const ctx = state.sharedListContext;
@@ -521,8 +534,9 @@ function buildSnapshotRenderContext() {
     // organisateur ou non. headerTitle distingue seulement le libellé.
     headerTitle: ctx.isCreator ? 'Votre liste' : title,
     availableCount: availableItems().length,
-    // Refonte UX — affichage informatif + base du CTA discret "Tout
-    // acheter" (plus de selectedTotal, il n'y a plus de sélection).
+    // Refonte UX — availableTotal reste informatif (montant de ce qui
+    // reste disponible, jamais une somme due) ; plus de selectedTotal, il
+    // n'y a plus de sélection.
     availableTotal: availableTotal(),
     showSaveAction,
     saved: showSaveAction && savedListTokensThisSession.has(ctx.token),
@@ -916,7 +930,7 @@ function handleBuySingleItem(itemId) {
     },
   }];
 
-  const started = checkoutSharedListSelection(cartItems);
+  const started = checkoutSharedListSelection(cartItems, { title: checkoutContextTitle() });
   if (!started) {
     showToast("Impossible de lancer l'achat, r\u00e9essayez.", 'error');
     return;
@@ -934,7 +948,7 @@ function handleBuySingleItem(itemId) {
 }
 
 /**
- * Doctrine finale — "Tout acheter" : construit un panier éphémère avec
+ * Doctrine finale — "Acheter le reste" : construit un panier éphémère avec
  * TOUTES les lignes encore disponibles et lance un unique checkout.
  * Optionnel et discret (organisateur et participant) — jamais le CTA
  * principal de la liste, qui reste le bouton "Acheter" par ligne.
@@ -991,7 +1005,7 @@ function handleBuyAllAvailable() {
     return;
   }
 
-  const started = checkoutSharedListSelection(cartItems);
+  const started = checkoutSharedListSelection(cartItems, { title: checkoutContextTitle() });
   if (!started) {
     showToast("Impossible de lancer l'achat, réessayez.", 'error');
     return;

@@ -676,20 +676,21 @@ describe('b-cart', () => {
       expect(buyBtn2).toBeNull();
     });
 
-    it('"Payer" affiche la valeur totale des lignes disponibles (réclamées exclues)', () => {
+    it('"Acheter le reste" est le CTA global, sans aucun montant dans son texte (doctrine — le montant reste informatif, affiché une seule fois dans le récap)', () => {
       activateList(); // i1 disponible (6500), i2 réclamé (exclu du total)
-      const buyAllBtn = findButtonByText('Payer');
+      const buyAllBtn = findButtonByText('Acheter le reste');
       expect(buyAllBtn).not.toBeNull();
-      expect(buyAllBtn.textContent).toContain('6500 KMF');
+      expect(buyAllBtn.textContent.trim()).toBe('Acheter le reste');
+      expect(buyAllBtn.textContent).not.toMatch(/KMF/);
       expect(buyAllBtn.disabled).toBeFalsy();
     });
 
-    it('tout est réclamé → aucun bouton "Acheter" par ligne, "Payer" absent', () => {
+    it('tout est réclamé → aucun bouton "Acheter" par ligne, "Acheter le reste" absent', () => {
       activateList({ items: [
         { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: true },
       ] });
       expect(dom.cartBody.querySelector('.k-cart-item-buy')).toBeNull();
-      expect(findButtonByText('Payer')).toBeNull();
+      expect(findButtonByText('Acheter le reste')).toBeNull();
     });
 
     // Mandat §4 — une liste fermée est entièrement non opérationnelle :
@@ -697,7 +698,7 @@ describe('b-cart', () => {
     // réel trouvé en test Playwright contre un serveur/DB réel (invisible
     // aux tests jsdom précédents) : un CTA restait affiché et cliquable
     // sur une liste fermée.
-    it('liste fermée (readOnly) → aucun bouton "Acheter" par ligne, "Payer" absent, même avec des lignes disponibles', () => {
+    it('liste fermée (readOnly) → aucun bouton "Acheter" par ligne, "Acheter le reste" absent, même avec des lignes disponibles', () => {
       activateList({
         isCreator: true,
         cart: { status: 'closed' },
@@ -706,8 +707,14 @@ describe('b-cart', () => {
         ],
       });
       expect(dom.cartBody.querySelector('.k-cart-item-buy')).toBeNull();
-      expect(findButtonByText('Payer')).toBeNull();
-      expect(document.getElementById('k-cart-snap-closelist').textContent.trim()).toBe('Liste fermée');
+      expect(findButtonByText('Acheter le reste')).toBeNull();
+      // Sélecteur mort retiré (id d'origine disparu depuis la refonte du
+      // footer, Lots 1+2/LOT13) — le bouton Fermer devient disabled et
+      // libellé "Liste fermée" plutôt que masqué (§4 du mandat), on le
+      // vérifie donc par texte comme le reste du fichier.
+      const closeLink = findButtonByText('Liste fermée');
+      expect(closeLink).not.toBeNull();
+      expect(closeLink.disabled).toBe(true);
     });
 
     it('participant (non organisateur) : lecture seule, aucun contrôle d\'édition, mais garde son bouton "Acheter" par ligne', () => {

@@ -45,6 +45,32 @@
 
 .ck-order-title-text { font-size: 1rem; letter-spacing: .015em; }
 
+/* ── Bandeau contexte liste partagée (LOT 13 §F) ─────────────────
+ * Purement décoratif — alimenté par state.checkoutDisplayContext
+ * (group-checkout-adapter.js), jamais lu pour une décision métier.
+ * Absent sur un checkout panier personnel classique.
+ */
+.ck-shared-list-context-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 9px 13px;
+  border-radius: var(--radius-sm);
+  background: rgba(77,166,104,.10);
+  border: 1px solid rgba(77,166,104,.28);
+  color: var(--checkout-accent-deep);
+  font-size: .82rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.ck-shared-list-context-banner::before {
+  content: '🎁';
+  font-size: .95rem;
+  line-height: 1;
+}
+
 /* ── Rail vertical ────────────────────────────────────────────── */
 
 .k-order-overlay.open .k-order-body--checkout {

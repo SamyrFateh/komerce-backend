@@ -677,7 +677,7 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
    * @property {boolean} isOrganizer
    * @property {string} headerTitle
    * @property {number} availableCount - total de lignes non réclamées (distingue "Tout est acheté" de 0 disponible)
-   * @property {number} availableTotal - valeur totale des lignes disponibles — affichage informatif + base du CTA discret "Tout acheter"
+   * @property {number} availableTotal - valeur informative des lignes disponibles (jamais une somme due) — base du CTA discret "Acheter le reste"
    * @property {boolean} showSaveAction
    * @property {boolean} saved
    */
@@ -884,23 +884,19 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   }
 
   /**
-   * Bouton dédié créé une seule fois dans un conteneur canonique (jamais
-   * dans un panneau propre), ré-utilisé et simplement mis à jour aux
-   * rendus suivants. `el.onclick = fn` (affectation, pas addEventListener)
-   * pour rebrancher l'action courante sans empiler de listeners.
+   * LOT 13 (refonte drawers + checkout) — création jetable d'un élément
+   * marqué data-snapshot-button="1", reconstruit à chaque appel de
+   * applySnapshotDrawerFooter/applySnapshotSideCartChrome (removeSnapshotButtons
+   * nettoie tout au début de chaque rendu, cf. ci-dessus). Remplace l'ancien
+   * getOrCreateSnapshotButton() (réutilisation inter-rendu par id) — plus
+   * simple à composer pour les deux rangées d'action (primaire / secondaire)
+   * du footer refondu, sans changer le contrat de nettoyage existant.
    */
-  function getOrCreateSnapshotButton(container, id, className) {
-    if (!container) return null;
-    let btn = container.querySelector('#' + id);
-    if (!btn) {
-      btn = document.createElement('button');
-      btn.type = 'button';
-      btn.id = id;
-      btn.className = className;
-      btn.dataset.snapshotButton = '1';
-      container.appendChild(btn);
-    }
-    return btn;
+  function snapCreateEl(tag, className) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    el.dataset.snapshotButton = '1';
+    return el;
   }
 
   // Boutons du panier personnel non applicables en mode snapshot (achat/
@@ -929,47 +925,78 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     const claimedCount = items.filter((it) => it.claimed).length;
     const itemCountEl = document.getElementById('k-cart-item-count');
     const itemPluralEl = document.getElementById('k-cart-item-plural');
+    const recapWordEl = document.getElementById('k-cart-recap-word');
     const subtotalEl = document.getElementById('k-cart-subtotal-val');
     if (itemCountEl) itemCountEl.textContent = `${claimedCount}/${items.length}`;
-    if (itemPluralEl) itemPluralEl.textContent = ' déjà achetés';
-    // Doctrine finale — plus de sélection locale : le sous-total affiché
-    // est la valeur de tout ce qui reste disponible (informatif), pas une
-    // sélection. Le CTA d'achat, lui, est désormais par ligne.
-    if (subtotalEl) subtotalEl.textContent = fmt(context.availableTotal, 'KMF');
-    if (dom.cartTotalVal) dom.cartTotalVal.textContent = fmt(context.availableTotal, 'KMF');
+    // LOT 13 §D — plus de mot "article" en mode snapshot ("0/8 article
+    // déjà achetés" → "0/8 achetés") : #k-cart-recap-word est masqué par
+    // CSS via [data-mode="shared-list"], on ne fait ici que garder le
+    // texte du pluriel neutre pour le cas où il redevient visible ailleurs.
+    if (recapWordEl) recapWordEl.textContent = 'article';
+    if (itemPluralEl) itemPluralEl.textContent = ' achetés';
+    // Doctrine (mise à jour) — le montant affiché ici n'est jamais une
+    // somme due : c'est la valeur informative de ce qui reste disponible
+    // à l'achat, jamais un solde à régler ("Reste : X KMF", pas "Total").
+    if (subtotalEl) subtotalEl.textContent = `Reste : ${fmt(context.availableTotal, 'KMF')}`;
+    // LOT 13 §D — la ligne .k-cart-total-row (deuxième affichage du même
+    // montant) est masquée en mode snapshot via CSS
+    // (.k-cart-drawer[data-mode="shared-list"] .k-cart-total-row), donc on
+    // ne renseigne plus ces champs ici : ils redeviennent pertinents dès le
+    // retour au panier personnel (renderCartBody() les réécrit alors).
     if (dom.cartTotalConv) dom.cartTotalConv.textContent = '';
 
     const btnRow = document.getElementById('k-cart-footer-btns');
     removeSnapshotButtons(btnRow);
     if (!btnRow) return;
 
+    // LOT 13 §D — refonte : une seule rangée primaire (Sauvegarder + Acheter
+    // le reste côte à côte, gabarit cible), une rangée secondaire discrète
+    // (Partager / Fermer la liste). #k-cart-continue (natif, non retiré
+    // par removeSnapshotButtons) est repositionné en dernier par CSS
+    // (order) et restylé en lien discret — voir shared-list-side-cart.css.
+    const primaryRow = snapCreateEl('div', 'k-snap-primary-row');
     if (context.showSaveAction) {
-      const saveBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-save', 'k-cart-continue-shop');
-      saveBtn.textContent = context.saved ? '✓ Sauvegardée' : '☆ Sauvegarder';
+      const saveBtn = snapCreateEl('button', 'k-snap-btn-secondary');
+      saveBtn.type = 'button';
+      saveBtn.textContent = context.saved ? '✓ Sauvegardée' : 'Sauvegarder';
       saveBtn.disabled = !!context.saved;
       saveBtn.onclick = () => actions.onSave();
+      primaryRow.appendChild(saveBtn);
     }
+    // Doctrine (mise à jour) — "Acheter le reste" est un raccourci
+    // volontaire (achète en une commande toutes les lignes encore
+    // disponibles), jamais un CTA de paiement d'un solde : aucun montant
+    // dans le texte du bouton (le montant reste affiché, informatif,
+    // dans la ligne récap au-dessus — pas de répétition ici).
+    if (!context.readOnly && context.availableCount > 0) {
+      const buyAllBtn = snapCreateEl('button', 'k-snap-btn-primary');
+      buyAllBtn.type = 'button';
+      buyAllBtn.textContent = 'Acheter le reste';
+      buyAllBtn.onclick = () => actions.onBuyAll();
+      primaryRow.appendChild(buyAllBtn);
+    }
+    if (primaryRow.children.length) btnRow.appendChild(primaryRow);
+
     // Doctrine d'immutabilité (§1.B) — aucun stepper, aucun bouton de
     // retrait sur une liste publiée, pour personne. L'organisateur ne
-    // voit ici que Partager / Fermer la liste.
+    // voit ici que Partager / Fermer la liste, désormais en actions
+    // secondaires discrètes plutôt qu'en blocs pleine largeur (§D).
     if (context.isOrganizer) {
-      const shareBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-share', 'k-cart-continue-shop');
-      shareBtn.textContent = '📤 Partager';
+      const secondaryRow = snapCreateEl('div', 'k-snap-secondary-row');
+      const shareBtn = snapCreateEl('button', 'k-snap-link');
+      shareBtn.type = 'button';
+      shareBtn.textContent = 'Partager';
       shareBtn.onclick = () => actions.onShare();
+      secondaryRow.appendChild(shareBtn);
 
-      const closeBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-closelist', 'k-cart-continue-shop');
+      const closeBtn = snapCreateEl('button', 'k-snap-link');
+      closeBtn.type = 'button';
       closeBtn.textContent = context.readOnly ? 'Liste fermée' : 'Fermer la liste';
       closeBtn.disabled = !!context.readOnly;
       closeBtn.onclick = () => actions.onClose();
-    }
-    // Doctrine finale — plus de CTA global "Acheter (N)" : chaque ligne a
-    // son propre bouton "Acheter". "Tout acheter" reste disponible en
-    // option discrète, pour organisateur ET participant, tant qu'il reste
-    // au moins une ligne disponible et que la liste est ouverte.
-    if (!context.readOnly && context.availableCount > 0) {
-      const buyAllBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-buyall', 'k-cart-continue-shop');
-      buyAllBtn.textContent = `Payer · ${fmt(context.availableTotal, 'KMF')}`;
-      buyAllBtn.onclick = () => actions.onBuyAll();
+      secondaryRow.appendChild(closeBtn);
+
+      btnRow.appendChild(secondaryRow);
     }
   }
 
@@ -1000,41 +1027,62 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
 
     const totalEl = sc.querySelector('#k-sc-total');
     if (totalEl) totalEl.textContent = fmt(context.availableTotal, 'KMF');
+    // Doctrine (mise à jour) — "Sous-total" implique un solde à régler ;
+    // en mode liste ce montant est uniquement informatif. Restauré à
+    // "Sous-total" par cleanupSnapshotSideCartChrome() pour ne jamais
+    // contaminer le panier personnel.
+    const subtotalWordEl = sc.querySelector('#k-sc-subtotal-word');
+    if (subtotalWordEl) subtotalWordEl.textContent = 'Reste disponible';
 
     const scHeader = sc.querySelector('.k-sc-header');
     removeSnapshotButtons(scHeader);
     if (!scHeader) return;
 
+    // LOT 13 §E — refonte : le side cart desktop est étroit, une seule
+    // action doit dominer. "Acheter le reste" devient l'unique CTA
+    // plein-largeur ; Sauvegarder / Partager / Fermer la liste passent en
+    // actions secondaires discrètes juste sous le CTA (au lieu de 3-4
+    // blocs de hauteur identique empilés — capture terrain, gabarit cible
+    // §E).
+    // Doctrine (mise à jour) — "Acheter le reste" est un raccourci
+    // volontaire, jamais un CTA de paiement d'un solde : aucun montant
+    // dans le texte du bouton (déjà affiché, une seule fois, dans la
+    // ligne "Reste disponible" au-dessus).
+    if (!context.readOnly && context.availableCount > 0) {
+      const buyAllBtn = snapCreateEl('button', 'k-snap-btn-primary');
+      buyAllBtn.type = 'button';
+      buyAllBtn.textContent = 'Acheter le reste';
+      buyAllBtn.onclick = () => actions.onBuyAll();
+      scHeader.appendChild(buyAllBtn);
+    }
+
+    const secondaryRow = snapCreateEl('div', 'k-snap-secondary-row');
     if (context.showSaveAction) {
-      // Correctif capture production — classe dédiée .k-sc-btn-snapshot-action,
-      // jamais .k-sc-btn-cart (display:none desktop pour un bouton natif sans
-      // rapport, "Voir le panier" — cf. css/shared-list-side-cart.css).
-      const saveBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-save', 'k-sc-btn-snapshot-action');
-      saveBtn.textContent = context.saved ? '✓ Sauvegardée' : '☆ Sauvegarder';
+      const saveBtn = snapCreateEl('button', 'k-snap-link');
+      saveBtn.type = 'button';
+      saveBtn.textContent = context.saved ? '✓ Sauvegardée' : 'Sauvegarder';
       saveBtn.disabled = !!context.saved;
       saveBtn.onclick = () => actions.onSave();
+      secondaryRow.appendChild(saveBtn);
     }
     // Doctrine d'immutabilité (§1.B) — aucun stepper, aucun bouton de
     // retrait sur une liste publiée, pour personne. L'organisateur ne
     // voit ici que Partager / Fermer la liste.
     if (context.isOrganizer) {
-      const shareBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-share', 'k-sc-btn-snapshot-action');
-      shareBtn.textContent = '📤 Partager';
+      const shareBtn = snapCreateEl('button', 'k-snap-link');
+      shareBtn.type = 'button';
+      shareBtn.textContent = 'Partager';
       shareBtn.onclick = () => actions.onShare();
+      secondaryRow.appendChild(shareBtn);
 
-      const closeBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-closelist', 'k-sc-btn-snapshot-action');
+      const closeBtn = snapCreateEl('button', 'k-snap-link');
+      closeBtn.type = 'button';
       closeBtn.textContent = context.readOnly ? 'Liste fermée' : 'Fermer la liste';
       closeBtn.disabled = !!context.readOnly;
       closeBtn.onclick = () => actions.onClose();
+      secondaryRow.appendChild(closeBtn);
     }
-    // Doctrine finale — plus de CTA global "Acheter (N)" : chaque ligne a
-    // son propre bouton "Acheter". "Tout acheter" reste disponible en
-    // option discrète, pour organisateur ET participant.
-    if (!context.readOnly && context.availableCount > 0) {
-      const buyAllBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-buyall', 'k-sc-btn-snapshot-action');
-      buyAllBtn.textContent = `Payer · ${fmt(context.availableTotal, 'KMF')}`;
-      buyAllBtn.onclick = () => actions.onBuyAll();
-    }
+    if (secondaryRow.children.length) scHeader.appendChild(secondaryRow);
   }
 
   function cleanupSnapshotSideCartChrome() {
@@ -1052,6 +1100,14 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     // c'est ce nettoyage qui doit le faire.
     const titleLabel = sc.querySelector('.k-sc-title-label');
     if (titleLabel) titleLabel.textContent = 'Mon panier';
+    // Doctrine (mise à jour) — même principe que .k-sc-title-label
+    // ci-dessus : applySnapshotSideCartChrome() réécrit #k-sc-subtotal-word
+    // en "Reste disponible" (montant informatif, jamais un solde), rien
+    // dans le pipeline panier personnel ne le restaure — ce nettoyage le
+    // fait, pour ne jamais faire fuiter le wording liste dans le panier
+    // personnel suivant.
+    const subtotalWordEl = sc.querySelector('#k-sc-subtotal-word');
+    if (subtotalWordEl) subtotalWordEl.textContent = 'Sous-total';
     SIDECART_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => sc.querySelector('#' + id)?.classList.remove('u-hidden'));
     sc.querySelector('.k-sc-title-bar')?.querySelector('#k-sc-snapshot-status')?.remove();
     sc.querySelector('.k-sc-title-bar')?.querySelector('#k-sc-snapshot-contributors')?.remove();

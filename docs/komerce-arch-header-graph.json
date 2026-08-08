@@ -3377,7 +3377,7 @@
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "checkout_ne_connait_jamais_la_liste",
+        "checkout_logic_agnostic_of_shared_list",
         "panier_personnel_source_de_verite"
       ],
       "impactAreas": [
@@ -17743,9 +17743,9 @@
       "doctrine": "un_appel_une_action"
     },
     {
-      "id": "doctrine:checkout_ne_connait_jamais_la_liste",
+      "id": "doctrine:checkout_logic_agnostic_of_shared_list",
       "type": "doctrine",
-      "doctrine": "checkout_ne_connait_jamais_la_liste"
+      "doctrine": "checkout_logic_agnostic_of_shared_list"
     },
     {
       "id": "doctrine:panier_personnel_source_de_verite",
@@ -23809,9 +23809,9 @@
     },
     {
       "from": "public/boutique/js/group/group-checkout-adapter.js",
-      "to": "doctrine:checkout_ne_connait_jamais_la_liste",
+      "to": "doctrine:checkout_logic_agnostic_of_shared_list",
       "type": "doctrine",
-      "label": "checkout_ne_connait_jamais_la_liste"
+      "label": "checkout_logic_agnostic_of_shared_list"
     },
     {
       "from": "public/boutique/js/group/group-checkout-adapter.js",
@@ -47216,7 +47216,7 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "checkout_ne_connait_jamais_la_liste",
+        "checkout_logic_agnostic_of_shared_list",
         "panier_personnel_source_de_verite"
       ],
       "impactAreas": [
@@ -47224,7 +47224,7 @@
         "checkout"
       ],
       "mustCheck": [
-        "doctrine:checkout_ne_connait_jamais_la_liste",
+        "doctrine:checkout_logic_agnostic_of_shared_list",
         "doctrine:panier_personnel_source_de_verite",
         "impact:checkout",
         "impact:shared-cart",

@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-08T15:04:45.950Z",
+  "generatedAt": "2026-08-08T16:02:10.077Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
     "events": 23,
-    "declaredActive": 34,
+    "declaredActive": 37,
     "declaredDead": 9,
     "cssBundles": 3,
     "endpoints": 46,
@@ -1980,7 +1980,7 @@
       "layer": "adapter",
       "criticality": "critical",
       "doctrine": [
-        "checkout_ne_connait_jamais_la_liste",
+        "checkout_logic_agnostic_of_shared_list",
         "panier_personnel_source_de_verite"
       ],
       "depends": [
@@ -3327,6 +3327,9 @@
       "checkout:order-failed",
       "backend",
       "g",
+      "de",
+      "group-checkout-adapter",
+      "pour",
       "charge",
       "komerce:show",
       "nav:goto-komerce-wallet",
@@ -3410,11 +3413,14 @@
       "charge",
       "clearSharedListContext",
       "couvre",
+      "de",
       "desktop",
       "g",
+      "group-checkout-adapter",
       "liste",
       "m",
       "partag",
+      "pour",
       "rappelle",
       "rapport",
       "surface",

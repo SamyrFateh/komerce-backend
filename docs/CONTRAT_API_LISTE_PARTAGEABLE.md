@@ -59,7 +59,7 @@
 | Action | Organisateur | Participant |
 |---|---|---|
 | Acheter (une ligne) | ✅ | ✅ |
-| Payer (toutes lignes dispo) | ✅ | ✅ |
+| Acheter le reste (toutes lignes dispo) | ✅ | ✅ |
 | Partager le lien | ✅ | ✅ |
 | Fermer la liste | ✅ | ✗ |
 | Sauvegarder dans Mes listes | — | ✅ |
@@ -179,7 +179,8 @@ Le code `open_list_exists` doit exposer `existing_token` pour que le frontend pr
 - [ ] Refus de création expose `existing_token` utilisable par le frontend.
 - [ ] Une liste CLOSED ouverte par lien direct → message informatif, side-cart inchangé.
 - [ ] `Acheter` → une seule ligne dans la commande.
-- [ ] `Payer` → toutes les lignes disponibles, aucune ligne du panier personnel.
+- [ ] `Acheter le reste` → toutes les lignes disponibles au moment du clic, aucune ligne du panier personnel. Le bouton n'affiche aucun montant.
+- [ ] Le montant "Reste disponible" affiché en surface liste est purement informatif — jamais présenté comme une somme due.
 - [ ] Ligne déjà achetée → refus DB atomique sous concurrence.
 - [ ] Image : chemin relatif en base → URL absolue en sortie d'API.
 - [ ] Sauvegarder → idempotent (POST /save deux fois = même résultat).

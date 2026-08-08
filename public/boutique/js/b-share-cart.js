@@ -473,10 +473,13 @@ export async function startShareFlow({ reshare = false } = {}) {
     return;
   }
 
-  // L7 — modale Komerce native (primitive showKomerceConfirm depuis group-side-cart.js).
+  // L7 — modale Komerce native (primitive showKomerceConfirm depuis
+  // group-side-cart.js). §5 (doctrine mise à jour) — message simplifié :
+  // l'utilisateur n'a pas besoin de connaître la granularité technique
+  // (articles/variantes/quantités figés) pour comprendre l'immutabilité.
   const confirmed = await showKomerceConfirm({
     title: 'Créer cette liste ?',
-    body: 'Après publication, les articles, variantes et quantités de cette liste seront figés.',
+    body: 'Une fois partagée, cette liste ne sera plus modifiable.',
     confirmLabel: 'Créer la liste',
     cancelLabel: 'Annuler',
   });

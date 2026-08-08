@@ -8,7 +8,7 @@
  * @outputs       ephemeral_canonical_cart, checkout_invocation
  * @depends       ../b-store.js, ../b-checkout.js
  * @used-by       group/group-side-cart.js
- * @doctrine      checkout_ne_connait_jamais_la_liste, panier_personnel_source_de_verite
+ * @doctrine      checkout_logic_agnostic_of_shared_list, panier_personnel_source_de_verite
  * @impact-areas  shared-cart, checkout
  * @version       2026-08
  */
@@ -19,13 +19,26 @@
  * @owner Boutique First — adaptateur entre une sélection de liste et le
  * checkout canonique.
  *
- * Le checkout ne connaît jamais la liste ; la liste ne détourne jamais le
- * panier personnel. Cet adaptateur construit un panier canonique éphémère
- * à partir d'une sélection d'articles de liste, appelle le checkout
- * exactement comme pour un achat personnel, puis restaure le panier
- * personnel dès que le modal de commande se ferme — succès ou annulation,
- * sans distinction : le panier personnel de navigation n'a jamais eu
- * connaissance de la transaction.
+ * Doctrine (mise à jour, LOT 13 §F) — checkout_logic_agnostic_of_shared_list :
+ * le checkout n'a besoin d'AUCUNE logique métier de la liste (prix, lignes,
+ * paiement, livraison, OTP, lifecycle du modal restent strictement ceux du
+ * panier personnel) ; le seul lien métier réel est celui déjà nécessaire au
+ * claim atomique côté serveur (`shared_cart_item_id`, propagé par ligne
+ * ci-dessous, inchangé). Ce module peut en revanche transmettre un contexte
+ * d'AFFICHAGE pur — `checkoutContext.title` ci-dessous — consommé par
+ * b-checkout.js::renderCheckout() uniquement pour peindre un bandeau
+ * ("Achat pour la liste de Fatima"), jamais lu pour une décision (prix,
+ * lignes, branche de code). C'est une évolution volontaire de l'ancienne
+ * formulation absolue "le checkout ne connaît jamais la liste", qui
+ * interdisait même ça.
+ *
+ * La liste ne détourne jamais le panier personnel. Cet adaptateur construit
+ * un panier canonique éphémère à partir d'une sélection d'articles de liste,
+ * appelle le checkout exactement comme pour un achat personnel, puis
+ * restaure le panier personnel ET efface le contexte d'affichage dès que le
+ * modal de commande se ferme — succès ou annulation, sans distinction : le
+ * panier personnel de navigation n'a jamais eu connaissance de la
+ * transaction, et le prochain checkout personnel ne voit jamais ce bandeau.
  *
  * Zéro modification de b-checkout.js pour l'isolation elle-même : dom
  * (services/b-store.js) est un objet partagé peuplé une fois au boot
@@ -50,10 +63,14 @@ import { checkoutCart } from '../b-checkout.js';
  * et restauré dès la fermeture du modal de commande (tout chemin de sortie).
  *
  * @param {Array<{shared_cart_item_id: string, product: object, quantity: number, variant_combo?: object|null}>} selectedItems
+ * @param {{title?: string}} [checkoutContext] — LOT 13 §F, purement
+ *   décoratif : un `title` à peindre en bandeau au-dessus du checkout
+ *   canonique. Jamais lu pour une décision métier. Absent/omis pour un
+ *   checkout personnel classique (aucun bandeau).
  * @returns {boolean} true si le checkout a été déclenché, false si la
  *   sélection était vide/invalide (aucun effet de bord dans ce cas).
  */
-export function checkoutSharedListSelection(selectedItems) {
+export function checkoutSharedListSelection(selectedItems, checkoutContext) {
   if (!Array.isArray(selectedItems) || selectedItems.length === 0) return false;
 
   const validItems = selectedItems.filter(it => it && it.product && it.shared_cart_item_id);
@@ -84,12 +101,18 @@ export function checkoutSharedListSelection(selectedItems) {
 
   const personalCart = state.cart;
   state.cart = ephemeralCart;
+  // LOT 13 §F — bandeau d'affichage pur, jamais lu par b-checkout.js pour
+  // une décision. Absent (undefined) si l'appelant n'en fournit pas.
+  state.checkoutDisplayContext = checkoutContext?.title ? { title: checkoutContext.title } : null;
 
   let restored = false;
   function restorePersonalCart() {
     if (restored) return;
     restored = true;
     state.cart = personalCart;
+    // Efface le bandeau avec le checkout — ne doit jamais survivre pour
+    // contaminer le prochain checkout personnel (§F, mandat explicite).
+    state.checkoutDisplayContext = null;
     observer.disconnect();
   }
 

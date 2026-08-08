@@ -518,6 +518,19 @@ export function renderCheckout() {
       });
     }
 
+    // LOT 13 §F (doctrine checkout_logic_agnostic_of_shared_list) — bandeau
+    // purement décoratif, jamais lu pour une décision (prix/lignes/OTP/
+    // lifecycle restent ceux du checkout personnel standard). Alimenté
+    // uniquement par group-checkout-adapter.js::checkoutSharedListSelection
+    // via state.checkoutDisplayContext, effacé avec le checkout (jamais
+    // persistant, jamais visible sur un checkout panier personnel).
+    if (state.checkoutDisplayContext?.title) {
+      const ctxBanner = document.createElement('div');
+      ctxBanner.className = 'ck-shared-list-context-banner';
+      ctxBanner.textContent = state.checkoutDisplayContext.title;
+      body.insertBefore(ctxBanner, body.firstChild);
+    }
+
     // Pays/zone (Comores/France) déplacé DANS le picker de relais (cf. _openRelaisPicker) :
     // il n'a pas sa place sur l'écran principal — il est le 1er cran du choix de retrait.
 
