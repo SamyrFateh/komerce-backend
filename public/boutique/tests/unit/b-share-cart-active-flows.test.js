@@ -29,6 +29,11 @@ jest.mock('../../js/group/group-state.js', () => ({
 // dynamique de group-side-cart.js + group-api.js (mandat §2/§4).
 jest.mock('../../js/group/group-side-cart.js', () => ({
   activateSharedListContext: mockActivateSharedListContext,
+  // L7 (mandat §11) — primitive de confirmation chargée dynamiquement par
+  // b-share-cart.js (publication / conflit OPEN). Auto-résolution à true,
+  // équivalent du window.confirm(true) qu'elle remplace, pour ne pas changer
+  // le comportement attendu par les tests existants de ce fichier.
+  showKomerceConfirm: jest.fn().mockResolvedValue(true),
 }));
 jest.mock('../../js/group/group-api.js', () => ({
   fetchWithTimeout: jest.requireActual('../../js/group/group-api.js').fetchWithTimeout,
@@ -230,6 +235,10 @@ test('P0-B — un clic normal repartage le lien existant au lieu de recréer une
     message: null,
     items: [],
   };
+  // L2 (mandat §4) — le bouton "Partager" testé ici ne rend que sur la
+  // surface shared-list ; sans elle startShareFlow() considère qu'on clique
+  // depuis Mon panier et tente TOUJOURS de créer MA liste (doctrine P0-2).
+  state.cartSurface = 'shared-list';
 
   await startShareFlow();
 
@@ -310,6 +319,10 @@ test('P0 — liste A active/restaurée puis ouverture de B via « Mes listes » 
     message: null,
     items: [],
   };
+  // L2 (mandat §4) — même remarque : "Partager" ne s'affiche que sur la
+  // surface shared-list (ici, B est affichée après l'ouverture depuis
+  // « Mes listes »).
+  state.cartSurface = 'shared-list';
 
   await startShareFlow();
 

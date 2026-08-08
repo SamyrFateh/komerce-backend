@@ -156,6 +156,14 @@ export const state = {
   cartName:   '',
   shareExpiry: null,
   /**
+   * L3 (mandat §5) — token ?p= détecté au boot par b-nav.js::handleParticipantUrl(),
+   * posé ici SANS activation immédiate pour éviter la race avec
+   * restoreSharedCartFromBackend()/mine. Consommé une seule fois par
+   * b-share-cart.js::install(), qui décide alors de l'ordre d'activation
+   * (URL prioritaire, jamais deux activations concurrentes).
+   */
+  _pendingParticipantToken: null,
+  /**
    * PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — contexte de
    * liste partageable projetée dans le side cart / drawer canonique.
    * Jamais fusionné avec state.cart (mandat §3, invariant explicite).
@@ -174,14 +182,6 @@ export const state = {
     message: null,
     items: [],
   },
-  /**
-   * Mode édition explicite de l'organisateur sur la liste active.
-   * Géré par group-side-cart.js (toggleEditMode), consommé par
-   * buildSnapshotRenderContext et b-cart.js via le contexte de rendu.
-   * false = lecture seule (défaut), true = contrôles quantité/retrait
-   * visibles sur les lignes non achetées.
-   */
-  sharedListEditMode: false,
   /**
    * Amendement V2 §A (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_
    * CART_V2) — quelle surface est projetée dans le side cart / drawer

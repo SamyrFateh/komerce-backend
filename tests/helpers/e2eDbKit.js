@@ -30,7 +30,13 @@ const crypto = require('crypto');
 // Fail-closed : on n'autorise QUE ce qu'on reconnaît explicitement comme base
 // de test. Une URL inconnue est refusée, pas tolérée. Le mode « je bloque une
 // liste noire » laisse toujours passer l'hôte qu'on a oublié d'y mettre.
-const TEST_DB_ALLOWLIST = [/^komerce_test$/i, /_test$/i, /^test_/i, /^railway$/i]; // staging Railway
+// L9 §17 (STOP-SHIP) — /^railway$/i a été retiré de cette allowlist. Railway
+// nomme très souvent sa base par défaut « railway » : la garder ici couplée
+// à KOMERCE_E2E_ALLOW_REMOTE revenait à protéger un hôte de prod/staging
+// avec un seul opt-in générique. Un hôte marqué PROD_HOST_MARKERS avec une
+// base non explicitement reconnue comme test exige maintenant un SECOND
+// opt-in explicite (KOMERCE_STAGING_DB_EXPLICIT) — voir assertTestDatabase.
+const TEST_DB_ALLOWLIST = [/^komerce_test$/i, /_test$/i, /^test_/i];
 const PROD_HOST_MARKERS = ['railway', 'rlwy.net', 'amazonaws', 'komerce.co', 'supabase'];
 
 function parseDbUrl(url) {
@@ -53,15 +59,36 @@ function assertTestDatabase(url = process.env.DATABASE_URL) {
   if (!parsed) throw new Error('[e2eDbKit] DATABASE_URL illisible — refus fail-closed.');
 
   const hostMarker = PROD_HOST_MARKERS.find((m) => parsed.host.includes(m));
-  if (hostMarker && !process.env.KOMERCE_E2E_ALLOW_REMOTE) {
-    throw new Error(
-      `[e2eDbKit] REFUS — l'hôte « ${parsed.host} » ressemble à un hébergeur de production ` +
-      `(marqueur « ${hostMarker} »). Les E2E à écriture ne tournent que sur une base de test.`
-    );
+  const namedAsTest = TEST_DB_ALLOWLIST.some((rx) => rx.test(parsed.database));
+
+  if (hostMarker) {
+    // L9 §17 — double opt-in obligatoire pour tout hôte ressemblant à de la
+    // production/staging (Railway, RDS, komerce.co, Supabase...).
+    const remoteAllowed = process.env.KOMERCE_E2E_ALLOW_REMOTE === '1';
+    if (!remoteAllowed) {
+      throw new Error(
+        `[e2eDbKit] REFUS — l'hôte « ${parsed.host} » ressemble à un hébergeur de production ` +
+        `(marqueur « ${hostMarker} »). Les E2E à écriture ne tournent que sur une base de test. ` +
+        `Posez KOMERCE_E2E_ALLOW_REMOTE=1 si vous ciblez délibérément un staging distant.`
+      );
+    }
+    // Un hôte distant AVEC un nom de base générique (ex. « railway ») exige
+    // un second opt-in explicite : KOMERCE_E2E_ALLOW_REMOTE seul ne suffit
+    // plus à couvrir le cas où le nom de base ne dit rien de son usage.
+    const explicitStaging = process.env.KOMERCE_STAGING_DB_EXPLICIT === '1';
+    if (!namedAsTest && !explicitStaging) {
+      throw new Error(
+        `[e2eDbKit] REFUS — hôte distant « ${parsed.host} » + base « ${parsed.database} » ` +
+        `non reconnue comme base de test. Nommez la base komerce_test/*_test/test_* ou ` +
+        `posez KOMERCE_STAGING_DB_EXPLICIT=1 (second opt-in requis pour un hôte de ` +
+        `production/staging avec un nom de base générique).`
+      );
+    }
+    return { host: parsed.host, database: parsed.database };
   }
 
-  const named = TEST_DB_ALLOWLIST.some((rx) => rx.test(parsed.database));
-  if (!named) {
+  // Hôte non marqué (ex. localhost) : la reconnaissance par nom suffit.
+  if (!namedAsTest) {
     throw new Error(
       `[e2eDbKit] REFUS — la base « ${parsed.database} » n'est pas reconnue comme base de test. ` +
       `Nommez-la komerce_test, *_test ou test_* (voir .github/workflows/ci.yml).`

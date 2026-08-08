@@ -148,6 +148,14 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
         existing_token: err.existing_token,
       });
     }
+    // L4 (mandat §6/§18-H) — même filet de sécurité concurrence que
+    // /from-basket : la contrainte DB ne doit jamais remonter en 500.
+    if (err.code === '23505' && String(err.constraint || '').includes('one_open_per_organizer')) {
+      return res.status(409).json({
+        error: 'Vous avez déjà une liste ouverte. Fermez-la avant d\'en publier une nouvelle.',
+        code: 'open_list_exists',
+      });
+    }
     if (err.message?.includes('vide') ||
         err.message?.includes('valide') ||
         err.message?.includes('introuvable')) {
@@ -179,6 +187,26 @@ router.post('/from-basket', authenticate, async (req, res, next) => {
     // porte déjà err.status/err.code, prioritaire sur le matching textuel
     // legacy ci-dessous.
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    // L4 / P0-5 (mandat §6) — même contrat 409 que /from-cart-items.
+    // Avant ce correctif, /from-basket ne gérait pas open_list_exists et
+    // tombait dans next(err) → 500 au lieu d'un 409 exploitable par l'UX.
+    if (err.code === 'open_list_exists') {
+      return res.status(409).json({
+        error: err.message,
+        code: 'open_list_exists',
+        existing_token: err.existing_token,
+      });
+    }
+    // Filet de sécurité concurrence (mandat §6/§18-H) : si la garde
+    // applicative (SELECT) a laissé passer une race, la contrainte DB
+    // (migration 129, index partiel one_open_per_organizer) la rattrape.
+    // Elle ne doit jamais remonter en 500.
+    if (err.code === '23505' && String(err.constraint || '').includes('one_open_per_organizer')) {
+      return res.status(409).json({
+        error: 'Vous avez déjà une liste ouverte. Fermez-la avant d\'en publier une nouvelle.',
+        code: 'open_list_exists',
+      });
+    }
     if (err.message.includes('Limite atteinte') ||
         err.message.includes('vide') ||
         err.message.includes('introuvable')) {

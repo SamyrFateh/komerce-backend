@@ -326,7 +326,10 @@ function activateCartInCanonicalSurface(cart, { silent = false } = {}) {
 }
 
 function openSharedListInCanonicalCart(cart) {
-  activateCartInCanonicalSurface(cart, { silent: false });
+  // L6 / P0-6 (mandat §10) — retourner la Promise : l'appelant doit pouvoir
+  // await l'activation du slot AVANT la feuille de partage native, sinon
+  // l'ordre "slot sélectionné → lien proposé" n'est pas garanti.
+  return activateCartInCanonicalSurface(cart, { silent: false });
 }
 
 /**
@@ -443,15 +446,27 @@ export async function startShareFlow({ reshare = false } = {}) {
   }
 
   // ── A. REPARTAGER ──────────────────────────────────────────────────
-  // activeShareTarget() est l'unique source de vérité (sharedListContext
-  // prioritaire, shareToken en repli de fenêtre de démarrage).
-  const target = activeShareTarget() || (reshare ? legacyShareTarget() : null);
+  // L2 / P0-2 (mandat §4) — la provenance de l'action décide du chemin,
+  // jamais une déduction implicite à partir du seul sharedListContext :
+  //
+  //   surface 'shared-list'  → je regarde CETTE liste, "Partager" la repartage
+  //   surface 'personal'     → "Créer une liste" doit TOUJOURS créer MA liste,
+  //                            même si une liste reçue (ex. Fatima) est OPEN
+  //                            en mémoire — jamais la repartager implicitement
+  //
+  // reshare=true (bouton dédié "Re-partager", visible seulement sur ma
+  // propre liste déjà connue) reste un chemin A explicite indépendant de
+  // la surface, via legacyShareTarget().
+  const onSharedListSurface = state.cartSurface === 'shared-list';
+  const target = (onSharedListSurface || reshare)
+    ? (activeShareTarget() || (reshare ? legacyShareTarget() : null))
+    : null;
   if (target) {
     await shareList(target.title, target.shareUrl);
     return;
   }
 
-  // ── B. CRÉER ───────────────────────────────────────────────────────
+  // ── B. CRÉER — toujours MA liste depuis Mon panier ──────────────────
   if (!state.cart?.length) {
     showToast("Ajoutez d'abord des produits au panier.", 'error');
     return;
@@ -518,9 +533,11 @@ export async function startShareFlow({ reshare = false } = {}) {
 
     showToast('Liste créée. Le lien est prêt à être partagé.', 'success');
 
-    // É8 — séquence correcte : slot sélectionné AVANT la feuille de partage.
-    // La liste reste valide si l'utilisateur abandonne la feuille (contrat §10).
-    openSharedListInCanonicalCart(cart);
+    // É8 / L6 (mandat §10) — séquence correcte : slot sélectionné AVANT la
+    // feuille de partage, réellement garantie par l'await (auparavant
+    // fire-and-forget). La liste reste valide si l'utilisateur abandonne
+    // la feuille (contrat §10).
+    await openSharedListInCanonicalCart(cart);
     await shareList(title, shareUrl);
 
   } catch (err) {
@@ -557,7 +574,22 @@ export function install() {
     refreshSharedBadges(false);
   }
 
-  _restorePromise = restoreSharedCartFromBackend({ silent: true });
+  // L3 / P0-3 (mandat §5) — autorité de boot unique, ordre strict :
+  //   1. ?p=token détecté par b-nav.js::handleParticipantUrl() (appelé
+  //      juste avant install() dans boutique.js) → cette liste gagne,
+  //      /mine ne doit JAMAIS l'écraser en résolvant après elle ;
+  //   2. sinon → restoreSharedCartFromBackend (session persistée / mine).
+  // Jamais les deux en parallèle : c'était la race d'origine.
+  const participantToken = state._pendingParticipantToken;
+  state._pendingParticipantToken = null;
+
+  if (participantToken) {
+    _restorePromise = import('./group/group-side-cart.js')
+      .then(({ activateFromParticipantUrl }) => activateFromParticipantUrl(participantToken))
+      .then(() => null);
+  } else {
+    _restorePromise = restoreSharedCartFromBackend({ silent: true });
+  }
 
   document.getElementById('k-cart-share')?.addEventListener('click', handleShareClick);
   document.getElementById('k-sc-share')?.addEventListener('click', handleShareClick);

@@ -33,7 +33,6 @@ import { renderTrackView, renderListsView } from './b-tracking.js';
 import { openMonKomerce }                  from './b-komerce.js';
 import {
   detectParticipantToken,
-  activateFromParticipantUrl,
 } from './group/group-side-cart.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
@@ -275,7 +274,12 @@ export function handleParticipantUrl() {
   document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
     i.classList.remove('active');
   });
-  activateFromParticipantUrl(token);
+  // L3 / P0-3 (mandat §5) — NE PAS activer immédiatement ici. On dépose le
+  // token détecté ; b-share-cart.js::install() (appelé juste après dans
+  // boutique.js) est l'autorité de boot unique et décide de l'ordre entre
+  // ce token URL et restoreSharedCartFromBackend()/mine, pour empêcher les
+  // deux activations asynchrones concurrentes qui causaient la race.
+  state._pendingParticipantToken = token;
 }
 
 /**

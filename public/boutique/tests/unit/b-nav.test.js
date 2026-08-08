@@ -375,7 +375,7 @@ describe('handleParticipantUrl', () => {
     expect(activateFromParticipantUrl).not.toHaveBeenCalled();
   });
 
-  test("token présent -> nettoie l'URL, désactive tous les onglets, activateFromParticipantUrl(token), aucun switchView('group')", () => {
+  test("token présent -> nettoie l'URL, désactive tous les onglets, dépose le token (L3/P0-3, sans l'activer immédiatement), aucun switchView('group')", () => {
     mountFixture('<button class="k-bnav-item active" data-tab="shop"></button><button class="k-bnav-item" data-tab="fav"></button>');
     detectParticipantToken.mockReturnValue('TOK123');
     const replaceStateSpy = jest.spyOn(window.history, 'replaceState').mockImplementation(() => {});
@@ -383,7 +383,11 @@ describe('handleParticipantUrl', () => {
     handleParticipantUrl();
 
     expect(replaceStateSpy).toHaveBeenCalled();
-    expect(activateFromParticipantUrl).toHaveBeenCalledWith('TOK123');
+    // L3 (mandat §5) — activation différée : le token est déposé pour que
+    // b-share-cart.js::install() orchestre seul l'ordre boot (URL avant /mine),
+    // jamais activé ici directement (c'était la source de la race d'origine).
+    expect(activateFromParticipantUrl).not.toHaveBeenCalled();
+    expect(state._pendingParticipantToken).toBe('TOK123');
     expect(document.querySelector('[data-tab="shop"]').classList.contains('active')).toBe(false);
     expect(document.querySelector('[data-tab="fav"]').classList.contains('active')).toBe(false);
 

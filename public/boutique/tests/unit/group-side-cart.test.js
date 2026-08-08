@@ -153,7 +153,6 @@ beforeEach(() => {
     sharedCartId: null, token: null, status: 'open', isCreator: false,
     creatorFirstName: null, title: null, message: null, items: [],
   };
-  state.sharedListEditMode = false;
   state.cartSurface = 'personal';
   state.cart = [];
   state.products = [{ id: 'p1', name: 'Riz' }, { id: 'p2', name: 'Huile' }];
@@ -484,22 +483,38 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
 
 
   describe('onClose — fermeture d\'une liste (P0, audit)', () => {
-    let confirmSpy;
+    // L7 (mandat §11) — window.confirm() a été remplacé par la modale
+    // Komerce showKomerceConfirm() (DOM réel, résolution sur clic). Le
+    // Promise executor s'exécute de façon synchrone : au moment où
+    // actions.onClose() (async) atteint son premier await, le DOM de la
+    // modale est déjà inséré dans document.body — on peut donc cliquer le
+    // bouton avant d'attendre la résolution de la promesse retournée.
+    function clickKomerceConfirm(confirm = true) {
+      const selector = confirm
+        ? '.k-confirm-dialog-btn-danger, .k-confirm-dialog-btn-primary'
+        : '.k-confirm-dialog-btn-secondary';
+      const btn = document.querySelector(selector);
+      if (!btn) throw new Error('Modale showKomerceConfirm introuvable dans le DOM au moment du clic.');
+      btn.click();
+    }
 
     beforeEach(() => {
-      confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
       closeCart.mockResolvedValue({});
     });
 
     afterEach(() => {
-      confirmSpy.mockRestore();
+      // Filet de sécurité : une modale laissée ouverte par un test qui
+      // n'a pas cliqué (ex. no-op participant) fausserait le suivant.
+      document.querySelectorAll('.k-confirm-overlay').forEach((el) => el.remove());
     });
 
     it('après succès API, démonte intégralement le contexte (token=null, cartSurface=personal), jamais un simple refresh', async () => {
       activateSharedListContext(payload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-      await actions.onClose();
+      const closePromise = actions.onClose();
+      clickKomerceConfirm(true);
+      await closePromise;
 
       expect(closeCart).toHaveBeenCalledWith('sc1');
       // P0 — la régression auditée : l'ancien code rappelait
@@ -518,7 +533,9 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
       activateSharedListContext(payload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-      await actions.onClose();
+      const closePromise = actions.onClose();
+      clickKomerceConfirm(true);
+      await closePromise;
 
       // isSharedListSurfaceActive() est le garde utilisé par b-cart.js::
       // openCart() pour décider de projeter la liste ou le panier
@@ -530,7 +547,9 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     it("après fermeture, reopenSharedListCart() (drawer mobile) ne réaffiche pas la liste fermée — no-op car isActiveContext() est faux", async () => {
       activateSharedListContext(payload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
-      await actions.onClose();
+      const closePromise = actions.onClose();
+      clickKomerceConfirm(true);
+      await closePromise;
 
       renderCartSnapshot.mockClear();
       reopenSharedListCart();
@@ -539,35 +558,36 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
       expect(state.cartSurface).toBe('personal');
     });
 
-    it('après fermeture, aucun contrôle d\'édition ne reste actif (editMode retombe, plus de token à éditer)', async () => {
+    it('après fermeture, le contexte organisateur retombe (isCreator réinitialisé, plus de liste active)', async () => {
       activateSharedListContext(payload({ is_creator: true }), 'tok-1');
-      state.sharedListEditMode = true;
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-      await actions.onClose();
+      const closePromise = actions.onClose();
+      clickKomerceConfirm(true);
+      await closePromise;
 
-      expect(state.sharedListEditMode).toBe(false);
       expect(state.sharedListContext.isCreator).toBe(false);
     });
 
     it('confirmation refusée par l\'utilisateur : aucun appel API, contexte inchangé', async () => {
-      confirmSpy.mockReturnValue(false);
       activateSharedListContext(payload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-      await actions.onClose();
+      const closePromise = actions.onClose();
+      clickKomerceConfirm(false);
+      await closePromise;
 
       expect(closeCart).not.toHaveBeenCalled();
       expect(state.sharedListContext.token).toBe('tok-1');
     });
 
-    it('participant (non organisateur) : onClose est un no-op, jamais de confirm ni d\'appel API', async () => {
+    it('participant (non organisateur) : onClose est un no-op, jamais de modale ni d\'appel API', async () => {
       activateSharedListContext(payload({ is_creator: false }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
       await actions.onClose();
 
-      expect(confirmSpy).not.toHaveBeenCalled();
+      expect(document.querySelector('.k-confirm-overlay')).toBeNull();
       expect(closeCart).not.toHaveBeenCalled();
       expect(state.sharedListContext.token).toBe('tok-1');
     });
@@ -577,7 +597,9 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
       activateSharedListContext(payload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-      await actions.onClose();
+      const closePromise = actions.onClose();
+      clickKomerceConfirm(true);
+      await closePromise;
 
       expect(state.sharedListContext.token).toBe('tok-1');
       expect(state.cartSurface).toBe('shared-list');

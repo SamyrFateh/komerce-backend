@@ -39,7 +39,7 @@ import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
 import { renderAddControl } from './render/render-product-card.js';
 import { getProductCartSummary, getCartItemProductId } from './cart-product-summary.js';
-import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRenderMode, setCartSurface, reopenSharedListCart } from './group/group-side-cart.js';
+import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInCart, exitSharedListRenderMode, setCartSurface, reopenSharedListCart } from './group/group-side-cart.js';
 
 'use strict';
 
@@ -949,9 +949,9 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       saveBtn.disabled = !!context.saved;
       saveBtn.onclick = () => actions.onSave();
     }
-    // Doctrine finale — plus de bascule "✎ Modifier / Terminer" : les
-    // steppers et ✕ sont toujours visibles pour l'organisateur tant que la
-    // liste est ouverte (context.editMode déjà toujours vrai dans ce cas).
+    // Doctrine d'immutabilité (§1.B) — aucun stepper, aucun bouton de
+    // retrait sur une liste publiée, pour personne. L'organisateur ne
+    // voit ici que Partager / Fermer la liste.
     if (context.isOrganizer) {
       const shareBtn = getOrCreateSnapshotButton(btnRow, 'k-cart-snap-share', 'k-cart-continue-shop');
       shareBtn.textContent = '📤 Partager';
@@ -1014,9 +1014,9 @@ import { isSharedListSurfaceActive, renderSharedListInCart, exitSharedListRender
       saveBtn.disabled = !!context.saved;
       saveBtn.onclick = () => actions.onSave();
     }
-    // Doctrine finale — plus de bascule "✎ Modifier / Terminer" : les
-    // steppers et ✕ sont toujours visibles pour l'organisateur tant que la
-    // liste est ouverte (context.editMode déjà toujours vrai dans ce cas).
+    // Doctrine d'immutabilité (§1.B) — aucun stepper, aucun bouton de
+    // retrait sur une liste publiée, pour personne. L'organisateur ne
+    // voit ici que Partager / Fermer la liste.
     if (context.isOrganizer) {
       const shareBtn = getOrCreateSnapshotButton(scHeader, 'k-sc-snap-share', 'k-sc-btn-snapshot-action');
       shareBtn.textContent = '📤 Partager';
@@ -1549,6 +1549,11 @@ function renderSideCart() {
   const bnavLbl  = document.getElementById('k-bnav-cart-label');
   const items    = state.cart;
   const hasItems = items.length > 0;
+  // P0-1 (mandat §3) — invariant : le SHELL (panneau + onglets) reste
+  // visible tant qu'une liste OPEN occupe le slot partagé, même si le
+  // panier personnel est vide. Ne pas confondre avec hasItems, qui ne
+  // pilote plus que le contenu affiché (liste d'articles vs état vide).
+  const sideCartVisible = hasItems || hasOpenSharedListInSlot();
 
   // Mobile bnav label : "Panier" → total ou retour
   if (bnavLbl) {
@@ -1562,21 +1567,34 @@ function renderSideCart() {
   }
 
   if (!sc) return;
-  sc.classList.toggle('has-items', hasItems);
+  // P0-1 : le shell suit sideCartVisible (panier OU liste affichable),
+  // pas hasItems seul — sinon une liste OPEN affichée devient inaccessible
+  // dès que le panier personnel repasse à zéro (cf. publication).
+  sc.classList.toggle('has-items', sideCartVisible);
 
   // Réserve la place du side cart en bordure droite du body.
   // Double-mécanisme avec body:has(.k-side-cart.has-items) en CSS :
   // si :has() n'est pas supporté (Firefox <121), cette classe prend le relais.
-  document.body.classList.toggle('sc-reserve', hasItems);
+  document.body.classList.toggle('sc-reserve', sideCartVisible);
 
   // (--sc-offset / sc-open : plus utilisés depuis que .k-side-cart est en
   // position: fixed. La réserve de place est gérée par body.sc-reserve +
   // body:has(.k-side-cart.has-items) en CSS — voir boutique-desktop.css.)
   if (!hasItems) {
-    // Vider explicitement la liste DOM pour éviter les items fantômes
-    // si renderSideCart() est rappelé plus tard avec un panier de nouveau plein.
+    // Panier personnel vide : vider explicitement la liste DOM pour éviter
+    // les items fantômes si renderSideCart() est rappelé plus tard avec un
+    // panier de nouveau plein. Si le shell reste visible (liste OPEN dans
+    // le slot), afficher un état vide explicite plutôt qu'un panneau vide.
     const itemsElEmpty = sc.querySelector('#k-sc-items');
-    if (itemsElEmpty) itemsElEmpty.innerHTML = '';
+    if (itemsElEmpty) {
+      itemsElEmpty.innerHTML = sideCartVisible
+        ? '<div class="k-sc-empty">Votre panier est vide.</div>'
+        : '';
+    }
+    const totalElEmpty = sc.querySelector('#k-sc-total');
+    if (totalElEmpty) totalElEmpty.textContent = fmtPrice(0);
+    const countInlineEmpty = sc.querySelector('#k-sc-count-inline');
+    if (countInlineEmpty) countInlineEmpty.textContent = '0';
     return;
   }
 

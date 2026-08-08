@@ -17,6 +17,23 @@
 'use strict';
 
 const db = require('../db');
+const { assertTestDatabase } = require('../tests/helpers/e2eDbKit');
+
+// L9 §17 (STOP-SHIP) — garde fail-closed obligatoire avant tout DELETE.
+// Ce script est destructif ; il doit exiger exactement la même protection
+// que assertTestDatabase() (double opt-in pour un hôte de type production,
+// allowlist de nom sinon). Aucun DELETE ne doit pouvoir démarrer uniquement
+// parce que la base s'appelle « railway ».
+(function guardBeforeAnyDelete() {
+  try {
+    assertTestDatabase(process.env.DATABASE_URL);
+  } catch (err) {
+    console.error('\n[cleanup-e2e-staging] REFUS FAIL-CLOSED :');
+    console.error(err.message);
+    console.error('\nAucun DELETE effectué. Vérifiez DATABASE_URL et les opt-ins requis.\n');
+    process.exit(1);
+  }
+}());
 
 const DRY_RUN = !process.argv.includes('--delete');
 

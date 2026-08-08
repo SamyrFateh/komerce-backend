@@ -37,6 +37,73 @@ import {
 } from './group-api.js';
 import { checkoutSharedListSelection } from './group-checkout-adapter.js';
 
+/* ── Modale de confirmation Komerce (mandat §11) ──────────────────────
+ * Primitive UNIQUE réutilisée par les 3 confirmations métier importantes
+ * (publication, conflit OPEN, fermeture) — remplace les window.confirm()
+ * fonctionnels mais hors-UX. Un seul composant, pas trois (mandat §20).
+ * Retourne une Promise<boolean> (true = bouton de confirmation cliqué).
+ * Volontairement locale à ce module (déjà propriétaire de shared-cart.feature.js)
+ * plutôt qu'un nouveau fichier — réutilisation > nouveau composant.
+ */
+export function showKomerceConfirm({ title, body, confirmLabel, cancelLabel = 'Annuler', danger = false }) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'k-confirm-overlay';
+
+    const dialog = document.createElement('div');
+    dialog.className = 'k-confirm-dialog';
+    dialog.setAttribute('role', 'alertdialog');
+    dialog.setAttribute('aria-modal', 'true');
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'k-confirm-dialog-title';
+    titleEl.textContent = title;
+
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'k-confirm-dialog-body';
+    bodyEl.textContent = body;
+
+    const actions = document.createElement('div');
+    actions.className = 'k-confirm-dialog-actions';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'k-confirm-dialog-btn k-confirm-dialog-btn-secondary';
+    cancelBtn.textContent = cancelLabel;
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.type = 'button';
+    confirmBtn.className = danger
+      ? 'k-confirm-dialog-btn k-confirm-dialog-btn-danger'
+      : 'k-confirm-dialog-btn k-confirm-dialog-btn-primary';
+    confirmBtn.textContent = confirmLabel;
+
+    function settle(result) {
+      overlay.removeEventListener('click', onOverlayClick);
+      document.removeEventListener('keydown', onKeydown);
+      overlay.remove();
+      resolve(result);
+    }
+    function onOverlayClick(e) {
+      if (e.target === overlay) settle(false);
+    }
+    function onKeydown(e) {
+      if (e.key === 'Escape') settle(false);
+    }
+
+    cancelBtn.addEventListener('click', () => settle(false));
+    confirmBtn.addEventListener('click', () => settle(true));
+    overlay.addEventListener('click', onOverlayClick);
+    document.addEventListener('keydown', onKeydown);
+
+    actions.append(cancelBtn, confirmBtn);
+    dialog.append(titleEl, bodyEl, actions);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    confirmBtn.focus();
+  });
+}
+
 /* ── Rendu snapshot (b-cart.js) ──────────────────────────────────────
  * Lot D+ (correctif cycle d'import) — b-cart.js importe déjà 4 exports
  * de ce module (isSharedListSurfaceActive, renderSharedListInCart,
@@ -200,15 +267,8 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
   if (!data || !data.cart) return;
 
   const cart = data.cart;
-  // Lot B — le mode édition ne doit pas survivre au passage d'une liste à
-  // une autre (lien différent ouvert pendant qu'une liste était déjà en
-  // édition) ; il doit en revanche survivre à un simple refresh de la même
-  // liste après mutation (handleQuantityStep/handleRemoveItem rappellent
-  // cette fonction via refreshSharedListContext), sinon chaque édition
-  // referme silencieusement le mode édition après un seul geste.
   const previousToken = state.sharedListContext.token;
   const nextToken = cart.token || token;
-  if (previousToken !== nextToken) state.sharedListEditMode = false;
 
   const items = Array.isArray(data.items) ? data.items : [];
   const contributors = Array.isArray(data.contributors) ? data.contributors : [];
@@ -294,6 +354,18 @@ export function isSharedListSurfaceActive() {
 }
 
 /**
+ * L1 / P0-1 (mandat §3) — distincte de isSharedListSurfaceActive() : celle-ci
+ * dit si une liste OPEN occupe le slot partagé, INDÉPENDAMMENT de la surface
+ * actuellement affichée. Sert à calculer l'invariant de visibilité du shell
+ * (sideCartVisible = personalHasItems OR displayedSharedListIsOpen) dans
+ * b-cart.js::renderSideCart() — le shell ne doit jamais disparaître juste
+ * parce que la surface active est 'personal' et le panier personnel vide.
+ */
+export function hasOpenSharedListInSlot() {
+  return isActiveContext() && state.sharedListContext?.status === 'open';
+}
+
+/**
  * Appelée par b-cart.js::renderCartBody() sur la branche panier personnel,
  * à chaque rendu, pour garantir qu'aucune trace DOM du mode liste ne
  * subsiste si le contexte vient de se terminer (fermeture, lien invalidé,
@@ -325,7 +397,6 @@ export function clearSharedListContext() {
   };
   // É2 — miroir de la synchronisation dans activateSharedListContext.
   state.shareToken = null;
-  state.sharedListEditMode = false;
   state.cartSurface = 'personal';
 
   bus.emit('cart-snapshot:cleanup');
@@ -343,16 +414,15 @@ export function clearSharedListContext() {
 }
 
 /**
- * Refonte UX (2026-08) — plus de mode édition à bascule. L'organisateur
- * voit TOUJOURS les steppers et les boutons de retrait sur les lignes
- * disponibles. Le participant voit les lignes en lecture seule. Pas
- * besoin d'activer un "mode" pour modifier la liste — la liste est
- * l'interface directe.
- *
- * toggleEditMode() retiré : l'ancienne bascule visible/invisible des
- * contrôles de mutation n'a plus de sens quand ils sont toujours visibles.
- * state.sharedListEditMode conservé uniquement pour ne pas casser les
- * tests existants, mais forcé à true côté contexte (buildSnapshotRenderContext).
+ * Refonte UX (2026-08) — aucun contrôle de mutation sur les lignes de la
+ * liste publiée, ni pour l'organisateur ni pour le participant (doctrine
+ * §1.B — snapshot immutable dès publication : pas de stepper, pas de
+ * retrait, pas de mode édition). Chaque ligne disponible porte uniquement
+ * un bouton "Acheter" individuel ; "Tout acheter" agit sur l'ensemble des
+ * lignes encore disponibles. Les anciens handleQuantityStep/handleRemoveItem
+ * et le mode édition à bascule (toggleEditMode) ont été supprimés — ne pas
+ * les réintroduire dans les commentaires ou le code sans décision produit
+ * explicite révisant la doctrine d'immutabilité.
  */
 
 /* ── Rendu ────────────────────────────────────────────────────────── */
@@ -441,9 +511,9 @@ function buildSnapshotRenderContext() {
     // GAP-05 (Lot 2) — toujours [] si !isCreator (payload backend gaté),
     // ne dépend jamais d'un filtrage frontend supplémentaire.
     contributors: ctx.contributors,
-    // Refonte UX — editMode toujours true pour l'organisateur tant que la
-    // liste est ouverte : les steppers/✕ sont toujours visibles, pas
-    // derrière un bouton "Modifier". Le participant n'a jamais editMode.
+    // Doctrine d'immutabilité (§1.B) — aucune notion d'editMode côté
+    // contexte : la liste publiée n'a jamais de contrôle de mutation,
+    // organisateur ou non. headerTitle distingue seulement le libellé.
     headerTitle: ctx.isCreator ? 'Votre liste' : title,
     availableCount: availableItems().length,
     // Refonte UX — affichage informatif + base du CTA discret "Tout
@@ -640,13 +710,59 @@ export function setCartSurface(surface) {
  * Un seul élément DOM #k-cart-surface-switch contient les deux tabs.
  * Son absence (shouldShow=false) signifie affichage panier personnel seul.
  */
+// L1b / N1 (mandat §15) — parité mobile/desktop. Le sélecteur d'onglets
+// doit exister dans les DEUX conteneurs canoniques : #k-side-cart (desktop)
+// et le drawer mobile (#k-cart-drawer). Ce sont deux arbres DOM disjoints
+// (pas un seul réparenté par prepend), donc on maintient DEUX instances du
+// sélecteur, synchronisées à chaque appel — même logique, pas de duplication
+// métier (les deux appellent exactement setCartSurface()).
+function buildSurfaceSwitchTabs(id) {
+  const tabs = document.createElement('div');
+  tabs.id = id;
+  tabs.className = 'k-cart-tabs';
+
+  const btnPersonal = document.createElement('button');
+  btnPersonal.type = 'button';
+  btnPersonal.className = 'k-cart-tab k-tab-personal';
+  btnPersonal.textContent = 'Mon panier';
+  btnPersonal.addEventListener('click', () => {
+    // setCartSurface('personal') déclenche bus 'side-cart:render' qui
+    // appelle renderSideCart() dans b-cart.js → panier personnel.
+    // La liste OPEN reste OPEN côté backend — aucun appel POST.
+    setCartSurface('personal');
+  });
+
+  const btnList = document.createElement('button');
+  btnList.type = 'button';
+  btnList.className = 'k-cart-tab k-tab-shared-list';
+  btnList.addEventListener('click', () => {
+    setCartSurface('shared-list');
+  });
+
+  tabs.append(btnPersonal, btnList);
+  return tabs;
+}
+
+function mountSurfaceSwitchTabs(id, host, insertFn) {
+  let tabs = document.getElementById(id);
+  if (!tabs) {
+    tabs = buildSurfaceSwitchTabs(id);
+    if (host) insertFn(host, tabs);
+  } else if (host && tabs.parentElement !== host) {
+    insertFn(host, tabs);
+  }
+  return tabs;
+}
+
 export function renderCartSurfaceSwitch() {
   const sc = document.getElementById('k-side-cart');
+  const drawerHeader = document.getElementById('k-cart-header');
   const ctx = state.sharedListContext;
   const hasOpenList = isActiveContext() && ctx?.status === 'open';
 
   if (!hasOpenList) {
     document.getElementById('k-cart-surface-switch')?.remove();
+    document.getElementById('k-cart-surface-switch-drawer')?.remove();
     return;
   }
 
@@ -654,54 +770,28 @@ export function renderCartSurfaceSwitch() {
   const name = ctx.creatorFirstName || ctx.title || null;
   const listLabel = name ? `Liste de ${sanitize(name)}` : 'Liste partagée';
 
-  let tabs = document.getElementById('k-cart-surface-switch');
-  if (!tabs) {
-    tabs = document.createElement('div');
-    tabs.id = 'k-cart-surface-switch';
-    tabs.className = 'k-cart-tabs';
-    sc?.prepend(tabs);
+  const desktopTabs = mountSurfaceSwitchTabs(
+    'k-cart-surface-switch', sc, (host, tabs) => host.prepend(tabs));
+  // Drawer mobile : insérer juste après le header, avant #k-cart-body.
+  const mobileTabs = mountSurfaceSwitchTabs(
+    'k-cart-surface-switch-drawer', drawerHeader,
+    (host, tabs) => host.insertAdjacentElement('afterend', tabs));
 
-    // Onglet Mon panier — change la surface locale, jamais un lifecycle.
-    const btnPersonal = document.createElement('button');
-    btnPersonal.type = 'button';
-    btnPersonal.id = 'k-tab-personal';
-    btnPersonal.className = 'k-cart-tab';
-    btnPersonal.textContent = 'Mon panier';
-    btnPersonal.addEventListener('click', () => {
-      // setCartSurface('personal') déclenche bus 'side-cart:render' qui
-      // appelle renderSideCart() dans b-cart.js → panier personnel.
-      // La liste OPEN reste OPEN côté backend — aucun appel POST.
-      setCartSurface('personal');
-    });
-
-    // Onglet Liste partagée — revient à la liste active.
-    const btnList = document.createElement('button');
-    btnList.type = 'button';
-    btnList.id = 'k-tab-shared-list';
-    btnList.className = 'k-cart-tab';
-    btnList.addEventListener('click', () => {
-      setCartSurface('shared-list');
-    });
-
-    tabs.append(btnPersonal, btnList);
-  } else if (sc && tabs.parentElement !== sc) {
-    sc.prepend(tabs);
+  for (const tabs of [desktopTabs, mobileTabs]) {
+    if (!tabs) continue;
+    const btnPersonal = tabs.querySelector('.k-tab-personal');
+    const btnList = tabs.querySelector('.k-tab-shared-list');
+    if (btnPersonal) {
+      btnPersonal.classList.toggle('k-cart-tab--active', activeTab === 'personal');
+      btnPersonal.setAttribute('aria-selected', String(activeTab === 'personal'));
+    }
+    if (btnList) {
+      btnList.textContent = listLabel;
+      btnList.classList.toggle('k-cart-tab--active', activeTab === 'list');
+      btnList.setAttribute('aria-selected', String(activeTab === 'list'));
+    }
+    tabs.setAttribute('data-active', activeTab);
   }
-
-  // Mise à jour de l'état actif et du libellé de liste (le nom peut
-  // changer si une autre liste est ouverte entre deux rendus).
-  const btnPersonal = document.getElementById('k-tab-personal');
-  const btnList = document.getElementById('k-tab-shared-list');
-  if (btnPersonal) {
-    btnPersonal.classList.toggle('k-cart-tab--active', activeTab === 'personal');
-    btnPersonal.setAttribute('aria-selected', String(activeTab === 'personal'));
-  }
-  if (btnList) {
-    btnList.textContent = listLabel;
-    btnList.classList.toggle('k-cart-tab--active', activeTab === 'list');
-    btnList.setAttribute('aria-selected', String(activeTab === 'list'));
-  }
-  tabs.setAttribute('data-active', activeTab);
 }
 
 /**
@@ -742,9 +832,15 @@ function handleOpenItemProduct(itemId) {
 
 async function handleCloseClick() {
   if (!state.sharedListContext.isCreator || isReadOnly()) return;
-  // É9 — la liste est figée depuis sa PUBLICATION, pas depuis sa fermeture.
-  // Le message porte sur ce qui change réellement : la fin des achats.
-  const ok = window.confirm('Fermer cette liste ?\n\nLes nouveaux achats ne seront plus possibles.');
+  // L7 (mandat §11/§12) — É9 : la liste est figée depuis sa PUBLICATION,
+  // pas depuis sa fermeture. Le message porte sur ce qui change réellement :
+  // la fin des achats. Copie exacte du mandat §11.
+  const ok = await showKomerceConfirm({
+    title: 'Fermer cette liste ?',
+    body: 'Les nouveaux achats ne seront plus possibles.',
+    confirmLabel: 'Fermer la liste',
+    danger: true,
+  });
   if (!ok) return;
 
   try {
@@ -865,8 +961,8 @@ function handleBuyAllAvailable() {
     // visibles et rachetables individuellement dès que le produit redevient
     // actif. "a été retiré" / "ont été retirés" affirmait une suppression
     // qui n'a jamais eu lieu — ancien wording, jamais réintroduire "retiré"
-    // ici pour ce cas précis (réservé au vrai retrait, cf. handleRemoveItem
-    // ci-dessus, qui appelle réellement removeItemFromSharedList()).
+    // ci-dessus — aucun retrait réel n'existe plus sur une liste publiée,
+    // doctrine §1.B). Vestige de wording pré-immutabilité, corrigé.
     showToast(
       unavailableCount === 1
         ? "Un article de la liste n'est plus disponible et n'a pas été inclus dans cet achat."

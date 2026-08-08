@@ -965,7 +965,11 @@ export async function submitOrder(btn) {
         apiResult = await apiPost('/api/orders', {
           items, relais_id: od.selectedRelaisId || undefined,
           payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
-          tracking_phone: trackingPhone || undefined, share_token: state.shareToken || undefined
+          tracking_phone: trackingPhone || undefined
+          // L5 / P0-4 (mandat §8) — share_token retiré : un checkout
+          // PERSONAL_CART ne doit porter aucune donnée de liste partagée.
+          // state.shareToken peut être alimenté par une liste reçue affichée
+          // (Fatima) et n'a rien à voir avec l'intention de ce checkout.
         }, { idempotencyKey: state.checkoutAttemptKey });
         orderData = apiResult.order || apiResult;
         state.pendingStripeOrderRef = orderData.reference;
@@ -976,7 +980,8 @@ export async function submitOrder(btn) {
       apiResult = await apiPost('/api/orders', {
         items, relais_id: od.selectedRelaisId || undefined,
         payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
-        tracking_phone: trackingPhone || undefined, share_token: state.shareToken || undefined
+        tracking_phone: trackingPhone || undefined
+        // L5 / P0-4 (mandat §8) — share_token retiré, cf. commentaire ci-dessus.
       });
       orderData = apiResult.order || apiResult;
     }
@@ -1142,7 +1147,7 @@ async function _createKomerceOrderForPayPal() {
     payment_mode:     'paypal_eur',
     use_wallet:       od.use_wallet || false,
     tracking_phone:   trackingPhone,
-    share_token:      state.shareToken || undefined,
+    // L5 / P0-4 (mandat §8) — share_token retiré, cf. commentaire plus haut.
   }, { idempotencyKey: genIdempotencyKey() });
 
   const order = apiResult.order || apiResult;
