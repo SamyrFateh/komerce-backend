@@ -234,6 +234,13 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
     message: cart.message || null,
     items,
   };
+  // É2 — synchronise state.shareToken depuis sharedListContext, qui est
+  // désormais la seule source de vérité décisionnelle. b-group-banner.js
+  // et group-state.js lisent state.shareToken directement (pas via
+  // activeShareTarget) — on le maintient synchronisé ici pour ne pas avoir
+  // à les modifier. b-share-cart.js::activeShareTarget() ne consulte plus
+  // que sharedListContext (voir ci-dessous).
+  state.shareToken = nextToken;
   state.cartSurface = 'shared-list';
 
   ensureSnapshotPollingLoop();
@@ -316,6 +323,8 @@ export function clearSharedListContext() {
     message: null,
     items: [],
   };
+  // É2 — miroir de la synchronisation dans activateSharedListContext.
+  state.shareToken = null;
   state.sharedListEditMode = false;
   state.cartSurface = 'personal';
 

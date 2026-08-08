@@ -1,3 +1,8 @@
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 const { makeClient, expectTransactionCommitted, expectTransactionRolledBack } = require('./test-harness/mock-db');
 
 const mockDb = {

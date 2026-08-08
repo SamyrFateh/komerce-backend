@@ -217,22 +217,29 @@ test('une erreur API remonte le message et réactive le bouton', async () => {
 
 test('P0-B — un clic normal repartage le lien existant au lieu de recréer une liste tant qu\'une liste est active', async () => {
   // Doctrine finale (§4/§9) : « Partager » repartage la liste active, il
-  // ne recrée JAMAIS silencieusement — corrige l'ancien comportement testé
-  // ici (« un clic normal crée une nouvelle liste même si une autre liste
-  // est active »), contraire au mandat.
-  state.shareToken = 'tok-old';
-  state.shareStatus = 'open';
-  state.shareUrl = 'https://komerce.test/boutique/?p=tok-old';
-  state.cartName = 'Ancienne liste';
+  // ne recrée JAMAIS silencieusement. É2 (2026-08) : activeShareTarget()
+  // lit uniquement sharedListContext — c'est lui qu'on pose ici.
+  state.sharedListContext = {
+    sharedCartId: 'sc-old',
+    token: 'tok-old',
+    status: 'open',
+    isCreator: true,
+    creatorFirstName: null,
+    contributors: [],
+    title: 'Ancienne liste',
+    message: null,
+    items: [],
+  };
 
   await startShareFlow();
 
   expect(global.fetch).not.toHaveBeenCalled();
   expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
     text: expect.stringContaining('Ancienne liste'),
-    url: 'https://komerce.test/boutique/?p=tok-old',
+    url: expect.stringContaining('tok-old'),
   }));
-  expect(state.shareToken).toBe('tok-old');
+  // sharedListContext est la source — le token y reste inchangé.
+  expect(state.sharedListContext.token).toBe('tok-old');
 });
 
 test('P0-B — une liste FERMÉE n\'empêche pas un clic normal de créer une nouvelle liste', async () => {

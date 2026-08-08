@@ -375,6 +375,17 @@ function reopenOwnSharedListInCanonicalCart() {
  * fenêtre où activateCartInCanonicalSurface() n'a pas encore résolu après
  * une création/restauration par CE module.
  */
+/**
+ * É2 (2026-08) — source unique : sharedListContext est l'autorité.
+ *
+ * state.shareToken est maintenu synchronisé par group-side-cart.js
+ * (activateSharedListContext / clearSharedListContext) pour les
+ * consommateurs directs (b-group-banner.js, group-state.js) mais
+ * n'est PLUS consulté ici pour décider quoi partager. La fenêtre de
+ * désynchronisation entre applyCartToState (sync) et activateSharedListContext
+ * (async, après GET) est couverte par _restorePromise : startShareFlow()
+ * attend sa résolution avant toute décision.
+ */
 function activeShareTarget() {
   const ctx = state.sharedListContext;
   if (ctx?.token && ctx.status === 'open') {
@@ -384,15 +395,6 @@ function activeShareTarget() {
       shareUrl: `${window.location.origin}/boutique/?p=${ctx.token}`,
     };
   }
-
-  if (state.shareToken && state.shareStatus === 'open') {
-    return {
-      token: state.shareToken,
-      title: state.cartName || DEFAULT_LIST_TITLE,
-      shareUrl: state.shareUrl || `${window.location.origin}/boutique/?p=${state.shareToken}`,
-    };
-  }
-
   return null;
 }
 

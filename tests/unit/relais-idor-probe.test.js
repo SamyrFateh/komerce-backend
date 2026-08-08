@@ -1,6 +1,12 @@
 'use strict';
 
 /**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
+
+/**
  * tests/integration/relais-idor-probe.test.js
  *
  * GOV-02 (volet 2) — Sonde multi-rôles + audit IDOR (B1/A2)

@@ -1,6 +1,12 @@
 'use strict';
 
 /**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+/**
  * LOT CONTENT — commit 5 : preuve bout-en-bout du Golden Product enrichi.
  *
  * Ce test ferme la boucle promise par la doctrine du chantier (§ FINISH LINE) :

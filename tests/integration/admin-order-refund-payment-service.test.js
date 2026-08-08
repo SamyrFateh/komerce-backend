@@ -1,5 +1,11 @@
 'use strict';
 
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
+
 // P3-A.2 — refundCancelledOrder doit produire le MÊME effet DB qu'avant
 // la migration (payment_status='refunded'), mais désormais via
 // services/payment-service.js (markRefunded) plutôt qu'un UPDATE inline.

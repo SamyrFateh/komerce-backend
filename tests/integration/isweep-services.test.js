@@ -1,3 +1,8 @@
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
 describe('I-SWEEP service behavior', () => {
   describe('product publication guard', () => {
     const { validatePublicationUpdate } = require('../../services/product-publication-guard');

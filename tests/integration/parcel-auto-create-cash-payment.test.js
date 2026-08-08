@@ -1,5 +1,11 @@
 'use strict';
 
+/**
+ * @test-kind integration
+ * @test-runner jest
+ * @test-requires postgres
+ */
+
 // P3-A.1 — confirmCashAndCreateParcel doit produire le MÊME effet DB qu'avant
 // la migration (payment_status='paid' + cash_paid_at posé), mais désormais
 // via services/payment-service.js (markPaid) plutôt qu'un UPDATE inline.
