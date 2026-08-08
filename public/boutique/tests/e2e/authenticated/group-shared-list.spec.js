@@ -45,6 +45,7 @@ const {
   addToCartFromModal,
   closeModal,
   openCartDrawer,
+  clickKomerceConfirm,
 } = require('../helpers/boutique.helpers');
 const {
   verifySharedCart,
@@ -147,8 +148,14 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
   );
 
   test.beforeEach(async ({ page }) => {
-    // handleRemoveItem/handleCloseClick passent par window.confirm() —
-    // jamais de blocage silencieux du test sur une boîte de dialogue native.
+    // L7 (2026-08) — seule la CRÉATION (b-share-cart.js::startShareFlow, y
+    // compris le conflit "liste déjà ouverte") passe encore par
+    // window.confirm() natif ; ce listener l'accepte automatiquement pour
+    // éviter tout blocage silencieux sur une boîte de dialogue native.
+    // La FERMETURE (handleCloseClick, group-side-cart.js) est désormais
+    // sur la modale DOM Komerce (showKomerceConfirm) — page.on('dialog')
+    // ne s'applique PAS à ce chemin, voir clickKomerceConfirm() ci-dessous
+    // (F22-9) pour la cliquer explicitement.
     page.on('dialog', (dialog) => dialog.accept());
     await page.goto(BASE_URL);
     await cancelAnyActiveSharedCart(page);
@@ -505,6 +512,11 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     await expect(closeBtn).toBeVisible({ timeout: 10_000 });
     await expect(closeBtn).toBeEnabled();
     await closeBtn.click();
+    // L7 — handleCloseClick ouvre désormais la modale DOM Komerce
+    // ("Fermer cette liste ?") au lieu d'un window.confirm natif ; il faut
+    // cliquer explicitement "Fermer la liste" pour que la Promise de
+    // showKomerceConfirm() se résolve et que apiCloseSharedCart() parte.
+    await clickKomerceConfirm(page);
 
     await expect(page.locator('#k-side-cart .k-cart-snapshot-item')).toHaveCount(0, { timeout: 10_000 });
     await expect(page.locator('#k-cart-surface-switch')).toHaveCount(0);

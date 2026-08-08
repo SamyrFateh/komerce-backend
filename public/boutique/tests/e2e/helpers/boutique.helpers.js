@@ -388,15 +388,45 @@ async function unblockApi(page) {
 }
 
 /**
- * É5 (2026-08) — window.confirm est utilisé pour la confirmation d'immutabilité
- * avant toute création de liste partagée. Playwright refuse les dialogs natifs
- * par défaut (retourne false). Ce helper les accepte pour la durée d'un test.
+ * É5 (2026-08) — window.confirm est encore utilisé pour DEUX des trois
+ * confirmations métier du mandat §11 : publication (b-share-cart.js) et
+ * conflit "liste déjà ouverte" (b-share-cart.js). Playwright refuse les
+ * dialogs natifs par défaut (retourne false). Ce helper les accepte pour
+ * la durée d'un test.
+ *
+ * NE COUVRE PAS la fermeture de liste ("Fermer la liste") : ce chemin a
+ * été migré vers la modale DOM Komerce (group-side-cart.js::showKomerceConfirm,
+ * cf. clickKomerceConfirm ci-dessous). Un test qui clique le bouton fermer
+ * doit utiliser clickKomerceConfirm(page), pas acceptConfirms — sinon
+ * page.on('dialog') n'a rien à accepter (aucun dialogue natif n'apparaît)
+ * et le test reste bloqué en attente indéfinie de la Promise retournée par
+ * showKomerceConfirm().
  *
  * Usage :
- *   acceptConfirms(page);  // avant le clic sur Partager / Créer
+ *   acceptConfirms(page);  // avant le clic sur Partager / Créer une liste
  */
 function acceptConfirms(page) {
   page.on('dialog', (dialog) => dialog.accept());
+}
+
+/**
+ * L7 — clique le bouton confirmer (ou annuler) de la modale Komerce DOM
+ * (group-side-cart.js::showKomerceConfirm), utilisée aujourd'hui pour la
+ * fermeture de liste ("Fermer la liste"). Ce n'est PAS un dialog natif :
+ * acceptConfirms()/page.on('dialog') ne s'applique pas ici.
+ *
+ * Usage :
+ *   await closeBtn.click();
+ *   await clickKomerceConfirm(page); // clique "Fermer la liste"
+ */
+async function clickKomerceConfirm(page, { confirm = true } = {}) {
+  const dialog = page.locator('.k-confirm-dialog[role="alertdialog"]');
+  await expect(dialog).toBeVisible({ timeout: 10_000 });
+  const button = confirm
+    ? dialog.locator('.k-confirm-dialog-btn-primary, .k-confirm-dialog-btn-danger')
+    : dialog.locator('.k-confirm-dialog-btn-secondary');
+  await button.click();
+  await expect(dialog).toHaveCount(0);
 }
 
 module.exports = {
@@ -421,4 +451,5 @@ module.exports = {
   hangAllApi,
   unblockApi,
   acceptConfirms,
+  clickKomerceConfirm,
 };
