@@ -538,7 +538,7 @@ describe('b-checkout', () => {
   }
 
   describe('checkoutCart — orchestration', () => {
-    it('panier non vide → ferme le panier, initialise orderData, rend le checkout, ouvre la modale', async () => {
+    it('panier non vide → ferme le panier, initialise orderData, ouvre la modale sur le récapitulatif (mandat §7/§8)', async () => {
       state.cart = [{ product: { id: 1 }, qty: 1 }];
 
       checkoutCart();
@@ -548,8 +548,26 @@ describe('b-checkout', () => {
       expect(state.orderData.payment_mode).toBe('cash_relais');
       expect(dom.orderModal.classList.contains('open')).toBe(true);
       expect(document.body.classList.contains('cart-open')).toBe(true);
-      // Le rendu réel a bien tourné : structure du formulaire présente.
+      // Premier écran affiché : le récapitulatif dédié, jamais directement
+      // le formulaire identité/paiement — plus de raccourci, même pour un
+      // seul article (mandat §7 : "Sélection → Commander → Récapitulatif
+      // → confirmation → checkout paiement", toujours la même séquence).
+      expect(dom.orderBody.textContent).toContain('Récapitulatif de votre commande');
+      expect(dom.orderBody.textContent).not.toContain('Retrait sécurisé');
+      expect(dom.orderBody.querySelector('#btn-confirm-recap')).not.toBeNull();
+    });
+
+    it('confirmation du récapitulatif → avance vers le formulaire identité/livraison/paiement', async () => {
+      state.cart = [{ product: { id: 1 }, qty: 1 }];
+
+      checkoutCart();
+      await flush();
+
+      dom.orderBody.querySelector('#btn-confirm-recap').click();
+      await flush();
+
       expect(dom.orderBody.textContent).toContain('Retrait sécurisé');
+      expect(dom.orderBody.textContent).not.toContain('Récapitulatif de votre commande');
       expect(dom.orderBody.textContent).not.toContain('QUI RÉCUPÈRE');
     });
 

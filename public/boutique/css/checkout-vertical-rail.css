@@ -315,12 +315,15 @@
   font-weight: 800;
 }
 
-/* ── Récapitulatif de votre commande (mandat cohérence post-LOT 13, §3.c) ──
- * Étape accordéon générique, repliée par défaut, commune au panier
- * personnel et à toute sélection de liste partagée (b-checkout.js::
- * _buildRecapStep). Pas de dot numéroté de rail (ce n'est pas une étape à
- * compléter mais une relecture avant paiement) — juste avant le bouton de
- * paiement final, hors du rail identité/retrait/paiement.
+/* ── Récapitulatif de votre commande (mandat §7/§8) ────────────────────────
+ * Bloc lecture seule commun au panier personnel et à toute sélection de
+ * liste partagée (b-checkout.js::_buildRecapItemsBlock). N'est plus un
+ * accordéon replié planqué en bas du formulaire : c'est tout le contenu de
+ * l'écran dédié renderOrderRecapGate(), affiché AVANT identité/retrait/
+ * paiement — voir le garde en tête de renderCheckout(). .ck-recap-toggle*
+ * ci-dessous n'a plus de consommateur JS (l'accordéon a été retiré) ; les
+ * règles restent pour compat visuelle si un appelant externe les réutilise,
+ * mais peuvent être supprimées lors d'un nettoyage CSS ultérieur.
  */
 .ck-recap-step {
   margin: 4px 0 18px;

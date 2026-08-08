@@ -6467,6 +6467,15 @@ body.cart-open .k-hero { pointer-events: none; }
   transform: translateX(100%);
   transition: transform .35s var(--ease);
   border-radius: 16px 0 0 16px;
+  /* Correctif revue mock (2026-08, mandat §11) — contour léger de la
+     surface active, cohérent avec le desktop (#k-side-cart { border-top:
+     3px solid var(--coral) }, boutique-desktop.css). Le mobile n'avait
+     jamais eu cet accent par défaut : seul le mode liste ajoutait sa
+     bordure verte (shared-list-side-cart.css), laissant le panier
+     personnel visuellement neutre en dessous de 900px. Le mode liste
+     reste prioritaire via [data-mode="shared-list"] (spécificité
+     attribut, déjà présent) et écrase cette valeur. */
+  border-left: 3px solid var(--coral);
 }
 .k-cart-drawer.open { transform: translateX(0); }
 
@@ -11418,12 +11427,15 @@ body.k-id-scroll-lock { overflow: hidden; }
   font-weight: 800;
 }
 
-/* ── Récapitulatif de votre commande (mandat cohérence post-LOT 13, §3.c) ──
- * Étape accordéon générique, repliée par défaut, commune au panier
- * personnel et à toute sélection de liste partagée (b-checkout.js::
- * _buildRecapStep). Pas de dot numéroté de rail (ce n'est pas une étape à
- * compléter mais une relecture avant paiement) — juste avant le bouton de
- * paiement final, hors du rail identité/retrait/paiement.
+/* ── Récapitulatif de votre commande (mandat §7/§8) ────────────────────────
+ * Bloc lecture seule commun au panier personnel et à toute sélection de
+ * liste partagée (b-checkout.js::_buildRecapItemsBlock). N'est plus un
+ * accordéon replié planqué en bas du formulaire : c'est tout le contenu de
+ * l'écran dédié renderOrderRecapGate(), affiché AVANT identité/retrait/
+ * paiement — voir le garde en tête de renderCheckout(). .ck-recap-toggle*
+ * ci-dessous n'a plus de consommateur JS (l'accordéon a été retiré) ; les
+ * règles restent pour compat visuelle si un appelant externe les réutilise,
+ * mais peuvent être supprimées lors d'un nettoyage CSS ultérieur.
  */
 .ck-recap-step {
   margin: 4px 0 18px;

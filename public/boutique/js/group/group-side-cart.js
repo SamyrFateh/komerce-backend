@@ -172,9 +172,12 @@ function isReadOnly() {
  * du snapshot backend, jamais un mode édition sur la liste elle-même
  * (doctrine d'immutabilité §1.B). Sert exclusivement à composer l'appel
  * unique à checkoutSharedListSelection (handleCommand ci-dessous). Reset
- * à chaque changement/effacement de contexte de liste et après tout
- * achat, pour ne jamais transporter une sélection périmée d'une liste à
- * une autre ou d'un achat au suivant.
+ * à chaque changement/effacement de contexte de liste, pour ne jamais
+ * transporter une sélection périmée d'une liste à une autre. Ne se
+ * réinitialise en revanche plus après un achat (correctif mandat §10,
+ * handleCommand) : elle persiste jusqu'au prochain rafraîchissement, où
+ * pruneSelectionAgainstItems() retire uniquement les lignes devenues
+ * claimed.
  */
 let selectedItemIds = new Set();
 
@@ -1128,11 +1131,15 @@ function handleCommand() {
     return;
   }
 
-  // La sélection est éphémère : elle ne survit pas au checkout, achat
-  // réussi ou non — repartir de zéro évite de rouvrir le panneau avec des
-  // cases cochées sur des lignes potentiellement déjà réclamées.
-  resetSelection();
-
+  // Correctif mandat §10 : la sélection n'est plus réinitialisée ici. Un
+  // resetSelection() prématuré à ce point perdait la sélection dès le
+  // premier onCommand(), alors que Retour/Annulation depuis le
+  // récapitulatif (b-checkout.js::renderOrderRecapGate) doivent pouvoir
+  // relancer le même achat sans tout recocher. La sélection reste donc
+  // intacte tant qu'aucun rafraîchissement de contexte ne survient ;
+  // c'est pruneSelectionAgainstItems() (déclenché par
+  // activateSharedListContext au prochain refresh/poll) qui retire
+  // naturellement les lignes devenues claimed après un achat réussi.
   const observer = new MutationObserver(() => {
     if (dom.orderModal && !dom.orderModal.classList.contains('open')) {
       observer.disconnect();

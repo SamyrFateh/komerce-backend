@@ -29,6 +29,15 @@ body.cart-open .k-hero { pointer-events: none; }
   transform: translateX(100%);
   transition: transform .35s var(--ease);
   border-radius: 16px 0 0 16px;
+  /* Correctif revue mock (2026-08, mandat §11) — contour léger de la
+     surface active, cohérent avec le desktop (#k-side-cart { border-top:
+     3px solid var(--coral) }, boutique-desktop.css). Le mobile n'avait
+     jamais eu cet accent par défaut : seul le mode liste ajoutait sa
+     bordure verte (shared-list-side-cart.css), laissant le panier
+     personnel visuellement neutre en dessous de 900px. Le mode liste
+     reste prioritaire via [data-mode="shared-list"] (spécificité
+     attribut, déjà présent) et écrase cette valeur. */
+  border-left: 3px solid var(--coral);
 }
 .k-cart-drawer.open { transform: translateX(0); }
 

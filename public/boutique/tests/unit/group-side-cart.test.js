@@ -807,7 +807,7 @@ describe('group-side-cart — sélection locale (mandat cohérence post-LOT 13, 
     expect(cartItems).toHaveLength(2);
   });
 
-  it('la sélection est réinitialisée après un achat réussi (repartir de zéro, jamais rouvrir avec des cases cochées)', () => {
+  it('correctif mandat §10 — la sélection n\'est plus réinitialisée au lancement du checkout : un second onCommand() sans refresh entre-temps relance le checkout avec la même sélection (Retour/Annulation doivent la conserver)', () => {
     activateSharedListContext(
       payload({
         items: [
@@ -822,12 +822,58 @@ describe('group-side-cart — sélection locale (mandat cohérence post-LOT 13, 
     actions.onToggleSelect('i1');
     actions.onCommand();
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
+    expect(checkoutSharedListSelection.mock.calls[0][0]).toHaveLength(1);
+    expect(checkoutSharedListSelection.mock.calls[0][0][0].shared_cart_item_id).toBe('i1');
 
-    // Une sélection reconstruite depuis zéro ne doit plus inclure i1 :
-    // un second onCommand() sans nouveau onToggleSelect ne doit rien
-    // envoyer (sélection vide après le premier achat).
+    // Aucun refresh/claim ne s'est produit entre les deux appels (le
+    // MutationObserver de group-checkout-adapter.js ne fait rien ici,
+    // checkoutSharedListSelection est mocké) : i1 reste sélectionné, un
+    // second onCommand() (ex. l'utilisateur revient sur "Commander" après
+    // un Retour depuis le récapitulatif) relance donc bien le checkout
+    // avec la même ligne — plus de perte de sélection prématurée.
+    actions.onCommand();
+    expect(checkoutSharedListSelection).toHaveBeenCalledTimes(2);
+    expect(checkoutSharedListSelection.mock.calls[1][0]).toHaveLength(1);
+    expect(checkoutSharedListSelection.mock.calls[1][0][0].shared_cart_item_id).toBe('i1');
+  });
+
+  it('mandat §10 — après un achat réussi (rafraîchissement avec la ligne devenue claimed), elle disparaît naturellement de la sélection ; les lignes toujours disponibles y restent', () => {
+    activateSharedListContext(
+      payload({
+        items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
+          { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: false },
+        ],
+      }),
+      'tok-1'
+    );
+    let [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+    actions.onToggleSelect('i1');
+    actions.onToggleSelect('i2');
     actions.onCommand();
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
+    expect(checkoutSharedListSelection.mock.calls[0][0]).toHaveLength(2);
+
+    // Rafraîchissement (même token 'tok-1') après achat réussi de i1 par
+    // un autre participant/onSuccess : pruneSelectionAgainstItems()
+    // retire uniquement i1, jamais i2 qui reste disponible.
+    activateSharedListContext(
+      payload({
+        items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: true },
+          { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: false },
+        ],
+      }),
+      'tok-1'
+    );
+    [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+    actions.onCommand();
+    expect(checkoutSharedListSelection).toHaveBeenCalledTimes(2);
+    const [cartItems] = checkoutSharedListSelection.mock.calls[1];
+    expect(cartItems).toHaveLength(1);
+    expect(cartItems[0].shared_cart_item_id).toBe('i2');
   });
 });
 

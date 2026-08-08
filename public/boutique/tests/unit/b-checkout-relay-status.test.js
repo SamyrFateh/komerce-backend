@@ -113,11 +113,19 @@ function resetDom() {
   document.body.appendChild(wrapper);
 }
 
-/** Ouvre le checkout avec un panier valide et attend la fin des microtâches. */
+/**
+ * Ouvre le checkout avec un panier valide, franchit l'écran récapitulatif
+ * obligatoire (mandat §7/§8 — checkoutCart() affiche désormais ce gate en
+ * premier, avant le formulaire identité/relais/paiement que ce fichier
+ * teste), puis attend la fin des microtâches internes au formulaire
+ * (relais, config, identité).
+ */
 async function openCheckout() {
   state.cart = [{ product: { id: 'p1', name: 'Prod', price_kmf: 5000 }, id: 'p1', qty: 1 }];
   state.orderData = {};
   checkoutCart();
+  await new Promise((r) => setTimeout(r, 0));
+  document.getElementById('btn-confirm-recap')?.click();
   // laisse se dérouler les await internes (relais, config, identité)
   await new Promise((r) => setTimeout(r, 0));
   await new Promise((r) => setTimeout(r, 0));

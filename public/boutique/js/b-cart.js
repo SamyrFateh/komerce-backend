@@ -766,9 +766,17 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     const buyerFirstName = claimed && item.buyer_first_name
       ? sanitize(item.buyer_first_name)
       : null;
+    // Correctif revue mock (2026-08) — "Disponible" était redondant : la
+    // case à cocher (rendue juste à droite pour toute ligne non claimed,
+    // cf. `control` plus bas) porte déjà cette information. Seul l'état
+    // claimed reste affiché ici, car lui seul retire la case et a donc
+    // besoin d'un texte pour communiquer le changement d'état.
     const statusText = claimed
       ? (buyerFirstName ? `Déjà acheté par ${buyerFirstName}` : 'Déjà acheté')
-      : 'Disponible';
+      : null;
+    const statusHtml = statusText
+      ? ` · <span class="k-cart-snapshot-item-status">${statusText}</span>`
+      : '';
     const priceText = fmt(item.unit_price_kmf, 'KMF');
     const quantity = Number(item.quantity) || 1;
     const quantityText = quantity > 1 ? ` · ×${quantity}` : '';
@@ -804,7 +812,7 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
           `<div class="k-cart-item-info">` +
             `<div class="k-cart-item-name">${sanitize(item.name || '')}</div>` +
             variantHtml +
-            `<div class="k-cart-snapshot-item-meta k-cart-item-context-note">${priceText}${quantityText} · <span class="k-cart-snapshot-item-status">${statusText}</span></div>` +
+            `<div class="k-cart-snapshot-item-meta k-cart-item-context-note">${priceText}${quantityText}${statusHtml}</div>` +
           `</div>` +
         `</button>` +
         `<div class="k-cart-snapshot-item-controls">${control}</div>` +

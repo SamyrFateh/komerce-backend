@@ -14,7 +14,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
 | **Modal produit** `.k-modal*` | modal-shell.css (29), modal-product.css (4), interactions.css (2), boutique-desktop.css (1), modal-mobile-canonical.css (1) | 5 | 🔴 |
-| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (18), layout.css (11), shared-list-side-cart.css (2), hero.css (1) | 4 | 🔴 |
+| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (18), layout.css (11), shared-list-side-cart.css (4), hero.css (1) | 4 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (23), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
 | **Header** `.k-header*` | layout.css (21), hero.css (2), tokens.css (1) | 3 | 🔴 |
@@ -33,7 +33,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-cart.js` | 69 | 26 | 5/8 | Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
 | `b-modal-desktop-product.js` | 94 | 1 | 0/0 | Modal produit |
 | `b-modal-mobile-product.js` | 81 | 1 | 0/0 | Modal produit |
-| `b-checkout.js` | 66 | 4 | 0/4 | Bottom-nav mobile |
+| `b-checkout.js` | 69 | 4 | 0/4 | Bottom-nav mobile |
 | `b-modal-core.js` | 17 | 49 | 4/2 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout-render.js` | 58 | 0 | 0/0 | — |
 | `b-modal-product.js` | 25 | 11 | 0/1 | Modal produit |
@@ -110,7 +110,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 
 ## 4. Dette CSS
 
-### `!important` — total : 20
+### `!important` — total : 21
 
 | Fichier | Occurrences |
 |---------|:-----------:|
@@ -118,11 +118,11 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | boutique-desktop.css | 4 |
 | categories.css | 2 |
 | share-cart.css | 2 |
+| shared-list-side-cart.css | 2 |
 | cart.css | 1 |
 | interactions.css | 1 |
 | layout.css | 1 |
 | products.css | 1 |
-| shared-list-side-cart.css | 1 |
 
 ### CSS injecté via JS (devrait être 0 — le CSS vit dans .css)
 
@@ -139,6 +139,6 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Modules JS écrivant le DOM | 35 | ≤ 5 |
 | Breakpoints distincts | 7 | ≤ 2 |
 | Violations breakpoint | 17 | 0 |
-| `!important` | 20 | < 5 |
+| `!important` | 21 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

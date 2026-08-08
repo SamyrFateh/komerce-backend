@@ -101,7 +101,12 @@ export function checkoutCart() {
     }
     closeCart();
     state.orderData = { payment_mode: 'cash_relais' };
-    renderCheckout();
+    // Mandat §7/§8 — l'écran de récapitulatif est désormais le premier
+    // écran du checkout canonique, pour N>=1 sans exception (plus de
+    // raccourci N=1). Son bouton "Confirmer et continuer" appelle
+    // renderCheckout() (formulaire identité/livraison/paiement, inchangé)
+    // à l'étape suivante — jamais l'inverse.
+    renderOrderRecapGate();
     dom.orderModal.classList.add('open');
     scroll.savedY = getScrollY();
     document.body.classList.add('cart-open');
@@ -500,45 +505,38 @@ function _renderPriceVariationRecap(body) {
 }
 
 /**
- * Mandat cohérence post-LOT 13, §3.c — étape accordéon "Récapitulatif de
- * votre commande". Fonction pure : lit uniquement state.cart (qui contient
- * déjà, selon l'origine, soit le panier personnel soit le panier canonique
- * éphémère construit par checkoutSharedListSelection — voir
+ * Mandat §7/§8 — bloc lecture seule des lignes de la commande + total.
+ * Fonction pure : lit uniquement state.cart (qui contient déjà, selon
+ * l'origine, soit le panier personnel soit le panier canonique éphémère
+ * construit par checkoutSharedListSelection — voir
  * group-checkout-adapter.js), sans jamais distinguer la provenance ni lire
  * shared_list_context/shared_cart_item_id pour une décision d'affichage.
- * Repliée par défaut. Lecture seule : aucun retrait, aucune modification de
- * quantité, aucun `<input>`. Le marqueur par ligne (`.ck-recap-check`) n'est
- * PAS une checkbox — non focusable, non cliquable, `aria-hidden`, avec un
- * texte accessible ("Inclus dans cette commande") porté séparément sur la
- * ligne (`.sr-only`), jamais un contrôle de formulaire fictif.
+ * Aucun retrait, aucune modification de quantité, aucun `<input>`. Le
+ * marqueur par ligne (`.ck-recap-check`) n'est PAS une checkbox — non
+ * focusable, non cliquable, `aria-hidden`, avec un texte accessible
+ * ("Inclus dans cette commande") porté séparément sur la ligne
+ * (`.sr-only`), jamais un contrôle de formulaire fictif.
+ *
+ * Correctif archéologie (2026-08) — remplace l'ancien accordéon replié
+ * (.ck-recap-toggle, aria-expanded) qui vivait tout en bas du formulaire
+ * identité/relais/paiement/wallet : repliée par défaut et invisible sans
+ * action volontaire, cette présentation ne constituait pas l'étape de
+ * confirmation exigée par le mandat §7 ("Sélection → Commander →
+ * Récapitulatif → confirmation → checkout paiement", même pour un seul
+ * article). Ce bloc est maintenant tout l'écran de renderOrderRecapGate()
+ * ci-dessous, entièrement visible, affiché AVANT identité/livraison/
+ * paiement — jamais après.
  * @returns {HTMLElement|null} null si le panier est vide (ne devrait pas
  *   arriver ici, mais défensif — jamais de section vide dans le DOM).
  */
-function _buildRecapStep() {
-  const items = state.cart;
+function _buildRecapItemsBlock(items) {
   if (!Array.isArray(items) || !items.length) return null;
 
-  const count = items.reduce((s, it) => s + Number(it.qty || 0), 0);
-  const total = cartTotal();
-
   const wrap = document.createElement('div');
-  wrap.className = 'ck-section-block ck-recap-step';
-
-  const toggle = document.createElement('button');
-  toggle.type = 'button';
-  toggle.className = 'ck-recap-toggle';
-  toggle.setAttribute('aria-expanded', 'false');
-  toggle.innerHTML =
-    '<span class="ck-recap-toggle-text">'
-    +   '<span class="ck-recap-toggle-label">Récapitulatif de votre commande</span>'
-    +   '<span class="ck-recap-toggle-sub">' + count + (count > 1 ? ' articles · ' : ' article · ') + fmt(total, 'KMF') + '</span>'
-    + '</span>'
-    + '<span class="ck-recap-toggle-chevron" aria-hidden="true">›</span>';
-  wrap.appendChild(toggle);
+  wrap.className = 'ck-recap-step ck-recap-step--gate';
 
   const list = document.createElement('div');
   list.className = 'ck-recap-items';
-  list.hidden = true;
 
   items.forEach((it) => {
     const product   = it.product || {};
@@ -563,22 +561,81 @@ function _buildRecapStep() {
 
   const totalRow = document.createElement('div');
   totalRow.className = 'ck-recap-total';
-  totalRow.innerHTML = '<span>Total</span><span>' + fmt(total, 'KMF') + '</span>';
+  totalRow.innerHTML = '<span>Total</span><span>' + fmt(cartTotal(), 'KMF') + '</span>';
   list.appendChild(totalRow);
 
   wrap.appendChild(list);
-
-  toggle.addEventListener('click', () => {
-    const expanded = toggle.getAttribute('aria-expanded') === 'true';
-    toggle.setAttribute('aria-expanded', String(!expanded));
-    list.hidden = expanded;
-  });
-
   return wrap;
+}
+
+/**
+ * Mandat §7/§8 — écran de récapitulatif, premier écran du checkout
+ * canonique, pour N>=1 sans exception (plus de raccourci N=1). Appelé par
+ * checkoutCart() uniquement ; son bouton "Confirmer et continuer" appelle
+ * ensuite renderCheckout() (formulaire identité/livraison/paiement,
+ * contrat inchangé — appelable directement, notamment par les tests,
+ * sans jamais repasser par ce gate). "← Retour" ferme le checkout et
+ * rouvre le panier/la liste, sélection intacte (mandat §7, §10 — voir
+ * aussi le retrait du resetSelection() prématuré dans
+ * group-side-cart.js::handleCommand).
+ */
+function renderOrderRecapGate() {
+  const body = dom.orderBody;
+  body.innerHTML = '';
+  body.classList.remove('k-order-body--checkout');
+  body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
+  dom.orderTitle.innerHTML = '<button type="button" class="ck-modal-back-btn ck-modal-back-btn--header" aria-label="Retour">← Retour</button><span class="ck-order-title-text">Récapitulatif de votre commande</span>';
+
+  const headerBackBtn = dom.orderTitle.querySelector('.ck-modal-back-btn--header');
+  if (headerBackBtn) {
+    headerBackBtn.addEventListener('click', () => {
+      closeOrderModal();
+      setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
+    });
+  }
+
+  // Même bandeau décoratif que le formulaire identité/paiement (LOT 13 §F) —
+  // sur l'écran récap ici plutôt que là-bas, cf. mock ("Achat pour Ma liste").
+  if (state.checkoutDisplayContext?.title) {
+    const ctxBanner = document.createElement('div');
+    ctxBanner.className = 'ck-shared-list-context-banner';
+    ctxBanner.textContent = state.checkoutDisplayContext.title;
+    body.appendChild(ctxBanner);
+  }
+
+  // Titre visible dans le corps du modal (pas seulement la barre de titre
+  // ci-dessus) — fidèle au mock : "Récapitulatif de votre commande" est
+  // un texte de la carte elle-même, pas seulement du chrome de la modale.
+  const heading = document.createElement('h2');
+  heading.className = 'ck-recap-gate-heading';
+  heading.textContent = 'Récapitulatif de votre commande';
+  body.appendChild(heading);
+
+  const block = _buildRecapItemsBlock(state.cart);
+  if (block) body.appendChild(block);
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.type = 'button';
+  confirmBtn.id = 'btn-confirm-recap';
+  confirmBtn.className = 'ck-confirm-btn';
+  confirmBtn.textContent = 'Confirmer et continuer · ' + fmt(cartTotal(), 'KMF');
+  confirmBtn.addEventListener('click', () => {
+    renderCheckout();
+  });
+  body.appendChild(confirmBtn);
 }
 
 // renderCheckoutCompact supprimée — doublon de renderCheckout(), jamais activée (07/05/2026)
 export function renderCheckout() {
+    // Mandat §7/§8 — renderCheckout() construit toujours le formulaire
+    // identité/livraison/paiement complet (contrat inchangé, cf. suite de
+    // tests b-checkout.test.js qui l'appelle directement). Le gate
+    // récapitulatif (renderOrderRecapGate()) est un écran distinct, en
+    // amont : c'est checkoutCart() qui l'affiche en premier, et c'est son
+    // bouton "Confirmer et continuer" qui appelle renderCheckout() ensuite
+    // — jamais l'inverse, jamais de garde ici pour ne pas changer le
+    // comportement d'un appel direct à renderCheckout() (tests, éventuels
+    // futurs appelants).
     const body = dom.orderBody;
     body.innerHTML = '';
     body.classList.add('k-order-body--checkout');
@@ -782,14 +839,9 @@ export function renderCheckout() {
 
     body.appendChild(secureNotice);
 
-    // ── Récapitulatif de votre commande (mandat cohérence post-LOT 13, §3.c) ──
-    // Étape accordéon générique, repliée par défaut, commune au panier
-    // personnel et à toute sélection issue d'une liste partagée — voir
-    // _buildRecapStep(). Positionnée ici : juste avant le bouton de
-    // paiement final, après identité/retrait/paiement/wallet.
-    const recapStep = _buildRecapStep();
-    if (recapStep) body.appendChild(recapStep);
-    // ── Fin récapitulatif ──────────────────────────────────────────────────
+    // Le récapitulatif (mandat §7/§8) n'est plus ici : c'est désormais
+    // l'écran dédié renderOrderRecapGate(), affiché AVANT ce formulaire par
+    // checkoutCart() — renderCheckout() lui-même reste inchangé.
 
     /* ── 6. Confirm (sticky) ── */
     // FIX: supprimer tout ancien bouton confirm
