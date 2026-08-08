@@ -82,8 +82,13 @@ const HARD_RULES = [
   {
     id: 'CSS-TEXT',
     label: 'assignation de règles CSS (sélecteur { … }) à textContent/innerHTML/cssText',
-    // chaîne template/literal contenant un "<sel> {" typique de CSS
-    re: /(textContent|innerHTML|cssText)\s*=\s*[`'"][^`'"]*[.#][\w-]+[^`'"]*\{/,
+    // chaîne template/literal contenant un "<sel> {" typique de CSS.
+    // (?<!\$) exclut le '{' qui ouvre une interpolation de template
+    // literal (${...}) — sinon tout `.textContent = \`... ${obj.prop} ...
+    // ${fn(...)}\`` déclenche un faux positif dès qu'une propriété (le
+    // '.prop' matché par [.#][\w-]+) est suivie d'une seconde
+    // interpolation plus loin dans la même chaîne (le '{' de '${').
+    re: /(textContent|innerHTML|cssText)\s*=\s*[`'"][^`'"]*[.#][\w-]+[^`'"]*(?<!\$)\{/,
   },
 ];
 

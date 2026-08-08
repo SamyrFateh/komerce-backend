@@ -51,26 +51,43 @@
   opacity: .55;
 }
 
-/* Doctrine finale — bouton "Acheter" individuel par ligne disponible
-   (remplace le badge de statut dans le même slot .k-cart-snapshot-item-controls,
-   cf. b-cart.js::snapshotItemRowHtml). Même gabarit que le badge claimed
-   pour ne jamais faire sauter la mise en page ligne à ligne. */
-.k-cart-item-buy {
+/* Mandat cohérence post-LOT 13, §3.a — case à cocher de sélection locale
+   par ligne disponible (remplace l'ancien bouton .k-cart-item-buy dans le
+   même slot .k-cart-snapshot-item-controls, cf. b-cart.js::snapshotItemRowHtml).
+   Signifie uniquement "je sélectionne cet article pour mon prochain achat" —
+   jamais posée sur une ligne .is-cart-item-claimed (voir §2, aucune classe
+   dédiée nécessaire côté claimed : le bouton n'est simplement pas rendu). */
+.k-cart-item-select {
   flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 6px 14px;
-  border: none;
-  border-radius: 20px;
-  background: var(--cta-green, var(--coral));
-  color: var(--white);
-  white-space: nowrap;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
   cursor: pointer;
-  transition: filter .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background .15s, border-color .15s;
 }
 
-.k-cart-item-buy:hover {
-  filter: brightness(0.95);
+.k-cart-item-select:hover {
+  border-color: var(--cta-green);
+}
+
+.k-cart-item-select.is-checked {
+  background: var(--cta-green);
+  border-color: var(--cta-green);
+}
+
+.k-cart-item-select.is-checked::after {
+  content: '';
+  width: 6px;
+  height: 11px;
+  border: solid var(--white);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
 }
 
 .k-cart-snapshot-item-open {

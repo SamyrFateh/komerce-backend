@@ -48,126 +48,37 @@
   display: inline-flex;
 }
 
-@container shared-list (max-width: 420px) {
-  /* Trois zones lisibles : produit en haut, quantité puis actions en bas. */
-  .k-cart-snapshot-item {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "product product"
-      "quantity actions";
-    align-items: center;
-    gap: 10px 8px;
-    padding: 10px;
-  }
+/* Mandat cohérence post-LOT 13, §1 — retrait du grid-stacking desktop.
+ * Les @container qui basculaient la ligne en grille 2-3 rangées dès
+ * max-width: 420px/310px faisaient systématiquement flancher #k-side-cart
+ * (toujours ~280-330px de large, seul élément container-type: inline-size)
+ * en dessous des deux seuils : la checkbox (§3) atterrissait sur sa propre
+ * ligne, sous le produit, au lieu de rester ancrée à droite. Le panier
+ * personnel (.k-cart-item, cart.css) n'a jamais eu ce problème : flex-row
+ * simple, aucune règle de stacking par largeur. On aligne le snapshot sur
+ * ce même pattern — troncature du nom en ellipsis plutôt que passage en
+ * grille, quelle que soit la largeur du conteneur. */
 
-  .k-cart-snapshot-item-open {
-    grid-area: product;
-    width: 100%;
-    min-width: 0;
-    display: grid;
-    grid-template-columns: 56px minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-  }
-
-  .k-cart-snapshot-item-open .k-cart-item-img {
-    width: 56px;
-    min-width: 56px;
-    height: 56px;
-  }
-
-  .k-cart-snapshot-item-open .k-cart-item-info {
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  .k-cart-snapshot-item-open .k-cart-item-name {
-    display: -webkit-box;
-    overflow: hidden;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-height: 1.3;
-  }
-
-  /* Le prix et le statut ne partagent plus la largeur des boutons. */
-  .k-cart-snapshot-item-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px 4px;
-    min-width: 0;
-    margin-top: 4px;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.35;
-    color: var(--text);
-  }
-
-  .k-cart-snapshot-item-status {
-    display: block;
-    flex-basis: 100%;
-    font-size: 11.5px;
-    font-weight: 500;
-    color: var(--text-muted);
-  }
-
-  .k-cart-snapshot-item .k-cart-item-qty {
-    grid-area: quantity;
-    justify-self: start;
-  }
-
-  .k-cart-snapshot-item-controls {
-    grid-area: actions;
-    justify-self: end;
-    min-width: 0;
-    gap: 4px;
-  }
+.k-cart-snapshot-item-open .k-cart-item-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Sécurité pour les navigateurs sans container queries : le side cart reste
- * le cas critique puisqu'il est toujours étroit, même sur desktop. */
-@supports not (container-type: inline-size) {
-  #k-side-cart[data-mode="shared-list"] .k-cart-snapshot-item {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "product product"
-      "quantity actions";
-    gap: 10px 8px;
-    padding: 10px;
-  }
-
-  #k-side-cart[data-mode="shared-list"] .k-cart-snapshot-item-open {
-    grid-area: product;
-    display: grid;
-    grid-template-columns: 56px minmax(0, 1fr);
-    gap: 10px;
-    width: 100%;
-  }
-
-  #k-side-cart[data-mode="shared-list"] .k-cart-snapshot-item .k-cart-item-qty {
-    grid-area: quantity;
-  }
-
-  #k-side-cart[data-mode="shared-list"] .k-cart-snapshot-item-controls {
-    grid-area: actions;
-    justify-self: end;
-  }
+.k-cart-snapshot-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  min-width: 0;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
 }
 
-@container shared-list (max-width: 310px) {
-  .k-cart-snapshot-item {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "product"
-      "quantity"
-      "actions";
-  }
-
-  .k-cart-snapshot-item-controls {
-    width: 100%;
-    justify-self: stretch;
-  }
+.k-cart-snapshot-item-status {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
 }

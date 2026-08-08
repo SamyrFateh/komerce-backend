@@ -307,7 +307,12 @@ export function renderListsView() {
 
 const LIBRARY_STATUS_DISPLAY = {
   open:      { emoji: '🟢', label: 'Ouverte',  cls: 'open' },
-  closed:    { emoji: '🔒', label: 'Fermée',   cls: 'closed' },
+  // Mandat cohérence post-LOT 13, §8 — "Fermer" reste le verbe générique
+  // de dismiss (panneaux/modales) ailleurs dans l'app ; "Clôturée" lève
+  // l'ambiguïté avec l'action métier irréversible de fin de vie de la
+  // liste. La valeur backend/interne 'closed' (clé de cet objet) ne
+  // change pas, seul ce libellé affiché change.
+  closed:    { emoji: '🔒', label: 'Clôturée', cls: 'closed' },
   cancelled: { emoji: '❌', label: 'Annulée',  cls: 'cancelled' },
 };
 

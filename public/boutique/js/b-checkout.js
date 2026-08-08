@@ -23,7 +23,7 @@
 
 import { bus }           from './b-bus.js';
 import { state, dom, $, $$, scroll }  from './b-store.js';
-import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost } from './b-utils.js';
+import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost, optimizeImgUrl } from './b-utils.js';
 import { showToast, cartTotal }   from './b-cart-core.js';
 import { renderPayPalButton, isPayPalEnabled } from './b-paypal.js'; // Migration 079
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
@@ -499,6 +499,84 @@ function _renderPriceVariationRecap(body) {
   body.appendChild(box);
 }
 
+/**
+ * Mandat cohérence post-LOT 13, §3.c — étape accordéon "Récapitulatif de
+ * votre commande". Fonction pure : lit uniquement state.cart (qui contient
+ * déjà, selon l'origine, soit le panier personnel soit le panier canonique
+ * éphémère construit par checkoutSharedListSelection — voir
+ * group-checkout-adapter.js), sans jamais distinguer la provenance ni lire
+ * shared_list_context/shared_cart_item_id pour une décision d'affichage.
+ * Repliée par défaut. Lecture seule : aucun retrait, aucune modification de
+ * quantité, aucun `<input>`. Le marqueur par ligne (`.ck-recap-check`) n'est
+ * PAS une checkbox — non focusable, non cliquable, `aria-hidden`, avec un
+ * texte accessible ("Inclus dans cette commande") porté séparément sur la
+ * ligne (`.sr-only`), jamais un contrôle de formulaire fictif.
+ * @returns {HTMLElement|null} null si le panier est vide (ne devrait pas
+ *   arriver ici, mais défensif — jamais de section vide dans le DOM).
+ */
+function _buildRecapStep() {
+  const items = state.cart;
+  if (!Array.isArray(items) || !items.length) return null;
+
+  const count = items.reduce((s, it) => s + Number(it.qty || 0), 0);
+  const total = cartTotal();
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ck-section-block ck-recap-step';
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'ck-recap-toggle';
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.innerHTML =
+    '<span class="ck-recap-toggle-text">'
+    +   '<span class="ck-recap-toggle-label">Récapitulatif de votre commande</span>'
+    +   '<span class="ck-recap-toggle-sub">' + count + (count > 1 ? ' articles · ' : ' article · ') + fmt(total, 'KMF') + '</span>'
+    + '</span>'
+    + '<span class="ck-recap-toggle-chevron" aria-hidden="true">›</span>';
+  wrap.appendChild(toggle);
+
+  const list = document.createElement('div');
+  list.className = 'ck-recap-items';
+  list.hidden = true;
+
+  items.forEach((it) => {
+    const product   = it.product || {};
+    const imgSrc    = product.image_url ? optimizeImgUrl(product.image_url, 96) : '';
+    const unitPrice = it.price ?? product.price_kmf ?? product.price ?? 0;
+    const qty       = Number(it.qty || 1);
+    const row = document.createElement('div');
+    row.className = 'ck-recap-item';
+    row.innerHTML =
+      (imgSrc
+        ? '<img class="ck-recap-item-img" src="' + imgSrc + '" alt="" loading="lazy">'
+        : '<span class="ck-recap-item-img ck-recap-item-img--empty" aria-hidden="true">📦</span>')
+      + '<span class="ck-recap-item-info">'
+      +   '<span class="ck-recap-item-name">' + sanitize(product.name || '') + '</span>'
+      +   '<span class="ck-recap-item-qty">Qté ' + qty + '</span>'
+      + '</span>'
+      + '<span class="ck-recap-item-price">' + fmt(unitPrice * qty, 'KMF') + '</span>'
+      + '<span class="ck-recap-check" aria-hidden="true">✓</span>'
+      + '<span class="sr-only">Inclus dans cette commande</span>';
+    list.appendChild(row);
+  });
+
+  const totalRow = document.createElement('div');
+  totalRow.className = 'ck-recap-total';
+  totalRow.innerHTML = '<span>Total</span><span>' + fmt(total, 'KMF') + '</span>';
+  list.appendChild(totalRow);
+
+  wrap.appendChild(list);
+
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!expanded));
+    list.hidden = expanded;
+  });
+
+  return wrap;
+}
+
 // renderCheckoutCompact supprimée — doublon de renderCheckout(), jamais activée (07/05/2026)
 export function renderCheckout() {
     const body = dom.orderBody;
@@ -703,6 +781,15 @@ export function renderCheckout() {
     });
 
     body.appendChild(secureNotice);
+
+    // ── Récapitulatif de votre commande (mandat cohérence post-LOT 13, §3.c) ──
+    // Étape accordéon générique, repliée par défaut, commune au panier
+    // personnel et à toute sélection issue d'une liste partagée — voir
+    // _buildRecapStep(). Positionnée ici : juste avant le bouton de
+    // paiement final, après identité/retrait/paiement/wallet.
+    const recapStep = _buildRecapStep();
+    if (recapStep) body.appendChild(recapStep);
+    // ── Fin récapitulatif ──────────────────────────────────────────────────
 
     /* ── 6. Confirm (sticky) ── */
     // FIX: supprimer tout ancien bouton confirm

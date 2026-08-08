@@ -315,6 +315,167 @@
   font-weight: 800;
 }
 
+/* ── Récapitulatif de votre commande (mandat cohérence post-LOT 13, §3.c) ──
+ * Étape accordéon générique, repliée par défaut, commune au panier
+ * personnel et à toute sélection de liste partagée (b-checkout.js::
+ * _buildRecapStep). Pas de dot numéroté de rail (ce n'est pas une étape à
+ * compléter mais une relecture avant paiement) — juste avant le bouton de
+ * paiement final, hors du rail identité/retrait/paiement.
+ */
+.ck-recap-step {
+  margin: 4px 0 18px;
+}
+
+.ck-recap-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 12px 14px;
+  border: 1px solid rgba(31,48,36,.10);
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: 0 8px 24px rgba(31,48,36,.06), 0 1px 2px rgba(31,48,36,.04);
+  cursor: pointer;
+  text-align: left;
+}
+
+.ck-recap-toggle-text {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ck-recap-toggle-label {
+  font-size: .88rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.ck-recap-toggle-sub {
+  font-size: .76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ck-recap-toggle-chevron {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  transition: transform .15s;
+}
+
+.ck-recap-toggle[aria-expanded="true"] .ck-recap-toggle-chevron {
+  transform: rotate(90deg);
+}
+
+.ck-recap-items {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(31,48,36,.10);
+  border-radius: 16px;
+  background: var(--sand, var(--checkout-cream));
+}
+
+.ck-recap-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(31,48,36,.08);
+}
+
+.ck-recap-item:last-of-type {
+  border-bottom: none;
+}
+
+.ck-recap-item-img,
+.ck-recap-item-img--empty {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--white);
+  border: 1px solid var(--border);
+}
+
+.ck-recap-item-img--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.ck-recap-item-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ck-recap-item-name {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ck-recap-item-qty {
+  font-size: .72rem;
+  color: var(--text-muted);
+}
+
+.ck-recap-item-price {
+  flex-shrink: 0;
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Marqueur "inclus dans cette commande" — jamais une checkbox : non
+ * focusable, non cliquable, aria-hidden (texte accessible séparé en
+ * .sr-only sur la même ligne). Sémantique volontairement distincte de la
+ * case à cocher de la liste (group-side-cart.js) : ici on ne sélectionne
+ * plus, on relit ce qui a déjà été choisi. */
+.ck-recap-check {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cta-green);
+  color: var(--white);
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+/* Scopé sous .ck-recap-step (wrapper posé par b-checkout.js) : cart.css
+ * possède déjà un .ck-recap-total pour le mini-récap existant (autre
+ * composant, autre contexte). Éviter le sélecteur global évite une
+ * collision de cascade entre les deux tout en gardant le même nom de
+ * classe côté JS (§3.c). */
+.ck-recap-step .ck-recap-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(31,48,36,.14);
+  font-size: .86rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
 /* ── Paiement ────────────────────────────────────────────────── */
 
 .ck-payment-section {

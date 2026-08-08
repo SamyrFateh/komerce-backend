@@ -141,18 +141,19 @@ function findItem(itemId) {
 }
 
 /**
- * Lignes disponibles (non réclamées) du snapshot — celles qui portent un
- * bouton "Acheter" individuel et alimentent "Acheter le reste".
+ * Lignes disponibles (non réclamées) du snapshot — celles qui portent une
+ * case à cocher de sélection (mandat cohérence post-LOT 13, §3.a) et
+ * alimentent le raccourci "Tout sélectionner" (§3.b-bis).
  */
 function availableItems() {
   return state.sharedListContext.items.filter((it) => !it.claimed);
 }
 
 /**
- * Refonte UX — valeur totale des lignes encore disponibles. Sert
- * uniquement d'affichage informatif (sous-total footer) et de base au CTA
- * discret "Acheter le reste" (handleBuyAllAvailable). Plus de notion de
- * sélection locale : soit on achète une ligne, soit on les achète toutes.
+ * Valeur informative des lignes encore disponibles. Sert uniquement à la
+ * ligne "Reste disponible" (jamais un solde à régler, jamais dans le
+ * texte d'un bouton — mandat cohérence post-LOT 13, §3.b). N'a plus aucun
+ * lien avec un CTA d'achat depuis la suppression de "Acheter le reste".
  */
 function availableTotal() {
   return availableItems().reduce((sum, it) => sum + (Number(it.unit_price_kmf) || 0) * (Number(it.quantity) || 1), 0);
@@ -164,6 +165,55 @@ function isActiveContext() {
 
 function isReadOnly() {
   return state.sharedListContext.status !== 'open';
+}
+
+/* ── Sélection locale (mandat cohérence post-LOT 13, §3) ──────────────
+ * État purement local et éphémère : jamais persisté, jamais une mutation
+ * du snapshot backend, jamais un mode édition sur la liste elle-même
+ * (doctrine d'immutabilité §1.B). Sert exclusivement à composer l'appel
+ * unique à checkoutSharedListSelection (handleCommand ci-dessous). Reset
+ * à chaque changement/effacement de contexte de liste et après tout
+ * achat, pour ne jamais transporter une sélection périmée d'une liste à
+ * une autre ou d'un achat au suivant.
+ */
+let selectedItemIds = new Set();
+
+function resetSelection() {
+  selectedItemIds = new Set();
+}
+
+/**
+ * Retire de la sélection toute ligne devenue claimed entre-temps (autre
+ * participant ayant acheté la même ligne pendant le polling temps réel) —
+ * ne jamais laisser une ligne réclamée cochée en mémoire.
+ */
+function pruneSelectionAgainstItems() {
+  const availableIds = new Set(availableItems().map((it) => String(it.id)));
+  selectedItemIds.forEach((id) => {
+    if (!availableIds.has(id)) selectedItemIds.delete(id);
+  });
+}
+
+function handleToggleSelect(itemId) {
+  const id = String(itemId);
+  const item = findItem(id);
+  if (!item || item.claimed || isReadOnly()) return;
+  if (selectedItemIds.has(id)) selectedItemIds.delete(id);
+  else selectedItemIds.add(id);
+  renderSharedListInCart();
+}
+
+/**
+ * "Tout sélectionner" (§3.b-bis) — coche toutes les lignes encore
+ * disponibles. Raccourci de sélection pure : ne déclenche jamais
+ * d'achat ni de checkout par lui-même, seul handleCommand le fait.
+ * Remplace définitivement handleBuyAllAvailable comme chemin d'achat
+ * séparé.
+ */
+function handleSelectAll() {
+  if (isReadOnly()) return;
+  availableItems().forEach((it) => selectedItemIds.add(String(it.id)));
+  renderSharedListInCart();
 }
 
 /* ── Temps réel (lot 2026-08, fraîcheur du snapshot) ─────────────────────
@@ -294,6 +344,12 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
     message: cart.message || null,
     items,
   };
+  // Mandat cohérence post-LOT 13, §3 — la sélection locale ne doit
+  // jamais survivre à un changement de liste (nouveau token). Sur un
+  // simple refresh de fraîcheur (même token), on la purge seulement
+  // contre les lignes devenues claimed entre-temps (autre participant).
+  if (previousToken !== nextToken) resetSelection();
+  else pruneSelectionAgainstItems();
   // É2 — synchronise state.shareToken depuis sharedListContext, qui est
   // désormais la seule source de vérité décisionnelle. b-group-banner.js
   // et group-state.js lisent state.shareToken directement (pas via
@@ -385,6 +441,7 @@ export function exitSharedListRenderMode() {
 export function clearSharedListContext() {
   stopSnapshotPollingLoop();
   lastSnapshotSignature = null;
+  resetSelection();
   state.sharedListContext = {
     sharedCartId: null,
     token: null,
@@ -509,10 +566,10 @@ async function handleSaveList() {
  * Construit le contexte contextuel attendu par b-cart.js::renderCartSnapshot
  * (contrat {source, readOnly, title, status, organizerName, isOrganizer, ...})
  * à partir de state.sharedListContext. Ce contrôleur ne produit plus aucun
- * HTML — il adapte uniquement les données. Doctrine finale (2026-08) —
- * plus de sélection locale : availableCount/availableTotal couvrent tout
- * ce qui n'est pas encore réclamé, achetable ligne par ligne ou en bloc
- * ("Acheter le reste").
+ * HTML — il adapte uniquement les données. Mandat cohérence post-LOT 13,
+ * §3 — selectedIds transporte la sélection locale/éphémère courante ;
+ * availableCount/availableTotal restent purement informatifs (ligne
+ * "Reste disponible"), plus aucun lien avec un CTA d'achat direct.
  */
 function buildSnapshotRenderContext() {
   const ctx = state.sharedListContext;
@@ -534,10 +591,8 @@ function buildSnapshotRenderContext() {
     // organisateur ou non. headerTitle distingue seulement le libellé.
     headerTitle: ctx.isCreator ? 'Votre liste' : title,
     availableCount: availableItems().length,
-    // Refonte UX — availableTotal reste informatif (montant de ce qui
-    // reste disponible, jamais une somme due) ; plus de selectedTotal, il
-    // n'y a plus de sélection.
     availableTotal: availableTotal(),
+    selectedIds: selectedItemIds,
     showSaveAction,
     saved: showSaveAction && savedListTokensThisSession.has(ctx.token),
   };
@@ -546,17 +601,18 @@ function buildSnapshotRenderContext() {
 /**
  * Callbacks d'action fournis au renderer canonique — le contrôleur reste
  * seul propriétaire des appels API et des mutations d'état (mandat §8/§9).
+ * Mandat cohérence post-LOT 13, §3 — onBuySingle/onBuyAll disparaissent :
+ * onToggleSelect/onSelectAll pilotent uniquement la sélection locale,
+ * onCommand est l'unique déclencheur de checkout, quel que soit N.
  */
 function buildSnapshotRenderActions() {
   return {
     onOpenProduct: handleOpenItemProduct,
     onShare: handleShareClick,
     onClose: handleCloseClick,
-    // Refonte UX — un bouton "Acheter" par ligne, pas un bouton global.
-    onBuySingle: handleBuySingleItem,
-    // Optionnel discret en bas de liste — achète tout le disponible en
-    // une seule commande (organisateur et participant).
-    onBuyAll: handleBuyAllAvailable,
+    onToggleSelect: handleToggleSelect,
+    onSelectAll: handleSelectAll,
+    onCommand: handleCommand,
     onSave: handleSaveList,
   };
 }
@@ -861,13 +917,16 @@ function handleOpenItemProduct(itemId) {
 
 async function handleCloseClick() {
   if (!state.sharedListContext.isCreator || isReadOnly()) return;
-  // L7 (mandat §11/§12) — É9 : la liste est figée depuis sa PUBLICATION,
-  // pas depuis sa fermeture. Le message porte sur ce qui change réellement :
-  // la fin des achats. Copie exacte du mandat §11.
+  // L7 (mandat §11/§12, renommé §8 mandat cohérence post-LOT 13) — É9 : la
+  // liste est figée depuis sa PUBLICATION, pas depuis sa clôture. Le
+  // message porte sur ce qui change réellement : la fin des achats.
+  // "Fermer" reste le verbe générique de dismiss (panneaux/modales)
+  // ailleurs dans l'app ; "Clôturer" désigne spécifiquement cette action
+  // métier irréversible, pour lever l'ambiguïté.
   const ok = await showKomerceConfirm({
-    title: 'Fermer cette liste ?',
+    title: 'Clôturer cette liste ?',
     body: 'Les nouveaux achats ne seront plus possibles.',
-    confirmLabel: 'Fermer la liste',
+    confirmLabel: 'Clôturer la liste',
     danger: true,
   });
   if (!ok) return;
@@ -886,7 +945,7 @@ async function handleCloseClick() {
     // remet cartSurface='personal', token=null et arrête le polling
     // (voir aussi son propre commentaire, plus haut dans ce fichier).
     clearSharedListContext();
-    showToast('Liste fermée.', 'success');
+    showToast('Liste clôturée.', 'success');
   } catch (err) {
     showToast(`Erreur : ${err.message}`, 'error');
   }
@@ -902,63 +961,20 @@ async function handleShareClick() {
 /* ── Checkout (mandat §8) ────────────────────────────────────────────── */
 
 /**
- * Refonte UX — achète un article seul. Chaque ligne disponible a son
- * propre bouton "Acheter" (pattern liste de cadeaux). L'adaptateur
- * checkout construit un panier éphémère avec cette seule ligne.
- * @param {string} itemId — shared_cart_items.id
+ * Mandat cohérence post-LOT 13, §3.b/§3.c — unique déclencheur d'achat de
+ * la liste partagée, quel que soit N (1..N lignes cochées). Remplace
+ * définitivement handleBuySingleItem et handleBuyAllAvailable : plus
+ * aucune branche par taille de sélection, plus de chemin d'achat séparé.
+ * Construit un panier éphémère depuis selectedItemIds et lance un unique
+ * checkout — le récapitulatif (générique, §3.c) est ensuite porté par
+ * b-checkout.js lui-même, pas par ce contrôleur.
+ * Même garde de catalogue que l'ancien code : toute ligne dont le
+ * product_id ne résout plus dans state.products est exclue et signalée,
+ * sans bloquer l'achat des autres lignes cochées.
  */
-function handleBuySingleItem(itemId) {
-  const item = findItem(itemId);
-  if (!item || item.claimed) return;
-
-  const product = (state.products || []).find((p) => String(p.id) === String(item.product_id));
-  if (!product) {
-    showToast("Ce produit n'est plus disponible dans le catalogue.", 'info');
-    refreshSharedListContext();
-    return;
-  }
-
-  const cartItems = [{
-    shared_cart_item_id: item.id,
-    product,
-    quantity: item.quantity || 1,
-    variant_combo: item.variant_combo || null,
-    shared_list_context: {
-      snapshot_unit_price_kmf: Number(item.unit_price_kmf) || 0,
-      snapshot_name: item.name || null,
-      snapshot_image_url: item.image || null,
-    },
-  }];
-
-  const started = checkoutSharedListSelection(cartItems, { title: checkoutContextTitle() });
-  if (!started) {
-    showToast("Impossible de lancer l'achat, r\u00e9essayez.", 'error');
-    return;
-  }
-
-  const observer = new MutationObserver(() => {
-    if (dom.orderModal && !dom.orderModal.classList.contains('open')) {
-      observer.disconnect();
-      refreshSharedListContext();
-    }
-  });
-  if (dom.orderModal) {
-    observer.observe(dom.orderModal, { attributes: true, attributeFilter: ['class'] });
-  }
-}
-
-/**
- * Doctrine finale — "Acheter le reste" : construit un panier éphémère avec
- * TOUTES les lignes encore disponibles et lance un unique checkout.
- * Optionnel et discret (organisateur et participant) — jamais le CTA
- * principal de la liste, qui reste le bouton "Acheter" par ligne.
- * Même garde de catalogue que handleBuySingleItem (product_id résolu
- * contre state.products, jamais construit depuis la ligne de liste) :
- * toute ligne dont le produit catalogue est introuvable est simplement
- * exclue et signalée, sans bloquer l'achat des autres.
- */
-function handleBuyAllAvailable() {
-  const items = availableItems();
+function handleCommand() {
+  if (isReadOnly()) return;
+  const items = availableItems().filter((it) => selectedItemIds.has(String(it.id)));
   if (!items.length) return;
 
   const cartItems = [];
@@ -983,25 +999,23 @@ function handleBuyAllAvailable() {
   });
 
   if (unavailableCount > 0) {
-    // P1 (audit — message trompeur) : ces lignes ne sont PAS retirées de la
-    // liste (ni de state.sharedListContext.items, ni côté serveur) — elles
-    // sont seulement exclues de CET achat groupé parce que leur product_id
-    // ne résout plus dans le catalogue (state.products). Elles restent
-    // visibles et rachetables individuellement dès que le produit redevient
-    // actif. "a été retiré" / "ont été retirés" affirmait une suppression
-    // qui n'a jamais eu lieu — ancien wording, jamais réintroduire "retiré"
-    // ci-dessus — aucun retrait réel n'existe plus sur une liste publiée,
-    // doctrine §1.B). Vestige de wording pré-immutabilité, corrigé.
+    // P1 (audit — message trompeur, hérité de l'ancien handleBuyAllAvailable) :
+    // ces lignes ne sont PAS retirées de la liste — elles sont seulement
+    // exclues de CET achat parce que leur product_id ne résout plus dans
+    // le catalogue (state.products). Elles restent visibles et
+    // sélectionnables individuellement dès que le produit redevient actif
+    // — jamais "retiré", aucun retrait réel n'existe sur une liste
+    // publiée (doctrine §1.B).
     showToast(
       unavailableCount === 1
-        ? "Un article de la liste n'est plus disponible et n'a pas été inclus dans cet achat."
-        : `${unavailableCount} articles de la liste ne sont plus disponibles et n'ont pas été inclus dans cet achat.`,
+        ? "Un article sélectionné n'est plus disponible et n'a pas été inclus dans cet achat."
+        : `${unavailableCount} articles sélectionnés ne sont plus disponibles et n'ont pas été inclus dans cet achat.`,
       'info'
     );
   }
 
   if (!cartItems.length) {
-    showToast('Plus rien à acheter dans cette liste.', 'info');
+    showToast('Plus rien à commander dans cette sélection.', 'info');
     return;
   }
 
@@ -1010,6 +1024,11 @@ function handleBuyAllAvailable() {
     showToast("Impossible de lancer l'achat, réessayez.", 'error');
     return;
   }
+
+  // La sélection est éphémère : elle ne survit pas au checkout, achat
+  // réussi ou non — repartir de zéro évite de rouvrir le panneau avec des
+  // cases cochées sur des lignes potentiellement déjà réclamées.
+  resetSelection();
 
   const observer = new MutationObserver(() => {
     if (dom.orderModal && !dom.orderModal.classList.contains('open')) {

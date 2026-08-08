@@ -667,30 +667,53 @@ describe('b-cart', () => {
       expect(claimedRow.textContent).toContain('Déjà acheté');
     });
 
-    it('chaque ligne disponible affiche son propre bouton "Acheter" ; jamais sur une ligne réclamée', () => {
+    it('chaque ligne disponible affiche sa propre case à cocher de sélection ; jamais sur une ligne réclamée (§2/§3.a)', () => {
       activateList(); // i1 disponible, i2 réclamé
-      const buyBtn1 = dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-buy');
-      const buyBtn2 = dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-buy');
-      expect(buyBtn1).not.toBeNull();
-      expect(buyBtn1.textContent.trim()).toBe('Acheter');
-      expect(buyBtn2).toBeNull();
+      const checkbox1 = dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select');
+      const checkbox2 = dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-select');
+      expect(checkbox1).not.toBeNull();
+      expect(checkbox1.getAttribute('role')).toBe('checkbox');
+      expect(checkbox1.getAttribute('aria-checked')).toBe('false');
+      expect(checkbox2).toBeNull();
     });
 
-    it('"Acheter le reste" est le CTA global, sans aucun montant dans son texte (doctrine — le montant reste informatif, affiché une seule fois dans le récap)', () => {
-      activateList(); // i1 disponible (6500), i2 réclamé (exclu du total)
-      const buyAllBtn = findButtonByText('Acheter le reste');
-      expect(buyAllBtn).not.toBeNull();
-      expect(buyAllBtn.textContent.trim()).toBe('Acheter le reste');
-      expect(buyAllBtn.textContent).not.toMatch(/KMF/);
-      expect(buyAllBtn.disabled).toBeFalsy();
+    it('aucune case cochée → pas de barre "Commander" ; cocher une ligne la fait apparaître avec N et le sous-total de la sélection (§3.b)', () => {
+      activateList(); // i1 disponible (6500), i2 réclamé (exclu)
+      expect(findButtonByText('Acheter le reste')).toBeNull();
+      expect(dom.cartBody.textContent).not.toMatch(/Commander \(/);
+
+      dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').click();
+
+      const commandBtn = findButtonByText('Commander (1');
+      expect(commandBtn).not.toBeNull();
+      expect(commandBtn.textContent).toMatch(/6[\s\u00a0\u202f]?500 KMF/);
+      expect(commandBtn.textContent).not.toMatch(/Payer|Total liste à payer/);
     });
 
-    it('tout est réclamé → aucun bouton "Acheter" par ligne, "Acheter le reste" absent', () => {
+    it('"Tout sélectionner" coche uniquement les lignes disponibles, sans déclencher de checkout (§3.b-bis)', () => {
+      activateList({ items: [
+        { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
+        { id: 'i2', product_id: 'p2', name: 'Huile', image: null, quantity: 1, unit_price_kmf: 3000, claimed: true },
+        { id: 'i3', product_id: 'p3', name: 'Sucre', image: null, quantity: 1, unit_price_kmf: 1000, claimed: false },
+      ] });
+      const selectAllBtn = findButtonByText('Tout sélectionner');
+      expect(selectAllBtn).not.toBeNull();
+
+      selectAllBtn.click();
+
+      expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').getAttribute('aria-checked')).toBe('true');
+      expect(dom.cartBody.querySelector('[data-item-id="i3"] .k-cart-item-select').getAttribute('aria-checked')).toBe('true');
+      // i2 est claimed : jamais de case, "Tout sélectionner" ne la touche pas.
+      expect(dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-select')).toBeNull();
+    });
+
+    it('tout est réclamé → aucune case à cocher, "Tout sélectionner" absent, "Commander" absent', () => {
       activateList({ items: [
         { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: true },
       ] });
-      expect(dom.cartBody.querySelector('.k-cart-item-buy')).toBeNull();
-      expect(findButtonByText('Acheter le reste')).toBeNull();
+      expect(dom.cartBody.querySelector('.k-cart-item-select')).toBeNull();
+      expect(findButtonByText('Tout sélectionner')).toBeNull();
+      expect(dom.cartBody.textContent).not.toMatch(/Commander \(/);
     });
 
     // Mandat §4 — une liste fermée est entièrement non opérationnelle :
@@ -698,7 +721,7 @@ describe('b-cart', () => {
     // réel trouvé en test Playwright contre un serveur/DB réel (invisible
     // aux tests jsdom précédents) : un CTA restait affiché et cliquable
     // sur une liste fermée.
-    it('liste fermée (readOnly) → aucun bouton "Acheter" par ligne, "Acheter le reste" absent, même avec des lignes disponibles', () => {
+    it('liste clôturée (readOnly) → aucune case à cocher, "Commander" absent, même avec des lignes disponibles (§8 — Clôturer)', () => {
       activateList({
         isCreator: true,
         cart: { status: 'closed' },
@@ -706,22 +729,19 @@ describe('b-cart', () => {
           { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
         ],
       });
-      expect(dom.cartBody.querySelector('.k-cart-item-buy')).toBeNull();
-      expect(findButtonByText('Acheter le reste')).toBeNull();
-      // Sélecteur mort retiré (id d'origine disparu depuis la refonte du
-      // footer, Lots 1+2/LOT13) — le bouton Fermer devient disabled et
-      // libellé "Liste fermée" plutôt que masqué (§4 du mandat), on le
-      // vérifie donc par texte comme le reste du fichier.
-      const closeLink = findButtonByText('Liste fermée');
+      expect(dom.cartBody.querySelector('.k-cart-item-select')).toBeNull();
+      expect(findButtonByText('Tout sélectionner')).toBeNull();
+      expect(dom.cartBody.textContent).not.toMatch(/Commander \(/);
+      const closeLink = findButtonByText('Liste clôturée');
       expect(closeLink).not.toBeNull();
       expect(closeLink.disabled).toBe(true);
     });
 
-    it('participant (non organisateur) : lecture seule, aucun contrôle d\'édition, mais garde son bouton "Acheter" par ligne', () => {
+    it('participant (non organisateur) : lecture seule, aucun contrôle d\'édition, mais garde sa case à cocher par ligne', () => {
       activateList({ isCreator: false });
       expect(byClass('k-cart-item-remove', dom.cartBody)).toHaveLength(0);
       expect(byClass('k-qty-btn', dom.cartBody)).toHaveLength(0);
-      expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-buy')).not.toBeNull();
+      expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select')).not.toBeNull();
     });
 
     // Une liste publiée est un snapshot structurel : même l'organisateur
@@ -749,7 +769,7 @@ describe('b-cart', () => {
 
       const row = dom.cartBody.querySelector('[data-item-id="i1"]');
       expect(row.textContent).toContain('×2');
-      expect(row.querySelector('.k-cart-item-buy')).not.toBeNull();
+      expect(row.querySelector('.k-cart-item-select')).not.toBeNull();
     });
     it('ouvre la fiche produit canonique depuis une ligne de liste (bus modal:open)', () => {
       state.products = [{ id: 'p1', name: 'Riz' }];

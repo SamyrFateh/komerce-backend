@@ -308,13 +308,19 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
       onOpenProduct: expect.any(Function),
       onShare: expect.any(Function),
       onClose: expect.any(Function),
-      onBuySingle: expect.any(Function),
-      onBuyAll: expect.any(Function),
+      onToggleSelect: expect.any(Function),
+      onSelectAll: expect.any(Function),
+      onCommand: expect.any(Function),
       onSave: expect.any(Function),
     }));
 
     expect(actions).not.toHaveProperty('onRemove');
     expect(actions).not.toHaveProperty('onQuantityStep');
+    // Mandat cohérence post-LOT 13, §3 — plus de chemin d'achat direct :
+    // onBuySingle/onBuyAll ont disparu au profit de la sélection locale
+    // (onToggleSelect/onSelectAll) + onCommand comme unique déclencheur.
+    expect(actions).not.toHaveProperty('onBuySingle');
+    expect(actions).not.toHaveProperty('onBuyAll');
   });
 
   it('clearSharedListContext / setCartSurface("personal") nettoient le DOM snapshot via cleanupCartSnapshotDom, sans reconstruire de panneau', () => {
@@ -391,11 +397,15 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     expect(cleanupCartSnapshotDom).toHaveBeenCalled();
   });
 
-  it('shared_cart_item_id et le contexte de prix snapshot sont préservés vers le checkout canonique (achat d\'une ligne unique)', () => {
+  it('shared_cart_item_id et le contexte de prix snapshot sont préservés vers le checkout canonique (sélection d\'une seule ligne)', () => {
     activateSharedListContext(payload(), 'tok-1');
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onBuySingle('i1');
+    // Mandat cohérence post-LOT 13, §3 — plus d'achat direct sur une
+    // ligne : sélection locale (onToggleSelect) puis unique déclencheur
+    // de checkout (onCommand), quel que soit N.
+    actions.onToggleSelect('i1');
+    actions.onCommand();
 
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
     const [cartItems] = checkoutSharedListSelection.mock.calls[0];
@@ -408,7 +418,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     });
   });
 
-  it('onBuyAll achète systématiquement toutes les lignes disponibles en une seule commande', () => {
+  it('onSelectAll + onCommand achètent toutes les lignes disponibles en une seule commande', () => {
     activateSharedListContext(
       payload({
         items: [
@@ -420,14 +430,19 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     );
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onBuyAll();
+    // "Tout sélectionner" est un raccourci de sélection pure : il ne
+    // déclenche jamais d'achat par lui-même (§3.b-bis), seul onCommand()
+    // lance le checkout.
+    actions.onSelectAll();
+    expect(checkoutSharedListSelection).not.toHaveBeenCalled();
+    actions.onCommand();
 
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
     const [cartItems] = checkoutSharedListSelection.mock.calls[0];
     expect(cartItems).toHaveLength(2);
   });
 
-  it('P1 (audit) — "Tout acheter" avec une ligne dont le produit catalogue est introuvable : message honnête, jamais "retiré" (la ligne reste dans la liste)', () => {
+  it('P1 (audit) — sélection incluant une ligne dont le produit catalogue est introuvable : message honnête, jamais "retiré" (la ligne reste dans la liste)', () => {
     activateSharedListContext(
       payload({
         items: [
@@ -441,7 +456,8 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     );
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onBuyAll();
+    actions.onSelectAll();
+    actions.onCommand();
 
     // La ligne indisponible n'entre pas dans CE checkout...
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
@@ -463,7 +479,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     );
   });
 
-  it('P1 — "Tout acheter" avec plusieurs lignes indisponibles : message au pluriel, toujours sans "retiré"', () => {
+  it('P1 — sélection avec plusieurs lignes indisponibles : message au pluriel, toujours sans "retiré"', () => {
     activateSharedListContext(
       payload({
         items: [
@@ -475,11 +491,15 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     );
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onBuyAll();
+    actions.onSelectAll();
+    actions.onCommand();
 
+    // Aucun produit ne résout : le panier éphémère est vide, donc aucun
+    // checkout n'est lancé (rien à commander), mais le message
+    // "indisponibles" reste émis pour les deux lignes exclues.
     expect(checkoutSharedListSelection).not.toHaveBeenCalled();
     expect(showToast).toHaveBeenCalledWith(
-      expect.stringContaining('2 articles de la liste'),
+      expect.stringContaining('2 articles sélectionnés'),
       'info',
     );
     expect(showToast).toHaveBeenCalledWith(
@@ -501,13 +521,13 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     showToast.mockClear();
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onBuyAll();
+    // onSelectAll() ne coche que les lignes de availableItems() (déjà
+    // filtrées des claimed, cf. describe dédié plus haut) : i2 n'est
+    // jamais sélectionnable, donc jamais vue comme "indisponible/exclue"
+    // par onCommand() — ce n'est pas un cas d'échec.
+    actions.onSelectAll();
+    actions.onCommand();
 
-    // availableItems() exclut déjà les lignes claimed en amont (calcul
-    // "disponible" = non réclamé, cf. describe dédié plus haut) : seule i1
-    // atteint handleBuyAllAvailable, i2 n'est jamais vue comme
-    // "indisponible/exclue" — ce n'est pas un cas d'échec, donc aucun toast
-    // "n'a pas été inclus" ne doit être émis pour elle.
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
     const [cartItems] = checkoutSharedListSelection.mock.calls[0];
     expect(cartItems).toHaveLength(1);
@@ -737,24 +757,30 @@ describe("group-side-cart — absence de boucle d'événements", () => {
   });
 });
 
-describe('group-side-cart — absence de sélection locale', () => {
-  it('aucun état de sélection locale : "disponible" est calculé uniquement depuis items[].claimed, jamais depuis un choix utilisateur', () => {
+describe('group-side-cart — sélection locale (mandat cohérence post-LOT 13, §3)', () => {
+  // Contradictoire avec §3 depuis la disparition de handleBuySingleItem/
+  // handleBuyAllAvailable : une sélection locale existe désormais
+  // explicitement (selectedItemIds), pilotée par onToggleSelect/onSelectAll,
+  // avec onCommand comme unique déclencheur de checkout. Ce describe ne
+  // verrouille plus une "absence" mais l'invariant toujours vrai : la
+  // sélection reste un état privé du module (jamais sur state.*, jamais
+  // persisté), et "disponible" reste calculé depuis items[].claimed seul.
+  it('"disponible" reste calculé uniquement depuis items[].claimed ; la sélection n\'existe pas sur state.* (état privé du module)', () => {
     activateSharedListContext(payload(), 'tok-1');
-    // Lot D (audit de clôture) : sharedListSelection a été retiré de
-    // b-store.js — zéro producteur/consommateur restant après le passage
-    // à la doctrine "disponible = non réclamé" (Lot B). Absent de state,
-    // pas seulement vide.
+    // La sélection locale (selectedItemIds) vit en module-scope dans
+    // group-side-cart.js, jamais dans b-store.js — aucun composant externe
+    // ne doit pouvoir la lire ou la muter directement.
     expect(Object.prototype.hasOwnProperty.call(state, 'sharedListSelection')).toBe(false);
 
     const [context] = renderCartSnapshot.mock.calls.at(-1);
-    // 1 seule ligne non réclamée dans le fixture ; aucune API de sélection
-    // (toggle/clear) n'existe plus sur le module.
+    // 1 seule ligne non réclamée dans le fixture — availableCount ne
+    // dépend que de claimed, jamais de la sélection en cours.
     expect(context.availableCount).toBe(1);
     const mod = require('../../js/group/group-side-cart.js');
     expect(typeof mod.toggleSharedListItem).toBe('undefined');
   });
 
-  it('onBuyAll achète toutes les lignes disponibles sans dépendre d\'un état de sélection quelconque', () => {
+  it('onSelectAll() + onCommand() fonctionnent indépendamment de tout état de sélection résiduel', () => {
     activateSharedListContext(
       payload({
         items: [
@@ -766,10 +792,40 @@ describe('group-side-cart — absence de sélection locale', () => {
     );
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onBuyAll();
+    // Sélection partielle laissée par un scénario précédent (une seule
+    // ligne cochée), puis "Tout sélectionner" doit tout de même englober
+    // l'ensemble des lignes disponibles, pas seulement l'ajouter à la
+    // sélection existante par accident d'implémentation.
+    actions.onToggleSelect('i1');
+    actions.onSelectAll();
+    actions.onCommand();
 
+    expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
     const [cartItems] = checkoutSharedListSelection.mock.calls[0];
     expect(cartItems).toHaveLength(2);
+  });
+
+  it('la sélection est réinitialisée après un achat réussi (repartir de zéro, jamais rouvrir avec des cases cochées)', () => {
+    activateSharedListContext(
+      payload({
+        items: [
+          { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 1, claimed: false },
+          { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: false },
+        ],
+      }),
+      'tok-1'
+    );
+    const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+    actions.onToggleSelect('i1');
+    actions.onCommand();
+    expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
+
+    // Une sélection reconstruite depuis zéro ne doit plus inclure i1 :
+    // un second onCommand() sans nouveau onToggleSelect ne doit rien
+    // envoyer (sélection vide après le premier achat).
+    actions.onCommand();
+    expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
   });
 });
 
