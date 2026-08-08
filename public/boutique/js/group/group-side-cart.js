@@ -400,6 +400,11 @@ export function clearSharedListContext() {
   state.cartSurface = 'personal';
 
   bus.emit('cart-snapshot:cleanup');
+  // P0 §2 — même raison que setCartSurface('personal') : la fermeture/
+  // annulation d'une liste ramène aussi la surface à 'personal', et le
+  // drawer mobile doit être rappelé explicitement (voir commentaire
+  // détaillé dans setCartSurface() ci-dessus).
+  bus.emit('cart-body:render-personal');
 
   updateSharedListIndicator();
   // P0 (audit terrain — F22-9) : le listener 'side-cart:render' qui
@@ -684,6 +689,16 @@ export function setCartSurface(surface) {
     bus.emit('cart-snapshot:cleanup');
     updateSharedListIndicator();
     renderCartSurfaceSwitch();
+    // P0 §2 (audit terrain — bascule mobile) : 'side-cart:render' ci-dessous
+    // n'est câblé qu'à b-cart.js::renderSideCart (#k-side-cart, desktop).
+    // Sans signal dédié, le drawer mobile (#k-cart-body, renderCartBody())
+    // n'était jamais rappelé au clic "Mon panier" — cleanupCartSnapshotDom()
+    // retire le chrome mais ne réécrit pas #k-cart-body, qui gardait donc
+    // les lignes de la liste affichées à l'écran alors que state.cartSurface
+    // était déjà repassé à 'personal'. Émission dédiée, consommée une seule
+    // fois par b-cart.js (aiguillage explicite et symétrique desktop/mobile,
+    // en miroir de 'cart-snapshot:render' côté liste — voir b-bus.js).
+    bus.emit('cart-body:render-personal');
   }
 
   // Consommateurs externes légitimes (pas ce module) : b-cart.js::renderSideCart

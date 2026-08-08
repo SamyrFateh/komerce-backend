@@ -28,6 +28,7 @@
 import { state } from './b-store.js';
 import { showToast } from './b-cart-core.js';
 import { clearCart } from './b-cart.js';
+import { showKomerceConfirm } from './group/group-side-cart.js';
 import { refreshGroupBadge } from './group/group-state.js';
 import { showBanner, hideBanner, refreshBanner } from './b-group-banner.js';
 import { requireIdentity } from './b-identity.js';
@@ -472,12 +473,13 @@ export async function startShareFlow({ reshare = false } = {}) {
     return;
   }
 
-  // É5 — Confirmation d'immutabilité AVANT tout appel réseau.
-  // Cohérent avec window.confirm utilisé pour 'Vider le panier' (b-cart.js).
-  // À remplacer par une modale native Komerce si une primitive émerge.
-  const confirmed = window.confirm(
-    "Créer et partager cette liste ?\n\nAprès publication, les articles, variantes et quantités seront figés."
-  );
+  // L7 — modale Komerce native (primitive showKomerceConfirm depuis group-side-cart.js).
+  const confirmed = await showKomerceConfirm({
+    title: 'Créer cette liste ?',
+    body: 'Après publication, les articles, variantes et quantités de cette liste seront figés.',
+    confirmLabel: 'Créer la liste',
+    cancelLabel: 'Annuler',
+  });
   if (!confirmed) return;
 
   const identity = await requireIdentity({
@@ -495,13 +497,16 @@ export async function startShareFlow({ reshare = false } = {}) {
     // Le backend renvoie 409 + existing_token pour que l'UX propose
     // « Ouvrir ma liste » plutôt qu'un mur (arbitrage A2).
     if (data?._statusCode === 409 && data?.code === 'open_list_exists') {
-      const openIt = window.confirm(
-        "Vous avez déjà une liste ouverte.\n\nOuvrir votre liste existante ?"
-      );
+      // L7 — modale Komerce pour le conflit V1 (même primitive).
+      const openIt = await showKomerceConfirm({
+        title: 'Vous avez déjà une liste ouverte.',
+        body: 'Fermez-la avant d\'en créer une nouvelle, ou ouvrez-la maintenant.',
+        confirmLabel: 'Ouvrir ma liste',
+        cancelLabel: 'Annuler',
+      });
       if (openIt && data.existing_token) {
-        await import('./group/group-side-cart.js').then(({ activateFromParticipantUrl }) =>
-          activateFromParticipantUrl(data.existing_token)
-        );
+        const { activateFromParticipantUrl } = await import('./group/group-side-cart.js');
+        await activateFromParticipantUrl(data.existing_token);
       }
       return;
     }

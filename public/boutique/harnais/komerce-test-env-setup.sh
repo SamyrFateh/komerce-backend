@@ -24,19 +24,17 @@ for arg in "$@"; do
   [[ "$arg" == "--skip-playwright" ]] && SKIP_PW=true
 done
 
+# Le script vit dans public/boutique/harnais/ — remonter 3 niveaux vers la racine.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Le script vit dans public/boutique/harnais/ — remonter 3 niveaux pour
-# retrouver la vraie racine du repo (pas le dossier harnais lui-même).
-# Bug L9/§17 : l'ancien calcul pointait REPO_ROOT sur harnais/, ce qui
-# faisait échouer silencieusement docs/db/railway-live-schema.sql,
-# migrations/ et scripts/test-header-check.js (chemins introuvables).
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-echo "▶ Repo root : $REPO_ROOT"
-if [ ! -f "$REPO_ROOT/package.json" ] || [ ! -d "$REPO_ROOT/migrations" ]; then
-  echo "✖ REPO_ROOT ne pointe pas vers la racine du repo (package.json ou migrations/ introuvable en $REPO_ROOT)."
-  echo "  Le script doit rester en public/boutique/harnais/ dans le repo cloné."
+
+# Garde-fou : vérifier qu'on est bien à la racine du repo Komerce.
+if [[ ! -f "$REPO_ROOT/package.json" ]] || [[ ! -d "$REPO_ROOT/migrations" ]]; then
+  echo "ERREUR : REPO_ROOT calculé ($REPO_ROOT) ne semble pas être la racine du repo Komerce."
+  echo "Attendu : package.json + migrations/ présents."
   exit 1
 fi
+echo "▶ Repo root : $REPO_ROOT"
 
 # ── 1. Node deps (backend) ───────────────────────────────────────────────────
 echo

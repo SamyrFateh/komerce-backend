@@ -1,12 +1,12 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-08T13:53:36.567Z.
+> Régénéré le 2026-08-08T15:04:45.950Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **76** (76 headés) · Événements bus : **22** · Bundles CSS : **3**
+- Modules JS : **76** (76 headés) · Événements bus : **23** · Bundles CSS : **3**
 - Endpoints appelés : **46** — 🔴 0 hors contrat · ⚪ 33 non prouvés · 🔵 15 dynamiques
 - Santé bus : 0 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 4 non déclaré(s)
 
@@ -66,6 +66,7 @@
 | Événement | Émetteurs | Écouteurs | Statut |
 |---|---|---|---|
 | `carousel:changed` | b-modal-product | b-modal-image-ux | 🟡 non déclaré |
+| `cart-body:render-personal` | group-side-cart | b-cart | 🟢 sain |
 | `cart-snapshot:cleanup` | group-side-cart | b-cart | 🟢 sain |
 | `cart-snapshot:render` | group-side-cart | b-cart | 🟢 sain |
 | `cart:update` | b-cart-core | b-cart, b-cart-pill, b-mini-cart, b-modal-suggestions | 🟢 sain |
@@ -116,6 +117,7 @@ graph LR
   b_cart["b-cart"] -->|checkout:open| boutique["boutique"]
   group_side_cart["group-side-cart"] -->|cart-snapshot:render| b_cart["b-cart"]
   group_side_cart["group-side-cart"] -->|cart-snapshot:cleanup| b_cart["b-cart"]
+  group_side_cart["group-side-cart"] -->|cart-body:render-personal| b_cart["b-cart"]
   b_nav["b-nav"] -->|view:changed| b_catalog_desktop_enhancers["b-catalog-desktop-enhancers"]
   b_nav["b-nav"] -->|view:changed| b_home_premium_v1["b-home-premium-v1"]
   b_catalog["b-catalog"] -->|catalog:cat-changed| b_home_premium_v1["b-home-premium-v1"]

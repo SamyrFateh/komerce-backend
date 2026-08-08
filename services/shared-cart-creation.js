@@ -51,6 +51,36 @@ function httpError(message, status = 400, code = null) {
 }
 
 /**
+ * L4/P1 (mandat §4) — contrat 409 uniforme. La garde applicative (SELECT
+ * avant INSERT, ci-dessous dans chaque fonction) attache déjà
+ * err.existing_token quand ELLE détecte le conflit. Mais si une course
+ * gagne cette fenêtre TOCTOU, c'est l'INSERT qui échoue en 23505
+ * (contrainte shared_carts_one_open_per_organizer, migration 129) — à ce
+ * stade la transaction est déjà abandonnée (withTransaction a fait
+ * ROLLBACK + release), donc impossible de réutiliser `client` pour
+ * retrouver le token gagnant : on rouvre une requête neuve, hors
+ * transaction, en best-effort (ne doit jamais faire échouer la réponse
+ * 409 elle-même si cette relecture rate).
+ */
+async function resolveExistingOpenToken(userId) {
+  try {
+    const { rows } = await db.query(
+      `SELECT token FROM shared_carts
+        WHERE organizer_user_id = $1 AND status = 'open'
+        LIMIT 1`,
+      [userId]
+    );
+    return rows[0]?.token || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function isOneOpenPerOrganizerViolation(err) {
+  return err?.code === '23505' && String(err.constraint || '').includes('one_open_per_organizer');
+}
+
+/**
  * Pont de compatibilité `/from-basket` (GAP-07 §9.4).
  *
  * Le domaine `baskets` est tombstoné — ce endpoint n'est qu'un pont de
@@ -66,7 +96,8 @@ function httpError(message, status = 400, code = null) {
  * variante devinée).
  */
 async function createSharedCartFromBasket(userId, basketId, options = {}) {
-  return withTransaction(async (client) => {
+  try {
+    return await withTransaction(async (client) => {
     // P0/§9 — une liste CLOSED n'est plus "active" : elle ne doit plus
     // consommer le quota de paniers partagés actifs. Seul 'open' compte
     // (avant correction, ce check comptait encore ('open','closed') — bug
@@ -171,8 +202,19 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
       { total_kmf: totalKmf, items_count: items.length, source: 'basket' }
     );
 
-    return { sharedCart, items: insertedItems, token };
-  });
+      return { sharedCart, items: insertedItems, token };
+    });
+  } catch (err) {
+    // L4 (mandat §4) — la course a été perdue au niveau DB plutôt qu'à la
+    // garde applicative : même contrat 409 + existing_token que le chemin
+    // pré-check ci-dessus, pour que le frontend propose « Ouvrir ma liste »
+    // dans tous les cas, pas seulement quand la garde applicative gagne.
+    if (isOneOpenPerOrganizerViolation(err)) {
+      err.code = 'open_list_exists';
+      err.existing_token = await resolveExistingOpenToken(userId);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -215,7 +257,8 @@ async function clearCreatorBasketInTx(client, userId) {
  * @returns {Object} { sharedCart, items, token, clearLocalCart }
  */
 async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
-  return withTransaction(async (client) => {
+  try {
+    return await withTransaction(async (client) => {
     if (!userId) throw new Error('user_id requis');
 
     // Règle V1 — 1 liste OPEN par organisateur (garde applicative ;
@@ -346,7 +389,18 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
     );
 
     return { sharedCart, items: insertedItems, token, clearLocalCart: true };
-  });
+    });
+  } catch (err) {
+    // L4 (mandat §4) — même filet que createSharedCartFromBasket : la
+    // course peut être perdue au niveau DB (23505) plutôt qu'à la garde
+    // applicative (SELECT ci-dessus) ; contrat 409 + existing_token
+    // uniforme dans les deux cas.
+    if (isOneOpenPerOrganizerViolation(err)) {
+      err.code = 'open_list_exists';
+      err.existing_token = await resolveExistingOpenToken(userId);
+    }
+    throw err;
+  }
 }
 
 module.exports = {

@@ -94,8 +94,13 @@ const { checkoutSharedListSelection } = require('../../js/group/group-checkout-a
 // désabonner ces listeners, exactement comme l'ancien mock module.
 const renderCartSnapshot = jest.fn();
 const cleanupCartSnapshotDom = jest.fn();
+const renderCartBody = jest.fn();
 bus.on('cart-snapshot:render', ({ context, items, actions }) => renderCartSnapshot(context, items, actions));
 bus.on('cart-snapshot:cleanup', () => cleanupCartSnapshotDom());
+// P0 §2 (mandat clôture — bascule mobile) : espion sur le 3e événement
+// consommé par b-cart.js::renderCartBody() (drawer mobile), en miroir
+// exact des deux ci-dessus — voir b-bus.js pour le contrat.
+bus.on('cart-body:render-personal', () => renderCartBody());
 
 const {
   activateSharedListContext,
@@ -320,6 +325,42 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     expect(state.sharedListContext.token).toBeNull();
     expect(state.cartSurface).toBe('personal');
     expect(document.getElementById('k-shared-list-panel')).toBeNull();
+  });
+
+  it('P0 (mandat clôture §2 — bascule mobile) : setCartSurface("personal") rappelle explicitement renderCartBody() (drawer mobile), pas seulement le badge desktop', () => {
+    // Bug réel : 'side-cart:render' n'est câblé qu'à renderSideCart()
+    // (#k-side-cart, desktop) côté b-cart.js. Sans signal dédié, le drawer
+    // mobile (#k-cart-body) gardait les lignes de la liste affichées après
+    // le clic "Mon panier" — cleanupCartSnapshotDom() retire le chrome mais
+    // ne réécrit jamais #k-cart-body. cart-body:render-personal est le
+    // pendant mobile explicite de cart-snapshot:render côté liste.
+    activateSharedListContext(payload(), 'tok-1');
+    renderCartBody.mockClear();
+
+    setCartSurface('personal');
+
+    expect(renderCartBody).toHaveBeenCalledTimes(1);
+  });
+
+  it('P0 (mandat clôture §2) : clearSharedListContext() (fermeture/annulation) rappelle aussi renderCartBody(), même invariant que setCartSurface', () => {
+    activateSharedListContext(payload(), 'tok-1');
+    renderCartBody.mockClear();
+
+    clearSharedListContext();
+
+    expect(renderCartBody).toHaveBeenCalledTimes(1);
+  });
+
+  it('setCartSurface("shared-list") n\'émet pas cart-body:render-personal — la liste reste rendue exclusivement via cart-snapshot:render', () => {
+    activateSharedListContext(payload(), 'tok-1');
+    setCartSurface('personal');
+    renderCartBody.mockClear();
+    renderCartSnapshot.mockClear();
+
+    setCartSurface('shared-list');
+
+    expect(renderCartBody).not.toHaveBeenCalled();
+    expect(renderCartSnapshot).toHaveBeenCalledTimes(1);
   });
 
   it('P0 (audit terrain — F22-9) : clearSharedListContext retire #k-cart-surface-switch du DOM, ne le laisse jamais orphelin', () => {

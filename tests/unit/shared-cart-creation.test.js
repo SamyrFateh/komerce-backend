@@ -626,38 +626,40 @@ describe('shared-cart-creation', () => {
   // que le service interprète correctement la violation de contrainte en
   // erreur métier explicite (pas un 500 cryptique).
 
-  it('V1 — violation de contrainte DB unique (race concurrente) → erreur remonte sans être avalée', async () => {
-    // Cas : deux créations simultanées. La garde applicative passe pour
-    // les deux (SELECT voit 0 OPEN), mais le second INSERT viole l'index
-    // unique partiel (migration 129). Ce test vérifie que le service ne
-    // masque pas l'erreur DB : elle remonte pour que la route la traduise
-    // en 409 (code 23505, contrainte shared_carts_one_open_per_organizer).
+  it('V1 concurrence DB — 23505 est transformé en open_list_exists avec existing_token', async () => {
+    // §4 mandat : après un 23505 sur shared_carts_one_open_per_organizer,
+    // le service doit résoudre le token gagnant et remonter une erreur
+    // applicative uniforme (code=open_list_exists + existing_token).
+    // La route ne doit jamais voir un 23505 brut → jamais de 500.
     const dbUniqueErr = Object.assign(
       new Error('duplicate key value violates unique constraint "shared_carts_one_open_per_organizer"'),
       { code: '23505', constraint: 'shared_carts_one_open_per_organizer' }
     );
     const product = { id: 'p1', name: 'Riz', image_url: null, category: null, price_kmf: 1000, is_active: true };
+    const WINNER_TOKEN = 'tok-winner';
 
-    // Mock manuel : garde passe, puis INSERT échoue avec 23505.
     const client = {
       query: jest.fn()
-        .mockResolvedValueOnce({ rows: [] })           // BEGIN
-        .mockResolvedValueOnce({ rows: [] })           // garde V1 : 0 OPEN
-        .mockResolvedValueOnce({ rows: [product] })    // resolveSellableUnit
+        .mockResolvedValueOnce({ rows: [] })            // BEGIN
+        .mockResolvedValueOnce({ rows: [] })            // garde V1 : 0 OPEN
+        .mockResolvedValueOnce({ rows: [product] })     // resolveSellableUnit
         .mockResolvedValueOnce({ rows: [{ full_name: 'Ali', phone: '0' }] }) // user
-        .mockResolvedValueOnce({ rows: [] })           // token unique check
-        .mockRejectedValueOnce(dbUniqueErr),           // INSERT → 23505
+        .mockResolvedValueOnce({ rows: [] })            // token unique check
+        .mockRejectedValueOnce(dbUniqueErr),            // INSERT → 23505
       release: jest.fn(),
     };
     db.getClient.mockResolvedValue(client);
+    // resolveExistingOpenToken utilise db.query directement (hors transaction)
+    // après le rollback pour récupérer le token gagnant.
+    db.query.mockResolvedValueOnce({ rows: [{ token: WINNER_TOKEN }] });
 
     const err = await createSharedCartFromCartItems(
       'user-001', [{ product_id: 'p1', quantity: 1 }]
     ).catch((e) => e);
 
-    // Le service ne l'avale pas — il remonte avec le code DB intègre.
-    // La route (tested in creator-route.test.js) le traduit en 409.
+    // Le 23505 est transformé — la route voit open_list_exists, pas 500.
     expect(err).toBeInstanceOf(Error);
-    expect(err.code).toBe('23505');
-    expect(client.release).toHaveBeenCalled(); // transaction nettoyée
+    expect(err.code).toBe('open_list_exists');
+    expect(err.existing_token).toBe(WINNER_TOKEN);
+    expect(client.release).toHaveBeenCalled(); // transaction proprement libérée
   });

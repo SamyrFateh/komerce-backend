@@ -106,12 +106,8 @@ beforeEach(() => {
   });
   global.fetch = jest.fn();
   window.open = jest.fn();
-  // É5 — window.confirm est utilisé pour la confirmation d'immutabilité
-  // avant création. On le mocke à true par défaut pour que les tests de
-  // création continuent ; les tests qui veulent tester l'annulation le
-  // remockent à false localement.
-  window.confirm = jest.fn().mockReturnValue(true);
-
+  // L7 — showKomerceConfirm (modale native) est mocké dans group-side-cart.js
+  // ci-dessus. window.confirm n'est plus utilisé pour les flux création/conflit.
   setNavigatorShare(jest.fn().mockResolvedValue());
   Object.defineProperty(navigator, 'clipboard', {
     value: { writeText: jest.fn().mockResolvedValue() },

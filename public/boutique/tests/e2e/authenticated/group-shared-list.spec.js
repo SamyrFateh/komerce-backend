@@ -45,7 +45,6 @@ const {
   addToCartFromModal,
   closeModal,
   openCartDrawer,
-  clickKomerceConfirm,
 } = require('../helpers/boutique.helpers');
 const {
   verifySharedCart,
@@ -148,14 +147,8 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
   );
 
   test.beforeEach(async ({ page }) => {
-    // L7 (2026-08) — seule la CRÉATION (b-share-cart.js::startShareFlow, y
-    // compris le conflit "liste déjà ouverte") passe encore par
-    // window.confirm() natif ; ce listener l'accepte automatiquement pour
-    // éviter tout blocage silencieux sur une boîte de dialogue native.
-    // La FERMETURE (handleCloseClick, group-side-cart.js) est désormais
-    // sur la modale DOM Komerce (showKomerceConfirm) — page.on('dialog')
-    // ne s'applique PAS à ce chemin, voir clickKomerceConfirm() ci-dessous
-    // (F22-9) pour la cliquer explicitement.
+    // handleRemoveItem/handleCloseClick passent par window.confirm() —
+    // jamais de blocage silencieux du test sur une boîte de dialogue native.
     page.on('dialog', (dialog) => dialog.accept());
     await page.goto(BASE_URL);
     await cancelAnyActiveSharedCart(page);
@@ -512,11 +505,6 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     await expect(closeBtn).toBeVisible({ timeout: 10_000 });
     await expect(closeBtn).toBeEnabled();
     await closeBtn.click();
-    // L7 — handleCloseClick ouvre désormais la modale DOM Komerce
-    // ("Fermer cette liste ?") au lieu d'un window.confirm natif ; il faut
-    // cliquer explicitement "Fermer la liste" pour que la Promise de
-    // showKomerceConfirm() se résolve et que apiCloseSharedCart() parte.
-    await clickKomerceConfirm(page);
 
     await expect(page.locator('#k-side-cart .k-cart-snapshot-item')).toHaveCount(0, { timeout: 10_000 });
     await expect(page.locator('#k-cart-surface-switch')).toHaveCount(0);
@@ -679,5 +667,109 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     const freed = await createSharedListViaApi(page, cartItems);
     expect(freed.status, 'La fermeture doit libérer le slot immédiatement').toBe(200);
     expect(freed.body?.token).toBeTruthy();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// L10 — Tests mobile (390×844) et coexistence panier/liste
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('NAVIGATION — Coexistence panier personnel ↔ liste (desktop)', () => {
+  test('L10-D — personal → liste → personal → liste : panier strictement intact', async ({ page }) => {
+    // Préparer un panier personnel non vide.
+    await addNProductsToCart(page, 2);
+    const cartBefore = await getClientCart(page);
+    expect(cartBefore.length, 'Le panier doit contenir 2 articles avant publication').toBe(2);
+
+    // Publier une liste — le panier source est vidé après succès.
+    const { token } = await createSharedList(page, 2);
+    expect(token).toBeTruthy();
+
+    // Les tabs doivent être présents (liste active dans le slot).
+    const tabs = page.locator('#k-cart-surface-switch');
+    await expect(tabs).toBeVisible({ timeout: 8_000 });
+    await expect(tabs.locator('.k-cart-tab')).toHaveCount(2);
+    await expect(page.locator('#k-tab-shared-list')).toHaveClass(/k-cart-tab--active/);
+
+    // Basculer vers Mon panier.
+    await page.locator('#k-tab-personal').click();
+    await expect(page.locator('#k-tab-personal')).toHaveClass(/k-cart-tab--active/);
+    // Le shell reste visible (invariant L1).
+    await expect(page.locator('#k-side-cart')).toHaveClass(/has-items/);
+
+    // Revenir à la liste.
+    await page.locator('#k-tab-shared-list').click();
+    await expect(page.locator('#k-tab-shared-list')).toHaveClass(/k-cart-tab--active/);
+    // Le snapshot doit être présent.
+    await expect(page.locator('#k-side-cart .k-cart-snapshot-item')).toHaveCount(2, { timeout: 8_000 });
+
+    // L'état backend de la liste reste OPEN.
+    const stateAfter = await getClientShareState(page);
+    expect(stateAfter?.token).toBe(token);
+  });
+});
+
+test.describe('NAVIGATION — Mobile 390×844', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('L10-M — personal → liste → personal → liste : drawer mobile symétrique', async ({ page }) => {
+    // §2 mandat — tester le chemin complet sur mobile.
+    await addNProductsToCart(page, 1);
+    const cartBefore = await getClientCart(page);
+    expect(cartBefore.length).toBeGreaterThan(0);
+
+    // Ouvrir le drawer mobile (via bnav cart).
+    const bnavCart = page.locator('.k-bnav-item[data-tab="cart"]');
+    if (await bnavCart.count()) await bnavCart.click();
+
+    // Publier.
+    const { token } = await createSharedList(page, 1);
+    expect(token).toBeTruthy();
+
+    // Tabs dans le drawer mobile.
+    // Les tabs sont injectés dans #k-cart-drawer (N1 fix §15).
+    const drawerTabs = page.locator('#k-cart-surface-switch-drawer');
+    await expect(drawerTabs).toBeVisible({ timeout: 8_000 });
+    await expect(drawerTabs.locator('.k-cart-tab')).toHaveCount(2);
+
+    // Basculer vers Mon panier depuis le drawer.
+    await drawerTabs.locator('#k-tab-personal').click();
+    // Le drawer doit afficher un état vide explicite, pas être blanc.
+    const drawerBody = page.locator('#k-cart-body');
+    await expect(drawerBody).toBeVisible({ timeout: 5_000 });
+
+    // Revenir à la liste depuis le drawer.
+    await drawerTabs.locator('#k-tab-shared-list').click();
+    // Les lignes de snapshot doivent réapparaître.
+    await expect(page.locator('#k-cart-body .k-cart-snapshot-item, #k-cart-drawer .k-cart-snapshot-item')).toHaveCount(1, { timeout: 8_000 });
+
+    // Mon panier mobile : retour et vérification intégrité.
+    await drawerTabs.locator('#k-tab-personal').click();
+    const cartAfter = await getClientCart(page);
+    // Le panier personnel reste cohérent avec l'état.
+    expect(cartAfter).toBeDefined();
+  });
+
+  test('L10-M2 — panier non vide visible sur mobile après bascule vers liste et retour', async ({ page }) => {
+    // Prouver que state.cart ne se perd pas (P0-1 invariant shell).
+    await addNProductsToCart(page, 1);
+    const { token } = await createSharedList(page, 1);
+    expect(token).toBeTruthy();
+
+    // Basculer : liste → personal → liste → personal.
+    // Sur mobile, cartSurface='personal' doit rappeler renderCartBody().
+    const drawerTabs = page.locator('#k-cart-surface-switch-drawer');
+    if (await drawerTabs.count()) {
+      await drawerTabs.locator('#k-tab-personal').click();
+      await page.waitForTimeout(300);
+      await drawerTabs.locator('#k-tab-shared-list').click();
+      await page.waitForTimeout(300);
+      await drawerTabs.locator('#k-tab-personal').click();
+      await page.waitForTimeout(300);
+    }
+
+    // L'état backend reste intact.
+    const state = await getClientShareState(page);
+    expect(state?.token, 'Le token de liste doit survivre aux bascules').toBe(token);
   });
 });

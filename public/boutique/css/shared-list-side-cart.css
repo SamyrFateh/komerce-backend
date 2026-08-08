@@ -322,3 +322,75 @@
   border-color: var(--coral, var(--cta-green));
   color: var(--coral, var(--cta-green));
 }
+
+/* ── Modale de confirmation Komerce (.k-confirm-*) ───────────────────────────
+ * Utilisée pour : fermeture de liste (danger), publication, conflit open.
+ * Créée dynamiquement par group-side-cart.js::showKomerceConfirm().
+ * Même structure que les modales checkout (alertdialog/aria-modal). */
+
+.k-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.k-confirm-dialog {
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .18);
+  padding: 24px 20px 20px;
+  max-width: 360px;
+  width: 100%;
+}
+
+.k-confirm-dialog-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.k-confirm-dialog-body {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.k-confirm-dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.k-confirm-dialog-btn {
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity .15s;
+}
+
+.k-confirm-dialog-btn:hover { opacity: .88; }
+
+.k-confirm-dialog-btn-secondary {
+  background: var(--sand);
+  color: var(--text);
+}
+
+.k-confirm-dialog-btn-primary {
+  background: var(--cta-green);
+  color: var(--white);
+}
+
+.k-confirm-dialog-btn-danger {
+  background: var(--coral);
+  color: var(--white);
+}

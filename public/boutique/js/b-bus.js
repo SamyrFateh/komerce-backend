@@ -55,6 +55,13 @@
  *   cart-snapshot:cleanup —             — retirer les traces DOM du mode liste des
  *     surfaces canoniques [group-side-cart.js → b-cart.js::cleanupCartSnapshotDom,
  *     même correctif]
+ *   cart-body:render-personal —         — pendant mobile de cart-snapshot:render :
+ *     rappelle b-cart.js::renderCartBody() (#k-cart-body, drawer mobile) quand la
+ *     surface repasse à 'personal' (tab "Mon panier", fermeture/annulation de
+ *     liste). 'side-cart:render' seul ne couvre que renderSideCart() (#k-side-cart,
+ *     desktop) — sans ce signal dédié le drawer mobile gardait les lignes de la
+ *     liste affichées après la bascule [group-side-cart.js::setCartSurface()/
+ *     clearSharedListContext() → b-cart.js::renderCartBody(), P0 audit terrain §2]
  *
  * Propriété des contrats (P3b, 2026-07) — owner = feature manifeste propriétaire du
  * contrat ; producer = seul module autorisé à émettre ; payload = arité attendue

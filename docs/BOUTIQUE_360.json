@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-08T13:53:36.567Z",
+  "generatedAt": "2026-08-08T15:04:45.950Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
-    "events": 22,
-    "declaredActive": 28,
+    "events": 23,
+    "declaredActive": 34,
     "declaredDead": 9,
     "cssBundles": 3,
     "endpoints": 46,
@@ -277,7 +277,8 @@
         "cart:update",
         "side-cart:render",
         "cart-snapshot:render",
-        "cart-snapshot:cleanup"
+        "cart-snapshot:cleanup",
+        "cart-body:render-personal"
       ],
       "imports": [
         "b-bus",
@@ -1615,6 +1616,7 @@
         "b-store",
         "b-cart-core",
         "b-cart",
+        "group-side-cart",
         "group-state",
         "b-group-banner",
         "b-identity",
@@ -2085,6 +2087,7 @@
       ],
       "emits": [
         "cart-snapshot:cleanup",
+        "cart-body:render-personal",
         "side-cart:render",
         "cart-snapshot:render",
         "modal:open"
@@ -2116,6 +2119,10 @@
           "hasArg": false
         },
         {
+          "name": "cart-body:render-personal",
+          "hasArg": false
+        },
+        {
           "name": "side-cart:render",
           "hasArg": false
         },
@@ -2125,6 +2132,10 @@
         },
         {
           "name": "cart-snapshot:cleanup",
+          "hasArg": false
+        },
+        {
+          "name": "cart-body:render-personal",
           "hasArg": false
         },
         {
@@ -2588,6 +2599,14 @@
       ]
     },
     "cart-snapshot:cleanup": {
+      "emitters": [
+        "group-side-cart"
+      ],
+      "listeners": [
+        "b-cart"
+      ]
+    },
+    "cart-body:render-personal": {
       "emitters": [
         "group-side-cart"
       ],
@@ -3319,7 +3338,13 @@
       "rapport",
       "cart-snapshot:cleanup",
       "surfaces",
-      "m"
+      "m",
+      "cart-body:render-personal",
+      "rappelle",
+      "surface",
+      "liste",
+      "desktop",
+      "clearSharedListContext"
     ],
     "dead": [
       "cart:add",
@@ -3383,11 +3408,16 @@
       "amendement",
       "backend",
       "charge",
+      "clearSharedListContext",
       "couvre",
+      "desktop",
       "g",
+      "liste",
       "m",
       "partag",
+      "rappelle",
       "rapport",
+      "surface",
       "surfaces",
       "view:switch"
     ],

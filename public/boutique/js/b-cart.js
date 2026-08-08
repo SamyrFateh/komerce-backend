@@ -1761,6 +1761,18 @@ bus.on('side-cart:render', renderSideCart);
 // group-side-cart.js n'importe plus rien de ce fichier.
 bus.on('cart-snapshot:render', ({ context, items, actions }) => renderCartSnapshot(context, items, actions));
 bus.on('cart-snapshot:cleanup', () => cleanupCartSnapshotDom());
+// P0 §2 (aiguillage explicite symétrique mobile/desktop) — émis par
+// group-side-cart.js quand la surface repasse à 'personal' (tab "Mon
+// panier", fermeture/annulation de liste). 'side-cart:render' seul ne
+// couvre que renderSideCart() (#k-side-cart, desktop) ; ce signal dédié
+// est le pendant mobile de 'cart-snapshot:render' côté liste, et rappelle
+// le SEUL renderer de contenu personnel (renderCartBody, doctrine
+// un_renderer_panier) pour que le drawer (#k-cart-body) ne garde jamais
+// les lignes de la liste affichées après la bascule. renderCartBody()
+// s'auto-garde déjà via isSharedListSurfaceActive() en tête de fonction,
+// donc cet appel est sûr même en cas de course avec une réactivation
+// rapide de la liste.
+bus.on('cart-body:render-personal', () => renderCartBody());
 //
 // Lot D (correction — audit de clôture) : l'écoute du signal "corps rendu
 // depuis bascule de surface" a été retirée ci-dessous. b-cart.js n'appelle
