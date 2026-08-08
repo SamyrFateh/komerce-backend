@@ -21,9 +21,9 @@
  *   - statut ligne → `.k-cart-snapshot-item-status` / badge `.is-claimed`
  *   - achat  → un bouton `.k-cart-item-buy` PAR ligne (plus de sélection +
  *     CTA global), option discrète `#k-cart-snap-buyall` / `#k-sc-snap-buyall`
- *   - `#k-cart-surface-switch` n'est plus qu'un indicateur (`.k-list-indicator`,
- *     texte "Liste de X · Ouverte/Fermée") — plus de boutons ni de bascule
- *     panier personnel/liste, plus jamais deux surfaces vivantes en parallèle.
+ *   - `#k-cart-surface-switch` est le conteneur `.k-cart-tabs` des deux
+ *     onglets [ Mon panier ] [ Liste partagée ] (É4, 2026-08). L'onglet
+ *     liste porte la classe `.k-cart-tab--active` quand une OPEN est affichée.
  *
  * Les 13 scénarios ci-dessous couvrent l'ensemble du cycle de vie côté UI
  * (création → consultation → mutation organisateur → achat ligne/bloc →
@@ -174,13 +174,17 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
   test('F22-1 — la liste active devient l\'unique panier visible : ni bascule de surface, ni sélection locale', async ({ page }) => {
     await createSharedList(page, 2);
 
-    // Plus de bascule à deux boutons : #k-cart-surface-switch est un simple
-    // indicateur, jamais un contrôle interactif.
-    const switcher = page.locator('#k-cart-surface-switch');
-    await expect(switcher).toBeVisible({ timeout: 10_000 });
-    await expect(switcher).toHaveClass(/k-list-indicator/);
-    await expect(switcher.locator('button, [data-surface]')).toHaveCount(0);
-    await expect(switcher.locator('.k-list-indicator-text')).toContainText('Ouverte');
+    // É4 (2026-08) : #k-cart-surface-switch est désormais le conteneur des
+    // deux onglets [ Mon panier ] [ Liste partagée ]. Il porte .k-cart-tabs
+    // et expose deux boutons .k-cart-tab. Le libellé actif est dans
+    // #k-tab-shared-list, qui contient le nom de la liste.
+    const tabs = page.locator('#k-cart-surface-switch');
+    await expect(tabs).toBeVisible({ timeout: 10_000 });
+    await expect(tabs).toHaveClass(/k-cart-tabs/);
+    // Deux onglets explicites — Mon panier et Liste partagée.
+    await expect(tabs.locator('.k-cart-tab')).toHaveCount(2);
+    // L'onglet liste partagée est actif (liste OPEN affichée).
+    await expect(page.locator('#k-tab-shared-list')).toHaveClass(/k-cart-tab--active/);
 
     // Plus de sélection locale : ni case/bouton "Sélectionner", ni ancien
     // conteneur .k-shared-list-item(s).
@@ -601,9 +605,10 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
       { timeout: 15_000 },
     ).catch(() => {});
 
-    const switcher = page.locator('#k-cart-surface-switch');
-    await expect(switcher).toBeVisible({ timeout: 10_000 });
-    await expect(switcher.locator('.k-list-indicator-text')).toContainText('Ouverte');
+    // É4 — le conteneur est .k-cart-tabs, l'onglet actif est #k-tab-shared-list.
+    const tabs = page.locator('#k-cart-surface-switch');
+    await expect(tabs).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#k-tab-shared-list')).toHaveClass(/k-cart-tab--active/);
 
     const rows = page.locator('#k-side-cart .k-cart-snapshot-item');
     await expect(rows).toHaveCount(2, { timeout: 10_000 });
