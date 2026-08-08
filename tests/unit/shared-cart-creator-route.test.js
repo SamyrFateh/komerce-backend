@@ -127,11 +127,21 @@ describe('POST /from-cart-items', () => {
     await new Promise(process.nextTick);
   });
 
-  it('erreur métier connue (Limite atteinte) → 400', async () => {
-    engine.createSharedCartFromCartItems.mockRejectedValue(new Error('Limite atteinte : 5 listes actives'));
+  it('Règle V1 — open_list_exists → 409 avec existing_token (arbitrage A2)', async () => {
+    // Le service lève une erreur structurée avec code + existing_token.
+    // La route doit la traduire en 409 et exposer existing_token pour que
+    // le frontend propose « Ouvrir ma liste » plutôt qu'un mur.
+    const err = Object.assign(
+      new Error('Vous avez déjà une liste ouverte. Fermez-la avant d\'en publier une nouvelle.'),
+      { code: 'open_list_exists', existing_token: 'tok-abc' }
+    );
+    engine.createSharedCartFromCartItems.mockRejectedValue(err);
     const res = await request(app).post('/api/shared-carts/from-cart-items')
       .send({ cart_items: [{ product_id: 'p1', quantity: 1 }] });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('open_list_exists');
+    expect(res.body.existing_token).toBe('tok-abc');
+    expect(res.body.error).toMatch(/liste ouverte/i);
   });
 
   it('erreur inconnue → next(err) → 500', async () => {

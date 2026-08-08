@@ -72,14 +72,19 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
     // (avant correction, ce check comptait encore ('open','closed') — bug
     // confirmé : un utilisateur avec MAX_ACTIVE_CARTS_PER_USER listes
     // toutes fermées ne pouvait plus jamais en recréer une seule).
-    const { rows: activeCount } = await client.query(
-      `SELECT COUNT(*)::int AS n FROM shared_carts
-        WHERE organizer_user_id = $1
-          AND status = 'open'`,
+    // Règle V1 — 1 liste OPEN par organisateur (garde applicative ;
+    // le filet DB est shared_carts_one_open_per_organizer, migration 129).
+    const { rows: openRows } = await client.query(
+      `SELECT id, token FROM shared_carts
+        WHERE organizer_user_id = $1 AND status = 'open'
+        LIMIT 1`,
       [userId]
     );
-    if (activeCount[0].n >= CONFIG.MAX_ACTIVE_CARTS_PER_USER) {
-      throw new Error(`Limite atteinte : ${CONFIG.MAX_ACTIVE_CARTS_PER_USER} paniers partagés actifs maximum`);
+    if (openRows.length >= CONFIG.MAX_OPEN_PER_ORGANIZER) {
+      const err = new Error('Vous avez déjà une liste ouverte. Fermez-la avant d\'en publier une nouvelle.');
+      err.code = 'open_list_exists';
+      err.existing_token = openRows[0].token;
+      throw err;
     }
 
     const { rows: userRows } = await client.query(
@@ -213,16 +218,19 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
   return withTransaction(async (client) => {
     if (!userId) throw new Error('user_id requis');
 
-    // P0/§9 — même correction que createSharedCartFromBasket ci-dessus :
-    // seul 'open' consomme le quota des listes actives.
-    const { rows: activeCount } = await client.query(
-      `SELECT COUNT(*)::int AS n FROM shared_carts
-        WHERE organizer_user_id = $1
-          AND status = 'open'`,
+    // Règle V1 — 1 liste OPEN par organisateur (garde applicative ;
+    // le filet DB est shared_carts_one_open_per_organizer, migration 129).
+    const { rows: openRows } = await client.query(
+      `SELECT id, token FROM shared_carts
+        WHERE organizer_user_id = $1 AND status = 'open'
+        LIMIT 1`,
       [userId]
     );
-    if (activeCount[0].n >= CONFIG.MAX_ACTIVE_CARTS_PER_USER) {
-      throw new Error(`Limite atteinte : ${CONFIG.MAX_ACTIVE_CARTS_PER_USER} paniers partagés actifs maximum`);
+    if (openRows.length >= CONFIG.MAX_OPEN_PER_ORGANIZER) {
+      const err = new Error('Vous avez déjà une liste ouverte. Fermez-la avant d\'en publier une nouvelle.');
+      err.code = 'open_list_exists';
+      err.existing_token = openRows[0].token;
+      throw err;
     }
 
     if (!Array.isArray(cartItems) || cartItems.length === 0) {

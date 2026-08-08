@@ -244,6 +244,11 @@ async function createSharedCart() {
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
+    // 409 open_list_exists — retourner l'objet structuré pour que
+    // startShareFlow() propose « Ouvrir ma liste » (arbitrage A2).
+    if (res.status === 409 && error.code === 'open_list_exists') {
+      return { _statusCode: 409, ...error };
+    }
     throw new Error(error.error || `Erreur API (${res.status})`);
   }
 
@@ -414,6 +419,20 @@ function legacyShareTarget() {
 
 /* ── Flow principal ─────────────────────────────────────────────── */
 
+/**
+ * startShareFlow — point d'entrée unique pour le bouton du panier.
+ *
+ * Deux chemins strictement séparés (É7, contrat §9) :
+ *
+ *   A. REPARTAGER — une liste OPEN existe déjà (créée par moi ou reçue
+ *      et affichée). On ne crée jamais une seconde liste : on repartage
+ *      le lien de celle qui est active.
+ *
+ *   B. CRÉER — aucune liste OPEN affichée, panier non vide.
+ *      Confirmation d'immutabilité AVANT le POST (É5, contrat §6).
+ *      Séquence succès : snapshot créé → panier vidé → slot sélectionné
+ *      → lien proposé (É8, contrat invariant 8).
+ */
 export async function startShareFlow({ reshare = false } = {}) {
   // Éviter la race entre restauration /mine et action utilisateur.
   if (_restorePromise) {
@@ -421,29 +440,31 @@ export async function startShareFlow({ reshare = false } = {}) {
     _restorePromise = null;
   }
 
-  // Le repartage porte sur la liste existante et ne dépend pas du panier
-  // local — déclenché explicitement (bouton « Re-partager ») ou implicitement
-  // dès qu'une liste ouverte est déjà active (doctrine §4/§9 : Partager =
-  // repartager, jamais recréer). activeShareTarget() est la seule source de
-  // vérité : jamais de lecture directe de state.shareToken/shareUrl/cartName
-  // ici (voir commentaire sur activeShareTarget/hasActiveList ci-dessus).
+  // ── A. REPARTAGER ──────────────────────────────────────────────────
+  // activeShareTarget() est l'unique source de vérité (sharedListContext
+  // prioritaire, shareToken en repli de fenêtre de démarrage).
   const target = activeShareTarget() || (reshare ? legacyShareTarget() : null);
   if (target) {
     await shareList(target.title, target.shareUrl);
     return;
   }
-  // reshare=true explicite mais aucun token connu : on tombe dans la
-  // création ci-dessous (comportement historique — un reshare sans aucune
-  // liste connue se comporte comme une création).
 
+  // ── B. CRÉER ───────────────────────────────────────────────────────
   if (!state.cart?.length) {
     showToast("Ajoutez d'abord des produits au panier.", 'error');
     return;
   }
 
-  // Aucune modale de configuration : l'identité est le seul prérequis.
+  // É5 — Confirmation d'immutabilité AVANT tout appel réseau.
+  // Cohérent avec window.confirm utilisé pour 'Vider le panier' (b-cart.js).
+  // À remplacer par une modale native Komerce si une primitive émerge.
+  const confirmed = window.confirm(
+    "Créer et partager cette liste ?\n\nAprès publication, les articles, variantes et quantités seront figés."
+  );
+  if (!confirmed) return;
+
   const identity = await requireIdentity({
-    reason: 'partager cette liste',
+    reason: 'créer cette liste',
     title: 'Sécuriser votre liste',
   });
   if (!identity) return;
@@ -452,6 +473,22 @@ export async function startShareFlow({ reshare = false } = {}) {
 
   try {
     const data = await createSharedCart();
+
+    // Règle V1 — une liste OPEN existe déjà (race ou session parallèle).
+    // Le backend renvoie 409 + existing_token pour que l'UX propose
+    // « Ouvrir ma liste » plutôt qu'un mur (arbitrage A2).
+    if (data?._statusCode === 409 && data?.code === 'open_list_exists') {
+      const openIt = window.confirm(
+        "Vous avez déjà une liste ouverte.\n\nOuvrir votre liste existante ?"
+      );
+      if (openIt && data.existing_token) {
+        await import('./group/group-side-cart.js').then(({ activateFromParticipantUrl }) =>
+          activateFromParticipantUrl(data.existing_token)
+        );
+      }
+      return;
+    }
+
     const shareUrl = data.share_url
       || `${window.location.origin}/boutique/?p=${data.token}`;
     const title = data.title || DEFAULT_LIST_TITLE;
@@ -465,14 +502,11 @@ export async function startShareFlow({ reshare = false } = {}) {
       created_at: new Date().toISOString(),
     };
 
-    // Poser le contexte avant de vider le panier : cart:cleared ne doit pas
-    // supprimer la liste qui vient d'être créée.
+    // Poser le contexte AVANT de vider le panier : cart:cleared ne doit
+    // pas supprimer la liste qui vient d'être créée.
     applyCartToState(cart);
     refreshSharedBadges(true);
-    showBanner({
-      title,
-      status: cart.status,
-    });
+    showBanner({ title, status: cart.status });
 
     if (data.clear_local_cart !== false) {
       _skipClearShareOnCartCleared = true;
@@ -482,11 +516,15 @@ export async function startShareFlow({ reshare = false } = {}) {
 
     showToast('Liste créée. Le lien est prêt à être partagé.', 'success');
 
-    // Le canal appartient à l'utilisateur : feuille native si disponible,
-    // WhatsApp + copie du lien comme fallback universel.
-    await shareList(title, shareUrl);
+    // É8 — séquence correcte : slot sélectionné AVANT la feuille de partage.
+    // La liste reste valide si l'utilisateur abandonne la feuille (contrat §10).
     openSharedListInCanonicalCart(cart);
+    await shareList(title, shareUrl);
+
   } catch (err) {
+    // Erreur réseau brute (fetch rejeté, JSON invalide...). Les erreurs
+    // applicatives (409, 400) sont traitées dans createSharedCart() et
+    // retournent un objet _statusCode, pas une exception.
     showToast(`Erreur : ${err.message}`, 'error');
   } finally {
     _skipClearShareOnCartCleared = false;

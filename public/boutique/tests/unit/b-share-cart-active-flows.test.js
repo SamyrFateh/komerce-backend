@@ -101,6 +101,11 @@ beforeEach(() => {
   });
   global.fetch = jest.fn();
   window.open = jest.fn();
+  // É5 — window.confirm est utilisé pour la confirmation d'immutabilité
+  // avant création. On le mocke à true par défaut pour que les tests de
+  // création continuent ; les tests qui veulent tester l'annulation le
+  // remockent à false localement.
+  window.confirm = jest.fn().mockReturnValue(true);
 
   setNavigatorShare(jest.fn().mockResolvedValue());
   Object.defineProperty(navigator, 'clipboard', {
@@ -127,7 +132,7 @@ test('crée immédiatement une liste, diffuse son lien et ouvre sa vue', async (
 
   expect(document.querySelector('.k-share-modal-overlay')).toBeNull();
   expect(mockRequireIdentity).toHaveBeenCalledWith({
-    reason: 'partager cette liste',
+    reason: 'créer cette liste',
     title: 'Sécuriser votre liste',
   });
 

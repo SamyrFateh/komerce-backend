@@ -83,7 +83,7 @@ describe('shared-cart-creation', () => {
       const sharedCart = { id: 'cart-001', status: 'open', closed_at: null, payment_window_ends_at: null };
       const item = { id: 'sci-001', shared_cart_id: 'cart-001', product_id: 'product-001' };
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [product] },
         { rows: [{ full_name: 'Creator', phone: '000000' }] },
         { rows: [] },
@@ -109,43 +109,44 @@ describe('shared-cart-creation', () => {
       expectTransactionCommitted(client);
     });
 
-    it("P0 — le compteur de quota ne filtre que status = 'open' (jamais 'closed'), independamment de la position de la requete", async () => {
-      // Variante robuste-au-refactor de l'assertion ci-dessus/ci-dessous
-      // (client.calls[1] suppose un ordre de requêtes précis) : retrouve la
-      // requête de comptage par son motif COUNT(*) plutôt que par index, pour
-      // rester valide même si une requête est ajoutée/réordonnée avant elle.
-      const client = makeClient([{ rows: [{ n: 0 }] }]);
+    it("V1 — la requête de garde ne filtre que status='open' (jamais 'closed'), robuste au refactor", async () => {
+      // Retrouve la requête de garde par son motif SELECT...token...status=open
+      // plutôt que par index (robuste si des requêtes sont réordonnées).
+      const client = makeClient([{ rows: [] }]);
       db.getClient.mockResolvedValue(client);
 
       await expect(createSharedCartFromCartItems('user-001', [])).rejects.toThrow('Le panier est vide');
 
-      const quotaCall = client.calls.find((c) => /COUNT\(\*\)/.test(c.sql));
-      const normalizedSql = quotaCall.sql.replace(/\s+/g, ' ').trim();
+      // La garde fait SELECT id, token WHERE status='open' LIMIT 1 (pas de COUNT).
+      const guardCall = client.calls.find((c) => /SELECT.+token.+FROM shared_carts/i.test(c.sql));
+      expect(guardCall).toBeDefined();
+      const normalizedSql = guardCall.sql.replace(/\s+/g, ' ').trim();
       expect(normalizedSql).toContain("status = 'open'");
       expect(normalizedSql).not.toContain("IN ('open'");
-      expect(normalizedSql).not.toContain('closed');
+      expect(normalizedSql).not.toContain("'closed'");
     });
 
-    it('leve si la limite de paniers actifs est atteinte (5 open)', async () => {
-      const client = makeClient([{ rows: [{ n: 5 }] }]);
+    it('Règle V1 — leve si une liste OPEN existe déjà pour ce créateur', async () => {
+      // La garde cherche SELECT id, token WHERE status='open' LIMIT 1.
+      // Retourner une ligne simule l'existence d'une liste OPEN existante.
+      const client = makeClient([{ rows: [{ id: 'cart-existing', token: 'tok-existing' }] }]);
       db.getClient.mockResolvedValue(client);
 
-      await expect(
-        createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }])
-      ).rejects.toThrow('Limite atteinte');
+      const err = await createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }])
+        .catch((e) => e);
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toMatch(/Vous avez déjà une liste ouverte/);
+      expect(err.code).toBe('open_list_exists');
+      expect(err.existing_token).toBe('tok-existing');
       expectTransactionRolledBack(client);
-      // P0 — le check de quota ne doit compter QUE les listes 'open'. Une
-      // liste 'closed' n'est plus active (doctrine §9) et ne doit jamais
-      // remonter dans ce COUNT.
+      // La garde ne doit interroger que les listes 'open'.
       expect(client.calls[1].sql).toMatch(/status\s*=\s*'open'/);
       expect(client.calls[1].sql).not.toMatch(/status\s+IN\s*\(/i);
     });
 
-    it('P0 — 4 listes open + N listes closed : la creation reste autorisee (la query ne compte que open)', async () => {
-      // Le mock ne filtre pas réellement le SQL (c'est une DB en mémoire de
-      // façade) : la garantie que les listes 'closed' ne sont pas comptées
-      // vient de la requête elle-même (assertion ci-dessous), pas de ce
-      // retour n=4 qui simule le résultat déjà filtré côté serveur réel.
+    it('V1 — N listes closed : la creation reste autorisee (la query ne cherche que open)', async () => {
+      // Le mock ne filtre pas réellement le SQL : la garantie vient de
+      // l'assertion sur le SQL ci-dessous. rows:[] simule zéro liste OPEN.
       const product = {
         id: 'product-001', name: 'Riz', image_url: 'riz.jpg', category: 'maison',
         price_kmf: 1000, is_active: true,
@@ -153,7 +154,7 @@ describe('shared-cart-creation', () => {
       const sharedCart = { id: 'cart-002', status: 'open' };
       const item = { id: 'sci-002', shared_cart_id: 'cart-002', product_id: 'product-001' };
       const client = makeClient([
-        { rows: [{ n: 4 }] },
+        { rows: [] }, // aucune liste OPEN existante
         { rows: [product] },
         { rows: [{ full_name: 'Creator', phone: '000000' }] },
         { rows: [] },
@@ -170,23 +171,21 @@ describe('shared-cart-creation', () => {
       expectTransactionCommitted(client);
     });
 
-    it('P0 — fermeture d\'une liste open puis nouvelle creation : le quota redevient disponible immediatement', async () => {
-      // Simule le scenario bout-en-bout : 5 open (bloque), puis une des 5
-      // passe a 'closed' (via closeCart, teste separement dans
-      // shared-cart-lifecycle.test.js), donc le prochain COUNT(*) ne doit
-      // plus la voir -> n=4 -> creation autorisee sans attente ni delai.
-      const blockedClient = makeClient([{ rows: [{ n: 5 }] }]);
+    it('V1 — fermeture de la liste OPEN puis nouvelle creation autorisee immediatement', async () => {
+      // Etape 1 : une liste OPEN existe -> refusé.
+      const blockedClient = makeClient([{ rows: [{ id: 'c1', token: 'tok1' }] }]);
       db.getClient.mockResolvedValue(blockedClient);
       await expect(
         createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }])
-      ).rejects.toThrow('Limite atteinte');
+      ).rejects.toThrow('Vous avez déjà une liste ouverte');
 
+      // Etape 2 : la liste est maintenant CLOSED -> rows vide -> creation autorisee.
       jest.clearAllMocks();
       const product = { id: 'p1', name: 'Riz', image_url: null, category: null, price_kmf: 1000, is_active: true };
       const sharedCart = { id: 'cart-003', status: 'open' };
       const item = { id: 'sci-003', shared_cart_id: 'cart-003', product_id: 'p1' };
       const freedClient = makeClient([
-        { rows: [{ n: 4 }] }, // une des 5 vient d'être fermée -> plus dans le COUNT
+        { rows: [] }, // liste précédente est CLOSED -> absent du SELECT WHERE status='open'
         { rows: [product] },
         { rows: [{ full_name: 'Creator', phone: '000000' }] },
         { rows: [] },
@@ -202,7 +201,7 @@ describe('shared-cart-creation', () => {
     });
 
     it('leve si cartItems vide', async () => {
-      const client = makeClient([{ rows: [{ n: 0 }] }]);
+      const client = makeClient([{ rows: [] }]);
       db.getClient.mockResolvedValue(client);
 
       await expect(createSharedCartFromCartItems('user-001', [])).rejects.toThrow('Le panier est vide');
@@ -210,7 +209,7 @@ describe('shared-cart-creation', () => {
     });
 
     it('leve si aucun product_id valide dans cartItems', async () => {
-      const client = makeClient([{ rows: [{ n: 0 }] }]);
+      const client = makeClient([{ rows: [] }]);
       db.getClient.mockResolvedValue(client);
 
       await expect(
@@ -221,7 +220,7 @@ describe('shared-cart-creation', () => {
 
     it('leve si tous les produits sont inactifs/quantite nulle/prix nul (aucun item enrichi)', async () => {
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [{ id: 'p1', name: 'X', price_kmf: 1000, is_active: false }] },
       ]);
       db.getClient.mockResolvedValue(client);
@@ -235,7 +234,7 @@ describe('shared-cart-creation', () => {
     it('leve si utilisateur introuvable', async () => {
       const product = { id: 'p1', name: 'X', price_kmf: 1000, is_active: true, is_promo: false };
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [product] },
         { rows: [] }, // user introuvable
       ]);
@@ -256,7 +255,7 @@ describe('shared-cart-creation', () => {
       const sharedCart = { id: 'cart-002', status: 'open', closed_at: null, payment_window_ends_at: null };
       const item = { id: 'sci-002' };
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [product] },
         { rows: [{ full_name: 'Creator', phone: '000' }] },
         { rows: [] },
@@ -278,7 +277,7 @@ describe('shared-cart-creation', () => {
       const sharedCart = { id: 'cart-003', status: 'open', closed_at: null };
       const item = { id: 'sci-003' };
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [product] },
         { rows: [{ full_name: 'Creator', phone: '000' }] },
         { rows: [] },
@@ -306,7 +305,7 @@ describe('shared-cart-creation', () => {
       const sharedCart = { id: 'cart-005', status: 'open', closed_at: null, payment_window_ends_at: null };
       const item = { id: 'sci-005' };
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [product] },
         { rows: [{ full_name: 'Creator', phone: '000' }] },
         { rows: [{ exists: 1 }] }, // collision sur 1ère tentative
@@ -336,7 +335,7 @@ describe('shared-cart-creation', () => {
         const sharedCart = { id: 'cart-sku', status: 'open' };
         const item = { id: 'sci-sku' };
         const client = makeClient([
-          { rows: [{ n: 0 }] },
+          { rows: [] },
           { rows: [skuProduct] },                                            // SELECT products
           { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] }, // resolveActiveSku
           { rows: [] },                                                      // media (product_sku_media/catalog_media) — aucune, fallback image produit
@@ -369,7 +368,7 @@ describe('shared-cart-creation', () => {
         const sharedCart = { id: 'cart-sku-media', status: 'open' };
         const item = { id: 'sci-sku-media' };
         const client = makeClient([
-          { rows: [{ n: 0 }] },
+          { rows: [] },
           { rows: [skuProduct] },
           { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
           { rows: [{ url: 'https://cdn/chemise-noir-m-canonique.jpg' }] }, // média SKU explicite
@@ -393,7 +392,7 @@ describe('shared-cart-creation', () => {
       it('deux variantes du meme produit restent deux lignes distinctes', async () => {
         const sharedCart = { id: 'cart-sku-2', status: 'open' };
         const client = makeClient([
-          { rows: [{ n: 0 }] },
+          { rows: [] },
           { rows: [skuProduct] },
           { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: 15000 }] },
           { rows: [] },                          // media item 1 — fallback image produit
@@ -423,7 +422,7 @@ describe('shared-cart-creation', () => {
 
       it('409 sellable_unit_not_found si la combinaison ne resout aucun SKU actif (jamais de skip silencieux)', async () => {
         const client = makeClient([
-          { rows: [{ n: 0 }] },
+          { rows: [] },
           { rows: [skuProduct] },
           { rows: [] }, // resolveActiveSku → rien
         ]);
@@ -437,7 +436,7 @@ describe('shared-cart-creation', () => {
 
       it('409 sellable_unit_out_of_stock si le stock du SKU resolu est insuffisant', async () => {
         const client = makeClient([
-          { rows: [{ n: 0 }] },
+          { rows: [] },
           { rows: [skuProduct] },
           { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 1, price_kmf: 15000 }] },
         ]);
@@ -453,7 +452,7 @@ describe('shared-cart-creation', () => {
         const sharedCart = { id: 'cart-sku-3', status: 'open' };
         const item = { id: 'sci-sku-3' };
         const client = makeClient([
-          { rows: [{ n: 0 }] },
+          { rows: [] },
           { rows: [skuProduct] },
           { rows: [{ id: 'sku-noir-m', sku: 'CHEM-N-M', stock: 5, price_kmf: null }] },
           { rows: [] },                          // media — aucune, fallback image produit
@@ -477,20 +476,22 @@ describe('shared-cart-creation', () => {
 
   describe('createSharedCartFromBasket', () => {
     it('leve si limite de paniers actifs atteinte (5 open)', async () => {
-      const client = makeClient([{ rows: [{ n: 5 }] }]);
+      // Règle V1 : retourner une liste OPEN existante déclenche le refus.
+      const client = makeClient([{ rows: [{ id: 'c-existing', token: 'tok-existing' }] }]);
       db.getClient.mockResolvedValue(client);
 
-      await expect(createSharedCartFromBasket('user-001', 'basket-001')).rejects.toThrow('Limite atteinte');
+      const err = await createSharedCartFromBasket('user-001', 'basket-001').catch((e) => e);
+      expect(err.message).toMatch(/Vous avez déjà une liste ouverte/);
+      expect(err.code).toBe('open_list_exists');
+      expect(err.existing_token).toBe('tok-existing');
       expectTransactionRolledBack(client);
-      // P0 — même garantie que createSharedCartFromCartItems : uniquement
-      // 'open' compte pour le quota, jamais 'closed'.
       expect(client.calls[1].sql).toMatch(/status\s*=\s*'open'/);
       expect(client.calls[1].sql).not.toMatch(/status\s+IN\s*\(/i);
     });
 
     it('leve si utilisateur introuvable', async () => {
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [] },
       ]);
       db.getClient.mockResolvedValue(client);
@@ -501,7 +502,7 @@ describe('shared-cart-creation', () => {
 
     it('leve si panier introuvable ou non autorise', async () => {
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [{ id: 'user-001', full_name: 'X', phone: '000' }] },
         { rows: [] },
       ]);
@@ -513,7 +514,7 @@ describe('shared-cart-creation', () => {
 
     it('leve si panier vide', async () => {
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [{ id: 'user-001', full_name: 'X', phone: '000' }] },
         { rows: [{ id: 'basket-001', user_id: 'user-001' }] },
         { rows: [] },
@@ -532,7 +533,7 @@ describe('shared-cart-creation', () => {
       const sharedCart = { id: 'cart-basket-001', status: 'open' };
 
       const client = makeClient([
-        { rows: [{ n: 0 }] },                                  // assertLimit
+        { rows: [] },                                  // assertLimit
         { rows: [{ id: 'user-001' }] },                        // SELECT users
         { rows: [{ id: 'basket-001', user_id: 'user-001' }] }, // SELECT baskets
         { rows: items },                                       // SELECT basket_items JOIN products
@@ -559,7 +560,7 @@ describe('shared-cart-creation', () => {
       const items = [{ product_id: 'p1', quantity: 1, name: 'Gratuit', image_url: null, category: 'x', price_kmf: 0 }];
       const sharedCart = { id: 'cart-invalid', status: 'open' };
       const client = makeClient([
-        { rows: [{ n: 0 }] },                                  // assertLimit
+        { rows: [] },                                  // assertLimit
         { rows: [{ id: 'user-001' }] },                        // SELECT users
         { rows: [{ id: 'basket-001', user_id: 'user-001' }] }, // SELECT baskets
         { rows: items },                                       // SELECT basket_items JOIN products
@@ -583,7 +584,7 @@ describe('shared-cart-creation', () => {
         { product_id: 'p1', quantity: 1, name: 'Robe', image_url: 'robe.jpg', category: 'vetements', price_kmf: 10000, inventory_model: 'SKU' },
       ];
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [{ id: 'user-001' }] },
         { rows: [{ id: 'basket-001', user_id: 'user-001' }] },
         { rows: items },
@@ -601,7 +602,7 @@ describe('shared-cart-creation', () => {
       const items = [{ product_id: 'p1', quantity: 1, name: 'X', image_url: null, category: 'x', price_kmf: 1000 }];
       const sharedCart = { id: 'cart-basket-002', status: 'open' };
       const client = makeClient([
-        { rows: [{ n: 0 }] },
+        { rows: [] },
         { rows: [{ id: 'user-001', full_name: 'X', phone: '000' }] },
         { rows: [{ id: 'basket-001', user_id: 'user-001' }] },
         { rows: items },
@@ -619,3 +620,44 @@ describe('shared-cart-creation', () => {
     });
   });
 });
+
+  // ── Preuve concurrente V1 ───────────────────────────────────────────────
+  // La vraie garantie est l'UNIQUE INDEX DB (migration 129) — ce test prouve
+  // que le service interprète correctement la violation de contrainte en
+  // erreur métier explicite (pas un 500 cryptique).
+
+  it('V1 — violation de contrainte DB unique (race concurrente) → erreur remonte sans être avalée', async () => {
+    // Cas : deux créations simultanées. La garde applicative passe pour
+    // les deux (SELECT voit 0 OPEN), mais le second INSERT viole l'index
+    // unique partiel (migration 129). Ce test vérifie que le service ne
+    // masque pas l'erreur DB : elle remonte pour que la route la traduise
+    // en 409 (code 23505, contrainte shared_carts_one_open_per_organizer).
+    const dbUniqueErr = Object.assign(
+      new Error('duplicate key value violates unique constraint "shared_carts_one_open_per_organizer"'),
+      { code: '23505', constraint: 'shared_carts_one_open_per_organizer' }
+    );
+    const product = { id: 'p1', name: 'Riz', image_url: null, category: null, price_kmf: 1000, is_active: true };
+
+    // Mock manuel : garde passe, puis INSERT échoue avec 23505.
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [] })           // BEGIN
+        .mockResolvedValueOnce({ rows: [] })           // garde V1 : 0 OPEN
+        .mockResolvedValueOnce({ rows: [product] })    // resolveSellableUnit
+        .mockResolvedValueOnce({ rows: [{ full_name: 'Ali', phone: '0' }] }) // user
+        .mockResolvedValueOnce({ rows: [] })           // token unique check
+        .mockRejectedValueOnce(dbUniqueErr),           // INSERT → 23505
+      release: jest.fn(),
+    };
+    db.getClient.mockResolvedValue(client);
+
+    const err = await createSharedCartFromCartItems(
+      'user-001', [{ product_id: 'p1', quantity: 1 }]
+    ).catch((e) => e);
+
+    // Le service ne l'avale pas — il remonte avec le code DB intègre.
+    // La route (tested in creator-route.test.js) le traduit en 409.
+    expect(err).toBeInstanceOf(Error);
+    expect(err.code).toBe('23505');
+    expect(client.release).toHaveBeenCalled(); // transaction nettoyée
+  });

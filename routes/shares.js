@@ -157,4 +157,8 @@ router.get('/:token', async (req, res, next) => {
   }
 });
 
+// [TOK-02] exporté pour permettre la preuve d'entropie (shares-token-entropy.test.js).
+// L'entropie est garantie par crypto.randomBytes — Math.random() n'est jamais
+// utilisé. Voir tests/unit/shares-token-entropy.test.js pour la preuve complète.
 module.exports = router;
+module.exports.genToken = genToken;

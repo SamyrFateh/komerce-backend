@@ -1,150 +1,143 @@
-# Komerce — Liste partagée · Doctrine Boutique First
+# Komerce — Liste partagée
 
-> **Canonique — août 2026**
->
-> Une liste publiée est un snapshot figé. Les proches achètent des articles ; Komerce ne gère ni cagnotte, ni engagement, ni contribution collective.
+> **Version** : 2026-08 — alignée sur le modèle minimal post-migrations 123/124/125.
 
-## 1. Principe
+## Doctrine intemporelle · Boutique First
 
-**La liste active est le panier visible.**
+> **Chacun gère sa négo. Komerce sait matérialiser l'achat.**
 
-Il n'existe pas de seconde surface concurrente, de panier collectif financier ou de checkout de groupe.
+Ce document n'est pas une spécification. Les specs vieillissent, les routes changent, les statuts se renomment. Ceci est la direction. Quand un choix se présente et qu'on hésite, on revient ici.
 
-La liste partage des articles réels. Chaque achat reste un achat Komerce normal.
+---
 
-## 2. Création = publication
+## 1. La phrase
 
-Le créateur prépare librement son panier personnel.
+**Une liste partagée n'est pas un checkout partagé.**
 
-Lorsqu'il crée la liste, son contenu publié devient structurellement immuable : produits, variantes et quantités sont figés.
+C'est une sélection publiée, figée, accessible par lien. Tout lien partagé ouvre d'abord la boutique. Le paiement n'est jamais le point d'entrée : il est une action possible *à l'intérieur* de la vue panier.
 
-`OPEN` signifie **achetable**, jamais **éditable**.
+**La négociation appartient aux humains. La matérialisation appartient à Komerce.**
 
-Une erreur après publication se corrige en fermant la liste puis en en publiant une nouvelle. L'ancien lien ne change pas silencieusement.
+Qui paie, combien, pourquoi, dans quel ordre, après quel coup de téléphone : c'est la famille, la diaspora, les liens qui existaient déjà avant nous. Komerce n'arbitre pas, ne relance pas, ne tient pas de cagnotte, ne gère pas de campagne. Komerce s'arrête là où commence l'intime, et reprend là où commence l'achat.
 
-## 3. Une seule surface
+Komerce sait faire une chose : **transformer une intention en un objet réel, visible, et livré.**
 
-Quand une liste est active, elle occupe la surface panier/side-cart.
+---
 
-Le panier personnel continue d'exister en état isolé mais ne concurrence jamais la liste dans l'interface.
+## 2. Ce que c'est — et ce que ce n'est pas
 
-Fermer le contexte de liste restitue le panier personnel. Aucune bascule manuelle panier/liste n'est nécessaire.
+C'est une sélection qu'on partage avec ceux qui nous aiment.
 
-## 4. Une ligne = une décision d'achat
+Ce n'est pas une plateforme de financement. Pas un portefeuille. Pas une cagnotte. Pas un transfert d'argent. Pas un arbitre des comptes familiaux.
 
-Chaque ligne disponible expose l'article, son prix, son état et l'action `Acheter`.
+La liste montre des articles vrais, à des prix vrais, qui arriveront vraiment. On ne paie pas un concept ni une promesse : on achète sa ligne d'un snapshot réel.
 
-`Acheter` ouvre le checkout standard avec cette ligne uniquement.
+Komerce ne collecte pas pour atteindre un objectif abstrait. Komerce encaisse une commande standard.
 
-Une ligne achetée reste visible mais devient verrouillée : `Déjà acheté`.
+---
 
-Le snapshot structurel ne change pas ; seul son état transactionnel évolue.
+## 3. La personne au centre
 
-## 5. Organisateur et participant
+Tout se décide dans un seul instant.
 
-L'organisateur voit `Déjà acheté par <nom>` lorsqu'une ligne a été achetée. Ses actions de liste sont `Partager`, `Fermer la liste` et `Payer` lorsqu'il reste des lignes disponibles.
+Quelqu'un qui n'a jamais entendu parler de Komerce ouvre un lien reçu par WhatsApp, sur un téléphone modeste, sur un réseau lent, et on lui demande de sortir de l'argent pour un pays à l'autre bout du monde.
 
-Il n'existe plus de stepper, de suppression, de mode Modifier ni de CTA `Ajouter à cette liste`.
+C'est le creuset. La confiance se gagne ou se perd là. Toute décision de design, de copie, d'architecture se juge à cette aune : **est-ce que ça rassure l'inconnu au moment où il s'apprête à payer ?**
 
-Le participant voit `Déjà acheté`, peut `Sauvegarder`, acheter une ligne disponible ou utiliser `Payer`.
+C'est pour cette personne qu'on ouvre la boutique en premier. On ne la met pas devant un formulaire de paiement : on la met devant un magasin. Le magasin est le mécanisme de confiance.
 
-Sauvegarder crée un signet d'accès. Cela ne copie ni ne modifie la liste.
-## 6. Payer
+---
 
-Le CTA global s'appelle `Payer · X KMF`.
+## 4. Les trois concepts
 
-Il achète en une seule commande toutes les lignes encore disponibles.
+```
+PANIER → LISTE → ACHAT
+```
 
-Il ne signifie jamais contribuer d'un montant libre, promettre une somme, financer un objectif ou compléter une cagnotte.
+**Panier personnel** — privé, vivant, modifiable, indépendant de toute liste reçue.
 
-S'il ne reste aucune ligne achetable, le CTA disparaît.
+**Liste partagée** — snapshot publié, figé dès sa création, accessible par lien, jamais éditable après publication.
 
-## 7. Concurrence et vérité d'achat
+**Achat** — commande Komerce standard ; peut porter sur une ligne disponible de liste ou sur toutes ses lignes disponibles ; ne crée aucun moteur financier collectif.
 
-Le frontend informe. Le backend décide.
+---
 
-Deux personnes ne doivent jamais pouvoir acheter la même ligne.
+## 5. Ce qui n'existe plus
 
-Le rattachement de la ligne partagée à la commande et la contrainte d'unicité en base protègent contre les achats concurrents.
+Supprimé définitivement, sous quelque nom que ce soit :
 
-Après confirmation : `Disponible → Déjà acheté`.
+- cagnotte, contribution, engagement, montant libre participant ;
+- modification d'une liste publiée ;
+- panier collectif éditable ;
+- checkout collectif spécifique ;
+- « À valider ensemble » / ouverture différée des paiements ;
+- ajustement post-publication.
 
-## 8. Fiche produit et panier personnel
+---
 
-Ouvrir une fiche produit depuis une liste ne donne jamais le droit de modifier cette liste.
+## 6. Le modèle d'état
 
-`Ajouter au panier` vise le panier personnel de l'utilisateur, organisateur comme participant.
+```
+personalCart           = indépendant, vivant, privé
+ownedOpenSharedList    = 0..1   (liste OPEN créée par l'utilisateur)
+displayedSharedList    = 0..1   (liste OPEN occupant le slot partagé)
+saved/receivedLists    = 0..N   (références, jamais des copies)
+```
 
-Ce panier reste isolé tant que la liste occupe la surface canonique.
+**Règle V1 (provisoire, réversible).** Tant que les listes ne sont pas nommables, un utilisateur ne peut posséder qu'une seule liste en état OPEN. Garantie par contrainte DB (index partiel). Si le besoin de plusieurs listes simultanées apparaît, le modèle évoluera avec nommage + sélection.
 
-## 9. Partager
+---
 
-Partager une liste active réutilise toujours son lien.
+## 7. Le side-cart universel
 
-Repartager ne crée jamais une nouvelle liste.
+```
+[ Mon panier ] [ Liste partagée ]
+```
 
-Une nouvelle liste naît uniquement d'une intention explicite de publication depuis un panier personnel.
+Second onglet présent **uniquement** si une liste OPEN est affichée. Absent si aucune liste n'est affichée, ou si la liste est CLOSED/CANCELLED.
 
-Le partage simple `/api/shares`, utilisé notamment pour les favoris, n'est pas une liste collective : il ne porte ni engagement, ni contribution, ni paiement collectif.
+`Mon panier` n'est pas une fermeture de liste : changer d'onglet ne déclenche aucun appel de lifecycle.
 
-## 10. Fermer
+Organisateur et participant utilisent le **même renderer**. Seule la matrice d'actions varie.
 
-Fermer une liste interdit les nouveaux achats, libère son quota actif et restitue le panier personnel.
+Une liste CLOSED ou CANCELLED ne peut jamais occuper le slot partagé. Une liste CLOSED reste dans `Mes listes` / historique — jamais dans le side-cart.
 
-Pour corriger une liste publiée :
+---
 
-**Fermer → préparer le bon panier → publier une nouvelle liste.**
+## 8. Ouvrir une liste = mécanique universelle
 
-Jamais : publier puis modifier silencieusement le snapshot partagé.
+Quatre entrées, une seule opération :
 
-## 11. États métier minimaux
+```
+publication par le créateur
+ouverture d'un lien reçu
+ouverture depuis Mes listes
+restauration au reload
+        ↓
+afficher cette liste OPEN
+dans le slot Liste partagée
+```
 
-Le domaine de la liste reste volontairement petit :
+---
 
-- `OPEN` : publiée et achetable ;
-- `CLOSED` : fermée aux nouveaux achats ;
-- `CANCELLED` : annulée.
+## 9. Deux intentions, jamais mélangées
 
-Commandes et paiements gardent leurs propres états. La liste ne recrée pas une machine financière parallèle.
+`PERSONAL_CART` ou `SHARED_LIST`. Un checkout liste n'absorbe jamais le panier personnel. Les deux intentions restent séparées jusqu'à la création de commande.
 
-## 12. Ce qui n'existe plus
+**Acheter** = une ligne seulement.
 
-La liste partagée ne possède plus :
+**Payer** = toutes les lignes encore disponibles de cette liste.
 
-- engagement indicatif ;
-- contribution ;
-- montant libre participant ;
-- passage collectif au règlement ;
-- panier sur-couvert ;
-- fenêtre de collecte ;
-- modification post-publication ;
-- reconstruction du snapshot en panier éditable ;
-- routes `as-cart-items` ou mutations `/items` ;
-- moteur `event + contributions` sous `/api/shares`.
+---
 
-Ces concepts ne doivent pas réapparaître sous un nouveau nom.
+## 10. Irréprochable
 
-## 13. Retrait — décision produit actée
+Comme on ne fait qu'une seule chose, cette chose porte tout. Irréprochable ne veut pas dire tout faire. Ça veut dire, sans exception :
 
-Le code de retrait reste produit par le mécanisme canonique. La liste ne génère jamais un second secret.
+- la liste arrive vite ;
+- les articles sont clairs ;
+- l'état (disponible / déjà acheté) ne ment jamais ;
+- le paiement réussit ou échoue sans ambiguïté ;
+- l'acheteur sait toujours ce qu'il a payé et ce qu'il recevra.
 
-Décision produit à implémenter et certifier dans le lot checkout/retrait :
-
-- le participant doit pouvoir choisir que Komerce adresse le code de retrait à l'organisateur ;
-- sinon le participant reçoit ou conserve le code et peut le transmettre lui-même.
-
-Cette option réutilise le mécanisme canonique existant, sans nouveau système de codes.
-
-## 14. Invariant de conception
-
-Si une évolution semble nécessiter un nouveau composant collectif, une route financière ou un état de groupe, demander d'abord :
-
-> Peut-on résoudre ce besoin avec la liste figée + checkout standard + commande standard ?
-
-La réponse par défaut est oui.
-
-## Le serment
-
-> La liste dit ce qui a été décidé.
-> L'achat dit qui l'a acheté.
-> Komerce vend des objets ; il ne tient pas les comptes de la famille.
+C'est la confiance. Le reste est du design.

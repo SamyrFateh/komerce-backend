@@ -34,7 +34,12 @@ const db = require('../db');
 // ─── Configuration ─────────────────────────────────────────────────────
 const CONFIG = {
   TOKEN_LENGTH: 16,                     // 16 caractères Base58 ≈ 95 bits
-  MAX_ACTIVE_CARTS_PER_USER: 5,
+  // Règle V1 (2026-08, provisoire) : 1 liste OPEN par organisateur tant que
+  // les listes ne sont pas nommables. Garanti en double :
+  //   1. garde applicative (message métier + existing_token dans shared-cart-creation.js)
+  //   2. UNIQUE INDEX shared_carts_one_open_per_organizer (migration 129, DB)
+  // Réversible : DROP INDEX + passer MAX_OPEN_PER_ORGANIZER à 2+.
+  MAX_OPEN_PER_ORGANIZER: 1,
 };
 
 // Base58 (sans 0/O/I/l) pour token URL-safe lisible

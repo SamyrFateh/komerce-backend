@@ -139,10 +139,18 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
       }
     });
   } catch (err) {
-    if (err.message.includes('Limite atteinte') ||
-        err.message.includes('vide') ||
-        err.message.includes('valide') ||
-        err.message.includes('introuvable')) {
+    // Règle V1 — liste OPEN existante : 409 avec existing_token pour que
+    // le frontend propose « Ouvrir ma liste » (arbitrage A2).
+    if (err.code === 'open_list_exists') {
+      return res.status(409).json({
+        error: err.message,
+        code: 'open_list_exists',
+        existing_token: err.existing_token,
+      });
+    }
+    if (err.message?.includes('vide') ||
+        err.message?.includes('valide') ||
+        err.message?.includes('introuvable')) {
       return res.status(400).json({ error: err.message });
     }
     next(err);

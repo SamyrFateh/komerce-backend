@@ -42,7 +42,7 @@ const { CONFIG, generateToken, r, withTransaction, addEvent } = require('../../s
 describe('CONFIG', () => {
   test('expose les constantes métier attendues', () => {
     expect(CONFIG.TOKEN_LENGTH).toBe(16);
-    expect(CONFIG.MAX_ACTIVE_CARTS_PER_USER).toBe(5);
+    expect(CONFIG.MAX_OPEN_PER_ORGANIZER).toBe(1); // Règle V1 (2026-08) — réversible
   });
 });
 

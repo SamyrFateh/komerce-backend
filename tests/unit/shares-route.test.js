@@ -82,7 +82,14 @@ describe('routes/shares', () => {
 
       const insertCall = mockDbQuery.mock.calls[1];
       expect(insertCall[0]).toMatch(/INSERT INTO cart_shares/);
-      expect(insertCall[1][2]).toBe('simple');
+      // Le type 'simple' est un LITTÉRAL SQL (VALUES ($1, $2, 'simple', ...)),
+      // pas un paramètre lié : il n'apparaît pas dans insertCall[1].
+      // On prouve que le SQL porte le littéral, et que les paramètres liés
+      // sont dans le bon ordre : token[0], items_json[1], sharer_name[2],
+      // expiresAt[3] — sharer_name est null quand absent du payload.
+      expect(insertCall[0]).toMatch(/'simple'/);
+      expect(insertCall[1][0]).toBe(res.body.token);
+      expect(insertCall[1][2]).toBeNull(); // sharer_name absent → null
     });
 
     test('réessaie la génération de token en cas de collision', async () => {

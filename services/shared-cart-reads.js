@@ -41,6 +41,31 @@
 const db = require('../db');
 
 /**
+ * Normalise product_image_snapshot en URL absolue http/https.
+ *
+ * Le frontend (b-cart.js::isRenderableSnapshotImageUrl) n'accepte que des
+ * URL absolues — cette garde protège un incident production documenté
+ * (chaîne sans schéma interprétée comme chemin relatif). Ne pas l'affaiblir.
+ * On normalise côté serveur plutôt que d'assouplir le garde client.
+ *
+ * Cas traités :
+ *   - URL absolue http(s)  → inchangée
+ *   - chemin absolu (/up…) → préfixé de APP_URL ou PUBLIC_BASE_URL
+ *   - chaîne vide ou null  → chaîne vide (→ fallback image côté client)
+ */
+const MEDIA_BASE = (process.env.APP_URL || process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '');
+
+function normalizeImageUrl(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (trimmed.startsWith('/') && MEDIA_BASE) return `${MEDIA_BASE}${trimmed}`;
+  // Chemin sans schéma ni slash initial — ambiguïté trop grande : vide → fallback.
+  return '';
+}
+
+/**
  * Lot 2026-08 (GAP-05) — Contributeurs agrégés.
  *
  * Dérive [{first_name, items_count}] depuis les lignes déjà jointes
@@ -148,7 +173,7 @@ async function getSharedCartForPublic(token, viewerUserId) {
       id: item.id,
       product_id: item.product_id,
       name: item.name,
-      image: item.image,
+      image: normalizeImageUrl(item.image),
       // GAP-07 §10/§11 — la combinaison doit être disponible côté public
       // pour afficher la variante et distinguer deux lignes du même
       // produit (renderer panier partagé). sku_id interne n'a pas besoin

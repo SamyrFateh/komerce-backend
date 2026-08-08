@@ -266,3 +266,78 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     expect(params).toEqual(['user-1']);
   });
 });
+
+  // ── Normalisation d'image (L7) ──────────────────────────────────────────
+  // Le frontend (b-cart.js::isRenderableSnapshotImageUrl) n'accepte que les
+  // URL absolues http/https. La normalisation se fait côté serveur pour ne
+  // pas affaiblir ce garde (incident production documenté). Ces tests
+  // prouvent que des chemins relatifs deviennent des URL rendables.
+
+  describe('normalizeImageUrl — getSharedCartForPublic', () => {
+    const BASE_CART = {
+      id: 'c', token: 'tok', title: null, message: null,
+      status: 'open', organizer_full_name: 'Ali', organizer_user_id: 'u',
+    };
+
+    async function imageOf(rawImage) {
+      const item = {
+        id: 'sci-1', name: 'Prod', image: rawImage,
+        quantity: 1, unit_price_kmf: 1000, line_total_kmf: 1000,
+        claimed: false, buyer_user_id: null, buyer_full_name: null,
+      };
+      db.query
+        .mockResolvedValueOnce({ rows: [BASE_CART] })
+        .mockResolvedValueOnce({ rows: [item] });
+      const result = await getSharedCartForPublic('tok');
+      return result.items[0].image;
+    }
+
+    it('URL absolue https → inchangée', async () => {
+      const url = 'https://cdn.komerce.km/img/riz.jpg';
+      expect(await imageOf(url)).toBe(url);
+    });
+
+    it('URL absolue http → inchangée', async () => {
+      const url = 'http://localhost:3000/uploads/riz.jpg';
+      expect(await imageOf(url)).toBe(url);
+    });
+
+    it('chemin relatif /uploads/… → URL absolue quand APP_URL est défini', async () => {
+      // Ce test utilise jest.resetModules pour que MEDIA_BASE soit recalculé
+      // avec la nouvelle valeur d'APP_URL. Il doit rester isolé du reste.
+      const originalUrl = process.env.APP_URL;
+      process.env.APP_URL = 'https://app.komerce.km';
+
+      jest.resetModules();
+      jest.mock('../../db', () => ({ query: jest.fn() }));
+      const freshDb = require('../../db');
+      const { getSharedCartForPublic: gsc } = require('../../services/shared-cart-reads');
+
+      const item = {
+        id: 'sci-2', name: 'P', image: '/uploads/products/img.jpg',
+        quantity: 1, unit_price_kmf: 500, line_total_kmf: 500,
+        claimed: false, buyer_user_id: null, buyer_full_name: null,
+      };
+      freshDb.query
+        .mockResolvedValueOnce({ rows: [BASE_CART] })
+        .mockResolvedValueOnce({ rows: [item] });
+
+      const result = await gsc('tok');
+      expect(result.items[0].image).toBe('https://app.komerce.km/uploads/products/img.jpg');
+
+      process.env.APP_URL = originalUrl;
+      jest.resetModules();
+    });
+
+    it('null → chaîne vide (fallback client)', async () => {
+      expect(await imageOf(null)).toBe('');
+    });
+
+    it('chaîne vide → chaîne vide', async () => {
+      expect(await imageOf('')).toBe('');
+    });
+
+    it('chemin sans slash ni schéma → chaîne vide (ambiguïté → fallback)', async () => {
+      expect(await imageOf('uploads/img.jpg')).toBe('');
+    });
+  });

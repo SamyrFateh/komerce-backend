@@ -135,9 +135,9 @@ export function renderSubtotalInto(el, detail, selection, qty) {
  * paiement, elle n'a plus sa place dans ce sélecteur. Modes retirés :
  * `group` (« Panier partagé — Invitez des proches à contribuer ») et
  * `pot` (« Cagnotte collective — Offrir ensemble, payer ensemble »).
- * Le CTA contextualisé correct pour ajouter à une liste active est
- * « Ajouter à cette liste » (wireAddToListButton ci-dessus), pas un
- * mode de paiement.
+ * (F22 — wireAddToListButton a été supprimé avec le CTA « Ajouter à
+ * cette liste » : le slot partagé est affiché dans le side-cart, pas
+ * dans les modes de paiement.)
  */
 export const PAYMENT_MODES = Object.freeze({
   stripe: { icon: '💳', tab: 'Carte', title: 'Carte bancaire', sub: 'Visa, Mastercard — Stripe sécurisé', badge: 'Stripe' },

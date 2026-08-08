@@ -37,10 +37,7 @@ import {
   digitsOnly,
   normalizeLocal,
 } from './b-phone.js';
-import {
-  getSharedCartLibrary,
-  closeCart as apiCloseSharedCart,
-} from './group/group-api.js';
+import { getSharedCartLibrary } from './group/group-api.js';
 
 'use strict';
 
@@ -352,19 +349,16 @@ function renderCreatedSection(carts) {
   if (!carts.length) {
     return '<p class="k-library-empty-hint">Aucune liste créée pour le moment.</p>';
   }
-  return carts.map((cart) => {
-    const closeBtn = cart.status === 'open'
-      ? '<button type="button" class="k-library-item-close" data-cart-id="' + sanitize(String(cart.id)) + '">Fermer</button>'
-      : '';
-    return (
-      '<div class="k-library-item-row">' +
-        '<button type="button" class="k-library-item" data-token="' + sanitize(cart.token || '') + '" data-status="' + sanitize(cart.status || '') + '"' + (cart.status !== 'open' ? ' disabled' : '') + '>' +
-          libraryItemInnerHtml(cart) +
-        '</button>' +
-        closeBtn +
-      '</div>'
-    );
-  }).join('');
+  // É6 (2026-08) — Fermer est retiré de Mes listes. Il reste au seul
+  // endroit canonique : le slot partagé du side-cart (arbitrage A2).
+  // Mes listes sert à retrouver et OUVRIR une liste existante.
+  return carts.map((cart) =>
+    '<div class="k-library-item-row">' +
+      '<button type="button" class="k-library-item" data-token="' + sanitize(cart.token || '') + '" data-status="' + sanitize(cart.status || '') + '"' + (cart.status !== 'open' ? ' disabled' : '') + '>' +
+        libraryItemInnerHtml(cart) +
+      '</button>' +
+    '</div>'
+  ).join('');
 }
 
 function renderSavedSection(carts) {
@@ -406,31 +400,8 @@ function wireLibraryItemOpen(el) {
   });
 }
 
-function wireLibraryCloseButtons(el) {
-  el.querySelectorAll('.k-library-item-close[data-cart-id]').forEach((btn) => {
-    btn.addEventListener('click', async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const cartId = btn.dataset.cartId;
-      if (!cartId) return;
-
-      const ok = window.confirm('Fermer cette liste ? Elle deviendra en lecture seule.');
-      if (!ok) return;
-
-      btn.disabled = true;
-      btn.textContent = 'Fermeture…';
-      try {
-        await apiCloseSharedCart(cartId);
-        showToast('Liste fermée.', 'success');
-        await renderListsTab(el);
-      } catch (err) {
-        showToast(`Impossible de fermer cette liste : ${err.message}`, 'error');
-        btn.disabled = false;
-        btn.textContent = 'Fermer';
-      }
-    });
-  });
-}
+// wireLibraryCloseButtons retiré — É6 (2026-08).
+// Fermer est canoniquement dans le slot partagé du side-cart.
 
 function renderLibrarySections(el) {
   const created = state.libraryContext?.created || [];
@@ -445,7 +416,7 @@ function renderLibrarySections(el) {
     '</section>';
 
   wireLibraryItemOpen(el);
-  wireLibraryCloseButtons(el);
+  // wireLibraryCloseButtons retiré — É6 (2026-08).
 }
 
 function renderListsError(el, err) {

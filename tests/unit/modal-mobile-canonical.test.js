@@ -123,15 +123,15 @@ describe('MDM-8: Mobile renderer extinction rules', () => {
     expect(source).not.toMatch(/startGroupCartFlow/);
   });
 
-  test('delegates scalar fields to product-fields and keeps only the buy-now (+ Lot 3 add-to-list) wiring locally', () => {
+  test('delegates scalar fields to product-fields and keeps only the buy-now wiring locally', () => {
+    // Doctrine F22 / MDM-8 finale (2026-08) : le CTA « Ajouter à cette liste »
+    // a été supprimé. wireAddToListButton n'existe plus dans b-modal-buybox-shared.
+    // Seul wireBuyNowButton reste autorisé — câblage local idempotent, .onclick=.
+    // renderSubtotal/renderPaymentModes/startGroupCartFlow restent interdits
+    // (vérifiés séparément par les tests ci-dessus et ci-dessous).
     expect(source).toMatch(/import\s*\{\s*paintDetailFields\s*\}\s*from\s*['"]\.\/b-modal-product-fields/);
-    // Lot 3 GAP-07 — wireAddToListButton (CTA "Ajouter à cette liste")
-    // rejoint wireBuyNowButton dans le même import buybox-shared : c'est
-    // la même famille de câblage local (idempotent, .onclick=) que
-    // l'extinction MDM-8 autorise déjà, pas une réintroduction de
-    // renderSubtotal/renderPaymentModes/startGroupCartFlow (interdits
-    // ci-dessus, toujours vérifiés séparément).
-    expect(source).toMatch(/import\s*\{\s*wireBuyNowButton\s*,\s*wireAddToListButton\s*\}\s*from\s*['"]\.\/b-modal-buybox-shared/);
+    expect(source).toMatch(/import\s*\{\s*wireBuyNowButton\s*\}\s*from\s*['"]\.\/b-modal-buybox-shared/);
+    expect(source).not.toMatch(/wireAddToListButton/);
     expect(source).not.toMatch(/getCurrentPrice/);
   });
 

@@ -74,7 +74,16 @@ describe('invariant auth-identity — toute route mutante passe par un middlewar
   beforeAll(() => {
     // Régénère docs/SECURITY_360.json depuis le CODE RÉEL (mode gen, exit 0
     // systématique) — jamais depuis un artefact potentiellement périmé.
-    execFileSync('node', ['scripts/gen-security-360.js'], { cwd: ROOT, stdio: 'pipe' });
+    // Passe l'env du processus Jest au sous-processus : gen-security-360.js
+    // charge server.js qui exige JWT_SECRET et autres secrets de test.
+    // Sans cela, le script sort en exit 1 avant d'avoir analysé les routes
+    // — ce qui ferait échouer tous les tests.each suivants avec une erreur
+    // d'environnement, pas une erreur de sécurité (violation invariant §2).
+    execFileSync('node', ['scripts/gen-security-360.js'], {
+      cwd: ROOT,
+      stdio: 'pipe',
+      env: { ...process.env },
+    });
     delete require.cache[require.resolve(path.join(ROOT, 'docs/SECURITY_360.json'))];
     const report = require(path.join(ROOT, 'docs/SECURITY_360.json'));
     bySecurityKey = new Map(report.routes.map((r) => [r.key, r]));

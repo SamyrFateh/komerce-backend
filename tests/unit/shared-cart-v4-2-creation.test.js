@@ -150,8 +150,8 @@ function standardSuccessResponses() {
   return [
     // BEGIN
     { rows: [] },
-    // SELECT COUNT active carts → 0
-    { rows: [{ n: 0 }] },
+    // SELECT id, token WHERE status='open' → 0 listes OPEN (Règle V1 — autorisé)
+    { rows: [] },
     // SELECT products
     { rows: [makeProduct()] },
     // SELECT user
@@ -183,7 +183,7 @@ function standardSuccessResponses() {
 function successNoBasketResponses() {
   return [
     { rows: [] },                          // BEGIN
-    { rows: [{ n: 0 }] },                  // SELECT COUNT active carts
+    { rows: [] },                          // garde V1: 0 listes OPEN
     { rows: [makeProduct()] },             // SELECT products
     { rows: [{ full_name: 'Ali', phone: '+2697001234' }] }, // SELECT user
     { rows: [] },                          // SELECT token collision
@@ -219,7 +219,7 @@ describe('createSharedCartFromCartItems — Doctrine v4.2', () => {
   test('[N4-SNAP-T2] Échec snapshot items → ROLLBACK → basket non vidé', async () => {
     const { client } = mockWithTransaction([
       { rows: [] },                          // BEGIN
-      { rows: [{ n: 0 }] },                  // SELECT COUNT
+      { rows: [] },                          // garde V1: 0 listes OPEN
       { rows: [makeProduct()] },             // SELECT products
       { rows: [{ full_name: 'Ali', phone: '+2697001234' }] },
       { rows: [] },                          // token

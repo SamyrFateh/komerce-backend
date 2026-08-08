@@ -9410,39 +9410,46 @@ body.cart-open  #k-section-index { display:none; }
  * le style).
  */
 
-.k-list-indicator {
+/* É4 (2026-08) — Deux onglets [ Mon panier ] [ Liste partagée ].
+ * Remplace l'ancien bandeau .k-list-indicator (rendu conditionnel).
+ * .k-list-indicator et ses dérivés sont conservés pour la transition ;
+ * ils peuvent être retirés une fois le déploiement confirmé. */
+
+.k-cart-tabs {
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 10px 12px 0;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  background: var(--cta-green-10);
-  color: var(--cta-green-dark, var(--cta-green));
-  font-size: 12.5px;
-  font-weight: 700;
+  border-bottom: 1px solid var(--border);
 }
 
-.k-list-indicator.is-closed {
-  background: var(--sand-dark, var(--sand));
+.k-cart-tab {
+  flex: 1;
+  padding: 10px 8px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-muted);
-}
-
-.k-list-indicator-dot {
-  flex-shrink: 0;
-  font-size: 10px;
-  line-height: 1;
-}
-
-.k-list-indicator-text {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
 }
 
-.k-cart-surface-btn:hover {
-  background: var(--sand-hover);
+.k-cart-tab:hover {
+  color: var(--text);
+}
+
+.k-cart-tab--active {
+  color: var(--cta-green-dark, var(--cta-green));
+  border-bottom-color: var(--cta-green);
+}
+
+/* Conserver .k-list-indicator pour rétrocompatibilité éventuelle — à
+   supprimer après confirmation du déploiement. */
+.k-list-indicator {
+  display: none;
 }
 
 /* ── Drawer mobile : léger resserrement en mode snapshot ─────────────────

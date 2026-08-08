@@ -219,7 +219,12 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
   state.sharedListContext = {
     sharedCartId: cart.id ?? state.sharedListContext.sharedCartId,
     token: nextToken,
-    status: cart.status || 'open',
+    // É3 fail-closed — un payload sans statut est traité comme CLOSED,
+    // jamais comme OPEN (un statut absent ne peut pas accorder des droits
+    // d'achat ; l'inverse aurait exposé des boutons Acheter sur une liste
+    // potentiellement fermée). Le chemin normal passe toujours la garde de
+    // activateFromParticipantUrl avant d'arriver ici.
+    status: cart.status || 'closed',
     isCreator: !!data.is_creator,
     creatorFirstName: cart.creator_first_name || null,
     // GAP-05 (Lot 2) — [{first_name, items_count}], jamais présent côté
@@ -615,39 +620,79 @@ export function setCartSurface(surface) {
  * (clearSharedListContext). Le switcher est remplacé par un simple
  * indicateur visuel coloré indiquant qu'on est dans une liste partagée.
  */
+/**
+ * É4 (2026-08) — Deux onglets [ Mon panier ] [ Liste partagée ].
+ *
+ * L'onglet « Liste partagée » n'apparaît que lorsqu'une liste OPEN est
+ * affichée dans le slot. Il est absent autrement (pas d'onglet vide).
+ * Cliquer sur « Mon panier » change la surface locale sans aucun appel
+ * de lifecycle (une liste OPEN reste OPEN — contrat §10, §3).
+ *
+ * Un seul élément DOM #k-cart-surface-switch contient les deux tabs.
+ * Son absence (shouldShow=false) signifie affichage panier personnel seul.
+ */
 export function renderCartSurfaceSwitch() {
   const sc = document.getElementById('k-side-cart');
   const ctx = state.sharedListContext;
-  const shouldShow = isActiveContext() && state.cartSurface === 'shared-list';
+  const hasOpenList = isActiveContext() && ctx?.status === 'open';
 
-  if (!shouldShow) {
+  if (!hasOpenList) {
     document.getElementById('k-cart-surface-switch')?.remove();
     return;
   }
 
-  let switcher = document.getElementById('k-cart-surface-switch');
-  if (!switcher) {
-    switcher = document.createElement('div');
-    switcher.id = 'k-cart-surface-switch';
-    switcher.className = 'k-list-indicator';
-    sc?.prepend(switcher);
-  } else if (sc && switcher.parentElement !== sc) {
-    sc.prepend(switcher);
+  const activeTab = state.cartSurface === 'shared-list' ? 'list' : 'personal';
+  const name = ctx.creatorFirstName || ctx.title || null;
+  const listLabel = name ? `Liste de ${sanitize(name)}` : 'Liste partagée';
+
+  let tabs = document.getElementById('k-cart-surface-switch');
+  if (!tabs) {
+    tabs = document.createElement('div');
+    tabs.id = 'k-cart-surface-switch';
+    tabs.className = 'k-cart-tabs';
+    sc?.prepend(tabs);
+
+    // Onglet Mon panier — change la surface locale, jamais un lifecycle.
+    const btnPersonal = document.createElement('button');
+    btnPersonal.type = 'button';
+    btnPersonal.id = 'k-tab-personal';
+    btnPersonal.className = 'k-cart-tab';
+    btnPersonal.textContent = 'Mon panier';
+    btnPersonal.addEventListener('click', () => {
+      // setCartSurface('personal') déclenche bus 'side-cart:render' qui
+      // appelle renderSideCart() dans b-cart.js → panier personnel.
+      // La liste OPEN reste OPEN côté backend — aucun appel POST.
+      setCartSurface('personal');
+    });
+
+    // Onglet Liste partagée — revient à la liste active.
+    const btnList = document.createElement('button');
+    btnList.type = 'button';
+    btnList.id = 'k-tab-shared-list';
+    btnList.className = 'k-cart-tab';
+    btnList.addEventListener('click', () => {
+      setCartSurface('shared-list');
+    });
+
+    tabs.append(btnPersonal, btnList);
+  } else if (sc && tabs.parentElement !== sc) {
+    sc.prepend(tabs);
   }
 
-  // Doctrine finale (2026-08) — bandeau unique en tête de side cart :
-  // dot coloré + "Liste de <nom> · <Statut>". Même libellé pour
-  // l'organisateur et le participant (c'est toujours "la liste de X"),
-  // jamais un texte différent selon le rôle.
-  const isOpen = ctx.status === 'open';
-  const statusLabel = isOpen ? 'Ouverte' : 'Fermée';
-  const dot = isOpen ? '🟢' : '🔴';
-  const name = ctx.creatorFirstName || ctx.title || null;
-  const label = name ? `Liste de ${sanitize(name)}` : 'Liste partagée';
-  switcher.classList.toggle('is-closed', !isOpen);
-  switcher.innerHTML =
-    `<span class="k-list-indicator-dot" aria-hidden="true">${dot}</span> ` +
-    `<span class="k-list-indicator-text">${label} · ${statusLabel}</span>`;
+  // Mise à jour de l'état actif et du libellé de liste (le nom peut
+  // changer si une autre liste est ouverte entre deux rendus).
+  const btnPersonal = document.getElementById('k-tab-personal');
+  const btnList = document.getElementById('k-tab-shared-list');
+  if (btnPersonal) {
+    btnPersonal.classList.toggle('k-cart-tab--active', activeTab === 'personal');
+    btnPersonal.setAttribute('aria-selected', String(activeTab === 'personal'));
+  }
+  if (btnList) {
+    btnList.textContent = listLabel;
+    btnList.classList.toggle('k-cart-tab--active', activeTab === 'list');
+    btnList.setAttribute('aria-selected', String(activeTab === 'list'));
+  }
+  tabs.setAttribute('data-active', activeTab);
 }
 
 /**
@@ -688,7 +733,9 @@ function handleOpenItemProduct(itemId) {
 
 async function handleCloseClick() {
   if (!state.sharedListContext.isCreator || isReadOnly()) return;
-  const ok = window.confirm('Fermer cette liste ? Elle deviendra en lecture seule.');
+  // É9 — la liste est figée depuis sa PUBLICATION, pas depuis sa fermeture.
+  // Le message porte sur ce qui change réellement : la fin des achats.
+  const ok = window.confirm('Fermer cette liste ?\n\nLes nouveaux achats ne seront plus possibles.');
   if (!ok) return;
 
   try {
@@ -863,6 +910,18 @@ export async function activateFromParticipantUrl(token) {
   const data = await getSharedCartPublic(token);
   if (!data) {
     showToast('Ce lien de liste partagée est invalide ou expiré.', 'error');
+    return false;
+  }
+  // É3 — une liste CLOSED/CANCELLED n'occupe jamais le side-cart (contrat §5,
+  // invariant 5 du contrat API). On informe sans modifier l'état existant.
+  const status = (data.cart?.status || '').toLowerCase();
+  if (status === 'closed' || status === 'cancelled') {
+    showToast(
+      status === 'cancelled'
+        ? 'Cette liste a été annulée.'
+        : 'Cette liste est fermée — les achats ne sont plus possibles.',
+      'info',
+    );
     return false;
   }
   activateSharedListContext(data, token);
