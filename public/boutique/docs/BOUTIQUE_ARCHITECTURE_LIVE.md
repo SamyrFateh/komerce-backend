@@ -17,7 +17,7 @@
 | `boutique-desktop.css` | 1315 | 🔴 **ORPHELIN** |
 | `cart.css` | 1921 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
-| `checkout-vertical-rail.css` | 556 | 🔴 **ORPHELIN** |
+| `checkout-vertical-rail.css` | 717 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
@@ -39,8 +39,8 @@
 | `share-cart.css` | 29 | 🔴 **ORPHELIN** |
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
 | `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart-responsive.css` | 174 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 525 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart-responsive.css` | 85 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 542 | 🔴 **ORPHELIN** |
 | `tokens.css` | 517 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
@@ -50,7 +50,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=161
- 2. /boutique/css/dist/components.css?v=405
+ 2. /boutique/css/dist/components.css?v=408
  3. /boutique/css/dist/desktop.css?v=85
 ```
 

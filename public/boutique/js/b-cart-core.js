@@ -60,12 +60,22 @@ export function cartTotal() {
 /**
  * @brief saveCart — Persiste le panier dans localStorage (clé kmrc_cart)
  * Échoue silencieusement si localStorage indisponible (mode privé)
+ *
+ * Correctif P0 ownership (mandat §9, group-checkout-adapter.js) —
+ * state.cartIsEphemeral === true signifie que state.cart contient
+ * temporairement la sélection d'une liste partagée injectée pour le
+ * checkout, jamais le panier personnel réel : on met à jour le badge
+ * (cohérence visuelle pendant le checkout) mais on n'écrit JAMAIS ce
+ * contenu éphémère dans localStorage, pour ne pas écraser le panier
+ * personnel réel qui y est déjà persisté.
  */
 export function saveCart() {
-  try {
-    localStorage.setItem('kmrc_cart', JSON.stringify(state.cart));
-    localStorage.setItem('kmrc_cart_v', String(CART_VERSION));
-  } catch(e) {}
+  if (!state.cartIsEphemeral) {
+    try {
+      localStorage.setItem('kmrc_cart', JSON.stringify(state.cart));
+      localStorage.setItem('kmrc_cart_v', String(CART_VERSION));
+    } catch(e) {}
+  }
   updateCartBadge();
 }
 

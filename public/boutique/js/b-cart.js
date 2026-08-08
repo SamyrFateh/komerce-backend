@@ -690,6 +690,16 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     if (typeof raw !== 'string') return false;
     const trimmed = raw.trim();
     if (!trimmed) return false;
+    // Mandat §12 — une URL relative /uploads/... (média uploadé côté
+    // serveur, explicitement demandée par le mandat) est renderable : elle
+    // n'a jamais de schéma explicite, donc rejetée à tort par le garde
+    // absolu ci-dessous avant ce correctif, déclenchant un fallback sur
+    // des images pourtant valides. Acceptée UNIQUEMENT sous ce préfixe
+    // précis (racine du dossier d'upload connu), jamais un chemin relatif
+    // arbitraire (qui resterait sujet au même risque que le bug de données
+    // "ges.unsplash.com/photo-cassee" documenté ci-dessous — une chaîne
+    // sans schéma acceptée sans discrimination).
+    if (trimmed.startsWith('/uploads/')) return true;
     try {
       // Mandat §9 — jamais de résolution avec base : une chaîne sans schéma
       // explicite (ex. "ges.unsplash.com/photo-cassee", bug de données
@@ -845,7 +855,16 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       if (it.claimed) return;
       if (!selectedIds.has(String(it.id))) return;
       count += 1;
-      total += Number(it.unit_price_kmf) || 0;
+      // Correctif archéologie (mandat §6, F22-F) — le total doit refléter
+      // unit_price_kmf * quantity, jamais seulement le prix unitaire :
+      // un article à 8 000 KMF en quantité 2 doit produire 16 000 KMF.
+      // availableTotal() (ligne "Reste disponible", non modifiée ici)
+      // faisait déjà ce calcul correctement — l'écart était local à cette
+      // fonction, utilisée par le CTA drawer mobile ET le side cart
+      // desktop (un seul point de calcul, cf. archéologie du code HEAD).
+      const unitPrice = Number(it.unit_price_kmf) || 0;
+      const qty = Number(it.quantity) || 1;
+      total += unitPrice * qty;
     });
     return { count, total };
   }
@@ -1020,7 +1039,11 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     if (!context.readOnly && context.availableCount > 0) {
       const selectAllBtn = snapCreateEl('button', 'k-snap-link');
       selectAllBtn.type = 'button';
-      selectAllBtn.textContent = 'Tout sélectionner';
+      // Revue mock — bascule "Tout sélectionner" ↔ "Tout désélectionner"
+      // selon context.allAvailableSelected (calculé par le contrôleur,
+      // jamais recalculé ici) : le clic appelle toujours actions.onSelectAll(),
+      // qui applique exactement la même condition côté contrôleur.
+      selectAllBtn.textContent = context.allAvailableSelected ? 'Tout désélectionner' : 'Tout sélectionner';
       selectAllBtn.onclick = () => actions.onSelectAll();
       secondaryRow.appendChild(selectAllBtn);
     }
@@ -1108,7 +1131,8 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     if (!context.readOnly && context.availableCount > 0) {
       const selectAllBtn = snapCreateEl('button', 'k-snap-link');
       selectAllBtn.type = 'button';
-      selectAllBtn.textContent = 'Tout sélectionner';
+      // Revue mock — même bascule que le side cart desktop ci-dessus.
+      selectAllBtn.textContent = context.allAvailableSelected ? 'Tout désélectionner' : 'Tout sélectionner';
       selectAllBtn.onclick = () => actions.onSelectAll();
       secondaryRow.appendChild(selectAllBtn);
     }

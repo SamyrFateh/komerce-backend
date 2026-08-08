@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-08T18:02:13.120Z",
+  "generatedAt": "2026-08-08T19:32:42.018Z",
   "summary": {
     "modules": 76,
     "withHeader": 76,
@@ -1994,7 +1994,8 @@
       "listens": [],
       "imports": [
         "b-store",
-        "b-checkout"
+        "b-checkout",
+        "b-cart-core"
       ],
       "bodyClasses": [],
       "emitCalls": []

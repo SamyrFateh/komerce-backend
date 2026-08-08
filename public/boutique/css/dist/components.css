@@ -9463,6 +9463,43 @@ body.cart-open  #k-section-index { display:none; }
   border-bottom-color: var(--cta-green);
 }
 
+/* Correctif archéologie (mandat §2/§11) — le × de sortie d'affichage doit
+ * cohabiter avec l'onglet "Liste de X" sans casser le flex:1 existant de
+ * .k-cart-tab : .k-cart-tab-group porte le flex:1 à la place de l'onglet
+ * liste (désormais un enfant interne, plus un enfant direct de
+ * .k-cart-tabs), et répartit lui-même son espace entre le label (qui
+ * absorbe toute la largeur restante) et le bouton × (largeur fixe,
+ * compacte — mandat §11 : "éviter les gros boutons par ligne"). */
+.k-cart-tab-group {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.k-cart-tab-group .k-tab-shared-list {
+  flex: 1;
+  min-width: 0;
+}
+
+.k-cart-tab-exit {
+  flex-shrink: 0;
+  width: 26px;
+  padding: 10px 0;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.k-cart-tab-exit:hover {
+  color: var(--text);
+}
+
 /* Conserver .k-list-indicator pour rétrocompatibilité éventuelle — à
    supprimer après confirmation du déploiement. */
 .k-list-indicator {
@@ -9750,6 +9787,36 @@ body.is-shared-list-context #k-cart-recap-word {
 .k-confirm-dialog-btn-danger {
   background: var(--coral);
   color: var(--white);
+}
+
+/* ── Contour continu de la surface active (mandat §11) ────────────────────
+ * Gap constaté (revue mock mock_side_cart_liste_recap_checkout_final.html) :
+ * seul l'onglet actif portait un accent (border-bottom 2px, ci-dessus,
+ * .k-cart-tab--active) — le panneau lui-même (#k-side-cart desktop,
+ * .k-cart-drawer mobile) restait visuellement identique en mode liste et
+ * en mode panier personnel. Le mandat demande un repère continu sur toute
+ * la surface active, pas seulement sur l'onglet : "Contour/accent vert
+ * continu" pour la liste, à distinguer de la surface neutre/chaude du
+ * panier personnel (déjà un accent corail, cf. .k-side-cart { border-top:
+ * 3px solid var(--coral) } en boutique-desktop.css — jamais recoloré selon
+ * le mode avant ce correctif).
+ *
+ * Volontairement compact — un simple recolorage de bordure existante
+ * (desktop : le border-top corail déjà présent bascule au vert ; mobile :
+ * une bande gauche fine ajoutée, pas de bandeau plein ni de header
+ * agrandi), pour respecter explicitement le §11 : "Éviter : gros aplats
+ * verts ; headers très hauts ; espaces morts". Sélecteur ID+attribut
+ * (#k-side-cart[data-mode]) : gagne en spécificité contre la règle de
+ * base .k-side-cart (border-top corail, boutique-desktop.css), sans
+ * dépendre de l'ordre de chargement des feuilles ni d'!important.
+ */
+#k-side-cart[data-mode="shared-list"] {
+  border-top-color: var(--cta-green);
+  border-left-color: var(--cta-green);
+}
+
+.k-cart-drawer[data-mode="shared-list"] {
+  border-left: 4px solid var(--cta-green);
 }
 
 

@@ -25,6 +25,7 @@ jest.mock('../../js/b-checkout.js', () => ({
 
 const { state, dom, initDom } = require('../../js/b-store.js');
 const { checkoutCart } = require('../../js/b-checkout.js');
+const { saveCart } = require('../../js/b-cart-core.js');
 const { checkoutSharedListSelection } = require('../../js/group/group-checkout-adapter.js');
 
 function flushMutations() {
@@ -184,5 +185,58 @@ describe('checkoutSharedListSelection', () => {
     await flushMutations();
 
     expect(state.cart[0].shared_cart_item_id).toBeUndefined();
+  });
+
+  // Correctif P0 ownership (mandat §9, archéologie) — reproduit exactement
+  // le bug historique : le checkout canonique appelle clearCart() (donc
+  // saveCart()) APRÈS succès, PENDANT que state.cart contient encore le
+  // panier éphémère (le modal de commande reste ouvert sur l'écran de
+  // succès — la restauration n'intervient qu'à sa fermeture). Avant le
+  // correctif, ce saveCart() intermédiaire écrasait localStorage avec le
+  // panier éphémère vidé (`[]`), perdant le panier personnel réel sur
+  // disque même si state.cart était ensuite bien restauré en mémoire.
+  it('ne persiste jamais le panier éphémère dans localStorage, même si saveCart() est appelé pendant le checkout (P0 ownership)', async () => {
+    const personalCart = [{ product: { id: 1 }, qty: 3 }];
+    state.cart = personalCart;
+    saveCart(); // localStorage reflète le vrai panier personnel avant checkout.
+    expect(JSON.parse(localStorage.getItem('kmrc_cart'))).toEqual(personalCart);
+
+    checkoutSharedListSelection([{ shared_cart_item_id: 'sci-1', product: { id: 42 }, quantity: 1 }]);
+    expect(state.cartIsEphemeral).toBe(true);
+
+    // Simule exactement ce que fait b-checkout.js après succès de commande :
+    // clearCart() → state.cart = []; saveCart(); — pendant que le modal
+    // reste encore ouvert (écran de succès), avant toute fermeture.
+    state.cart = [];
+    saveCart();
+
+    // localStorage doit toujours contenir le panier personnel réel, jamais `[]`.
+    expect(JSON.parse(localStorage.getItem('kmrc_cart'))).toEqual(personalCart);
+
+    dom.orderModal.classList.add('open');
+    await flushMutations();
+    dom.orderModal.classList.remove('open');
+    await flushMutations();
+
+    expect(state.cartIsEphemeral).toBe(false);
+    expect(state.cart).toBe(personalCart);
+    expect(JSON.parse(localStorage.getItem('kmrc_cart'))).toEqual(personalCart);
+  });
+
+  it('state.cartIsEphemeral repasse à false dès la restauration, même sur le chemin défensif sans dom.orderModal', () => {
+    const originalOrderModal = dom.orderModal;
+    dom.orderModal = null;
+    try {
+      const personalCart = [{ product: { id: 1 }, qty: 1 }];
+      state.cart = personalCart;
+
+      const result = checkoutSharedListSelection([{ shared_cart_item_id: 'sci-1', product: { id: 42 }, quantity: 1 }]);
+
+      expect(result).toBe(false);
+      expect(state.cartIsEphemeral).toBe(false);
+      expect(state.cart).toBe(personalCart);
+    } finally {
+      dom.orderModal = originalOrderModal;
+    }
   });
 });

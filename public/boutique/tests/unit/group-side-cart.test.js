@@ -112,6 +112,8 @@ const {
   renderSharedListInCart,
   reopenSharedListCart,
   renderCartSurfaceSwitch,
+  isDismissedSharedListToken,
+  isSharedListSurfaceActive,
 } = require('../../js/group/group-side-cart.js');
 
 function mountShell() {
@@ -1009,5 +1011,111 @@ describe('group-side-cart — temps réel (fraîcheur du snapshot, lot 2026-08)'
     jest.advanceTimersByTime(4000);
 
     expect(getSharedCartPublic).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('group-side-cart — × de sortie d\'affichage (mandat §2)', () => {
+  afterEach(() => {
+    try { sessionStorage.clear(); } catch (_) {}
+  });
+
+  it('rend un bouton × séparé de l\'onglet liste, jamais imbriqué dans celui-ci', () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+
+    const btnExit = document.querySelector('#k-cart-surface-switch .k-cart-tab-exit');
+    const btnList = document.querySelector('#k-cart-surface-switch .k-tab-shared-list');
+    expect(btnExit).not.toBeNull();
+    expect(btnExit.tagName).toBe('BUTTON');
+    // Un <button> ne peut jamais contenir un autre <button> (HTML invalide) :
+    // le × doit être un frère de l'onglet liste, pas un enfant.
+    expect(btnList.contains(btnExit)).toBe(false);
+  });
+
+  it('clic sur × : sharedListContext démonté localement, cartSurface repasse à personal, aucun appel réseau (closeCart jamais appelé)', () => {
+    activateSharedListContext(payload({ is_creator: false }), 'tok-1');
+    expect(state.cartSurface).toBe('shared-list');
+
+    document.querySelector('#k-cart-surface-switch .k-cart-tab-exit').click();
+
+    expect(state.sharedListContext.token).toBeNull();
+    expect(state.cartSurface).toBe('personal');
+    expect(isSharedListSurfaceActive()).toBe(false);
+    // Le × ne clôture ni ne mute jamais la liste côté backend — distinct
+    // de handleCloseClick/apiCloseSharedCart (organisateur uniquement).
+    expect(closeCart).not.toHaveBeenCalled();
+  });
+
+  it('clic sur × : disponible aussi bien pour le participant que pour l\'organisateur (aucune garde de rôle, contrairement à onClose)', () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+
+    document.querySelector('#k-cart-surface-switch .k-cart-tab-exit').click();
+
+    expect(state.cartSurface).toBe('personal');
+    expect(closeCart).not.toHaveBeenCalled();
+  });
+
+  it('clic sur × : ne touche jamais le panier personnel (state.cart intact)', () => {
+    const personalCart = [{ product: { id: 1 }, qty: 2 }, { product: { id: 2 }, qty: 1 }];
+    state.cart = personalCart;
+    activateSharedListContext(payload(), 'tok-1');
+
+    document.querySelector('#k-cart-surface-switch .k-cart-tab-exit').click();
+
+    expect(state.cart).toBe(personalCart);
+  });
+
+  it('marque le token comme "quitté" pour la session en cours (isDismissedSharedListToken)', () => {
+    activateSharedListContext(payload(), 'tok-1');
+    expect(isDismissedSharedListToken('tok-1')).toBe(false);
+
+    document.querySelector('#k-cart-surface-switch .k-cart-tab-exit').click();
+
+    expect(isDismissedSharedListToken('tok-1')).toBe(true);
+  });
+
+  it('le dismiss est stocké en sessionStorage, jamais en localStorage (ne doit pas devenir permanent)', () => {
+    activateSharedListContext(payload(), 'tok-1');
+    document.querySelector('#k-cart-surface-switch .k-cart-tab-exit').click();
+
+    expect(sessionStorage.getItem('kmrc_dismissed_shared_lists')).toContain('tok-1');
+    expect(localStorage.getItem('kmrc_dismissed_shared_lists')).toBeNull();
+  });
+
+  it('rouvrir la même liste après un × fonctionne à nouveau normalement (réactivation explicite jamais bloquée)', () => {
+    activateSharedListContext(payload(), 'tok-1');
+    document.querySelector('#k-cart-surface-switch .k-cart-tab-exit').click();
+    expect(state.cartSurface).toBe('personal');
+
+    activateSharedListContext(payload(), 'tok-1');
+
+    expect(state.cartSurface).toBe('shared-list');
+    expect(state.sharedListContext.token).toBe('tok-1');
+  });
+
+  // Scénario impératif du mandat §2 : panier personnel A+B → ouvrir une
+  // liste → quitter avec × → seul Mon panier reste → A+B toujours présents
+  // → le token est marqué quitté pour la session (empêche la résurrection
+  // automatique côté b-share-cart.js::restoreSharedCartFromBackend, testé
+  // séparément dans b-share-cart.test.js) → réouverture explicite
+  // (Mes listes / lien) reprend bien le slot liste.
+  it('scénario mandat complet : A+B intact après × ; la liste ne réoccupe le slot qu\'à une réouverture explicite', () => {
+    const personalCart = [{ product: { id: 'A' }, qty: 1 }, { product: { id: 'B' }, qty: 1 }];
+    state.cart = personalCart;
+
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    expect(state.cartSurface).toBe('shared-list');
+
+    document.querySelector('#k-cart-surface-switch .k-cart-tab-exit').click();
+
+    // Seul Mon panier reste, A+B toujours présents.
+    expect(state.cartSurface).toBe('personal');
+    expect(state.cart).toEqual(personalCart);
+    expect(isSharedListSurfaceActive()).toBe(false);
+    expect(isDismissedSharedListToken('tok-1')).toBe(true);
+
+    // Réouverture explicite (ex. depuis "Mes listes") : reprend le slot liste.
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+    expect(state.cartSurface).toBe('shared-list');
+    expect(state.cart).toEqual(personalCart);
   });
 });

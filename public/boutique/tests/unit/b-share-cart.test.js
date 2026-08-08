@@ -32,6 +32,12 @@ const mockActivateSharedListContext = jest.fn();
 jest.mock('../../js/group/group-side-cart.js', () => ({
   activateFromParticipantUrl: mockActivateFromParticipantUrl,
   activateSharedListContext: mockActivateSharedListContext,
+  // Correctif archéologie (mandat §2) — activateCartInCanonicalSurface()
+  // consulte désormais ce garde avant toute réactivation silencieuse ;
+  // false par défaut ici (aucun test de ce fichier ne couvre le × lui-même,
+  // couvert par group-side-cart.test.js) pour ne changer le comportement
+  // d'aucun test existant.
+  isDismissedSharedListToken: jest.fn().mockReturnValue(false),
 }));
 // P0-A — restoreSharedCartFromBackend() active désormais réellement la
 // liste dans le side cart canonique (activateCartInCanonicalSurface), pas
@@ -311,6 +317,39 @@ describe('b-share-cart', () => {
       expect(state.shareToken).toBeNull();
       expect(mockActivateSharedListContext).not.toHaveBeenCalled();
     });
+
+    // Correctif archéologie (mandat §2) — le × ne doit jamais être
+    // court-circuité par la restauration silencieuse au boot : un token
+    // marqué "quitté" par isDismissedSharedListToken() ne doit provoquer
+    // aucune activation du side cart, même si /mine le renvoie toujours
+    // OPEN (l'organisateur ne l'a pas clôturé, juste quitté l'affichage).
+    test('mandat §2 — une liste OPEN dont le token est marqué "quitté" (×) n\'est pas réactivée au boot silencieux', async () => {
+      const { isDismissedSharedListToken } = require('../../js/group/group-side-cart.js');
+      isDismissedSharedListToken.mockReturnValueOnce(true);
+
+      global.fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          carts: [{ id: 'sc-dismissed', token: 'tok-dismissed', status: 'open', created_at: '2026-06-01T00:00:00Z' }],
+        }),
+      });
+
+      const result = await restoreSharedCartFromBackend();
+      await Promise.resolve(); await Promise.resolve();
+
+      // Le cache de session (badge/bandeau) reste synchronisé normalement —
+      // seule l'activation dans le side cart canonique est bloquée.
+      expect(result).toEqual(expect.objectContaining({ token: 'tok-dismissed' }));
+      expect(mockActivateSharedListContext).not.toHaveBeenCalled();
+      expect(mockGetSharedCartPublic).not.toHaveBeenCalled();
+    });
+
+    // Une activation EXPLICITE (silent=false, ex. juste après publication
+    // via openSharedListInCanonicalCart) ne doit jamais être bloquée par ce
+    // garde — seul le boot silencieux (restoreSharedCartFromBackend) le
+    // consulte. Non couvert directement ici (openSharedListInCanonicalCart
+    // n'est pas exportée), mais le contrat silent=true est vérifié
+    // ci-dessus et documenté dans activateCartInCanonicalSurface().
   });
 
   describe('startShareFlow', () => {

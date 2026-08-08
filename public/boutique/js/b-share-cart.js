@@ -313,6 +313,14 @@ function activateCartInCanonicalSurface(cart, { silent = false } = {}) {
     import('./group/group-side-cart.js'),
     import('./group/group-api.js'),
   ]).then(async ([sideCart, api]) => {
+    // Correctif archéologie (mandat §2) — une liste que l'organisateur a
+    // explicitement quittée (×) pendant cette session de navigation ne
+    // doit pas être automatiquement réactivée dans le side cart au
+    // prochain boot silencieux (ce chemin, restoreSharedCartFromBackend).
+    // Ne s'applique jamais à une activation explicite (silent=false,
+    // ex. juste après publication) : à ce stade aucun × n'a encore pu être
+    // cliqué sur cette liste.
+    if (silent && sideCart.isDismissedSharedListToken(cart.token)) return;
     const data = await api.getSharedCartPublic(cart.token);
     if (!data) return;
     sideCart.activateSharedListContext(data, cart.token, { silent });

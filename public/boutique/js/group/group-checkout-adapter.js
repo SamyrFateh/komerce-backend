@@ -51,10 +51,26 @@
  * Restauration idempotente et défensive : si aucune sélection valide n'est
  * fournie, aucun appel checkout n'est déclenché et le panier personnel
  * n'est jamais touché.
+ *
+ * Correctif P0 ownership (mandat §9, audit archéologie) — le panier
+ * personnel réel n'est plus JAMAIS exposé à une écriture localStorage
+ * pendant qu'il est temporairement remplacé par le panier éphémère :
+ * state.cartIsEphemeral (b-store.js) est levé avant le swap et consulté
+ * par b-cart-core.js::saveCart(), qui n'écrit alors plus dans
+ * localStorage. Le checkout canonique appelle toujours clearCart() après
+ * succès (b-checkout.js, inchangé) : cet appel opère bien sur le panier
+ * éphémère (`state.cart = []`), mais ce `[]` n'est plus jamais persisté —
+ * seul le panier personnel réel, jamais retouché sur disque pendant tout
+ * ce temps, reste dans localStorage. `state.cart` est restauré en mémoire
+ * ET resynchronisé sur disque (`saveCart()`) dès la fermeture du modal de
+ * commande. Avant ce correctif, seule la mémoire était restaurée — un
+ * reload pendant l'écran de succès (avant fermeture manuelle du modal)
+ * perdait le panier personnel pour de bon.
  */
 
 import { state, dom } from '../b-store.js';
 import { checkoutCart } from '../b-checkout.js';
+import { saveCart } from '../b-cart-core.js';
 
 /**
  * Construit un panier canonique éphémère depuis une sélection d'articles
@@ -101,6 +117,12 @@ export function checkoutSharedListSelection(selectedItems, checkoutContext) {
 
   const personalCart = state.cart;
   state.cart = ephemeralCart;
+  // Correctif P0 ownership (mandat §9) — posé AVANT le swap ci-dessus pour
+  // qu'aucune écriture localStorage (saveCart(), y compris via l'éventuel
+  // clearCart() de fin de checkout dans b-checkout.js) ne puisse jamais
+  // toucher le disque tant que state.cart ne contient pas le panier
+  // personnel réel.
+  state.cartIsEphemeral = true;
   // LOT 13 §F — bandeau d'affichage pur, jamais lu par b-checkout.js pour
   // une décision. Absent (undefined) si l'appelant n'en fournit pas.
   state.checkoutDisplayContext = checkoutContext?.title ? { title: checkoutContext.title } : null;
@@ -110,6 +132,16 @@ export function checkoutSharedListSelection(selectedItems, checkoutContext) {
     if (restored) return;
     restored = true;
     state.cart = personalCart;
+    // Ordre important : lever le flag AVANT saveCart(), sinon saveCart()
+    // continuerait de considérer state.cart comme éphémère et sauterait
+    // l'écriture — ce qui laisserait localStorage sur le dernier état
+    // connu avant checkout au lieu du panier personnel actuel restauré.
+    state.cartIsEphemeral = false;
+    // Resynchronise explicitement le disque avec le panier personnel
+    // restauré (défensif : localStorage n'a normalement pas bougé pendant
+    // l'éphémère, mais on ne laisse jamais dépendre la cohérence disque
+    // d'une simple absence d'écriture — un appel explicite le garantit).
+    saveCart();
     // Efface le bandeau avec le checkout — ne doit jamais survivre pour
     // contaminer le prochain checkout personnel (§F, mandat explicite).
     state.checkoutDisplayContext = null;

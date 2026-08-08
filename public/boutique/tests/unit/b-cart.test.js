@@ -660,6 +660,21 @@ describe('b-cart', () => {
       expect(img.getAttribute('onerror')).toContain('is-img-error');
     });
 
+    // Correctif archéologie (mandat §12) — une URL relative /uploads/...
+    // (média uploadé côté serveur) est explicitement demandée par le
+    // mandat comme renderable ; le garde ne doit plus la rejeter à tort
+    // et déclencher un fallback sur une image pourtant valide.
+    it('URL image relative /uploads/... : <img> émis, pas de fallback (§12)', () => {
+      activateList({ items: [
+        { id: 'i1', product_id: 'p1', name: 'Riz', image: '/uploads/riz-snapshot.jpg', quantity: 1, unit_price_kmf: 6500, claimed: false },
+      ] });
+      const row = dom.cartBody.querySelector('[data-item-id="i1"]');
+      const img = row.querySelector('img');
+      expect(img).not.toBeNull();
+      expect(img.getAttribute('src')).toContain('/uploads/riz-snapshot.jpg');
+      expect(row.querySelector('.k-cart-item-img').classList.contains('is-img-error')).toBe(false);
+    });
+
     it('ligne réclamée : grisée (is-cart-item-claimed) et libellée "Déjà acheté"', () => {
       activateList();
       const claimedRow = dom.cartBody.querySelector('[data-item-id="i2"]');
@@ -690,6 +705,22 @@ describe('b-cart', () => {
       expect(commandBtn.textContent).not.toMatch(/Payer|Total liste à payer/);
     });
 
+    // Correctif archéologie (mandat §6, F22-F) — le total du CTA doit
+    // multiplier unit_price_kmf par quantity, pas seulement additionner le
+    // prix unitaire. Un article à 8 000 KMF en quantité 2 doit produire
+    // 16 000 KMF, jamais 8 000.
+    it('le sous-total de la sélection tient compte de la quantité de chaque ligne (§6, F22-F)', () => {
+      activateList({ items: [
+        { id: 'i1', product_id: 'p1', name: 'Casque audio', image: null, quantity: 2, unit_price_kmf: 8000, claimed: false },
+      ] });
+      dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').click();
+
+      const commandBtn = findButtonByText('Commander (1');
+      expect(commandBtn).not.toBeNull();
+      expect(commandBtn.textContent).toMatch(/16[\s\u00a0\u202f]?000 KMF/);
+      expect(commandBtn.textContent).not.toMatch(/8[\s\u00a0\u202f]?000 KMF/);
+    });
+
     it('"Tout sélectionner" coche uniquement les lignes disponibles, sans déclencher de checkout (§3.b-bis)', () => {
       activateList({ items: [
         { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
@@ -705,6 +736,46 @@ describe('b-cart', () => {
       expect(dom.cartBody.querySelector('[data-item-id="i3"] .k-cart-item-select').getAttribute('aria-checked')).toBe('true');
       // i2 est claimed : jamais de case, "Tout sélectionner" ne la touche pas.
       expect(dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-select')).toBeNull();
+    });
+
+    // Revue mock (mock_side_cart_liste_recap_checkout_final.html) — le lien
+    // bascule en "Tout désélectionner" une fois toutes les lignes
+    // disponibles cochées, et un second clic décoche tout.
+    it('"Tout sélectionner" devient "Tout désélectionner" une fois toutes les lignes disponibles cochées, et décoche au reclic', () => {
+      activateList({ items: [
+        { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
+        { id: 'i2', product_id: 'p2', name: 'Huile', image: null, quantity: 1, unit_price_kmf: 3000, claimed: true },
+        { id: 'i3', product_id: 'p3', name: 'Sucre', image: null, quantity: 1, unit_price_kmf: 1000, claimed: false },
+      ] });
+
+      let toggleBtn = findButtonByText('Tout sélectionner');
+      expect(toggleBtn).not.toBeNull();
+      toggleBtn.click();
+
+      toggleBtn = findButtonByText('Tout désélectionner');
+      expect(toggleBtn).not.toBeNull();
+      expect(findButtonByText('Tout sélectionner')).toBeNull();
+      expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').getAttribute('aria-checked')).toBe('true');
+
+      toggleBtn.click();
+
+      expect(findButtonByText('Tout sélectionner')).not.toBeNull();
+      expect(findButtonByText('Tout désélectionner')).toBeNull();
+      expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').getAttribute('aria-checked')).toBe('false');
+      expect(dom.cartBody.querySelector('[data-item-id="i3"] .k-cart-item-select').getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('cocher manuellement chaque ligne disponible une à une fait aussi basculer le lien en "Tout désélectionner"', () => {
+      activateList({ items: [
+        { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
+        { id: 'i3', product_id: 'p3', name: 'Sucre', image: null, quantity: 1, unit_price_kmf: 1000, claimed: false },
+      ] });
+
+      dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').click();
+      expect(findButtonByText('Tout désélectionner')).toBeNull();
+
+      dom.cartBody.querySelector('[data-item-id="i3"] .k-cart-item-select').click();
+      expect(findButtonByText('Tout désélectionner')).not.toBeNull();
     });
 
     it('tout est réclamé → aucune case à cocher, "Tout sélectionner" absent, "Commander" absent', () => {

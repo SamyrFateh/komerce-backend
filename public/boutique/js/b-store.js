@@ -100,6 +100,22 @@ export const state = {
   products: [],
   filtered: [],
   cart: _loadCart(),
+  /**
+   * Correctif P0 ownership (mandat §9) — vrai tant que state.cart contient
+   * un panier ÉPHÉMÈRE de checkout (sélection d'une liste partagée injectée
+   * par group-checkout-adapter.js::checkoutSharedListSelection), jamais le
+   * panier personnel réel. Consulté exclusivement par
+   * b-cart-core.js::saveCart() pour ne JAMAIS persister ce contenu
+   * éphémère dans localStorage (clé kmrc_cart) — auparavant clearCart()
+   * appelé après un achat de liste écrivait `[]` en écrasant le vrai
+   * panier personnel sur disque, restauré seulement en mémoire (jamais
+   * réécrit sur disque) à la fermeture du modal de commande : un reload
+   * pendant l'écran de succès perdait le panier personnel pour de bon.
+   * Toujours remis à false par group-checkout-adapter.js dès la
+   * restauration de state.cart, jamais laissé actif en dehors d'un
+   * checkout de liste en cours.
+   */
+  cartIsEphemeral: false,
   favs: JSON.parse(localStorage.getItem('k_favs') || '[]'),
   activeCat: 'all',
   activeSubcat: null,

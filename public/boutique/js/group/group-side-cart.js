@@ -204,15 +204,25 @@ function handleToggleSelect(itemId) {
 }
 
 /**
- * "Tout sélectionner" (§3.b-bis) — coche toutes les lignes encore
- * disponibles. Raccourci de sélection pure : ne déclenche jamais
- * d'achat ni de checkout par lui-même, seul handleCommand le fait.
+ * "Tout sélectionner" / "Tout désélectionner" (§3.b-bis, revue mock) —
+ * bascule : si toutes les lignes disponibles sont déjà cochées, les
+ * décoche toutes ; sinon coche toutes les lignes encore disponibles.
+ * Raccourci de sélection pure dans les deux sens : ne déclenche jamais
+ * d'achat ni de checkout par lui-même, seul handleCommand le fait. Le
+ * libellé affiché ("allAvailableSelected" dans buildSnapshotRenderContext)
+ * suit ce même état — jamais désynchronisé, un seul point de vérité.
  * Remplace définitivement handleBuyAllAvailable comme chemin d'achat
  * séparé.
  */
 function handleSelectAll() {
   if (isReadOnly()) return;
-  availableItems().forEach((it) => selectedItemIds.add(String(it.id)));
+  const available = availableItems();
+  const allSelected = available.length > 0 && available.every((it) => selectedItemIds.has(String(it.id)));
+  if (allSelected) {
+    available.forEach((it) => selectedItemIds.delete(String(it.id)));
+  } else {
+    available.forEach((it) => selectedItemIds.add(String(it.id)));
+  }
   renderSharedListInCart();
 }
 
@@ -434,6 +444,64 @@ export function exitSharedListRenderMode() {
   bus.emit('cart-snapshot:cleanup');
 }
 
+/* ── Sortie d'affichage (le × de l'onglet, mandat §2) ─────────────────
+ * Distinct de handleCloseClick/apiCloseSharedCart (organisateur, mutation
+ * backend réelle, statut OPEN→CLOSED) : le × ne signifie QUE "quitter
+ * l'affichage de cette liste", jamais clôturer/supprimer/annuler. Aucun
+ * appel réseau, aucun changement de statut OPEN/CLOSED, aucun article
+ * personnel touché — clearSharedListContext() ci-dessous est déjà
+ * purement local, donc directement réutilisable comme mécanique de
+ * démontage. La seule différence avec un simple clearSharedListContext()
+ * est le marquage ci-dessous : sans lui, une liste OPEN dont l'utilisateur
+ * est l'organisateur réapparaîtrait à la prochaine visite via
+ * restoreSharedCartFromBackend()/GET mine (mandat : "après reload, une
+ * liste explicitement quittée ne doit pas ressusciter automatiquement").
+ * sessionStorage (pas localStorage) : le dismiss ne doit valoir que pour
+ * la session de navigation en cours, jamais devenir permanent — rouvrir
+ * la liste (Mes listes, ou un nouveau lien) doit toujours fonctionner.
+ */
+const DISMISSED_SHARED_LISTS_KEY = 'kmrc_dismissed_shared_lists';
+
+function rememberDismissedSharedListToken(token) {
+  if (!token) return;
+  try {
+    const raw = sessionStorage.getItem(DISMISSED_SHARED_LISTS_KEY);
+    const tokens = new Set(raw ? JSON.parse(raw) : []);
+    tokens.add(token);
+    sessionStorage.setItem(DISMISSED_SHARED_LISTS_KEY, JSON.stringify([...tokens]));
+  } catch (_) {}
+}
+
+/**
+ * Consultée par b-share-cart.js::restoreSharedCartFromBackend() avant de
+ * réactiver automatiquement une liste OPEN au boot (chemin organisateur,
+ * GET /mine) — jamais par le chemin lien/participant (?p=token), qui reste
+ * une activation explicite volontaire même pour un token déjà quitté.
+ * @param {string|null|undefined} token
+ * @returns {boolean}
+ */
+export function isDismissedSharedListToken(token) {
+  if (!token) return false;
+  try {
+    const raw = sessionStorage.getItem(DISMISSED_SHARED_LISTS_KEY);
+    if (!raw) return false;
+    return JSON.parse(raw).includes(token);
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * Callback du × sur l'onglet "Liste de X"/"Ma liste" — organisateur et
+ * participant indifféremment (mandat §2, mock organisateur `[ Mon panier ]
+ * [ Ma liste × ]` inclus). Aucune garde de rôle ici, contrairement à
+ * handleCloseClick.
+ */
+function handleExitSharedListDisplay() {
+  rememberDismissedSharedListToken(state.sharedListContext.token);
+  clearSharedListContext();
+}
+
 /**
  * Efface intégralement le contexte de liste, puis restaure le rendu du
  * panier personnel normal dans les mêmes surfaces.
@@ -593,6 +661,15 @@ function buildSnapshotRenderContext() {
     availableCount: availableItems().length,
     availableTotal: availableTotal(),
     selectedIds: selectedItemIds,
+    // Revue mock (mock_side_cart_liste_recap_checkout_final.html) — le
+    // libellé "Tout sélectionner"/"Tout désélectionner" suit cet état,
+    // calculé ici (seule source de vérité de la sélection), jamais
+    // recalculé indépendamment côté rendu (b-cart.js) pour éviter toute
+    // désynchronisation entre le libellé affiché et le comportement réel
+    // du clic (handleSelectAll ci-dessus applique exactement la même
+    // condition).
+    allAvailableSelected: availableItems().length > 0 &&
+      availableItems().every((it) => selectedItemIds.has(String(it.id))),
     showSaveAction,
     saved: showSaveAction && savedListTokensThisSession.has(ctx.token),
   };
@@ -824,7 +901,25 @@ function buildSurfaceSwitchTabs(id) {
     setCartSurface('shared-list');
   });
 
-  tabs.append(btnPersonal, btnList);
+  // Mandat §2 — le × est INDISPENSABLE et distinct du contenu cliquable de
+  // l'onglet : un <button> séparé (jamais imbriqué dans btnList, un
+  // <button> dans un <button> serait invalide) pour ne jamais déclencher
+  // setCartSurface('shared-list') en même temps que la sortie d'affichage.
+  const btnExit = document.createElement('button');
+  btnExit.type = 'button';
+  btnExit.className = 'k-cart-tab-exit';
+  btnExit.setAttribute('aria-label', 'Quitter l’affichage de cette liste');
+  btnExit.textContent = '×';
+  btnExit.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handleExitSharedListDisplay();
+  });
+
+  const listTabGroup = document.createElement('span');
+  listTabGroup.className = 'k-cart-tab-group';
+  listTabGroup.append(btnList, btnExit);
+
+  tabs.append(btnPersonal, listTabGroup);
   return tabs;
 }
 
@@ -866,6 +961,7 @@ export function renderCartSurfaceSwitch() {
     if (!tabs) continue;
     const btnPersonal = tabs.querySelector('.k-tab-personal');
     const btnList = tabs.querySelector('.k-tab-shared-list');
+    const btnExit = tabs.querySelector('.k-cart-tab-exit');
     if (btnPersonal) {
       btnPersonal.classList.toggle('k-cart-tab--active', activeTab === 'personal');
       btnPersonal.setAttribute('aria-selected', String(activeTab === 'personal'));
@@ -874,6 +970,13 @@ export function renderCartSurfaceSwitch() {
       btnList.textContent = listLabel;
       btnList.classList.toggle('k-cart-tab--active', activeTab === 'list');
       btnList.setAttribute('aria-selected', String(activeTab === 'list'));
+    }
+    if (btnExit) {
+      // Suit le même état actif que l'onglet liste (repère visuel continu,
+      // mandat §11), sans jamais déclencher setCartSurface au clic (géré
+      // séparément, voir buildSurfaceSwitchTabs).
+      btnExit.classList.toggle('k-cart-tab--active', activeTab === 'list');
+      btnExit.setAttribute('aria-label', `Quitter l’affichage de ${listLabel}`);
     }
     tabs.setAttribute('data-active', activeTab);
   }
