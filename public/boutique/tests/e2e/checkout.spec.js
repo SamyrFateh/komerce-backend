@@ -7,14 +7,14 @@
 /**
  * @e2e   checkout.spec.js
  * @feature orders, payments
- * @brief Checkout : formulaire bénéficiaire, state machine relais, chips
- *        paiement, bouton Confirmer verrouillé, retry relais
+ * @brief Checkout : identité/relais (résumés compacts, mandat simplification
+ *        2026-08), retrait sécurisé, state machine relais, chips paiement,
+ *        bouton Confirmer verrouillé, retry relais.
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
 const {
-  BASE_URL, addFirstProductToCart, openCheckout, selectRecipientOther,
-  hangAllApi, unblockApi,
+  addFirstProductToCart, openCheckout,
   IS_REMOTE,
 } = require('./helpers/boutique.helpers');
 
@@ -28,37 +28,44 @@ test.describe('E-CHECKOUT — Checkout complet', () => {
     await addFirstProductToCart(page);
   });
 
-  test('E4 — Le checkout s\'ouvre avec les 3 sections (bénéficiaire, relais, paiement)', async ({ page }) => {
+  test('E4 — Le checkout s\'ouvre avec identité + relais en résumés compacts et la section paiement', async ({ page }) => {
     await openCheckout(page);
 
-    // Section 1 : QUI RÉCUPÈRE
-    await expect(page.locator('.ck-section-title:has-text("QUI RÉCUPÈRE")').first()).toBeAttached({ timeout: 5_000 });
+    // Identité (Lot 3, simplification 2026-08) : plus de section "QUI
+    // RÉCUPÈRE" à onglets — une ligne compacte renderStepHeader (label =
+    // nom/téléphone, sublabel "identifié") avec un lien "Changer".
+    const identityHeader = page.locator('#ck-identity-recap.ck-step-header, .ck-step-header--identity').first();
+    if ((await identityHeader.count()) > 0) {
+      await expect(identityHeader).toBeAttached({ timeout: 5_000 });
+    }
 
-    // Section 2 : POINT DE RETRAIT
-    await expect(page.locator('.ck-section-title:has-text("POINT DE RETRAIT")').first()).toBeAttached({ timeout: 5_000 });
+    // Relais : même composant renderStepHeader (label = nom du relais,
+    // sublabel = île · zone), jamais l'ancien titre "POINT DE RETRAIT".
+    const relaisSummary = page.locator('#ck-relais-summary').first();
+    await expect(relaisSummary).toBeAttached({ timeout: 8_000 });
+    await expect(relaisSummary.locator('.ck-step-header-change')).toHaveText('Changer');
 
-    // Section 3 : PAIEMENT
-    await expect(page.locator('.ck-section-title:has-text("PAIEMENT")').first()).toBeAttached({ timeout: 5_000 });
+    // Section paiement : titre statique "Comment souhaitez-vous payer ?"
+    // (règle §4, simplification 2026-08 — jamais "PAIEMENT" ni "régler le solde").
+    await expect(page.locator('#ck-payment-summary .ck-section-title')).toHaveText('Comment souhaitez-vous payer ?');
 
     // Bouton Confirmer sticky en bas
     await expect(page.locator('#btn-confirm-order')).toBeAttached({ timeout: 5_000 });
   });
 
-  test('E4b — Le formulaire bénéficiaire est révélé et éditable en mode "Quelqu\'un d\'autre"', async ({ page }) => {
+  test('E4b — Achat personnel (hors liste) : bloc statique "Retrait sécurisé", aucun formulaire bénéficiaire', async ({ page }) => {
     await openCheckout(page);
 
-    // Par défaut (mode "Moi"), le champ existe dans le DOM mais est `hidden` —
-    // ce n'est pas un problème de scroll, il faut basculer l'onglet pour le révéler.
-    const nameField = page.locator('#of-beneficiary-name').first();
-    await expect(nameField).toBeHidden({ timeout: 3_000 });
+    // Lot 3 : le formulaire bénéficiaire distinct ("Pour moi / Pour
+    // quelqu'un d'autre", champ nom/téléphone) a été retiré du checkout —
+    // remplacé par un bloc statique informatif, jamais un toggle éditable.
+    const secureNotice = page.locator('.ck-secure-pickup-notice').first();
+    await expect(secureNotice).toBeAttached({ timeout: 5_000 });
+    await expect(secureNotice).toContainText('Retrait sécurisé');
 
-    await selectRecipientOther(page);
-    await nameField.scrollIntoViewIfNeeded({ timeout: 5_000 });
-    await expect(nameField).toBeVisible({ timeout: 3_000 });
-
-    // Le champ est éditable
-    await nameField.fill('Test Komerce');
-    await expect(nameField).toHaveValue('Test Komerce');
+    // Les anciens champs/toggle bénéficiaire n'existent plus dans le DOM.
+    await expect(page.locator('.ck-recip-seg')).toHaveCount(0);
+    await expect(page.locator('#of-beneficiary-name')).toHaveCount(0);
   });
 
   test('E5 — State machine relais : bouton Confirmer disabled tant que relais pas chargés', async ({ page }) => {

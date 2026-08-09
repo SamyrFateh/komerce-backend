@@ -133,7 +133,7 @@ const { clearCart, openCart, closeCart } = require('../../js/b-cart.js');
 const { requireIdentity, getCurrentIdentity, restoreIdentity, bindChangeIdentity, openIdentityModal } = require('../../js/b-identity.js');
 const { digitsOnly: _digitsOnly, normalizeLocal: _normalizeLocal, prettifyLocal: _prettifyLocal, buildE164: _buildE164 } =
   require('../../js/b-phone.js');
-const { buildOrderSuccessDOM, buildIdentityRecapDOM, applyIdentityToCard, renderStepHeader, makeInput: _makeInputRender, makePhoneInput: _makePhoneInputRender } =
+const { buildOrderSuccessDOM, buildIdentityRecapDOM, applyIdentityToCard, renderStepHeader, setCheckoutConfirmButton, makeInput: _makeInputRender, makePhoneInput: _makePhoneInputRender } =
   require('../../js/b-checkout-render.js');
 const { scrollToPosition } = require('../../js/b-scroll-owner.js');
 const { renderPayPalButton, isPayPalEnabled } = require('../../js/b-paypal.js');
@@ -275,7 +275,7 @@ describe('b-checkout', () => {
       expect(ded.innerHTML).toContain('Entièrement couvert');
     });
 
-    it('case wallet cochée + solde partiel → affiche le reste à payer', () => {
+    it('case wallet cochée + solde partiel → affiche le montant restant dû (« À payer », jamais « reste à régler »)', () => {
       const ded = document.createElement('div');
       ded.id = 'wallet-deduction';
       document.body.appendChild(ded);
@@ -290,7 +290,8 @@ describe('b-checkout', () => {
 
       updateWalletDisplay();
 
-      expect(ded.innerHTML).toContain('Reste à payer');
+      expect(ded.innerHTML).toContain('À payer');
+      expect(ded.innerHTML).not.toContain('régler');
     });
 
     it('case wallet décochée → masque le bloc (is-visible retiré)', () => {
@@ -613,19 +614,23 @@ describe('b-checkout', () => {
       restoreIdentity.mockResolvedValue(null);
     });
 
-    it('construit le titre avec bouton retour, qui ferme le checkout et rouvre le panier', async () => {
-      jest.useFakeTimers({ doNotFake: ['nextTick'] });
+    it('construit le titre avec bouton retour « ← Récap », qui rouvre le récapitulatif sans fermer le checkout', async () => {
+      // Règle §9 (simplification checkout final, cf. mock) : depuis ce
+      // formulaire, "← Récap" ramène au récapitulatif des articles dans le
+      // même modal — il ne ferme plus le checkout / ne rouvre plus le
+      // tiroir panier (ancien comportement "← Panier", retiré).
       renderCheckout();
       dom.orderModal.classList.add('open');
 
       let backBtn = dom.orderTitle.querySelector('.ck-modal-back-btn--header');
       expect(backBtn).not.toBeNull();
+      expect(backBtn.textContent).toContain('Récap');
       backBtn.click();
-      jest.runAllTimers();
 
-      expect(dom.orderModal.classList.contains('open')).toBe(false);
-      expect(openCart).toHaveBeenCalled();
-      jest.useRealTimers();
+      expect(dom.orderModal.classList.contains('open')).toBe(true);
+      expect(openCart).not.toHaveBeenCalled();
+      // Le récapitulatif redevient le contenu du modal (heading dédié).
+      expect(dom.orderBody.querySelector('.ck-recap-gate-heading')).not.toBeNull();
     });
 
     it('identité déjà connue → ligne repliée (renderStepHeader) insérée en tête, sans passer par restoreIdentity', async () => {
@@ -832,17 +837,22 @@ describe('b-checkout', () => {
       expect(document.getElementById('ck-chip-paypal').style.display).toBe('');
     });
 
-    it('checkWalletBalance : solde 0 → sort de "Chargement…" et affiche la section (R3, non-régression)', async () => {
-      // FIX 2026-07-11 : avant, le texte restait bloqué sur "Chargement…" et
-      // #wallet-section restait display:none à jamais quand balance_kmf=0,
-      // car l'ancienne implémentation ne mettait à jour l'UI que si balance > 0.
+    it('checkWalletBalance : solde 0 → section masquée, pas de crédit proposé (règle §3, simplification checkout final)', async () => {
+      // Règle §3 (mock_checkout_final_simplifie.html) : à crédit nul, on ne
+      // propose PAS l'utilisation du crédit — la section reste masquée.
+      // Remplace l'ancien test "R3, non-régression" (fix 2026-07-11) qui
+      // exigeait l'inverse (section toujours visible, y compris à 0) pour
+      // sortir d'un état "Chargement…" bloqué. Le nouvel objectif — ne
+      // jamais rester bloqué sur "Chargement…" — est conservé (assertion
+      // ci-dessous sur balText), simplement sans rendre la section visible
+      // quand il n'y a explicitement rien à proposer.
       global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 0 }) });
       renderCheckout();
       await flush();
 
       const section = document.getElementById('wallet-section');
       const balText = document.getElementById('wallet-balance-text');
-      expect(section.classList.contains('is-visible')).toBe(true);
+      expect(section.classList.contains('is-visible')).toBe(false);
       expect(balText.textContent).not.toContain('Chargement');
       expect(balText.textContent).not.toContain('NaN');
       expect(balText.textContent).not.toContain('undefined');
@@ -900,6 +910,112 @@ describe('b-checkout', () => {
       await flush();
 
       expect(requireIdentity).toHaveBeenCalled();
+    });
+
+    describe('règle §8 — CTA "Confirmer la commande · X KMF" (jamais "Payer", jamais "(net wallet)")', () => {
+      it('mode cash, sans wallet → CTA uniforme avec le total', async () => {
+        cartTotal.mockReturnValue(2000);
+        renderCheckout();
+        await flush();
+
+        const lastCall = setCheckoutConfirmButton.mock.calls.at(-1);
+        expect(lastCall[1]).toBe('Confirmer la commande · 2000 KMF');
+        expect(lastCall[1]).not.toMatch(/Payer|net wallet/);
+      });
+
+      it('mode Stripe sélectionné → même gabarit de CTA (jamais "💳 Payer")', async () => {
+        cartTotal.mockReturnValue(2000);
+        renderCheckout();
+        await flush();
+
+        const stripeRadio = dom.orderBody.querySelector('input[value="stripe_eur"]');
+        stripeRadio.checked = true;
+        stripeRadio.dispatchEvent(new Event('change', { bubbles: true }));
+        await flush();
+
+        const lastCall = setCheckoutConfirmButton.mock.calls.at(-1);
+        expect(lastCall[1]).toBe('Confirmer la commande · 2000 KMF');
+        expect(lastCall[1]).not.toMatch(/Payer/);
+      });
+
+      it('wallet coché, couverture partielle → CTA porte le montant NET (après déduction), toujours le même gabarit', async () => {
+        global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 800 }) });
+        cartTotal.mockReturnValue(2000);
+        renderCheckout();
+        await flush();
+
+        const cb = document.getElementById('cb-use-wallet');
+        cb.checked = true;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+        await flush();
+
+        const lastCall = setCheckoutConfirmButton.mock.calls.at(-1);
+        expect(lastCall[1]).toBe('Confirmer la commande · 1200 KMF');
+      });
+    });
+
+    describe('règle §3 — ordre wallet avant paiement + masquage total quand le crédit couvre tout', () => {
+      it('le bloc wallet précède le bloc paiement dans le DOM (parité visuelle avec le mock)', async () => {
+        renderCheckout();
+        await flush();
+
+        const walletSection = document.getElementById('wallet-section');
+        const paymentSection = document.querySelector('.ck-payment-section');
+        expect(walletSection).toBeTruthy();
+        expect(paymentSection).toBeTruthy();
+        // DOCUMENT_POSITION_FOLLOWING (4) : paymentSection vient après walletSection.
+        expect(walletSection.compareDocumentPosition(paymentSection) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      });
+
+      it('wallet coché + solde couvrant tout le total → masque le choix du moyen de paiement, affiche le message de couverture', async () => {
+        global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 5000 }) });
+        cartTotal.mockReturnValue(2000);
+        renderCheckout();
+        await flush();
+
+        const cb = document.getElementById('cb-use-wallet');
+        cb.checked = true;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+        await flush();
+
+        expect(document.getElementById('ck-payment-summary').classList.contains('ck-force-hidden')).toBe(true);
+        expect(document.getElementById('ck-pay-grid').classList.contains('ck-force-hidden')).toBe(true);
+        expect(document.getElementById('ck-wallet-full-cover-msg').classList.contains('is-visible')).toBe(true);
+        expect(document.getElementById('ck-wallet-full-cover-msg').textContent).toContain('couvre toute la commande');
+      });
+
+      it('wallet décoché après avoir tout couvert → réaffiche le choix du moyen de paiement', async () => {
+        global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 5000 }) });
+        cartTotal.mockReturnValue(2000);
+        renderCheckout();
+        await flush();
+
+        const cb = document.getElementById('cb-use-wallet');
+        cb.checked = true;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+        await flush();
+        cb.checked = false;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+        await flush();
+
+        expect(document.getElementById('ck-payment-summary').classList.contains('ck-force-hidden')).toBe(false);
+        expect(document.getElementById('ck-pay-grid').classList.contains('ck-force-hidden')).toBe(false);
+        expect(document.getElementById('ck-wallet-full-cover-msg').classList.contains('is-visible')).toBe(false);
+      });
+
+      it('od.payment_mode n\'est jamais modifié par le masquage — décoration pure (invariant commande/paiement préservé)', async () => {
+        global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 5000 }) });
+        cartTotal.mockReturnValue(2000);
+        renderCheckout();
+        await flush();
+
+        const cb = document.getElementById('cb-use-wallet');
+        cb.checked = true;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+        await flush();
+
+        expect(state.orderData.payment_mode).toBe('cash_relais');
+      });
     });
   });
 

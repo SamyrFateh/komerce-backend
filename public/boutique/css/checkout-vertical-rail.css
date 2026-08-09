@@ -71,77 +71,53 @@
   line-height: 1;
 }
 
-/* ── Rail vertical ────────────────────────────────────────────── */
+/* ── Corps du checkout — cartes compactes (règle §1) ─────────────
+ * Anciennement un "rail vertical" (ligne de progression + pastilles
+ * numérotées empruntées à b-tracking.js, .k-track-step-dot) qui simulait
+ * une logique d'étapes/timeline à franchir. Retiré (simplification
+ * checkout final, cf. mock_checkout_final_simplifie.html) : identité,
+ * point de retrait et paiement ne sont pas des étapes séquentielles mais
+ * des informations déjà connues, chacune modifiable indépendamment via
+ * « Changer ». Les cartes s'empilent maintenant à plat, sans ligne ni
+ * numérotation reliant les blocs entre eux.
+ */
 
 .k-order-overlay.open .k-order-body--checkout {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 22px 16px 30px 60px;
+  padding: 22px 16px 30px;
   background:
     radial-gradient(circle at 92% 4%, rgba(232,131,90,.08), transparent 24%),
     var(--checkout-cream);
 }
 
-.k-order-body--checkout::before {
-  content: "";
-  position: absolute;
-  top: 38px;
-  bottom: 44px;
-  left: 31px;
-  width: 2px;
-  border-radius: 999px;
-  background: linear-gradient(to bottom,
-    var(--checkout-accent) 0 28%,
-    rgba(232,131,90,.62) 28% 72%,
-    rgba(31,48,36,.12) 72% 100%);
-  pointer-events: none;
-}
-
 .k-order-body--checkout > .ck-section-block:empty { display: none; }
 
 .ck-step-header {
-  position: relative;
   width: 100%;
-  min-height: 72px;
+  min-height: 60px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 14px;
+  padding: 11px 13px;
   margin: 0;
   border: 1px solid rgba(31,48,36,.10);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--white);
-  box-shadow: 0 8px 24px rgba(31,48,36,.06), 0 1px 2px rgba(31,48,36,.04);
+  box-shadow: 0 6px 18px rgba(31,48,36,.05), 0 1px 2px rgba(31,48,36,.04);
 }
 
-.ck-step-header .k-track-step-dot {
-  position: absolute;
-  top: 19px;
-  left: -44px;
-  width: 30px;
-  height: 30px;
-  margin: 0;
-  border: 4px solid var(--checkout-cream);
-  box-shadow: 0 2px 8px rgba(31,48,36,.16);
-  z-index: 2;
-}
-
-.ck-step-header .k-track-step-dot.done {
-  background: var(--checkout-accent);
-  color: var(--white);
-}
-
-.ck-step-header .k-track-step-dot.current {
-  background: var(--coral);
-  color: var(--white);
-}
-
-.ck-payment-section .k-track-step-dot.current::before {
-  content: "3";
-  font-size: .72rem;
-  font-weight: 900;
+.ck-step-header-icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--checkout-cream);
+  font-size: 1.05rem;
 }
 
 .ck-step-header-text {
@@ -163,7 +139,6 @@
 
 .ck-identity-summary .ck-step-header-text::before { content: "Qui commande ?"; }
 .ck-relais-section .ck-step-header-text::before { content: "Point de retrait"; }
-.ck-payment-section .ck-step-header-text::before { content: "Comment payez-vous ?"; }
 
 .ck-step-header-label {
   overflow: hidden;
@@ -207,37 +182,19 @@
 
 .ck-identity-summary,
 .k-ck-guest-hint {
-  position: relative;
-  margin: 0 0 18px;
+  margin: 0 0 14px;
 }
 
 .k-ck-guest-hint {
-  min-height: 76px;
-  padding: 14px 15px;
-  border: 1px solid rgba(232,131,90,.26);
-  border-radius: 16px;
-  background: var(--white);
-  box-shadow: 0 8px 24px rgba(31,48,36,.06);
-}
-
-.k-ck-guest-hint::before {
-  content: "1";
-  position: absolute;
-  top: 20px;
-  left: -44px;
-  width: 30px;
-  height: 30px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border: 4px solid var(--checkout-cream);
-  border-radius: 50%;
-  background: var(--coral);
-  color: var(--white);
-  box-shadow: 0 2px 8px rgba(31,48,36,.16);
-  font-size: .72rem;
-  font-weight: 900;
-  z-index: 2;
+  gap: 10px;
+  min-height: 60px;
+  padding: 12px 14px;
+  border: 1px solid rgba(232,131,90,.26);
+  border-radius: 14px;
+  background: var(--white);
+  box-shadow: 0 6px 18px rgba(31,48,36,.05);
 }
 
 .k-ck-guest-hint .k-ck-guest-ic {
@@ -254,8 +211,7 @@
 /* ── Relais ──────────────────────────────────────────────────── */
 
 .ck-relais-section {
-  position: relative;
-  margin: 0 0 18px;
+  margin: 0 0 14px;
 }
 
 .ck-relais-section .ck-step-header {
@@ -266,40 +222,17 @@
 .ck-relais-loading,
 .ck-relais-empty,
 .ck-relais-error {
-  position: relative;
-  min-height: 70px;
+  min-height: 56px;
   display: flex;
   align-items: center;
-  padding: 14px 15px;
+  padding: 12px 14px;
   border: 1px solid rgba(31,48,36,.10);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--white);
   color: var(--text-muted);
-  box-shadow: 0 8px 24px rgba(31,48,36,.05);
+  box-shadow: 0 6px 18px rgba(31,48,36,.05);
   font-size: .8rem;
   font-weight: 700;
-}
-
-.ck-relais-loading::before,
-.ck-relais-empty::before,
-.ck-relais-error::before {
-  content: "2";
-  position: absolute;
-  top: 18px;
-  left: -44px;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 4px solid var(--checkout-cream);
-  border-radius: 50%;
-  background: var(--coral);
-  color: var(--white);
-  box-shadow: 0 2px 8px rgba(31,48,36,.16);
-  font-size: .72rem;
-  font-weight: 900;
-  z-index: 2;
 }
 
 .ck-relais-error { flex-wrap: wrap; gap: 10px; color: var(--coral-dark); }
@@ -482,23 +415,19 @@
 /* ── Paiement ────────────────────────────────────────────────── */
 
 .ck-payment-section {
-  position: relative;
   padding: 0;
   margin: 0 0 10px;
   border: 0;
 }
 
-.ck-payment-section .ck-step-header {
-  min-height: auto;
+/* Titre de section statique — règle §4, remplace l'ancien résumé
+ * "PAIEMENT · <moyen choisi>" (renderStepHeader, pastille "current"). */
+.ck-section-title {
   padding: 4px 0 11px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
 }
-
-.ck-payment-section .ck-step-header-label { font-size: 1rem; }
-.ck-payment-section .ck-step-header-sub { color: var(--coral-dark); }
 
 .ck-pay-grid {
   grid-template-columns: repeat(2, minmax(0,1fr));
@@ -551,7 +480,47 @@
 }
 
 .k-stripe-wrap { padding: 13px 14px; }
-.k-wallet-section { margin-top: 0; padding: 12px 14px; }
+/* Règle §3 — le wallet précède désormais le paiement (cf. mock) : marge
+ * basse propre au lieu de compter sur le bloc suivant pour l'espacement. */
+.k-wallet-section { margin: 0 0 14px; padding: 12px 14px; }
+
+/* Règle §3 — masque intégralement un bloc (titre paiement, puces,
+ * Stripe/PayPal) quand le wallet couvre déjà tout le montant dû. Sélecteurs
+ * ID+classe (jamais `!important`, gate check-important.js à 0 pour ce
+ * fichier) : la spécificité id l'emporte sur les combos `.k-stripe-wrap
+ * .is-visible` / `.k-paypal-wrap.is-visible` (2 classes) sans dépendre de
+ * l'ordre des règles dans la feuille.
+ */
+#ck-payment-summary.ck-force-hidden,
+#ck-pay-grid.ck-force-hidden,
+#stripe-card-wrap.ck-force-hidden,
+#paypal-wrap.ck-force-hidden {
+  display: none;
+}
+
+/* ── Message crédit couvrant tout (règle §3) ─────────────────────
+ * Remplace le titre "Comment souhaitez-vous payer ?" + les moyens de
+ * paiement quand le wallet couvre déjà l'intégralité du montant dû —
+ * cf. mock_checkout_final_simplifie.html ("Votre crédit couvre toute la
+ * commande."). Masqué par défaut ; basculé par
+ * _togglePaymentMethodVisibility() (b-checkout.js).
+ */
+.ck-wallet-full-cover-msg {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 13px;
+  border-radius: var(--radius-sm);
+  background: rgba(77,166,104,.10);
+  border: 1px solid rgba(77,166,104,.28);
+  color: var(--checkout-accent-deep);
+  font-size: .82rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.ck-wallet-full-cover-msg.is-visible { display: flex; }
 
 .ck-secure-pickup-notice--footer {
   margin: 12px 0 4px;
@@ -561,6 +530,44 @@
   background: rgba(31,122,84,.06);
   color: var(--sage-dark);
   line-height: 1.35;
+}
+
+/* ── Destinataire du code de retrait — commande liée à une liste (règle §7) ── */
+
+.ck-recipient-section { margin: 12px 0 4px; }
+
+.ck-recipient-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ck-recipient-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 10px 11px;
+  border: 1px solid rgba(31,48,36,.11);
+  border-radius: 14px;
+  background: var(--white);
+  cursor: pointer;
+}
+
+.ck-recipient-option input { margin: 2px 0 0; accent-color: var(--checkout-accent-deep); }
+
+.ck-recipient-option.is-active {
+  border-color: var(--checkout-accent);
+  background: var(--checkout-chip-active-bg);
+  box-shadow: 0 0 0 2px var(--coral-focus-12);
+}
+
+.ck-recipient-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ck-recipient-copy strong { font-size: .84rem; color: var(--text); }
+.ck-recipient-copy small { font-size: .72rem; color: var(--text-muted); line-height: 1.25; }
+
+@media (max-width: 380px) {
+  .ck-recipient-grid { grid-template-columns: 1fr; }
 }
 
 /* ── CTA final ───────────────────────────────────────────────── */
@@ -673,15 +680,7 @@
 /* ── Responsive ──────────────────────────────────────────────── */
 
 @media (max-width: 380px) {
-  .k-order-overlay.open .k-order-body--checkout { padding-right: 12px; padding-left: 54px; }
-  .k-order-body--checkout::before { left: 27px; }
-
-  .ck-step-header .k-track-step-dot,
-  .k-ck-guest-hint::before,
-  .ck-relais-loading::before,
-  .ck-relais-empty::before,
-  .ck-relais-error::before { left: -40px; }
-
+  .k-order-overlay.open .k-order-body--checkout { padding-right: 12px; padding-left: 12px; }
   .ck-step-header { padding-right: 11px; padding-left: 11px; }
   .ck-step-header-change { padding: 0 9px; }
   .ck-pay-chip { min-height: 72px; padding: 9px 10px; }
@@ -696,14 +695,7 @@
   }
 
   .k-order-header { border-radius: 24px 24px 0 0; }
-  .k-order-overlay.open .k-order-body--checkout { padding: 26px 24px 34px 70px; }
-  .k-order-body--checkout::before { left: 38px; }
-
-  .ck-step-header .k-track-step-dot,
-  .k-ck-guest-hint::before,
-  .ck-relais-loading::before,
-  .ck-relais-empty::before,
-  .ck-relais-error::before { left: -48px; }
+  .k-order-overlay.open .k-order-body--checkout { padding: 26px 24px 34px; }
 
   .k-order-overlay.open .ck-confirm-btn {
     width: calc(100% - 32px);

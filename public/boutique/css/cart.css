@@ -1313,19 +1313,17 @@ body.cart-open .k-wa-fab {
    Ne touche pas aux classes existantes.
    -------------------------------------------------------------------------- */
 
-/* Titre de section court en capslock */
-.ck-section-title {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: .62rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--text-muted);
-  line-height: 1;
-  margin-bottom: 8px;
-}
+/* .ck-section-title (ancien titre de section en capslock, 3 sections QUI
+ * RÉCUPÈRE/POINT DE RETRAIT/PAIEMENT) — supprimé (nettoyage 2026-08,
+ * gate check-css-guard). Mort depuis la simplification checkout final :
+ * seul js/b-checkout.js crée des éléments .ck-section-title, et il n'y a
+ * plus qu'un seul titre de section statique (§4 — "Comment souhaitez-vous
+ * payer ?"), stylé par css/checkout-vertical-rail.css. Cette règle-ci
+ * n'était plus jamais appliquée en pratique (checkout-vertical-rail.css,
+ * chargé après cart.css dans le bundle components.css, l'emportait
+ * toujours en cascade) — mais restait détectée comme conflit par le gate
+ * une fois le bundle régénéré. Cf. aussi son override desktop plus bas
+ * (@media (min-width: 900px)), retiré pour la même raison. */
 
 /* Badge numéroté ① ② ③ — cercle vert marché */
 .ck-step-num {
@@ -1418,14 +1416,10 @@ body.cart-open .k-wa-fab {
   flex-direction: column;
   min-height: 0;
 }
-/* Guest hint plus compact */
-.k-ck-guest-hint {
-  display: flex;
-  align-items: center;
-  background: var(--cream-peach);
-  border: 1px solid var(--border-coral-22, var(--border));
-  color: var(--text);
-}
+/* .k-ck-guest-hint (variante "plus compact") — supprimé (nettoyage 2026-08,
+ * gate check-css-guard), même raison que .ck-section-title ci-dessus :
+ * seul js/b-checkout.js crée cet élément, et css/checkout-vertical-rail.css
+ * (chargé après dans le bundle) porte désormais la seule styling active. */
 .k-ck-guest-ic { font-size: 1rem; flex: 0 0 auto; }
 
 /* Recap identité compact */
@@ -1561,26 +1555,14 @@ body.cart-open .k-wa-fab {
     padding: 16px 16px calc(90px + env(safe-area-inset-bottom));
   }
   .ck-section-block { padding-top: 18px; }
-  .ck-section-title { font-size: .68rem; margin-bottom: 6px; }
   .ck-secure-pickup-notice { padding: 10px 12px; }
   .ck-confirm-btn { min-height: 64px; }
   .ck-relais-ile-btn { min-height: 36px; font-size: .78rem; }
 }
 
-/* ── Invitation douce « Nouveau ? » (checkout sans cookie) ── */
-.k-ck-guest-hint {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  background: var(--cream-peach);
-  border: 1px solid var(--border-coral-22, var(--border));
-  border-radius: 13px;
-  padding: 13px 14px;
-  margin-bottom: 18px;
-  font-size: .8rem;
-  line-height: 1.4;
-  color: var(--text);
-}
+/* .k-ck-guest-hint « Invitation douce Nouveau ? » — supprimé (nettoyage
+ * 2026-08, gate check-css-guard), même raison : css/checkout-vertical-rail.css
+ * porte désormais la seule styling active de ce composant. */
 .k-ck-guest-ic { font-size: 1.1rem; flex: 0 0 auto; }
 
 /* ---------------------------------------------------------------

@@ -241,15 +241,18 @@ function _ensureRelaisSelection(od, byIle, allIles) {
   od.selectedRelaisName  = r.name || r.nom || '';
 }
 
-/** Ligne repliée « 📍 Relais · Île · Pays » + lien Changer → ouvre le picker. */
+/** Ligne compacte « 📍 Nom du relais · Île · Pays » + lien Changer → ouvre le picker.
+ * Mock (règle §2) : résumé compact, pas de pastille d'étape ni de drapeau
+ * dans le libellé — le drapeau reste porté par le picker lui-même
+ * (_openRelaisPicker), pas par le résumé replié. */
 function _renderRelaisSummary(container, od, byIle, allIles) {
   container.classList.remove('is-error');
-  const flag  = od.fulfillment_zone === 'france' ? '🇫🇷' : '🇰🇲';
-  const zone  = od.fulfillment_zone === 'france' ? 'France' : 'Comores';
+  const zone = od.fulfillment_zone === 'france' ? 'France' : 'Comores';
   container.innerHTML = '';
   const header = renderStepHeader({
     state:    'done',
-    label:    flag + ' ' + (od.selectedRelaisName || ''),
+    icon:     '📍',
+    label:    od.selectedRelaisName || '',
     sublabel: (od.selectedIsland || '') + ' · ' + zone,
     onChange: () => {
       _openRelaisPicker(od, byIle, allIles, () => {
@@ -264,13 +267,19 @@ function _renderRelaisSummary(container, od, byIle, allIles) {
   container.appendChild(header);
 }
 
-/** Ligne d'en-tête « PAIEMENT · <moyen choisi> » — se met à jour à chaque changement. */
-function _renderPaymentHeader(container, mode) {
-  const sublabel = mode === 'paypal_eur' ? 'PayPal'
-    : mode === 'stripe_eur' ? 'Carte via Stripe'
-    : 'Cash au relais';
+/** Titre statique de la section paiement (règle §4 — jamais « régler le
+ * solde » / « reste à régler »). Purement décoratif, ne se re-rend jamais :
+ * contrairement à l'ancien résumé « PAIEMENT · <moyen choisi> » (dérivé de
+ * renderStepHeader, pastille "current"), ce n'est pas une étape à valider —
+ * le moyen sélectionné est déjà visible sur les puces ck-pay-chip
+ * elles-mêmes (classe --active), pas besoin de le répéter en toute-lettres
+ * au-dessus. */
+function _renderPaymentHeader(container) {
   container.innerHTML = '';
-  container.appendChild(renderStepHeader({ state: 'current', label: 'PAIEMENT', sublabel }));
+  const title = document.createElement('div');
+  title.className = 'ck-section-title';
+  title.textContent = 'Comment souhaitez-vous payer ?';
+  container.appendChild(title);
 }
 
 /** Feuille pays → île, relais auto. Remplace renderFulfillmentSelector + chips d'îles. */
@@ -423,9 +432,11 @@ function refreshCheckoutComputedUI() {
   const cb = document.getElementById('cb-use-wallet');
   const walletApplied = (cb && cb.checked && state.walletBalance > 0) ? Math.min(state.walletBalance, total) : 0;
   const netAmount = total - walletApplied;
-  const mainText = mode === 'stripe_eur'
-    ? '💳 Payer ' + fmt(total, 'KMF')
-    : '✅ Confirmer — ' + fmt(netAmount, 'KMF') + (walletApplied > 0 ? ' (net wallet)' : '');
+  // Règle §8 (simplification checkout final, cf. mock) — un seul gabarit de
+  // CTA, quel que soit le moyen de paiement ou l'usage du wallet : jamais
+  // « Payer » (Stripe) ni « (net wallet) » (cash), toujours le même libellé
+  // portant le montant net réellement dû (après déduction wallet).
+  const mainText = 'Confirmer la commande · ' + fmt(netAmount, 'KMF');
   let subText = mode === 'stripe_eur'
     ? (where ? 'Carte via Stripe • ' + where : 'Carte via Stripe')
     : (where ? 'Cash au relais • ' + where : 'Cash au relais');
@@ -455,6 +466,7 @@ function _buildIdentityHeader(identity) {
   const phone = identity.phone || '';
   const header = renderStepHeader({
     state:    'done',
+    icon:     '👤',
     label:    name || phone,
     sublabel: 'identifié' + (name && phone ? ' · ' + phone : ''),
     onChange: async () => {
@@ -640,16 +652,23 @@ export function renderCheckout() {
     body.innerHTML = '';
     body.classList.add('k-order-body--checkout');
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
-    dom.orderTitle.innerHTML = '<button type="button" class="ck-modal-back-btn ck-modal-back-btn--header" aria-label="Retour au panier">← Panier</button><span class="ck-order-title-text">🛒 Commander</span>';
+    dom.orderTitle.innerHTML = '<button type="button" class="ck-modal-back-btn ck-modal-back-btn--header" aria-label="Retour au récapitulatif">← Récap</button><span class="ck-order-title-text">🛒 Commander</span>';
 
     const od = state.orderData;
     if (!od.fulfillment_zone) od.fulfillment_zone = 'comoros';
 
+    // Règle §9 (simplification checkout final, cf. mock "← Récap") — le
+    // retour depuis cet écran mène au récapitulatif des articles
+    // (renderOrderRecapGate(), écran précédent du même modal), jamais à la
+    // fermeture du checkout. Avant : "← Panier" fermait le modal et
+    // rouvrait le tiroir panier, sautant le récapitulatif — ce que ce même
+    // écran affiche pourtant déjà un bouton dédié pour faire ("← Retour" en
+    // tête de renderOrderRecapGate(), inchangé, qui lui ferme bien le modal
+    // et rouvre le panier).
     const headerBackBtn = dom.orderTitle.querySelector('.ck-modal-back-btn--header');
     if (headerBackBtn) {
       headerBackBtn.addEventListener('click', () => {
-        closeOrderModal();
-        setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
+        renderOrderRecapGate();
       });
     }
 
@@ -742,6 +761,53 @@ export function renderCheckout() {
       + '<span class="ck-secure-pickup-short">🔒 Code de retrait envoyé sur WhatsApp une fois prête</span>';
     // Insertion différée : appendChild plus bas, après le bloc paiement (cf. suite du fichier)
 
+    // ── Destinataire du code de retrait — commande liée à une liste (règle §7) ─
+    // N'apparaît QUE si b-checkout.js reçoit un organizerLabel via le contexte
+    // d'affichage décoratif (state.checkoutDisplayContext — LOT 13 §F étendu,
+    // voir group-checkout-adapter.js). Ce module ne lit ni n'importe rien
+    // d'autre de la liste : organizerLabel est un simple libellé fourni par
+    // l'appelant, jamais un id/token de liste. Remplace le bloc statique
+    // « Retrait sécurisé » ci-dessus pour un checkout de liste (redondant
+    // sinon — chaque option porte déjà sa propre légende).
+    //
+    // IMPORTANT (transparence) — ce choix n'est aujourd'hui capturé que
+    // côté UI (od.pickupCodeRecipient) : aucun champ backend équivalent
+    // n'existe dans POST /api/orders (validators/index.js, orders.create).
+    // Il n'est donc PAS envoyé à l'API — l'ajouter au payload serait un
+    // no-op silencieux (stripUnknown:true côté validate()), ce qui donnerait
+    // l'illusion d'une fonctionnalité livrée. Le routage réel du code vers
+    // l'organisateur reste à faire côté backend (lot séparé).
+    const organizerLabel = state.checkoutDisplayContext?.organizerLabel || null;
+    let recipientBlock = null;
+    if (organizerLabel) {
+      od.pickupCodeRecipient = od.pickupCodeRecipient || 'me';
+      recipientBlock = document.createElement('div');
+      recipientBlock.className = 'ck-section-block ck-recipient-section';
+      recipientBlock.innerHTML =
+        '<div class="ck-section-title">Code de retrait</div>'
+        + '<div class="ck-recipient-grid">'
+        +   '<label class="ck-recipient-option' + (od.pickupCodeRecipient === 'me' ? ' is-active' : '') + '">'
+        +     '<input type="radio" name="ck-pickup-recipient" value="me"' + (od.pickupCodeRecipient === 'me' ? ' checked' : '') + '>'
+        +     '<span class="ck-recipient-copy"><strong>Me l\u2019envoyer</strong>'
+        +       '<small>Sur mon WhatsApp quand la commande est prête</small></span>'
+        +   '</label>'
+        +   '<label class="ck-recipient-option' + (od.pickupCodeRecipient === 'organizer' ? ' is-active' : '') + '">'
+        +     '<input type="radio" name="ck-pickup-recipient" value="organizer"' + (od.pickupCodeRecipient === 'organizer' ? ' checked' : '') + '>'
+        +     '<span class="ck-recipient-copy"><strong>L\u2019envoyer à ' + sanitize(organizerLabel) + '</strong>'
+        +       '<small>Organisateur de la liste</small></span>'
+        +   '</label>'
+        + '</div>';
+      recipientBlock.addEventListener('change', (e) => {
+        const input = e.target.closest('input[name="ck-pickup-recipient"]');
+        if (!input) return;
+        od.pickupCodeRecipient = input.value;
+        recipientBlock.querySelectorAll('.ck-recipient-option').forEach(opt => {
+          opt.classList.toggle('is-active', opt.querySelector('input').value === od.pickupCodeRecipient);
+        });
+      });
+    }
+    // ── Fin destinataire du code de retrait ──────────────────────────────────
+
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
     sRelais.className = 'ck-section-block';
@@ -753,16 +819,51 @@ export function renderCheckout() {
     body.appendChild(relaisSection);
     _loadRelaisSection(relaisSection, od);
 
-    /* ── 3. Paiement ── */
+    /* ── 3. Wallet (règle §3 — précède le paiement dans le mock : son
+       usage détermine le montant réellement dû, donc affiché avant le
+       choix du moyen de paiement plutôt qu'après) ── */
+    checkWalletBalance();
+    const walletSection = document.createElement('div');
+    walletSection.id = 'wallet-section';
+    walletSection.className = 'k-wallet-section';
+    walletSection.innerHTML = '<label class="k-wallet-label">'
+      + '<input type="checkbox" id="cb-use-wallet" class="k-wallet-cb">'
+      + '<div class="k-wallet-info"><div class="k-wallet-title">💰 Utiliser mon crédit</div>'
+      + '<div id="wallet-balance-text" class="k-wallet-balance">Chargement…</div>'
+      + '<div id="wallet-expiry-text" class="k-wallet-expiry-text"></div></div></label>'
+      + '<div id="wallet-deduction" class="k-wallet-ded"></div>'
+      + '<button type="button" id="wallet-goto-komerce" class="k-wallet-goto-komerce">Voir mon wallet dans Mon Komerce</button>';
+    body.appendChild(walletSection);
+    // Lot 4 §5 — lien discret, jamais l'écran de gestion du wallet lui-même.
+    document.getElementById('wallet-goto-komerce')?.addEventListener('click', () => {
+      bus.emit('nav:goto-komerce-wallet');
+      closeOrderModal();
+    });
+
+    /* ── 4. Paiement ── */
     const s2 = document.createElement('div');
     s2.className = 'ck-section-block ck-payment-section';
     const payHeaderSlot = document.createElement('div');
     payHeaderSlot.id = 'ck-payment-summary';
-    _renderPaymentHeader(payHeaderSlot, od.payment_mode || 'cash_relais');
+    _renderPaymentHeader(payHeaderSlot);
     s2.appendChild(payHeaderSlot);
+    // Règle §3 — remplace intégralement le choix du moyen de paiement quand
+    // le crédit wallet couvre déjà tout le montant dû (cf. mock : "✓ Votre
+    // crédit couvre toute la commande."). Masqué par défaut ; basculé par
+    // _togglePaymentMethodVisibility() (appelée depuis updateWalletDisplay,
+    // seul endroit où le montant net peut changer). N'affecte jamais
+    // od.payment_mode ni aucun invariant commande/paiement — décoration
+    // pure d'une sélection qui reste en place (submitOrder() continue de
+    // lire od.payment_mode normalement, cash_relais par défaut).
+    const fullCoverMsg = document.createElement('div');
+    fullCoverMsg.id = 'ck-wallet-full-cover-msg';
+    fullCoverMsg.className = 'ck-wallet-full-cover-msg';
+    fullCoverMsg.textContent = '✓ Votre crédit couvre toute la commande.';
+    s2.appendChild(fullCoverMsg);
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
+    payGrid.id = 'ck-pay-grid';
     payGrid.className = 'ck-pay-grid';
     payGrid.innerHTML =
       '<label class="ck-pay-chip" id="ck-chip-cash">'
@@ -818,32 +919,14 @@ export function renderCheckout() {
     });
 
 
-    /* ── 5. Wallet ── */
-    checkWalletBalance();
-    const walletSection = document.createElement('div');
-    walletSection.id = 'wallet-section';
-    walletSection.className = 'k-wallet-section';
-    walletSection.innerHTML = '<label class="k-wallet-label">'
-      + '<input type="checkbox" id="cb-use-wallet" class="k-wallet-cb">'
-      + '<div class="k-wallet-info"><div class="k-wallet-title">💰 Utiliser mon crédit</div>'
-      + '<div id="wallet-balance-text" class="k-wallet-balance">Chargement…</div>'
-      + '<div id="wallet-expiry-text" class="k-wallet-expiry-text"></div></div></label>'
-      + '<div id="wallet-deduction" class="k-wallet-ded"></div>'
-      + '<button type="button" id="wallet-goto-komerce" class="k-wallet-goto-komerce">Voir mon wallet dans Mon Komerce</button>';
-    body.appendChild(walletSection);
-    // Lot 4 §5 — lien discret, jamais l'écran de gestion du wallet lui-même.
-    document.getElementById('wallet-goto-komerce')?.addEventListener('click', () => {
-      bus.emit('nav:goto-komerce-wallet');
-      closeOrderModal();
-    });
-
-    body.appendChild(secureNotice);
+    if (recipientBlock) body.appendChild(recipientBlock);
+    else body.appendChild(secureNotice);
 
     // Le récapitulatif (mandat §7/§8) n'est plus ici : c'est désormais
     // l'écran dédié renderOrderRecapGate(), affiché AVANT ce formulaire par
     // checkoutCart() — renderCheckout() lui-même reste inchangé.
 
-    /* ── 6. Confirm (sticky) ── */
+    /* ── 5. Confirm (sticky) ── */
     // FIX: supprimer tout ancien bouton confirm
     document.querySelectorAll('#btn-confirm-order').forEach(el => el.remove());
     const confirmBtn = document.createElement('button');
@@ -853,7 +936,9 @@ export function renderCheckout() {
     // lorsque relayStatus === 'ready' + relais sélectionné (refreshCheckoutComputedUI).
     // Avant : rendu actif immédiatement, même si /api/relais était en erreur.
     confirmBtn.disabled = true;
-    setCheckoutConfirmButton(confirmBtn, '✅ Confirmer — ' + fmt(cartTotal(), 'KMF'), 'Chargement du relais…');
+    // Règle §8 — même gabarit de libellé qu'à l'état stabilisé (refreshCheckoutComputedUI) ;
+    // seul le sous-texte change tant que le relais n'est pas chargé.
+    setCheckoutConfirmButton(confirmBtn, 'Confirmer la commande · ' + fmt(cartTotal(), 'KMF'), 'Chargement du relais…');
     // Bouton confirm HORS du scroll area → toujours visible en bas du modal
     body.parentElement.appendChild(confirmBtn);
 
@@ -869,8 +954,9 @@ export function renderCheckout() {
       const isPaypal = mode && mode.value === 'paypal_eur';
       od.payment_mode = mode ? mode.value : 'cash_relais';
 
-      const payHeaderSlot = document.getElementById('ck-payment-summary');
-      if (payHeaderSlot) _renderPaymentHeader(payHeaderSlot, od.payment_mode);
+      // Le titre de section est statique (règle §4) — plus de re-rendu ici.
+      // Le moyen sélectionné reste visible via la classe --active sur les
+      // puces (juste en dessous).
 
       document.querySelectorAll('.ck-pay-chip').forEach(chip => {
         const r = chip.querySelector('input[type=radio]');
@@ -1000,32 +1086,65 @@ export async function checkWalletBalance() {
       if (res.ok) {
         const data = await res.json();
         state.walletBalance = data.balance_kmf || 0;
-        // Afficher la section + le texte dans TOUS les cas, pas seulement quand
-        // balance > 0. Avant : à solde 0, le texte restait bloqué sur
-        // "Chargement…" et la section restait display:none pour toujours
-        // (classe is-visible jamais posée) → l'utilisateur ne savait jamais si
-        // son solde avait bien été chargé (0 réel) ou si l'appel avait échoué/pendait.
-        if (section) section.classList.add('is-visible');
-        if (balText) {
-          balText.textContent = state.walletBalance > 0
-            ? 'Solde disponible : ' + fmt(state.walletBalance, 'KMF')
-            : 'Aucun crédit disponible';
-        }
-        if (expText) {
-          expText.textContent = (state.walletBalance > 0 && data.expires_at)
-            ? 'Expire le ' + new Date(data.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-            : '';
+        // Règle §3 (simplification checkout final) — le wallet n'est PROPOSÉ
+        // que si crédit > 0 ; à crédit nul, la section reste masquée (pas de
+        // "Aucun crédit disponible" affiché). Avant (fix R3 2026-07-11) : la
+        // section restait visible en permanence, y compris à 0, pour sortir
+        // l'utilisateur d'un état "Chargement…" bloqué indéfiniment. On
+        // conserve cet objectif (sortir explicitement de "Chargement…", ne
+        // jamais laisser planer une ambiguïté chargement/échec) sans pour
+        // autant proposer un crédit qui n'existe pas : la section est
+        // explicitement masquée dès qu'on SAIT que le solde est 0 (chemin
+        // différent d'un état encore inconnu/en cours).
+        if (state.walletBalance > 0) {
+          if (section) section.classList.add('is-visible');
+          if (balText) balText.textContent = 'Solde disponible : ' + fmt(state.walletBalance, 'KMF');
+          if (expText) {
+            expText.textContent = data.expires_at
+              ? 'Expire le ' + new Date(data.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+              : '';
+          }
+        } else {
+          if (section) section.classList.remove('is-visible');
+          if (balText) balText.textContent = 'Aucun crédit disponible';
+          if (expText) expText.textContent = '';
         }
       } else {
-        // Réponse non-ok (401/403/5xx) : ne pas laisser "Chargement…" indéfiniment.
+        // Réponse non-ok (401/403/5xx) : ne pas laisser "Chargement…" indéfiniment,
+        // et ne jamais proposer un crédit dont on n'a pas confirmé l'existence.
+        if (section) section.classList.remove('is-visible');
         if (balText) balText.textContent = 'Crédit indisponible';
       }
     } catch(e) {
       // Réseau/parsing : idem, sortir explicitement de l'état "Chargement…".
+      const section = document.getElementById('wallet-section');
       const balText = document.getElementById('wallet-balance-text');
+      if (section) section.classList.remove('is-visible');
       if (balText) balText.textContent = 'Crédit indisponible';
     }
   }
+
+/**
+ * Règle §3 (simplification checkout final) — masque intégralement le choix
+ * du moyen de paiement (titre + puces + zones Stripe/PayPal) et affiche à
+ * la place le message "✓ Votre crédit couvre toute la commande." quand le
+ * wallet couvre déjà 100% du montant dû. Purement visuel : od.payment_mode
+ * n'est jamais modifié ici, submitOrder() continue de lire la dernière
+ * valeur sélectionnée (cash_relais par défaut) sans que cela ait d'impact,
+ * le montant net étant nul dans ce cas.
+ */
+function _togglePaymentMethodVisibility(fullyCovered) {
+  const payHeaderSlot = document.getElementById('ck-payment-summary');
+  const fullCoverMsg  = document.getElementById('ck-wallet-full-cover-msg');
+  const payGrid       = document.getElementById('ck-pay-grid');
+  const stripeWrap    = document.getElementById('stripe-card-wrap');
+  const paypalWrap    = document.getElementById('paypal-wrap');
+  if (payHeaderSlot) payHeaderSlot.classList.toggle('ck-force-hidden', fullyCovered);
+  if (fullCoverMsg)  fullCoverMsg.classList.toggle('is-visible', fullyCovered);
+  if (payGrid)       payGrid.classList.toggle('ck-force-hidden', fullyCovered);
+  if (stripeWrap)    stripeWrap.classList.toggle('ck-force-hidden', fullyCovered);
+  if (paypalWrap)    paypalWrap.classList.toggle('ck-force-hidden', fullyCovered);
+}
 
 export function updateWalletDisplay() {
     const ded = document.getElementById('wallet-deduction');
@@ -1037,9 +1156,11 @@ export function updateWalletDisplay() {
       const remaining = total - applied;
       ded.classList.add('is-visible');
       ded.innerHTML = '<div class="k-wal-row"><span>💰 Crédit appliqué</span><span class="k-wal-value">-' + fmt(applied, 'KMF') + '</span></div>' +
-        (remaining > 0 ? '<div class="k-wal-row"><span>Reste à payer</span><span class="k-wal-bold">' + fmt(remaining, 'KMF') + '</span></div>' : '<div class="k-wal-success">✅ Entièrement couvert par votre crédit !</div>');
+        (remaining > 0 ? '<div class="k-wal-row"><span>À payer</span><span class="k-wal-bold">' + fmt(remaining, 'KMF') + '</span></div>' : '<div class="k-wal-success">✅ Entièrement couvert par votre crédit !</div>');
+      _togglePaymentMethodVisibility(remaining <= 0);
     } else {
       ded.classList.remove('is-visible');
+      _togglePaymentMethodVisibility(false);
     }
     refreshCheckoutComputedUI();
   }
