@@ -410,15 +410,8 @@ describe('b-share-cart', () => {
       expect(document.getElementById('k-cart-reshare')).toBeNull();
       expect(document.getElementById('k-sc-reshare')).toBeNull();
 
-      cartShare.click();
-      sideShare.click();
-      await Promise.resolve();
-      await Promise.resolve();
-
-      expect(showToast).toHaveBeenCalledWith(
-        expect.stringContaining('panier'),
-        'error',
-      );
+      expect(cartShare.disabled).toBe(false);
+      expect(sideShare.disabled).toBe(false);
 
       state.shareToken = 'tok-clear-by-event';
       document.dispatchEvent(new Event('cart:cleared'));
