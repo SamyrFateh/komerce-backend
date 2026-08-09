@@ -154,7 +154,7 @@ test('crée immédiatement une liste, diffuse son lien et ouvre sa vue', async (
   expect(state).toMatchObject({
     shareToken: 'tok-101',
     shareId: 'sc-101',
-    cartName: 'Liste partagée',
+    cartName: 'Ma liste',
     shareStatus: 'open',
     shareUrl: 'https://komerce.test/boutique/?p=tok-101',
   });
@@ -170,7 +170,7 @@ test('crée immédiatement une liste, diffuse son lien et ouvre sa vue', async (
     'success',
   );
   expect(mockShowBanner).toHaveBeenCalledWith({
-    title: 'Liste partagée',
+    title: 'Ma liste',
     status: 'open',
   });
   expect(mockGetSharedCartPublic).toHaveBeenCalledWith('tok-101');
@@ -240,7 +240,7 @@ test('P0-B — un clic normal repartage le lien existant au lieu de recréer une
 
   expect(global.fetch).not.toHaveBeenCalled();
   expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
-    text: expect.stringContaining('Ancienne liste'),
+    text: expect.stringContaining('sélection Komerce'),
     url: expect.stringContaining('tok-old'),
   }));
   // sharedListContext est la source — le token y reste inchangé.
@@ -324,7 +324,7 @@ test('P0 — liste A active/restaurée puis ouverture de B via « Mes listes » 
 
   expect(global.fetch).not.toHaveBeenCalled();
   expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
-    text: expect.stringContaining('Liste B'),
+    text: expect.stringContaining('sélection Komerce'),
     url: `${window.location.origin}/boutique/?p=tok-B`,
   }));
   expect(navigator.share).not.toHaveBeenCalledWith(expect.objectContaining({
@@ -332,19 +332,27 @@ test('P0 — liste A active/restaurée puis ouverture de B via « Mes listes » 
   }));
 });
 
-test('le repartage fonctionne sans panier local et sans nouvelle création', async () => {
+test('Partager la liste affichée fonctionne sans panier local et sans nouvelle création', async () => {
   state.cart = [];
-  state.shareToken = 'tok-existing';
-  state.shareUrl = 'https://komerce.test/boutique/?p=tok-existing';
-  state.cartName = 'Repas de dimanche';
+  state.cartSurface = 'shared-list';
+  state.sharedListContext = {
+    sharedCartId: 'sc-existing',
+    token: 'tok-existing',
+    status: 'open',
+    isCreator: false,
+    creatorFirstName: 'Awa',
+    title: 'Ancien titre libre ignoré',
+    message: null,
+    items: [],
+  };
 
-  await startShareFlow({ reshare: true });
+  await startShareFlow();
 
   expect(global.fetch).not.toHaveBeenCalled();
   expect(mockRequireIdentity).not.toHaveBeenCalled();
   expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
-    text: expect.stringContaining('Repas de dimanche'),
-    url: 'https://komerce.test/boutique/?p=tok-existing',
+    text: expect.stringContaining('Liste de Awa'),
+    url: `${window.location.origin}/boutique/?p=tok-existing`,
   }));
 });
 
