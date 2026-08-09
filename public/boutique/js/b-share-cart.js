@@ -200,16 +200,7 @@ function setShareButtonsBusy(isBusy) {
   });
 }
 
-export function refreshSharedBadges(isShared) {
-  const mobileBadge = document.getElementById('k-share-badge-row');
-  if (mobileBadge) mobileBadge.hidden = !isShared;
-
-  const desktopBadge = document.getElementById('k-sc-shared-badge');
-  if (desktopBadge) {
-    desktopBadge.hidden = true;
-    desktopBadge.innerHTML = '';
-  }
-
+export function refreshSharedBadges() {
   const desktopShare = document.getElementById('k-sc-share');
   if (desktopShare) desktopShare.hidden = false;
 
@@ -343,27 +334,9 @@ function openSharedListInCanonicalCart(cart) {
 }
 
 /**
- * Bouton "👥 Suivre les participations →" du badge partagé (#k-sc-group-view).
- * Remplace l'ancien handler switchToGroup() — supprimé lors de la migration
- * précédente mais dont ce listener n'avait pas été mis à jour (bug trouvé à
- * la reprise de session : référence à un identifiant jamais défini dans ce
- * module, ReferenceError dès l'exécution de install()). On ne connaît ici
- * que le token courant (state.shareToken) : on réutilise
- * activateFromParticipantUrl(), qui fait déjà GET public/:token →
- * activateSharedListContext (le backend dérive is_creator via soft-auth,
- * cf. group-api.js) — même chemin que le destinataire, isCreator=true.
- */
-function reopenOwnSharedListInCanonicalCart() {
-  if (!state.shareToken) return;
-  import('./group/group-side-cart.js').then(({ activateFromParticipantUrl }) => {
-    activateFromParticipantUrl(state.shareToken);
-  });
-}
-
-/**
  * P0-B (audit — le partage recréait une liste alors qu'une liste existait)
  * — « une liste active = LE panier » : tant qu'une liste ouverte existe,
- * TOUT clic sur « Partager » (bouton normal ou « Re-partager ») repartage
+ * TOUT clic sur l’unique action « Partager » repartage
  * son lien existant, jamais une création silencieuse. state.sharedListContext
  * (group-side-cart.js) est la source vivante la plus à jour — mise à jour
  * par refreshSharedListContext() y compris après une fermeture — donc
@@ -415,23 +388,6 @@ function hasActiveList() {
   return !!activeShareTarget();
 }
 
-/**
- * Repli utilisé UNIQUEMENT pour un reshare explicite (bouton
- * « Re-partager », visible seulement sur une liste déjà connue de
- * l'utilisateur) : fonctionne même si shareStatus n'a pas encore été
- * peuplé côté state.shareToken (comportement historique préservé). Ne
- * jamais utiliser ce repli pour la détection implicite hasActiveList() —
- * il ne vérifie pas que le token appartient à une liste encore 'open'.
- */
-function legacyShareTarget() {
-  if (!state.shareToken) return null;
-  return {
-    token: state.shareToken,
-    title: state.cartName || DEFAULT_LIST_TITLE,
-    shareUrl: state.shareUrl || `${window.location.origin}/boutique/?p=${state.shareToken}`,
-  };
-}
-
 /* ── Flow principal ─────────────────────────────────────────────── */
 
 /**
@@ -439,37 +395,26 @@ function legacyShareTarget() {
  *
  * Deux chemins strictement séparés (É7, contrat §9) :
  *
- *   A. REPARTAGER — une liste OPEN existe déjà (créée par moi ou reçue
- *      et affichée). On ne crée jamais une seconde liste : on repartage
- *      le lien de celle qui est active.
+ *   A. PARTAGER — une liste OPEN est affichée. L'action unique partage
+ *      son lien existant et ne crée jamais une seconde liste.
  *
  *   B. CRÉER — aucune liste OPEN affichée, panier non vide.
  *      Confirmation d'immutabilité AVANT le POST (É5, contrat §6).
  *      Séquence succès : snapshot créé → panier vidé → slot sélectionné
  *      → lien proposé (É8, contrat invariant 8).
  */
-export async function startShareFlow({ reshare = false } = {}) {
+export async function startShareFlow() {
   // Éviter la race entre restauration /mine et action utilisateur.
   if (_restorePromise) {
     await _restorePromise;
     _restorePromise = null;
   }
 
-  // ── A. REPARTAGER ──────────────────────────────────────────────────
-  // L2 / P0-2 (mandat §4) — la provenance de l'action décide du chemin,
-  // jamais une déduction implicite à partir du seul sharedListContext :
-  //
-  //   surface 'shared-list'  → je regarde CETTE liste, "Partager" la repartage
-  //   surface 'personal'     → "Créer une liste" doit TOUJOURS créer MA liste,
-  //                            même si une liste reçue (ex. Fatima) est OPEN
-  //                            en mémoire — jamais la repartager implicitement
-  //
-  // reshare=true (bouton dédié "Re-partager", visible seulement sur ma
-  // propre liste déjà connue) reste un chemin A explicite indépendant de
-  // la surface, via legacyShareTarget().
-  const onSharedListSurface = state.cartSurface === 'shared-list';
-  const target = (onSharedListSurface || reshare)
-    ? (activeShareTarget() || (reshare ? legacyShareTarget() : null))
+  // ── A. PARTAGER LA LISTE AFFICHÉE ────────────────────────────────
+  // Une seule action existe dans le shell. Sa surface détermine l'intention :
+  // liste affichée → partager son lien ; panier personnel → créer Ma liste.
+  const target = state.cartSurface === 'shared-list'
+    ? activeShareTarget()
     : null;
   if (target) {
     await shareList(target.title, target.shareUrl);
@@ -569,7 +514,7 @@ export async function startShareFlow({ reshare = false } = {}) {
 }
 
 async function handleShareClick() {
-  return startShareFlow({ reshare: false });
+  return startShareFlow();
 }
 
 /* ── Installation ───────────────────────────────────────────────── */
@@ -611,12 +556,6 @@ export function install() {
   document.getElementById('k-cart-share')?.addEventListener('click', handleShareClick);
   document.getElementById('k-sc-share')?.addEventListener('click', handleShareClick);
 
-  document.getElementById('k-cart-reshare')?.addEventListener('click', () =>
-    startShareFlow({ reshare: true }));
-  document.getElementById('k-sc-reshare')?.addEventListener('click', () =>
-    startShareFlow({ reshare: true }));
-
-  document.getElementById('k-sc-group-view')?.addEventListener('click', reopenOwnSharedListInCanonicalCart);
 
   document.addEventListener('cart:cleared', () => {
     if (_skipClearShareOnCartCleared) return;
