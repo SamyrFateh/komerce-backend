@@ -422,15 +422,18 @@ async function _notifyPostScan(step, order_id, reference) {
 
     if (step === 'relais_received') {
       const { rows: [o] } = await db.query(
-        `SELECT o.pickup_secret_last4, rc.phone AS recipient_phone, rc.full_name,
+        `SELECT o.pickup_secret_last4,
+                COALESCE(pcu.phone, rc.phone) AS pickup_code_phone,
+                COALESCE(pcu.full_name, rc.full_name) AS pickup_code_name,
                 r.name AS relais_name, r.address AS relais_address
          FROM orders o
-         LEFT JOIN recipients rc ON rc.id = o.recipient_id
-         LEFT JOIN relais     r  ON r.id  = o.relais_id
+         LEFT JOIN users      pcu ON pcu.id = COALESCE(o.pickup_code_recipient_user_id, o.user_id)
+         LEFT JOIN recipients rc  ON rc.id  = o.recipient_id
+         LEFT JOIN relais     r   ON r.id   = o.relais_id
          WHERE o.id = $1`,
         [order_id]
       );
-      if (o?.recipient_phone) {
+      if (o?.pickup_code_phone) {
         // Lot 2 : le code en clair n'est plus lisible ici (jamais persisté en
         // clair hors pickup_reveal_codes, TTL 30 min). On envoie le masqué +
         // un renvoi vers la révélation one-shot dans l'app, au lieu de
@@ -438,8 +441,8 @@ async function _notifyPostScan(step, order_id, reference) {
         const masked = o.pickup_secret_last4
           ? ('•••-•' + o.pickup_secret_last4.slice(0, 2) + '-' + o.pickup_secret_last4.slice(2))
           : '••••••••';
-        notifyText(o.recipient_phone,
-          `Komerce · Bonjour ${o.full_name}, votre colis est disponible au ${o.relais_name} (${o.relais_address}). Code de retrait (${masked}) : consultez-le dans l'app pour le voir en entier.`,
+        notifyText(o.pickup_code_phone,
+          `Komerce · Bonjour ${o.pickup_code_name || 'client'}, votre colis est disponible au ${o.relais_name} (${o.relais_address}). Code de retrait (${masked}) : consultez-le dans l'app pour le voir en entier.`,
           'available', order_id
         ).catch(err => log.error({ err }, 'Notification available error'));
         return true;
