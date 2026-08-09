@@ -53,7 +53,7 @@ Après succès, dans cet ordre :
 3. **Ma liste** devient la liste affichée ;
 4. le lien est proposé au partage.
 
-Articles, quantités, variantes, prix et médias du snapshot ne sont plus éditables. Une erreur se corrige en fermant la liste puis en en créant une nouvelle.
+La composition publiée — articles, quantités, variantes et médias de référence — n'est plus éditable. Le prix photographié à la publication reste une référence d'affichage ; la commande applique le prix marchand courant et toute variation est annoncée avant confirmation. Une erreur de composition se corrige en fermant la liste puis en en créant une nouvelle.
 
 Tant que les listes ne sont pas nommables, un organisateur ne peut posséder qu'une seule liste **OPEN**. Cette contrainte est volontaire, réversible et garantie par la base.
 
@@ -142,7 +142,8 @@ Dans le récapitulatif :
 
 - le symbole **✓** signifie « inclus dans cette commande » ;
 - ce symbole est statique et n'est jamais une case à cocher ;
-- chaque ligne affiche article, quantité et montant ;
+- chaque ligne affiche article, quantité et prix marchand courant ;
+- toute variation depuis le prix de publication est annoncée explicitement ;
 - l'utilisateur peut revenir à la liste avant de confirmer.
 
 Le checkout final conserve le contrat Komerce standard : identité, relais, crédit disponible, moyen de paiement et confirmation. La liste n'ajoute qu'un contexte d'affichage et les identifiants de claim nécessaires à la commande.
@@ -168,7 +169,8 @@ Le serveur :
 2. résout l'organisateur depuis cette liste ;
 3. utilise son numéro vérifié si l'option organizer est choisie ;
 4. persiste le choix sur la commande ;
-5. envoie réellement le code au destinataire retenu lorsqu'il devient disponible.
+5. notifie réellement le destinataire retenu lorsqu'il devient disponible ;
+6. réserve à ce destinataire l'accès à la révélation sécurisée du code complet.
 
 Une préférence uniquement visuelle, sans effet backend, est interdite.
 
