@@ -395,4 +395,36 @@ describe('b-share-cart', () => {
   });
 
 
+  describe('install — action Partager canonique', () => {
+    test('câble uniquement les deux CTA canoniques et respecte le token participant au boot', async () => {
+      const cartShare = appendElement('button', 'k-cart-share');
+      const sideShare = appendElement('button', 'k-sc-share');
+      state._pendingParticipantToken = 'tok-participant';
+
+      install();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockActivateFromParticipantUrl).toHaveBeenCalledWith('tok-participant');
+      expect(document.getElementById('k-cart-reshare')).toBeNull();
+      expect(document.getElementById('k-sc-reshare')).toBeNull();
+
+      cartShare.click();
+      sideShare.click();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(showToast).toHaveBeenCalledWith(
+        expect.stringContaining('panier'),
+        'error',
+      );
+
+      state.shareToken = 'tok-clear-by-event';
+      document.dispatchEvent(new Event('cart:cleared'));
+      expect(state.shareToken).toBeNull();
+    });
+  });
+
+
 });
