@@ -595,12 +595,12 @@ async function getPickupStatus({ orderId }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // revealOnce
 // ══════════════════════════════════════════════════════════════════════════════
-// Révélation one-shot du code clair au payeur.
-// Fenêtre 30 min, user_id match, 410 si déjà révélé ou expiré.
+// Révélation one-shot du code clair au destinataire choisi au checkout.
+// Fenêtre 30 min, destinataire vérifié côté serveur, 410 si déjà révélé ou expiré.
 
 async function revealOnce({ orderId, userId }) {
   const { rows: [order] } = await db.query(`
-    SELECT id, reference, user_id,
+    SELECT id, reference, user_id, pickup_code_recipient_user_id,
            pickup_secret_channel,
            pickup_secret_emitted_at,
            pickup_secret_revealed_at,
@@ -615,8 +615,11 @@ async function revealOnce({ orderId, userId }) {
     return { status: 404, body: { error: 'Commande introuvable' } };
   }
 
-  if (order.user_id && order.user_id !== userId) {
-    return { status: 403, body: { error: 'Cette commande ne vous appartient pas' } };
+  const authorizedRecipientUserId =
+    order.pickup_code_recipient_user_id || order.user_id;
+
+  if (authorizedRecipientUserId && String(authorizedRecipientUserId) !== String(userId)) {
+    return { status: 403, body: { error: 'Vous n’êtes pas le destinataire du code de retrait' } };
   }
 
   if (!order.pickup_secret_hash) {
