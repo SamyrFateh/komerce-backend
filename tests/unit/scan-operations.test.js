@@ -203,12 +203,15 @@ describe('recordScan', () => {
     db.getClient.mockResolvedValue(client);
     db.query
       .mockResolvedValueOnce({ rows: [{ status: 'available', reference: 'KOM-001' }] })
-      .mockResolvedValueOnce({ rows: [{ pickup_code: '123456', recipient_phone: '+269333333', full_name: 'Jean', relais_name: 'Relais A', relais_address: 'Moroni' }] });
+      .mockResolvedValueOnce({ rows: [{ pickup_secret_last4: '56AB', pickup_code_phone: '+269333333', pickup_code_name: 'Jean', relais_name: 'Relais A', relais_address: 'Moroni' }] });
 
     const result = await scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'relais_received' }, agentRelais, null);
 
     expect(result.body.sms_triggered).toBe(true);
     expect(notifyText).toHaveBeenCalledWith('+269333333', expect.stringContaining('disponible'), 'available', 'o1');
+    const recipientQuery = db.query.mock.calls[1][0];
+    expect(recipientQuery).toMatch(/pickup_code_recipient_user_id/);
+    expect(recipientQuery).toMatch(/COALESCE\(pcu\.phone, rc\.phone\)/);
   });
 
   test('rollback et propage l\'erreur si une requete echoue', async () => {
@@ -267,7 +270,7 @@ describe('recordScan', () => {
     db.getClient.mockResolvedValue(client);
     db.query
       .mockResolvedValueOnce({ rows: [{ status: 'available', reference: 'KOM-001' }] })
-      .mockResolvedValueOnce({ rows: [{ pickup_code: '123456', recipient_phone: '+269333333', full_name: 'Jean', relais_name: 'Relais A', relais_address: 'Moroni' }] });
+      .mockResolvedValueOnce({ rows: [{ pickup_secret_last4: '56AB', pickup_code_phone: '+269333333', pickup_code_name: 'Jean', relais_name: 'Relais A', relais_address: 'Moroni' }] });
     notifyText.mockRejectedValueOnce(new Error('sms down'));
 
     const result = await scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'relais_received' }, agentRelais, null);
