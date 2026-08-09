@@ -17,7 +17,7 @@
 | `boutique-desktop.css` | 1321 | 🔴 **ORPHELIN** |
 | `cart.css` | 1912 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
-| `checkout-vertical-rail.css` | 741 | 🔴 **ORPHELIN** |
+| `checkout-vertical-rail.css` | 767 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
@@ -34,13 +34,13 @@
 | `modal-product.css` | 1516 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 1246 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
-| `products.css` | 887 | 🔴 **ORPHELIN** |
+| `products.css` | 892 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 29 | 🔴 **ORPHELIN** |
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
 | `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart-responsive.css` | 85 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 609 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 618 | 🔴 **ORPHELIN** |
 | `tokens.css` | 517 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
@@ -49,9 +49,9 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=161
- 2. /boutique/css/dist/components.css?v=419
- 3. /boutique/css/dist/desktop.css?v=86
+ 1. /boutique/css/dist/base.css?v=162
+ 2. /boutique/css/dist/components.css?v=421
+ 3. /boutique/css/dist/desktop.css?v=87
 ```
 
 ## 3. Cartographie des sélecteurs critiques

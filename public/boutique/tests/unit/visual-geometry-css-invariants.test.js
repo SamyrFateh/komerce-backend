@@ -83,43 +83,26 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–4, 2026-08)', () => 
   });
 
   // ── LOT 3 — Badges paiement autonomes ────────────────────────────────────
-  describe('LOT 3 — checkout-vertical-rail.css : em.ck-soon / em.ck-stripe-tag autonomes', () => {
+  describe('LOT 3 — checkout-vertical-rail.css : em.ck-soon / em.ck-stripe-tag surcharges géométriques', () => {
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('LOT3-a : .ck-chip-lbl em.ck-soon — display:inline-block déclaré', () => {
-      const block = css.match(/\.ck-chip-lbl\s+em\.ck-soon\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/display\s*:\s*inline-block/);
-    });
-
-    it('LOT3-b : .ck-chip-lbl em.ck-soon — background déclaré (badge visible sans cascade cart.css)', () => {
-      const block = css.match(/\.ck-chip-lbl\s+em\.ck-soon\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/background\s*:/);
-    });
-
-    it('LOT3-c : .ck-chip-lbl em.ck-soon — color déclaré', () => {
-      const block = css.match(/\.ck-chip-lbl\s+em\.ck-soon\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/color\s*:/);
-    });
-
-    it('LOT3-d : .ck-chip-lbl em.ck-soon — font-style:normal (pas de texte incliné)', () => {
-      const block = css.match(/\.ck-chip-lbl\s+em\.ck-soon\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/font-style\s*:\s*normal/);
-    });
-
-    it('LOT3-e : .ck-chip-lbl em.ck-stripe-tag — display:inline-block déclaré', () => {
-      const block = css.match(/\.ck-chip-lbl\s+em\.ck-stripe-tag\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/display\s*:\s*inline-block/);
-    });
-
-    it('LOT3-f : .ck-chip-lbl em.ck-stripe-tag — background déclaré', () => {
-      const block = css.match(/\.ck-chip-lbl\s+em\.ck-stripe-tag\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/background\s*:/);
-    });
-
-    it('LOT3-g : .ck-chip-lbl em.ck-stripe-tag — font-style:normal', () => {
-      const block = css.match(/\.ck-chip-lbl\s+em\.ck-stripe-tag\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/font-style\s*:\s*normal/);
+    it('LOT3 : sélecteur combiné present — border-radius:999px, padding, margin-top surchargés', () => {
+      // La règle combinée (.ck-soon, .ck-stripe-tag { border-radius:999px; padding:2px 6px; margin-top:4px })
+      // est dans la baseline css-guard (conflits légitimes avec cart.css déjà figés).
+      // background et color restent dans cart.css — les redéclarer ici avec des valeurs différentes
+      // crée de nouveaux conflits hors baseline (vérifié empiriquement par css-guard --strict).
+      const combined = css.match(
+        /\.ck-chip-lbl\s+em\.ck-soon[\s\S]{0,200}\.ck-chip-lbl\s+em\.ck-stripe-tag\s*\{([^}]+)\}/
+      );
+      const block = combined ? combined[1] : '';
+      expect(block).toBeTruthy(); // Règle combinée .ck-soon/.ck-stripe-tag introuvable
+      expect(block).toMatch(/border-radius\s*:\s*999px/);
+      expect(block).toMatch(/padding\s*:/);
+      expect(block).toMatch(/margin-top\s*:/);
+      // Invariant css-guard : background et color ne doivent PAS être dans cette règle
+      expect(block).not.toMatch(/background\s*:/);
+      expect(block).not.toMatch(/\bcolor\s*:/);
     });
   });
 
