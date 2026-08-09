@@ -369,8 +369,9 @@ describe('b-share-cart', () => {
       await startShareFlow();
 
       expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
-        text: expect.stringContaining('Ma liste'),
-        url: 'https://x.test/boutique/?p=tok-1',
+        title: 'Sélection Komerce',
+        text: expect.stringContaining('sélection Komerce'),
+        url: 'http://localhost/boutique/?p=tok-1',
       }));
       expect(global.fetch).not.toHaveBeenCalled();
     });
