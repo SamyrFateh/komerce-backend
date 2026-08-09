@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 363,
-    "filesWithFullHeaders": 337,
+    "scannedCodeFiles": 364,
+    "filesWithFullHeaders": 338,
     "filesWithLiteHeaders": 26,
-    "filesWithAnyHeaders": 363,
+    "filesWithAnyHeaders": 364,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 767,
-    "edges": 4124,
+    "graphNodes": 770,
+    "edges": 4133,
     "dbTables": 108,
-    "doctrines": 166,
+    "doctrines": 168,
     "impactAreas": 130,
     "unresolvedCodeEdges": 417,
     "dbWriteViaOverlapWarnings": 0,
@@ -38,7 +38,7 @@
     "boutique": 19,
     "catalog": 64,
     "checkout": 2,
-    "shared-cart": 20,
+    "shared-cart": 21,
     "account": 1,
     "shared-cart-modal": 7,
     "recommendations": 4,
@@ -87,6 +87,7 @@
     "controller": 1,
     "api-client": 2,
     "adapter": 1,
+    "presenter": 1,
     "domain-logic": 1,
     "state-store": 1,
     "schema": 1,
@@ -101,7 +102,7 @@
   "byCriticality": {
     "critical": 55,
     "medium": 106,
-    "high": 168,
+    "high": 169,
     "low": 34
   },
   "nodes": [
@@ -3428,6 +3429,46 @@
         "shared-cart",
         "mon-komerce",
         "participant-flow"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "public/boutique/js/group/group-list-labels.js",
+      "file": "public/boutique/js/group/group-list-labels.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-list-display-labels",
+      "domain": "shared-cart",
+      "layer": "presenter",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "viewer_relation",
+        "organizer_name"
+      ],
+      "outputs": [
+        "canonical_shared_list_labels"
+      ],
+      "depends": [],
+      "usedBy": [
+        "group/group-side-cart.js",
+        "b-share-cart.js",
+        "b-tracking.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "ma_liste_for_owner",
+        "liste_de_prenom_for_recipient"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "side-cart",
+        "checkout",
+        "account"
       ],
       "version": "2026-08"
     },
@@ -17763,6 +17804,16 @@
       "doctrine": "contexte_actif_preserve"
     },
     {
+      "id": "doctrine:ma_liste_for_owner",
+      "type": "doctrine",
+      "doctrine": "ma_liste_for_owner"
+    },
+    {
+      "id": "doctrine:liste_de_prenom_for_recipient",
+      "type": "doctrine",
+      "doctrine": "liste_de_prenom_for_recipient"
+    },
+    {
       "id": "doctrine:prix_snapshot_liste_prix_actuel_checkout",
       "type": "doctrine",
       "doctrine": "prix_snapshot_liste_prix_actuel_checkout"
@@ -23896,6 +23947,60 @@
       "to": "impact:participant-flow",
       "type": "impact",
       "label": "participant-flow"
+    },
+    {
+      "from": "public/boutique/js/group/group-side-cart.js",
+      "to": "public/boutique/js/group/group-list-labels.js",
+      "type": "uses",
+      "label": "group/group-side-cart.js"
+    },
+    {
+      "from": "public/boutique/js/b-share-cart.js",
+      "to": "public/boutique/js/group/group-list-labels.js",
+      "type": "uses",
+      "label": "b-share-cart.js"
+    },
+    {
+      "from": "public/boutique/js/b-tracking.js",
+      "to": "public/boutique/js/group/group-list-labels.js",
+      "type": "uses",
+      "label": "b-tracking.js"
+    },
+    {
+      "from": "public/boutique/js/group/group-list-labels.js",
+      "to": "doctrine:ma_liste_for_owner",
+      "type": "doctrine",
+      "label": "ma_liste_for_owner"
+    },
+    {
+      "from": "public/boutique/js/group/group-list-labels.js",
+      "to": "doctrine:liste_de_prenom_for_recipient",
+      "type": "doctrine",
+      "label": "liste_de_prenom_for_recipient"
+    },
+    {
+      "from": "public/boutique/js/group/group-list-labels.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "public/boutique/js/group/group-list-labels.js",
+      "to": "impact:side-cart",
+      "type": "impact",
+      "label": "side-cart"
+    },
+    {
+      "from": "public/boutique/js/group/group-list-labels.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "public/boutique/js/group/group-list-labels.js",
+      "to": "impact:account",
+      "type": "impact",
+      "label": "account"
     },
     {
       "from": "public/boutique/js/b-checkout.js",
@@ -46654,6 +46759,7 @@
         "public/boutique/js/b-share-phone-guard.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/boutique.js",
+        "public/boutique/js/group/group-list-labels.js",
         "public/boutique/js/group/group-side-cart.js",
         "public/boutique/js/group/group-state.js",
         "routes/shared-cart.js"
@@ -46874,6 +46980,7 @@
         "public/boutique/js/boutique.js",
         "public/boutique/js/group/group-api.js",
         "public/boutique/js/group/group-library-remove.js",
+        "public/boutique/js/group/group-list-labels.js",
         "public/boutique/js/group/group-side-cart.js",
         "routes/orders.js",
         "routes/otp.js",
@@ -47277,6 +47384,45 @@
         "public/boutique/js/group/group-state.js"
       ]
     },
+    "public/boutique/js/group/group-list-labels.js": {
+      "role": "shared-list-display-labels",
+      "domain": "shared-cart",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "public/boutique/js/group/group-side-cart.js",
+        "public/boutique/js/b-share-cart.js",
+        "public/boutique/js/b-tracking.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "ma_liste_for_owner",
+        "liste_de_prenom_for_recipient"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "side-cart",
+        "checkout",
+        "account"
+      ],
+      "mustCheck": [
+        "doctrine:liste_de_prenom_for_recipient",
+        "doctrine:ma_liste_for_owner",
+        "impact:account",
+        "impact:checkout",
+        "impact:shared-cart",
+        "impact:side-cart",
+        "public/boutique/js/b-share-cart.js",
+        "public/boutique/js/b-tracking.js",
+        "public/boutique/js/group/group-side-cart.js"
+      ]
+    },
     "public/boutique/js/group/group-price-variation.js": {
       "role": "shared-list-price-variation",
       "domain": "shared-cart",
@@ -47369,7 +47515,8 @@
         "public/boutique/js/b-tracking.js",
         "public/boutique/js/b-utils.js",
         "public/boutique/js/group/group-api.js",
-        "public/boutique/js/group/group-checkout-adapter.js"
+        "public/boutique/js/group/group-checkout-adapter.js",
+        "public/boutique/js/group/group-list-labels.js"
       ]
     },
     "public/boutique/js/group/group-state.js": {

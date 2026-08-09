@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 363
-- Files with full headers: 337
+- Scanned code files: 364
+- Files with full headers: 338
 - Files with lite headers: 26
-- Files with any headers: 363
+- Files with any headers: 364
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 767
-- Edges: 4124
+- Graph nodes: 770
+- Edges: 4133
 - DB tables: 108
-- Doctrines: 166
+- Doctrines: 168
 - Impact areas: 130
 - Unresolved code edges: 417
 - Tables multi-écrivains directs (>=2): 61
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - recommendations: 4
 - refunds: 2
 - shared: 1
-- shared-cart: 20
+- shared-cart: 21
 - shared-cart-modal: 7
 - sourcing: 1
 - tracking: 1
@@ -73,6 +73,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - machine: 1
 - manual-test: 1
 - middleware: 11
+- presenter: 1
 - route: 96
 - route-manifest: 1
 - schema: 1
@@ -179,6 +180,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/controllers/home-controller.js — boutique-home-navigation-controller (catalog, high, full)
 - public/boutique/js/group/group-api.js — shared-cart-front-api (shared-cart, high, full)
 - public/boutique/js/group/group-library-remove.js — shared-cart-library-removal-ui (shared-cart, high, full)
+- public/boutique/js/group/group-list-labels.js — shared-list-display-labels (shared-cart, high, full)
 - public/boutique/js/komerce-api.js — boutique-api-client (boutique, high, full)
 - public/boutique/js/product-store.js — boutique-product-store (catalog, high, full)
 - public/boutique/js/shop-schema.js — boutique-taxonomy-schema (catalog, high, full)
