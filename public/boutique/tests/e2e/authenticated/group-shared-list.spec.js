@@ -7,9 +7,9 @@
 /**
  * @e2e   authenticated/group-shared-list.spec.js
  * @feature shared-cart, group
- * @brief F22 — Doctrine finale (2026-08) de la liste partagée en side cart /
- * drawer canonique : "la liste active EST le panier visible", pas une
- * surface parallèle avec bascule ou sélection locale.
+ * @brief F22 — Doctrine canonique (2026-08-09) : Mon panier et une liste
+ * OPEN affichée coexistent dans deux onglets séparés. La liste est figée ;
+ * l'achat passe toujours par sélection locale, récapitulatif, puis checkout.
  *
  * Remplace group-coexistence.spec.js (supprimé) : celui-ci testait un
  * modèle révolu (`.k-shared-list-item`, `.k-shared-item-select`,
@@ -19,12 +19,10 @@
  *   - lignes  → `.k-cart-snapshot-item` (+ `.is-cart-item-claimed`)
  *   - ouverture fiche produit → `.k-cart-snapshot-item-open`
  *   - statut ligne → `.k-cart-snapshot-item-status` / badge `.is-claimed`
- *   - achat  → un bouton `.k-cart-item-buy` PAR ligne (plus de sélection +
- *     CTA global), option discrète `.k-snap-btn-primary` ("Acheter le
- *     reste", LOT 13 — remplace les anciens id `#k-cart-snap-buyall` /
- *     `#k-sc-snap-buyall`, retirés par la refonte du footer : les boutons
- *     du footer snapshot sont désormais jetables, sans id stable, ciblés
- *     par classe + texte, cf. b-cart.js::snapCreateEl)
+ *   - sélection → `.k-cart-item-select`, locale et sans réservation
+ *   - commande  → `.k-snap-btn-primary` ("Commander (N · X KMF)")
+ *   - récapitulatif obligatoire → `.ck-recap-item` + ✓ statique, puis
+ *     `#btn-confirm-recap`
  *   - `#k-cart-surface-switch` est le conteneur `.k-cart-tabs` des deux
  *     onglets [ Mon panier ] [ Liste partagée ] (É4, 2026-08). L'onglet
  *     liste porte la classe `.k-cart-tab--active` quand une OPEN est affichée.
@@ -142,6 +140,35 @@ function snapshotPanel(page) {
     .first();
 }
 
+async function selectSharedRowsAndOpenRecap(page, indexes) {
+  const selectors = page.locator('#k-side-cart .k-cart-item-select');
+  for (const index of indexes) {
+    const selector = selectors.nth(index);
+    await expect(selector).toBeVisible({ timeout: 10_000 });
+    await selector.click();
+    await expect(selector).toHaveAttribute('aria-checked', 'true');
+  }
+
+  const commandBtn = page.locator('#k-side-cart').getByRole('button', { name: /^Commander \(/ });
+  await expect(commandBtn).toBeVisible({ timeout: 10_000 });
+  await commandBtn.click();
+
+  await expect(page.locator('.ck-recap-gate-heading')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.ck-recap-item')).toHaveCount(indexes.length);
+  await expect(page.locator('.ck-recap-check')).toHaveCount(indexes.length);
+  await expect(page.locator('.ck-recap-item input[type="checkbox"]')).toHaveCount(0);
+}
+
+async function continueRecapToCheckout(page) {
+  const recapConfirm = page.locator('#btn-confirm-recap');
+  await expect(recapConfirm).toBeVisible({ timeout: 10_000 });
+  await recapConfirm.click();
+  await page.locator('#ck-relais-summary').waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+  const confirmBtn = page.locator('#btn-confirm-order');
+  await expect(confirmBtn).toBeVisible({ timeout: 10_000 });
+  return confirmBtn;
+}
+
 test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
@@ -175,7 +202,7 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     await cancelAnyActiveSharedCart(page);
   });
 
-  test('F22-1 — la liste active devient l\'unique panier visible : ni bascule de surface, ni sélection locale', async ({ page }) => {
+  test('F22-1 — Mon panier reste disponible à côté de Ma liste ; la sélection est locale', async ({ page }) => {
     await createSharedList(page, 2);
 
     // É4 (2026-08) : #k-cart-surface-switch est désormais le conteneur des
@@ -185,20 +212,29 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     const tabs = page.locator('#k-cart-surface-switch');
     await expect(tabs).toBeVisible({ timeout: 10_000 });
     await expect(tabs).toHaveClass(/k-cart-tabs/);
-    // Deux onglets explicites — Mon panier et Liste partagée.
+    // Deux onglets explicites — Mon panier et Ma liste.
     await expect(tabs.locator('.k-cart-tab')).toHaveCount(2);
+    await expect(tabs.locator('.k-tab-personal')).toHaveText('Mon panier');
+    await expect(tabs.locator('.k-tab-shared-list')).toContainText('Ma liste');
     // L'onglet liste partagée est actif (liste OPEN affichée).
-    await expect(page.locator('#k-tab-shared-list')).toHaveClass(/k-cart-tab--active/);
+    await expect(tabs.locator('.k-tab-shared-list')).toHaveClass(/k-cart-tab--active/);
 
-    // Plus de sélection locale : ni case/bouton "Sélectionner", ni ancien
-    // conteneur .k-shared-list-item(s).
+    // Plus aucun ancien conteneur concurrent.
     await expect(page.locator('.k-shared-item-select, .k-shared-list-item, .k-shared-list-items')).toHaveCount(0);
 
     const rows = page.locator('#k-side-cart .k-cart-snapshot-item');
     await expect(rows).toHaveCount(2);
-    // Chaque ligne disponible expose son propre CTA d'achat, jamais un
-    // bouton de sélection.
-    await expect(page.locator('#k-side-cart .k-cart-item-buy')).toHaveCount(2);
+    await expect(page.locator('#k-side-cart .k-cart-item-select')).toHaveCount(2);
+    await expect(page.locator('#k-side-cart .k-cart-item-buy')).toHaveCount(0);
+
+    // Tant que rien n'est sélectionné, aucun CTA de commande liste.
+    await expect(page.locator('#k-side-cart').getByRole('button', { name: /^Commander \(/ })).toHaveCount(0);
+
+    // L'onglet personnel reste fonctionnel et ne détruit pas la liste.
+    await tabs.locator('.k-tab-personal').click();
+    await expect(tabs.locator('.k-tab-personal')).toHaveClass(/k-cart-tab--active/);
+    await tabs.locator('.k-tab-shared-list').click();
+    await expect(rows).toHaveCount(2);
   });
 
   test('F22-2 — un participant qui ouvre la fiche produit d\'une ligne ajoute au panier PERSONNEL (jamais à la liste, dont il n\'est pas créateur), puis retrouve la liste à la fermeture', async ({ page, browser }) => {
@@ -306,8 +342,9 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     const row = page.locator('#k-side-cart .k-cart-snapshot-item').first();
     await expect(row).toBeVisible({ timeout: 10_000 });
 
-    // OPEN signifie "achetable", jamais "éditable".
-    await expect(row.locator('.k-cart-item-buy')).toBeVisible();
+    // OPEN signifie "sélectionnable/achetable", jamais "éditable".
+    await expect(row.locator('.k-cart-item-select')).toBeVisible();
+    await expect(row.locator('.k-cart-item-buy')).toHaveCount(0);
     await expect(row.locator('.k-cart-item-qty')).toHaveCount(0);
     await expect(row.locator('.k-qty-btn')).toHaveCount(0);
     await expect(row.locator('.k-cart-item-remove')).toHaveCount(0);
@@ -380,18 +417,12 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
       page.locator('#k-side-cart .k-cart-snapshot-item'),
     ).toHaveCount(1);
   });
-  test('F22-6 — acheter une ligne via "Acheter" la passe "Déjà acheté" sans altérer le snapshot structurel', async ({ page }) => {
+  test('F22-6 — sélectionner une ligne puis confirmer le récapitulatif la passe "Déjà acheté"', async ({ page }) => {
     const { token } = await createSharedList(page, 1);
 
-    const row = page.locator('#k-side-cart .k-cart-snapshot-item').first();
-    await row.locator('.k-cart-item-buy').click();
-
-    await page.waitForSelector('#k-order-modal.open, .k-order-modal.open', { timeout: 10_000 });
-    const relaisSummary = page.locator('#ck-relais-summary');
-    await relaisSummary.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
-
-    const confirmBtn = page.locator('#btn-confirm-order');
-    await expect(confirmBtn).toBeVisible({ timeout: 10_000 });
+    await selectSharedRowsAndOpenRecap(page, [0]);
+    await expect(page.locator('.ck-shared-list-context-banner')).toContainText('Achat pour Ma liste');
+    const confirmBtn = await continueRecapToCheckout(page);
     const orderCall = page.waitForResponse(
       (r) => r.url().includes('/api/orders') && r.request().method() === 'POST',
       { timeout: 20_000 },
@@ -412,7 +443,7 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
       const claimedRow = page.locator('#k-side-cart .k-cart-snapshot-item.is-cart-item-claimed').first();
       await expect(claimedRow).toBeVisible({ timeout: 15_000 });
       await expect(claimedRow.locator('.k-cart-snapshot-item-status-badge.is-claimed')).toBeVisible();
-      await expect(claimedRow.locator('.k-cart-item-qty, .k-cart-item-remove, .k-cart-item-buy')).toHaveCount(0);
+      await expect(claimedRow.locator('.k-cart-item-qty, .k-cart-item-remove, .k-cart-item-buy, .k-cart-item-select')).toHaveCount(0);
 
       const check = await verifySharedCart(page, token);
       expect(check.exists).toBe(true);
@@ -427,12 +458,8 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     // Avant tout achat : ni résumé contributeurs (rien à résumer).
     await expect(page.locator('#k-side-cart #k-sc-snapshot-contributors')).toHaveCount(0);
 
-    const row = page.locator('#k-side-cart .k-cart-snapshot-item').first();
-    await row.locator('.k-cart-item-buy').click();
-    await page.waitForSelector('#k-order-modal.open, .k-order-modal.open', { timeout: 10_000 });
-    await page.locator('#ck-relais-summary').waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
-    const confirmBtn = page.locator('#btn-confirm-order');
-    await expect(confirmBtn).toBeVisible({ timeout: 10_000 });
+    await selectSharedRowsAndOpenRecap(page, [0]);
+    const confirmBtn = await continueRecapToCheckout(page);
     const orderCall = page.waitForResponse(
       (r) => r.url().includes('/api/orders') && r.request().method() === 'POST',
       { timeout: 20_000 },
@@ -461,21 +488,20 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     }
   });
 
-  test('F22-8 — "Acheter le reste" achète explicitement en une commande toutes les lignes encore disponibles, puis disparaît', async ({ page }) => {
+  test('F22-8 — "Tout sélectionner" prépare une commande unique sans achat immédiat', async ({ page }) => {
     const { token } = await createSharedList(page, 2);
 
-    // P1 (LOT 13) — le footer snapshot n'a plus d'id stable sur ses
-    // boutons (b-cart.js::snapCreateEl, boutons jetables reconstruits à
-    // chaque rendu) : on cible par rôle + texte exact, comme les tests
-    // unitaires (helpers/query-helpers.js::findButtonByText).
-    const buyAllBtn = page.locator('#k-side-cart').getByRole('button', { name: 'Acheter le reste', exact: true });
-    await expect(buyAllBtn).toBeVisible({ timeout: 10_000 });
+    const selectAllBtn = page.locator('#k-side-cart').getByRole('button', { name: 'Tout sélectionner', exact: true });
+    await expect(selectAllBtn).toBeVisible({ timeout: 10_000 });
+    await selectAllBtn.click();
+    await expect(page.locator('#k-side-cart .k-cart-item-select[aria-checked="true"]')).toHaveCount(2);
 
-    await buyAllBtn.click();
-    await page.waitForSelector('#k-order-modal.open, .k-order-modal.open', { timeout: 10_000 });
-    await page.locator('#ck-relais-summary').waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
-    const confirmBtn = page.locator('#btn-confirm-order');
-    await expect(confirmBtn).toBeVisible({ timeout: 10_000 });
+    const commandBtn = page.locator('#k-side-cart').getByRole('button', { name: /^Commander \(2 ·/ });
+    await expect(commandBtn).toBeVisible();
+    await commandBtn.click();
+    await expect(page.locator('.ck-recap-item')).toHaveCount(2);
+    await expect(page.locator('.ck-recap-check')).toHaveCount(2);
+    const confirmBtn = await continueRecapToCheckout(page);
     const orderCall = page.waitForResponse(
       (r) => r.url().includes('/api/orders') && r.request().method() === 'POST',
       { timeout: 20_000 },
@@ -487,8 +513,9 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
 
     try {
       await expect(page.locator('#k-side-cart .k-cart-snapshot-item.is-cart-item-claimed')).toHaveCount(2, { timeout: 15_000 });
-      // Plus rien de disponible → le CTA discret disparaît.
-      await expect(page.locator('#k-side-cart').getByRole('button', { name: 'Acheter le reste', exact: true })).toHaveCount(0);
+      // Plus rien de disponible → ni sélection ni commande.
+      await expect(page.locator('#k-side-cart .k-cart-item-select')).toHaveCount(0);
+      await expect(page.locator('#k-side-cart').getByRole('button', { name: /^Commander \(/ })).toHaveCount(0);
 
       const check = await verifySharedCart(page, token);
       expect(check.exists).toBe(true);
@@ -521,6 +548,35 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     const check = await verifySharedCart(page, token);
     expect(check.exists).toBe(true);
     if (check.cart) expect(check.cart.status).toBe('closed');
+  });
+
+  test('F22-9b — × quitte seulement l’affichage, restaure Mon panier et ne ressuscite pas la liste au reload', async ({ page }) => {
+    const { token } = await createSharedList(page, 1);
+
+    // Alimente le panier personnel après publication : il doit survivre à
+    // toute navigation dans la liste et réapparaître à la sortie locale.
+    const secondCard = page.locator('#k-grid .k-promo-card, #k-grid .k-card').nth(1);
+    await secondCard.click();
+    await page.waitForSelector('#k-modal-overlay.open, .k-modal-overlay.open', { timeout: 6_000 });
+    await addToCartFromModal(page);
+    await closeModal(page);
+
+    const exitBtn = page.locator('#k-cart-surface-switch .k-cart-tab-exit');
+    await expect(exitBtn).toBeVisible({ timeout: 10_000 });
+    await exitBtn.click();
+
+    await expect(page.locator('#k-cart-surface-switch')).toHaveCount(0);
+    await expect(page.locator('#k-side-cart .k-cart-snapshot-item')).toHaveCount(0);
+    await expect(page.locator('#k-side-cart .k-cart-item')).toHaveCount(1);
+
+    const stillOpen = await verifySharedCart(page, token);
+    expect(stillOpen.cart?.status).toBe('open');
+
+    await page.reload();
+    await openCartDrawer(page);
+    await expect(page.locator('#k-cart-surface-switch')).toHaveCount(0);
+    await expect(page.locator('#k-side-cart .k-cart-snapshot-item')).toHaveCount(0);
+    await expect(page.locator('#k-side-cart .k-cart-item')).toHaveCount(1);
   });
 
   test('F22-10 — repartager depuis le side cart (📤 Partager) réutilise le lien actif, ne recrée jamais de liste', async ({ page }) => {
