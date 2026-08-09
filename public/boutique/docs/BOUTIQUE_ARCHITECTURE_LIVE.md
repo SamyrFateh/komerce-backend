@@ -17,7 +17,7 @@
 | `boutique-desktop.css` | 1321 | 🔴 **ORPHELIN** |
 | `cart.css` | 1912 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
-| `checkout-vertical-rail.css` | 767 | 🔴 **ORPHELIN** |
+| `checkout-vertical-rail.css` | 754 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
@@ -49,9 +49,9 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=162
- 2. /boutique/css/dist/components.css?v=421
- 3. /boutique/css/dist/desktop.css?v=87
+ 1. /boutique/css/dist/base.css?v=161
+ 2. /boutique/css/dist/components.css?v=423
+ 3. /boutique/css/dist/desktop.css?v=86
 ```
 
 ## 3. Cartographie des sélecteurs critiques
