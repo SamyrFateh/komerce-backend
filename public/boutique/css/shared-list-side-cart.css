@@ -40,8 +40,9 @@
 .k-cart-snapshot-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px;
+  gap: 8px;
+  min-height: 66px;
+  padding: 8px 9px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--white);
@@ -59,8 +60,8 @@
    dédiée nécessaire côté claimed : le bouton n'est simplement pas rendu). */
 .k-cart-item-select {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   border: 1.5px solid var(--border);
   background: var(--white);
@@ -309,7 +310,10 @@
  * Lot C — voir js/b-tracking.js).
  */
 .k-cart-drawer[data-mode="shared-list"] #k-cart-body {
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
 }
 
 /* ── Correctif capture production — chrome personnel non masqué / actions

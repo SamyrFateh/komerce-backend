@@ -70,6 +70,7 @@ module.exports = {
   invariants: [
     'tout fichier js/* portant @domain recommendations doit etre liste dans files.js de ce manifeste',
     'le bouton + et le stepper des suggestions partagent une emprise stable et ne déplacent jamais la carte',
+    'le bouton + est un cercle corail compact et le stepper actif une pilule verte pleine sur mobile comme sur desktop',
     'le scroll des suggestions ne change jamais automatiquement de filtre ni de position',
   ],
 

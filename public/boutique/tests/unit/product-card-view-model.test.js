@@ -45,7 +45,7 @@ describe('buildProductCardViewModel — cas nominal', () => {
     expect(vm.name).toBe('Produit Komerce');
     expect(vm.description).toBe('');
     expect(vm.priceLabel).toBe('Prix à confirmer');
-    expect(vm.imageUrl).toBe('/images/placeholder-product.png');
+    expect(vm.imageUrl).toBe('/images/placeholder-product.svg');
   });
 
   it('appel sans argument (défauts product={} et options={}) ne throw pas', () => {
@@ -78,12 +78,12 @@ describe('buildProductCardViewModel — image (product > category > placeholder)
   });
 
   it('aucune image nulle part → placeholder par défaut', () => {
-    expect(buildProductCardViewModel({}).imageUrl).toBe('/images/placeholder-product.png');
+    expect(buildProductCardViewModel({}).imageUrl).toBe('/images/placeholder-product.svg');
   });
 
   it('options.category non-objet (string) → ignoré, pas de throw', () => {
     expect(() => buildProductCardViewModel({}, { category: 'oops' })).not.toThrow();
-    expect(buildProductCardViewModel({}, { category: 'oops' }).imageUrl).toBe('/images/placeholder-product.png');
+    expect(buildProductCardViewModel({}, { category: 'oops' }).imageUrl).toBe('/images/placeholder-product.svg');
   });
 });
 

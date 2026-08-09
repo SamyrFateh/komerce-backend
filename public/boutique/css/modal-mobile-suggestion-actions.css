@@ -12,11 +12,12 @@
 /* MDM-9 — finition strictement mobile, aucun changement visuel desktop. */
 @media (max-width: 899px) {
   #k-modal .k-sug-add {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     padding: 0;
-    background: var(--sand);
-    border: 1px solid var(--border);
+    background: var(--coral);
+    color: var(--white);
+    border: 1px solid var(--coral);
     border-radius: 50%;
     box-shadow: none;
     display: grid;
@@ -25,7 +26,7 @@
   }
 
   #k-modal .k-sug-add:active {
-    background: var(--sand-dark);
+    background: var(--coral-dark);
     transform: scale(.88);
   }
 
@@ -38,9 +39,9 @@
     grid-template-columns: 24px 22px 24px;
     align-items: center;
     padding: 0;
-    border: 1px solid var(--border);
+    border: 1px solid var(--cta-green);
     border-radius: 999px;
-    background: transparent;
+    background: var(--cta-green);
     overflow: hidden;
   }
 
@@ -51,11 +52,13 @@
     border: 0;
     border-radius: 0;
     background: transparent;
+    color: var(--white);
     box-shadow: none;
   }
 
   #k-modal .k-sug-card-actions.is-filled .k-sug-qty {
     min-width: 22px;
     text-align: center;
+    color: var(--white);
   }
 }

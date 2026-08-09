@@ -85,7 +85,7 @@ describe('DEFAULT_CARD_CONFIG', () => {
     expect(DEFAULT_CARD_CONFIG.image.source).toBe('product.image_url');
     expect(DEFAULT_CARD_CONFIG.image.fallback).toEqual([
       'category.image_url',
-      '/images/placeholder-product.png',
+      '/images/placeholder-product.svg',
     ]);
   });
 

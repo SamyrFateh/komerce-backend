@@ -119,6 +119,30 @@ export function fmtPrice(kmf) {
 
 /* ── PRODUIT ─────────────────────────────────────────────── */
 
+export const PRODUCT_IMAGE_FALLBACK_URL = '/images/placeholder-product.svg';
+
+/**
+ * Remplace une image produit distante cassée par l'asset local canonique.
+ * Le marqueur évite toute boucle si le fallback devient lui-même indisponible.
+ */
+export function applyProductImageFallback(image) {
+  if (!image || image.dataset?.kFallbackApplied === '1') return false;
+  image.dataset.kFallbackApplied = '1';
+  image.removeAttribute('srcset');
+  image.alt = '';
+  image.classList.add('is-image-fallback');
+  image.src = PRODUCT_IMAGE_FALLBACK_URL;
+  return true;
+}
+
+/**
+ * Variante HTML pour les renderers de chaînes. La valeur est statique :
+ * aucune donnée produit n'est injectée dans le handler.
+ */
+export function productImageFallbackAttr() {
+  return `onerror="if(this.dataset.kFallbackApplied!=='1'){this.dataset.kFallbackApplied='1';this.removeAttribute('srcset');this.alt='';this.classList.add('is-image-fallback');this.src='${PRODUCT_IMAGE_FALLBACK_URL}'}"`;
+}
+
 /**
  * Retourne l'emoji associé à un produit.
  * @param {Object} p - Objet produit
@@ -169,10 +193,10 @@ export function renderProductCarousel(p, width) {
     imgs = p.image_url ? [p.image_url] : [];
   }
   if (!imgs.length) {
-    return `<img class="k-card-img" src="" alt="${sanitize(p.name || '')}" loading="lazy" decoding="async">`;
+    return `<img class="k-card-img is-image-fallback" src="${PRODUCT_IMAGE_FALLBACK_URL}" alt="" loading="lazy" decoding="async">`;
   }
   const slides = imgs.map((src, i) =>
-    `<div class="k-card-slide"><img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="${sanitize(p.name || '')} ${i + 1}" loading="lazy" decoding="async"></div>`
+    `<div class="k-card-slide"><img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="${sanitize(p.name || '')} ${i + 1}" loading="lazy" decoding="async" ${productImageFallbackAttr()}></div>`
   ).join('');
   const dots = imgs.length > 1
     ? `<div class="k-card-dots">${imgs.map((_, i) => `<span class="k-card-dot${i === 0 ? ' active' : ''}"></span>`).join('')}</div>`

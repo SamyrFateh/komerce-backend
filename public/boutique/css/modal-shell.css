@@ -1090,7 +1090,7 @@
         pose `.visible`. opacity restait donc à 0 et pointer-events à none
         en permanence, quel que soit le scroll. → sélecteur aligné sur .visible.
    Owner unique de .k-modal-back-top (le bloc de base plus haut a été retiré). */
-.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--text); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:420; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
+.k-modal-back-top { position:fixed; bottom:calc(var(--k-modal-action-bar-h, 64px) + 12px + env(safe-area-inset-bottom, 0px)); right:12px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--text); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:420; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
 .k-modal-back-top.visible { opacity:1; pointer-events:auto; transform:translateY(0); }
 
 /* ── Topbar produit — infos compactes (ex interactions.css) ───── */
@@ -1100,6 +1100,7 @@
 
 /* ── Desktop : taille & ombre modale (ex desktop-commerce-skeleton.css) ── */
 @media (min-width: 900px) {
+  .k-modal-back-top { bottom:20px; right:20px; }
   .k-modal {
     /* [MDM-8 phase 2] max-width: min(1040px, …) retiré — mort par
        spécificité, toujours écrasé par #k-modal.k-modal { max-width: none }

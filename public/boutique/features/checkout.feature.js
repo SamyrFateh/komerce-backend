@@ -36,7 +36,7 @@ module.exports = {
   canonicalFeature: 'payments',
   sliceKind: 'ui-orchestration',
 
-  service: "Tunnel de commande canonique : identité, point de retrait, paiement, confirmation et projection visuelle à rail vertical.",
+  service: "Tunnel de commande canonique : récapitulatif, identité, point de retrait, paiement et confirmation en cartes indépendantes.",
 
   perimeter: {
     in:  ['fichiers js/* annotes @domain checkout', 'présentation responsive du tunnel checkout'],
@@ -85,6 +85,7 @@ module.exports = {
   invariants: [
     'tout fichier js/* portant @domain checkout doit etre liste dans files.js de ce manifeste',
     'le skin checkout ne modifie jamais les calculs, contrats API, OTP ou transitions de paiement',
+    'le checkout final présente des cartes indépendantes sans fausse progression ; son chrome est neutre, les moyens de paiement restent compacts et le wallet ne devient jamais une étape obligatoire',
   ],
 
 };

@@ -701,7 +701,7 @@
     top: 0;
     right: 0;
     bottom: 0;
-    width: 272px; /* élargi (audit 2026-07) : 240px → 272px, aligné sur --sc-reserve-w (layout.css) */
+    width: 296px; /* libellés et contrôles restent lisibles sans retour artificiel */
     height: 100dvh;
     border-radius: 0;
     background: var(--surface-sand-94);
@@ -1153,7 +1153,7 @@
 
   /* ──────────────────────────────────────────────────────────
      BODY PADDING RIGHT — side cart fixed.
-     Réserve la place du side-cart sur le bord droit (240px),
+     Réserve la place du side-cart sur le bord droit,
      mais SEULEMENT quand le panier a des items. Sinon le
      panneau est en display:none et on ne veut pas de bande
      vide à droite.
@@ -1168,7 +1168,7 @@
      body.modal-open (0-1-1) gagne par ordre source ✓ */
   body:where(:has(.k-side-cart.has-items)),
   body.sc-reserve {
-    padding-right: var(--sc-reserve-w, 240px); /* VIS-1 — token défini dans layout.css */
+    padding-right: var(--sc-reserve-w, 296px); /* VIS-1 — token défini dans layout.css */
   }
 
   /* Pendant qu'un overlay plein écran est ouvert (modal/cart drawer),
@@ -1190,10 +1190,10 @@
 
 @media (min-width: 1200px) {
   .k-side-cart {
-    width: 288px; /* élargi (audit 2026-07) : 254px → 288px, aligné sur --sc-reserve-w (layout.css) */
+    width: 320px; /* largeur confortable sur grand desktop */
   }
   /* Le panneau reparenté doit rester à 100% de .k-modal-cart-slot (largeur
-     pilotée par la grille de la coque, modal-shell.css), pas à 254px fixe —
+     pilotée par la grille de la coque, modal-shell.css), pas à largeur fixe —
      sans cette override, la règle .k-side-cart de ce bloc gagnerait par ordre
      source (même spécificité 0-1-0). */
   .k-side-cart--in-modal {
@@ -1201,7 +1201,7 @@
   }
   body:has(.k-side-cart.has-items),
   body.sc-reserve {
-    padding-right: var(--sc-reserve-w, 288px); /* VIS-1 — token défini dans layout.css @1200px */
+    padding-right: var(--sc-reserve-w, 320px); /* VIS-1 — token défini dans layout.css @1200px */
   }
   /* Largeur "wide" des conteneurs de centrage ≥1200px.
      Rapatrié de desktop-commerce-skeleton.css (supprimé le 31/05 — fichier mort).
@@ -1226,7 +1226,7 @@
 @media (min-width: 900px) {
   body:has(.k-side-cart.has-items) #k-hero-fixed-wrap,
   body.sc-reserve #k-hero-fixed-wrap {
-    max-width: calc(100vw - var(--sc-reserve-w, 240px));
+    max-width: calc(100vw - var(--sc-reserve-w, 296px));
     overflow: clip;
   }
   /* L'image elle-même doit aussi être contrainte à la largeur utile
@@ -1234,18 +1234,18 @@
      et non sur toute la largeur viewport avec la dame coupée à droite. */
   body:has(.k-side-cart.has-items) .k-hero-img,
   body.sc-reserve .k-hero-img {
-    max-width: calc(100vw - var(--sc-reserve-w, 240px));
+    max-width: calc(100vw - var(--sc-reserve-w, 296px));
     object-position: 48% 35%;
   }
 }
 @media (min-width: 1200px) {
   body:has(.k-side-cart.has-items) #k-hero-fixed-wrap,
   body.sc-reserve #k-hero-fixed-wrap {
-    max-width: calc(100vw - var(--sc-reserve-w, 288px));
+    max-width: calc(100vw - var(--sc-reserve-w, 320px));
   }
   body:has(.k-side-cart.has-items) .k-hero-img,
   body.sc-reserve .k-hero-img {
-    max-width: calc(100vw - var(--sc-reserve-w, 288px));
+    max-width: calc(100vw - var(--sc-reserve-w, 320px));
   }
 }
 /* ══ FIN HERO RÉSERVE SIDE-CART ════════════════════════════════ */

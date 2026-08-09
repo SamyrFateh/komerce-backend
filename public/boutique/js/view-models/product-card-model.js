@@ -40,7 +40,7 @@ import { DEFAULT_CARD_CONFIG, ALLOWED_SOURCES } from '../card-config.js';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const PLACEHOLDER_IMAGE = '/images/placeholder-product.png';
+const PLACEHOLDER_IMAGE = '/images/placeholder-product.svg';
 const DEFAULT_NAME      = 'Produit Komerce';
 
 // ─── Résolution de source (whitelist stricte) ─────────────────────────────────

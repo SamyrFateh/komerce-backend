@@ -1115,7 +1115,7 @@ body:has(#k-page-scroll.k-pager-active) {
      (typique Windows 125% → viewport effectif ~1520px → 1266px dispo < 1400), margin:0 auto
      part en marges négatives → clip gauche (logo + titre + 1ère carte). Solution : caper la
      largeur des conteneurs centrés à l'espace réellement disponible quand le panier est docké. */
-  :root { --sc-reserve-w: 272px; } /* élargi (audit 2026-07) : 240px → 272px, aligné sur boutique-desktop.css */
+  :root { --sc-reserve-w: 296px; } /* largeur utile aux libellés + contrôles, alignée sur boutique-desktop.css */
 
   /* ROOT CAUSE FIX : le max-width de #k-catalog-section a UN SEUL owner
      (#k-desktop-catalog-wrap #k-catalog-section, plus bas). On ne se bat plus
@@ -1269,8 +1269,8 @@ body:has(#k-page-scroll.k-pager-active) {
 /* ── 1200px : raffinements supplémentaires ───────────────────── */
 @media (min-width: 1200px) {
 
-  /* VIS-1 FIX — token réserve 254px aligné sur boutique-desktop.css (@1200px) */
-  :root { --sc-reserve-w: 288px; } /* élargi (audit 2026-07) : 254px → 288px, aligné sur boutique-desktop.css */
+  /* VIS-1 FIX — réserve alignée sur boutique-desktop.css (@1200px) */
+  :root { --sc-reserve-w: 320px; } /* largeur confortable sur grand desktop, alignée sur boutique-desktop.css */
 
   .k-header { height: 72px; }
   .k-header-inner { height: 72px; }
@@ -1575,7 +1575,7 @@ body:has(#k-page-scroll.k-pager-active) {
   left: 0;
   right: 0;
   top: 50%;
-  transform: translate(-4px, -50%);  /* -4px gauche : badge reste dans l'écran mobile */
+  transform: translate(0, -50%);
   margin: 0 auto;
   width: 26px;          /* PR-AVATAR : réduit 30→26px — panier ne remonte plus sur la tête */
   height: auto;
@@ -1595,7 +1595,7 @@ body:has(#k-page-scroll.k-pager-active) {
   position: absolute;
   top: auto;
   bottom: calc(50% - 23px);
-  left: calc(50% + 3px);  /* avatar décalé -4px → badge suit : 7-4=3 */
+  left: calc(50% + 7px);
   right: auto;
   min-width: 16px;
   height: 16px;

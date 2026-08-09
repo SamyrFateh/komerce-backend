@@ -96,7 +96,7 @@ describe('resolveProductCardModel — image (resolveImage)', () => {
 
   it('aucune image produit/catégorie → placeholder littéral du fallback array', () => {
     const model = resolveProductCardModel({}, {});
-    expect(model.imageUrl).toBe('/images/placeholder-product.png');
+    expect(model.imageUrl).toBe('/images/placeholder-product.svg');
   });
 
   it('image_url produit = chaîne vide → tombe sur le fallback catégorie', () => {
@@ -107,7 +107,7 @@ describe('resolveProductCardModel — image (resolveImage)', () => {
   it('config.image absente → placeholder direct', () => {
     const config = { ...DEFAULT_CARD_CONFIG, image: undefined };
     const model = resolveProductCardModel({ image_url: 'https://x/img.png' }, {}, config);
-    expect(model.imageUrl).toBe('/images/placeholder-product.png');
+    expect(model.imageUrl).toBe('/images/placeholder-product.svg');
   });
 
   it('fallback déclaré (source whitelistée) épuisé sans valeur ni littéral → placeholder final', () => {
@@ -116,7 +116,7 @@ describe('resolveProductCardModel — image (resolveImage)', () => {
       image: { source: 'product.image_url', fallback: ['category.image_url'] },
     };
     const model = resolveProductCardModel({}, {}, config);
-    expect(model.imageUrl).toBe('/images/placeholder-product.png');
+    expect(model.imageUrl).toBe('/images/placeholder-product.svg');
   });
 });
 

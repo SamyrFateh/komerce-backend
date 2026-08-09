@@ -35,7 +35,7 @@ import { sanitize, fmt, fmtPrice, optimizeImgUrl } from '../b-utils.js';
 'use strict';
 
 const DEFAULT_PRODUCT_NAME = 'Produit Komerce';
-const DEFAULT_IMAGE_URL = '/images/placeholder-product.png';
+const DEFAULT_IMAGE_URL = '/images/placeholder-product.svg';
 
 function normalizeString(value, fallback = '') {
   if (value === null || value === undefined) return fallback;

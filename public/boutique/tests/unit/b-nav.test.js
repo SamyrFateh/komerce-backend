@@ -165,6 +165,26 @@ describe('setupDrawer', () => {
     expect(checkoutCart).toHaveBeenCalled();
   });
 
+  test('avatar desktop avec panier -> ouvre directement le récapitulatif', () => {
+    dom.cartBtn = document.createElement('button');
+    state.cart = [{ product: { id: 1 }, qty: 1 }];
+    window.innerWidth = 1200;
+    setupDrawer();
+    dom.cartBtn.click();
+    expect(checkoutCart).toHaveBeenCalledTimes(1);
+    expect(openCart).not.toHaveBeenCalled();
+  });
+
+  test('avatar mobile -> conserve le drawer pour relire et modifier le panier', () => {
+    dom.cartBtn = document.createElement('button');
+    state.cart = [{ product: { id: 1 }, qty: 1 }];
+    window.innerWidth = 390;
+    setupDrawer();
+    dom.cartBtn.click();
+    expect(openCart).toHaveBeenCalledTimes(1);
+    expect(checkoutCart).not.toHaveBeenCalled();
+  });
+
   test('orderModal : clic sur l\'overlay lui-même ferme, clic à l\'intérieur ne ferme pas', () => {
     dom.cartBtn = document.createElement('button');
     dom.orderModal = document.createElement('div');

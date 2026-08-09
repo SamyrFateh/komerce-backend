@@ -32,6 +32,7 @@
 jest.mock('../../js/b-utils.js', () => ({
   optimizeImgUrl: jest.fn((url) => url),
   fmtPrice: jest.fn((n) => String(n) + ' KMF'),
+  applyProductImageFallback: jest.fn(),
 }));
 
 const { state, dom } = require('../../js/b-store.js');

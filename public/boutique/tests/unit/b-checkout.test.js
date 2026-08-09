@@ -567,7 +567,7 @@ describe('b-checkout', () => {
       // le formulaire identité/paiement — plus de raccourci, même pour un
       // seul article (mandat §7 : "Sélection → Commander → Récapitulatif
       // → confirmation → checkout paiement", toujours la même séquence).
-      expect(dom.orderBody.textContent).toContain('Récapitulatif de votre commande');
+      expect(dom.orderBody.textContent).toContain('Vérifiez vos articles');
       expect(dom.orderBody.textContent).not.toContain('Retrait sécurisé');
       expect(dom.orderBody.querySelector('#btn-confirm-recap')).not.toBeNull();
     });
@@ -582,7 +582,7 @@ describe('b-checkout', () => {
       await flush();
 
       expect(dom.orderBody.textContent).toContain('Retrait sécurisé');
-      expect(dom.orderBody.textContent).not.toContain('Récapitulatif de votre commande');
+      expect(dom.orderBody.textContent).not.toContain('Vérifiez vos articles');
       expect(dom.orderBody.textContent).not.toContain('QUI RÉCUPÈRE');
     });
 

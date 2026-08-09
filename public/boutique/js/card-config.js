@@ -72,7 +72,7 @@ export const DEFAULT_CARD_CONFIG = {
 
   image: {
     source: 'product.image_url',
-    fallback: ['category.image_url', '/images/placeholder-product.png'],
+    fallback: ['category.image_url', '/images/placeholder-product.svg'],
   },
 
   title: {

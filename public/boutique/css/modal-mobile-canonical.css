@@ -146,7 +146,7 @@
      36vh single) rendait la hauteur du hero dépendante du mode galerie
      plutôt que d'un ratio stable — Golden Elite (multi-image) produisait un
      cadre visiblement plus haut qu'une fixture SVG single-image, à contenu
-     équivalent. Remplacé par un ratio 4:3 unique (cible brief), identique
+     équivalent. Remplacé par un ratio 16:10 compact, identique
      quel que soit gallery-mode ou has-variants : la hauteur ne dépend plus
      que de la largeur du wrapper, donc cohérente entre produits.
 
@@ -161,7 +161,7 @@
   #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"],
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
     width: 100%;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 10;
     height: auto;
     min-height: 150px;
     max-height: 48vh;
@@ -178,14 +178,14 @@
 
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
      k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
-     ratio 4:3 (plus compact que l'ancien 48vh), le hero libère déjà plus
+     ratio 16:10 (plus compact que l'ancien 48vh), le hero libère déjà plus
      d'espace vertical pour les chips Taille qu'avant — pas de surcharge
      supplémentaire nécessaire ici. Règle conservée à titre explicite pour
      ne pas dépendre implicitement du fallback ci-dessus si le contrat
      évolue. */
   #k-modal.k-modal--has-variants .k-modal-img-wrap,
   #k-modal.k-modal--has-variants .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 10;
     height: auto;
     min-height: 150px;
     max-height: 48vh;
@@ -368,9 +368,9 @@
     display: flex;
     flex-direction: column;
     align-self: stretch;
-    flex: 0 0 110px;
-    width: 110px;
-    max-width: 110px;
+    flex: 0 0 132px;
+    width: 132px;
+    max-width: 132px;
   }
 
   /* ── MDM-4 : Selection message ─────────────────────────────── */
@@ -677,5 +677,3 @@
     justify-content: flex-start;
   }
 }
-
-

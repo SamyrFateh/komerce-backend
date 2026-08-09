@@ -18,6 +18,7 @@ jest.mock('../../js/b-scroll-owner.js', () => ({
 jest.mock('../../js/b-utils.js', () => ({
   sanitize: jest.fn((value) => String(value || '').replace(/"/g, '&quot;')),
   renderProductCarousel: jest.fn(() => '<div class="carousel-mock"></div>'),
+  productImageFallbackAttr: jest.fn(() => 'data-image-fallback="product"'),
 }));
 
 jest.mock('../../js/b-cart-core.js', () => ({

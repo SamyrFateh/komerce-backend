@@ -615,12 +615,11 @@ function renderOrderRecapGate() {
     body.appendChild(ctxBanner);
   }
 
-  // Titre visible dans le corps du modal (pas seulement la barre de titre
-  // ci-dessus) — fidèle au mock : "Récapitulatif de votre commande" est
-  // un texte de la carte elle-même, pas seulement du chrome de la modale.
+  // Le chrome porte déjà « Récapitulatif de votre commande ». Le titre du
+  // corps donne donc l'instruction utile sans répéter mot pour mot le header.
   const heading = document.createElement('h2');
   heading.className = 'ck-recap-gate-heading';
-  heading.textContent = 'Récapitulatif de votre commande';
+  heading.textContent = 'Vérifiez vos articles';
   body.appendChild(heading);
 
   const block = _buildRecapItemsBlock(state.cart);

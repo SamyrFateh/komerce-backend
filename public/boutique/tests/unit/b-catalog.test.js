@@ -75,6 +75,7 @@ jest.mock('../../js/b-utils.js', () => ({
   fmt: jest.fn(String),
   fmtPrice: jest.fn((value) => `${value} KMF`),
   productEmoji: jest.fn(() => '📦'),
+  productImageFallbackAttr: jest.fn(() => 'data-image-fallback="1"'),
   _currency: 'KMF',
   _rates: {},
   renderProductCarousel: jest.fn(),
