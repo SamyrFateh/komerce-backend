@@ -161,6 +161,11 @@ export const state = {
   searchTimeout: null,
   relais: [],
   orderData: { payment_mode: 'cash_relais' },
+  /**
+   * Contexte éphémère du checkout courant. null pour Mon panier ; objet
+   * structuré pour SHARED_LIST. Jamais persisté.
+   */
+  checkoutDisplayContext: null,
   walletBalance: 0,
   page: 0,
   pageSize: PAGE_SIZE,
@@ -208,11 +213,9 @@ export const state = {
    */
   cartSurface: 'personal',
   /**
-   * Amendement V2 §D (bibliothèque « Mes listes ») — dernier résultat de
-   * GET /api/shared-carts/library, projeté dans le side cart / drawer
-   * canonique quand cartSurface === 'library'. Distinct de
-   * sharedListContext (qui décrit une liste ouverte précise) : la
-   * bibliothèque ne réfère à aucune liste unique.
+   * Bibliothèque « Mes listes » — dernier résultat de
+   * GET /api/shared-carts/library. Elle vit dans Mon Komerce et n'est jamais
+   * une valeur de cartSurface : le side cart ne connaît que personal/shared-list.
    */
   libraryContext: { created: [], saved: [] },
   /**
