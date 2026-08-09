@@ -615,7 +615,9 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     await stubShareChannels(page);
 
     await expect(page.locator('#k-cart-reshare, #k-sc-reshare')).toHaveCount(0);
-    const shareBtn = page.locator('#k-cart-share:visible, #k-sc-share:visible');
+    const shareBtn = page
+      .locator('#k-side-cart')
+      .getByRole('button', { name: 'Partager', exact: true });
     await expect(shareBtn).toHaveCount(1);
     await expect(shareBtn).toBeVisible({ timeout: 10_000 });
     await shareBtn.click();

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-09T15:31:13.176Z",
+  "generatedAt": "2026-08-09T21:32:36.575Z",
   "summary": {
     "modules": 77,
     "withHeader": 77,
@@ -1620,7 +1620,8 @@
         "group-state",
         "b-group-banner",
         "b-identity",
-        "group-api"
+        "group-api",
+        "group-list-labels"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2131,7 +2132,8 @@
         "b-bus",
         "b-scroll-owner",
         "group-api",
-        "group-checkout-adapter"
+        "group-checkout-adapter",
+        "group-list-labels"
       ],
       "bodyClasses": [
         "cart-open",
