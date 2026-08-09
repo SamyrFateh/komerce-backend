@@ -43,14 +43,14 @@
   "summary": {
     "features": 29,
     "healthy": 6,
-    "attention": 20,
-    "blocked": 3,
-    "businessDependencies": 112,
-    "directCrossFeatureImports": 7,
+    "attention": 19,
+    "blocked": 4,
+    "businessDependencies": 111,
+    "directCrossFeatureImports": 8,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 68,
     "ontologyGaps": 0,
-    "debtItemsTotal": 125,
+    "debtItemsTotal": 126,
     "gateHealthy": 14,
     "gateBlocked": 1
   },
@@ -8824,7 +8824,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 5
+          "count": 4
         }
       },
       "businessDependencies": [
@@ -12310,14 +12310,6 @@
           ]
         },
         {
-          "provider": "shared-cart",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
-          "channels": [
-            "interface",
-            "static-code"
-          ]
-        },
-        {
           "provider": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -12413,8 +12405,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
-        "directCrossFeatureImports": 0,
+        "status": "BLOCKED",
+        "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 2,
@@ -12502,7 +12494,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 12,
+        "debtCount": 13,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -12563,6 +12555,11 @@
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
             "evidence": "contract.consumes déclare \"purchasing\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          },
+          {
+            "type": "DIRECT_CROSS_FEATURE_IMPORT",
+            "severity": "high",
+            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -15215,7 +15212,7 @@
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 10,
+            "count": 11,
             "files": [
               {
                 "declared": "css/hero-cart-proxy.css",
@@ -15258,6 +15255,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "js/group/group-list-labels.js",
+                "resolvedPath": "public/boutique/js/group/group-list-labels.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "js/group/group-side-cart.js",
                 "resolvedPath": "public/boutique/js/group/group-side-cart.js",
                 "status": "resolved-in-technical-graph"
@@ -15280,7 +15282,7 @@
             ]
           },
           "migrations": {
-            "count": 17,
+            "count": 19,
             "files": [
               {
                 "declared": "migrations/044_shared_cart.sql",
@@ -15365,6 +15367,16 @@
               {
                 "declared": "migrations/127_shared_cart_saved_access.sql",
                 "resolvedPath": "migrations/127_shared_cart_saved_access.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/128_shared_list_pickup_code_recipient.sql",
+                "resolvedPath": "migrations/128_shared_list_pickup_code_recipient.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/129_shared_cart_one_open_per_organizer.sql",
+                "resolvedPath": "migrations/129_shared_cart_one_open_per_organizer.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -15495,7 +15507,7 @@
             ]
           }
         },
-        "totalFiles": 50,
+        "totalFiles": 53,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
           "count": 17,
@@ -15860,14 +15872,6 @@
           "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "consumer": "orders",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
-          "channels": [
-            "interface",
             "static-code"
           ]
         }
