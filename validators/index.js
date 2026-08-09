@@ -205,6 +205,9 @@ const orders = {
       payment_mode:          Joi.string().valid('stripe_eur', 'cash_relais', 'paypal_eur').required(),
       stripe_payment_intent: safeStr(200),
       tracking_phone:        phone.allow(null, ''),
+      // Liste partagée : intention uniquement, jamais un téléphone fourni
+      // par le client. Le serveur résout l'utilisateur vérifié.
+      pickup_code_recipient: Joi.string().valid('buyer', 'organizer').default('buyer'),
       confection_type:           Joi.string().valid(...CONFECTION_TYPES).default('aucun'),
       confection_instructions:   safeStr(1000),
       confection_delay_days:     Joi.number().integer().min(0).max(365).default(0),
