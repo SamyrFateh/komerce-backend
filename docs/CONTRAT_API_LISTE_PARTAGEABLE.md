@@ -1,188 +1,268 @@
-# Contrat API — Liste partagée
+# Contrat exécutable — Liste partagée
 
-**Version** : 2026-08 — modèle post-migrations 123/124/125.
-**Source de vérité** : ce document. `PANIER_PARTAGE_BOUTIQUE_FIRST.md` est la doctrine de direction.
+> **Version normative : 2026-08-09**  
+> **Doctrine associée :** `docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`  
+> Ce contrat remplace les flux d'achat direct, « Acheter le reste », « Payer le total » et la doctrine de surface panier unique.
 
----
-
-## Vocabulaire
+## 1. Vocabulaire
 
 | Terme | Définition |
 |---|---|
-| **snapshot** | Ensemble figé d'articles au moment de la publication. Jamais modifié après création. |
-| **OPEN** | Liste publiée, figée, acceptant encore les achats. |
-| **CLOSED** | Liste terminée. Consultable dans l'historique, jamais dans le side-cart. |
-| **CANCELLED** | Même interdiction que CLOSED. |
-| **displayedSharedList** | État frontend local : null ou une liste OPEN. Pas un statut métier. |
-| **claim** | Achat d'une ligne de liste : une commande standard créée avec `shared_cart_item_id`. |
+| **personalCart** | panier privé, vivant et modifiable de l'utilisateur |
+| **ownedOpenSharedList** | liste OPEN appartenant à l'utilisateur ; cardinalité 0..1 |
+| **displayedSharedList** | liste OPEN affichée localement dans le slot partagé ; cardinalité 0..1 |
+| **savedLists** | références sauvegardées dans Mes listes ; cardinalité 0..N |
+| **snapshot** | composition figée : articles, quantités, variantes, médias et prix de référence à la publication |
+| **selection** | ensemble local d'identifiants de lignes disponibles, sans réservation |
+| **claim** | rattachement atomique d'une ligne à une commande via `shared_cart_item_id` |
+| **intent** | `PERSONAL_CART` ou `SHARED_LIST`, jamais les deux |
+| **pickupCodeRecipient** | `buyer` ou `organizer` pour une commande issue d'une liste |
 
----
+## 2. Invariants obligatoires
 
-## Invariants
+1. Une liste publiée est structurellement immuable.
+2. OPEN signifie achetable, jamais éditable.
+3. Un créateur possède au maximum une liste OPEN tant que les listes V1 ne sont pas nommables.
+4. Une seule liste OPEN peut occuper `displayedSharedList`.
+5. Le panier personnel reste disponible et indépendant de la liste affichée.
+6. Aucune commande ne mélange lignes personnelles et lignes de liste.
+7. La sélection d'une ligne ne la réserve pas et ne l'ajoute pas au panier personnel.
+8. Toute sélection passe par un récapitulatif avant le checkout final.
+9. Le ✓ du récapitulatif est statique.
+10. Une ligne n'est réclamable qu'une fois, sous arbitrage DB.
+11. CLOSED/CANCELLED ne sont jamais affichées dans le side-cart.
+12. Quitter l'affichage ne change aucun statut.
+13. Le choix du destinataire du code secret produit un effet backend réel.
+14. Une liste reçue n'est sauvegardée que sur action explicite.
+15. Partager une liste existante ne crée jamais une nouvelle liste.
 
-1. **Immutabilité du snapshot.** Les articles, variantes et quantités d'une liste sont figés à la publication. Aucune route ne les modifie après création.
-2. **1 OPEN par créateur.** Un utilisateur ne peut posséder qu'une seule liste en état OPEN simultanément. Garanti par contrainte DB (index unique partiel). Réversible quand les listes deviendront nommables.
-3. **Claim atomique.** Une ligne ne peut être achetée qu'une fois. Garanti par `UNIQUE INDEX order_items_shared_cart_item_id_unique` (migration 123). Pas un guard frontend.
-4. **Pas de mélange des intentions.** Un checkout liste n'absorbe jamais le panier personnel.
-5. **CLOSED jamais dans le side-cart.** Une liste CLOSED/CANCELLED ne prend jamais le slot partagé, quels que soient l'entrée utilisée (lien direct, Mes listes, reload).
-6. **Confirmation avant création.** L'utilisateur confirme l'immutabilité avant tout POST de création. Annuler = zéro appel.
-7. **Panier vidé après succès, pas avant.** Si la création échoue, le panier personnel est intact.
-8. **Séquence post-création.** Succès → snapshot créé → panier vidé → slot sélectionné → lien proposé. Dans cet ordre.
-9. **`Partager` ne crée jamais.** Il repartage le lien d'une liste existante. `Créer une liste` et `Partager` sont deux intentions distinctes.
-10. **Feuille de partage abandonnée ≠ rollback.** Une liste déjà créée reste valide si l'utilisateur abandonne la feuille de partage.
+## 3. Nommage canonique
 
----
+Le libellé dépend de la relation avec l'utilisateur courant, pas d'un titre stocké :
 
-## États
+| Contexte | Valeur |
+|---|---|
+| surface personnelle | `Mon panier` |
+| liste dont `isCreator=true` | `Ma liste` |
+| liste reçue | `Liste de {creatorFirstName}` |
+| checkout de sa liste | `Achat pour Ma liste` |
+| checkout reçu | `Achat pour la liste de {creatorFirstName}` |
 
-```
-                  ┌──────────┐
-      publication │          │
-   ──────────────>│   OPEN   │
-                  │          │
-                  └──────────┘
-                       │
-            close()    │    cancel()
-               ┌───────┴───────┐
-               ▼               ▼
-          ┌────────┐      ┌──────────┐
-          │ CLOSED │      │CANCELLED │
-          └────────┘      └──────────┘
-```
+Les fallbacks `Votre liste`, `Liste sans titre` et `Liste partagée` sont interdits dans l'UI canonique.
 
-`CLOSED` et `CANCELLED` sont terminaux. Aucune transition retour.
+Le champ historique `title` peut rester nullable pour compatibilité, mais il ne pilote pas ces libellés V1.
 
----
+## 4. Modèle d'état frontend
 
-## Matrice de rôles
+~~~js
+state.cart                  // personalCart uniquement
+state.cartSurface           // 'personal' | 'shared-list'
+state.sharedListContext     // displayedSharedList ou null
+state.sharedSelection       // Set<shared_cart_item_id>, local uniquement
+state.checkoutDisplayContext = {
+  origin: 'PERSONAL_CART' | 'SHARED_LIST',
+  sharedCartId: string | null,
+  isCreator: boolean,
+  creatorFirstName: string | null,
+  title: string | null
+}
+~~~
+
+Contraintes :
+
+- `state.cart` n'est jamais remplacé durablement par une liste ;
+- l'adaptateur peut construire un panier éphémère uniquement pendant le checkout ;
+- le contexte checkout est structuré, pas réduit à une chaîne d'affichage ;
+- toute sortie du modal restaure le panier personnel et efface le contexte éphémère.
+
+## 5. Side-cart
+
+| Événement | Effet local | Effet backend |
+|---|---|---|
+| ouvrir une liste OPEN | remplace `displayedSharedList`, sélectionne shared-list | aucun |
+| cliquer Mon panier | `cartSurface='personal'` | aucun |
+| cliquer Ma liste/Liste de X | `cartSurface='shared-list'` | aucun |
+| cliquer × | efface `displayedSharedList`, revient au panier | aucun |
+| fermer la liste | efface le slot, revient au panier | OPEN → CLOSED |
+| ouvrir CLOSED/CANCELLED | message informatif, side-cart inchangé | aucun |
+| reload après × dans la même session | ne restaure pas la liste quittée | aucun |
+
+Le second onglet est absent lorsque `displayedSharedList=null`.
+
+## 6. Publication
+
+Avant `POST /api/shared-carts/from-cart-items`, le frontend doit afficher :
+
+> Une fois partagée, cette liste ne sera plus modifiable.
+
+Annulation : aucun POST.
+
+Succès :
+
+1. réponse de création valide ;
+2. vidage du panier personnel source ;
+3. activation comme **Ma liste** ;
+4. proposition de partage.
+
+Échec : panier personnel inchangé.
+
+La création concurrente d'une seconde liste OPEN renvoie :
+
+~~~json
+{
+  "code": "open_list_exists",
+  "existing_token": "..."
+}
+~~~
+
+## 7. Sélection et récapitulatif
+
+Une ligne est sélectionnable si et seulement si :
+
+- liste OPEN ;
+- `claimed=false` ;
+- produit encore achetable selon les gardes de commande.
+
+Le CTA apparaît uniquement si la sélection n'est pas vide :
+
+> Commander (N · X KMF)
+
+Le total affiché par le CTA et le récapitulatif vaut la somme du **prix marchand courant validé × quantité figée** des lignes sélectionnées. `unit_price_kmf_snapshot` reste une référence de publication : toute variation doit être annoncée avant confirmation.
+
+Une action « Tout sélectionner » peut remplir la sélection avec toutes les lignes disponibles. Elle ne déclenche jamais directement le checkout.
+
+Le récapitulatif :
+
+- est obligatoire pour N ≥ 1 ;
+- affiche uniquement les lignes sélectionnées ;
+- affiche un ✓ non interactif ;
+- permet de revenir à la liste ;
+- ne modifie pas le snapshot.
+
+## 8. Checkout canonique
+
+~~~text
+PERSONAL_CART → panier personnel → récapitulatif → checkout
+SHARED_LIST   → sélection locale → panier éphémère → récapitulatif → checkout
+~~~
+
+Chaque ligne SHARED_LIST transmise à `POST /api/orders` contient `shared_cart_item_id`.
+
+Toutes les lignes d'une même commande SHARED_LIST doivent appartenir à la même liste affichée.
+
+Le checkout affiche :
+
+- `Achat pour Ma liste` si l'acheteur est aussi l'organisateur ;
+- `Achat pour la liste de X` sinon.
+
+Le checkout liste n'efface jamais le panier personnel. Celui-ci est restauré sur succès comme sur annulation.
+
+## 9. Destinataire du code secret
+
+Extension du payload `POST /api/orders` pour une intention SHARED_LIST :
+
+~~~json
+{
+  "pickup_code_recipient": "buyer"
+}
+~~~
+
+Valeurs :
+
+| Valeur | Effet |
+|---|---|
+| `buyer` | notification envoyée à l'acheteur vérifié ; lui seul peut révéler le code complet |
+| `organizer` | notification envoyée au créateur vérifié ; lui seul peut révéler le code complet |
+
+Règles serveur :
+
+1. le champ est accepté uniquement si au moins une ligne contient `shared_cart_item_id` ;
+2. sa valeur par défaut est `buyer` ;
+3. le client n'envoie ni numéro ni identifiant d'organisateur ;
+4. le serveur résout l'organisateur depuis les lignes réclamées ;
+5. toutes les lignes doivent pointer vers la même liste ;
+6. le choix est persisté sur la commande ;
+7. le service de retrait notifie cette identité et lui réserve la révélation sécurisée du code complet ;
+8. pour **Ma liste**, `organizer` et `buyer` désignent la même identité et le sélecteur UI est masqué.
+
+## 10. Claim atomique et conflit
+
+La sélection ne constitue aucune réservation.
+
+L'unicité de `order_items.shared_cart_item_id` arbitre le gagnant.
+
+En cas de conflit, l'API répond avec un code structuré `already_claimed` ou équivalent stable. Le frontend :
+
+1. garde le panier personnel intact ;
+2. ferme ou suspend la confirmation ;
+3. recharge la liste ;
+4. retire la ligne de la sélection ;
+5. affiche **Déjà acheté**.
+
+L'organisateur reçoit `buyer_first_name`; les autres utilisateurs reçoivent une valeur nulle.
+
+## 11. Matrice des rôles
 
 | Action | Organisateur | Participant |
-|---|---|---|
-| Acheter (une ligne) | ✅ | ✅ |
-| Acheter le reste (toutes lignes dispo) | ✅ | ✅ |
-| Partager le lien | ✅ | ✅ |
-| Fermer la liste | ✅ | ✗ |
-| Sauvegarder dans Mes listes | — | ✅ |
-| Voir l'identité de l'acheteur | ✅ | ✗ |
-| Créer une nouvelle liste pendant qu'une OPEN existe | ✗ (refusé) | ✅ (liste distincte) |
+|---|---:|---:|
+| afficher une liste OPEN | oui | oui |
+| sélectionner des lignes disponibles | oui | oui |
+| commander sa sélection | oui | oui |
+| sélectionner tout le disponible | oui | oui |
+| partager le lien existant | oui | oui |
+| fermer OPEN → CLOSED | oui | non |
+| quitter l'affichage × | oui | oui |
+| sauvegarder dans Mes listes | inutile | oui |
+| voir le prénom de l'acheteur | oui | non |
+| modifier articles/quantités/variantes | non | non |
+| ajouter un produit après publication | non | non |
 
----
+## 12. API de liste autorisées
 
-## Comportement side-cart
+~~~text
+GET    /api/shared-carts/public/:token
+POST   /api/shared-carts/from-cart-items
+GET    /api/shared-carts/mine
+GET    /api/shared-carts/library
+POST   /api/shared-carts/save
+DELETE /api/shared-carts/saved/:sharedCartId
+GET    /api/shared-carts/:id
+POST   /api/shared-carts/:id/close
+POST   /api/shared-carts/:id/cancel
+~~~
 
-```
-[ Mon panier ]                          → toujours disponible
-[ Liste partagée ]                      → uniquement si displayedSharedList ≠ null et OPEN
-```
+Le claim passe exclusivement par `POST /api/orders`.
 
-Changer d'onglet = **aucun appel de lifecycle**. Ce n'est pas une fermeture.
+## 13. API interdites
 
-Fermer une liste OPEN → retirer immédiatement du slot → masquer l'onglet → sélectionner Mon panier.
+Ne jamais restaurer :
 
-Ouvrir un lien B quand A est affichée → remplace displayedSharedList par B. A reste OPEN, intacte côté backend.
+~~~text
+GET    /api/shared-carts/:id/as-cart-items
+PUT    /api/shared-carts/:id/items
+POST   /api/shared-carts/:id/items
+PATCH  /api/shared-carts/:id/items/:itemId
+DELETE /api/shared-carts/:id/items/:itemId
+POST   /api/shared-carts/:id/contributions/*
+POST   /api/shared-carts/:id/finalize
+POST   /api/shared-carts/:id/awaiting-choice/*
+~~~
 
----
+## 14. Critères d'acceptation fonctionnels
 
-## Contrat checkout
-
-Le checkout ne connaît jamais la liste. Il reçoit un panier canonique éphémère construit par `group-checkout-adapter.js`.
-
-```
-PERSONAL_CART    → checkout standard, panier personnel
-SHARED_LIST      → checkout standard, panier éphémère (lignes de liste)
-                   + contextualisation discrète « Achat pour la liste de X »
-```
-
-Restauration du panier personnel à la fermeture du modal de commande (tout chemin de sortie : succès, annulation, Escape, clic overlay).
-
----
-
-## API autorisées
-
-```
-GET    /api/shared-carts/public/:token          lecture publique (softAuthenticate)
-POST   /api/shared-carts/from-cart-items        création (authenticateOrCreateGuest)
-GET    /api/shared-carts/mine                   mes listes OPEN (authenticate)
-GET    /api/shared-carts/library                {created[], saved[]} (authenticate)
-POST   /api/shared-carts/save                   sauvegarder une liste reçue (authenticate)
-GET    /api/shared-carts/:id                    détail (authenticate)
-POST   /api/shared-carts/:id/close              OPEN → CLOSED (authenticate, organisateur)
-POST   /api/shared-carts/:id/cancel             OPEN → CANCELLED (authenticate, organisateur)
-```
-
----
-
-## API interdites — ne jamais restaurer
-
-```
-GET    /:id/as-cart-items
-PUT    /:id/items
-POST   /:id/items
-PATCH  /:id/items/:itemId
-DELETE /:id/items/:itemId
-POST   /:id/stripe/webhook
-POST   /:id/contributions/*
-POST   /:id/finalize
-POST   /:id/awaiting-choice/*
-```
-
----
-
-## Erreurs structurantes
-
-| Situation | Code | Message |
-|---|---|---|
-| Création quand une OPEN existe | 409 | `open_list_exists` + `{ existing_token }` |
-| Claim sur ligne déjà achetée | 409 | `already_claimed` (contrainte DB) |
-| Activation d'une liste non-OPEN | — | guard frontend, jamais placée dans le slot |
-| Panier vide à la publication | 400 | `cart_empty` |
-| Fermeture par non-organisateur | 403 | `forbidden` |
-
-Le code `open_list_exists` doit exposer `existing_token` pour que le frontend propose `[ Ouvrir ma liste ]` (arbitrage A2).
-
----
-
-## Payload GET /public/:token
-
-```json
-{
-  "id": "uuid",
-  "token": "string",
-  "title": "string|null",
-  "message": "string|null",
-  "status": "open|closed|cancelled",
-  "organizer_name": "string|null",
-  "is_organizer": true,
-  "items": [
-    {
-      "id": "uuid",
-      "product_id": "uuid|null",
-      "name": "string",
-      "image": "https://... (URL absolue http/https)",
-      "unit_price_kmf": 10000,
-      "quantity": 2,
-      "variant_combo": { "couleur": "Noir" } | null,
-      "claimed": false,
-      "buyer_first_name": "Ali" | null  // null pour les participants
-    }
-  ]
-}
-```
-
-**`image` doit être une URL absolue http/https** ou une chaîne vide. Jamais un chemin relatif. Normalisée côté serveur à la lecture (`shared-cart-reads.js`). Le frontend rejette tout ce qui n'est pas http(s) — comportement intentionnel, ne pas l'affaiblir.
-
----
-
-## Critères d'acceptation
-
-- [ ] Deux créations concurrentes → une seule liste OPEN (constraint DB, pas un if frontend).
-- [ ] Refus de création expose `existing_token` utilisable par le frontend.
-- [ ] Une liste CLOSED ouverte par lien direct → message informatif, side-cart inchangé.
-- [ ] `Acheter` → une seule ligne dans la commande.
-- [ ] `Acheter le reste` → toutes les lignes disponibles au moment du clic, aucune ligne du panier personnel. Le bouton n'affiche aucun montant.
-- [ ] Le montant "Reste disponible" affiché en surface liste est purement informatif — jamais présenté comme une somme due.
-- [ ] Ligne déjà achetée → refus DB atomique sous concurrence.
-- [ ] Image : chemin relatif en base → URL absolue en sortie d'API.
-- [ ] Sauvegarder → idempotent (POST /save deux fois = même résultat).
-- [ ] Fermeture → liste disparaît immédiatement du slot, onglet masqué.
-- [ ] Abandon de la feuille de partage post-création → liste reste valide.
+- [ ] l'organisateur voit **Ma liste** partout ;
+- [ ] le participant voit **Liste de [Prénom]** partout ;
+- [ ] une seconde liste OPEN appartenant au même créateur est refusée atomiquement ;
+- [ ] Mon panier reste accessible et inchangé pendant toute consultation/commande de liste ;
+- [ ] × quitte l'affichage sans fermer la liste ;
+- [ ] une liste quittée ne se restaure pas au reload de la même session ;
+- [ ] CLOSED/CANCELLED ne s'affichent jamais dans le side-cart ;
+- [ ] une ou plusieurs lignes peuvent être sélectionnées ;
+- [ ] Commander ouvre toujours le récapitulatif ;
+- [ ] le ✓ du récapitulatif n'est pas interactif ;
+- [ ] le montant confirmé correspond uniquement à la sélection ;
+- [ ] aucune ligne du panier personnel n'entre dans la commande liste ;
+- [ ] le choix buyer/organizer apparaît uniquement lorsqu'il est pertinent ;
+- [ ] ce choix est validé, persisté et appliqué côté serveur ;
+- [ ] un claim concurrent perdant retourne une erreur stable puis rafraîchit la liste ;
+- [ ] les E2E ne cherchent plus `.k-cart-item-buy` et couvrent `.k-cart-item-select` + `Commander`.

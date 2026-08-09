@@ -571,10 +571,34 @@ describe('revealOnce', () => {
     expect(result.status).toBe(404);
   });
 
-  it('403 si la commande appartient à un autre utilisateur', async () => {
+  it('403 si l’utilisateur n’est pas le destinataire du code', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: 'o1', user_id: 'u2' }] });
     const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
     expect(result.status).toBe(403);
+  });
+
+  it('autorise l’organisateur désigné et refuse le payeur quand le code lui est délégué', async () => {
+    const emitted = new Date();
+    const delegatedOrder = {
+      id: 'o1', reference: 'KMC-001', user_id: 'buyer-1',
+      pickup_code_recipient_user_id: 'organizer-1',
+      pickup_secret_hash: 'h', pickup_secret_emitted_at: emitted,
+      pickup_secret_channel: 'cash', total_kmf: 5000,
+    };
+
+    db.query.mockResolvedValueOnce({ rows: [delegatedOrder] });
+    const denied = await revealOnce({ orderId: 'o1', userId: 'buyer-1' });
+    expect(denied.status).toBe(403);
+
+    db.query
+      .mockResolvedValueOnce({ rows: [delegatedOrder] })
+      .mockResolvedValueOnce({ rows: [{ code: 'A7K-3M9-P2' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const allowed = await revealOnce({ orderId: 'o1', userId: 'organizer-1' });
+    expect(allowed.status).toBe(200);
+    expect(allowed.body.code).toBe('A7K-3M9-P2');
   });
 
   it('202 pending si pas encore de hash (webhook en retard)', async () => {

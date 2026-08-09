@@ -38,6 +38,7 @@ import {
   normalizeLocal,
 } from './b-phone.js';
 import { getSharedCartLibrary } from './group/group-api.js';
+import { sharedListDisplayLabel } from './group/group-list-labels.js';
 
 'use strict';
 
@@ -335,14 +336,18 @@ function libraryStatus(status) {
  * ajouté). Ne pas envelopper cette section serait donc une régression
  * silencieuse de la fonctionnalité de retrait.
  */
-function libraryItemInnerHtml(cart) {
+function libraryItemInnerHtml(cart, { isCreator = false } = {}) {
   const status  = libraryStatus(cart.status);
+  const label   = sharedListDisplayLabel({
+    isCreator,
+    organizerFullName: cart.organizer_full_name || null,
+  });
   const total   = fmt(cart.total_kmf || 0, 'KMF');
   const count   = parseInt(cart.items_count, 10) || 0;
   const claimed = parseInt(cart.claimed_count, 10) || 0;
   return (
     '<div class="k-library-item-body">' +
-      '<div class="k-library-item-title">' + sanitize(cart.title || 'Liste sans titre') + '</div>' +
+      '<div class="k-library-item-title">' + sanitize(label) + '</div>' +
       '<div class="k-library-item-meta">' + claimed + '/' + count + ' article' + (count > 1 ? 's' : '') + ' · ' + total + '</div>' +
       '<div class="k-library-item-status k-library-item-status--' + status.cls + '">' + status.emoji + ' ' + status.label + '</div>' +
     '</div>' +
@@ -360,7 +365,7 @@ function renderCreatedSection(carts) {
   return carts.map((cart) =>
     '<div class="k-library-item-row">' +
       '<button type="button" class="k-library-item" data-token="' + sanitize(cart.token || '') + '" data-status="' + sanitize(cart.status || '') + '"' + (cart.status !== 'open' ? ' disabled' : '') + '>' +
-        libraryItemInnerHtml(cart) +
+        libraryItemInnerHtml(cart, { isCreator: true }) +
       '</button>' +
     '</div>'
   ).join('');
@@ -373,7 +378,7 @@ function renderSavedSection(carts) {
   // Pas de wrapper .k-library-item-row ici — voir libraryItemInnerHtml() ci-dessus.
   return carts.map((cart) =>
     '<button type="button" class="k-library-item" data-token="' + sanitize(cart.token || '') + '" data-status="' + sanitize(cart.status || '') + '"' + (cart.status !== 'open' ? ' disabled' : '') + '>' +
-      libraryItemInnerHtml(cart) +
+      libraryItemInnerHtml(cart, { isCreator: false }) +
     '</button>'
   ).join('');
 }

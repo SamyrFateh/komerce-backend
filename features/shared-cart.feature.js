@@ -23,9 +23,9 @@ module.exports = {
   // ── Service rendu ──────────────────────────────────────────────────────────
   // Réécrit (Lot 2/3, migration 124) : le panier partagé n'est plus un
   // véhicule de paiement groupé — c'est une liste de souhaits partageable.
-  service: 'Permettre à un créateur de composer une liste de produits ' +
-           'partageable par lien public ; chaque participant réclame un ' +
-           'article en l\'achetant individuellement via le checkout canonique.',
+  service: 'Permettre à un créateur de publier une liste immuable par lien public ; ' +
+           'chaque acheteur sélectionne une ou plusieurs lignes disponibles, ' +
+           'passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel.',
 
   // ── Périmètre ────────────────────────────────────────────────────────────
   perimeter: {
@@ -80,6 +80,8 @@ module.exports = {
       'migrations/123_shared_cart_item_claim_bridge.sql',    // pont order_items <-> shared_cart_items
       'migrations/125_shared_cart_minimal_domain.sql',       // domaine minimal, colonnes financières retirées
       'migrations/127_shared_cart_saved_access.sql',         // bibliothèque "Mes listes" (Amendement V2 §D)
+      'migrations/128_shared_list_pickup_code_recipient.sql', // destinataire vérifié du secret de retrait
+      'migrations/129_shared_cart_one_open_per_organizer.sql',// cardinalité V1 : 0..1 OPEN par organisateur
     ],
     tests: [
       'tests/unit/baskets.test.js',
@@ -113,6 +115,7 @@ module.exports = {
       'js/b-share-phone-guard.js',
       'js/group/group-api.js',
       'js/group/group-checkout-adapter.js',
+      'js/group/group-list-labels.js',
       'js/group/group-side-cart.js',
       'js/group/group-state.js',
       'css/share-cart.css',
@@ -196,19 +199,16 @@ module.exports = {
 
   // ── Dette assumée / documentée ────────────────────────────────────────────
   debt: {
-    knownGaps: [
-      { gap: 'Frontend boutique (js/b-group-view.js, js/group/*) et dashboard admin ' +
-             '(SharedCartsView.js) non réécrits dans ce lot — référencent encore ' +
-             'contributed_kmf/remaining_kmf, colonnes supprimées par la migration 124.',
-        risk: 'Cassure UI garantie si la migration 124 est appliquée sans réécriture ' +
-              'frontend correspondante (lot séparé, hors périmètre backend).',
-      },
-    ],
+    knownGaps: [],
   },
 
   // ── Invariants propres ────────────────────────────────────────────────────
   invariants: [
     'une liste publiée est un snapshot structurellement immuable : OPEN signifie achetable, jamais éditable',
+    'tant que les listes V1 ne sont pas nommables, un créateur possède au maximum une liste OPEN',
+    'Mon panier reste indépendant ; une seule liste OPEN peut occuper le slot partagé local',
+    'une sélection de liste est locale, ne réserve rien et passe toujours par récapitulatif puis checkout canonique',
+    'une commande porte soit sur PERSONAL_CART soit sur SHARED_LIST, jamais les deux',
     'un article de liste n\'est jamais réclamable deux fois — arbitré par index unique, pas par verrou applicatif (migration 123)',
     'aucune donnée financière n\'est stockée sur shared_carts — le total se calcule toujours par SUM() sur shared_cart_items',
     'lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)',

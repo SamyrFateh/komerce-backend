@@ -4,7 +4,7 @@
  * @domain        shared-cart
  * @status        production
  * @owner         boutique
- * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
+ * @doctrine      docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md
  * @registry      scripts/feature-registry-check.js
  */
 'use strict';
@@ -15,14 +15,14 @@ module.exports = {
   domain: 'shared-cart',
   status: 'production',
   owner: 'boutique',
-  doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
+  doctrine: 'docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md',
   canonicalFeature: 'shared-cart',
   sliceKind: 'frontend-slice',
 
-  service: 'Liste partagée publiée comme snapshot immuable, projetée dans le side cart / drawer canonique ; achat et paiement passent exclusivement par le checkout canonique.',
+  service: 'Liste publiée comme snapshot immuable dans un slot distinct de Mon panier ; sélection locale, récapitulatif obligatoire et checkout canonique sans mélange des intentions.',
   perimeter: {
-    in: ['création, activation et rendu d’une liste publiée immuable dans la surface panier canonique'],
-    out: ['panier personnel, catalogue vivant et paiement hors contrat partagé'],
+    in: ['création, activation et rendu d’une liste publiée immuable dans le slot partagé du side cart', 'sélection de lignes disponibles et pont vers le récapitulatif puis le checkout canonique'],
+    out: ['mutation du snapshot publié, fusion avec le panier personnel, cagnotte ou checkout collectif parallèle'],
   },
 
   files: {
@@ -31,6 +31,7 @@ module.exports = {
       '../js/b-share-cart.js',
       '../js/group/group-api.js',
       '../js/group/group-checkout-adapter.js',
+      '../js/group/group-list-labels.js',
       '../js/group/group-library-remove.js',
       '../js/group/group-price-variation.js',
       '../js/group/group-side-cart.js',
@@ -50,11 +51,13 @@ module.exports = {
       '../tests/unit/group-price-variation.test.js',
       '../tests/unit/b-share-phone-guard.test.js',
       '../tests/unit/group-side-cart.test.js',
+      '../tests/unit/b-checkout.test.js',
       '../tests/unit/shared-list-responsive-layout.test.js',
+      '../tests/e2e/authenticated/group-shared-list.spec.js',
     ],
   },
 
-  docs: ['REFACTOR_SUMMARY.md'],
+  docs: ['docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md', 'docs/CONTRAT_API_LISTE_PARTAGEABLE.md'],
   contract: {
     exposes: [],
     internalApi: [
@@ -75,9 +78,13 @@ module.exports = {
   authority: 'boutique — shared-cart possède seul le cycle groupe et la vue participant.',
   invariants: [
     'contenu, quantités et variantes sont figés dès publication ; seuls les claims évoluent',
-    'visiteur en lecture seule hors actions explicitement autorisées',
-    'aucun appel au catalogue vivant pour une fiche snapshot partagée',
-    'une liste active est l’unique surface panier visible ; le panier personnel reste isolé en état',
+    'Mon panier reste une surface indépendante ; zéro ou une liste OPEN occupe le slot partagé',
+    'le propriétaire voit Ma liste ; un tiers voit Liste de [Prénom]',
+    'la sélection est locale et ne réserve jamais une ligne',
+    'toute sélection passe par un récapitulatif avant le checkout canonique',
+    'une commande ne mélange jamais panier personnel et lignes de liste',
+    'quitter × ne ferme ni ne modifie la liste',
+    'CLOSED/CANCELLED restent historiques et ne résident jamais dans le side cart',
     'retirer une liste sauvegardée ne supprime jamais la liste ni son token public',
   ],
 };

@@ -88,6 +88,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       order_occasion = null,
       use_wallet = false,
       share_token,
+      pickup_code_recipient = 'buyer',
     } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -193,6 +194,10 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
 
     let total_kmf = 0;
     let cost_estimated = 0;
+    let sharedCartId = null;
+    let sharedListOrganizerUserId = null;
+    let hasSharedListItems = false;
+    let hasPersonalItems = false;
 
     for (const item of items) {
       if (!item.product_id || typeof item.product_id !== 'string') {
@@ -336,8 +341,8 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       // bretelles avec la contrainte unique, jamais un remplacement.
       if (item.shared_cart_item_id) {
         const { rows: sciRows } = await client.query(
-          `SELECT sci.id, sci.product_id, sci.sku_id, sci.variant_combo_snapshot,
-                  sci.quantity, sc.status AS cart_status,
+          `SELECT sci.id, sci.shared_cart_id, sci.product_id, sci.sku_id, sci.variant_combo_snapshot,
+                  sci.quantity, sc.organizer_user_id, sc.status AS cart_status,
                   EXISTS (
                     SELECT 1 FROM order_items oi WHERE oi.shared_cart_item_id = sci.id
                   ) AS already_claimed
@@ -356,6 +361,17 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           });
         }
         const sci = sciRows[0];
+        hasSharedListItems = true;
+
+        if (sharedCartId && String(sharedCartId) !== String(sci.shared_cart_id)) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            error: 'Une commande de liste partagée ne peut concerner qu’une seule liste.',
+            code: 'mixed_shared_lists_forbidden',
+          });
+        }
+        sharedCartId = sci.shared_cart_id;
+        sharedListOrganizerUserId = sci.organizer_user_id;
 
         if (sci.cart_status !== 'open') {
           await client.query('ROLLBACK');
@@ -402,13 +418,15 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           }
         }
 
-        if (qty > sci.quantity) {
+        if (qty !== Number(sci.quantity)) {
           await client.query('ROLLBACK');
           return res.status(409).json({
-            error: `Quantité demandée supérieure à la ligne de liste partagée — disponible : ${sci.quantity}`,
+            error: `La quantité commandée doit correspondre exactement à la ligne figée : ${sci.quantity}`,
             code: 'shared_cart_item_mismatch',
           });
         }
+      } else {
+        hasPersonalItems = true;
       }
 
       total_kmf += item._effective_unit_price_kmf * qty;
@@ -418,6 +436,27 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       const customs_est = base_aed_kmf * (customsPct / 100) * (product.customs_risk_coeff || 1.0);
       cost_estimated += base_aed_kmf + fret_kmf + customs_est;
     }
+
+    if (hasSharedListItems && hasPersonalItems) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'Le panier personnel et une liste partagée doivent être commandés séparément.',
+        code: 'mixed_checkout_origins_forbidden',
+      });
+    }
+
+    if (pickup_code_recipient === 'organizer' && !hasSharedListItems) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'Le destinataire organisateur est réservé à un achat depuis une liste reçue.',
+        code: 'pickup_code_recipient_invalid',
+      });
+    }
+
+    const pickupCodeRecipientUserId =
+      pickup_code_recipient === 'organizer'
+        ? sharedListOrganizerUserId
+        : req.user.id;
 
     // §8 — devis transport commercial, ajouté au total AVANT le calcul de
     // marge : cost_estimated inclut déjà le coût fret interne (fret_kmf),
@@ -497,7 +536,8 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      cost_estimated_kmf, margin_estimated_pct,
      discount_pct, discount_kmf, loyalty_label,
      destination_island, routing_mode, transit_hub,
-     transport_price_kmf
+     transport_price_kmf,
+     pickup_code_recipient, pickup_code_recipient_user_id
    ) VALUES (
      $1,$2,$3,$4,$5,
      $6,
@@ -513,7 +553,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      $25,$26,
      $27,$28,$29,
      $30,$31,$32,
-     $33
+     $33,$34,$35
    ) RETURNING *`,
   [
     uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
@@ -547,6 +587,8 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     routing.routing_mode,
     routing.transit_hub,
     transport_price_kmf,
+    pickup_code_recipient,
+    pickupCodeRecipientUserId,
   ]
 );
 
@@ -763,6 +805,7 @@ if (creditApplied > 0 && total_kmf === 0 && order.id) {
         payment_mode: order.payment_mode,
         payment_status: order.payment_status,
         cash_ref_code: order.cash_ref_code,
+        pickup_code_recipient: order.pickup_code_recipient,
         confection_type: order.confection_type,
         module_type: order.module_type,
         relais: relais ? {

@@ -1,145 +1,226 @@
-# Komerce — Liste partagée
+# Komerce — Doctrine canonique de la liste partagée
 
-> **Version** : 2026-08 — alignée sur le modèle minimal post-migrations 123/124/125.
-
-## Doctrine intemporelle · Boutique First
-
-> **Chacun gère sa négo. Komerce sait matérialiser l'achat.**
-
-Ce document n'est pas une spécification. Les specs vieillissent, les routes changent, les statuts se renomment. Ceci est la direction. Quand un choix se présente et qu'on hésite, on revient ici.
-
----
+> **Version normative : 2026-08-09**  
+> **Statut : source de vérité métier**  
+> Cette version remplace les doctrines antérieures « liste active = panier unique », achat direct par ligne et « payer tout / acheter le reste ».
 
 ## 1. La phrase
 
-**Une liste partagée n'est pas un checkout partagé.**
+**Une liste partagée est une sélection publiée et figée ; ce n'est ni un panier personnel, ni un checkout collectif.**
 
-C'est une sélection publiée, figée, accessible par lien. Tout lien partagé ouvre d'abord la boutique. Le paiement n'est jamais le point d'entrée : il est une action possible *à l'intérieur* de la vue panier.
+Komerce ne tient pas de cagnotte, ne répartit pas une dette et ne demande jamais de régler le montant total d'une liste. Chaque achat est une commande Komerce standard portant uniquement sur les articles que l'acheteur a explicitement sélectionnés.
 
-**La négociation appartient aux humains. La matérialisation appartient à Komerce.**
+## 2. Les trois objets
 
-Qui paie, combien, pourquoi, dans quel ordre, après quel coup de téléphone : c'est la famille, la diaspora, les liens qui existaient déjà avant nous. Komerce n'arbitre pas, ne relance pas, ne tient pas de cagnotte, ne gère pas de campagne. Komerce s'arrête là où commence l'intime, et reprend là où commence l'achat.
+| Objet | Propriétaire | Nature | Modifiable |
+|---|---|---|---|
+| **Mon panier** | utilisateur courant | panier privé et vivant | oui |
+| **Liste partagée** | organisateur | snapshot publié et accessible par lien | jamais après publication |
+| **Commande** | acheteur | matérialisation d'une sélection personnelle | selon le cycle normal des commandes |
 
-Komerce sait faire une chose : **transformer une intention en un objet réel, visible, et livré.**
+Le panier personnel et la liste partagée coexistent, mais leurs articles ne sont jamais fusionnés.
 
----
+## 3. Nommage centré sur la personne
 
-## 2. Ce que c'est — et ce que ce n'est pas
+Les listes V1 ne sont pas nommables. Leur libellé est donc calculé selon la relation avec l'utilisateur courant :
 
-C'est une sélection qu'on partage avec ceux qui nous aiment.
+| Situation | Libellé canonique |
+|---|---|
+| Panier privé | **Mon panier** |
+| Liste créée par l'utilisateur courant | **Ma liste** |
+| Liste créée par une autre personne | **Liste de [Prénom]** |
+| Checkout de sa propre liste | **Achat pour Ma liste** |
+| Checkout d'une liste reçue | **Achat pour la liste de [Prénom]** |
 
-Ce n'est pas une plateforme de financement. Pas un portefeuille. Pas une cagnotte. Pas un transfert d'argent. Pas un arbitre des comptes familiaux.
+Un titre technique nul ne doit jamais produire « Liste sans titre », « Votre liste » ou « Liste partagée » dans l'expérience utilisateur.
 
-La liste montre des articles vrais, à des prix vrais, qui arriveront vraiment. On ne paie pas un concept ni une promesse : on achète sa ligne d'un snapshot réel.
+Dans l'historique, plusieurs anciennes listes personnelles peuvent être distinguées par leur date et leur statut, sans introduire de nommage libre.
 
-Komerce ne collecte pas pour atteindre un objectif abstrait. Komerce encaisse une commande standard.
+## 4. Publication et immutabilité
 
----
+La création d'une liste part toujours du panier personnel.
 
-## 3. La personne au centre
+Avant tout appel de création, l'utilisateur confirme explicitement :
 
-Tout se décide dans un seul instant.
+> **Une fois partagée, cette liste ne sera plus modifiable.**
 
-Quelqu'un qui n'a jamais entendu parler de Komerce ouvre un lien reçu par WhatsApp, sur un téléphone modeste, sur un réseau lent, et on lui demande de sortir de l'argent pour un pays à l'autre bout du monde.
+Annuler cette confirmation n'écrit rien.
 
-C'est le creuset. La confiance se gagne ou se perd là. Toute décision de design, de copie, d'architecture se juge à cette aune : **est-ce que ça rassure l'inconnu au moment où il s'apprête à payer ?**
+Après succès, dans cet ordre :
 
-C'est pour cette personne qu'on ouvre la boutique en premier. On ne la met pas devant un formulaire de paiement : on la met devant un magasin. Le magasin est le mécanisme de confiance.
+1. le snapshot est créé ;
+2. le panier personnel source est vidé ;
+3. **Ma liste** devient la liste affichée ;
+4. le lien est proposé au partage.
 
----
+La composition publiée — articles, quantités, variantes et médias de référence — n'est plus éditable. Le prix photographié à la publication reste une référence d'affichage ; la commande applique le prix marchand courant et toute variation est annoncée avant confirmation. Une erreur de composition se corrige en fermant la liste puis en en créant une nouvelle.
 
-## 4. Les trois concepts
+Tant que les listes ne sont pas nommables, un organisateur ne peut posséder qu'une seule liste **OPEN**. Cette contrainte est volontaire, réversible et garantie par la base.
 
-```
-PANIER → LISTE → ACHAT
-```
+## 5. Le side-cart universel
 
-**Panier personnel** — privé, vivant, modifiable, indépendant de toute liste reçue.
+Le side-cart possède deux réalités séparées :
 
-**Liste partagée** — snapshot publié, figé dès sa création, accessible par lien, jamais éditable après publication.
+~~~text
+[ Mon panier ] [ Ma liste ]
+ou
+[ Mon panier ] [ Liste de Samsam ]
+~~~
 
-**Achat** — commande Komerce standard ; peut porter sur une ligne disponible de liste ou sur toutes ses lignes disponibles ; ne crée aucun moteur financier collectif.
+Règles :
 
----
+- **Mon panier** est toujours disponible ;
+- le second onglet existe uniquement lorsqu'une liste OPEN est affichée ;
+- une seule liste partagée peut être affichée à la fois ;
+- ouvrir une liste B remplace seulement la liste A affichée ; A n'est ni fermée ni modifiée ;
+- changer d'onglet ne déclenche aucun appel métier ;
+- les deux surfaces utilisent le même shell et le même checkout canonique, jamais le même contenu.
 
-## 5. Ce qui n'existe plus
+Le bouton **×** du panneau partagé signifie **quitter cet affichage** :
 
-Supprimé définitivement, sous quelque nom que ce soit :
+- il retire la liste du slot local ;
+- il ne la ferme pas ;
+- il ne la désenregistre pas ;
+- il ne modifie aucun article ;
+- il restitue immédiatement **Mon panier** ;
+- un simple reload de la même session ne doit pas réouvrir automatiquement une liste explicitement quittée.
 
-- cagnotte, contribution, engagement, montant libre participant ;
-- modification d'une liste publiée ;
-- panier collectif éditable ;
-- checkout collectif spécifique ;
-- « À valider ensemble » / ouverture différée des paiements ;
-- ajustement post-publication.
+## 6. Cycle de vie
 
----
+| État | Signification | Side-cart | Achat |
+|---|---|---|---|
+| **OPEN** | snapshot publié et encore achetable | oui, s'il est affiché | oui |
+| **CLOSED** | liste terminée par l'organisateur | jamais | non |
+| **CANCELLED** | liste annulée | jamais | non |
 
-## 6. Le modèle d'état
+**Fermer la liste** est une action métier réservée à l'organisateur : OPEN → CLOSED.
 
-```
-personalCart           = indépendant, vivant, privé
-ownedOpenSharedList    = 0..1   (liste OPEN créée par l'utilisateur)
-displayedSharedList    = 0..1   (liste OPEN occupant le slot partagé)
-saved/receivedLists    = 0..N   (références, jamais des copies)
-```
+**Quitter l'affichage** est une action locale disponible à toute personne : elle ne change aucun statut.
 
-**Règle V1 (provisoire, réversible).** Tant que les listes ne sont pas nommables, un utilisateur ne peut posséder qu'une seule liste en état OPEN. Garantie par contrainte DB (index partiel). Si le besoin de plusieurs listes simultanées apparaît, le modèle évoluera avec nommage + sélection.
+Les listes CLOSED/CANCELLED restent accessibles dans **Mes listes** comme historique passif.
 
----
+## 7. Sélection avant achat
 
-## 7. Le side-cart universel
+Une ligne OPEN non achetée est **sélectionnable**. Une ligne déjà achetée est verrouillée.
 
-```
-[ Mon panier ] [ Liste partagée ]
-```
+L'utilisateur peut sélectionner :
 
-Second onglet présent **uniquement** si une liste OPEN est affichée. Absent si aucune liste n'est affichée, ou si la liste est CLOSED/CANCELLED.
+- un seul article ;
+- plusieurs articles ;
+- tous les articles encore disponibles via une action de sélection globale.
 
-`Mon panier` n'est pas une fermeture de liste : changer d'onglet ne déclenche aucun appel de lifecycle.
+La sélection :
 
-Organisateur et participant utilisent le **même renderer**. Seule la matrice d'actions varie.
+- est locale et temporaire ;
+- ne réserve rien ;
+- ne modifie pas la liste ;
+- n'ajoute rien au panier personnel ;
+- n'inclut jamais une ligne déjà achetée.
 
-Une liste CLOSED ou CANCELLED ne peut jamais occuper le slot partagé. Une liste CLOSED reste dans `Mes listes` / historique — jamais dans le side-cart.
+Le CTA canonique est :
 
----
+> **Commander (N · montant sélectionné)**
 
-## 8. Ouvrir une liste = mécanique universelle
+Il n'existe plus d'achat direct par bouton « Acheter », de « Payer [montant de la liste] », ni d'obligation de régler le reste.
 
-Quatre entrées, une seule opération :
+**Reste disponible** est une information sur la liste, jamais une somme due.
 
-```
-publication par le créateur
-ouverture d'un lien reçu
-ouverture depuis Mes listes
-restauration au reload
-        ↓
-afficher cette liste OPEN
-dans le slot Liste partagée
-```
+## 8. Récapitulatif puis checkout canonique
 
----
+Toute sélection, y compris un seul article, suit exactement ce parcours :
 
-## 9. Deux intentions, jamais mélangées
+~~~text
+Liste OPEN
+  → sélection explicite
+  → Commander
+  → récapitulatif des articles inclus
+  → checkout canonique
+  → création d'une commande standard
+~~~
 
-`PERSONAL_CART` ou `SHARED_LIST`. Un checkout liste n'absorbe jamais le panier personnel. Les deux intentions restent séparées jusqu'à la création de commande.
+Dans le récapitulatif :
 
-**Acheter** = acheter une ligne disponible choisie.
+- le symbole **✓** signifie « inclus dans cette commande » ;
+- ce symbole est statique et n'est jamais une case à cocher ;
+- chaque ligne affiche article, quantité et prix marchand courant ;
+- toute variation depuis le prix de publication est annoncée explicitement ;
+- l'utilisateur peut revenir à la liste avant de confirmer.
 
-**Acheter le reste** = raccourci volontaire permettant d'acheter en une commande toutes les lignes encore disponibles.
+Le checkout final conserve le contrat Komerce standard : identité, relais, crédit disponible, moyen de paiement et confirmation. La liste n'ajoute qu'un contexte d'affichage et les identifiants de claim nécessaires à la commande.
 
-**Reste disponible** = valeur informative des lignes non encore achetées. Ce montant n'est jamais une somme due.
+Un checkout porte soit sur **PERSONAL_CART**, soit sur **SHARED_LIST**. Jamais les deux.
 
----
+Le panier personnel est conservé intégralement pendant un checkout liste et restauré à toute sortie du modal : succès, annulation, retour, Escape ou fermeture.
 
-## 10. Irréprochable
+## 9. Code secret de retrait
 
-Comme on ne fait qu'une seule chose, cette chose porte tout. Irréprochable ne veut pas dire tout faire. Ça veut dire, sans exception :
+Pour une commande issue d'une liste reçue, l'acheteur choisit dans le checkout final :
 
-- la liste arrive vite ;
-- les articles sont clairs ;
-- l'état (disponible / déjà acheté) ne ment jamais ;
-- le paiement réussit ou échoue sans ambiguïté ;
-- l'acheteur sait toujours ce qu'il a payé et ce qu'il recevra.
+- **Me l'envoyer** — choix par défaut ;
+- **L'envoyer à l'organisateur** — option explicite.
 
-C'est la confiance. Le reste est du design.
+Pour une commande issue de **Ma liste**, ces deux destinations représentent la même personne ; aucun choix redondant n'est affiché.
+
+Le navigateur transmet uniquement une intention sûre : **buyer** ou **organizer**. Il ne transmet jamais librement le numéro de l'organisateur.
+
+Le serveur :
+
+1. vérifie que les lignes appartiennent à une seule liste ;
+2. résout l'organisateur depuis cette liste ;
+3. utilise son numéro vérifié si l'option organizer est choisie ;
+4. persiste le choix sur la commande ;
+5. notifie réellement le destinataire retenu lorsqu'il devient disponible ;
+6. réserve à ce destinataire l'accès à la révélation sécurisée du code complet.
+
+Une préférence uniquement visuelle, sans effet backend, est interdite.
+
+## 10. Achat concurrent et vérité des états
+
+La sélection ne réserve pas les lignes. Deux personnes peuvent sélectionner le même article.
+
+Une ligne ne peut toutefois être réclamée qu'une fois. La commande gagnante est arbitrée atomiquement par la base via **shared_cart_item_id**.
+
+En cas de conflit :
+
+- la commande concurrente est refusée proprement ;
+- la liste est rafraîchie ;
+- la ligne devient **Déjà acheté** ;
+- l'organisateur peut voir **Déjà acheté par [Prénom]** ;
+- le participant voit seulement **Déjà acheté**.
+
+## 11. Mes listes
+
+**Mes listes** référence :
+
+- les listes créées par moi ;
+- les listes reçues que j'ai explicitement sauvegardées.
+
+Sauvegarder une liste reçue est idempotent et ne copie pas son snapshot.
+
+Une personne peut participer à plusieurs listes dans le temps, mais une seule liste OPEN est affichée dans le side-cart à un instant donné.
+
+## 12. Ce qui est interdit
+
+Ne pas réintroduire :
+
+- modification ou ajout après publication ;
+- stepper ou suppression de ligne sur une liste publiée ;
+- CTA « Ajouter à cette liste » dans une fiche produit ;
+- achat direct sans récapitulatif ;
+- paiement forcé de toutes les lignes disponibles ;
+- fusion panier personnel + liste ;
+- checkout collectif parallèle ;
+- cagnotte, contribution, montant libre ou objectif de financement ;
+- liste CLOSED/CANCELLED résidente dans le side-cart ;
+- choix de destinataire du code sans effet réel côté serveur.
+
+## 13. Test décisif
+
+À tout moment, l'utilisateur doit pouvoir répondre sans hésiter à quatre questions :
+
+1. Suis-je dans **Mon panier**, **Ma liste** ou **Liste de [Prénom]** ?
+2. Quels articles ai-je sélectionnés pour cette commande précise ?
+3. Quel montant vais-je confirmer maintenant ?
+4. Qui recevra le code secret de retrait ?
+
+Si une réponse n'est pas immédiatement claire, l'implémentation n'est pas conforme.

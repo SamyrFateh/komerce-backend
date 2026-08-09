@@ -38,6 +38,8 @@ describe('checkoutSharedListSelection', () => {
     document.body.innerHTML = '<div id="k-order-modal"></div>';
     initDom();
     state.cart = [];
+    state.cartIsEphemeral = false;
+    state.checkoutDisplayContext = null;
     jest.clearAllMocks();
   });
 
@@ -75,6 +77,27 @@ describe('checkoutSharedListSelection', () => {
     expect(state.cart).toEqual([
       { product: { id: 42, name: 'Riz' }, qty: 2, shared_cart_item_id: 'sci-1', variant_combo: null },
     ]);
+  });
+
+  it('transmet un contexte structuré au checkout sans lui déléguer de logique de liste', () => {
+    checkoutSharedListSelection(
+      [{ shared_cart_item_id: 'sci-1', product: { id: 42 }, quantity: 1 }],
+      {
+        origin: 'SHARED_LIST',
+        sharedCartId: 'cart-1',
+        isCreator: false,
+        creatorFirstName: 'Samsam',
+        title: 'Achat pour la liste de Samsam',
+      },
+    );
+
+    expect(state.checkoutDisplayContext).toEqual({
+      origin: 'SHARED_LIST',
+      sharedCartId: 'cart-1',
+      isCreator: false,
+      creatorFirstName: 'Samsam',
+      title: 'Achat pour la liste de Samsam',
+    });
   });
 
   // GAP-07 §12 — l'unité vendable (variant_combo) doit survivre jusqu'au
@@ -153,6 +176,7 @@ describe('checkoutSharedListSelection', () => {
     await flushMutations();
 
     expect(state.cart).toBe(personalCart);
+    expect(state.checkoutDisplayContext).toBeNull();
   });
 
   it('ne restaure qu\'une seule fois même si la classe change plusieurs fois après fermeture (idempotence)', async () => {
@@ -239,4 +263,19 @@ describe('checkoutSharedListSelection', () => {
       dom.orderModal = originalOrderModal;
     }
   });
+  it('restaure immédiatement panier et contexte si checkoutCart lève une erreur synchrone', () => {
+    const personalCart = [{ product: { id: 1 }, qty: 1 }];
+    state.cart = personalCart;
+    checkoutCart.mockImplementationOnce(() => { throw new Error('checkout indisponible'); });
+
+    expect(() => checkoutSharedListSelection(
+      [{ shared_cart_item_id: 'sci-1', product: { id: 42 }, quantity: 1 }],
+      { origin: 'SHARED_LIST', title: 'Achat pour la liste de Samsam' },
+    )).toThrow('checkout indisponible');
+
+    expect(state.cart).toBe(personalCart);
+    expect(state.cartIsEphemeral).toBe(false);
+    expect(state.checkoutDisplayContext).toBeNull();
+  });
+
 });
