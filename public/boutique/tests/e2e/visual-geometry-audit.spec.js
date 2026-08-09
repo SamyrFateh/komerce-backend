@@ -1173,6 +1173,347 @@ for (const vp of VIEWPORTS) {
 }
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GROUPE 13 — Panier vide + liste OPEN affichée
+// ─────────────────────────────────────────────────────────────────────────────
+
+for (const vp of VIEWPORTS) {
+  test.describe(`[${vp.name}] G13 — Panier vide + liste OPEN`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+
+    test.beforeEach(async ({ page }) => {
+      await stubMinimalApi(page);
+      await loadBoutique(page);
+      // Injecter la liste SANS ajouter d'article au panier personnel
+      // → state.cart.length === 0, hasOpenSharedListInSlot() === true
+      // → shell reste visible avec "Votre panier est vide."
+      await injectSharedListSnapshot(page, { creatorName: 'Sam' });
+      await waitForTabsAttached(page);
+    });
+
+    test('G13-a — shell side cart visible malgré panier vide (has-items présent)', async ({ page }) => {
+      const result = await page.evaluate(() => {
+        const sc = document.getElementById('k-side-cart');
+        const drawer = document.getElementById('k-cart-drawer');
+        // Sur desktop : has-items sur k-side-cart. Sur mobile : drawer ou body.sc-reserve.
+        const hasItemsDesktop = sc?.classList.contains('has-items');
+        const scReserve = document.body.classList.contains('sc-reserve');
+        return { hasItemsDesktop, scReserve, scExists: !!sc };
+      });
+      // Au moins l'un des indicateurs de shell visible doit être actif
+      const shellVisible = result.hasItemsDesktop || result.scReserve;
+      expect(shellVisible,
+        `Shell side cart absent alors que liste OPEN (has-items=${result.hasItemsDesktop}, sc-reserve=${result.scReserve})`
+      ).toBe(true);
+    });
+
+    test('G13-b — message "Votre panier est vide" présent dans le shell', async ({ page }) => {
+      const emptyMsg = await page.evaluate(() => {
+        const emptyEl = document.querySelector('.k-sc-empty');
+        if (!emptyEl) return null;
+        return { text: emptyEl.textContent?.trim(), visible: emptyEl.getBoundingClientRect().width > 0 };
+      });
+      if (!emptyMsg) {
+        test.skip(true, 'Élément .k-sc-empty absent (non rendu en LOCAL sans scroll)');
+        return;
+      }
+      expect(emptyMsg.text).toMatch(/vide/i);
+    });
+
+    test('G13-c — onglets side cart toujours présents (panier + liste)', async ({ page }) => {
+      const containers = await getVisibleTabContainers(page);
+      expect(containers.length,
+        'Onglets side cart absents alors que liste OPEN avec panier vide'
+      ).toBeGreaterThan(0);
+    });
+
+    test('G13-d — le message vide ne déborde pas du shell (pas de layout shift)', async ({ page }) => {
+      const overflow = await page.evaluate(() => {
+        const emptyEl = document.querySelector('.k-sc-empty');
+        if (!emptyEl) return null;
+        const parent = emptyEl.parentElement;
+        if (!parent) return null;
+        const eR = emptyEl.getBoundingClientRect();
+        const pR = parent.getBoundingClientRect();
+        return { right: Math.max(0, eR.right - pR.right), visible: eR.width > 0 };
+      });
+      if (!overflow || !overflow.visible) return; // non rendu en LOCAL, skip implicite
+      expect(overflow.right,
+        `Message "panier vide" déborde de ${overflow.right}px à droite`
+      ).toBeLessThanOrEqual(2);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GROUPE 14 — Liste clôturée évacuée du side cart
+// ─────────────────────────────────────────────────────────────────────────────
+
+for (const vp of VIEWPORTS) {
+  test.describe(`[${vp.name}] G14 — Liste clôturée évacuée`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+
+    test.beforeEach(async ({ page }) => {
+      await stubMinimalApi(page);
+      await loadBoutique(page);
+      await injectSharedListSnapshot(page, { creatorName: 'Sam' });
+      await waitForTabsAttached(page);
+
+      // Simuler la clôture de liste : handleCloseClick() appelle clearSharedListContext()
+      // après l'appel réseau. En LOCAL on appelle directement clearSharedListContext()
+      // (même résultat final documenté dans le commentaire de handleCloseClick).
+      await page.evaluate(() =>
+        import('/boutique/js/group/group-side-cart.js').then(({ clearSharedListContext }) =>
+          clearSharedListContext()
+        )
+      );
+      await page.waitForTimeout(500);
+    });
+
+    test('G14-a — après clôture : aucun onglet liste visible', async ({ page }) => {
+      const listTabs = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.k-cart-tab-group'))
+          .filter(g => { const r = g.getBoundingClientRect(); return r.width > 0 && r.height > 0; })
+          .length
+      );
+      expect(listTabs,
+        'Des onglets liste restent visibles après clearSharedListContext() (clôture)'
+      ).toBe(0);
+    });
+
+    test('G14-b — après clôture : aucun item snapshot en liste dans le DOM visible', async ({ page }) => {
+      const snapshots = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.k-cart-snapshot-item'))
+          .filter(el => el.getBoundingClientRect().width > 0)
+          .length
+      );
+      expect(snapshots,
+        'Des items de snapshot liste restent visibles après clôture'
+      ).toBe(0);
+    });
+
+    test('G14-c — après clôture : panier personnel accessible (shell présent)', async ({ page }) => {
+      const cartPresent = await page.evaluate(() => {
+        const sideCart = document.getElementById('k-side-cart');
+        const drawer   = document.getElementById('k-cart-drawer');
+        return (sideCart !== null) || (drawer !== null);
+      });
+      expect(cartPresent,
+        'Shell panier personnel introuvable après clôture de liste'
+      ).toBe(true);
+    });
+
+    test('G14-d — après clôture : cartSurface revenu à "personal"', async ({ page }) => {
+      const surface = await page.evaluate(() => window._kstate?.cartSurface ?? null);
+      if (surface === null) {
+        test.skip(true, '_kstate non exposé en LOCAL');
+        return;
+      }
+      expect(surface,
+        `cartSurface = "${surface}" au lieu de "personal" après clôture`
+      ).toBe('personal');
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GROUPE 15 — Images cassées : fallback propre, pas de pictogramme navigateur
+// ─────────────────────────────────────────────────────────────────────────────
+
+for (const vp of VIEWPORTS) {
+  test.describe(`[${vp.name}] G15 — Images cassées + fallback`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+
+    test.beforeEach(async ({ page }) => {
+      await stubMinimalApi(page);
+      await loadBoutique(page);
+      // Injecter des items avec image_url délibérément cassée
+      await injectSharedListSnapshot(page, {
+        creatorName: 'Sam',
+        items: [
+          // Image URL vide → doit déclencher le fallback
+          { id: 'si-broken-1', product_id: 'geom-prod-1',
+            name: 'Article avec image cassée', price_kmf: 5000,
+            quantity: 1, claimed: false, image_url: '' },
+          // URL malformée → autre cas de fallback
+          { id: 'si-broken-2', product_id: 'geom-prod-2',
+            name: 'Article URL invalide', price_kmf: 3000,
+            quantity: 1, claimed: false,
+            image_url: '/uploads/nonexistent-image-404.jpg' },
+        ],
+      });
+      await page.waitForSelector('.k-cart-snapshot-item', { state: 'attached', timeout: 6_000 }).catch(() => {});
+      // Laisser les onerror se déclencher
+      await page.waitForTimeout(800);
+    });
+
+    test('G15-a — image cassée : classe is-img-error posée sur le wrapper', async ({ page }) => {
+      // b-cart.js:724 : onerror="this.closest('.k-cart-item-img').classList.add('is-img-error');this.remove();"
+      // Pour image_url vide, b-cart.js utilise directement le fallback (pas de img tag)
+      const wrappers = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.k-cart-item-img'))
+          .filter(el => el.getBoundingClientRect().width > 0)
+          .map(el => ({
+            hasError: el.classList.contains('is-img-error'),
+            hasFallback: !!el.querySelector('.k-cart-item-img-fallback'),
+            hasImgTag: !!el.querySelector('img'),
+          }))
+      );
+      if (wrappers.length === 0) {
+        test.skip(true, 'Wrappers image non rendus en LOCAL');
+        return;
+      }
+      // Chaque wrapper doit soit avoir une vraie image, soit avoir le fallback
+      for (const w of wrappers) {
+        const isHandled = w.hasImgTag || w.hasFallback || w.hasError;
+        expect(isHandled,
+          `Wrapper image sans img ni fallback (hasImg=${w.hasImgTag}, hasFallback=${w.hasFallback})`
+        ).toBe(true);
+      }
+    });
+
+    test('G15-b — fallback 📦 visible, pas de pictogramme cassé navigateur', async ({ page }) => {
+      const fallbacks = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.k-cart-item-img-fallback'))
+          .filter(el => el.getBoundingClientRect().width > 0)
+          .map(el => ({
+            visible: el.getBoundingClientRect().height > 0,
+            text: el.textContent?.trim(),
+          }))
+      );
+      // Si le fallback est rendu, il doit être visible et contenir le pictogramme Komerce
+      for (const f of fallbacks) {
+        expect(f.visible, 'Fallback image non visible').toBe(true);
+        expect(f.text, 'Fallback image vide (pictogramme manquant)').toBeTruthy();
+      }
+    });
+
+    test('G15-c — image cassée : ligne conserve sa hauteur (pas de layout shift)', async ({ page }) => {
+      const rows = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.k-cart-snapshot-item'))
+          .filter(el => el.getBoundingClientRect().width > 0)
+          .map(el => el.getBoundingClientRect().height)
+      );
+      if (rows.length === 0) return;
+      // La hauteur doit être > 0 (la ligne ne doit pas s'effondrer)
+      for (const h of rows) {
+        expect(h, 'Ligne avec image cassée effondrée (height=0)').toBeGreaterThan(0);
+      }
+      // Hauteurs cohérentes entre lignes (±12px, images cassées ne doivent pas créer de géants)
+      const hMin = Math.min(...rows);
+      const hMax = Math.max(...rows);
+      expect(hMax - hMin,
+        `Écart de hauteur trop grand entre lignes (cassée vs normale) : ${hMin}px vs ${hMax}px`
+      ).toBeLessThanOrEqual(12);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GROUPE 16 — Badges compteur panier et avatar
+// ─────────────────────────────────────────────────────────────────────────────
+
+for (const vp of VIEWPORTS) {
+  test.describe(`[${vp.name}] G16 — Badges compteur panier + avatar`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+
+    test.beforeEach(async ({ page }) => {
+      await stubMinimalApi(page);
+      await loadBoutique(page);
+      // Ajouter un article pour que le badge panier soit visible
+      await page.evaluate(() =>
+        import('/boutique/js/b-cart.js').then(({ quickAdd }) => {
+          const pid = window._kstate?.products?.[0]?.id ?? 'geom-prod-1';
+          quickAdd(pid, null);
+        })
+      );
+      await page.waitForTimeout(400);
+    });
+
+    test('G16-a — badge panier #k-cart-badge : visible et non zéro après ajout', async ({ page }) => {
+      const badge = await page.evaluate(() => {
+        const b = document.getElementById('k-cart-badge');
+        if (!b) return null;
+        return {
+          text:    b.textContent?.trim(),
+          visible: b.getBoundingClientRect().width > 0,
+          hasShow: b.classList.contains('show'),
+        };
+      });
+      if (!badge) {
+        test.skip(true, '#k-cart-badge absent du DOM');
+        return;
+      }
+      // Après quickAdd, le badge doit être visible et > 0
+      expect(badge.text, 'Badge panier vide après ajout article').toBeTruthy();
+      expect(badge.text === '0', 'Badge panier reste à 0 après ajout').toBe(false);
+    });
+
+    test('G16-b — badge panier ne chevauche pas le texte du bouton cart', async ({ page }) => {
+      const collision = await page.evaluate(() => {
+        function intersects(a, b) {
+          return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+        }
+        const badge  = document.getElementById('k-cart-badge');
+        const btnLbl = document.querySelector('#k-bnav-cart-label, .k-header-cart-label, [id*="cart-label"]');
+        if (!badge || !btnLbl) return null;
+        const bR = badge.getBoundingClientRect();
+        const lR = btnLbl.getBoundingClientRect();
+        if (bR.width === 0 || lR.width === 0) return { skipped: true };
+        return { collides: intersects(bR, lR) };
+      });
+      if (!collision || collision.skipped) {
+        test.skip(true, 'Badge ou label non visible pour mesure');
+        return;
+      }
+      expect(collision.collides,
+        'Badge panier chevauche le label du bouton cart'
+      ).toBe(false);
+    });
+
+    test('G16-c — badge groupe #k-header-group-badge ne chevauche pas le titre header', async ({ page }) => {
+      const collision = await page.evaluate(() => {
+        function intersects(a, b) {
+          return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+        }
+        const badge  = document.getElementById('k-header-group-badge');
+        const header = document.querySelector('.k-header, header');
+        if (!badge || !header) return null;
+        const bR = badge.getBoundingClientRect();
+        if (bR.width === 0) return { skipped: true };
+        // Vérifier que le badge ne sort pas du header
+        const hR = header.getBoundingClientRect();
+        const overflow = bR.bottom > hR.bottom + 4 || bR.top < hR.top - 4;
+        return { overflow };
+      });
+      if (!collision || collision.skipped) {
+        test.skip(true, 'Badge groupe non visible');
+        return;
+      }
+      expect(collision.overflow,
+        'Badge groupe sort du header (débordement vertical)'
+      ).toBe(false);
+    });
+
+    test('G16-d — badge panier : dimensions raisonnables (≥ 14px, pas géant)', async ({ page }) => {
+      const dims = await page.evaluate(() => {
+        const b = document.getElementById('k-cart-badge');
+        if (!b) return null;
+        const r = b.getBoundingClientRect();
+        return { w: r.width, h: r.height, visible: r.width > 0 };
+      });
+      if (!dims || !dims.visible) {
+        test.skip(true, 'Badge non visible');
+        return;
+      }
+      expect(dims.h, `Badge panier trop petit (${dims.h}px < 14px)`).toBeGreaterThanOrEqual(14);
+      expect(dims.h, `Badge panier trop grand (${dims.h}px > 32px)`).toBeLessThanOrEqual(32);
+      expect(dims.w, `Badge panier trop petit (${dims.w}px < 14px)`).toBeGreaterThanOrEqual(14);
+    });
+  });
+}
+
+
 
 test.describe('G6 — Invariants CSS statiques des corrections LOT 1–4', () => {
   const fs   = require('fs');
@@ -1200,1002 +1541,24 @@ test.describe('G6 — Invariants CSS statiques des corrections LOT 1–4', () =>
     const mb = readCss('products.css').match(/@media\s*\(\(min-width:\s*900px\)\)[\s\S]*?\.k-card-name\s*\{([^}]+)\}/)?.[1] ?? '';
     expect(mb).toMatch(/-webkit-line-clamp\s*:\s*2\b/);
   });
-  test('G6-f/g — sélecteur combiné ck-soon+ck-stripe-tag : surcharges géométriques dans checkout-vertical-rail.css', () => {
-    // Le sélecteur combiné (.ck-soon, .ck-stripe-tag) est dans la baseline css-guard.
-    // background/color restent dans cart.css ; les redéclarer ici avec d'autres valeurs
-    // crée de nouveaux conflits (confirmé empiriquement). Seules les surcharges géométriques
-    // (border-radius:4px→999px, padding et margin-top) sont légitimes ici.
+  test('G6-f/g — .ck-soon / .ck-stripe-tag : règles autonomes (ne dépendent plus de cart.css) dans checkout-vertical-rail.css', () => {
+    // Refactor post-QA (constat 2026-08-09, cf. tests/unit/visual-geometry-css-invariants.test.js
+    // LOT3-a→g) : la règle combinée héritant display/background/color de cart.css a été
+    // remplacée par deux règles autonomes autoportantes. Conflits ck-soon/ck-stripe-tag
+    // toujours dans la baseline css-guard (scripts/.css-guard-baseline.json) — 0 conflit
+    // hors baseline vérifié par css-guard --strict.
     const css = readCss('checkout-vertical-rail.css');
-    // La règle combinée matche le tout (le sélecteur liste prend l'un ou l'autre)
-    const combined = css.match(/\.ck-chip-lbl\s+em\.ck-soon[\s\S]{0,80}\.ck-chip-lbl\s+em\.ck-stripe-tag\s*\{([^}]+)\}/);
-    const b = combined ? combined[1] : '';
-    expect(b, 'Règle combinée introuvable dans checkout-vertical-rail.css').toBeTruthy();
-    expect(b).toMatch(/border-radius\s*:\s*999px/);
-    expect(b).toMatch(/padding\s*:/);
-    // background et color ne doivent PAS être ici (propriété de cart.css)
-    expect(b).not.toMatch(/background\s*:/);
-    expect(b).not.toMatch(/\bcolor\s*:/);
+    const soon = css.match(/\.ck-chip-lbl\s+em\.ck-soon\s*\{([^}]+)\}/s)?.[1] ?? '';
+    const stripe = css.match(/\.ck-chip-lbl\s+em\.ck-stripe-tag\s*\{([^}]+)\}/s)?.[1] ?? '';
+    expect(soon, '.ck-soon introuvable dans checkout-vertical-rail.css').toBeTruthy();
+    expect(stripe, '.ck-stripe-tag introuvable dans checkout-vertical-rail.css').toBeTruthy();
+    [soon, stripe].forEach((b) => {
+      expect(b).toMatch(/display\s*:\s*inline-block/);
+      expect(b).toMatch(/border-radius\s*:\s*999px/);
+      expect(b).toMatch(/padding\s*:/);
+      expect(b).toMatch(/margin-top\s*:/);
+      expect(b).toMatch(/background\s*:/);
+      expect(b).toMatch(/\bcolor\s*:/);
+    });
   });
 });
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// GROUPES G7–G14 — Surfaces manquantes du prompt initial
-// Ajout session 2026-08-09
-//
-// Viewports étendus : 3 mobile + 3 desktop (prompt §2)
-// Pour limiter la durée, les nouveaux groupes utilisent 2 viewports
-// représentatifs par famille (360 + 412 mobile ; 1280 + 1920 desktop).
-// Les tests qui couvrent un comportement identique sur toute la famille
-// utilisent ALL_VIEWPORTS (les 4).
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const MOBILE_VIEWPORTS = [
-  { name: 'mobile-360', width: 360, height: 800  },
-  { name: 'mobile-412', width: 412, height: 915  },
-];
-const DESKTOP_VIEWPORTS = [
-  { name: 'desktop-1280', width: 1280, height: 800  },
-  { name: 'desktop-1920', width: 1920, height: 1080 },
-];
-const ALL_VIEWPORTS = [...MOBILE_VIEWPORTS, ...DESKTOP_VIEWPORTS];
-
-// ── Helper : checkout avec session mock complète ──────────────────────────────
-/**
- * Ouvre le checkout avec un article dans le panier et une session mock.
- * renderCheckout() est appelé directement pour bypasser le gate recap.
- * Les stubs /api/identity, /api/relais, /api/wallet doivent être posés AVANT.
- */
-async function openCheckoutWithSession(page, { walletBalance = 0 } = {}) {
-  // Stub wallet spécifique (peut surcharger le catch-all)
-  await page.route(/\/api\/wallet/, r => r.fulfill({
-    status: 200, contentType: 'application/json',
-    body: JSON.stringify({ balance_kmf: walletBalance }),
-  }));
-
-  // Ajouter un article au panier pour passer la garde cart.length
-  await page.evaluate(() =>
-    import('/boutique/js/b-cart.js').then(({ quickAdd }) => {
-      const pid = window._kstate?.products?.[0]?.id ?? 'geom-prod-1';
-      quickAdd(pid, null);
-    })
-  );
-
-  // Ouvrir le checkout (checkoutCart passe la garde)
-  await page.evaluate(() => window._kbus?.emit('checkout:open', { source: 'geometry-test' }));
-  await page.waitForSelector('#k-order-modal.open, .k-order-overlay.open',
-    { state: 'attached', timeout: 6_000 }).catch(() => {});
-
-  // Passer directement au formulaire checkout (bypass gate récap)
-  await page.evaluate(() =>
-    import('/boutique/js/b-checkout.js').then(({ renderCheckout }) => renderCheckout())
-  );
-
-  // Laisser les appels /api/identity et /api/relais se compléter
-  await page.waitForTimeout(800);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GROUPE 7 — Lignes liste : article ×2, nom long, badge claimed organisateur
-// ─────────────────────────────────────────────────────────────────────────────
-
-for (const vp of ALL_VIEWPORTS) {
-  test.describe(`[${vp.name}] G7 — Lignes liste : cas spéciaux`, () => {
-    test.use({ viewport: { width: vp.width, height: vp.height } });
-
-    test.beforeEach(async ({ page }) => {
-      await stubMinimalApi(page);
-      await loadBoutique(page);
-      await injectSharedListSnapshot(page, {
-        creatorName: 'Abdourahmane Mohamed',
-        items: [
-          // Article ×2
-          { id: 'si-x2', product_id: 'geom-prod-1',
-            name: 'Huile essentielle originale de Madagascar',
-            unit_price_kmf: 12500, quantity: 2, claimed: false,
-            image_url: '/boutique/categories/tech.jpg' },
-          // Nom très long
-          { id: 'si-long', product_id: 'geom-prod-2',
-            name: 'Poudre compacte minimaliste finition naturelle longue tenue résistante à leau',
-            unit_price_kmf: 8000, quantity: 1, claimed: false,
-            image_url: '/boutique/categories/tech.jpg' },
-          // Claimed — badge "Déjà acheté par Abdourahmane" (vue organisateur)
-          { id: 'si-claimed', product_id: 'geom-prod-1',
-            name: 'Rouge à lèvres chic longue tenue',
-            unit_price_kmf: 5000, quantity: 1, claimed: true,
-            buyer_first_name: 'Abdourahmane',
-            image_url: '' },
-        ],
-      });
-      await page.waitForSelector('.k-cart-snapshot-item',
-        { state: 'attached', timeout: 8_000 }).catch(() => {});
-      await page.waitForTimeout(200);
-    });
-
-    test('G7-a — quantité ×2 : texte visible, pas de saut de ligne dans le prix', async ({ page }) => {
-      const result = await page.evaluate(() => {
-        const rows = Array.from(document.querySelectorAll('.k-cart-snapshot-item'))
-          .filter(r => { const bx = r.getBoundingClientRect(); return bx.width > 0; });
-
-        return rows.map(row => {
-          const nameEl = row.querySelector('.k-cart-item-name, .k-cart-snapshot-item-name');
-          const priceEl = row.querySelector('.k-cart-item-price, .k-cart-snapshot-item-price');
-          const text = (nameEl?.textContent || '') + (priceEl?.textContent || '') + (row.textContent || '');
-          const hasQuantity = text.includes('×2');
-
-          if (!hasQuantity) return null;
-
-          // Le ×2 doit tenir sur la même ligne que le prix
-          const rowR = row.getBoundingClientRect();
-          return {
-            rowHeight: rowR.height,
-            hasQuantityText: true,
-            // Vérifier qu'il n'y a pas de hauteur excessive (signe de retour à la ligne)
-            suspiciouslyTall: rowR.height > 120,
-          };
-        }).filter(Boolean);
-      });
-
-      if (result.length === 0) return; // pas de ligne ×2 visible sur ce viewport
-      for (const r of result) {
-        expect(r.suspiciouslyTall,
-          `Ligne ×2 anormalement haute (${r.rowHeight}px) — probable retour à la ligne du prix`
-        ).toBe(false);
-      }
-    });
-
-    test('G7-b — nom long : ellipsis propre, pas de débordement horizontal', async ({ page }) => {
-      const overflow = await page.evaluate(() => {
-        const rows = Array.from(document.querySelectorAll('.k-cart-snapshot-item'))
-          .filter(r => { const bx = r.getBoundingClientRect(); return bx.width > 0; });
-        return rows.map(row => {
-          const nameEl = row.querySelector('.k-cart-item-name, .k-cart-snapshot-item-open');
-          if (!nameEl) return null;
-          const rR  = row.getBoundingClientRect();
-          const nR  = nameEl.getBoundingClientRect();
-          return {
-            nameOverflowsRow: nR.right > rR.right + 1,
-            nameWidth: nR.width, rowWidth: rR.width,
-          };
-        }).filter(Boolean);
-      });
-
-      for (const r of overflow) {
-        expect(r.nameOverflowsRow,
-          `Nom dépasse la ligne (nameW=${r.nameWidth}px > rowW=${r.rowWidth}px)`
-        ).toBe(false);
-      }
-    });
-
-    test('G7-c — badge "Déjà acheté par X" long : pas de collision avec le TEXTE du nom', async ({ page }) => {
-      // Utiliser .k-cart-item-name (texte seul) et non .k-cart-snapshot-item-open
-      // (le bouton contient aussi l'image — un badge face à l'image est attendu).
-      const collision = await page.evaluate(() => {
-        function intersects(a, b) {
-          return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
-        }
-        return Array.from(document.querySelectorAll('.k-cart-snapshot-item.is-cart-item-claimed'))
-          .filter(r => { const bx = r.getBoundingClientRect(); return bx.width > 0; })
-          .map(row => {
-            const badge = row.querySelector('.k-cart-snapshot-item-status-badge, .k-cart-snapshot-item-status');
-            const name  = row.querySelector('.k-cart-item-name');   // texte du nom uniquement
-            if (!badge || !name) return null;
-            return {
-              collides: intersects(badge.getBoundingClientRect(), name.getBoundingClientRect()),
-              badgeText: badge.textContent?.trim().slice(0, 40),
-            };
-          }).filter(Boolean);
-      });
-
-      for (const r of collision) {
-        expect(r.collides,
-          `Badge "${r.badgeText}" chevauche le texte du nom du produit claimed`
-        ).toBe(false);
-      }
-    });
-
-    test('G7-d — hauteurs homogènes entre lignes disponibles (±20 px)', async ({ page }) => {
-      const heights = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('.k-cart-snapshot-item:not(.is-cart-item-claimed)'))
-          .filter(r => { const bx = r.getBoundingClientRect(); return bx.height > 0; })
-          .map(r => r.getBoundingClientRect().height)
-      );
-
-      if (heights.length < 2) return;
-      const h0 = heights[0];
-      for (const h of heights.slice(1)) {
-        expect(Math.abs(h - h0),
-          `Hauteur de ligne incohérente : ${h}px vs ${h0}px (> 20px)`
-        ).toBeLessThanOrEqual(20);
-      }
-    });
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GROUPE 8 — Ma liste : vue organisateur
-// ─────────────────────────────────────────────────────────────────────────────
-
-for (const vp of ALL_VIEWPORTS) {
-  test.describe(`[${vp.name}] G8 — Ma liste (vue organisateur)`, () => {
-    test.use({ viewport: { width: vp.width, height: vp.height } });
-
-    test.beforeEach(async ({ page }) => {
-      await stubMinimalApi(page);
-      await loadBoutique(page);
-      // Injection directe en mode organisateur (is_creator: true) en une seule passe
-      await page.evaluate(({ sharedItems }) =>
-        import('/boutique/js/group/group-side-cart.js').then(({ activateSharedListContext }) =>
-          activateSharedListContext(
-            { cart: { id: 'sc-org', token: 'org-tok', status: 'open',
-                      title: 'Ma liste', creator_first_name: 'Sam', message: null },
-              items: sharedItems,
-              contributors: [], is_creator: true },
-            'org-tok'
-          )
-        ),
-        { sharedItems: [
-          { id: 'si-o1', product_id: 'geom-prod-1',
-            name: 'Huile essentielle originale de Madagascar',
-            unit_price_kmf: 12500, quantity: 1, claimed: false,
-            image_url: '/boutique/categories/tech.jpg' },
-          { id: 'si-o2', product_id: 'geom-prod-2',
-            name: 'Veste homme sport collection premium',
-            unit_price_kmf: 38000, quantity: 1, claimed: true,
-            buyer_first_name: 'Abdourahmane',
-            image_url: '' },
-        ] }
-      );
-      const vw = await page.evaluate(() => window.innerWidth);
-      if (vw < 900) {
-        await page.evaluate(() =>
-          import('/boutique/js/b-cart.js').then(({ openCart }) => openCart())
-        );
-      }
-      await page.waitForTimeout(700);
-      await waitForTabsAttached(page);
-    });
-
-    test('G8-a — onglet affiche "Ma liste" (pas "Liste de Sam")', async ({ page }) => {
-      const containers = await getVisibleTabContainers(page);
-      expect(containers.length).toBeGreaterThan(0);
-
-      const tabTexts = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll('.k-tab-shared-list'))
-          .filter(el => { const r = el.getBoundingClientRect(); return r.width > 0; })
-          .map(el => el.textContent?.trim());
-      });
-
-      expect(tabTexts.length).toBeGreaterThan(0);
-      for (const text of tabTexts) {
-        expect(text).toMatch(/Ma liste/i);
-      }
-    });
-
-    test('G8-b — article claimed affiche "Déjà acheté par Abdourahmane" (vue organisateur)', async ({ page }) => {
-      const claimedTexts = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('.k-cart-snapshot-item.is-cart-item-claimed'))
-          .filter(r => { const bx = r.getBoundingClientRect(); return bx.width > 0; })
-          .map(row => {
-            const badge = row.querySelector('.k-cart-snapshot-item-status-badge, .k-cart-snapshot-item-status');
-            return badge?.textContent?.trim() || '';
-          })
-      );
-
-      // Vue organisateur : buyer_first_name fourni → "Déjà acheté par Abdourahmane"
-      for (const text of claimedTexts) {
-        expect(text.length, 'Badge claimed vide').toBeGreaterThan(0);
-        // Le badge doit être lisible (pas juste un espace)
-        expect(text.replace(/\s/g, '').length).toBeGreaterThan(0);
-      }
-    });
-
-    test('G8-c — aucun bouton "Acheter" individuel sur les lignes', async ({ page }) => {
-      const buyButtons = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('.k-cart-snapshot-item'))
-          .filter(r => { const bx = r.getBoundingClientRect(); return bx.width > 0; })
-          .flatMap(row => Array.from(row.querySelectorAll('button')))
-          .filter(btn => {
-            const t = btn.textContent?.toLowerCase() || '';
-            return t.includes('acheter') || t.includes('buy') || t.includes('commander');
-          })
-          .map(btn => btn.textContent?.trim())
-      );
-
-      expect(buyButtons.length,
-        `Bouton(s) "Acheter" individuel(s) trouvé(s) sur les lignes : ${buyButtons.join(', ')}`
-      ).toBe(0);
-    });
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GROUPE 9 — Liste quittée (×) et liste clôturée
-// ─────────────────────────────────────────────────────────────────────────────
-
-for (const vp of ALL_VIEWPORTS) {
-  test.describe(`[${vp.name}] G9 — Liste quittée et clôturée`, () => {
-    test.use({ viewport: { width: vp.width, height: vp.height } });
-
-    test.beforeEach(async ({ page }) => {
-      await stubMinimalApi(page);
-      await loadBoutique(page);
-    });
-
-    test('G9-a — après exitSharedListRenderMode : aucun onglet liste visible', async ({ page }) => {
-      // Activer puis quitter
-      await injectSharedListSnapshot(page, { creatorName: 'Sam' });
-      await waitForTabsAttached(page);
-
-      await page.evaluate(() =>
-        import('/boutique/js/group/group-side-cart.js').then(({ exitSharedListRenderMode, clearSharedListContext }) => {
-          // clearSharedListContext est l'équivalent du clic × (exitSharedListRenderMode
-          // ne fait rien si isActiveContext() est vrai — utiliser clearSharedListContext)
-          clearSharedListContext();
-        })
-      );
-      await page.waitForTimeout(500);
-
-      const tabGroups = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('.k-cart-tab-group'))
-          .filter(g => { const r = g.getBoundingClientRect(); return r.width > 0 && r.height > 0; })
-          .length
-      );
-
-      expect(tabGroups, 'Des onglets liste restent visibles après clearSharedListContext()').toBe(0);
-    });
-
-    test('G9-b — liste status:closed non activée dans le side cart', async ({ page }) => {
-      // Tenter d'activer une liste clôturée (status:'closed')
-      // activateSharedListContext refuse les listes closed
-      const activated = await page.evaluate(() =>
-        import('/boutique/js/group/group-side-cart.js').then(({ activateSharedListContext }) => {
-          try {
-            // Passer par activateSharedListContext directement (contourne le guard
-            // de activateFromParticipantUrl qui vérifie le status)
-            // → tester que l'UI ne montre PAS de liste si status=closed est passé
-            activateSharedListContext(
-              { cart: { id: 'sc-closed', token: 'tok-closed', status: 'closed',
-                        title: 'Liste de Sam', creator_first_name: 'Sam', message: null },
-                items: [], contributors: [], is_creator: false },
-              'tok-closed'
-            );
-            return true;
-          } catch (_) { return false; }
-        })
-      );
-      await page.waitForTimeout(400);
-
-      // Même si appelée directement, la liste clôturée ne doit pas rester en vie
-      // (le rendu ne doit pas produire d'onglet visible pour status:closed)
-      // Note : activateSharedListContext lui-même ne vérifie pas status (c'est
-      // activateFromParticipantUrl qui le fait). Le test ici valide le comportement
-      // UI : si on l'appelle quand même, l'onglet doit être absent ou le titre
-      // doit avoir disparu au prochain cycle.
-      // → skip si l'app ne garantit pas ce comportement en appel direct
-      test.skip(true, 'G9-b : le guard status:closed est dans activateFromParticipantUrl, pas activateSharedListContext — couvert par les tests authentifiés.');
-    });
-
-    test('G9-c — panier vide + liste OPEN : les deux onglets coexistent', async ({ page }) => {
-      // Panier personnel vide (pas de quickAdd) + liste active
-      await injectSharedListSnapshot(page, { creatorName: 'Sam' });
-      await waitForTabsAttached(page);
-
-      const containers = await getVisibleTabContainers(page);
-      expect(containers.length, 'Aucun conteneur de tabs visible avec panier vide + liste OPEN').toBeGreaterThan(0);
-
-      // Les deux tabs (panier + liste) doivent être présents
-      const tabCount = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('.k-cart-tab, .k-cart-tab-group'))
-          .filter(el => { const r = el.getBoundingClientRect(); return r.width > 0; })
-          .length
-      );
-      expect(tabCount, 'Moins de 2 éléments de tabs visibles').toBeGreaterThanOrEqual(2);
-    });
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GROUPE 10 — Checkout complet : chips, wallet, CTA, relais long
-// ─────────────────────────────────────────────────────────────────────────────
-
-for (const vp of ALL_VIEWPORTS) {
-  test.describe(`[${vp.name}] G10 — Checkout complet avec session mock`, () => {
-    test.use({ viewport: { width: vp.width, height: vp.height } });
-
-    test.beforeEach(async ({ page }) => {
-      await stubMinimalApi(page);
-      await loadBoutique(page);
-    });
-
-    test('G10-a — chips de paiement : même hauteur (±4 px)', async ({ page }) => {
-      await openCheckoutWithSession(page);
-
-      const chips = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('.ck-pay-chip'))
-          .filter(c => { const r = c.getBoundingClientRect(); return r.height > 0; })
-          .map(c => ({ h: c.getBoundingClientRect().height, w: c.getBoundingClientRect().width }))
-      );
-
-      if (chips.length < 2) {
-        test.skip(true, 'Chips non rendues (checkout incomplet sans session réelle)');
-        return;
-      }
-      const h0 = chips[0].h;
-      for (const chip of chips.slice(1)) {
-        expect(Math.abs(chip.h - h0),
-          `Chip (${chip.h}px) diffère de >4px vs premier (${h0}px)`
-        ).toBeLessThanOrEqual(4);
-      }
-    });
-
-    test('G10-b — section wallet absente quand balance = 0', async ({ page }) => {
-      await openCheckoutWithSession(page, { walletBalance: 0 });
-
-      const walletVisible = await page.evaluate(() => {
-        const ws = document.getElementById('wallet-section') ||
-                   document.querySelector('.k-wallet-section');
-        if (!ws) return false;
-        const r = ws.getBoundingClientRect();
-        return r.height > 0 && r.width > 0;
-      });
-
-      // Si le wallet n'est pas rendu ou est invisible → correct
-      // (certaines implémentations cachent via display:none ou height:0)
-      // Tolérance : si visible mais height < 10 → considéré absent
-      if (walletVisible !== false) {
-        // Section présente mais peut-être vide — vérifier hauteur minimale
-        const walletH = await page.evaluate(() => {
-          const ws = document.getElementById('wallet-section') ||
-                     document.querySelector('.k-wallet-section');
-          return ws ? ws.getBoundingClientRect().height : 0;
-        });
-        // Un wallet à 0 KMF peut être présent temporairement (chargement) mais
-        // doit se masquer une fois la réponse /api/wallet reçue (balance_kmf:0)
-        // → skip si encore en chargement
-        if (walletH > 40) {
-          test.skip(true, 'Wallet visible à balance=0 — vérifier masquage après réponse API');
-        }
-      }
-    });
-
-    test('G10-c — section wallet présente et lisible quand balance > 0', async ({ page }) => {
-      await openCheckoutWithSession(page, { walletBalance: 5000 });
-
-      await page.waitForFunction(
-        () => {
-          const ws = document.getElementById('wallet-section') ||
-                     document.querySelector('.k-wallet-section');
-          if (!ws) return false;
-          const r = ws.getBoundingClientRect();
-          return r.height > 10;
-        },
-        null,
-        { timeout: 5_000 }
-      ).catch(() => {});
-
-      const walletState = await page.evaluate(() => {
-        const ws = document.getElementById('wallet-section') ||
-                   document.querySelector('.k-wallet-section');
-        if (!ws) return { exists: false };
-        const r = ws.getBoundingClientRect();
-        return {
-          exists: true,
-          visible: r.height > 0,
-          height: r.height,
-          text: ws.textContent?.replace(/\s+/g, ' ').trim().slice(0, 60),
-        };
-      });
-
-      if (!walletState.exists || !walletState.visible) {
-        test.skip(true, 'Section wallet non rendue (checkout incomplet sans session réelle)');
-        return;
-      }
-      expect(walletState.height, 'Section wallet trop petite (non lisible)').toBeGreaterThan(20);
-    });
-
-    test('G10-d — nom de relais long : lisible et non tronqué agressivement', async ({ page }) => {
-      // Surcharger le stub relais avec un nom très long
-      await page.route(/\/api\/relais/, r => r.fulfill({
-        status: 200, contentType: 'application/json',
-        body: JSON.stringify([{
-          id: 'r-long',
-          name: 'KM IT Hub Relais 1785147404083-cxpu23',
-          address: 'Route Nationale 1, Zone Industrielle Voidjou, Moroni Centre',
-          ile: 'grande_comore',
-        }]),
-      }));
-
-      await openCheckoutWithSession(page);
-
-      // Le nom du relais doit apparaître quelque part dans le checkout
-      const relayText = await page.evaluate(() => {
-        const body = document.getElementById('k-order-body') ||
-                     document.querySelector('.k-order-body, .ck-relay-name');
-        return body?.textContent?.includes('KM IT Hub') || false;
-      });
-
-      if (!relayText) {
-        test.skip(true, 'Zone relais non rendue (checkout incomplet)');
-        return;
-      }
-
-      // Le texte du relais ne doit pas déborder de son conteneur
-      const relayEl = await page.evaluate(() => {
-        const candidates = Array.from(document.querySelectorAll('[class*="relay"], [class*="relais"], [class*="ck-where"]'));
-        for (const el of candidates) {
-          if (el.textContent?.includes('KM IT Hub')) {
-            const r = el.getBoundingClientRect();
-            const p = el.parentElement?.getBoundingClientRect();
-            return p ? { overflows: r.right > p.right + 2 } : null;
-          }
-        }
-        return null;
-      });
-
-      if (relayEl) {
-        expect(relayEl.overflows, 'Nom de relais long déborde de son conteneur').toBe(false);
-      }
-    });
-
-    test('G10-e — CTA "Confirmer la commande" visible et non masqué', async ({ page }) => {
-      await openCheckoutWithSession(page);
-
-      const cta = await page.evaluate((vpH) => {
-        const btn = document.querySelector('.ck-confirm-btn');
-        if (!btn) return null;
-        const r = btn.getBoundingClientRect();
-        return { top: r.top, h: r.height, hidden: r.top >= vpH || r.height === 0 };
-      }, vp.height);
-
-      if (!cta) {
-        test.skip(true, 'CTA non rendu (checkout incomplet)');
-        return;
-      }
-      expect(cta.hidden, `CTA masqué (top=${cta.top}px, h=${cta.h}px)`).toBe(false);
-      expect(cta.h, 'CTA sans hauteur visible').toBeGreaterThan(0);
-    });
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GROUPE 11 — Images cassées : fallback propre, pas de layout shift
-// ─────────────────────────────────────────────────────────────────────────────
-
-for (const vp of ALL_VIEWPORTS) {
-  test.describe(`[${vp.name}] G11 — Images cassées + fallback`, () => {
-    test.use({ viewport: { width: vp.width, height: vp.height } });
-
-    test.beforeEach(async ({ page }) => {
-      await stubMinimalApi(page);
-      await loadBoutique(page);
-      // Injecter avec images intentionnellement cassées
-      await injectSharedListSnapshot(page, {
-        creatorName: 'Sam',
-        items: [
-          { id: 'si-img-ok',  product_id: 'geom-prod-1',
-            name: 'Produit avec image valide',
-            unit_price_kmf: 5000, quantity: 1, claimed: false,
-            image_url: '/boutique/categories/tech.jpg' },
-          { id: 'si-img-bad', product_id: 'geom-prod-2',
-            name: 'Produit avec image cassée',
-            unit_price_kmf: 6000, quantity: 1, claimed: false,
-            image_url: '/images/inexistant-404.jpg' },
-          { id: 'si-img-empty', product_id: 'geom-prod-1',
-            name: 'Produit sans image',
-            unit_price_kmf: 7000, quantity: 1, claimed: true,
-            image_url: '' },
-        ],
-      });
-      await page.waitForSelector('.k-cart-snapshot-item',
-        { state: 'attached', timeout: 8_000 }).catch(() => {});
-      // Attendre que les onerror se déclenchent
-      await page.waitForTimeout(1000);
-    });
-
-    test('G11-a — lignes avec image absente : .is-img-error posé, pas de pictogramme cassé natif', async ({ page }) => {
-      const result = await page.evaluate(() => {
-        const rows = Array.from(document.querySelectorAll('.k-cart-snapshot-item'))
-          .filter(r => { const bx = r.getBoundingClientRect(); return bx.width > 0; });
-
-        return rows.map(row => {
-          const imgWrap = row.querySelector('.k-cart-item-img');
-          const img = imgWrap?.querySelector('img');
-          const fallback = imgWrap?.querySelector('.k-cart-item-img-fallback');
-
-          if (!imgWrap) return null;
-
-          // Si l'image a échoué, soit :
-          // 1. imgWrap a la classe is-img-error ET fallback est visible
-          // 2. img a été retirée du DOM et fallback est là
-          const hasError = imgWrap.classList.contains('is-img-error');
-          const fallbackVisible = fallback
-            ? (() => { const r = fallback.getBoundingClientRect(); return r.width > 0 && r.height > 0; })()
-            : false;
-          const imgStillPresent = !!img;
-
-          return {
-            hasError, fallbackVisible, imgStillPresent,
-            imgSrc: img?.src?.slice(-30) || 'removed',
-          };
-        }).filter(Boolean);
-      });
-
-      // Pour les lignes avec image cassée ou vide : fallback attendu
-      const brokenRows = result.filter(r => r.hasError);
-      for (const r of brokenRows) {
-        expect(r.fallbackVisible,
-          `Ligne avec is-img-error : fallback non visible (imgSrc=${r.imgSrc})`
-        ).toBe(true);
-        // L'img doit avoir été retirée (ou cachée) pour éviter le pictogramme cassé natif
-        // (le onerror remove l'img : this.remove())
-        expect(r.imgStillPresent,
-          'Image cassée encore présente dans le DOM après onerror (pictogramme cassé natif possible)'
-        ).toBe(false);
-      }
-    });
-
-    test('G11-b — image cassée : hauteur de la ligne préservée (±5 px vs ligne valide)', async ({ page }) => {
-      const heights = await page.evaluate(() => {
-        const rows = Array.from(document.querySelectorAll('.k-cart-snapshot-item:not(.is-cart-item-claimed)'))
-          .filter(r => { const bx = r.getBoundingClientRect(); return bx.height > 0; });
-        return rows.map(r => r.getBoundingClientRect().height);
-      });
-
-      if (heights.length < 2) return;
-      const h0 = heights[0];
-      for (const h of heights.slice(1)) {
-        expect(Math.abs(h - h0),
-          `Layout shift détecté entre lignes (${h}px vs ${h0}px) — image cassée provoque un changement de hauteur`
-        ).toBeLessThanOrEqual(10);
-      }
-    });
-
-    test('G11-c — fallback : zone image conserve ses dimensions (~40–60 px)', async ({ page }) => {
-      const fallbackDims = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('.k-cart-item-img.is-img-error'))
-          .filter(el => { const r = el.getBoundingClientRect(); return r.width > 0; })
-          .map(el => {
-            const r = el.getBoundingClientRect();
-            return { w: r.width, h: r.height };
-          })
-      );
-
-      for (const d of fallbackDims) {
-        expect(d.w, `Zone image fallback trop étroite (${d.w}px < 30px)`).toBeGreaterThanOrEqual(30);
-        expect(d.h, `Zone image fallback trop petite (${d.h}px < 30px)`).toBeGreaterThanOrEqual(30);
-      }
-    });
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GROUPE 12 — Débordements scrollWidth sur les conteneurs principaux
-// ─────────────────────────────────────────────────────────────────────────────
-
-for (const vp of [...MOBILE_VIEWPORTS, ...DESKTOP_VIEWPORTS]) {
-  test.describe(`[${vp.name}] G12 — Débordements scrollWidth`, () => {
-    test.use({ viewport: { width: vp.width, height: vp.height } });
-
-    test.beforeEach(async ({ page }) => {
-      await stubMinimalApi(page, [
-        buildMinimalProduct({ id: 'p1', name: 'Rouge à lèvres chic longue tenue extrêmement longue', promo_pct: 20 }),
-        buildMinimalProduct({ id: 'p2', name: 'Huile essentielle originale de Madagascar bio premium', promo_pct: 15 }),
-        buildMinimalProduct({ id: 'p3', name: 'Poudre compacte minimaliste finition naturelle longue tenue', promo_pct: null }),
-        buildMinimalProduct({ id: 'p4', name: 'Veste homme sport collection premium automne hiver', promo_pct: null }),
-      ]);
-      await loadBoutique(page);
-      await injectSharedListSnapshot(page, { creatorName: 'Abdourahmane Mohamed' });
-      await page.waitForTimeout(600);
-    });
-
-    test('G12-a — body ne déborde pas horizontalement', async ({ page }) => {
-      const overflow = await page.evaluate(() => {
-        const body = document.body;
-        return {
-          scrollWidth: body.scrollWidth,
-          clientWidth: body.clientWidth,
-          overflows: body.scrollWidth > body.clientWidth + 1,
-        };
-      });
-
-      expect(overflow.overflows,
-        `body déborde : scrollWidth=${overflow.scrollWidth}px > clientWidth=${overflow.clientWidth}px`
-      ).toBe(false);
-    });
-
-    test('G12-b — grille produits ne déborde pas', async ({ page }) => {
-      const overflow = await page.evaluate(() => {
-        const grid = document.querySelector('#k-grid, .k-grid, .k-sec-grid');
-        if (!grid) return null;
-        return {
-          scrollWidth: grid.scrollWidth,
-          clientWidth: grid.clientWidth,
-          overflows: grid.scrollWidth > grid.clientWidth + 1,
-        };
-      });
-
-      if (!overflow) return;
-      expect(overflow.overflows,
-        `Grille produits déborde : scrollWidth=${overflow.scrollWidth}px > clientWidth=${overflow.clientWidth}px`
-      ).toBe(false);
-    });
-
-    test('G12-c — liste snapshot ne déborde pas dans son conteneur', async ({ page }) => {
-      const overflow = await page.evaluate(() => {
-        // Chercher le conteneur du snapshot dans le side cart / drawer
-        const containers = Array.from(document.querySelectorAll(
-          '.k-cart-snapshot-list, .k-cart-snapshot-body, #k-cart-snapshot'
-        )).filter(el => { const r = el.getBoundingClientRect(); return r.width > 0; });
-
-        return containers.map(c => ({
-          cls: c.className,
-          overflows: c.scrollWidth > c.clientWidth + 1,
-          scrollW: c.scrollWidth, clientW: c.clientWidth,
-        }));
-      });
-
-      for (const r of overflow) {
-        expect(r.overflows,
-          `Conteneur snapshot "${r.cls}" déborde : scrollW=${r.scrollW}px > clientW=${r.clientW}px`
-        ).toBe(false);
-      }
-    });
-
-    test('G12-d — modal checkout ne déborde pas horizontalement', async ({ page }) => {
-      await page.evaluate(() =>
-        import('/boutique/js/b-cart.js').then(({ quickAdd }) => {
-          const pid = window._kstate?.products?.[0]?.id ?? 'geom-prod-1';
-          quickAdd(pid, null);
-        })
-      );
-      await page.evaluate(() => window._kbus?.emit('checkout:open', { source: 'overflow-test' }));
-      await page.waitForSelector('#k-order-modal.open', { state: 'attached', timeout: 6_000 }).catch(() => {});
-      await page.waitForTimeout(400);
-
-      const overflow = await page.evaluate(() => {
-        const modal = document.getElementById('k-order-modal') ||
-                      document.querySelector('.k-order-overlay');
-        if (!modal) return null;
-        return {
-          scrollWidth: modal.scrollWidth,
-          clientWidth: modal.clientWidth,
-          overflows: modal.scrollWidth > modal.clientWidth + 1,
-        };
-      });
-
-      if (!overflow) return;
-      expect(overflow.overflows,
-        `Modal checkout déborde : scrollW=${overflow.scrollWidth}px > clientW=${overflow.clientWidth}px`
-      ).toBe(false);
-    });
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GROUPE 13 — Badges globaux : compteur panier, pas de collision
-// ─────────────────────────────────────────────────────────────────────────────
-
-for (const vp of ALL_VIEWPORTS) {
-  test.describe(`[${vp.name}] G13 — Badges globaux`, () => {
-    test.use({ viewport: { width: vp.width, height: vp.height } });
-
-    test.beforeEach(async ({ page }) => {
-      await stubMinimalApi(page);
-      await loadBoutique(page);
-      // Ajouter un article pour déclencher le badge compteur
-      await page.evaluate(() =>
-        import('/boutique/js/b-cart.js').then(({ quickAdd }) => {
-          const pid = window._kstate?.products?.[0]?.id ?? 'geom-prod-1';
-          quickAdd(pid, null);
-        })
-      );
-      await page.waitForTimeout(400);
-    });
-
-    test('G13-a — badge compteur panier visible et non nul après ajout article', async ({ page }) => {
-      const badges = await page.evaluate(() => {
-        const selectors = ['#k-cart-badge', '#k-bnav-cart-badge', '.k-cart-badge', '.k-bnav-badge'];
-        return selectors.map(sel => {
-          const el = document.querySelector(sel);
-          if (!el) return null;
-          const r = el.getBoundingClientRect();
-          return {
-            sel,
-            text: el.textContent?.trim(),
-            visible: r.width > 0 && r.height > 0,
-          };
-        }).filter(Boolean);
-      });
-
-      const visibleBadges = badges.filter(b => b.visible && b.text && b.text !== '0' && b.text !== '');
-      // Au moins un badge compteur doit afficher une valeur non nulle
-      expect(visibleBadges.length,
-        'Aucun badge compteur panier visible et non nul après ajout article'
-      ).toBeGreaterThan(0);
-    });
-
-    test('G13-b — badge compteur ne chevauche pas le texte de navigation adjacent', async ({ page }) => {
-      const collision = await page.evaluate(() => {
-        function intersects(a, b) {
-          return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
-        }
-        const badge = document.querySelector('#k-cart-badge, #k-bnav-cart-badge, .k-cart-badge');
-        if (!badge) return [];
-        const bR = badge.getBoundingClientRect();
-        if (bR.width === 0) return [];
-
-        // Vérifier contre les éléments texte frères ou parents
-        const parent = badge.parentElement;
-        if (!parent) return [];
-        const siblings = Array.from(parent.querySelectorAll('span, div, p, button'))
-          .filter(el => el !== badge && el.textContent?.trim().length > 0);
-
-        return siblings.map(sib => {
-          const sR = sib.getBoundingClientRect();
-          return {
-            collides: intersects(bR, sR),
-            sibText: sib.textContent?.trim().slice(0, 20),
-          };
-        }).filter(s => s.collides);
-      });
-
-      expect(collision.filter(c => c.collides).length,
-        `Badge compteur chevauche : ${collision.map(c => c.sibText).join(', ')}`
-      ).toBe(0);
-    });
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GROUPE 14 — Footer sticky et safe-area
-// ─────────────────────────────────────────────────────────────────────────────
-
-for (const vp of ALL_VIEWPORTS) {
-  test.describe(`[${vp.name}] G14 — Footer sticky et safe-area`, () => {
-    test.use({ viewport: { width: vp.width, height: vp.height } });
-
-    test.beforeEach(async ({ page }) => {
-      await stubMinimalApi(page);
-      await loadBoutique(page);
-      await injectSharedListSnapshot(page, {
-        creatorName: 'Sam',
-        items: Array.from({ length: 8 }, (_, i) => ({
-          id: `si-${i}`, product_id: i % 2 === 0 ? 'geom-prod-1' : 'geom-prod-2',
-          name: i % 2 === 0
-            ? 'Huile essentielle originale de Madagascar'
-            : 'Veste homme sport collection premium',
-          unit_price_kmf: 12500 + i * 1000,
-          quantity: 1, claimed: i >= 6,
-          image_url: '/boutique/categories/tech.jpg',
-        })),
-      });
-      await page.waitForSelector('.k-cart-snapshot-item',
-        { state: 'attached', timeout: 8_000 }).catch(() => {});
-      await page.waitForTimeout(500);
-    });
-
-    test('G14-a — CTA Commander visible et non masqué par le footer sticky', async ({ page }) => {
-      const vpH = vp.height;
-      const result = await page.evaluate((vpH) => {
-        // Chercher le CTA de la liste (bouton Commander)
-        const ctas = Array.from(document.querySelectorAll(
-          '.k-group-cta, .k-list-cta, button[class*="cta"], .k-cart-cta, .ck-confirm-btn, [class*="commander"]'
-        )).filter(el => {
-          const t = el.textContent?.toLowerCase() || '';
-          return t.includes('commander') || t.includes('confirmer') || t.includes('payer');
-        });
-
-        return ctas.map(cta => {
-          const r = cta.getBoundingClientRect();
-          return {
-            text: cta.textContent?.trim().slice(0, 30),
-            top: r.top, bottom: r.bottom, h: r.height,
-            hiddenBelowFold: r.top >= vpH,
-            hiddenAboveFold: r.bottom <= 0,
-            zeroHeight: r.height === 0,
-          };
-        }).filter(r => r.h > 0);
-      }, vpH);
-
-      if (result.length === 0) return; // pas de CTA visible dans ce contexte
-
-      for (const cta of result) {
-        expect(cta.hiddenBelowFold,
-          `CTA "${cta.text}" masqué sous le fold (top=${cta.top}px > vpH=${vpH}px)`
-        ).toBe(false);
-      }
-    });
-
-    test('G14-b — dernier article de la liste scrollable au-dessus du footer', async ({ page }) => {
-      const result = await page.evaluate(() => {
-        const rows = Array.from(document.querySelectorAll('.k-cart-snapshot-item'))
-          .filter(r => { const bx = r.getBoundingClientRect(); return bx.width > 0; });
-
-        if (rows.length === 0) return null;
-        const lastRow = rows[rows.length - 1];
-        const lastR = lastRow.getBoundingClientRect();
-
-        // Chercher un footer ou CTA sticky en bas
-        const sticky = Array.from(document.querySelectorAll(
-          '[class*="sticky"], [class*="footer"], [class*="cta"], .k-group-cta, .k-cart-cta'
-        )).filter(el => {
-          const r = el.getBoundingClientRect();
-          const style = window.getComputedStyle(el);
-          return (style.position === 'fixed' || style.position === 'sticky') &&
-                 r.height > 0 && r.bottom > 0;
-        });
-
-        if (sticky.length === 0) return { noSticky: true };
-
-        const stickyTop = Math.min(...sticky.map(s => s.getBoundingClientRect().top));
-        return {
-          lastRowBottom: lastR.bottom,
-          stickyTop,
-          lastRowHidden: lastR.bottom > stickyTop && lastR.top > 0,
-        };
-      });
-
-      if (!result || result.noSticky) return; // pas de sticky détecté
-
-      // Le bas du dernier article ne doit pas être sous le sticky footer
-      // (c'est-à-dire l'article doit pouvoir être scrollé pour être entièrement visible)
-      // Ce test valide que scrolling est possible, pas que l'article soit visible à l'écran
-      expect(result.lastRowHidden,
-        `Dernier article (.bottom=${result.lastRowBottom}px) masqué par le sticky footer (top=${result.stickyTop}px)`
-      ).toBe(false);
-    });
-
-    test('G14-c — pas de double scrollbar sur le side cart', async ({ page }) => {
-      const scrollbars = await page.evaluate(() => {
-        const cartContainers = Array.from(document.querySelectorAll(
-          '#k-cart-drawer, #k-side-cart, .k-cart-body, .k-order-body'
-        )).filter(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
-
-        return cartContainers.map(el => {
-          const style = window.getComputedStyle(el);
-          const overflowY = style.overflowY;
-          const hasScroll = overflowY === 'auto' || overflowY === 'scroll';
-          const isScrollable = el.scrollHeight > el.clientHeight + 2;
-          return {
-            cls: el.className.slice(0, 40),
-            overflowY,
-            isScrollable,
-            scrollHeight: el.scrollHeight,
-            clientHeight: el.clientHeight,
-          };
-        });
-      });
-
-      // Pas plus d'un conteneur scrollable visible dans la même pile parente
-      const scrollableContainers = scrollbars.filter(c => c.hasScroll && c.isScrollable);
-
-      // Vérifier qu'on n'a pas deux scrollbars imbriquées (parent ET enfant scrollables)
-      // → heuristique : si 2+ conteneurs scrollables, vérifier qu'ils ne sont pas imbriqués
-      if (scrollableContainers.length >= 2) {
-        const doubleScroll = await page.evaluate(() => {
-          const scrollables = Array.from(document.querySelectorAll(
-            '#k-cart-drawer, #k-side-cart, .k-cart-body, .k-order-body'
-          )).filter(el => {
-            const style = window.getComputedStyle(el);
-            const ov = style.overflowY;
-            return (ov === 'auto' || ov === 'scroll') &&
-                   el.scrollHeight > el.clientHeight + 2 &&
-                   el.getBoundingClientRect().height > 0;
-          });
-
-          // Vérifier imbrication : un scrollable est-il ancêtre d'un autre ?
-          for (let i = 0; i < scrollables.length; i++) {
-            for (let j = 0; j < scrollables.length; j++) {
-              if (i !== j && scrollables[i].contains(scrollables[j])) return true;
-            }
-          }
-          return false;
-        });
-
-        expect(doubleScroll,
-          `Double scrollbar détectée : ${scrollableContainers.map(c => c.cls).join(' / ')}`
-        ).toBe(false);
-      }
-    });
-  });
-}

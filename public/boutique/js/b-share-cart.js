@@ -33,7 +33,6 @@ import { refreshGroupBadge } from './group/group-state.js';
 import { showBanner, hideBanner, refreshBanner } from './b-group-banner.js';
 import { requireIdentity } from './b-identity.js';
 import { fetchWithTimeout } from './group/group-api.js';
-import { sharedListDisplayLabel } from './group/group-list-labels.js';
 
 const API_CREATE = '/api/shared-carts/from-cart-items';
 const API_MINE = '/api/shared-carts/mine';
@@ -43,7 +42,7 @@ const API_MINE = '/api/shared-carts/mine';
 // prochain boot, ni bloquer la création d'une nouvelle liste, ni
 // afficher le badge/bandeau « actif ». Seul 'open' qualifie.
 const ACTIVE_STATUSES = new Set(['open']);
-const DEFAULT_LIST_TITLE = 'Ma liste';
+const DEFAULT_LIST_TITLE = 'Liste partagée';
 const SHARE_BUTTON_LABEL = '📤 Partager cette liste';
 
 /* ── Helpers ───────────────────────────────────────────────────── */
@@ -404,7 +403,7 @@ function activeShareTarget() {
   if (ctx?.token && ctx.status === 'open') {
     return {
       token: ctx.token,
-      title: sharedListDisplayLabel(ctx),
+      title: ctx.title || DEFAULT_LIST_TITLE,
       shareUrl: `${window.location.origin}/boutique/?p=${ctx.token}`,
     };
   }

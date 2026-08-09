@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-09T13:45:21.543Z",
+  "generatedAt": "2026-08-09T14:54:12.876Z",
   "summary": {
-    "modules": 76,
-    "withHeader": 76,
+    "modules": 77,
+    "withHeader": 77,
     "events": 23,
     "declaredActive": 37,
     "declaredDead": 9,
@@ -1757,7 +1757,8 @@
         "b-cart-core",
         "b-store",
         "b-phone",
-        "group-api"
+        "group-api",
+        "group-list-labels"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2032,6 +2033,32 @@
         "b-bus",
         "group-api"
       ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/group/group-list-labels.js",
+      "id": "group-list-labels",
+      "hasHeader": true,
+      "role": "shared-list-display-labels",
+      "domain": "shared-cart",
+      "layer": "presenter",
+      "criticality": "high",
+      "doctrine": [
+        "ma_liste_for_owner",
+        "liste_de_prenom_for_recipient"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "group/group-side-cart.js",
+        "b-share-cart.js",
+        "b-tracking.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
       "bodyClasses": [],
       "emitCalls": []
     },
