@@ -833,8 +833,9 @@ describe('orders/create — erreurs DB', () => {
 // le produit B tout en claimant la ligne partagée du produit A".
 describe('orders/create — §6 intégrité du claim shared_cart_item_id', () => {
   const SCI_ROW_BASE = {
-    id: 'sci-1', product_id: 'prod-1', sku_id: null, variant_combo_snapshot: null,
-    quantity: 5, cart_status: 'open', already_claimed: false,
+    id: 'sci-1', shared_cart_id: 'cart-1', organizer_user_id: 'organizer-1',
+    product_id: 'prod-1', sku_id: null, variant_combo_snapshot: null,
+    quantity: 1, cart_status: 'open', already_claimed: false,
   };
 
   it('409 shared_cart_item_mismatch si le shared_cart_item_id est introuvable', async () => {
@@ -953,7 +954,7 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
     expectTransactionRolledBack(client);
   });
 
-  it('409 shared_cart_item_mismatch si la quantité commandée dépasse la quantité de la ligne', async () => {
+  it('409 shared_cart_item_mismatch si la quantité commandée diffère de la quantité figée', async () => {
     const client = makeClient([
       { rows: [RELAIS] },
       { rows: [{ id: 'recip-1' }] },
@@ -968,6 +969,66 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
 
     expect(res.status).toBe(409);
     expect(res.body).toMatchObject({ code: 'shared_cart_item_mismatch' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('409 mixed_checkout_origins_forbidden si une commande mélange panier personnel et liste', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT, { ...PRODUCT, id: 'prod-2' }] },
+      { rows: [SCI_ROW_BASE] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [
+        { product_id: 'prod-1', quantity: 1, shared_cart_item_id: 'sci-1' },
+        { product_id: 'prod-2', quantity: 1 },
+      ] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'mixed_checkout_origins_forbidden' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('409 mixed_shared_lists_forbidden si les lignes appartiennent à plusieurs listes', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT, { ...PRODUCT, id: 'prod-2' }] },
+      { rows: [SCI_ROW_BASE] },
+      { rows: [{ ...SCI_ROW_BASE, id: 'sci-2', shared_cart_id: 'cart-2', product_id: 'prod-2' }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [
+        { product_id: 'prod-1', quantity: 1, shared_cart_item_id: 'sci-1' },
+        { product_id: 'prod-2', quantity: 1, shared_cart_item_id: 'sci-2' },
+      ] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'mixed_shared_lists_forbidden' });
+    expectTransactionRolledBack(client);
+  });
+
+  it('400 pickup_code_recipient_invalid si organizer est demandé hors liste', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ pickup_code_recipient: 'organizer' })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ code: 'pickup_code_recipient_invalid' });
     expectTransactionRolledBack(client);
   });
 
@@ -995,6 +1056,32 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
 
     const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
     expect(itemInsert.params).toContain('sci-1');
+  });
+
+  it('organizer persiste le destinataire vérifié résolu depuis la liste', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT] },
+      { rows: [SCI_ROW_BASE] },
+      { rows: [orderRow({ pickup_code_recipient: 'organizer' })] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({
+        pickup_code_recipient: 'organizer',
+        items: [{ product_id: 'prod-1', quantity: 1, shared_cart_item_id: 'sci-1' }],
+      })
+    );
+
+    expect(res.status).toBe(201);
+    const orderInsert = client.calls.find(call => /INSERT INTO orders/.test(call.sql));
+    expect(orderInsert.sql).toMatch(/pickup_code_recipient_user_id/);
+    expect(orderInsert.params.slice(-2)).toEqual(['organizer', 'organizer-1']);
+    expect(res.body.order.pickup_code_recipient).toBe('organizer');
   });
 
   it('nominal : produit SKU cohérent (sku_id + combo canonique identiques) → commande créée', async () => {
