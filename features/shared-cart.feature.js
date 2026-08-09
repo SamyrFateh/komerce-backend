@@ -80,6 +80,8 @@ module.exports = {
       'migrations/123_shared_cart_item_claim_bridge.sql',    // pont order_items <-> shared_cart_items
       'migrations/125_shared_cart_minimal_domain.sql',       // domaine minimal, colonnes financières retirées
       'migrations/127_shared_cart_saved_access.sql',         // bibliothèque "Mes listes" (Amendement V2 §D)
+      'migrations/128_shared_list_pickup_code_recipient.sql', // destinataire vérifié du secret de retrait
+      'migrations/129_shared_cart_one_open_per_organizer.sql',// cardinalité V1 : 0..1 OPEN par organisateur
     ],
     tests: [
       'tests/unit/baskets.test.js',
@@ -113,6 +115,7 @@ module.exports = {
       'js/b-share-phone-guard.js',
       'js/group/group-api.js',
       'js/group/group-checkout-adapter.js',
+      'js/group/group-list-labels.js',
       'js/group/group-side-cart.js',
       'js/group/group-state.js',
       'css/share-cart.css',
@@ -197,10 +200,6 @@ module.exports = {
   // ── Dette assumée / documentée ────────────────────────────────────────────
   debt: {
     knownGaps: [
-      {
-        gap: 'Le destinataire du code secret (buyer|organizer) est encore un état UI non persisté par orders.',
-        risk: 'Le choix affiché peut rester sans effet réel tant que le contrat POST /api/orders et le service de code ne sont pas alignés.',
-      },
       {
         gap: 'Le scénario E2E F22 référence encore l’ancien achat direct .k-cart-item-buy.',
         risk: 'La sélection + Commander + récapitulatif n’est pas certifiée de bout en bout.',
