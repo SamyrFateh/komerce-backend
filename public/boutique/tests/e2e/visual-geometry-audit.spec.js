@@ -1242,6 +1242,31 @@ for (const vp of VIEWPORTS) {
         `Message "panier vide" déborde de ${overflow.right}px à droite`
       ).toBeLessThanOrEqual(2);
     });
+
+    test('G13-e — une seule action Partager, aucun CTA Re-partager concurrent', async ({ page }) => {
+      const controls = await page.evaluate(() => {
+        const legacy = document.querySelectorAll('#k-cart-reshare, #k-sc-reshare').length;
+        const canonical = [...document.querySelectorAll('#k-cart-share, #k-sc-share')]
+          .filter((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return rect.width > 0
+              && rect.height > 0
+              && style.display !== 'none'
+              && style.visibility !== 'hidden';
+          })
+          .map((element) => element.textContent?.trim() || '');
+
+        return { legacy, canonical };
+      });
+
+      expect(controls.legacy, 'Les CTA Re-partager legacy doivent être absents du DOM').toBe(0);
+      expect(
+        controls.canonical,
+        `Une seule action Partager doit être visible, reçu: ${JSON.stringify(controls.canonical)}`,
+      ).toHaveLength(1);
+      expect(controls.canonical[0]).toMatch(/Partager/i);
+    });
   });
 }
 
