@@ -25,12 +25,10 @@
  * panier personnel) ; le seul lien métier réel est celui déjà nécessaire au
  * claim atomique côté serveur (`shared_cart_item_id`, propagé par ligne
  * ci-dessous, inchangé). Ce module peut en revanche transmettre un contexte
- * d'AFFICHAGE pur — `checkoutContext.title` ci-dessous — consommé par
- * b-checkout.js::renderCheckout() uniquement pour peindre un bandeau
- * ("Achat pour la liste de Fatima"), jamais lu pour une décision (prix,
- * lignes, branche de code). C'est une évolution volontaire de l'ancienne
- * formulation absolue "le checkout ne connaît jamais la liste", qui
- * interdisait même ça.
+ * structuré minimal — origine, identifiant de liste, relation créateur et
+ * libellé — consommé par b-checkout.js. Les prix et lignes restent ceux du
+ * panier éphémère ; la relation sert uniquement au libellé et au choix sûr
+ * buyer|organizer du destinataire du code secret.
  *
  * La liste ne détourne jamais le panier personnel. Cet adaptateur construit
  * un panier canonique éphémère à partir d'une sélection d'articles de liste,
@@ -79,10 +77,10 @@ import { saveCart } from '../b-cart-core.js';
  * et restauré dès la fermeture du modal de commande (tout chemin de sortie).
  *
  * @param {Array<{shared_cart_item_id: string, product: object, quantity: number, variant_combo?: object|null}>} selectedItems
- * @param {{title?: string}} [checkoutContext] — LOT 13 §F, purement
- *   décoratif : un `title` à peindre en bandeau au-dessus du checkout
- *   canonique. Jamais lu pour une décision métier. Absent/omis pour un
- *   checkout personnel classique (aucun bandeau).
+ * @param {{origin?: 'SHARED_LIST', sharedCartId?: string|null,
+ *   isCreator?: boolean, creatorFirstName?: string|null, title?: string}} [checkoutContext]
+ *   Contexte relationnel minimal. Aucun téléphone ou destinataire libre ne
+ *   transite ici.
  * @returns {boolean} true si le checkout a été déclenché, false si la
  *   sélection était vide/invalide (aucun effet de bord dans ce cas).
  */
@@ -116,16 +114,20 @@ export function checkoutSharedListSelection(selectedItems, checkoutContext) {
   });
 
   const personalCart = state.cart;
-  state.cart = ephemeralCart;
-  // Correctif P0 ownership (mandat §9) — posé AVANT le swap ci-dessus pour
-  // qu'aucune écriture localStorage (saveCart(), y compris via l'éventuel
-  // clearCart() de fin de checkout dans b-checkout.js) ne puisse jamais
-  // toucher le disque tant que state.cart ne contient pas le panier
-  // personnel réel.
+  // Le verrou de persistance est posé AVANT le swap : aucune observation
+  // synchrone ne peut voir le panier éphémère comme panier personnel.
   state.cartIsEphemeral = true;
-  // LOT 13 §F — bandeau d'affichage pur, jamais lu par b-checkout.js pour
-  // une décision. Absent (undefined) si l'appelant n'en fournit pas.
-  state.checkoutDisplayContext = checkoutContext?.title ? { title: checkoutContext.title } : null;
+  state.cart = ephemeralCart;
+
+  state.checkoutDisplayContext = checkoutContext?.origin === 'SHARED_LIST'
+    ? {
+        origin: 'SHARED_LIST',
+        sharedCartId: checkoutContext.sharedCartId || null,
+        isCreator: !!checkoutContext.isCreator,
+        creatorFirstName: checkoutContext.creatorFirstName || null,
+        title: checkoutContext.title || null,
+      }
+    : null;
 
   let restored = false;
   function restorePersonalCart() {
@@ -164,6 +166,11 @@ export function checkoutSharedListSelection(selectedItems, checkoutContext) {
     return false;
   }
 
-  checkoutCart();
-  return true;
+  try {
+    checkoutCart();
+    return true;
+  } catch (err) {
+    restorePersonalCart();
+    throw err;
+  }
 }
