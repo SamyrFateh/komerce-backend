@@ -199,12 +199,7 @@ module.exports = {
 
   // ── Dette assumée / documentée ────────────────────────────────────────────
   debt: {
-    knownGaps: [
-      {
-        gap: 'Le scénario E2E F22 référence encore l’ancien achat direct .k-cart-item-buy.',
-        risk: 'La sélection + Commander + récapitulatif n’est pas certifiée de bout en bout.',
-      },
-    ],
+    knownGaps: [],
   },
 
   // ── Invariants propres ────────────────────────────────────────────────────
