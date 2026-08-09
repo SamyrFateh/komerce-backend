@@ -761,33 +761,26 @@ export function renderCheckout() {
       + '<span class="ck-secure-pickup-short">🔒 Code de retrait envoyé sur WhatsApp une fois prête</span>';
     // Insertion différée : appendChild plus bas, après le bloc paiement (cf. suite du fichier)
 
-    // ── Destinataire du code de retrait — commande liée à une liste (règle §7) ─
-    // N'apparaît QUE si b-checkout.js reçoit un organizerLabel via le contexte
-    // d'affichage décoratif (state.checkoutDisplayContext — LOT 13 §F étendu,
-    // voir group-checkout-adapter.js). Ce module ne lit ni n'importe rien
-    // d'autre de la liste : organizerLabel est un simple libellé fourni par
-    // l'appelant, jamais un id/token de liste. Remplace le bloc statique
-    // « Retrait sécurisé » ci-dessus pour un checkout de liste (redondant
-    // sinon — chaque option porte déjà sa propre légende).
-    //
-    // IMPORTANT (transparence) — ce choix n'est aujourd'hui capturé que
-    // côté UI (od.pickupCodeRecipient) : aucun champ backend équivalent
-    // n'existe dans POST /api/orders (validators/index.js, orders.create).
-    // Il n'est donc PAS envoyé à l'API — l'ajouter au payload serait un
-    // no-op silencieux (stripUnknown:true côté validate()), ce qui donnerait
-    // l'illusion d'une fonctionnalité livrée. Le routage réel du code vers
-    // l'organisateur reste à faire côté backend (lot séparé).
-    const organizerLabel = state.checkoutDisplayContext?.organizerLabel || null;
+    // ── Destinataire du code de retrait — commande issue d'une liste reçue ─
+    // Le contexte contient uniquement la relation avec l'organisateur, jamais
+    // son téléphone. Le backend résout l'identité vérifiée depuis les lignes
+    // shared_cart_item_id et applique réellement buyer|organizer.
+    const sharedCheckoutContext = state.checkoutDisplayContext?.origin === 'SHARED_LIST'
+      ? state.checkoutDisplayContext
+      : null;
+    const organizerLabel = sharedCheckoutContext && !sharedCheckoutContext.isCreator
+      ? sharedCheckoutContext.creatorFirstName
+      : null;
     let recipientBlock = null;
     if (organizerLabel) {
-      od.pickupCodeRecipient = od.pickupCodeRecipient || 'me';
+      od.pickupCodeRecipient = od.pickupCodeRecipient || 'buyer';
       recipientBlock = document.createElement('div');
       recipientBlock.className = 'ck-section-block ck-recipient-section';
       recipientBlock.innerHTML =
         '<div class="ck-section-title">Code de retrait</div>'
         + '<div class="ck-recipient-grid">'
-        +   '<label class="ck-recipient-option' + (od.pickupCodeRecipient === 'me' ? ' is-active' : '') + '">'
-        +     '<input type="radio" name="ck-pickup-recipient" value="me"' + (od.pickupCodeRecipient === 'me' ? ' checked' : '') + '>'
+        +   '<label class="ck-recipient-option' + (od.pickupCodeRecipient === 'buyer' ? ' is-active' : '') + '">'
+        +     '<input type="radio" name="ck-pickup-recipient" value="buyer"' + (od.pickupCodeRecipient === 'buyer' ? ' checked' : '') + '>'
         +     '<span class="ck-recipient-copy"><strong>Me l\u2019envoyer</strong>'
         +       '<small>Sur mon WhatsApp quand la commande est prête</small></span>'
         +   '</label>'
@@ -1217,6 +1210,10 @@ export async function submitOrder(btn) {
   btn.style.opacity = '0.7';
 
   try {
+    const pickupCodeRecipient = state.checkoutDisplayContext?.origin === 'SHARED_LIST'
+      ? (od.pickupCodeRecipient === 'organizer' ? 'organizer' : 'buyer')
+      : undefined;
+
     const items = state.cart.map(i => ({
       product_id: String(i.product.id),
       quantity: i.qty,
@@ -1238,7 +1235,8 @@ export async function submitOrder(btn) {
         apiResult = await apiPost('/api/orders', {
           items, relais_id: od.selectedRelaisId || undefined,
           payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
-          tracking_phone: trackingPhone || undefined
+          tracking_phone: trackingPhone || undefined,
+          pickup_code_recipient: pickupCodeRecipient
           // L5 / P0-4 (mandat §8) — share_token retiré : un checkout
           // PERSONAL_CART ne doit porter aucune donnée de liste partagée.
           // state.shareToken peut être alimenté par une liste reçue affichée
@@ -1253,7 +1251,8 @@ export async function submitOrder(btn) {
       apiResult = await apiPost('/api/orders', {
         items, relais_id: od.selectedRelaisId || undefined,
         payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
-        tracking_phone: trackingPhone || undefined
+        tracking_phone: trackingPhone || undefined,
+        pickup_code_recipient: pickupCodeRecipient
         // L5 / P0-4 (mandat §8) — share_token retiré, cf. commentaire ci-dessus.
       });
       orderData = apiResult.order || apiResult;
@@ -1420,6 +1419,9 @@ async function _createKomerceOrderForPayPal() {
     payment_mode:     'paypal_eur',
     use_wallet:       od.use_wallet || false,
     tracking_phone:   trackingPhone,
+    pickup_code_recipient: state.checkoutDisplayContext?.origin === 'SHARED_LIST'
+      ? (od.pickupCodeRecipient === 'organizer' ? 'organizer' : 'buyer')
+      : undefined,
     // L5 / P0-4 (mandat §8) — share_token retiré, cf. commentaire plus haut.
   }, { idempotencyKey: genIdempotencyKey() });
 
