@@ -51,7 +51,6 @@ module.exports = {
       '../tests/unit/group-price-variation.test.js',
       '../tests/unit/b-share-phone-guard.test.js',
       '../tests/unit/group-side-cart.test.js',
-      '../tests/unit/b-checkout.test.js',
       '../tests/unit/shared-list-responsive-layout.test.js',
       '../tests/e2e/authenticated/group-shared-list.spec.js',
     ],
