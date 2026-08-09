@@ -1524,6 +1524,11 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   .k-card-name {
     font-size: 13px;
+    /* min-height:2.4em réserve 2 lignes — surcharger le clamp pour en
+       utiliser réellement 2 : affiche plus de titre, homogénéise la
+       hauteur des cartes et élimine l'espace mort de la ligne vide
+       (auparavant -webkit-line-clamp:1 non surchargé ici). */
+    -webkit-line-clamp: 2;
     min-height: 2.4em;
   }
 
@@ -9456,6 +9461,10 @@ body.cart-open  #k-section-index { display:none; }
   padding: 10px 8px;
   font-size: 13px;
   font-weight: 600;
+  /* Centrage cross-browser : <button> peut aligner à gauche selon le UA.
+     line-height:1 aligne sur le même axe vertical que .k-cart-tab-exit. */
+  text-align: center;
+  line-height: 1;
   color: var(--text-muted);
   background: none;
   border: none;
@@ -9493,6 +9502,11 @@ body.cart-open  #k-section-index { display:none; }
 .k-cart-tab-group .k-tab-shared-list {
   flex: 1;
   min-width: 0;
+  /* Centrage optique : le × occupe 26px à droite du groupe ; sans
+     compensation à gauche, le label « Liste de X » semble décalé vers
+     la gauche. padding-left:26px équilibre les deux bords visuels.
+     L'ellipsis s'applique sur la largeur restante (flex:1 min-width:0). */
+  padding-left: 26px;
 }
 
 .k-cart-tab-exit {
@@ -11538,6 +11552,10 @@ body.k-id-scroll-lock { overflow: hidden; }
   color: var(--white);
   font-size: .72rem;
   font-weight: 900;
+  /* line-height:1 garantit que ✓ (U+2713) est centré optiquement dans
+     le cercle 20×20, sans être déplacé par la boîte typographique par
+     défaut (qui varie selon les moteurs). */
+  line-height: 1;
 }
 
 /* Scopé sous .ck-recap-step (wrapper posé par b-checkout.js) : cart.css
@@ -11608,11 +11626,33 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-chip-icon { font-size: 1.28rem; }
 .ck-chip-lbl { font-size: .82rem; line-height: 1.25; }
 
-.ck-chip-lbl em.ck-soon,
-.ck-chip-lbl em.ck-stripe-tag {
+/* Badges secondaires sur les chips de paiement — règle autonome (ne pas
+ * dépendre de l'ordre de cascade avec cart.css pour display/background/color).
+ * Surcharge les propriétés définies dans cart.css (display:inline-block,
+ * font-size:.58rem, border-radius:4px) par des valeurs adaptées au nouveau
+ * gabarit de chip (min-height:78px, text-align:left, border-radius:16px). */
+.ck-chip-lbl em.ck-soon {
+  display: inline-block;
   margin-top: 4px;
   padding: 2px 6px;
   border-radius: 999px;
+  font-style: normal;
+  font-size: .62rem;
+  font-weight: 700;
+  background: var(--coral);
+  color: var(--white);
+}
+
+.ck-chip-lbl em.ck-stripe-tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: .62rem;
+  font-weight: 700;
+  background: var(--blue-stripe-bg);
+  color: var(--blue-stripe-text);
 }
 
 .k-stripe-wrap,

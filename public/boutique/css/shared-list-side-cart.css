@@ -231,6 +231,10 @@
   padding: 10px 8px;
   font-size: 13px;
   font-weight: 600;
+  /* Centrage cross-browser : <button> peut aligner à gauche selon le UA.
+     line-height:1 aligne sur le même axe vertical que .k-cart-tab-exit. */
+  text-align: center;
+  line-height: 1;
   color: var(--text-muted);
   background: none;
   border: none;
@@ -268,6 +272,11 @@
 .k-cart-tab-group .k-tab-shared-list {
   flex: 1;
   min-width: 0;
+  /* Centrage optique : le × occupe 26px à droite du groupe ; sans
+     compensation à gauche, le label « Liste de X » semble décalé vers
+     la gauche. padding-left:26px équilibre les deux bords visuels.
+     L'ellipsis s'applique sur la largeur restante (flex:1 min-width:0). */
+  padding-left: 26px;
 }
 
 .k-cart-tab-exit {

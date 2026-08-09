@@ -1,5 +1,5 @@
 {
-  "total": 170,
+  "total": 165,
   "keys": [
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||height",
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||width",
@@ -28,7 +28,13 @@
     "#k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title|||@media (min-width: 900px) {|||border-bottom",
     "#k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title|||@media (min-width: 900px) {|||margin-bottom",
     ".ck-chip-icon|||global|||font-size",
+    ".ck-chip-lbl em.ck-soon|||global|||border-radius",
+    ".ck-chip-lbl em.ck-soon|||global|||font-size",
+    ".ck-chip-lbl em.ck-soon|||global|||font-weight",
+    ".ck-chip-lbl em.ck-soon|||global|||margin-top",
+    ".ck-chip-lbl em.ck-soon|||global|||padding",
     ".ck-chip-lbl em.ck-stripe-tag|||global|||border-radius",
+    ".ck-chip-lbl em.ck-stripe-tag|||global|||font-size",
     ".ck-chip-lbl em.ck-stripe-tag|||global|||margin-top",
     ".ck-chip-lbl em.ck-stripe-tag|||global|||padding",
     ".ck-chip-lbl|||global|||font-size",
@@ -103,22 +109,11 @@
     ".k-bnav-badge|||global|||top",
     ".k-cart-drawer|||global|||border-radius",
     ".k-cart-drawer|||global|||max-width",
-    ".k-cart-snapshot-item-controls|||global|||gap",
-    ".k-cart-snapshot-item-controls|||global|||justify-self",
-    ".k-cart-snapshot-item-open|||global|||display",
-    ".k-cart-snapshot-item|||global|||display",
-    ".k-cart-snapshot-item|||global|||gap",
-    ".k-cart-snapshot-item|||global|||grid-template-columns",
-    ".k-cart-snapshot-item|||global|||padding",
     ".k-cat-section|||global|||margin-bottom",
     ".k-cats::after|||global|||flex",
     ".k-chip-photo img|||global|||border-radius",
     ".k-chip.active .k-chip-label|||global|||font-weight",
     ".k-chip:active|||global|||transform",
-    ".k-ck-guest-hint|||global|||background",
-    ".k-ck-guest-hint|||global|||border",
-    ".k-ck-guest-hint|||global|||border-radius",
-    ".k-ck-guest-hint|||global|||padding",
     ".k-ck-guest-ic|||global|||font-size",
     ".k-ck-id-sep|||global|||color",
     ".k-ck-phone-input|||global|||font-size",
@@ -172,5 +167,5 @@
     ".k-wallet-title|||global|||font-size",
     "html.k-home-premium-v1 .k-hero-badge|||@media (min-width: 900px) {|||letter-spacing"
   ],
-  "savedAt": "2026-08-06T03:08:28.578Z"
+  "savedAt": "2026-08-09T11:26:17.372Z"
 }

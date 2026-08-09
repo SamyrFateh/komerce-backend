@@ -34,7 +34,7 @@
 | `modal-product.css` | 1516 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 1246 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
-| `products.css` | 888 | 🔴 **ORPHELIN** |
+| `products.css` | 887 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 29 | 🔴 **ORPHELIN** |
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
@@ -50,7 +50,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=161
- 2. /boutique/css/dist/components.css?v=418
+ 2. /boutique/css/dist/components.css?v=419
  3. /boutique/css/dist/desktop.css?v=86
 ```
 

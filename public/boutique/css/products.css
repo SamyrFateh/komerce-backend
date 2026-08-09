@@ -521,6 +521,11 @@
 
   .k-card-name {
     font-size: 13px;
+    /* min-height:2.4em réserve 2 lignes — surcharger le clamp pour en
+       utiliser réellement 2 : affiche plus de titre, homogénéise la
+       hauteur des cartes et élimine l'espace mort de la ligne vide
+       (auparavant -webkit-line-clamp:1 non surchargé ici). */
+    -webkit-line-clamp: 2;
     min-height: 2.4em;
   }
 
