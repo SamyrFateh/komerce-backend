@@ -12,7 +12,7 @@
 | **ownedOpenSharedList** | liste OPEN appartenant à l'utilisateur ; cardinalité 0..1 |
 | **displayedSharedList** | liste OPEN affichée localement dans le slot partagé ; cardinalité 0..1 |
 | **savedLists** | références sauvegardées dans Mes listes ; cardinalité 0..N |
-| **snapshot** | articles, quantités, variantes, prix et médias figés à la publication |
+| **snapshot** | composition figée : articles, quantités, variantes, médias et prix de référence à la publication |
 | **selection** | ensemble local d'identifiants de lignes disponibles, sans réservation |
 | **claim** | rattachement atomique d'une ligne à une commande via `shared_cart_item_id` |
 | **intent** | `PERSONAL_CART` ou `SHARED_LIST`, jamais les deux |
@@ -127,7 +127,7 @@ Le CTA apparaît uniquement si la sélection n'est pas vide :
 
 > Commander (N · X KMF)
 
-Le total sélectionné vaut la somme de `snapshot_unit_price_kmf × quantity` des lignes sélectionnées.
+Le total affiché par le CTA et le récapitulatif vaut la somme du **prix marchand courant validé × quantité figée** des lignes sélectionnées. `unit_price_kmf_snapshot` reste une référence de publication : toute variation doit être annoncée avant confirmation.
 
 Une action « Tout sélectionner » peut remplir la sélection avec toutes les lignes disponibles. Elle ne déclenche jamais directement le checkout.
 
@@ -171,8 +171,8 @@ Valeurs :
 
 | Valeur | Effet |
 |---|---|
-| `buyer` | code envoyé au téléphone vérifié de l'acheteur |
-| `organizer` | code envoyé au téléphone vérifié du créateur de la liste |
+| `buyer` | notification envoyée à l'acheteur vérifié ; lui seul peut révéler le code complet |
+| `organizer` | notification envoyée au créateur vérifié ; lui seul peut révéler le code complet |
 
 Règles serveur :
 
@@ -182,7 +182,7 @@ Règles serveur :
 4. le serveur résout l'organisateur depuis les lignes réclamées ;
 5. toutes les lignes doivent pointer vers la même liste ;
 6. le choix est persisté sur la commande ;
-7. le service de code de retrait utilise ce choix lors de l'envoi réel ;
+7. le service de retrait notifie cette identité et lui réserve la révélation sécurisée du code complet ;
 8. pour **Ma liste**, `organizer` et `buyer` désignent la même identité et le sélecteur UI est masqué.
 
 ## 10. Claim atomique et conflit
