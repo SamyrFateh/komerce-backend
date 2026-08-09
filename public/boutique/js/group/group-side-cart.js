@@ -36,6 +36,11 @@ import {
   closeCart as apiCloseSharedCart,
 } from './group-api.js';
 import { checkoutSharedListSelection } from './group-checkout-adapter.js';
+import {
+  firstNameOf,
+  sharedListDisplayLabel,
+  sharedListCheckoutLabel,
+} from './group-list-labels.js';
 
 /* ── Modale de confirmation Komerce (mandat §11) ──────────────────────
  * Primitive UNIQUE réutilisée par les 3 confirmations métier importantes
@@ -550,9 +555,9 @@ export function clearSharedListContext() {
  * Refonte UX (2026-08) — aucun contrôle de mutation sur les lignes de la
  * liste publiée, ni pour l'organisateur ni pour le participant (doctrine
  * §1.B — snapshot immutable dès publication : pas de stepper, pas de
- * retrait, pas de mode édition). Chaque ligne disponible porte uniquement
- * un bouton "Acheter" individuel ; "Acheter le reste" agit sur l'ensemble des
- * lignes encore disponibles. Les anciens handleQuantityStep/handleRemoveItem
+ * retrait, pas de mode édition). Chaque ligne disponible peut uniquement être
+ * sélectionnée pour composer une commande ; le CTA Commander ouvre toujours
+ * le récapitulatif. Les anciens handleQuantityStep/handleRemoveItem
  * et le mode édition à bascule (toggleEditMode) ont été supprimés — ne pas
  * les réintroduire dans les commentaires ou le code sans décision produit
  * explicite révisant la doctrine d'immutabilité.
@@ -562,27 +567,29 @@ export function clearSharedListContext() {
 
 function headerCopy() {
   const ctx = state.sharedListContext;
-  if (ctx.isCreator) {
-    return { title: ctx.title || 'Votre liste', sub: null };
-  }
-  const first = ctx.creatorFirstName;
+  const first = firstNameOf(ctx.creatorFirstName);
   return {
-    title: ctx.title || (first ? `Liste de ${first}` : 'Liste partagée'),
-    sub: first ? `${first} a préparé cette liste pour vous` : 'Cette liste a été partagée avec vous',
+    title: sharedListDisplayLabel(ctx),
+    sub: ctx.isCreator
+      ? null
+      : (first ? `${first} a préparé cette liste pour vous` : 'Cette liste a été partagée avec vous'),
   };
 }
 
 /**
- * LOT 13 §F — titre du bandeau d'affichage checkout, purement décoratif
- * (voir group-checkout-adapter.js::checkoutSharedListSelection). Distinct
- * de headerCopy() ci-dessus (qui alimente le chrome du drawer/side cart,
- * pas le checkout) : gabarit imposé "Achat pour la liste de X" / fallback
- * "Achat pour une liste partagée" — jamais réutilisé pour une décision.
+ * Contexte structuré du checkout SHARED_LIST. Le titre est une projection
+ * canonique ; sharedCartId/isCreator/creatorFirstName portent la relation
+ * nécessaire au choix du destinataire du code, sans transmettre de téléphone.
  */
-function checkoutContextTitle() {
+function checkoutContext() {
   const ctx = state.sharedListContext;
-  const first = ctx.creatorFirstName;
-  return first ? `Achat pour la liste de ${first}` : 'Achat pour une liste partagée';
+  return {
+    origin: 'SHARED_LIST',
+    sharedCartId: ctx.sharedCartId || null,
+    isCreator: !!ctx.isCreator,
+    creatorFirstName: firstNameOf(ctx.creatorFirstName),
+    title: sharedListCheckoutLabel(ctx),
+  };
 }
 
 /**
@@ -660,7 +667,7 @@ function buildSnapshotRenderContext() {
     // Doctrine d'immutabilité (§1.B) — aucune notion d'editMode côté
     // contexte : la liste publiée n'a jamais de contrôle de mutation,
     // organisateur ou non. headerTitle distingue seulement le libellé.
-    headerTitle: ctx.isCreator ? 'Votre liste' : title,
+    headerTitle: title,
     availableCount: availableItems().length,
     availableTotal: availableTotal(),
     selectedIds: selectedItemIds,
@@ -950,8 +957,7 @@ export function renderCartSurfaceSwitch() {
   }
 
   const activeTab = state.cartSurface === 'shared-list' ? 'list' : 'personal';
-  const name = ctx.creatorFirstName || ctx.title || null;
-  const listLabel = name ? `Liste de ${sanitize(name)}` : 'Liste partagée';
+  const listLabel = sharedListDisplayLabel(ctx);
 
   const desktopTabs = mountSurfaceSwitchTabs(
     'k-cart-surface-switch', sc, (host, tabs) => host.prepend(tabs));
@@ -1125,7 +1131,7 @@ function handleCommand() {
     return;
   }
 
-  const started = checkoutSharedListSelection(cartItems, { title: checkoutContextTitle() });
+  const started = checkoutSharedListSelection(cartItems, checkoutContext());
   if (!started) {
     showToast("Impossible de lancer l'achat, réessayez.", 'error');
     return;
