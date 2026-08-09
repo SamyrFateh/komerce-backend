@@ -116,6 +116,23 @@
 
 #k-modal .k-sug-chips {
   padding: 2px 0 7px;
+  /* Toujours 1 ligne : plus de sous-catégories que ne le laissait supposer
+     le jeu de données de test, ou libellés longs, ne doivent jamais faire
+     passer les chips à la ligne suivante (chevauchement avec les cartes
+     en dessous). Défilement horizontal si ça ne tient pas. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+#k-modal .k-sug-chips::-webkit-scrollbar {
+  display: none;
+}
+
+#k-modal .k-sug-chips > * {
+  flex-shrink: 0;
 }
 
 /* ── Action suggestion : slot stable + / stepper ────────────── */
@@ -144,28 +161,30 @@
   height: var(--k-sug-action-height);
   min-width: var(--k-sug-action-height);
   padding: 0;
-  border: 1px solid var(--coral);
+  border: none;
   border-radius: 50%;
-  background: var(--coral);
-  color: var(--white);
-  box-shadow: 0 3px 9px rgba(200,92,45,.22);
+  background: transparent;
+  color: var(--coral);
+  box-shadow: none;
 }
 
 #k-modal .k-sug-add:hover {
-  background: var(--coral-dark);
-  border-color: var(--coral-dark);
+  background: transparent;
+  border-color: transparent;
+  transform: scale(1.1);
 }
 
 #k-modal .k-sug-add:active {
-  background: var(--coral-dark);
-  transform: scale(.90);
+  background: transparent;
+  transform: scale(.88);
 }
 
 #k-modal .k-sug-add-plus {
   color: currentColor;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 900;
   line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.18));
 }
 
 #k-modal .k-sug-card-actions.is-filled {
@@ -176,11 +195,11 @@
   max-width: var(--k-sug-action-width);
   min-height: var(--k-sug-action-height);
   padding: 0;
-  border: 1px solid var(--cta-green);
-  border-radius: 999px;
-  background: var(--cta-green);
+  border: 1.5px solid var(--ocean);
+  border-radius: 16px;
+  background: var(--white);
   overflow: hidden;
-  box-shadow: 0 3px 9px rgba(42,122,62,.20);
+  box-shadow: 0 2px 6px rgba(74,144,64,.25);
 }
 
 #k-modal .k-sug-card-actions.is-filled .k-sug-step {
@@ -191,21 +210,21 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--white);
+  color: var(--ocean);
   box-shadow: none;
   font-size: 16px;
 }
 
 #k-modal .k-sug-card-actions.is-filled .k-sug-step:hover,
 #k-modal .k-sug-card-actions.is-filled .k-sug-step:active {
-  background: rgba(255,255,255,.15);
+  background: rgba(74,144,64,.12);
 }
 
 #k-modal .k-sug-card-actions.is-filled .k-sug-qty {
   min-width: 28px;
-  color: var(--white);
+  color: var(--ocean);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 /* Plusieurs variantes : conserve exactement le même slot transactionnel. */

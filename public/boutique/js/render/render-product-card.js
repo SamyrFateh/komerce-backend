@@ -152,7 +152,8 @@ function renderSuggestionCard(product, cartSummary, actionVariant) {
   return `
     <div class="k-sug-card ${vm.cssClassName}" data-id="${vm.id}" data-subcat="${sanitize(vm.raw.subcategory || '')}">
       <div class="k-sug-card-img">
-        <img src="${vm.optimizedImageUrl}" alt="${vm.imageAlt}" loading="lazy" decoding="async">
+        <img src="${vm.optimizedImageUrl}" alt="${vm.imageAlt}" loading="lazy" decoding="async" onerror="this.closest('.k-sug-card-img').classList.add('is-img-error');this.remove();">
+        <span class="k-sug-card-img-fallback" aria-hidden="true">📦</span>
         ${vm.promoLabel ? `<span class="k-sug-promo-badge">${vm.promoLabel}</span>` : ''}
       </div>
       <div class="k-sug-card-name">${vm.safeName}</div>

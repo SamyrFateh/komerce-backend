@@ -1071,11 +1071,17 @@
   }
   .k-sc-item-meta {
     display: flex; align-items: center;
+    flex-wrap: wrap;
     justify-content: space-between;
-    margin-top: 1px; gap: 4px;
+    margin-top: 1px; gap: 2px 4px;
   }
   .k-sc-item-price-wrap {
-    display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 4px; row-gap: 1px; min-width: 0;
+    display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 4px; row-gap: 1px;
+    /* Panier in-modal plus étroit (clamp 220-260px, cf. modal-shell.css) que le
+       panier autonome (272px) : le prix ne doit jamais se faire comprimer sous
+       le stepper (qui est flex-shrink:0). S'il manque de place, le stepper
+       passe à la ligne suivante plutôt que de recouvrir le prix. */
+    flex-shrink: 0;
   }
   .k-sc-item-price {
     font-size: 12px; font-weight: 800;

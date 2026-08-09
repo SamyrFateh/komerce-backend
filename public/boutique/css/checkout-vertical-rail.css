@@ -33,6 +33,11 @@
     var(--checkout-accent-mid) 58%,
     var(--checkout-accent) 100%);
   box-shadow: 0 6px 20px rgba(26,59,44,.18);
+  /* Le titre doit rester centré dans le header, quelle que soit la largeur
+     du bouton retour (variable : "← Retour" / "← Récap") — cf. mock. Le
+     bouton retour reste au fil normal (gauche), le texte est positionné
+     indépendamment au centre du header (voir .ck-order-title-text). */
+  position: relative;
 }
 
 .ck-modal-back-btn--header {
@@ -43,7 +48,31 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
 }
 
-.ck-order-title-text { font-size: 1rem; letter-spacing: .015em; }
+/* Titre visible dans le corps du récap (h2, distinct du chrome du header
+   ci-dessus) — aucune règle CSS ne le stylait jusqu'ici : héritait de
+   l'alignement par défaut (gauche) au lieu du centrage du mock. */
+.ck-recap-gate-heading {
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+  color: var(--text);
+  margin: 4px 0 14px;
+}
+
+.ck-order-title-text {
+  font-size: 1rem;
+  letter-spacing: .015em;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: calc(100% - 168px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
 
 /* ── Bandeau contexte liste partagée (LOT 13 §F) ─────────────────
  * Purement décoratif — alimenté par state.checkoutDisplayContext

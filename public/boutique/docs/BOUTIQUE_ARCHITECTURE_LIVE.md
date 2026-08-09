@@ -15,9 +15,9 @@
 | Fichier | Lignes | Bundle |
 |---|---:|---|
 | `boutique-desktop.css` | 1315 | 🔴 **ORPHELIN** |
-| `cart.css` | 1930 | 🔴 **ORPHELIN** |
+| `cart.css` | 1912 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
-| `checkout-vertical-rail.css` | 720 | 🔴 **ORPHELIN** |
+| `checkout-vertical-rail.css` | 712 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
@@ -50,7 +50,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=161
- 2. /boutique/css/dist/components.css?v=412
+ 2. /boutique/css/dist/components.css?v=414
  3. /boutique/css/dist/desktop.css?v=85
 ```
 

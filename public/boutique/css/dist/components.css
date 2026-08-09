@@ -3613,6 +3613,10 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-sug-grid .k-sug-card { display: flex; flex-direction: column; height: auto; overflow: visible; width: 100%; }
 .k-sug-grid .k-sug-card-img { aspect-ratio: 1; position: relative; overflow: hidden; background: var(--sand); border-radius: 10px 10px 0 0; }
 .k-sug-grid .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; padding: 6px; display: block; }
+/* Repli image cassée (même convention que .k-cart-item-img-fallback) : jamais
+   d'icône/texte alt du navigateur, qui chevauche le badge promo top-left. */
+.k-sug-card-img-fallback { display: none; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 1.6rem; line-height: 1; }
+.k-sug-card-img.is-img-error .k-sug-card-img-fallback { display: flex; }
 .k-sug-grid .k-sug-card-name { font-size: 13px; line-height: 1.3; padding: 6px 8px 2px; color: var(--text); font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 34px; }
 .k-sug-grid .k-sug-card-price { padding: 0 8px 8px; font-size: 14px; font-weight: 700; color: var(--coral); }
 .k-sug-card-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0; flex-shrink: 0; }
@@ -8971,6 +8975,23 @@ body.cart-open  #k-section-index { display:none; }
 
 #k-modal .k-sug-chips {
   padding: 2px 0 7px;
+  /* Toujours 1 ligne : plus de sous-catégories que ne le laissait supposer
+     le jeu de données de test, ou libellés longs, ne doivent jamais faire
+     passer les chips à la ligne suivante (chevauchement avec les cartes
+     en dessous). Défilement horizontal si ça ne tient pas. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+#k-modal .k-sug-chips::-webkit-scrollbar {
+  display: none;
+}
+
+#k-modal .k-sug-chips > * {
+  flex-shrink: 0;
 }
 
 /* ── Action suggestion : slot stable + / stepper ────────────── */
@@ -8999,28 +9020,30 @@ body.cart-open  #k-section-index { display:none; }
   height: var(--k-sug-action-height);
   min-width: var(--k-sug-action-height);
   padding: 0;
-  border: 1px solid var(--coral);
+  border: none;
   border-radius: 50%;
-  background: var(--coral);
-  color: var(--white);
-  box-shadow: 0 3px 9px rgba(200,92,45,.22);
+  background: transparent;
+  color: var(--coral);
+  box-shadow: none;
 }
 
 #k-modal .k-sug-add:hover {
-  background: var(--coral-dark);
-  border-color: var(--coral-dark);
+  background: transparent;
+  border-color: transparent;
+  transform: scale(1.1);
 }
 
 #k-modal .k-sug-add:active {
-  background: var(--coral-dark);
-  transform: scale(.90);
+  background: transparent;
+  transform: scale(.88);
 }
 
 #k-modal .k-sug-add-plus {
   color: currentColor;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 900;
   line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.18));
 }
 
 #k-modal .k-sug-card-actions.is-filled {
@@ -9031,11 +9054,11 @@ body.cart-open  #k-section-index { display:none; }
   max-width: var(--k-sug-action-width);
   min-height: var(--k-sug-action-height);
   padding: 0;
-  border: 1px solid var(--cta-green);
-  border-radius: 999px;
-  background: var(--cta-green);
+  border: 1.5px solid var(--ocean);
+  border-radius: 16px;
+  background: var(--white);
   overflow: hidden;
-  box-shadow: 0 3px 9px rgba(42,122,62,.20);
+  box-shadow: 0 2px 6px rgba(74,144,64,.25);
 }
 
 #k-modal .k-sug-card-actions.is-filled .k-sug-step {
@@ -9046,21 +9069,21 @@ body.cart-open  #k-section-index { display:none; }
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--white);
+  color: var(--ocean);
   box-shadow: none;
   font-size: 16px;
 }
 
 #k-modal .k-sug-card-actions.is-filled .k-sug-step:hover,
 #k-modal .k-sug-card-actions.is-filled .k-sug-step:active {
-  background: rgba(255,255,255,.15);
+  background: rgba(74,144,64,.12);
 }
 
 #k-modal .k-sug-card-actions.is-filled .k-sug-qty {
   min-width: 28px;
-  color: var(--white);
+  color: var(--ocean);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 /* Plusieurs variantes : conserve exactement le même slot transactionnel. */
@@ -11127,6 +11150,11 @@ body.k-id-scroll-lock { overflow: hidden; }
     var(--checkout-accent-mid) 58%,
     var(--checkout-accent) 100%);
   box-shadow: 0 6px 20px rgba(26,59,44,.18);
+  /* Le titre doit rester centré dans le header, quelle que soit la largeur
+     du bouton retour (variable : "← Retour" / "← Récap") — cf. mock. Le
+     bouton retour reste au fil normal (gauche), le texte est positionné
+     indépendamment au centre du header (voir .ck-order-title-text). */
+  position: relative;
 }
 
 .ck-modal-back-btn--header {
@@ -11137,7 +11165,31 @@ body.k-id-scroll-lock { overflow: hidden; }
   box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
 }
 
-.ck-order-title-text { font-size: 1rem; letter-spacing: .015em; }
+/* Titre visible dans le corps du récap (h2, distinct du chrome du header
+   ci-dessus) — aucune règle CSS ne le stylait jusqu'ici : héritait de
+   l'alignement par défaut (gauche) au lieu du centrage du mock. */
+.ck-recap-gate-heading {
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+  color: var(--text);
+  margin: 4px 0 14px;
+}
+
+.ck-order-title-text {
+  font-size: 1rem;
+  letter-spacing: .015em;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: calc(100% - 168px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
 
 /* ── Bandeau contexte liste partagée (LOT 13 §F) ─────────────────
  * Purement décoratif — alimenté par state.checkoutDisplayContext
