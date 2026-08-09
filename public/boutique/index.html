@@ -39,7 +39,7 @@
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=161">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=423">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=424">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=86">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
@@ -331,17 +331,6 @@
           Commander (<span id="k-sc-count-inline">0</span>)
         </button>
         <button id="k-sc-cta" class="k-sc-btn-cart" type="button">Voir le panier</button>
-        <!-- Badge "Partagé" — visible uniquement quand shareToken actif -->
-        <div class="k-sc-shared-badge" id="k-sc-shared-badge" hidden>
-          <div class="k-sc-shared-badge-row">
-            <span class="k-sc-shared-dot" aria-hidden="true"></span>
-            <span class="k-sc-shared-label">Panier partagé actif</span>
-            <button id="k-sc-reshare" class="k-sc-reshare-btn" type="button" aria-label="Re-partager le lien">📲 Re-partager</button>
-          </div>
-          <button id="k-sc-group-view" class="k-sc-group-view-btn" type="button">
-            👥 Suivre les participations →
-          </button>
-        </div>
         <!-- Bouton "Partager" (PR-1) — géré par b-share-cart.js -->
         <button id="k-sc-share" class="k-sc-btn-share" type="button" aria-label="📤 Partager">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -482,12 +471,6 @@
   </div>
   <div id="k-cart-body" class="k-cart-body"></div>
   <div id="k-cart-footer" class="k-cart-footer u-hidden">
-    <!-- Badge partagé (drawer mobile) -->
-    <div class="k-share-badge-row" id="k-share-badge-row" hidden>
-      <span class="k-share-badge-dot" aria-hidden="true"></span>
-      <span class="k-share-badge-label">Partagé</span>
-      <button id="k-cart-reshare" class="k-share-reshare-btn" type="button">Re-partager</button>
-    </div>
     <div class="k-cart-recap" id="k-cart-recap">
       <div class="k-cart-recap-line">
         <span class="k-cart-recap-label"><span id="k-cart-item-count">0</span> <span id="k-cart-recap-word">article</span><span id="k-cart-item-plural"></span></span>
@@ -646,7 +629,6 @@
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
 <!-- fixMobile removed v19 -->
 </html>
-
 
 
 

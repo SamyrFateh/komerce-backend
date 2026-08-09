@@ -403,7 +403,6 @@ module.exports = {
       'GET /api/health',
       'GET /api/public/config',
       'GET /webhook/authkey-whatsapp',
-      'POST /api/shared-carts/stripe/webhook',
       'GET /*.html',
     ],
     // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : aucune de ces

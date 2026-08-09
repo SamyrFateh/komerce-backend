@@ -897,7 +897,7 @@ describe('b-cart', () => {
     it('le titre du side cart ("Mon panier") est restauré après clearSharedListContext, pas seulement le contenu', () => {
       activateList({ cart: { title: 'Sync multi-client' } });
       const titleLabel = document.getElementById('k-side-cart').querySelector('.k-sc-title-label');
-      expect(titleLabel.textContent).toBe('Sync multi-client');
+      expect(titleLabel.textContent).toBe('Liste de Samsam');
 
       clearSharedListContext();
       state.cart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];

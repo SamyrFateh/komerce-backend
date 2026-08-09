@@ -13,8 +13,8 @@
 | NON_RUNTIME_TEST | 7 |
 | TECHNICAL_PRIMITIVE | 29 |
 | BUSINESS_TRANSVERSAL_SERVICE | 3 |
-| CROSS_FEATURE_DIRECT_IMPORT | 7 |
-| BUSINESS_FEATURE_INTERFACE | 7 |
+| CROSS_FEATURE_DIRECT_IMPORT | 8 |
+| BUSINESS_FEATURE_INTERFACE | 6 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
 | **TOTAL** | **75** |
@@ -70,7 +70,7 @@
 | orders → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-foundation | static-code | technical-primitive | technical-dependency-policy | — | `` |
 | orders → notifications | BUSINESS_TRANSVERSAL_SERVICE | RUNTIME_AND_TEST | business-feature | business-transversal | static-code | business-file-import | business-dependency-declare-candidate | — | `` |
 | orders → platform-ops | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-transversal | static-code | business-file-import | technical-dependency-policy | — | `` |
-| orders → shared-cart | BUSINESS_FEATURE_INTERFACE | RUNTIME_AND_TEST | business-feature | business-feature | interface+static-code | mixed | business-dependency-declare-candidate | — | `` |
+| orders → shared-cart | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_AND_TEST | business-feature | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import | `` |
 | payments → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-foundation | interface+static-code | mixed | technical-dependency-policy | — | `` |
 | payments → shared-cart | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_ONLY | business-feature | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import, runtime-cycle | `` |
 | platform-ops → auth-identity | BUSINESS_FEATURE_INTERFACE | RUNTIME_AND_TEST | technical-transversal | business-feature | interface+static-code | interface | business-dependency-declare-candidate | runtime-cycle | `` |

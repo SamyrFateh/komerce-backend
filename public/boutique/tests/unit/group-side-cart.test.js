@@ -410,13 +410,47 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     actions.onCommand();
 
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
-    const [cartItems] = checkoutSharedListSelection.mock.calls[0];
+    const [cartItems, checkoutCtx] = checkoutSharedListSelection.mock.calls[0];
     expect(cartItems).toHaveLength(1); // seule i1 (non réclamé) est achetable
     expect(cartItems[0]).toMatchObject({
       shared_cart_item_id: 'i1',
       quantity: 2,
       product: { id: 'p1' },
       shared_list_context: expect.objectContaining({ snapshot_unit_price_kmf: 1000 }),
+    });
+    expect(checkoutCtx).toEqual({
+      origin: 'SHARED_LIST',
+      sharedCartId: 'sc1',
+      isCreator: false,
+      creatorFirstName: 'Awa',
+      title: 'Achat pour la liste de Awa',
+    });
+  });
+
+  it('projette Ma liste et le contexte checkout complet pour l’organisateur', () => {
+    activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+
+    const ownerTab = document.querySelector(
+      '#k-cart-surface-switch .k-tab-shared-list'
+    );
+    expect(ownerTab).not.toBeNull();
+    expect(ownerTab.textContent).toBe('Ma liste');
+
+    const [context, , actions] = renderCartSnapshot.mock.calls.at(-1);
+    expect(context.title).toBe('Ma liste');
+    expect(context.headerTitle).toBe('Ma liste');
+
+    actions.onToggleSelect('i1');
+    actions.onCommand();
+
+    expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
+    const [, checkoutCtx] = checkoutSharedListSelection.mock.calls[0];
+    expect(checkoutCtx).toEqual({
+      origin: 'SHARED_LIST',
+      sharedCartId: 'sc1',
+      isCreator: true,
+      creatorFirstName: 'Awa',
+      title: 'Achat pour Ma liste',
     });
   });
 

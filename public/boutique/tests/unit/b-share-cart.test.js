@@ -123,32 +123,25 @@ describe('b-share-cart', () => {
   });
 
   describe('refreshSharedBadges', () => {
-    test('affiche le contexte partagé et normalise le CTA', () => {
-      appendElement('div', 'k-share-badge-row', { hidden: true });
+    test('normalise l’unique CTA Partager sans badge concurrent', () => {
       appendElement('button', 'k-cart-share');
-      appendElement('div', 'k-sc-shared-badge');
       appendElement('button', 'k-sc-share', { hidden: true });
 
       refreshSharedBadges(true);
 
-      expect(document.getElementById('k-share-badge-row').hidden).toBe(false);
       expect(document.getElementById('k-cart-share').textContent)
         .toBe('📤 Partager cette liste');
-      expect(document.getElementById('k-sc-shared-badge').hidden).toBe(true);
       expect(document.getElementById('k-sc-share').hidden).toBe(false);
       expect(document.getElementById('k-sc-share').textContent)
         .toBe('📤 Partager cette liste');
+      expect(document.getElementById('k-share-badge-row')).toBeNull();
+      expect(document.getElementById('k-cart-reshare')).toBeNull();
+      expect(document.getElementById('k-sc-reshare')).toBeNull();
       expect(refreshGroupBadge).toHaveBeenCalled();
     });
 
-    test('masque le badge mobile si aucune liste n’est active', () => {
-      appendElement('div', 'k-share-badge-row');
-      refreshSharedBadges(false);
-      expect(document.getElementById('k-share-badge-row').hidden).toBe(true);
-    });
-
     test('ne dépend pas de la présence des éléments DOM', () => {
-      expect(() => refreshSharedBadges(true)).not.toThrow();
+      expect(() => refreshSharedBadges(false)).not.toThrow();
     });
   });
 
@@ -363,59 +356,68 @@ describe('b-share-cart', () => {
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    test('un repartage ne dépend pas du panier local', async () => {
+    test('Partager depuis la liste affichée ne dépend pas du panier local', async () => {
       state.cart = [];
-      state.shareToken = 'tok-1';
-      state.shareUrl = 'https://x.test/boutique/?p=tok-1';
-      state.cartName = 'Repas de famille';
+      state.cartSurface = 'shared-list';
+      state.sharedListContext = {
+        token: 'tok-1',
+        status: 'open',
+        isCreator: true,
+        creatorFirstName: 'Sam',
+      };
 
-      await startShareFlow({ reshare: true });
+      await startShareFlow();
 
       expect(navigator.share).toHaveBeenCalledWith(expect.objectContaining({
-        text: expect.stringContaining('Repas de famille'),
-        url: 'https://x.test/boutique/?p=tok-1',
+        title: 'Sélection Komerce',
+        text: expect.stringContaining('sélection Komerce'),
+        url: 'http://localhost/boutique/?p=tok-1',
       }));
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    test('un repartage annulé par l’utilisateur ne produit pas d’erreur', async () => {
-      state.shareToken = 'tok-2';
-      state.shareUrl = 'https://x.test/boutique/?p=tok-2';
+    test('un partage de liste annulé par l’utilisateur ne produit pas d’erreur', async () => {
+      state.cartSurface = 'shared-list';
+      state.sharedListContext = {
+        token: 'tok-2',
+        status: 'open',
+        isCreator: false,
+        creatorFirstName: 'Awa',
+      };
       navigator.share.mockRejectedValue(
         Object.assign(new Error('cancelled'), { name: 'AbortError' }),
       );
 
-      await expect(startShareFlow({ reshare: true })).resolves.toBeUndefined();
+      await expect(startShareFlow()).resolves.toBeUndefined();
       expect(showToast).not.toHaveBeenCalled();
       expect(window.open).not.toHaveBeenCalled();
     });
   });
 
-  describe('install', () => {
-    // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART — régression :
-    // #k-sc-group-view appelait l'ancien switchToGroup(), supprimé par une
-    // session antérieure sans que ce listener soit mis à jour (ReferenceError
-    // au clic). Couvre le câblage réel du bouton plutôt que la seule
-    // fonction interne, pour qu'un futur renommage similaire échoue ici.
-    // install() est un singleton au niveau module (_installed) : un seul
-    // appel par fichier de test, les deux branches sont vérifiées via deux
-    // clics successifs avec un état différent plutôt que deux install().
-    test('#k-sc-group-view active la liste courante dans le side cart canonique (jamais switchToGroup)', async () => {
-      appendElement('button', 'k-sc-group-view');
+
+  describe('install — action Partager canonique', () => {
+    test('câble uniquement les deux CTA canoniques et respecte le token participant au boot', async () => {
+      const cartShare = appendElement('button', 'k-cart-share');
+      const sideShare = appendElement('button', 'k-sc-share');
+      state._pendingParticipantToken = 'tok-participant';
 
       install();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
 
-      state.shareToken = null;
-      document.getElementById('k-sc-group-view').click();
-      await Promise.resolve();
-      await Promise.resolve();
-      expect(mockActivateFromParticipantUrl).not.toHaveBeenCalled();
+      expect(mockActivateFromParticipantUrl).toHaveBeenCalledWith('tok-participant');
+      expect(document.getElementById('k-cart-reshare')).toBeNull();
+      expect(document.getElementById('k-sc-reshare')).toBeNull();
 
-      state.shareToken = 'tok-owner-1';
-      document.getElementById('k-sc-group-view').click();
-      await Promise.resolve();
-      await Promise.resolve();
-      expect(mockActivateFromParticipantUrl).toHaveBeenCalledWith('tok-owner-1');
+      expect(cartShare.disabled).toBe(false);
+      expect(sideShare.disabled).toBe(false);
+
+      state.shareToken = 'tok-clear-by-event';
+      document.dispatchEvent(new Event('cart:cleared'));
+      expect(state.shareToken).toBeNull();
     });
   });
+
+
 });
