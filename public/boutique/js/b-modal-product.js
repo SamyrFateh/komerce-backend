@@ -45,7 +45,7 @@
 
 import { bus }                   from './b-bus.js';
 import { state, dom }            from './b-store.js';
-import { optimizeImgUrl, fmtPrice } from './b-utils.js';
+import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.js';
 
 'use strict';
 
@@ -167,6 +167,7 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
       img.alt = product.name || '';
       img.draggable = false;
       img.loading = i < 3 ? 'eager' : 'lazy';
+      img.addEventListener('error', () => applyProductImageFallback(img));
       // Première image : on coupe le shimmer dès qu'elle est chargée
       if (i === 0 && imgWrapForSkeleton) {
         let killShimmer = function() { imgWrapForSkeleton.classList.add('is-image-loaded'); };
@@ -313,8 +314,10 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
 
     function measure() {
       let isStatic = actBar.parentNode === dom.modal;
-      let h = isStatic ? 0 : (actBar.offsetHeight || 0);
+      let actionBarHeight = actBar.offsetHeight || 0;
+      let h = isStatic ? 0 : actionBarHeight;
       document.documentElement.style.setProperty('--k-modal-cta-h', h + 'px');
+      document.documentElement.style.setProperty('--k-modal-action-bar-h', actionBarHeight + 'px');
     }
 
     measure();

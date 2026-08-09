@@ -6,8 +6,8 @@
  * @status        production
  * @owner         public/boutique/tests/unit/visual-geometry-css-invariants.test.js
  * @purpose       Verrouille les corrections CSS de la campagne QA visuelle
- *                2026-08 (LOT 1–4 : onglets side cart, recap check, card-name
- *                desktop, chips paiement autonomes) contre toute régression
+ *                2026-08 (LOT 1–6 : onglets side cart, recap check, card-name
+ *                desktop, chips paiement autonomes, checkout neutre, drawers) contre toute régression
  *                silencieuse dans les sources CSS.
  *                Équivalent Jest des invariants G6 du spec Playwright
  *                visual-geometry-audit.spec.js (projectable sans navigateur).
@@ -27,7 +27,7 @@ function readCss(name) {
   return fs.readFileSync(path.join(CSS, name), 'utf8');
 }
 
-describe('QA visuelle — invariants CSS statiques (LOT 1–4, 2026-08)', () => {
+describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => {
   // ── LOT 1 — Onglets side cart ─────────────────────────────────────────────
   describe('LOT 1 — shared-list-side-cart.css : centrage onglets', () => {
     let css;
@@ -124,8 +124,51 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–4, 2026-08)', () => 
     });
   });
 
+  // ── LOT 5 — Checkout final neutre et compact ─────────────────────────────
+  describe('LOT 5 — checkout-vertical-rail.css : hiérarchie neutre', () => {
+    let css;
+    beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
+
+    it('LOT5-a : le header utilise le fond sable neutre, jamais un bandeau vert', () => {
+      const block = css.match(/\.k-order-header\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(block).toMatch(/background\s*:\s*var\(--sand-warm\)/);
+      expect(block).toMatch(/color\s*:\s*var\(--text\)/);
+      expect(block).not.toMatch(/gradient|checkout-accent|cta-green/);
+    });
+
+    it('LOT5-b : les moyens de paiement restent compacts et passent sur quatre colonnes desktop', () => {
+      const chip = css.match(/\.ck-pay-chip\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(chip).toMatch(/min-height\s*:\s*60px/);
+
+      const desktop = css.match(/@media\s*\(min-width:\s*900px\)[\s\S]*?\.ck-pay-grid\s*\{([^}]+)\}/)?.[1] ?? '';
+      expect(desktop).toMatch(/grid-template-columns\s*:\s*repeat\(4,/);
+    });
+
+    it('LOT5-c : le CTA engageant est terracotta, pas vert', () => {
+      const block = css.match(/\.k-order-overlay\.open\s+\.ck-confirm-btn\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(block).toMatch(/background\s*:\s*var\(--terracotta\)/);
+      expect(block).not.toMatch(/checkout-accent|cta-green/);
+    });
+  });
+
+  // ── LOT 6 — Drawers lisibles desktop et mobile ───────────────────────────
+  describe('LOT 6 — drawers : largeur et respiration', () => {
+    it('LOT6-a : le side cart desktop réserve 296px puis 320px', () => {
+      const css = readCss('layout.css');
+      expect(css).toMatch(/--sc-reserve-w\s*:\s*296px/);
+      expect(css).toMatch(/--sc-reserve-w\s*:\s*320px/);
+    });
+
+    it('LOT6-b : le drawer de liste mobile conserve marge et espacement entre les lignes', () => {
+      const css = readCss('shared-list-side-cart.css');
+      const block = css.match(/\.k-cart-drawer\[data-mode="shared-list"\]\s+#k-cart-body\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(block).toMatch(/gap\s*:\s*6px/);
+      expect(block).toMatch(/padding\s*:\s*8px\s+10px/);
+    });
+  });
+
   // ── Intégrité bundle ─────────────────────────────────────────────────────
-  describe('Bundle — components.css inclut les 4 feuilles modifiées', () => {
+  describe('Bundle — components.css inclut les feuilles visuelles concernées', () => {
     it('LOT-bundle : shared-list-side-cart, checkout-vertical-rail et products dans components.css', () => {
       const { BUNDLES } = require('../../scripts/css-bundles');
       const comp = BUNDLES.find((b) => b.out === 'components.css');

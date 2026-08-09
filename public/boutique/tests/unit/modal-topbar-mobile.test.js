@@ -176,4 +176,17 @@ describe('topbar mobile canonique — oracle REF-2026-07e', () => {
   test('le safe-area inférieur reste pris en compte pour les actions sticky', () => {
     expect(shell).toMatch(/\.k-modal-actions\s*\{[^}]*env\(safe-area-inset-bottom/);
   });
+
+  test("le panier revient dans le flux à l'état scrollé et ne masque pas le titre produit", () => {
+    const polish = fs.readFileSync(path.join(ROOT, 'css/modal-product-polish.css'), 'utf8');
+    const rule = polish.match(/#k-modal\.is-scrolled \.k-modal-cart-btn\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(rule).toMatch(/position\s*:\s*static/);
+    expect(rule).toMatch(/transform\s*:\s*none/);
+  });
+
+  test('le bouton retour-haut reste au-dessus de la barre transactionnelle mobile', () => {
+    const rule = shell.match(/\.k-modal-back-top\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(rule).toMatch(/--k-modal-action-bar-h/);
+    expect(rule).toMatch(/safe-area-inset-bottom/);
+  });
 });

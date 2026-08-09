@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Image produit indisponible</title>
+  <desc id="desc">Illustration neutre d'un colis Komerce</desc>
+  <rect width="640" height="640" rx="48" fill="#f7f3ea"/>
+  <circle cx="320" cy="292" r="156" fill="#edf4ea"/>
+  <path d="M220 250 320 194l100 56v124l-100 56-100-56Z" fill="#fff" stroke="#3f8548" stroke-width="18" stroke-linejoin="round"/>
+  <path d="m220 250 100 58 100-58M320 308v122" fill="none" stroke="#3f8548" stroke-width="18" stroke-linejoin="round"/>
+  <path d="m270 222 102 59" fill="none" stroke="#d86232" stroke-width="14" stroke-linecap="round"/>
+  <text x="320" y="506" text-anchor="middle" fill="#667063" font-family="Arial, sans-serif" font-size="30" font-weight="600">Image bientôt disponible</text>
+</svg>

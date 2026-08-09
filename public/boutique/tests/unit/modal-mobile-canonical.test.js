@@ -44,4 +44,10 @@ describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
       /#k-modal\s+\.k-sug-card-bottom\s*\{[^}]*margin-top:\s*auto/s
     );
   });
+
+  test('gives mobile suggestions enough width to keep product names readable', () => {
+    expect(css).toMatch(
+      /#k-modal\s+\.k-sug-grid\s+\.k-sug-card\s*\{[^}]*flex:\s*0\s+0\s+132px[^}]*width:\s*132px/s
+    );
+  });
 });

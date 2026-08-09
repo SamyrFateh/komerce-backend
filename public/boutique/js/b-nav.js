@@ -52,7 +52,14 @@ export function setupDrawer() {
 
   // Anti double-binding si setupDrawer est rappelé après hot reload / re-init.
   if (dom.cartBtn.dataset.drawerBound !== '1') {
-    dom.cartBtn.addEventListener('click', openCart);
+    dom.cartBtn.addEventListener('click', () => {
+      // Desktop : le side cart est déjà résident et visible. Le clic sur
+      // l'avatar devient donc le raccourci utile vers le récapitulatif.
+      // Mobile : le drawer reste l'étape nécessaire pour relire/modifier le
+      // panier avant de commander. Panier vide : on montre aussi le drawer.
+      if (window.innerWidth >= 900 && state.cart.length > 0) checkoutCart();
+      else openCart();
+    });
     dom.cartBtn.dataset.drawerBound = '1';
   }
 
@@ -334,7 +341,6 @@ export async function loadRelais() {
     state.relais = [];
   }
 }
-
 
 
 

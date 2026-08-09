@@ -157,25 +157,25 @@
 }
 
 #k-modal .k-sug-add {
-  width: var(--k-sug-action-height);
-  height: var(--k-sug-action-height);
-  min-width: var(--k-sug-action-height);
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
   padding: 0;
-  border: none;
+  border: 1px solid var(--coral);
   border-radius: 50%;
-  background: transparent;
-  color: var(--coral);
-  box-shadow: none;
+  background: var(--coral);
+  color: var(--white);
+  box-shadow: 0 2px 7px rgba(200,92,45,.22);
 }
 
 #k-modal .k-sug-add:hover {
-  background: transparent;
-  border-color: transparent;
+  background: var(--coral-dark);
+  border-color: var(--coral-dark);
   transform: scale(1.1);
 }
 
 #k-modal .k-sug-add:active {
-  background: transparent;
+  background: var(--coral-dark);
   transform: scale(.88);
 }
 
@@ -195,9 +195,9 @@
   max-width: var(--k-sug-action-width);
   min-height: var(--k-sug-action-height);
   padding: 0;
-  border: 1.5px solid var(--ocean);
+  border: 1.5px solid var(--cta-green);
   border-radius: 16px;
-  background: var(--white);
+  background: var(--cta-green);
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(74,144,64,.25);
 }
@@ -210,19 +210,19 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--ocean);
+  color: var(--white);
   box-shadow: none;
   font-size: 16px;
 }
 
 #k-modal .k-sug-card-actions.is-filled .k-sug-step:hover,
 #k-modal .k-sug-card-actions.is-filled .k-sug-step:active {
-  background: rgba(74,144,64,.12);
+  background: rgba(255,255,255,.14);
 }
 
 #k-modal .k-sug-card-actions.is-filled .k-sug-qty {
   min-width: 28px;
-  color: var(--ocean);
+  color: var(--white);
   font-size: 13px;
   font-weight: 700;
 }
@@ -259,6 +259,36 @@
     height: 31px;
   }
 
+  /* Au scroll, l'identité produit prend la place centrale. Le panier revient
+     alors dans le groupe d'actions de droite au lieu de flotter sur le titre. */
+  #k-modal.is-scrolled .k-modal-cart-btn {
+    position: static;
+    transform: none;
+  }
+
+  #k-modal.is-scrolled .k-modal-cart-btn:active {
+    transform: scale(.94);
+  }
+
+  #k-modal.is-scrolled .k-modal-topbar-product {
+    margin-left: 0;
+    gap: 6px;
+  }
+
+  #k-modal.is-scrolled .k-topbar-thumb {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  #k-modal.is-scrolled .k-topbar-name {
+    font-size: 12px;
+  }
+
+  #k-modal.is-scrolled .k-topbar-price {
+    gap: 4px;
+  }
+
   #k-modal .k-modal-suggestions {
     padding-right: 10px;
     padding-left: 10px;
@@ -288,6 +318,9 @@
 
   #k-modal .k-sug-card-name {
     min-height: 32px;
+    font-size: 12px;
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
   }
 }
 

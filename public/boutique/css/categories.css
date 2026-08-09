@@ -580,18 +580,15 @@
   }
 
   .k-cats {
-    display: grid;
-    /* auto-fit : autant de colonnes que la largeur permet (≥120px chacune).
-       Remplace l'ancien repeat(8) + le palier magique @900-1180px qui forçait
-       4 colonnes quand 8×92px ne tenaient pas. auto-fit fait ça nativement,
-       sans breakpoint intermédiaire. Voir check-breakpoints (900/1200 only). */
-    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    display: flex;
+    flex-flow: row nowrap;
     gap: 8px;
     max-width: none;
     height: auto;
     margin: 0;
     padding: 0;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
     align-items: stretch;
     scroll-snap-type: none;
   }
@@ -609,7 +606,8 @@
 
   .k-chip {
     /* Géométrie carte */
-    min-width: 0;
+    flex: 1 0 132px;
+    min-width: 132px;
     max-width: none;
     width: 100%;
     height: 72px;
@@ -933,18 +931,12 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   html.k-home-premium-v1 .k-cats {
     position: relative;
-    gap: 20px;
-    /* FIX AUDIT 2026-06-11 : la min-width premium vit sur les TRACKS, pas sur
-       les chips. Avec min-width:164px sur .k-chip, les tracks minmax(120px,1fr)
-       ne faisaient que ~131px à 900px → chips débordant du conteneur (+12px de
-       scroll horizontal entre 900 et ~1240px). auto-fit réduit désormais le
-       nombre de colonnes nativement. */
-    grid-template-columns: repeat(auto-fit, minmax(164px, 1fr));
+    gap: 8px;
   }
 
   html.k-home-premium-v1 .k-chip {
     border-radius: 24px;
-    min-width: 0;
+    min-width: 132px;
     background: color-mix(in srgb, var(--white) 78%, transparent);
     box-shadow: 0 14px 34px var(--border-text-06);
     transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);

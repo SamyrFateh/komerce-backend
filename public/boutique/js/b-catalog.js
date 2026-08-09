@@ -34,7 +34,7 @@ import {
   state, dom, $, $$, PAGE_SIZE, scroll,
 }                         from './b-store.js';
 import {
-  optimizeImgUrl, sanitize, promoImgUrl, fmt, fmtPrice,
+  optimizeImgUrl, sanitize, promoImgUrl, fmt, fmtPrice, productImageFallbackAttr,
   productEmoji, _currency, _rates,
   renderProductCarousel, bindCarouselDots,
 }                         from './b-utils.js';
@@ -244,7 +244,7 @@ function renderPromos() {
     const oldPrice = divisor > 0 ? Math.round(p.price_kmf / divisor) : p.price_kmf;
     return `
       <div class="k-promo-card" data-id="${p.id}">
-        <img class="k-promo-card-img" src="${promoImgUrl(p.image_url, 400)}" alt="${sanitize(p.name)}" loading="lazy" decoding="async">
+        <img class="k-promo-card-img" src="${promoImgUrl(p.image_url, 400)}" alt="${sanitize(p.name)}" loading="lazy" decoding="async" ${productImageFallbackAttr()}>
         <span class="k-promo-badge">-${p.promo_pct}%</span>
         <div class="k-promo-card-info">
           <div class="k-promo-card-name">${sanitize(p.name)}</div>
