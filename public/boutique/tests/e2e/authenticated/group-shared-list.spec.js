@@ -608,19 +608,21 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     await expect(page.locator('#k-side-cart .k-sc-item')).toHaveCount(1);
   });
 
-  test('F22-10 — repartager depuis le side cart (📤 Partager) réutilise le lien actif, ne recrée jamais de liste', async ({ page }) => {
+  test('F22-10 — l’action unique « Partager » réutilise le lien actif, sans recréer de liste', async ({ page }) => {
     const { token } = await createSharedList(page, 1);
 
     const postSpy = await spyOnApi(page, '/api/shared-carts/from-cart-items', 'POST');
     await stubShareChannels(page);
 
-    const reshareBtn = page.locator('#k-side-cart').getByRole('button', { name: 'Partager', exact: true });
-    await expect(reshareBtn).toBeVisible({ timeout: 10_000 });
-    await reshareBtn.click();
+    await expect(page.locator('#k-cart-reshare, #k-sc-reshare')).toHaveCount(0);
+    const shareBtn = page.locator('#k-cart-share:visible, #k-sc-share:visible');
+    await expect(shareBtn).toHaveCount(1);
+    await expect(shareBtn).toBeVisible({ timeout: 10_000 });
+    await shareBtn.click();
 
     // Laisser une fenêtre courte pour être sûr qu'aucune création ne part.
     await page.waitForTimeout(1_500);
-    expect(postSpy.calls().length, 'Repartager ne doit jamais recréer une liste').toBe(0);
+    expect(postSpy.calls().length, 'Partager une liste affichée ne doit jamais recréer une liste').toBe(0);
 
     const stateAfter = await getClientShareState(page);
     expect(stateAfter?.token).toBe(token);
