@@ -125,16 +125,19 @@
 }
 
 /* ── BOUTON AJOUTER AU PANIER ────────────────────────────────── */
+/* Harmonisé sur le design plein de la modal (cercle corail plein,
+   pilule verte pleine — cf. #k-modal .k-sug-add / .k-sug-card-actions.is-filled,
+   css/modal-product-polish.css) plutôt que le glyphe plat sans fond. */
 .k-card-add {
   position: absolute;
   bottom: 7px;
   right: 7px;
   width: 32px;
   height: 32px;
-  background: transparent;
+  background: var(--coral);
   border-radius: 50%;
-  box-shadow: none;
-  border: none;
+  box-shadow: 0 3px 9px rgba(200,92,45,.22);
+  border: 1px solid var(--coral);
   padding: 0;
   z-index: 5;
   cursor: pointer;
@@ -142,9 +145,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform .15s var(--ease);
-  /* Bouton sans cercle : le contenu est un <span class="k-card-add-plus"> texte
-     (pas d'<img>), cf. render-product-card.js renderAddControl(). */
+  transition: transform .15s var(--ease), background .15s, border-color .15s;
 }
 /* FIX centrage + : .k-card-add-trigger est le <button> réel généré par
    renderAddControl() À L'INTÉRIEUR de .k-card-add (le conteneur positionné).
@@ -161,39 +162,35 @@
   justify-content: center;
 }
 .k-card-add:active {
-  transform: scale(.88);
+  transform: scale(.90);
+  background: var(--coral-dark);
+  border-color: var(--coral-dark);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .k-card-add:hover {
-    transform: scale(1.1);
+    background: var(--coral-dark);
+    border-color: var(--coral-dark);
   }
 }
 
-/* État "dans le panier" : stepper inline */
+/* État "dans le panier" : stepper inline, pilule verte pleine */
 .k-card-add.in-cart {
   width: auto;
   min-width: 68px;
   max-width: 86px;
   height: 32px;
   padding: 0;
-  background: transparent;                       /* transparent d'abord */
-  border: 1.5px solid var(--ocean);
-  border-radius: 16px;
-  box-shadow: 0 2px 6px rgba(74,144,64,.25);
+  background: var(--cta-green);
+  border: 1px solid var(--cta-green);
+  border-radius: 999px;
+  box-shadow: 0 3px 9px rgba(42,122,62,.20);
   display: flex;
   align-items: center;
   justify-content: space-between;
   animation: cartAddPulse .35s cubic-bezier(.34,1.56,.64,1);
   right: 7px;
   bottom: 7px;
-  /* Le fond blanc n'apparaît qu'après la fin de l'animation */
-  animation: cartAddPulse .35s cubic-bezier(.34,1.56,.64,1) forwards,
-             cartAddBg .01s linear .35s forwards;
-}
-
-@keyframes cartAddBg {
-  to { background: var(--white); }
 }
 
 @keyframes cartAddPulse {
@@ -209,19 +206,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--ocean);
+  color: var(--white);
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
-  border-radius: 16px;
+  border-radius: 0;
   transition: background .15s;
 }
 
 .k-card-add.in-cart .k-add-minus:active,
 .k-card-add.in-cart .k-add-plus-ic:active {
-  background: rgba(74,144,64,.12);
+  background: rgba(255,255,255,.15);
 }
 
 .k-card-add.in-cart .k-add-qty {
@@ -229,7 +226,7 @@
   text-align: center;
   font-size: 13px;
   font-weight: 700;
-  color: var(--ocean);
+  color: var(--white);
   pointer-events: none;
   min-width: 18px;
 }
@@ -263,14 +260,14 @@
   100% { transform: scale(1) rotate(0deg);     opacity: 1; }
 }
 
-/* Parts stepper */
+/* Glyphe "+" du bouton .k-card-add — blanc sur fond corail plein
+   (cf. harmonisation ci-dessus, plus de fond transparent). */
 .k-card-add-plus {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 900;
-  color: var(--coral);
+  color: var(--white);
   line-height: 1;
   pointer-events: none;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,.18));
 }
 
 .k-add-minus,
@@ -634,10 +631,12 @@
     left: 7px;
   }
 
-  /* Stepper inline dans la carte desktop */
+  /* Stepper inline dans la carte desktop — pilule verte pleine (harmonisé
+     avec le style plein de la modal, cf. bloc de base .k-card-add.in-cart
+     plus bas dans ce fichier). */
   .k-card-add.in-cart {
     border-radius: 18px;
-    background-color: var(--white);
+    background-color: var(--cta-green);
     box-shadow: var(--elev-2);
   }
 

@@ -14,10 +14,10 @@
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1315 | 🔴 **ORPHELIN** |
+| `boutique-desktop.css` | 1321 | 🔴 **ORPHELIN** |
 | `cart.css` | 1912 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
-| `checkout-vertical-rail.css` | 712 | 🔴 **ORPHELIN** |
+| `checkout-vertical-rail.css` | 741 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
@@ -30,8 +30,8 @@
 | `modal-mobile-canonical.css` | 682 | 🔴 **ORPHELIN** |
 | `modal-mobile-suggestion-actions.css` | 62 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 502 | 🔴 **ORPHELIN** |
-| `modal-product-polish.css` | 322 | 🔴 **ORPHELIN** |
-| `modal-product.css` | 1512 | 🔴 **ORPHELIN** |
+| `modal-product-polish.css` | 341 | 🔴 **ORPHELIN** |
+| `modal-product.css` | 1516 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 1246 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 888 | 🔴 **ORPHELIN** |
@@ -50,8 +50,8 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=161
- 2. /boutique/css/dist/components.css?v=414
- 3. /boutique/css/dist/desktop.css?v=85
+ 2. /boutique/css/dist/components.css?v=418
+ 3. /boutique/css/dist/desktop.css?v=86
 ```
 
 ## 3. Cartographie des sélecteurs critiques
