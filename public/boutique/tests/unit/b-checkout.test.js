@@ -168,6 +168,7 @@ describe('b-checkout', () => {
     state.checkoutAttemptKey = null;
     state.pendingStripeOrderRef = null;
     state.shareToken = null;
+    state.checkoutDisplayContext = null;
     scroll.savedY = 0;
     getCurrentIdentity.mockReturnValue(null);
   });
@@ -382,6 +383,7 @@ describe('b-checkout', () => {
       const sentPayload = apiPost.mock.calls[0][1];
       expect(sentPayload).not.toHaveProperty('recipient_name');
       expect(sentPayload).not.toHaveProperty('recipient_phone');
+      expect(sentPayload.pickup_code_recipient).toBeUndefined();
       expect(clearCart).toHaveBeenCalled();
       expect(showToast).toHaveBeenCalledWith('Commande confirmée !', 'success');
       expect(btn.dataset.busy).toBe('0');
@@ -390,11 +392,22 @@ describe('b-checkout', () => {
       expect(dom.orderTitle.textContent).toBe('✅ Commande confirmée');
     });
 
-    it('Contrat API §3 : propage shared_cart_item_id si présent sur l\'item (panier éphémère liste), absent sinon (panier personnel inchangé)', async () => {
-      state.orderData = { selectedRelaisId: 7, payment_mode: 'cash_relais', relayStatus: 'ready' };
+    it('Contrat liste : propage uniquement les claims sélectionnés et le destinataire organizer', async () => {
+      state.orderData = {
+        selectedRelaisId: 7,
+        payment_mode: 'cash_relais',
+        relayStatus: 'ready',
+        pickupCodeRecipient: 'organizer',
+      };
+      state.checkoutDisplayContext = {
+        origin: 'SHARED_LIST',
+        sharedCartId: 'cart-1',
+        isCreator: false,
+        creatorFirstName: 'Samsam',
+        title: 'Achat pour la liste de Samsam',
+      };
       state.cart = [
         { product: { id: 1 }, qty: 1, shared_cart_item_id: 'sci-abc' },
-        { product: { id: 2 }, qty: 1 }, // panier personnel classique, pas de shared_cart_item_id
       ];
 
       requireIdentity.mockResolvedValue({ phone: '+269123456', full_name: 'Amina' });
@@ -403,9 +416,10 @@ describe('b-checkout', () => {
       const btn = document.createElement('button');
       await submitOrder(btn);
 
-      const sentItems = apiPost.mock.calls[0][1].items;
+      const payload = apiPost.mock.calls[0][1];
+      const sentItems = payload.items;
       expect(sentItems[0].shared_cart_item_id).toBe('sci-abc');
-      expect(sentItems[1].shared_cart_item_id).toBeUndefined();
+      expect(payload.pickup_code_recipient).toBe('organizer');
     });
 
     it('erreur API → toast erreur, bouton réactivé, busy remis à 0', async () => {
@@ -691,6 +705,41 @@ describe('b-checkout', () => {
       const idCard = dom.orderBody.querySelector('#ck-identity-recap');
       expect(idCard).not.toBeNull();
       expect(idCard.className).toContain('ck-step-header--done');
+    });
+    it('liste reçue : propose buyer par défaut ou organizer, sans numéro libre', async () => {
+      state.checkoutDisplayContext = {
+        origin: 'SHARED_LIST',
+        sharedCartId: 'cart-1',
+        isCreator: false,
+        creatorFirstName: 'Samsam',
+        title: 'Achat pour la liste de Samsam',
+      };
+
+      renderCheckout();
+      await flush();
+
+      const block = dom.orderBody.querySelector('.ck-recipient-section');
+      expect(block).not.toBeNull();
+      expect(block.textContent).toContain('Me l’envoyer');
+      expect(block.textContent).toContain('L’envoyer à Samsam');
+      expect(block.querySelector('input[value="buyer"]').checked).toBe(true);
+      expect(block.querySelector('input[value="organizer"]').checked).toBe(false);
+      expect(block.querySelector('input[type="tel"]')).toBeNull();
+    });
+
+    it('Ma liste : masque le choix redondant du destinataire du code', async () => {
+      state.checkoutDisplayContext = {
+        origin: 'SHARED_LIST',
+        sharedCartId: 'cart-1',
+        isCreator: true,
+        creatorFirstName: 'Amina',
+        title: 'Achat pour Ma liste',
+      };
+
+      renderCheckout();
+      await flush();
+
+      expect(dom.orderBody.querySelector('.ck-recipient-section')).toBeNull();
     });
   });
 
