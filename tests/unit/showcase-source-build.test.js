@@ -4,10 +4,11 @@
 
 const {
   USER_AGENT,
-  COMMONS_QUERIES,
+  COMMONS_CATEGORIES,
   parseArgs,
   retryDelayMs,
   isReusableCommonsLicense,
+  isShowcaseRaster,
   mapCommonsPage,
   dedupe,
   decorate,
@@ -16,7 +17,8 @@ const {
 describe('showcase-source-build', () => {
   test('identifie le client Wikimedia et limite la concurrence', () => {
     expect(USER_AGENT).toContain('https://komerce.co');
-    expect(COMMONS_QUERIES.length).toBeGreaterThanOrEqual(10);
+    expect(COMMONS_CATEGORIES.length).toBeGreaterThanOrEqual(10);
+    expect(COMMONS_CATEGORIES.some(([name]) => name.includes('white background'))).toBe(true);
     expect(parseArgs([])).toMatchObject({ target: 500, concurrency: 3 });
     expect(() => parseArgs(['--concurrency', '4'])).toThrow(/entre 1 et 3/);
   });
@@ -37,6 +39,13 @@ describe('showcase-source-build', () => {
     expect(isReusableCommonsLicense('All rights reserved')).toBe(false);
   });
 
+  test('filtre les médias Commons pour un rendu vitrine', () => {
+    expect(isShowcaseRaster({ mime: 'image/jpeg', width: 1200, height: 900 })).toBe(true);
+    expect(isShowcaseRaster({ mime: 'image/svg+xml', width: 1200, height: 900 })).toBe(false);
+    expect(isShowcaseRaster({ mime: 'image/jpeg', width: 250, height: 250 })).toBe(false);
+    expect(isShowcaseRaster({ mime: 'image/jpeg', width: 2400, height: 300 })).toBe(false);
+  });
+
   test('mapCommonsPage conserve source et attribution', () => {
     const row = mapCommonsPage({
       pageid: 42,
@@ -44,6 +53,8 @@ describe('showcase-source-build', () => {
       imageinfo: [{
         thumburl: 'https://upload.wikimedia.org/watch.jpg',
         mime: 'image/jpeg',
+        width: 1200,
+        height: 1000,
         descriptionurl: 'https://commons.wikimedia.org/wiki/File:Yellow_wristwatch.jpg',
         extmetadata: {
           LicenseShortName: { value: 'CC BY-SA 4.0' },
@@ -51,12 +62,13 @@ describe('showcase-source-build', () => {
           ImageDescription: { value: '<p>Yellow wristwatch product photo</p>' },
         },
       }],
-    }, 'wristwatch product', 'Mode', 'Montres');
+    }, 'Timepieces with white background', 'Mode', 'Montres');
 
     expect(row.source).toBe('commons:42');
     expect(row.category).toBe('Mode');
     expect(row.source_attribution.license).toBe('CC BY-SA 4.0');
     expect(row.source_attribution.artist).toBe('Alice');
+    expect(row.source_attribution.commons_category).toBe('Timepieces with white background');
   });
 
   test('mapCommonsPage rejette un média non image', () => {
@@ -66,9 +78,11 @@ describe('showcase-source-build', () => {
       imageinfo: [{
         url: 'https://upload.wikimedia.org/test.pdf',
         mime: 'application/pdf',
+        width: 1200,
+        height: 900,
         extmetadata: { LicenseShortName: { value: 'CC BY-SA 4.0' } },
       }],
-    }, 'x', 'Maison', 'Divers')).toBeNull();
+    }, 'Office equipment with white background', 'Maison', 'Divers')).toBeNull();
   });
 
   test('dedupe refuse doublons source et hero', () => {
