@@ -108,6 +108,12 @@
   --checkout-chip-active-bg:#FFF4EE;                   /* fond chip paiement actif          */
   --checkout-chip-active-text: #5A3010;                /* texte chip paiement actif         */
 
+  /* Checkout final simplifié — neutres du mock canonique 2026-08 */
+  --checkout-neutral:      #555650;  /* header final checkout */
+  --checkout-neutral-deep: #343531;  /* total + CTA sombre */
+  --checkout-neutral-mid:  #5b5c56;  /* second stop CTA */
+  --checkout-control-soft: #f8f7f4;  /* action secondaire "Changer" */
+
 
 
 

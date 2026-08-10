@@ -11446,8 +11446,8 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-order-header {
   min-height: 58px;
   padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
-  background: var(--sand-warm);
-  color: var(--text);
+  background: var(--checkout-neutral);
+  color: var(--white);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 4px 16px rgba(31,48,36,.07);
   /* Le titre doit rester centré dans le header, quelle que soit la largeur
@@ -11460,12 +11460,12 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-modal-back-btn--header {
   min-height: 36px;
   padding: 0 13px;
-  background: var(--white);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.50);
   box-shadow: none;
 }
 
-.k-order-header .ck-modal-back-btn--header { color: var(--text); }
+.k-order-header .ck-modal-back-btn--header { color: var(--white); }
 
 /* Titre visible dans le corps du récap (h2, distinct du chrome du header
    ci-dessus) — aucune règle CSS ne le stylait jusqu'ici : héritait de
@@ -11476,7 +11476,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   font-weight: 800;
   letter-spacing: .01em;
   color: var(--text);
-  margin: 2px 0 10px;
+  margin: 0 0 14px;
 }
 
 .ck-order-title-text {
@@ -11542,14 +11542,14 @@ body.k-id-scroll-lock { overflow: hidden; }
 
 .ck-step-header {
   width: 100%;
-  min-height: 60px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 13px;
+  padding: 10px 13px;
   margin: 0;
   border: 1px solid rgba(31,48,36,.10);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--white);
   box-shadow: 0 2px 8px rgba(31,48,36,.04);
 }
@@ -11608,13 +11608,13 @@ body.k-id-scroll-lock { overflow: hidden; }
 
 .ck-step-header-change {
   flex: 0 0 auto;
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 30px;
+  padding: 0 9px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--sand);
+  background: var(--checkout-control-soft);
   color: var(--text-muted);
-  font-size: .74rem;
+  font-size: .70rem;
   font-weight: 800;
   cursor: pointer;
 }
@@ -11622,13 +11622,15 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-step-header-change:hover {
   border-color: var(--terracotta);
   background: var(--white);
+  color: var(--text);
 }
 
 /* ── Identité ────────────────────────────────────────────────── */
 
-.ck-identity-summary,
+.ck-identity-summary { margin: 0 0 7px; }
+
 .k-ck-guest-hint {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
 }
 
 .k-ck-guest-hint {
@@ -11657,7 +11659,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 /* ── Relais ──────────────────────────────────────────────────── */
 
 .ck-relais-section {
-  margin: 0 0 14px;
+  margin: 0 0 11px;
 }
 
 .ck-relais-section .ck-step-header {
@@ -11705,7 +11707,7 @@ body.k-id-scroll-lock { overflow: hidden; }
  * mais peuvent être supprimées lors d'un nettoyage CSS ultérieur.
  */
 .ck-recap-step {
-  margin: 4px 0 18px;
+  margin: 0 0 12px;
 }
 
 .ck-recap-toggle {
@@ -11755,18 +11757,18 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 .ck-recap-items {
-  margin-top: 8px;
-  padding: 10px 12px;
-  border: 1px solid rgba(31,48,36,.10);
-  border-radius: 16px;
-  background: var(--sand, var(--checkout-cream));
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .ck-recap-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 0;
+  padding: 11px 0 13px;
   border-bottom: 1px solid rgba(31,48,36,.08);
 }
 
@@ -11777,8 +11779,8 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-recap-item-img,
 .ck-recap-item-img--empty {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 8px;
   object-fit: cover;
   background: var(--white);
@@ -11854,20 +11856,30 @@ body.k-id-scroll-lock { overflow: hidden; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(31,48,36,.14);
-  font-size: .86rem;
+  margin-top: 0;
+  padding-top: 13px;
+  border-top: 0;
+  font-size: .92rem;
   font-weight: 800;
   color: var(--text);
+}
+
+/* Gate récapitulatif — CTA rattaché visuellement au contenu. */
+#btn-confirm-recap {
+  width: 100%;
+  min-height: 52px;
+  margin: 2px 0 0;
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 /* ── Paiement ────────────────────────────────────────────────── */
 
 .ck-payment-section {
-  padding: 0;
-  margin: 0 0 10px;
+  padding: 11px 0 0;
+  margin: 11px 0 10px;
   border: 0;
+  border-top: 1px solid rgba(31,48,36,.10);
 }
 
 /* Titre de section statique — règle §4, remplace l'ancien résumé
@@ -11881,21 +11893,22 @@ body.k-id-scroll-lock { overflow: hidden; }
 
 .ck-pay-grid {
   grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: 10px;
-  margin: 0 0 12px;
+  gap: 7px;
+  margin: 0 0 10px;
 }
 
 .ck-pay-chip {
-  min-height: 60px;
-  padding: 8px 10px;
+  min-height: 52px;
+  padding: 7px 9px;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1.5px solid rgba(31,48,36,.11);
-  border-radius: 14px;
+  justify-content: flex-start;
+  gap: 8px;
+  border: 1px solid rgba(31,48,36,.11);
+  border-radius: 11px;
   background: var(--white);
-  box-shadow: 0 2px 8px rgba(31,48,36,.04);
-  text-align: center;
+  box-shadow: none;
+  text-align: left;
 }
 
 .ck-pay-chip:hover {
@@ -11941,7 +11954,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-stripe-wrap { padding: 13px 14px; }
 /* Règle §3 — le wallet précède désormais le paiement (cf. mock) : marge
  * basse propre au lieu de compter sur le bloc suivant pour l'espacement. */
-.k-wallet-section { margin: 0 0 14px; padding: 12px 14px; }
+.k-wallet-section { margin: 0 0 10px; padding: 12px 14px; }
 
 /* Règle §3 — masque intégralement un bloc (titre paiement, puces,
  * Stripe/PayPal) quand le wallet couvre déjà tout le montant dû. Sélecteurs
@@ -11982,12 +11995,13 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-wallet-full-cover-msg.is-visible { display: flex; }
 
 .ck-secure-pickup-notice--footer {
-  margin: 12px 0 4px;
-  padding: 11px 13px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--sand);
+  margin: 6px 0 0;
+  padding: 8px 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--text-muted);
+  font-size: .78rem;
   line-height: 1.35;
 }
 
@@ -12029,22 +12043,47 @@ body.k-id-scroll-lock { overflow: hidden; }
   .ck-recipient-grid { grid-template-columns: 1fr; }
 }
 
+/* ── Total final ─────────────────────────────────────────────── */
+.ck-final-total {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 10px 2px 0;
+  padding: 11px 0 7px;
+  border-top: 1px solid rgba(31,48,36,.10);
+}
+
+.ck-final-total span {
+  color: var(--text);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.ck-final-total strong {
+  color: var(--checkout-neutral-deep);
+  font-size: 1.28rem;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 /* ── CTA final ───────────────────────────────────────────────── */
 
 .k-order-overlay.open .ck-confirm-btn {
-  width: calc(100% - 24px);
-  min-height: 58px;
-  margin: 10px 12px calc(12px + env(safe-area-inset-bottom));
-  padding: 10px 18px;
+  width: calc(100% - 32px);
+  min-height: 52px;
+  margin: 8px 16px calc(14px + env(safe-area-inset-bottom));
+  padding: 10px 16px;
   border: 0;
-  border-radius: 18px;
-  background: var(--terracotta);
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--checkout-neutral-deep), var(--checkout-neutral-mid));
   color: var(--white);
-  box-shadow: 0 8px 20px var(--border-terra-22);
+  box-shadow: 0 5px 14px rgba(52,53,49,.16);
 }
 
 .k-order-overlay.open .ck-confirm-btn:not(:disabled):hover {
-  background: var(--terracotta-dark);
+  background: var(--checkout-neutral-deep);
   filter: none;
   transform: translateY(-1px);
 }
@@ -12146,21 +12185,25 @@ body.k-id-scroll-lock { overflow: hidden; }
 
 @media (min-width: 900px) {
   .k-order-overlay.open .k-order-modal {
-    width: min(540px, calc(100vw - 48px));
-    max-width: 540px;
+    width: min(620px, calc(100vw - 48px));
+    max-width: 620px;
     max-height: 92vh;
     border-radius: 24px;
   }
 
   .k-order-header { border-radius: 24px 24px 0 0; }
-  .k-order-overlay.open .k-order-body--checkout { padding: 26px 24px 34px; }
+  .k-order-overlay.open .k-order-body--checkout {
+    flex: 0 1 auto;
+    min-height: 0;
+    padding: 22px 24px 8px;
+  }
 
-  .ck-pay-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .ck-pay-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 
   .k-order-overlay.open .ck-confirm-btn {
-    width: calc(100% - 32px);
-    margin: 12px 16px 16px;
-    border-radius: 18px;
+    width: calc(100% - 48px);
+    margin: 8px 24px 18px;
+    border-radius: 12px;
   }
 }
 
