@@ -71,6 +71,13 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(tab).toMatch(/align-items\s*:\s*center/);
       expect(tab).toMatch(/justify-content\s*:\s*center/);
     });
+
+    it('LOT1-h : le trait vert de Ma liste se prolonge sous le bouton de sortie', () => {
+      const block = css.match(
+        /\.k-cart-tabs\[data-active="shared-list"\]\s+\.k-cart-tab-exit\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+      expect(block).toMatch(/box-shadow\s*:\s*inset\s+0\s+-3px\s+0\s+var\(--cta-green\)/);
+    });
   });
 
   // ── LOT 2 — Récapitulatif checkout ───────────────────────────────────────
