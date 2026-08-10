@@ -60,7 +60,7 @@ export const SHOWCASE_PRODUCT_FALLBACK_URL =
  * inline reprenne la main lorsque notre data URI se charge.
  */
 export function polishFallbackImage(image) {
-  if (!image || image.dataset?.[FALLBACK_MARKER] === '1') return false;
+  if (!image || image.dataset[FALLBACK_MARKER] === '1') return false;
   image.dataset.kFallbackApplied = '1';
   image.dataset[FALLBACK_MARKER] = '1';
   image.removeAttribute('srcset');
@@ -70,46 +70,31 @@ export function polishFallbackImage(image) {
   return true;
 }
 
-function upgradeFallbacksIn(node) {
-  if (!node) return;
-  if (node.matches?.('img.is-image-fallback')) polishFallbackImage(node);
-  node.querySelectorAll?.('img.is-image-fallback').forEach(polishFallbackImage);
+function onImageError(event) {
+  const target = event.target;
+  if (target.tagName === 'IMG') polishFallbackImage(target);
+}
+
+function onImageLoad(event) {
+  const target = event.target;
+  if (target.tagName !== 'IMG') return;
+
+  // Le listener document (capture) voit le load AVANT le onload inline de
+  // b-utils. Une microtask permet donc à b-utils de détecter une tiny-image
+  // Cloudinary et d'appliquer son fallback technique, puis nous le remplaçons.
+  queueMicrotask(() => {
+    if (target.classList.contains('is-image-fallback')) polishFallbackImage(target);
+  });
 }
 
 /**
- * Installe un filet global, idempotent :
- * - capture les erreurs IMG avant les handlers inline legacy ;
- * - upgrade les fallbacks techniques appliqués lors d'un onload "tiny image" ;
- * - couvre aussi les images injectées après le boot (pagination, modal, cart).
+ * Installe un filet global, idempotent. Les listeners document en capture
+ * couvrent automatiquement les images créées après le boot (pagination,
+ * modal, panier) sans MutationObserver ni scan permanent du DOM.
  */
 export function setupBoutiqueWowStyle() {
-  if (typeof document === 'undefined' || typeof window === 'undefined') return;
   if (window[INSTALL_MARKER]) return;
   window[INSTALL_MARKER] = true;
-
-  document.addEventListener('error', (event) => {
-    const target = event.target;
-    if (target?.tagName === 'IMG') polishFallbackImage(target);
-  }, true);
-
-  upgradeFallbacksIn(document);
-
-  if (typeof MutationObserver !== 'undefined') {
-    const observer = new MutationObserver((records) => {
-      for (const record of records) {
-        if (record.type === 'attributes') {
-          upgradeFallbacksIn(record.target);
-          continue;
-        }
-        record.addedNodes.forEach(upgradeFallbacksIn);
-      }
-    });
-    observer.observe(document.documentElement, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-    window.__kProductFallbackPolishObserver = observer;
-  }
+  document.addEventListener('error', onImageError, true);
+  document.addEventListener('load', onImageLoad, true);
 }
