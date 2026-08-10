@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - 'scripts/showcase-catalog.js'
+      - 'scripts/showcase-source-build.js'
       - 'tests/unit/showcase-catalog.test.js'
+      - 'tests/unit/showcase-source-build.test.js'
       - 'db/seed-products-v2.json'
       - '.github/workflows/showcase-catalog-media-audit.yml'
   workflow_dispatch:
@@ -16,7 +18,7 @@ jobs:
   proof:
     name: 500-product source + media proof
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +32,11 @@ jobs:
         run: npm ci
 
       - name: Showcase catalog unit tests
-        run: npx jest tests/unit/showcase-catalog.test.js --runInBand
+        run: |
+          npx jest \
+            tests/unit/showcase-catalog.test.js \
+            tests/unit/showcase-source-build.test.js \
+            --runInBand
 
       - name: Prove legacy Cloudinary is unavailable
         run: |
@@ -43,16 +49,12 @@ jobs:
           })().catch((error) => { console.error(error); process.exitCode = 1; });
           NODE
 
-      # Construit d'abord tout ce qui est réellement valide. Le step suivant
-      # affiche la répartition puis applique le seuil 500 : on garde le diagnostic
-      # exploitable même quand une source publique se dégrade.
       - name: Build network-verified source catalogue
         run: |
-          node scripts/showcase-catalog.js source \
+          node scripts/showcase-source-build.js \
             --target 500 \
-            --source-manifest /tmp/showcase-catalog-v1-source.json \
-            --network \
-            --concurrency 12
+            --output /tmp/showcase-catalog-v1-source.json \
+            --concurrency 3
 
       - name: Source catalogue distribution and 500 gate
         run: |
@@ -76,14 +78,7 @@ jobs:
             by_category: byCategory,
           };
           console.log(JSON.stringify(summary, null, 2));
-          if (summary.products !== 500) {
-            console.error(`SHOWCASE SOURCE GATE: ${summary.products}/500 seulement`);
-            process.exitCode = 1;
-          }
-          if (summary.unique_heroes !== summary.products) {
-            console.error('SHOWCASE SOURCE GATE: héros non uniques');
-            process.exitCode = 1;
-          }
+          if (summary.products !== 500 || summary.unique_heroes !== 500) process.exitCode = 1;
           NODE
 
       - name: Upload source proof
