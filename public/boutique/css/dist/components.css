@@ -9683,11 +9683,41 @@ body.cart-open  #k-section-index { display:none; }
   color: var(--text);
 }
 
-/* Le bouton de sortie appartient visuellement au même onglet « Ma liste ».
- * Prolonge son indicateur jusqu'au bord droit du groupe : sans cette règle,
- * les 26px réservés au × interrompent le trait vert de l'onglet actif. */
-.k-tab-shared-list.k-cart-tab--active + .k-cart-tab-exit {
-  box-shadow: inset 0 -3px 0 var(--cta-green);
+/* [Ma liste + ×] est UNE seule surface active.
+ * Le trait appartient au groupe complet : aucun raccord, aucun petit
+ * segment sous le ×, même rendu desktop et mobile. */
+/* [Ma liste + ×] est UNE seule surface active.
+ * Aucun enfant ne dessine l'indicateur : le groupe possède l'unique trait. */
+.k-cart-tab-group--active {
+  position: relative;
+  border-radius: 12px 12px 0 0;
+  background: var(--green-soft);
+  overflow: hidden;
+}
+
+/* Trait unique, physiquement continu sur 100 % du groupe. */
+.k-cart-tab-group--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--cta-green);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Neutraliser TOUT trait hérité des deux enfants. */
+.k-cart-tab-group--active .k-tab-shared-list.k-cart-tab--active,
+.k-cart-tab-group--active .k-cart-tab-exit {
+  background: transparent;
+  box-shadow: none;
+  border-bottom: 0;
+}
+
+.k-cart-tab-group--active .k-cart-tab-exit {
+  color: var(--cta-green);
 }
 
 /* Conserver .k-list-indicator pour rétrocompatibilité éventuelle — à
@@ -9706,6 +9736,23 @@ body.cart-open  #k-section-index { display:none; }
   flex-direction: column;
   gap: 6px;
   padding: 8px 10px;
+  background: var(--sand);
+}
+
+/* Hiérarchie mobile : le contenu scrollable se détache du chrome blanc.
+ * Pas de cadres supplémentaires — seulement des plans visuels lisibles. */
+.k-cart-drawer[data-mode="shared-list"] {
+  background: var(--sand);
+}
+
+.k-cart-drawer[data-mode="shared-list"] .k-cart-header,
+.k-cart-drawer[data-mode="shared-list"] .k-cart-tabs,
+.k-cart-drawer[data-mode="shared-list"] .k-cart-footer {
+  background: var(--white);
+}
+
+.k-cart-drawer[data-mode="shared-list"] .k-cart-footer {
+  border-top-color: var(--border);
 }
 
 /* ── Correctif capture production — chrome personnel non masqué / actions
