@@ -12,11 +12,15 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        no
- * @version       2026-08-v1
+ * @version       2026-08-v2
  *
  * Construit un pool de produits de test réellement chargeables AVANT tout
  * upload Cloudinary. Les sources sont distinctes et traçables ; aucun produit
  * n'est dupliqué artificiellement pour atteindre le volume cible.
+ *
+ * Commons est volontairement limité à des catégories d'objets sur fond blanc
+ * ou transparent : le dataset doit ressembler à une vitrine, pas à une banque
+ * d'images aléatoires.
  */
 'use strict';
 
@@ -37,23 +41,23 @@ const DEFAULT_TARGET = 500;
 const DUMMY_URL = 'https://dummyjson.com/products?limit=0';
 const PLATZI_URL = 'https://api.escuelajs.co/api/v1/products?offset=0&limit=500';
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
-const USER_AGENT = 'KomerceShowcaseBuilder/1.0 (https://komerce.co)';
+const USER_AGENT = 'KomerceShowcaseBuilder/2.0 (https://komerce.co)';
 
-const COMMONS_QUERIES = Object.freeze([
-  ['wristwatch product', 'Mode', 'Montres'],
-  ['handbag product', 'Mode', 'Sacs'],
-  ['shoe product', 'Mode', 'Chaussures'],
-  ['dress clothing', 'Mode', 'Vêtements'],
-  ['perfume bottle product', 'Beauté', 'Parfums'],
-  ['cosmetics product', 'Beauté', 'Maquillage'],
-  ['smartphone product', 'Tech', 'Téléphones'],
-  ['headphones product', 'Tech', 'Accessoires'],
-  ['computer laptop product', 'Tech', 'Ordinateurs'],
-  ['kitchen utensil product', 'Maison', 'Cuisine'],
-  ['chair furniture product', 'Maison', 'Mobilier'],
-  ['home decoration product', 'Maison', 'Décoration'],
-  ['children toy product', 'Enfant', 'Jouets'],
-  ['sports equipment product', 'Sport', 'Fitness'],
+const COMMONS_CATEGORIES = Object.freeze([
+  ['Clothing on white background', 'Mode', 'Vêtements'],
+  ['Shoes on white background', 'Mode', 'Chaussures'],
+  ['Bags on white background', 'Mode', 'Sacs'],
+  ['Timepieces with white background', 'Mode', 'Montres'],
+  ['Cosmetics on white background', 'Beauté', 'Maquillage'],
+  ['Electronic devices on white background', 'Tech', 'Accessoires'],
+  ['Computer hardware with white background', 'Tech', 'Ordinateurs'],
+  ['Audio devices with white background', 'Tech', 'Accessoires'],
+  ['Kitchenware on white background', 'Maison', 'Cuisine'],
+  ['Furniture on white background', 'Maison', 'Mobilier'],
+  ['Household appliances with white background', 'Maison', 'Cuisine'],
+  ['Office equipment with white background', 'Maison', 'Divers'],
+  ['Toys on white background', 'Enfant', 'Jouets'],
+  ['Sports gear with transparent background', 'Sport', 'Fitness'],
 ]);
 
 const DESCRIPTION_BY_CATEGORY = Object.freeze({
@@ -104,7 +108,16 @@ async function fetchJson(url, { retries = 0, minDelayMs = 0 } = {}) {
       redirect: 'follow',
     });
     lastStatus = response.status;
-    if (response.ok) return response.json();
+    if (response.ok) {
+      const body = await response.json();
+      if (body?.error?.code === 'maxlag' && attempt < retries) {
+        const waitMs = Math.min(1200 * (2 ** attempt), 15000);
+        console.log(`[showcase-source] Commons maxlag; retry ${attempt + 1}/${retries} dans ${waitMs}ms`);
+        await sleep(waitMs);
+        continue;
+      }
+      return body;
+    }
     if ((response.status === 429 || response.status === 503) && attempt < retries) {
       const waitMs = retryDelayMs(response, attempt);
       console.log(`[showcase-source] ${response.status} ${new URL(url).hostname}; retry ${attempt + 1}/${retries} dans ${waitMs}ms`);
@@ -134,12 +147,22 @@ function isReusableCommonsLicense(value) {
     license.includes('cc-by');
 }
 
-function mapCommonsPage(page, query, category, subcategory) {
+function isShowcaseRaster(info) {
+  const mime = String(info?.mime || '');
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(mime)) return false;
+  const width = Number(info?.width || info?.thumbwidth || 0);
+  const height = Number(info?.height || info?.thumbheight || 0);
+  if (width < 400 || height < 300) return false;
+  const ratio = width / height;
+  return ratio >= 0.45 && ratio <= 2.4;
+}
+
+function mapCommonsPage(page, categoryName, category, subcategory) {
   const info = page.imageinfo?.[0];
   const metadata = info?.extmetadata || {};
   const license = stripHtml(metadata.LicenseShortName?.value || metadata.UsageTerms?.value);
   const url = info?.thumburl || info?.url;
-  if (!url || !String(info?.mime || '').startsWith('image/') || !isReusableCommonsLicense(license)) return null;
+  if (!url || !isShowcaseRaster(info) || !isReusableCommonsLicense(license)) return null;
 
   const artist = stripHtml(metadata.Artist?.value || 'Contributeur Wikimedia Commons');
   const name = localizeTitle(page.title);
@@ -154,17 +177,17 @@ function mapCommonsPage(page, query, category, subcategory) {
     images: [url],
     source: `commons:${page.pageid}`,
     source_url: info.descriptionurl || `https://commons.wikimedia.org/?curid=${page.pageid}`,
-    source_attribution: { query, license, artist },
+    source_attribution: { commons_category: categoryName, license, artist },
   };
 }
 
-async function fetchCommonsQuery(query, category, subcategory, limit = 50) {
+async function fetchCommonsCategory(categoryName, category, subcategory, limit = 50) {
   const params = new URLSearchParams({
     action: 'query',
-    generator: 'search',
-    gsrsearch: query,
-    gsrnamespace: '6',
-    gsrlimit: String(limit),
+    generator: 'categorymembers',
+    gcmtitle: `Category:${categoryName}`,
+    gcmtype: 'file',
+    gcmlimit: String(limit),
     prop: 'imageinfo',
     iiprop: 'url|mime|size|extmetadata',
     iiurlwidth: '900',
@@ -175,7 +198,7 @@ async function fetchCommonsQuery(query, category, subcategory, limit = 50) {
   });
   const body = await fetchJson(`${COMMONS_API}?${params}`, { retries: 5, minDelayMs: 500 });
   return (body.query?.pages || [])
-    .map((page) => mapCommonsPage(page, query, category, subcategory))
+    .map((page) => mapCommonsPage(page, categoryName, category, subcategory))
     .filter(Boolean);
 }
 
@@ -226,11 +249,11 @@ async function collectCandidates(target) {
     if (mapped?.image_url) pool.push(mapped);
   }
 
-  // 14 requêtes maximum, séquentielles et identifiées. On collecte tout le
-  // pool Commons pour garder une marge après validation réseau des médias.
-  for (const [query, category, subcategory] of COMMONS_QUERIES) {
-    const rows = await fetchCommonsQuery(query, category, subcategory, 50);
-    console.log(`[showcase-source] Commons ${query}: ${rows.length} candidats réutilisables`);
+  // Catégories Commons explicitement orientées objets détourés/fond blanc.
+  // Requêtes séquentielles, identifiées et espacées pour respecter l'API.
+  for (const [categoryName, category, subcategory] of COMMONS_CATEGORIES) {
+    const rows = await fetchCommonsCategory(categoryName, category, subcategory, 50);
+    console.log(`[showcase-source] Commons ${categoryName}: ${rows.length} candidats vitrine`);
     pool.push(...rows);
   }
 
@@ -309,10 +332,11 @@ if (require.main === module) {
 
 module.exports = {
   USER_AGENT,
-  COMMONS_QUERIES,
+  COMMONS_CATEGORIES,
   parseArgs,
   retryDelayMs,
   isReusableCommonsLicense,
+  isShowcaseRaster,
   mapCommonsPage,
   dedupe,
   decorate,
