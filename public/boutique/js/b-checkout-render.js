@@ -314,14 +314,13 @@ export function buildOrderSuccessDOM(body, order) {
  * @param {Function} [opts.onChange] - si fourni, ajoute un bouton "Changer"
  * @returns {HTMLElement}
  */
-export function renderStepHeader({ state: stepState, label, sublabel, onChange }) {
-  const dotCls     = stepState === 'pending' ? '' : stepState; // '' | 'done' | 'current'
-  const dotContent = stepState === 'done' ? '✓' : '';
+export function renderStepHeader({ state: stepState, icon, label, sublabel, onChange }) {
+  const visual = icon || (stepState === 'done' ? String.fromCharCode(10003) : '');
 
   const el = document.createElement('div');
   el.className = 'ck-step-header ck-step-header--' + stepState;
   el.innerHTML =
-    '<span class="k-track-step-dot k-track-step-dot--sm ' + dotCls + '" aria-hidden="true">' + dotContent + '</span>'
+    '<span class="ck-step-header-icon" aria-hidden="true">' + sanitize(visual) + '</span>'
     + '<span class="ck-step-header-text">'
     +   '<span class="ck-step-header-label">' + sanitize(label || '') + '</span>'
     +   (sublabel ? '<span class="ck-step-header-sub">' + sanitize(sublabel) + '</span>' : '')
