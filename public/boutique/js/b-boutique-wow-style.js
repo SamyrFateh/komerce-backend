@@ -1,7 +1,7 @@
 /**
  * @komerce-arch-lite
  * @role          boutique-product-image-fallback-polish
- * @domain        catalog
+ * @domain        boutique
  * @layer         ui-component
  * @owner         public/boutique/js/boutique.js
  * @purpose       Preserve a showcase-quality product surface when a media asset fails.
