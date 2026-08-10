@@ -72,11 +72,22 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(tab).toMatch(/justify-content\s*:\s*center/);
     });
 
-    it('LOT1-h : le trait vert de Ma liste se prolonge sous le bouton de sortie adjacent', () => {
-      const block = css.match(
-        /\.k-tab-shared-list\.k-cart-tab--active\s*\+\s*\.k-cart-tab-exit\s*\{([^}]+)\}/s
+    it('LOT1-h : Ma liste + sortie portent un unique trait continu dessiné par le groupe', () => {
+      const indicator = css.match(
+        /\.k-cart-tab-group--active::after\s*\{([^}]+)\}/s
       )?.[1] ?? '';
-      expect(block).toMatch(/box-shadow\s*:\s*inset\s+0\s+-3px\s+0\s+var\(--cta-green\)/);
+
+      expect(indicator).toMatch(/left\s*:\s*0/);
+      expect(indicator).toMatch(/right\s*:\s*0/);
+      expect(indicator).toMatch(/height\s*:\s*3px/);
+      expect(indicator).toMatch(/background\s*:\s*var\(--cta-green\)/);
+
+      const children = css.match(
+        /\.k-cart-tab-group--active\s+\.k-tab-shared-list\.k-cart-tab--active,\s*\.k-cart-tab-group--active\s+\.k-cart-tab-exit\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+      expect(children).toMatch(/box-shadow\s*:\s*none/);
+      expect(children).toMatch(/border-bottom\s*:\s*0/);
     });
   });
 

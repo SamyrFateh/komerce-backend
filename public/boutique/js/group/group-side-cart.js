@@ -1018,6 +1018,7 @@ export function renderCartSurfaceSwitch() {
     if (!tabs) continue;
     const btnPersonal = tabs.querySelector('.k-tab-personal');
     const btnList = tabs.querySelector('.k-tab-shared-list');
+    const listTabGroup = tabs.querySelector('.k-cart-tab-group');
     const btnExit = tabs.querySelector('.k-cart-tab-exit');
     if (btnPersonal) {
       btnPersonal.classList.toggle('k-cart-tab--active', activeTab === 'personal');
@@ -1028,11 +1029,18 @@ export function renderCartSurfaceSwitch() {
       btnList.classList.toggle('k-cart-tab--active', activeTab === 'list');
       btnList.setAttribute('aria-selected', String(activeTab === 'list'));
     }
+    if (listTabGroup) {
+      // L'indicateur appartient au groupe complet [Ma liste + ×].
+      // Un seul état visuel = un seul trait continu, desktop comme mobile.
+      listTabGroup.classList.toggle(
+        'k-cart-tab-group--active',
+        activeTab === 'list',
+      );
+    }
     if (btnExit) {
-      // Suit le même état actif que l'onglet liste (repère visuel continu,
-      // mandat §11), sans jamais déclencher setCartSurface au clic (géré
-      // séparément, voir buildSurfaceSwitchTabs).
-      btnExit.classList.toggle('k-cart-tab--active', activeTab === 'list');
+      // Le × reste une action distincte, jamais un deuxième onglet actif.
+      // Retirer explicitement l'ancienne classe évite tout segment résiduel.
+      btnExit.classList.remove('k-cart-tab--active');
       btnExit.setAttribute('aria-label', `Quitter l’affichage de ${listLabel}`);
     }
     tabs.setAttribute('data-active', activeTab);
