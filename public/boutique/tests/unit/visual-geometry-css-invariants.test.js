@@ -166,25 +166,41 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('LOT5-a : le header utilise le fond sable neutre, jamais un bandeau vert', () => {
+    it('LOT5-a : le header reprend le graphite neutre du mock, jamais un bandeau vert', () => {
       const block = css.match(/\.k-order-header\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/background\s*:\s*var\(--sand-warm\)/);
-      expect(block).toMatch(/color\s*:\s*var\(--text\)/);
+      expect(block).toMatch(/background\s*:\s*var\(--checkout-neutral\)/);
+      expect(block).toMatch(/color\s*:\s*var\(--white\)/);
       expect(block).not.toMatch(/gradient|checkout-accent|cta-green/);
     });
 
-    it('LOT5-b : les moyens de paiement restent compacts et passent sur quatre colonnes desktop', () => {
+    it('LOT5-b : les moyens de paiement restent compacts en grille 2x2 desktop', () => {
       const chip = css.match(/\.ck-pay-chip\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(chip).toMatch(/min-height\s*:\s*60px/);
+      expect(chip).toMatch(/min-height\s*:\s*52px/);
+      expect(chip).toMatch(/border\s*:\s*1px\s+solid\s+rgba\(31,48,36,.11\)/);
+      expect(chip).toMatch(/border-radius\s*:\s*11px/);
 
       const desktop = css.match(/@media\s*\(min-width:\s*900px\)[\s\S]*?\.ck-pay-grid\s*\{([^}]+)\}/)?.[1] ?? '';
-      expect(desktop).toMatch(/grid-template-columns\s*:\s*repeat\(4,/);
+      expect(desktop).toMatch(/grid-template-columns\s*:\s*repeat\(2,/);
     });
 
-    it('LOT5-c : le CTA engageant est terracotta, pas vert', () => {
+    it('LOT5-c : le CTA engageant reste graphite et compact', () => {
       const block = css.match(/\.k-order-overlay\.open\s+\.ck-confirm-btn\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/background\s*:\s*var\(--terracotta\)/);
+      expect(block).toMatch(/min-height\s*:\s*52px/);
+      expect(block).toMatch(/border-radius\s*:\s*12px/);
+      expect(block).toMatch(/background\s*:\s*linear-gradient\(90deg,\s*var\(--checkout-neutral-deep\),\s*var\(--checkout-neutral-mid\)\)/);
       expect(block).not.toMatch(/checkout-accent|cta-green/);
+    });
+
+    it('LOT5-d : les cartes de contexte et le modal desktop gardent la géométrie finale', () => {
+      const header = css.match(/\.ck-step-header\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(header).toMatch(/min-height\s*:\s*56px/);
+      expect(header).toMatch(/border-radius\s*:\s*12px/);
+
+      const modal = css.match(
+        /@media\s*\(min-width:\s*900px\)[\s\S]*?\.k-order-overlay\.open\s+\.k-order-modal\s*\{([^}]+)\}/
+      )?.[1] ?? '';
+      expect(modal).toMatch(/width\s*:\s*min\(620px,\s*calc\(100vw - 48px\)\)/);
+      expect(modal).toMatch(/max-width\s*:\s*620px/);
     });
   });
 

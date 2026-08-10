@@ -252,7 +252,7 @@ function _renderRelaisSummary(container, od, byIle, allIles) {
   const header = renderStepHeader({
     state:    'done',
     icon:     '📍',
-    label:    od.selectedRelaisName || '',
+    label:    getRelayDisplayName(od.selectedRelaisName),
     sublabel: (od.selectedIsland || '') + ' · ' + zone,
     onChange: () => {
       _openRelaisPicker(od, byIle, allIles, () => {
@@ -278,7 +278,7 @@ function _renderPaymentHeader(container) {
   container.innerHTML = '';
   const title = document.createElement('div');
   title.className = 'ck-section-title';
-  title.textContent = 'Comment souhaitez-vous payer ?';
+  title.textContent = 'Comment r\u00e9gler le solde ?';
   container.appendChild(title);
 }
 
@@ -322,7 +322,7 @@ function _openRelaisPicker(od, byIle, allIles, onDone) {
               + '</div>')
       +   (r
             ? '<div class="ck-relais-auto"><span class="ck-relais-auto-ok" aria-hidden="true">✓</span>'
-              + '<span class="ck-relais-auto-body"><span class="ck-relais-auto-name">' + sanitize(r.name || r.nom || '') + '</span>'
+              + '<span class="ck-relais-auto-body"><span class="ck-relais-auto-name">' + sanitize(getRelayDisplayName(r.name || r.nom || '')) + '</span>'
               + (r.address || r.adresse || r.location ? '<span class="ck-relais-auto-addr">' + sanitize(r.address || r.adresse || r.location) + '</span>' : '')
               + '</span></div>'
               + '<div class="ck-relais-auto-cap">Un seul relais par ' + (isFr ? 'zone' : 'île') + ' — sélectionné automatiquement.</div>'
@@ -381,6 +381,13 @@ function classifyRelayGroup(relais) {
   return relais.island || relais.ile || relais.island_name || 'Comores';
 }
 
+function getRelayDisplayName(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const clean = raw.replace(/\s+\d{10,}(?:-[a-z0-9-]+)?$/i, '').trim();
+  return clean || raw;
+}
+
 function getRelayGroupOrder(groups) {
   const order = ['Ndzouani', 'Ngazidja', 'Mwali', 'France', 'Comores'];
   return groups.slice().sort((a, b) => {
@@ -425,13 +432,24 @@ function refreshCheckoutComputedUI() {
   if (!confirmBtn) return;
   const od = state.orderData || {};
   const mode = document.querySelector('input[name="payment_mode"]:checked')?.value || od.payment_mode || 'cash_relais';
-  const relayName = od.selectedRelaisName || '';
+  const relayName = getRelayDisplayName(od.selectedRelaisName);
   const island    = od.selectedIsland || '';
   const where     = relayName ? (relayName + (island ? ' • ' + island : '')) : '';
   const total = cartTotal();
   const cb = document.getElementById('cb-use-wallet');
   const walletApplied = (cb && cb.checked && state.walletBalance > 0) ? Math.min(state.walletBalance, total) : 0;
   const netAmount = total - walletApplied;
+
+  const finalTotalLabel = document.getElementById('ck-final-total-label');
+  const finalTotalAmount = document.getElementById('ck-final-total-amount');
+  if (finalTotalLabel) {
+    finalTotalLabel.textContent = walletApplied > 0
+      ? 'Reste \u00e0 r\u00e9gler'
+      : '\u00c0 r\u00e9gler';
+  }
+  if (finalTotalAmount) {
+    finalTotalAmount.textContent = fmt(netAmount, 'KMF');
+  }
   // Règle §8 (simplification checkout final, cf. mock) — un seul gabarit de
   // CTA, quel que soit le moyen de paiement ou l'usage du wallet : jamais
   // « Payer » (Stripe) ni « (net wallet) » (cash), toujours le même libellé
@@ -913,6 +931,13 @@ export function renderCheckout() {
 
     if (recipientBlock) body.appendChild(recipientBlock);
     else body.appendChild(secureNotice);
+
+    const finalTotal = document.createElement('div');
+    finalTotal.className = 'ck-final-total';
+    finalTotal.innerHTML =
+      '<span id="ck-final-total-label">\u00c0 r\u00e9gler</span>'
+      + '<strong id="ck-final-total-amount">' + fmt(cartTotal(), 'KMF') + '</strong>';
+    body.appendChild(finalTotal);
 
     // Le récapitulatif (mandat §7/§8) n'est plus ici : c'est désormais
     // l'écran dédié renderOrderRecapGate(), affiché AVANT ce formulaire par
