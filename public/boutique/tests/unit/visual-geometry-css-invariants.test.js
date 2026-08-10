@@ -89,6 +89,16 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(children).toMatch(/box-shadow\s*:\s*none/);
       expect(children).toMatch(/border-bottom\s*:\s*0/);
     });
+    it('LOT1-i : la sélection liste garde la même hauteur optique que le stepper panier', () => {
+      const box = css.match(/\.k-cart-item-select\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const checked = css.match(/\.k-cart-item-select\.is-checked\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(box).toMatch(/width\s*:\s*28px/);
+      expect(box).toMatch(/height\s*:\s*28px/);
+      expect(box).toMatch(/border\s*:\s*1px\s+solid\s+var\(--stepper-border\)/);
+      expect(checked).toMatch(/background\s*:\s*var\(--green-soft\)/);
+      expect(checked).toMatch(/border-color\s*:\s*var\(--cta-green\)/);
+    });
   });
 
   // ── LOT 2 — Récapitulatif checkout ───────────────────────────────────────
