@@ -193,14 +193,14 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
 
     it('LOT5-d : les cartes de contexte et le modal desktop gardent la géométrie finale', () => {
       const header = css.match(/\.ck-step-header\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(header).toMatch(/min-height\s*:\s*56px/);
+      expect(header).toMatch(/min-height\s*:\s*50px/);
       expect(header).toMatch(/border-radius\s*:\s*12px/);
 
       const modal = css.match(
         /@media\s*\(min-width:\s*900px\)[\s\S]*?\.k-order-overlay\.open\s+\.k-order-modal\s*\{([^}]+)\}/
       )?.[1] ?? '';
-      expect(modal).toMatch(/width\s*:\s*min\(620px,\s*calc\(100vw - 48px\)\)/);
-      expect(modal).toMatch(/max-width\s*:\s*620px/);
+      expect(modal).toMatch(/width\s*:\s*min\(540px,\s*calc\(100vw - 48px\)\)/);
+      expect(modal).toMatch(/max-width\s*:\s*540px/);
     });
   });
 

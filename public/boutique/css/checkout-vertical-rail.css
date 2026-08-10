@@ -116,7 +116,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 18px 16px 24px;
+  padding: 16px 18px 18px;
   background: var(--checkout-cream);
 }
 
@@ -124,28 +124,28 @@
 
 .ck-step-header {
   width: 100%;
-  min-height: 56px;
+  min-height: 50px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 13px;
+  gap: 9px;
+  padding: 8px 10px;
   margin: 0;
   border: 1px solid rgba(31,48,36,.10);
   border-radius: 12px;
   background: var(--white);
-  box-shadow: 0 2px 8px rgba(31,48,36,.04);
+  box-shadow: none;
 }
 
 .ck-step-header-icon {
   flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
+  width: 31px;
+  height: 31px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  background: var(--checkout-cream);
-  font-size: 1.05rem;
+  border-radius: 9px;
+  background: var(--checkout-control-soft);
+  font-size: .92rem;
 }
 
 .ck-step-header-text {
@@ -153,14 +153,14 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .ck-step-header-text::before {
-  font-size: .64rem;
+  font-size: .58rem;
   font-weight: 900;
   line-height: 1;
-  letter-spacing: .09em;
+  letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
@@ -171,7 +171,7 @@
 .ck-step-header-label {
   overflow: hidden;
   color: var(--text);
-  font-size: .94rem;
+  font-size: .82rem;
   font-weight: 800;
   line-height: 1.18;
   text-overflow: ellipsis;
@@ -181,22 +181,22 @@
 .ck-step-header-sub {
   overflow: hidden;
   color: var(--text-muted);
-  font-size: .76rem;
+  font-size: .68rem;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.22;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ck-step-header-change {
   flex: 0 0 auto;
-  min-height: 30px;
-  padding: 0 9px;
+  min-height: 28px;
+  padding: 0 8px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--checkout-control-soft);
   color: var(--text-muted);
-  font-size: .70rem;
+  font-size: .66rem;
   font-weight: 800;
   cursor: pointer;
 }
@@ -675,8 +675,8 @@
   box-shadow: none;
 }
 
-.ck-confirm-main { font-size: 1rem; font-weight: 900; }
-.ck-confirm-subtext { color: var(--white); font-size: .72rem; opacity: .82; }
+.ck-confirm-main { font-size: .88rem; font-weight: 900; }
+.ck-confirm-subtext { color: var(--white); font-size: .62rem; opacity: .78; }
 
 /* ── Informations secondaires ───────────────────────────────── */
 
@@ -767,8 +767,8 @@
 
 @media (min-width: 900px) {
   .k-order-overlay.open .k-order-modal {
-    width: min(620px, calc(100vw - 48px));
-    max-width: 620px;
+    width: min(540px, calc(100vw - 48px));
+    max-width: 540px;
     max-height: 92vh;
     border-radius: 24px;
   }
@@ -777,14 +777,14 @@
   .k-order-overlay.open .k-order-body--checkout {
     flex: 0 1 auto;
     min-height: 0;
-    padding: 22px 24px 8px;
+    padding: 16px 18px 6px;
   }
 
   .ck-pay-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 
   .k-order-overlay.open .ck-confirm-btn {
-    width: calc(100% - 48px);
-    margin: 8px 24px 18px;
+    width: calc(100% - 36px);
+    margin: 8px 18px 18px;
     border-radius: 12px;
   }
 }
