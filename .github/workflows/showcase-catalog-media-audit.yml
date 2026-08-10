@@ -14,9 +14,9 @@ permissions:
 
 jobs:
   proof:
-    name: Unit + current Cloudinary media health
+    name: 500-product source + media proof
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -32,95 +32,68 @@ jobs:
       - name: Showcase catalog unit tests
         run: npx jest tests/unit/showcase-catalog.test.js --runInBand
 
-      - name: Diagnose first Cloudinary asset
+      # Dette initiale explicitée : le cloud historique n'est plus une source.
+      - name: Prove legacy Cloudinary is unavailable
         run: |
           node - <<'NODE'
           const products = require('./db/seed-products-v2.json');
           const url = products[0].image_url;
-
-          async function inspect(label, headers = {}) {
-            try {
-              const response = await fetch(url, { method: 'GET', headers, redirect: 'follow' });
-              const buffer = Buffer.from(await response.arrayBuffer());
-              console.log(JSON.stringify({
-                label,
-                url,
-                status: response.status,
-                ok: response.ok,
-                type: response.headers.get('content-type'),
-                content_length: response.headers.get('content-length'),
-                content_range: response.headers.get('content-range'),
-                bytes_received: buffer.length,
-                body_preview: buffer.toString('utf8', 0, Math.min(120, buffer.length)),
-                magic: buffer.subarray(0, 16).toString('hex'),
-              }, null, 2));
-            } catch (error) {
-              console.log(JSON.stringify({ label, url, error: error.message, cause: error.cause?.message }, null, 2));
-            }
-          }
-
           (async () => {
-            await inspect('plain-get');
-            await inspect('range-get', { Range: 'bytes=0-4095' });
+            const response = await fetch(url, { redirect: 'follow' });
+            console.log(JSON.stringify({
+              url,
+              status: response.status,
+              ok: response.ok,
+              type: response.headers.get('content-type'),
+            }, null, 2));
+            if (response.status !== 401) {
+              console.log('Legacy cloud state changed; re-evaluate whether old media can be recovered.');
+            }
           })().catch((error) => {
             console.error(error);
             process.exitCode = 1;
           });
           NODE
 
-      - name: Measure replacement source pools
+      # Gate sans secret : 500 parents distincts ET hero réellement chargeable.
+      - name: Build and network-verify 500-product source catalogue
+        run: |
+          node scripts/showcase-catalog.js source \
+            --target 500 \
+            --source-manifest /tmp/showcase-catalog-v1-source.json \
+            --network \
+            --strict \
+            --concurrency 12
+
+      - name: Source catalogue distribution
         run: |
           node - <<'NODE'
-          async function getJson(url) {
-            const response = await fetch(url, { headers: { 'User-Agent': 'KomerceShowcaseSourceAudit/1.0' } });
-            if (!response.ok) throw new Error(`${url} -> ${response.status}`);
-            return response.json();
+          const products = require('/tmp/showcase-catalog-v1-source.json');
+          const bySource = {};
+          const byCategory = {};
+          let galleryRich = 0;
+          for (const p of products) {
+            const source = String(p.source || '').split(':')[0] || 'unknown';
+            bySource[source] = (bySource[source] || 0) + 1;
+            byCategory[p.category] = (byCategory[p.category] || 0) + 1;
+            if ((p.images || []).length >= 2) galleryRich += 1;
           }
-
-          function imageUrls(items, field) {
-            return items.flatMap((item) => field(item)).filter(Boolean);
-          }
-
-          (async () => {
-            const dummy = await getJson('https://dummyjson.com/products?limit=0');
-            const platzi = await getJson('https://api.escuelajs.co/api/v1/products?offset=0&limit=500');
-            const dummyProducts = dummy.products || [];
-            const platziProducts = Array.isArray(platzi) ? platzi : [];
-            const dummyImages = imageUrls(dummyProducts, (p) => [p.thumbnail, ...(p.images || [])]);
-            const platziImages = imageUrls(platziProducts, (p) => p.images || []);
-
-            console.log(JSON.stringify({
-              dummyjson: {
-                products: dummyProducts.length,
-                reported_total: dummy.total,
-                image_refs: dummyImages.length,
-                unique_images: new Set(dummyImages).size,
-                categories: new Set(dummyProducts.map((p) => p.category)).size,
-              },
-              platzi: {
-                products: platziProducts.length,
-                image_refs: platziImages.length,
-                unique_images: new Set(platziImages).size,
-                categories: new Set(platziProducts.map((p) => p.category?.name).filter(Boolean)).size,
-              },
-              combined_products: dummyProducts.length + platziProducts.length,
-            }, null, 2));
-          })().catch((error) => {
-            console.error(error);
-            process.exitCode = 1;
-          });
+          console.log(JSON.stringify({
+            products: products.length,
+            unique_refs: new Set(products.map((p) => p.product_ref)).size,
+            unique_heroes: new Set(products.map((p) => p.image_url)).size,
+            gallery_rich_products: galleryRich,
+            by_source: bySource,
+            by_category: byCategory,
+          }, null, 2));
+          if (products.length !== 500) process.exitCode = 1;
+          if (new Set(products.map((p) => p.image_url)).size !== 500) process.exitCode = 1;
           NODE
 
-      # Preuve réseau sans secret : on audite le seed historique de 467 produits
-      # tel qu'il est servi aujourd'hui. Ce passage est volontairement non-strict
-      # car l'objectif de cette étape est de mesurer la dette initiale (URLs
-      # /image/fetch/, assets cassés, etc.). Le manifest V1 produit par `prepare`
-      # devra, lui, passer `audit --network --strict` avant tout seed staging.
-      - name: Audit current 467-product media pool
-        run: |
-          node scripts/showcase-catalog.js audit \
-            --input db/seed-products-v2.json \
-            --manifest /tmp/showcase-manifest-not-built.json \
-            --target 467 \
-            --network \
-            --concurrency 12
+      - name: Upload source proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-catalog-v1-source
+          path: /tmp/showcase-catalog-v1-source.json
+          if-no-files-found: error
+          retention-days: 7
