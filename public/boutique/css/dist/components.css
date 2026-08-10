@@ -9429,7 +9429,7 @@ body.cart-open  #k-section-index { display:none; }
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--stepper-border);
   background: var(--white);
   cursor: pointer;
   display: flex;
@@ -9444,7 +9444,7 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 .k-cart-item-select.is-checked {
-  background: var(--cta-green);
+  background: var(--green-soft);
   border-color: var(--cta-green);
 }
 
@@ -9452,7 +9452,7 @@ body.cart-open  #k-section-index { display:none; }
   content: '';
   width: 6px;
   height: 11px;
-  border: solid var(--white);
+  border: solid var(--cta-green);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
 }
