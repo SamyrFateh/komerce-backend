@@ -848,10 +848,11 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   }
 
   function snapshotStatusText(context) {
-    const parts = [snapshotStatusLabel(context.status)];
-    if (context.organizerName) parts.push(context.organizerName);
-    if (context.subtitle) parts.push(context.subtitle);
-    return parts.join(' · ');
+    // Le titre canonique porte déjà toute la relation utile : « Ma liste »
+    // pour l'organisateur, « Liste de Sam » pour le participant. Répéter le
+    // prénom (ou une phrase de contexte) dans le même en-tête créait un
+    // second niveau typographique et désalignait les deux surfaces.
+    return snapshotStatusLabel(context.status);
   }
 
   /**
@@ -889,7 +890,12 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
    */
   function applySnapshotStatusBadge(container, id, context, anchorSelector) {
     if (!container) return;
+    const text = snapshotStatusText(context);
     let badge = container.querySelector('#' + id);
+    if (!text) {
+      badge?.remove();
+      return;
+    }
     if (!badge) {
       badge = document.createElement('span');
       badge.id = id;
@@ -898,7 +904,7 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       if (anchor) container.insertBefore(badge, anchor);
       else container.appendChild(badge);
     }
-    badge.textContent = snapshotStatusText(context);
+    badge.textContent = text;
   }
 
   /**
@@ -2012,4 +2018,3 @@ export {
 };
 // Alias pour boutique.js qui importe 'renderCart'
 export { renderCartBody as renderCart };
-

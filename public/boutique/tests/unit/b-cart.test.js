@@ -898,6 +898,7 @@ describe('b-cart', () => {
       activateList({ cart: { title: 'Sync multi-client' } });
       const titleLabel = document.getElementById('k-side-cart').querySelector('.k-sc-title-label');
       expect(titleLabel.textContent).toBe('Liste de Samsam');
+      expect(document.getElementById('k-sc-snapshot-status')).toBeNull();
 
       clearSharedListContext();
       state.cart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];

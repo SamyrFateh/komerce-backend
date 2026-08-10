@@ -97,4 +97,10 @@ describe('liste partageable — layout étroit side cart / drawer', () => {
     expect(css).toMatch(/\.k-cart-snapshot-item \.k-cart-item-img-el\s*\{[^}]*object-fit:\s*cover/s);
     expect(css).toMatch(/\.k-cart-snapshot-item \.k-cart-item-img\.is-img-error \.k-cart-item-img-fallback/);
   });
+
+  it('harmonise la géométrie desktop du snapshot avec les cartes du panier personnel', () => {
+    expect(css).toMatch(/@media \(min-width: 900px\)[\s\S]*?#k-side-cart \.k-cart-snapshot-item\s*\{[^}]*align-items:\s*center[^}]*gap:\s*8px[^}]*padding:\s*8px/s);
+    expect(css).toMatch(/#k-side-cart \.k-cart-snapshot-item \.k-cart-item-img\s*\{[^}]*width:\s*48px[^}]*height:\s*48px/s);
+    expect(css).toMatch(/#k-side-cart \.k-cart-snapshot-item \.k-cart-item-name\s*\{[^}]*font-size:\s*11\.5px[^}]*font-weight:\s*600/s);
+  });
 });

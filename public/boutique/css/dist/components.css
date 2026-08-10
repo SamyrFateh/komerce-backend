@@ -9590,7 +9590,7 @@ body.cart-open  #k-section-index { display:none; }
 .k-cart-tabs {
   flex-shrink: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr 34px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   min-height: 60px;
   padding: 8px 10px 0;
@@ -9615,6 +9615,9 @@ body.cart-open  #k-section-index { display:none; }
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .k-cart-tab:hover { color: var(--text); }
@@ -9662,7 +9665,8 @@ body.cart-open  #k-section-index { display:none; }
 .k-cart-tab-exit {
   flex-shrink: 0;
   width: 26px;
-  padding: 10px 0;
+  height: 43px;
+  padding: 0;
   font-size: 15px;
   line-height: 1;
   color: var(--text-muted);
@@ -9671,6 +9675,8 @@ body.cart-open  #k-section-index { display:none; }
   border-bottom: 2px solid transparent;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
+  display: grid;
+  place-items: center;
 }
 
 .k-cart-tab-exit:hover {
@@ -10013,8 +10019,7 @@ body.is-shared-list-context #k-cart-recap-word {
  * dépendre de l'ordre de chargement des feuilles ni d'!important.
  */
 #k-side-cart[data-mode="shared-list"] {
-  border-top-color: var(--cta-green);
-  border-left-color: var(--cta-green);
+  border-color: var(--cta-green);
 }
 
 /* Contour vert complet quand la liste est active (mandat §12).
@@ -10111,6 +10116,55 @@ body.is-shared-list-context #k-cart-recap-word {
   font-size: 11.5px;
   font-weight: 500;
   color: var(--text-muted);
+}
+
+/* Desktop : panier personnel et liste partagée utilisent exactement la
+ * même géométrie de carte. Seuls les contrôles de droite diffèrent
+ * (stepper/retrait versus sélection/état acheté). Cette parité évite le
+ * saut vertical du texte et l'impression que la liste commence plus haut. */
+@media (min-width: 900px) {
+  #k-side-cart .k-cart-snapshot-item {
+    align-items: center;
+    gap: 8px;
+    min-height: 66px;
+    padding: 8px;
+    border-color: var(--border-text-06);
+    border-radius: 10px;
+  }
+
+  #k-side-cart .k-cart-snapshot-item-open {
+    align-items: center;
+    gap: 8px;
+  }
+
+  #k-side-cart .k-cart-snapshot-item .k-cart-item-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 7px;
+  }
+
+  #k-side-cart .k-cart-snapshot-item .k-cart-item-img-el {
+    border-radius: 6px;
+  }
+
+  #k-side-cart .k-cart-snapshot-item .k-cart-item-info {
+    min-height: 48px;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  #k-side-cart .k-cart-snapshot-item .k-cart-item-name {
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  #k-side-cart .k-cart-snapshot-item-meta {
+    margin-top: 0;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
 }
 
 

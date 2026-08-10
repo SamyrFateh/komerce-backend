@@ -700,11 +700,13 @@
     height: 100dvh;
     border-radius: 0;
     background: var(--surface-sand-94);
-    border-left: 1px solid var(--border-ocean-14);
-    border-right: none;
-    border-top: 3px solid var(--coral);
-    border-bottom: none;
-    box-shadow: -4px 0 20px var(--shadow-ocean-10), -1px 0 0 var(--border-coral-09);
+    /* Une seule coque pour les deux surfaces : le panier est identifié par
+       un contour corail continu, la liste ne fait qu'en changer la couleur
+       (shared-list-side-cart.css). Le précédent contrat ne colorait que le
+       bord haut du panier et donnait visuellement plus de poids à la liste. */
+    border: 1px solid var(--coral);
+    border-top-width: 3px;
+    box-shadow: -4px 0 20px var(--shadow-ocean-10);
     overflow: hidden;
     z-index: 200;
     opacity: 0;
@@ -737,8 +739,7 @@
     pointer-events: auto;
     transform: none;
     box-shadow: none;
-    border-top: none;
-    border-left: none;
+    border: none;
   }
   .k-side-cart--in-modal:not(.has-items) { display: flex; }
 
@@ -748,7 +749,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 14px 10px;
+    min-height: 48px;
+    padding: 10px 12px;
+    box-sizing: border-box;
     background: var(--surface-sand-97);
     border-bottom: 1px solid var(--border-coral-09);
   }
@@ -1024,7 +1027,7 @@
   /* ── Item carte ── */
   .k-sc-item {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 8px;
     padding: 8px;
     background: var(--white);
@@ -1047,10 +1050,11 @@
   }
   .k-sc-item-info {
     flex: 1; min-width: 0;
-    display: flex; flex-direction: column; gap: 3px;
+    min-height: 48px;
+    display: flex; flex-direction: column; justify-content: center; gap: 3px;
   }
   .k-sc-item-name {
-    font-size: 11.5px; font-weight: 500; color: var(--text);
+    font-size: 11.5px; font-weight: 600; color: var(--text);
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 1;
@@ -1081,7 +1085,7 @@
     flex-shrink: 0;
   }
   .k-sc-item-price {
-    font-size: 12px; font-weight: 850;
+    font-size: 12px; font-weight: 700;
     color: var(--text); letter-spacing: -.01em; /* doctrine 2026-08 : encre sombre */
     white-space: nowrap;
   }
@@ -1266,7 +1270,6 @@
 @media (min-width: 900px) {
   html.k-home-premium-v1 .k-side-cart {
     box-shadow: -14px 0 44px var(--border-text-08);
-    border-left: 1px solid var(--border-text-06);
   }
 
   html.k-home-premium-v1 .k-sc-btn-checkout { border-radius: 18px; }

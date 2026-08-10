@@ -224,7 +224,7 @@
 .k-cart-tabs {
   flex-shrink: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr 34px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   min-height: 60px;
   padding: 8px 10px 0;
@@ -249,6 +249,9 @@
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .k-cart-tab:hover { color: var(--text); }
@@ -296,7 +299,8 @@
 .k-cart-tab-exit {
   flex-shrink: 0;
   width: 26px;
-  padding: 10px 0;
+  height: 43px;
+  padding: 0;
   font-size: 15px;
   line-height: 1;
   color: var(--text-muted);
@@ -305,6 +309,8 @@
   border-bottom: 2px solid transparent;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
+  display: grid;
+  place-items: center;
 }
 
 .k-cart-tab-exit:hover {
@@ -647,8 +653,7 @@ body.is-shared-list-context #k-cart-recap-word {
  * dépendre de l'ordre de chargement des feuilles ni d'!important.
  */
 #k-side-cart[data-mode="shared-list"] {
-  border-top-color: var(--cta-green);
-  border-left-color: var(--cta-green);
+  border-color: var(--cta-green);
 }
 
 /* Contour vert complet quand la liste est active (mandat §12).
