@@ -223,37 +223,50 @@
 
 .k-cart-tabs {
   flex-shrink: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr 34px;
+  align-items: center;
+  min-height: 60px;
+  padding: 8px 10px 0;
   border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.92);
 }
 
 .k-cart-tab {
-  flex: 1;
-  padding: 10px 8px;
+  min-width: 0;
+  height: 43px;
+  border: 0;
+  border-radius: 12px 12px 0 0;
+  color: var(--tab-inactive-text);
+  background: transparent;
+  font-family: inherit;
   font-size: 13px;
-  font-weight: 600;
-  /* Centrage cross-browser : <button> peut aligner à gauche selon le UA.
-     line-height:1 aligne sur le même axe vertical que .k-cart-tab-exit. */
-  text-align: center;
-  line-height: 1;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
+  font-weight: 760;
+  line-height: 1;  /* parité de hauteur avec .k-cart-tab-exit (LOT1-b) */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.15s, border-color 0.15s;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  text-align: center;
 }
 
-.k-cart-tab:hover {
-  color: var(--text);
-}
+.k-cart-tab:hover { color: var(--text); }
 
+/* Onglet actif — fond teinté + indicateur bas (mockup direction UX 2026-08) */
+/* Vert pour Ma liste (défaut) */
 .k-cart-tab--active {
-  color: var(--cta-green-dark, var(--cta-green));
-  border-bottom-color: var(--cta-green);
+  color: var(--cta-green);
+  background: var(--green-soft);
+  box-shadow: inset 0 -3px 0 var(--cta-green);
+  font-weight: 760;
+}
+
+/* Corail pour Mon panier quand actif */
+.k-cart-tabs[data-active="personal"] .k-tab-personal.k-cart-tab--active {
+  color: var(--coral);
+  background: var(--coral-soft);
+  box-shadow: inset 0 -3px 0 var(--coral);
 }
 
 /* Correctif archéologie (mandat §2/§11) — le × de sortie d'affichage doit
@@ -398,6 +411,22 @@
  * de 3-4 blocs de hauteur identique (capture terrain, §D/§E de la mission).
  */
 
+/* Barre de progression liste — % articles achetés (mockup 2026-08) */
+.k-cart-snapshot-progress {
+  height: 5px;
+  margin: 0 0 9px;
+  border-radius: 99px;
+  background: var(--tab-progress-bg);
+  overflow: hidden;
+}
+.k-cart-snapshot-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--cta-green);
+  transition: width .4s ease;
+}
+
 /* -- Rangée primaire (drawer mobile uniquement — §D) ------------------- */
 .k-snap-primary-row {
   display: flex;
@@ -410,58 +439,61 @@
 .k-snap-btn-primary {
   min-height: 44px;
   padding: 0 16px;
-  border: none;
-  border-radius: 50px;
-  font-weight: 700;
-  font-size: .88rem;
-  color: var(--white);
-  background: linear-gradient(135deg, var(--cta-green) 0%, var(--status-confirmed-text) 100%);
-  box-shadow: 0 3px 10px rgba(42,122,62,.3);
+  width: 100%;
+  border: 1px solid var(--stone-border);
+  border-radius: 13px;
+  font-weight: 850;
+  font-size: .9rem;
+  color: var(--stone-text);
+  background: var(--stone);
+  box-shadow: 0 5px 13px rgba(42,33,23,.08);
   cursor: pointer;
-  transition: transform .15s, box-shadow .15s;
+  transition: background .15s, transform .12s;
   white-space: nowrap;
 }
-.k-snap-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(42,122,62,.4); }
+.k-snap-btn-primary:hover { background: var(--stone-hover); transform: translateY(-1px); }
 .k-snap-btn-primary:disabled { opacity: .6; cursor: default; transform: none; }
 
 .k-snap-btn-secondary {
-  min-height: 44px;
+  min-height: 36px;
   padding: 0 14px;
-  border: 1.5px solid var(--border);
-  border-radius: 50px;
-  font-weight: 600;
-  font-size: .85rem;
-  color: var(--text);
+  border: 1px solid var(--action-btn-border);
+  border-radius: 11px;
+  font-weight: 750;
+  font-size: .82rem;
+  color: var(--action-btn-text);
   background: var(--white);
   cursor: pointer;
   white-space: nowrap;
-  transition: background .15s, border-color .15s;
+  transition: background .15s;
 }
-.k-snap-btn-secondary:hover { background: var(--sand); }
+.k-snap-btn-secondary:hover { background: var(--sand); color: var(--text); }
 .k-snap-btn-secondary:disabled { opacity: .6; cursor: default; }
 
-/* -- Rangée d'actions secondaires (drawer + side cart — §D/§E) --------- */
+/* Rangée secondaire — 2 colonnes compactes (Partager | Clôturer) */
 .k-snap-secondary-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
   width: 100%;
-  margin-top: 6px;
+  margin-top: 0;
 }
 .k-snap-link {
-  padding: 4px 2px;
-  border: none;
-  background: none;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--action-btn-border);
+  border-radius: 11px;
+  background: var(--white);
+  font-size: 11px;
+  font-weight: 750;
+  color: var(--action-btn-text);
   cursor: pointer;
   white-space: nowrap;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
 }
-.k-snap-link:hover { color: var(--text); text-decoration: underline; }
-.k-snap-link:disabled { opacity: .6; cursor: default; text-decoration: none; }
+.k-snap-link:hover { background: var(--sand); color: var(--text); text-decoration: none; }
+.k-snap-link:disabled { opacity: .6; cursor: default; }
 
 /* -- Drawer mobile — désactive le grid natif du footer panier personnel
  * en mode liste (grid-template 1fr/auto/1fr responsable de l'empilement
@@ -476,7 +508,9 @@
 }
 .k-snap-primary-row   { order: 1; }
 .k-snap-secondary-row { order: 2; }
-.k-cart-drawer[data-mode="shared-list"] #k-cart-continue {
+.k-cart-drawer[data-mode="shared-list"] #k-cart-continue,
+.k-cart-drawer[data-mode="shared-list"] .k-cart-continue-link {
+  display: flex;
   order: 3;
   align-self: center;
   width: auto;
@@ -489,7 +523,8 @@
   font-weight: 600;
   color: var(--text-muted);
 }
-.k-cart-drawer[data-mode="shared-list"] #k-cart-continue:hover {
+.k-cart-drawer[data-mode="shared-list"] #k-cart-continue:hover,
+.k-cart-drawer[data-mode="shared-list"] .k-cart-continue-link:hover {
   background: none;
   color: var(--text);
 }
@@ -620,8 +655,7 @@ body.is-shared-list-context #k-cart-recap-word {
  * Surcharge border-top et border-bottom ajoutés dans cart.css
  * pour l'identité corail — ils restaient coral en mode liste car
  * la règle précédente ne ciblait que border-left. */
+/* Mode liste : passe la bordure TOP en vert (bordure top-only depuis cart.css) */
 .k-cart-drawer[data-mode="shared-list"] {
-  border-left: 4px solid var(--cta-green);
-  border-top: 4px solid var(--cta-green);
-  border-bottom: 4px solid var(--cta-green);
+  border-top-color: var(--cta-green);
 }

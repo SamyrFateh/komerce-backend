@@ -119,11 +119,31 @@ export function fmtPrice(kmf) {
 
 /* ── PRODUIT ─────────────────────────────────────────────── */
 
-export const PRODUCT_IMAGE_FALLBACK_URL = '/images/placeholder-product.svg';
+/**
+ * Fallback image universel — data URI inline, ne dépend d'aucun fichier serveur.
+ * Affiche un carré sable neutre avec une icône 📦 centrée.
+ *
+ * Pourquoi data URI plutôt que /images/placeholder-product.svg :
+ *   · Cloudinary peut renvoyer HTTP 200 avec sa propre image d'erreur
+ *     (une petite icône cassée) → onerror ne se déclenche jamais, la vraie
+ *     URL du serveur n'est jamais atteinte.
+ *   · Un data URI est chargé immédiatement depuis la mémoire, sans requête
+ *     réseau, sans possibilité d'échec.
+ */
+export const PRODUCT_IMAGE_FALLBACK_URL = (() => {
+  const svg = [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">',
+    '<rect width="64" height="64" rx="10" fill="#f5f0e8"/>',
+    '<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"',
+    ' font-size="26" font-family="system-ui,sans-serif">📦</text>',
+    '</svg>',
+  ].join('');
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+})();
 
 /**
- * Remplace une image produit distante cassée par l'asset local canonique.
- * Le marqueur évite toute boucle si le fallback devient lui-même indisponible.
+ * Applique le fallback sur une instance IMG existante.
+ * Garde le marqueur kFallbackApplied pour éviter toute boucle.
  */
 export function applyProductImageFallback(image) {
   if (!image || image.dataset?.kFallbackApplied === '1') return false;
@@ -136,11 +156,23 @@ export function applyProductImageFallback(image) {
 }
 
 /**
- * Variante HTML pour les renderers de chaînes. La valeur est statique :
- * aucune donnée produit n'est injectée dans le handler.
+ * Attribut HTML pour les renderers de chaînes.
+ *
+ * onload : vérifie les dimensions après chargement.
+ *   · Une vraie image produit mesure au minimum MIN_DIM px dans sa plus
+ *     petite dimension. L'image d'erreur Cloudinary et les fichiers corrompus
+ *     sont typiquement ≤ 8 px.
+ *   · Si les dimensions sont insuffisantes → même traitement qu'un 404.
+ *
+ * onerror : déclenché sur 404 / erreur réseau / image invalide.
  */
+const MIN_DIM = 16; // px — seuil de détection d'image d'erreur
 export function productImageFallbackAttr() {
-  return `onerror="if(this.dataset.kFallbackApplied!=='1'){this.dataset.kFallbackApplied='1';this.removeAttribute('srcset');this.alt='';this.classList.add('is-image-fallback');this.src='${PRODUCT_IMAGE_FALLBACK_URL}'}"`;
+  const fb = PRODUCT_IMAGE_FALLBACK_URL;
+  const apply = `this.dataset.kFallbackApplied='1';this.removeAttribute('srcset');this.alt='';this.classList.add('is-image-fallback');this.src='${fb}'`;
+  const onload  = `if(this.dataset.kFallbackApplied!=='1'&&(this.naturalWidth<${MIN_DIM}||this.naturalHeight<${MIN_DIM})){${apply}}`;
+  const onerror = `if(this.dataset.kFallbackApplied!=='1'){${apply}}`;
+  return `onload="${onload}" onerror="${onerror}"`;
 }
 
 /**

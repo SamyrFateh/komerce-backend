@@ -720,10 +720,14 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       return { html: SNAPSHOT_ITEM_IMG_FALLBACK, wrapClass: ' is-img-error' };
     }
     const optimized = optimizeImgUrl(rawUrl, SNAPSHOT_ITEM_IMG_WIDTH);
+    // onload : check dimensions — image d'erreur Cloudinary (200 OK) détectée
+    // si naturalWidth < 16px. onerror : 404 / réseau. Les deux cas : retire l'img
+    // et pose is-img-error sur le parent → CSS révèle le 📦 de repli.
+    const removeFlag = `this.closest('.k-cart-item-img')?.classList.add('is-img-error');this.remove();`;
     const html = (
       `<img class="k-cart-item-img-el" src="${sanitize(optimized)}" alt="" loading="lazy" ` +
-      `onload="this.classList.add('k-img-ok')" ` +
-      `onerror="this.closest('.k-cart-item-img').classList.add('is-img-error');this.remove();">` +
+      `onload="if(this.naturalWidth<16||this.naturalHeight<16){${removeFlag}}" ` +
+      `onerror="${removeFlag}">` +
       SNAPSHOT_ITEM_IMG_FALLBACK
     );
     return { html, wrapClass: '' };
@@ -989,22 +993,22 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     const recapWordEl = document.getElementById('k-cart-recap-word');
     const subtotalEl = document.getElementById('k-cart-subtotal-val');
     if (itemCountEl) itemCountEl.textContent = `${claimedCount}/${items.length}`;
-    // LOT 13 §D — plus de mot "article" en mode snapshot ("0/8 article
-    // déjà achetés" → "0/8 achetés") : #k-cart-recap-word est masqué par
-    // CSS via [data-mode="shared-list"], on ne fait ici que garder le
-    // texte du pluriel neutre pour le cas où il redevient visible ailleurs.
     if (recapWordEl) recapWordEl.textContent = 'article';
     if (itemPluralEl) itemPluralEl.textContent = ' achetés';
-    // Doctrine (mise à jour) — le montant affiché ici n'est jamais une
-    // somme due : c'est la valeur informative de ce qui reste disponible
-    // à l'achat, jamais un solde à régler ("Reste : X KMF", pas "Total").
     if (subtotalEl) subtotalEl.textContent = `Reste : ${fmt(context.availableTotal, 'KMF')}`;
-    // LOT 13 §D — la ligne .k-cart-total-row (deuxième affichage du même
-    // montant) est masquée en mode snapshot via CSS
-    // (.k-cart-drawer[data-mode="shared-list"] .k-cart-total-row), donc on
-    // ne renseigne plus ces champs ici : ils redeviennent pertinents dès le
-    // retour au panier personnel (renderCartBody() les réécrit alors).
     if (dom.cartTotalConv) dom.cartTotalConv.textContent = '';
+
+    // Barre de progression (mockup 2026-08) — % articles achetés
+    const existingProg = dom.cartFooter.querySelector('.k-cart-snapshot-progress');
+    if (existingProg) existingProg.remove();
+    if (items.length > 0) {
+      const prog = document.createElement('div');
+      prog.className = 'k-cart-snapshot-progress';
+      const fill = document.createElement('span');
+      fill.style.width = Math.round((claimedCount / items.length) * 100) + '%';
+      prog.appendChild(fill);
+      dom.cartFooter.insertBefore(prog, dom.cartFooter.firstChild);
+    }
 
     const btnRow = document.getElementById('k-cart-footer-btns');
     removeSnapshotButtons(btnRow);
@@ -1034,7 +1038,8 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     if (!context.readOnly && selection.count > 0) {
       const commandBtn = snapCreateEl('button', 'k-snap-btn-primary');
       commandBtn.type = 'button';
-      commandBtn.textContent = `Commander (${selection.count} · ${fmt(selection.total, 'KMF')})`;
+      // Mockup 2026-08 — libellé "Commander la sélection" (pierre claire)
+      commandBtn.textContent = `Commander la sélection`;
       commandBtn.onclick = () => actions.onCommand();
       primaryRow.appendChild(commandBtn);
     }
@@ -1313,9 +1318,12 @@ export function cleanupCartSnapshotDom() {
         img.src = optimizeImgUrl(p.image_url, 128);
         img.alt = '';
         img.loading = 'lazy';
-        // onload : révèle l'image seulement si elle charge réellement
-        // (prévient l'icône native Cloudinary 200 qui passerait inaperçue)
-        img.setAttribute('onload', "this.classList.add('k-img-ok')");
+        // Fallback universel via b-utils — data URI inline, couvre les 404
+        // ET les images d'erreur Cloudinary (détection par dimensions).
+        const fbAttr = productImageFallbackAttr();
+        // productImageFallbackAttr() retourne onload="..." onerror="..."
+        img.setAttribute('onload',  fbAttr.match(/onload="([^"]+)"/)?.[1]  ?? '');
+        img.setAttribute('onerror', fbAttr.match(/onerror="([^"]+)"/)?.[1] ?? '');
         // Même mécanisme que productImageFallbackAttr() : marqueur anti-boucle
         // kFallbackApplied pour ne pas rappeler onerror sur le placeholder lui-même.
         img.setAttribute('onerror',
@@ -1785,9 +1793,13 @@ function renderSideCart() {
   const totalEl = sc.querySelector('#k-sc-total');
   if (totalEl) totalEl.textContent = fmtPrice(cartTotal());
 
-  // Compteur inline dans le bouton Commander
-  const countInline = sc.querySelector('#k-sc-count-inline');
-  if (countInline) countInline.textContent = qty;
+  // CTA Commander — libellé "Commander · montant" (doctrine 2026-08)
+  // Le span #k-sc-count-inline est conservé dans le DOM pour compat,
+  // mais le bouton complet est mis à jour avec le montant total.
+  const checkoutBtn = sc.querySelector('#k-sc-checkout');
+  if (checkoutBtn) {
+    checkoutBtn.textContent = 'Commander · ' + fmtPrice(cartTotal());
+  }
 
   // Articles (plus récents en premier)
   const itemsEl = sc.querySelector('#k-sc-items');
@@ -1816,7 +1828,7 @@ function renderSideCart() {
         ? `<span class="k-sc-item-variant">${sanitize(variant)}</span>`
         : '';
 
-      const imgFallbackAttr = `onload="this.classList.add('k-img-ok')" onerror="if(this.dataset.kFallbackApplied!=='1'){this.dataset.kFallbackApplied='1';this.removeAttribute('srcset');this.classList.add('is-image-fallback');this.src='${PRODUCT_IMAGE_FALLBACK_URL}'}"`;
+      const imgFallbackAttr = productImageFallbackAttr();
       el.innerHTML =
         `<img class="k-sc-item-img" src="${imgSrc}" alt="" loading="lazy" ${imgFallbackAttr}>` +
         `<div class="k-sc-item-info">` +

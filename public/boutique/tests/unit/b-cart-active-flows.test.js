@@ -39,6 +39,9 @@ jest.mock('../../js/b-utils.js', () => ({
   _currency: 'KMF',
   apiGet: mockApiGet,
   apiPost: mockApiPost,
+  PRODUCT_IMAGE_FALLBACK_URL: 'data:image/svg+xml,<svg/>',
+  productImageFallbackAttr: jest.fn(() => 'onload="this.classList.add(\'k-img-ok\')" onerror="this.src=\'data:image/svg+xml,<svg/>\'"'),
+  applyProductImageFallback: jest.fn(),
 }));
 
 jest.mock('../../js/b-cart-core.js', () => ({

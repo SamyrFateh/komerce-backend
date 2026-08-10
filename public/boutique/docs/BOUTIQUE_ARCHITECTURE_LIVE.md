@@ -14,8 +14,8 @@
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1321 | 🔴 **ORPHELIN** |
-| `cart.css` | 1960 | 🔴 **ORPHELIN** |
+| `boutique-desktop.css` | 1325 | 🔴 **ORPHELIN** |
+| `cart.css` | 1967 | 🔴 **ORPHELIN** |
 | `categories.css` | 988 | 🔴 **ORPHELIN** |
 | `checkout-vertical-rail.css` | 754 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
@@ -40,7 +40,7 @@
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
 | `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart-responsive.css` | 85 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 622 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 628 | 🔴 **ORPHELIN** |
 | `tokens.css` | 517 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
@@ -50,8 +50,8 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=164
- 2. /boutique/css/dist/components.css?v=435
- 3. /boutique/css/dist/desktop.css?v=88
+ 2. /boutique/css/dist/components.css?v=437
+ 3. /boutique/css/dist/desktop.css?v=90
 ```
 
 ## 3. Cartographie des sélecteurs critiques

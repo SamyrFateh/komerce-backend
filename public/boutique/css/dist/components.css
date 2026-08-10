@@ -6458,52 +6458,48 @@ body.cart-open .k-cats,
 body.cart-open .k-hero { pointer-events: none; }
 
 /* -- DRAWER --------------------------------------------------- */
+/* Mockup direction UX 2026-08 :
+   · bordure TOP 4px — accent surface (corail panier, vert liste)
+   · grid 4 rangées : tabs / title / body scrollable / footer
+   · mobile plein écran : max-width 100%, bords écran = encadrement naturel */
 .k-cart-drawer {
   position: fixed; top: 0; right: 0; bottom: 0;
   width: 100%; max-width: 400px; z-index: 1150;
   background: var(--white);
-  box-shadow: var(--elev-4);
-  display: flex; flex-direction: column;
+  box-shadow: -12px 0 32px rgba(44,34,24,.08);
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
   transform: translateX(100%);
   transition: transform .35s var(--ease);
-  border-radius: 16px 0 0 16px;
-  /* Correctif revue mock (2026-08, mandat §11) — contour léger de la
-     surface active, cohérent avec le desktop (#k-side-cart { border-top:
-     3px solid var(--coral) }, boutique-desktop.css). Le mobile n'avait
-     jamais eu cet accent par défaut : seul le mode liste ajoutait sa
-     bordure verte (shared-list-side-cart.css), laissant le panier
-     personnel visuellement neutre en dessous de 900px. Le mode liste
-     reste prioritaire via [data-mode="shared-list"] (spécificité
-     attribut, déjà présent) et écrase cette valeur. */
-  /* Contour corail complet côté gauche (mandat §1 — identité "Mon panier") */
-  border-left: 3px solid var(--coral);
-  border-top: 3px solid var(--coral);
-  border-bottom: 3px solid var(--coral);
+  border-top: 4px solid var(--coral);
 }
+.k-cart-drawer[data-mode="shared-list"] { border-top-color: var(--cta-green); }
 .k-cart-drawer.open { transform: translateX(0); }
 
+/* Header — titre surface + compteur (rows 2) */
 .k-cart-header {
   background: var(--white); color: var(--text);
-  padding: 12px 16px;
+  padding: 10px 15px;
   display: flex; align-items: center; justify-content: space-between;
-  font-weight: 700; font-size: 1rem;
-  border-radius: 16px 0 0 0; flex-shrink: 0;
   border-bottom: 1px solid var(--border);
+  min-height: 52px;
 }
+.k-cart-header strong { font-size: 14px; font-weight: 700; }
+.k-cart-header span   { color: var(--text-muted); font-size: 11px; }
 
-/* Bouton fermeture — 44px max, bien centré (mandat §6) */
+/* Bouton fermeture compact */
 #k-cart-close {
-  width: 36px; height: 36px; min-width: 36px; max-width: 44px;
+  width: 30px; height: 30px;
   border-radius: 50%; border: 1px solid var(--border);
-  background: var(--sand); color: var(--text-muted);
+  background: var(--white); color: var(--text-muted);
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; cursor: pointer; flex-shrink: 0;
+  font-size: 15px; cursor: pointer; flex-shrink: 0;
   transition: background .15s, color .15s;
 }
 #k-cart-close:hover { background: var(--sand-dark); color: var(--text); }
 
-/* Corps scrollable — flex:1, min-height:0 (mandat §3 : footer jamais recouvert) */
-.k-cart-body { flex: 1; overflow-y: auto; min-height: 0; padding: 8px 10px; scrollbar-width: thin; }
+/* Corps scrollable — 1fr dans la grid (footer jamais recouvert) */
+.k-cart-body { overflow-y: auto; min-height: 0; padding: 10px 10px 14px; scrollbar-width: thin; }
 
 /* Panier vide */
 .k-cart-empty { text-align: center; padding: 48px 24px 60px; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 14px; }
@@ -6532,122 +6528,179 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-continue-shop:hover { background: var(--sand); border-style: solid; color: var(--text); }
 
 /* -- ITEMS --------------------------------------------------- */
+/* Mockup 2026-08 : grid 52px/1fr/auto, min-height 70px, card blanche
+   avec ombre légère. Image 52px. Prix encre sombre (plus de corail).
+   Stepper compact : grid 26px×3 dans pill. */
 .k-cart-item {
-  display: flex; gap: 8px; padding: 8px 10px; margin-bottom: 4px;
-  border-radius: 12px; background: var(--white);
-  box-shadow: var(--elev-1); border: 1px solid var(--border);
-  animation: fadeIn .3s; transition: box-shadow .2s ease; position: relative;
+  display: grid;
+  grid-template-columns: 52px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 70px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid var(--item-card-border);
+  border-radius: 13px;
+  background: var(--white);
+  box-shadow: 0 2px 6px rgba(45,36,25,.025);
+  animation: fadeIn .3s; transition: box-shadow .2s ease;
 }
-.k-cart-item:hover { box-shadow: var(--elev-2); }
-.k-cart-item.new-item {
-  border-left: 4px solid var(--coral);
-  background: linear-gradient(90deg, var(--cream-amber-bg) 0%, var(--white) 55%);
-  border-radius: 0 12px 12px 0;
-  animation: newItemSlide .42s cubic-bezier(.34,1.56,.64,1);
+.k-cart-item:hover { box-shadow: 0 4px 12px rgba(45,36,25,.06); }
+.k-cart-item.new-item { animation: newItemSlide .42s cubic-bezier(.34,1.56,.64,1); }
+
+/* Image 52px — fond dégradé chaud, border subtile */
+.k-cart-item-img {
+  width: 52px; height: 52px;
+  background: linear-gradient(145deg, var(--item-img-bg-start), var(--item-img-bg-end));
+  border-radius: 10px; border: 1px solid var(--item-img-border);
+  display: grid; place-items: center;
+  font-size: 1.4rem; flex-shrink: 0;
+  overflow: hidden; cursor: pointer; position: relative;
 }
-.k-cart-item-img { width: 64px; height: 64px; background: var(--sand); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; overflow: hidden; border: 1px solid var(--border); cursor: pointer; position: relative; } /* S3.2 — cursor sorti de b-cart.js */
-.k-cart-item-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
-/* Images produit dans le panier — masquées par défaut, révélées après onload.
- * Empêche l'icône cassée native dans les deux cas :
- * · URL 404 : onerror se déclenche, fallback affiché, image retirée ;
- * · URL Cloudinary 200 invalide : onload ne se déclenche pas, image reste
- *   invisible, fallback prend sa place via .is-img-error ou CSS de repli. */
-.k-cart-item-img img { opacity: 0; transition: opacity .18s; }
-.k-cart-item-img img.k-img-ok { opacity: 1; }
-/* Fallback pictogramme (mandat §4) — caché par défaut, révélé par .is-img-error
-   ou par .k-cart-item-img-fallback--visible (URL absente dès la construction).
-   font-size défini dans shared-list-side-cart.css (propriétaire unique). */
+.k-cart-item-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 9px; }
+/* #k-cart-continue — caché en mode panier personnel (mockup §2026-08 sans ce bouton),
+   visible en mode liste via shared-list-side-cart.css [data-mode="shared-list"].
+   Requis dans le DOM par b-store.js initDom() / b-nav.js closeCart handler. */
+.k-cart-continue-link {
+  display: none;
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  padding: 4px 2px; align-self: center;
+  transition: color .15s;
+}
+.k-cart-continue-link:hover { color: var(--text); }
+
+/* Fallback pictogramme — font-size hérite de shared-list-side-cart.css */
 .k-cart-item-img-fallback { display: none; }
 .k-cart-item-img-fallback--visible,
 .k-cart-item-img.is-img-error .k-cart-item-img-fallback { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-.k-cart-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px; }
-.k-cart-item-name  { font-weight: 700; font-size: .8rem; color: var(--text); /* mandat §2 — max 2 lignes, pas d'ellipsis prématuré (white-space:nowrap retiré) */
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-  overflow: hidden; line-height: 1.2; cursor: pointer; } /* S3.2 */
-/* GAP-07 §11 — variante d'une ligne panier snapshot (« Noir · Taille M »),
-   sous le nom du produit. Même poids visuel que .k-cart-item-unit
-   (existant) : information secondaire, jamais confondue avec le nom. */
-.k-cart-snapshot-item-variant { font-size: .68rem; color: var(--text-muted); margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.k-cart-item-unit  { font-size: .68rem; color: var(--text-muted); margin-top: 0; }
-.k-cart-item-price { font-size: .82rem; color: var(--coral); font-weight: 700; margin-top: 0; }
-/* Stepper compact drawer — contour vert, fond neutre (pas de pill plein).
-   Classe canonique .k-qty-ctrl (le JS utilisait .k-qty-btn par erreur,
-   corrigé dans b-cart.js simultanément). */
-.k-cart-item-qty   { display: flex; align-items: center; gap: 0; margin-top: 4px; background: transparent; border: 1.5px solid var(--cta-green); border-radius: 20px; width: fit-content; }
-.k-qty-ctrl { width: 28px; height: 28px; border-radius: 50%; background: transparent; color: var(--cta-green); font-weight: 700; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: background .15s, color .15s; cursor: pointer; border: none; touch-action: manipulation; }
-.k-qty-ctrl:hover { background: var(--cta-green); color: var(--white); }
-.k-qty-ctrl-val { min-width: 20px; text-align: center; font-weight: 700; font-size: .82rem; color: var(--cta-green); }
-/* Bouton retrait — zone tactile 44 px (mandat §2), discret */
-.k-cart-item-remove { background: none; color: var(--text-muted); align-self: center; padding: 0; transition: all .15s; cursor: pointer; border-radius: 50%; width: 44px; height: 44px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; }
-.k-cart-item-remove:hover { background: var(--red-bg-soft); color: var(--red); }
+
+/* Info column */
+.k-cart-item-info { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+/* Nom : 1 ligne tronquée (compact) ou 2 lignes max pour les titres longs */
+.k-cart-item-name  {
+  font-weight: 760; font-size: 12px; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer; line-height: 1.3;
+}
+.k-cart-snapshot-item-variant { font-size: .68rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-cart-item-unit  { font-size: .68rem; color: var(--text-muted); }
+/* Prix — encre sombre dans TOUTES les surfaces (doctrine 2026-08 §2.2 :
+   "noms, prix et quantités restent en encre sombre ; pas de prix corail") */
+.k-cart-item-price { font-size: 12px; color: var(--text); font-weight: 850; }
+.k-cart-item-old-price { margin-left: 5px; color: var(--item-old-price); font-size: 9px; font-weight: 600; text-decoration: line-through; }
+
+/* Stepper compact pill — grid 26×26×26, hauteur 28px, fond blanc, bordure fine */
+.k-cart-item-qty {
+  display: grid; grid-template-columns: 26px 26px 26px;
+  align-items: center; height: 28px;
+  border: 1px solid var(--stepper-border); border-radius: 999px;
+  background: var(--white);
+  width: fit-content;
+}
+.k-qty-ctrl {
+  display: grid; place-items: center; height: 100%;
+  background: transparent; border: none;
+  font-size: 13px; font-weight: 760; color: var(--text);
+  cursor: pointer; touch-action: manipulation;
+  transition: background .12s;
+  border-radius: 999px;
+}
+.k-qty-ctrl:hover { background: var(--sand); }
+.k-qty-ctrl-val { display: grid; place-items: center; height: 100%; font-size: 12px; font-weight: 760; color: var(--text); }
+
+/* Zone contrôle (stepper + remove) */
+.k-cart-item-control { display: flex; align-items: center; gap: 4px; }
+/* Bouton retrait — zone tactile 44px, discret */
+.k-cart-item-remove {
+  background: none; color: var(--remove-btn-color);
+  font-size: 18px; line-height: 1;
+  cursor: pointer; border: none; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  transition: color .15s;
+}
+.k-cart-item-remove:hover { color: var(--red); }
 
 /* -- FOOTER PANIER -------------------------------------------- */
-/* Architecture mandat §3 : header non-scrollable, body flex:1 scroll,
-   footer compact hors flux scrollable, env(safe-area-inset-bottom). */
+/* Mockup 2026-08 :
+   · résumé compact : label muted + total serif 22px
+   · CTA principal pierre claire (--stone) — doctrine universelle
+   · actions secondaires : grid 1fr 1fr, boutons blancs contour fin
+   · footer dans la grid (auto) — jamais recouvrant le body */
 .k-cart-footer {
-  border-top: 1px solid var(--border);
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-  background: var(--white); box-shadow: 0 -3px 12px rgba(0,0,0,.05);
-  flex-shrink: 0;
+  padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--footer-separator);
+  background: rgba(255,253,249,.98);
+  box-shadow: 0 -9px 24px rgba(42,33,23,.06);
 }
-/* Ligne récap unique : "N articles · 17 000 KMF" (mandat §3, pas de doublon) */
-.k-cart-recap { padding-bottom: 0; margin-bottom: 8px; }
-.k-cart-recap-line { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 13px; }
-.k-cart-recap-label { color: var(--text-muted); font-weight: 500; }
-.k-cart-recap-val   { color: var(--text); font-weight: 700; font-size: 14px; }
-.k-cart-recap-free  { color: var(--cta-green); font-weight: 600; font-size: 13px; }
-.k-cart-recap-divider { display: none; /* supprimé — un seul affichage du total (mandat §3) */ }
-/* .k-cart-total-row masquée dans le drawer — doublon avec recap-line (mandat §3).
-   Conservée dans le DOM (applySnapshotDrawerFooter l'utilise pour snapshot mode). */
-#k-cart-footer .k-cart-total-row { display: none; }
-.k-cart-total-row   { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0 0; font-weight: 700; font-size: 16px; }
-.k-cart-total-label { font-size: 15px; color: var(--text); }
-/* aucun montant vert dans le panier personnel (mandat §3) */
-.k-cart-total-val   { font-weight: 800; font-size: 20px; color: var(--text); }
-.k-cart-total-conv  { font-size: 12px; color: var(--text-muted); display: block; text-align: right; font-weight: 500; margin-top: 2px; margin-bottom: 8px; }
 
-/* Boutons footer — grille 3 colonnes égales : Continuer | Partager | Vider
-   puis Commander pleine largeur (mandat §3). Aucun débordement horizontal. */
-.k-cart-footer-btns {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto auto;
-  gap: 6px; width: 100%;
+/* Résumé : "4 articles" muted à gauche, total serif grand à droite */
+.k-cart-recap { margin-bottom: 10px; }
+.k-cart-recap-line {
+  display: flex; justify-content: space-between; align-items: baseline;
 }
-.kcf-btn { padding: 9px 8px; border-radius: 10px; font-weight: 700; font-size: .82rem; transition: all .18s var(--ease); display: flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer; border: none; min-height: 44px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#k-cart-continue { grid-column: 1; grid-row: 1; }
-#k-cart-share    { grid-column: 2; grid-row: 1; }
-#k-cart-clear    { grid-column: 3; grid-row: 1; }
-/* Commander : fond corail, texte blanc, anneau blanc inset (contour discret
-   qui renforce l'identité sans alourdir). */
+.k-cart-recap-label { color: var(--text-muted); font-size: 12px; font-weight: 500; }
+.k-cart-recap-val   { font-family: Georgia, serif; font-size: 22px; font-weight: 400; letter-spacing: -.02em; color: var(--text); }
+.k-cart-recap-free  { color: var(--cta-green); font-weight: 600; font-size: 12px; }
+.k-cart-recap-divider { display: none; }
+/* .k-cart-total-row masquée (doublon) */
+#k-cart-footer .k-cart-total-row { display: none; }
+.k-cart-total-row   { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0 0; }
+.k-cart-total-label { font-size: 15px; color: var(--text); }
+.k-cart-total-val   { font-family: Georgia, serif; font-size: 22px; color: var(--text); }
+.k-cart-total-conv  { font-size: 12px; color: var(--text-muted); display: block; text-align: right; margin-top: 2px; }
+
+/* CTA transactionnel principal — pierre claire (doctrine UX 2026-08) */
+.k-cart-footer-btns { display: flex; flex-direction: column; gap: 8px; }
+
 #k-cart-checkout {
-  grid-column: 1 / -1; grid-row: 2;
-  font-size: .9rem; padding: 12px 16px;
-  background: var(--coral); color: var(--white);
-  border: none;
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,.45);
+  width: 100%; min-height: 44px;
+  padding: 12px 16px;
+  background: var(--stone);
+  border: 1px solid var(--stone-border);
+  border-radius: 13px;
+  color: var(--stone-text);
+  font-size: 14px; font-weight: 850;
+  cursor: pointer;
+  box-shadow: var(--stone-shadow, 0 5px 13px rgba(42,33,23,.08));
+  transition: background .15s, transform .12s;
 }
-#k-cart-checkout:hover { background: var(--coral-dark, var(--coral)); filter: brightness(.94); }
+#k-cart-checkout:hover  { background: var(--stone-hover); transform: translateY(-1px); }
 #k-cart-checkout:active { transform: scale(.98); }
+
+/* Actions secondaires — 2 colonnes, blanches, contour fin */
+.k-cart-footer-actions {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.k-cart-footer-actions button,
+#k-cart-share, #k-cart-clear, #k-cart-continue {
+  min-height: 36px;
+  border: 1px solid var(--action-btn-border); border-radius: 11px;
+  background: var(--white); color: var(--action-btn-text);
+  font-size: 11px; font-weight: 750;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.k-cart-footer-actions button:hover,
+#k-cart-share:hover, #k-cart-clear:hover, #k-cart-continue:hover {
+  background: var(--sand); color: var(--text);
+}
+/* Compat legacy classes */
+.kcf-btn { min-height: 36px; border: 1px solid var(--action-btn-border); border-radius: 11px; background: var(--white); color: var(--action-btn-text); font-size: 11px; font-weight: 750; cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+.kcf-btn:hover { background: var(--sand); color: var(--text); }
 .kcf-full { width: 100%; padding: 14px 20px; border-radius: 50px; font-size: 15px; font-weight: 700; margin: 6px 0 12px; background: linear-gradient(135deg, var(--cta-green) 0%, var(--status-confirmed-text) 100%); color: var(--white); box-shadow: 0 4px 14px rgba(42,122,62,.3); }
-.kcf-full:hover  { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(42,122,62,.4); }
-.kcf-full:active { transform: scale(.98); }
-.kcf-primary  { background: var(--coral); color: var(--white); box-shadow: 0 2px 10px rgba(200,92,45,.25); }
-.kcf-primary:hover { background: var(--coral-dark); transform: translateY(-1px); }
+.kcf-full:hover  { transform: translateY(-1px); }
+.kcf-primary  { background: var(--stone); color: var(--stone-text); border: 1px solid var(--stone-border); }
 .kcf-secondary { background: var(--sand); color: var(--text-muted); border: 1px solid var(--border); }
-.kcf-secondary:hover { background: var(--white); color: var(--text); }
-.kcf-share { background: var(--whatsapp); color: var(--white); box-shadow: 0 2px 8px rgba(37,211,102,.25); }
-.kcf-share:hover { background: var(--whatsapp-dk); transform: translateY(-1px); }
-.kcf-share:active { transform: scale(.97); }
+.kcf-share { border-color: var(--cta-green); color: var(--cta-green); }
 .kcf-danger-mini { padding: 9px 14px; background: transparent; color: var(--text-form-soft); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
 .kcf-danger-mini:hover { background: var(--red-danger-bg); color: var(--red-danger-text); border-color: var(--red-danger-border); }
 .kcf-whatsapp { background: var(--whatsapp); color: var(--white); border-radius: 12px; }
 .kcf-whatsapp:hover { background: var(--ocean); }
 .kcf-whatsapp-mini { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; background: transparent; color: var(--whatsapp); border: 1.5px solid var(--whatsapp); border-radius: 50px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
-.kcf-whatsapp-mini:hover { background: var(--whatsapp-bg-hover); transform: translateY(-1px); }
+.kcf-whatsapp-mini:hover { background: var(--whatsapp-bg-hover); }
 
-#k-cart-whatsapp { font-size: .72rem; padding: 10px 6px; gap: 4px; }
-#k-cart-whatsapp svg { width: 14px; height: 14px; }
 
 /* -- MODAL COMMANDE ------------------------------------------- */
 .k-order-overlay { display: none; position: fixed; inset: 0; z-index: 1200; background: var(--overlay-dark-md); justify-content: flex-start; align-items: stretch; /* center uniquement sur desktop via @media 900px */ }
@@ -9536,37 +9589,50 @@ body.cart-open  #k-section-index { display:none; }
 
 .k-cart-tabs {
   flex-shrink: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr 34px;
+  align-items: center;
+  min-height: 60px;
+  padding: 8px 10px 0;
   border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.92);
 }
 
 .k-cart-tab {
-  flex: 1;
-  padding: 10px 8px;
+  min-width: 0;
+  height: 43px;
+  border: 0;
+  border-radius: 12px 12px 0 0;
+  color: var(--tab-inactive-text);
+  background: transparent;
+  font-family: inherit;
   font-size: 13px;
-  font-weight: 600;
-  /* Centrage cross-browser : <button> peut aligner à gauche selon le UA.
-     line-height:1 aligne sur le même axe vertical que .k-cart-tab-exit. */
-  text-align: center;
-  line-height: 1;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
+  font-weight: 760;
+  line-height: 1;  /* parité de hauteur avec .k-cart-tab-exit (LOT1-b) */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.15s, border-color 0.15s;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  text-align: center;
 }
 
-.k-cart-tab:hover {
-  color: var(--text);
-}
+.k-cart-tab:hover { color: var(--text); }
 
+/* Onglet actif — fond teinté + indicateur bas (mockup direction UX 2026-08) */
+/* Vert pour Ma liste (défaut) */
 .k-cart-tab--active {
-  color: var(--cta-green-dark, var(--cta-green));
-  border-bottom-color: var(--cta-green);
+  color: var(--cta-green);
+  background: var(--green-soft);
+  box-shadow: inset 0 -3px 0 var(--cta-green);
+  font-weight: 760;
+}
+
+/* Corail pour Mon panier quand actif */
+.k-cart-tabs[data-active="personal"] .k-tab-personal.k-cart-tab--active {
+  color: var(--coral);
+  background: var(--coral-soft);
+  box-shadow: inset 0 -3px 0 var(--coral);
 }
 
 /* Correctif archéologie (mandat §2/§11) — le × de sortie d'affichage doit
@@ -9711,6 +9777,22 @@ body.cart-open  #k-section-index { display:none; }
  * de 3-4 blocs de hauteur identique (capture terrain, §D/§E de la mission).
  */
 
+/* Barre de progression liste — % articles achetés (mockup 2026-08) */
+.k-cart-snapshot-progress {
+  height: 5px;
+  margin: 0 0 9px;
+  border-radius: 99px;
+  background: var(--tab-progress-bg);
+  overflow: hidden;
+}
+.k-cart-snapshot-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--cta-green);
+  transition: width .4s ease;
+}
+
 /* -- Rangée primaire (drawer mobile uniquement — §D) ------------------- */
 .k-snap-primary-row {
   display: flex;
@@ -9723,58 +9805,61 @@ body.cart-open  #k-section-index { display:none; }
 .k-snap-btn-primary {
   min-height: 44px;
   padding: 0 16px;
-  border: none;
-  border-radius: 50px;
-  font-weight: 700;
-  font-size: .88rem;
-  color: var(--white);
-  background: linear-gradient(135deg, var(--cta-green) 0%, var(--status-confirmed-text) 100%);
-  box-shadow: 0 3px 10px rgba(42,122,62,.3);
+  width: 100%;
+  border: 1px solid var(--stone-border);
+  border-radius: 13px;
+  font-weight: 850;
+  font-size: .9rem;
+  color: var(--stone-text);
+  background: var(--stone);
+  box-shadow: 0 5px 13px rgba(42,33,23,.08);
   cursor: pointer;
-  transition: transform .15s, box-shadow .15s;
+  transition: background .15s, transform .12s;
   white-space: nowrap;
 }
-.k-snap-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(42,122,62,.4); }
+.k-snap-btn-primary:hover { background: var(--stone-hover); transform: translateY(-1px); }
 .k-snap-btn-primary:disabled { opacity: .6; cursor: default; transform: none; }
 
 .k-snap-btn-secondary {
-  min-height: 44px;
+  min-height: 36px;
   padding: 0 14px;
-  border: 1.5px solid var(--border);
-  border-radius: 50px;
-  font-weight: 600;
-  font-size: .85rem;
-  color: var(--text);
+  border: 1px solid var(--action-btn-border);
+  border-radius: 11px;
+  font-weight: 750;
+  font-size: .82rem;
+  color: var(--action-btn-text);
   background: var(--white);
   cursor: pointer;
   white-space: nowrap;
-  transition: background .15s, border-color .15s;
+  transition: background .15s;
 }
-.k-snap-btn-secondary:hover { background: var(--sand); }
+.k-snap-btn-secondary:hover { background: var(--sand); color: var(--text); }
 .k-snap-btn-secondary:disabled { opacity: .6; cursor: default; }
 
-/* -- Rangée d'actions secondaires (drawer + side cart — §D/§E) --------- */
+/* Rangée secondaire — 2 colonnes compactes (Partager | Clôturer) */
 .k-snap-secondary-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
   width: 100%;
-  margin-top: 6px;
+  margin-top: 0;
 }
 .k-snap-link {
-  padding: 4px 2px;
-  border: none;
-  background: none;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--action-btn-border);
+  border-radius: 11px;
+  background: var(--white);
+  font-size: 11px;
+  font-weight: 750;
+  color: var(--action-btn-text);
   cursor: pointer;
   white-space: nowrap;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
 }
-.k-snap-link:hover { color: var(--text); text-decoration: underline; }
-.k-snap-link:disabled { opacity: .6; cursor: default; text-decoration: none; }
+.k-snap-link:hover { background: var(--sand); color: var(--text); text-decoration: none; }
+.k-snap-link:disabled { opacity: .6; cursor: default; }
 
 /* -- Drawer mobile — désactive le grid natif du footer panier personnel
  * en mode liste (grid-template 1fr/auto/1fr responsable de l'empilement
@@ -9789,7 +9874,9 @@ body.cart-open  #k-section-index { display:none; }
 }
 .k-snap-primary-row   { order: 1; }
 .k-snap-secondary-row { order: 2; }
-.k-cart-drawer[data-mode="shared-list"] #k-cart-continue {
+.k-cart-drawer[data-mode="shared-list"] #k-cart-continue,
+.k-cart-drawer[data-mode="shared-list"] .k-cart-continue-link {
+  display: flex;
   order: 3;
   align-self: center;
   width: auto;
@@ -9802,7 +9889,8 @@ body.cart-open  #k-section-index { display:none; }
   font-weight: 600;
   color: var(--text-muted);
 }
-.k-cart-drawer[data-mode="shared-list"] #k-cart-continue:hover {
+.k-cart-drawer[data-mode="shared-list"] #k-cart-continue:hover,
+.k-cart-drawer[data-mode="shared-list"] .k-cart-continue-link:hover {
   background: none;
   color: var(--text);
 }
@@ -9933,10 +10021,9 @@ body.is-shared-list-context #k-cart-recap-word {
  * Surcharge border-top et border-bottom ajoutés dans cart.css
  * pour l'identité corail — ils restaient coral en mode liste car
  * la règle précédente ne ciblait que border-left. */
+/* Mode liste : passe la bordure TOP en vert (bordure top-only depuis cart.css) */
 .k-cart-drawer[data-mode="shared-list"] {
-  border-left: 4px solid var(--cta-green);
-  border-top: 4px solid var(--cta-green);
-  border-bottom: 4px solid var(--cta-green);
+  border-top-color: var(--cta-green);
 }
 
 

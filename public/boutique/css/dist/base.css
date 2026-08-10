@@ -23,6 +23,37 @@
   --cta-green:        #2a7a3e;
   --cta-green-10:     rgba(46,160,90,.12);  /* bandeau indicateur liste partagée — shared-list-side-cart.css */
 
+  /* ── Pierre claire — CTA transactionnel universel (spec direction UX 2026-08) ──
+   * Remplace les CTA corail/vert/graphite pour TOUS les boutons transactionnels
+   * principaux : Commander, Confirmer, Acheter maintenant, Recevoir le code, Suivre.
+   * WhatsApp reste vert WhatsApp (exception de marque explicite).               */
+  --stone:            #f1eee8;
+  --stone-border:     #cfc7bc;
+  --stone-hover:      #e9e4dc;
+  --stone-text:       #1f2924;
+  --stone-shadow:     0 5px 13px rgba(42,33,23,.08);
+
+  /* Teintes douces surface — fond onglet actif */
+  --coral-soft:       #fff2ec;
+  --green-soft:       #edf7ef;
+
+  /* ── Drawer items (mockup 2026-08) ─────────────────────────────────────────
+   * Valeurs extraites du mockup HTML de référence. Toutes doivent passer via
+   * un token ici — aucun hex nu dans cart.css / shared-list-side-cart.css.    */
+  --item-card-border:       #e6ded3;  /* bordure carte article drawer           */
+  --item-img-bg-start:      #fffaf3;  /* dégradé image — couleur de départ      */
+  --item-img-bg-end:        #f2e9dd;  /* dégradé image — couleur de fin         */
+  --item-img-border:        #eadfd3;  /* bordure image miniature                */
+  --item-old-price:         #98a098;  /* prix barré                             */
+  --stepper-border:         #e4ddd4;  /* contour du pill stepper                */
+  --remove-btn-color:       #8b958d;  /* couleur icône retrait                  */
+  --footer-separator:       #eee8df;  /* séparateur footer / items              */
+  --action-btn-border:      #e3dcd2;  /* contour boutons actions secondaires    */
+  --action-btn-text:        #66736a;  /* texte boutons actions secondaires      */
+  --tab-inactive-text:      #788178;  /* texte onglet inactif                   */
+  --tab-progress-bg:        #e9eee9;  /* fond barre de progression liste        */
+  --green-explicit:         #287f45;  /* vert mockup (= --cta-green, explicite) */
+
   /* ── Sauge — palette checkout (remplace ocean/coral trop saturés dans le flow commande) ──
      Sauge : vert désaturé, posé, lisible sur fond sable.
      Terracotta : chaleur douce, remplace coral sans l'orange criard.

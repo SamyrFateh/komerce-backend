@@ -38,9 +38,9 @@
      Ne jamais remettre en inline, ne jamais ajouter defer/async, ne jamais
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=164">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=437">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=90">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=167">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=443">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=95">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
      cascade, alors que deploy-css.js ne le régénérait jamais (absent de
@@ -486,16 +486,17 @@
       </div>
     </div>
     <div id="k-cart-footer-btns" class="k-cart-footer-btns">
-      <!-- Ordre : Continuer | Partager | Vider (mandat §3) -->
-      <button id="k-cart-continue" class="kcf-btn kcf-secondary" type="button">← Continuer</button>
-      <button id="k-cart-share" class="kcf-btn kcf-share" type="button" aria-label="Partager">
-        Partager
-      </button>
-      <button id="k-cart-clear" class="kcf-btn kcf-danger" type="button" aria-label="Vider le panier">
-        Vider
-      </button>
-      <!-- Commander · <montant> — libellé mis à jour dynamiquement par renderCartBody() -->
+      <!-- Commander pierre claire — CTA principal, pleine largeur -->
       <button id="k-cart-checkout" class="kcf-btn kcf-primary" type="button">Commander</button>
+      <!-- Actions secondaires : 2 colonnes compactes -->
+      <div class="k-cart-footer-actions">
+        <button id="k-cart-share" class="kcf-btn" type="button" aria-label="Partager">Partager</button>
+        <button id="k-cart-clear" class="kcf-btn" type="button" aria-label="Vider le panier">Vider</button>
+      </div>
+      <!-- #k-cart-continue — requis par b-store.js/b-nav.js (fermeture drawer).
+           Caché en mode panier personnel (CSS), repositionné en lien discret
+           en mode liste via shared-list-side-cart.css [data-mode="shared-list"]. -->
+      <button id="k-cart-continue" class="k-cart-continue-link" type="button">← Continuer</button>
     </div>
   </div>
 </div>

@@ -864,25 +864,25 @@
   }
   .k-sc-free-ship svg { width: 12px; height: 12px; flex-shrink: 0; }
 
-  /* ── CTA Commander — coral plein ── */
+  /* ── CTA Commander — pierre claire (doctrine UX 2026-08) ── */
   .k-sc-btn-checkout {
     width: 100%;
     min-height: 44px;
     padding: 0 14px;
-    border: none;
-    border-radius: 999px;
-    background: var(--text);
-    color: var(--white);
+    border: 1px solid var(--stone-border);
+    border-radius: 13px;
+    background: var(--stone);
+    color: var(--stone-text);
     font-size: 13.5px;
-    font-weight: 700;
+    font-weight: 850;
     cursor: pointer;
     font-family: var(--font);
-    letter-spacing: .02em;
-    box-shadow: none;
+    letter-spacing: .01em;
+    box-shadow: 0 5px 13px rgba(42,33,23,.08);
     transition: background .15s, transform .12s;
   }
   .k-sc-btn-checkout:hover {
-    background: var(--text-muted);
+    background: var(--stone-hover);
     transform: translateY(-1px);
   }
   .k-sc-btn-checkout:active { transform: scale(.98); }
@@ -908,14 +908,15 @@
   }
 
   /* ── Partager — vert WhatsApp (aligné mobile) ── */
+  /* ── Partager — vert sobre (création de liste depuis Mon panier) ── */
   .k-sc-btn-share {
     width: 100%;
     min-height: 34px;
     padding: 0 14px;
-    border: none;
+    border: 1.5px solid var(--cta-green);
     border-radius: 999px;
-    background: var(--whatsapp);
-    color: var(--white);
+    background: transparent;
+    color: var(--cta-green-dark, var(--cta-green));
     cursor: pointer;
     font-family: var(--font);
     font-size: 12px;
@@ -925,10 +926,10 @@
     justify-content: center;
     gap: 6px;
     white-space: nowrap;
-    box-shadow: 0 1px 6px rgba(37,211,102,.30);
-    transition: background .15s, transform .12s;
+    box-shadow: none;
+    transition: background .15s, color .15s, transform .12s;
   }
-  .k-sc-btn-share:hover { background: var(--whatsapp-dk); }
+  .k-sc-btn-share:hover { background: var(--cta-green); color: var(--white); }
   .k-sc-btn-share:active { transform: scale(.95); }
   .k-sc-btn-share[hidden] { display: none; }
 
@@ -1048,11 +1049,7 @@
     flex-shrink: 0;
     background: var(--sand);
     border: 1px solid var(--border-text-06);
-    /* Masquée jusqu'à onload — évite l'icône cassée Cloudinary */
-    opacity: 0;
-    transition: opacity .18s;
   }
-  .k-sc-item-img.k-img-ok { opacity: 1; }
   .k-sc-item-info {
     flex: 1; min-width: 0;
     display: flex; flex-direction: column; gap: 3px;
@@ -1074,10 +1071,11 @@
     display: inline-block; width: fit-content;
   }
   .k-sc-item-meta {
-    display: flex; align-items: center;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    margin-top: 1px; gap: 2px 4px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    margin-top: 2px;
+    gap: 4px;
   }
   .k-sc-item-price-wrap {
     display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 4px; row-gap: 1px;
@@ -1088,8 +1086,8 @@
     flex-shrink: 0;
   }
   .k-sc-item-price {
-    font-size: 12px; font-weight: 800;
-    color: var(--red-text-md); letter-spacing: -.01em;
+    font-size: 12px; font-weight: 850;
+    color: var(--text); letter-spacing: -.01em; /* doctrine 2026-08 : encre sombre */
     white-space: nowrap;
   }
   .k-sc-item-old-price {
