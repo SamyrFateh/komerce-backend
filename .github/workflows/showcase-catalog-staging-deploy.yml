@@ -1,0 +1,90 @@
+name: Deploy staging showcase catalogue
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Nombre de produits showcase à publier'
+        required: true
+        default: '500'
+        type: choice
+        options:
+          - '500'
+          - '750'
+          - '1000'
+
+permissions:
+  contents: read
+
+env:
+  NODE_ENV: staging
+  KOMERCE_ALLOW_SHOWCASE_SEED: '1'
+  DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+  CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+  CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+  CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
+jobs:
+  deploy-showcase:
+    name: Build, mirror, audit and seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require staging secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for var in DATABASE_URL CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET; do
+            if [ -z "${!var:-}" ]; then
+              echo "::error::$var manquant dans les secrets GitHub"
+              exit 1
+            fi
+          done
+
+      - name: Build source catalogue
+        run: |
+          node scripts/showcase-catalog.js source \
+            --target '${{ inputs.target }}' \
+            --network \
+            --strict \
+            --concurrency 12
+
+      - name: Mirror all showcase media to Cloudinary staging
+        run: |
+          node scripts/showcase-catalog.js prepare \
+            --target '${{ inputs.target }}'
+
+      - name: Strict Cloudinary audit
+        run: |
+          node scripts/showcase-catalog.js audit \
+            --target '${{ inputs.target }}' \
+            --network \
+            --strict \
+            --concurrency 12
+
+      - name: Seed Railway staging catalogue
+        run: |
+          node scripts/showcase-catalog.js seed \
+            --target '${{ inputs.target }}' \
+            --replace-active
+
+      - name: Preserve manifests as evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-catalog-${{ inputs.target }}-manifests
+          path: |
+            data/catalogue-test-raw/showcase-catalog-v1-source.json
+            data/catalogue-test-raw/showcase-catalog-v1.json
+          if-no-files-found: error
+          retention-days: 14
