@@ -12,6 +12,7 @@ const mockShowToast = jest.fn();
 const mockClearCart = jest.fn();
 const mockRefreshGroupBadge = jest.fn();
 const mockActivateSharedListContext = jest.fn();
+const mockActivateFromParticipantUrl = jest.fn();
 const mockGetSharedCartPublic = jest.fn();
 const mockShowBanner = jest.fn();
 const mockHideBanner = jest.fn();
@@ -29,6 +30,7 @@ jest.mock('../../js/group/group-state.js', () => ({
 // dynamique de group-side-cart.js + group-api.js (mandat §2/§4).
 jest.mock('../../js/group/group-side-cart.js', () => ({
   activateSharedListContext: mockActivateSharedListContext,
+  activateFromParticipantUrl: mockActivateFromParticipantUrl,
   // L7 (mandat §11) — primitive de confirmation chargée dynamiquement par
   // b-share-cart.js (publication / conflit OPEN). Auto-résolution à true,
   // équivalent du window.confirm(true) qu'elle remplace, pour ne pas changer
@@ -50,6 +52,7 @@ const { state } = require('../../js/b-store.js');
 const {
   startShareFlow,
   clearShareState,
+  install,
 } = require('../../js/b-share-cart.js');
 
 function cartItem(id, qty = 1) {
@@ -83,6 +86,8 @@ beforeEach(() => {
   state.cartName = '';
   state.shareStatus = null;
   state.shareUrl = null;
+  state._pendingParticipantToken = null;
+  mockActivateFromParticipantUrl.mockResolvedValue(true);
   // Isolation — sharedListContext est la source de vérité prioritaire de
   // activeShareTarget() : un test qui le pose (ex. « ouverture de B via
   // Mes listes ») ne doit jamais fuiter dans les tests suivants.
@@ -385,6 +390,28 @@ test('sans partage natif, le lien est copié et aucun canal n\'est ouvert automa
   );
 });
 
+test('P0 reload participant — le boot restaure le token exact de kmrc_share avant /mine', async () => {
+  sessionStorage.setItem('kmrc_share', JSON.stringify({
+    token: 'tok-participant',
+    id: 'sc-participant',
+    status: 'open',
+    name: 'Liste de Awa',
+    share_url: 'https://komerce.test/boutique/?p=tok-participant',
+  }));
+
+  state._pendingParticipantToken = null;
+
+  install();
+  await settle();
+
+  expect(mockActivateFromParticipantUrl).toHaveBeenCalledWith(
+    'tok-participant',
+    { silent: true },
+  );
+
+  // Si le token exact a été restauré, /mine ne doit jamais être consulté.
+  expect(global.fetch).not.toHaveBeenCalled();
+});
 test('clearShareState supprime le cache et les indicateurs', () => {
   state.shareToken = 'tok-clear';
   state.shareId = 'sc-clear';

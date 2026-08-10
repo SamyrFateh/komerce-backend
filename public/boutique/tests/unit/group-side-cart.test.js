@@ -155,6 +155,7 @@ function payload(overrides = {}) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  sessionStorage.clear();
   mountShell();
   state.sharedListContext = {
     sharedCartId: null, token: null, status: 'open', isCreator: false,
@@ -187,8 +188,26 @@ describe('group-side-cart — chargement du snapshot', () => {
     expect(state.sharedListContext.creatorFirstName).toBe('Awa');
     expect(state.sharedListContext.items).toHaveLength(2);
     expect(state.cartSurface).toBe('shared-list');
+
+    expect(JSON.parse(sessionStorage.getItem('kmrc_share'))).toMatchObject({
+      token: 'tok-1',
+      id: 'sc1',
+      status: 'open',
+    });
   });
 
+  it('clearSharedListContext retire aussi le cache exact de session', () => {
+    activateSharedListContext(payload(), 'tok-1');
+
+    expect(sessionStorage.getItem('kmrc_share')).not.toBeNull();
+
+    clearSharedListContext();
+
+    expect(sessionStorage.getItem('kmrc_share')).toBeNull();
+    expect(state.shareToken).toBeNull();
+    expect(state.sharedListContext.token).toBeNull();
+    expect(state.cartSurface).toBe('personal');
+  });
   it('payload sans cart → no-op strict (aucun state modifié)', () => {
     activateSharedListContext({}, 'tok-1');
     expect(state.sharedListContext.token).toBeNull();

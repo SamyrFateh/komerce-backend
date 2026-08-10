@@ -172,6 +172,52 @@ function isReadOnly() {
   return state.sharedListContext.status !== 'open';
 }
 
+/**
+ * Cache de session de LA liste réellement affichée.
+ *
+ * Ce cache n'est jamais une source métier : le snapshot public backend reste
+ * la vérité. Il sert uniquement à retrouver le token exact après un reload,
+ * notamment pour un participant pour lequel GET /mine n'a aucune autorité.
+ */
+function persistActiveSharedListSession(cart, token) {
+  const resolvedToken = cart?.token || token || null;
+  if (!resolvedToken) return;
+
+  const shareUrl = cart?.share_url
+    || `${window.location.origin}/boutique/?p=${resolvedToken}`;
+
+  state.shareToken = resolvedToken;
+  state.shareId = cart?.id || null;
+  state.shareExpiry = cart?.expires_at || null;
+  state.cartName = cart?.title || '';
+  state.shareStatus = cart?.status || null;
+  state.shareUrl = shareUrl;
+
+  try {
+    sessionStorage.setItem('kmrc_share', JSON.stringify({
+      token: state.shareToken,
+      id: state.shareId,
+      expiry: state.shareExpiry,
+      name: state.cartName,
+      status: state.shareStatus,
+      share_url: state.shareUrl,
+    }));
+  } catch (_) {}
+}
+
+function clearActiveSharedListSession() {
+  state.shareToken = null;
+  state.shareId = null;
+  state.shareExpiry = null;
+  state.cartName = '';
+  state.shareStatus = null;
+  state.shareUrl = null;
+
+  try {
+    sessionStorage.removeItem('kmrc_share');
+  } catch (_) {}
+}
+
 /* ── Sélection locale (mandat cohérence post-LOT 13, §3) ──────────────
  * État purement local et éphémère : jamais persisté, jamais une mutation
  * du snapshot backend, jamais un mode édition sur la liste elle-même
@@ -374,7 +420,7 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
   // activeShareTarget) — on le maintient synchronisé ici pour ne pas avoir
   // à les modifier. b-share-cart.js::activeShareTarget() ne consulte plus
   // que sharedListContext (voir ci-dessous).
-  state.shareToken = nextToken;
+  persistActiveSharedListSession(cart, nextToken);
   state.cartSurface = 'shared-list';
 
   ensureSnapshotPollingLoop();
@@ -529,7 +575,9 @@ export function clearSharedListContext() {
     items: [],
   };
   // É2 — miroir de la synchronisation dans activateSharedListContext.
-  state.shareToken = null;
+  // Démonter une liste retire aussi son cache exact : un ×, une clôture ou
+  // un lien devenu invalide ne doivent jamais ressusciter au prochain reload.
+  clearActiveSharedListSession();
   state.cartSurface = 'personal';
 
   bus.emit('cart-snapshot:cleanup');
@@ -1175,25 +1223,30 @@ async function handleSharedListPurchaseConflict() {
 
 /* ── Entrée destinataire (lien reçu) ─────────────────────────────────── */
 
-export async function activateFromParticipantUrl(token) {
+export async function activateFromParticipantUrl(token, { silent = false } = {}) {
   const data = await getSharedCartPublic(token);
   if (!data) {
-    showToast('Ce lien de liste partagée est invalide ou expiré.', 'error');
+    if (!silent) {
+      showToast('Ce lien de liste partagée est invalide ou expiré.', 'error');
+    }
     return false;
   }
   // É3 — une liste CLOSED/CANCELLED n'occupe jamais le side-cart (contrat §5,
-  // invariant 5 du contrat API). On informe sans modifier l'état existant.
+  // invariant 5 du contrat API). En restauration silencieuse au boot, aucun
+  // toast parasite : le caller peut poursuivre vers son fallback propriétaire.
   const status = (data.cart?.status || '').toLowerCase();
   if (status === 'closed' || status === 'cancelled') {
-    showToast(
-      status === 'cancelled'
-        ? 'Cette liste a été annulée.'
-        : 'Cette liste est fermée — les achats ne sont plus possibles.',
-      'info',
-    );
+    if (!silent) {
+      showToast(
+        status === 'cancelled'
+          ? 'Cette liste a été annulée.'
+          : 'Cette liste est fermée — les achats ne sont plus possibles.',
+        'info',
+      );
+    }
     return false;
   }
-  activateSharedListContext(data, token);
+  activateSharedListContext(data, token, { silent });
   return true;
 }
 

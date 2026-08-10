@@ -9686,7 +9686,7 @@ body.cart-open  #k-section-index { display:none; }
 /* Le bouton de sortie appartient visuellement au même onglet « Ma liste ».
  * Prolonge son indicateur jusqu'au bord droit du groupe : sans cette règle,
  * les 26px réservés au × interrompent le trait vert de l'onglet actif. */
-.k-cart-tabs[data-active="shared-list"] .k-cart-tab-exit {
+.k-tab-shared-list.k-cart-tab--active + .k-cart-tab-exit {
   box-shadow: inset 0 -3px 0 var(--cta-green);
 }
 
