@@ -20,6 +20,7 @@ watchPatterns = [
   "validators/**",
   "db/**",
   "boutique/**",
+  "public/boutique/**",
   "dashboard-app/**",
   "public/dashboards/**",
   "bootstrap/**",

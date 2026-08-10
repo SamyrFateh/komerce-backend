@@ -15,8 +15,8 @@
 | Fichier | Lignes | Bundle |
 |---|---:|---|
 | `boutique-desktop.css` | 1321 | 🔴 **ORPHELIN** |
-| `cart.css` | 1912 | 🔴 **ORPHELIN** |
-| `categories.css` | 996 | 🔴 **ORPHELIN** |
+| `cart.css` | 1960 | 🔴 **ORPHELIN** |
+| `categories.css` | 988 | 🔴 **ORPHELIN** |
 | `checkout-vertical-rail.css` | 754 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
@@ -27,12 +27,12 @@
 | `modal-cart-sku-guard.css` | 26 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 340 | 🔴 **ORPHELIN** |
-| `modal-mobile-canonical.css` | 682 | 🔴 **ORPHELIN** |
-| `modal-mobile-suggestion-actions.css` | 62 | 🔴 **ORPHELIN** |
+| `modal-mobile-canonical.css` | 680 | 🔴 **ORPHELIN** |
+| `modal-mobile-suggestion-actions.css` | 65 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 502 | 🔴 **ORPHELIN** |
-| `modal-product-polish.css` | 341 | 🔴 **ORPHELIN** |
-| `modal-product.css` | 1516 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 1246 | 🔴 **ORPHELIN** |
+| `modal-product-polish.css` | 374 | 🔴 **ORPHELIN** |
+| `modal-product.css` | 1517 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 1247 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 892 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
@@ -40,7 +40,7 @@
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
 | `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart-responsive.css` | 85 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 618 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 622 | 🔴 **ORPHELIN** |
 | `tokens.css` | 517 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
@@ -49,9 +49,9 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=161
- 2. /boutique/css/dist/components.css?v=425
- 3. /boutique/css/dist/desktop.css?v=86
+ 1. /boutique/css/dist/base.css?v=164
+ 2. /boutique/css/dist/components.css?v=435
+ 3. /boutique/css/dist/desktop.css?v=88
 ```
 
 ## 3. Cartographie des sélecteurs critiques

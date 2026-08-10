@@ -19,7 +19,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 | **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
 | **Header** `.k-header*` | layout.css (21), hero.css (2), tokens.css (1) | 3 | 🔴 |
 | **Hero** `.k-hero*` | hero.css (9), cart.css (1) | 2 | 🔴 |
-| **Chips catégories** `.k-chip*` | categories.css (62), layout.css (2), interactions.css (1) | 3 | 🔴 |
+| **Chips catégories** `.k-chip*` | categories.css (61), layout.css (2), interactions.css (1) | 3 | 🔴 |
 | **Bottom-nav mobile** `.k-bnav*` | interactions.css (2), layout.css (2) | 2 | 🔴 |
 
 ---
@@ -30,13 +30,13 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 
 | Module JS | DOM | CSS-inj | bus on/emit | Composants ciblés |
 |-----------|:---:|:-------:|:-----------:|-------------------|
-| `b-cart.js` | 69 | 26 | 5/8 | Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
+| `b-cart.js` | 74 | 26 | 5/8 | Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
 | `b-modal-desktop-product.js` | 94 | 1 | 0/0 | Modal produit |
 | `b-modal-mobile-product.js` | 81 | 1 | 0/0 | Modal produit |
 | `b-checkout.js` | 77 | 4 | 0/4 | Bottom-nav mobile |
 | `b-modal-core.js` | 17 | 49 | 4/2 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout-render.js` | 58 | 0 | 0/0 | — |
-| `b-modal-product.js` | 25 | 11 | 0/1 | Modal produit |
+| `b-modal-product.js` | 25 | 12 | 0/1 | Modal produit |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
 | `b-cart-pill.js` | 6 | 18 | 3/0 | Grille produits, Section catalogue |
 | `b-wallet.js` | 24 | 0 | 0/0 | Section catalogue |
