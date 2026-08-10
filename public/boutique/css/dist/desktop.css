@@ -1048,7 +1048,11 @@
     flex-shrink: 0;
     background: var(--sand);
     border: 1px solid var(--border-text-06);
+    /* Masquée jusqu'à onload — évite l'icône cassée Cloudinary */
+    opacity: 0;
+    transition: opacity .18s;
   }
+  .k-sc-item-img.k-img-ok { opacity: 1; }
   .k-sc-item-info {
     flex: 1; min-width: 0;
     display: flex; flex-direction: column; gap: 3px;

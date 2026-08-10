@@ -722,6 +722,7 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     const optimized = optimizeImgUrl(rawUrl, SNAPSHOT_ITEM_IMG_WIDTH);
     const html = (
       `<img class="k-cart-item-img-el" src="${sanitize(optimized)}" alt="" loading="lazy" ` +
+      `onload="this.classList.add('k-img-ok')" ` +
       `onerror="this.closest('.k-cart-item-img').classList.add('is-img-error');this.remove();">` +
       SNAPSHOT_ITEM_IMG_FALLBACK
     );
@@ -1312,6 +1313,9 @@ export function cleanupCartSnapshotDom() {
         img.src = optimizeImgUrl(p.image_url, 128);
         img.alt = '';
         img.loading = 'lazy';
+        // onload : révèle l'image seulement si elle charge réellement
+        // (prévient l'icône native Cloudinary 200 qui passerait inaperçue)
+        img.setAttribute('onload', "this.classList.add('k-img-ok')");
         // Même mécanisme que productImageFallbackAttr() : marqueur anti-boucle
         // kFallbackApplied pour ne pas rappeler onerror sur le placeholder lui-même.
         img.setAttribute('onerror',
@@ -1812,8 +1816,7 @@ function renderSideCart() {
         ? `<span class="k-sc-item-variant">${sanitize(variant)}</span>`
         : '';
 
-      // Fallback universel side cart : même mécanisme anti-boucle que renderCartBody.
-      const imgFallbackAttr = `onerror="if(this.dataset.kFallbackApplied!=='1'){this.dataset.kFallbackApplied='1';this.removeAttribute('srcset');this.classList.add('is-image-fallback');this.src='${PRODUCT_IMAGE_FALLBACK_URL}'}"`;
+      const imgFallbackAttr = `onload="this.classList.add('k-img-ok')" onerror="if(this.dataset.kFallbackApplied!=='1'){this.dataset.kFallbackApplied='1';this.removeAttribute('srcset');this.classList.add('is-image-fallback');this.src='${PRODUCT_IMAGE_FALLBACK_URL}'}"`;
       el.innerHTML =
         `<img class="k-sc-item-img" src="${imgSrc}" alt="" loading="lazy" ${imgFallbackAttr}>` +
         `<div class="k-sc-item-info">` +

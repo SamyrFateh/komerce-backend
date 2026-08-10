@@ -616,6 +616,12 @@ body.is-shared-list-context #k-cart-recap-word {
   border-left-color: var(--cta-green);
 }
 
+/* Contour vert complet quand la liste est active (mandat §12).
+ * Surcharge border-top et border-bottom ajoutés dans cart.css
+ * pour l'identité corail — ils restaient coral en mode liste car
+ * la règle précédente ne ciblait que border-left. */
 .k-cart-drawer[data-mode="shared-list"] {
   border-left: 4px solid var(--cta-green);
+  border-top: 4px solid var(--cta-green);
+  border-bottom: 4px solid var(--cta-green);
 }
