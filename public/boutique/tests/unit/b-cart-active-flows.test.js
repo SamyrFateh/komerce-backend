@@ -244,9 +244,10 @@ test('câble image, nom, quantité et suppression dans le drawer', () => {
   expect(emitSpy).toHaveBeenCalledWith('modal:open', { id: 5 });
 
   renderCartBody();
-  dom.cartBody.querySelectorAll('.k-qty-btn')[1].click();
+  // Classe canonique corrigée dans b-cart.js : .k-qty-ctrl (mandat §2, mismatch CSS résolu)
+  dom.cartBody.querySelectorAll('.k-qty-ctrl')[1].click();
   expect(state.cart[0].qty).toBe(3);
-  dom.cartBody.querySelectorAll('.k-qty-btn')[0].click();
+  dom.cartBody.querySelectorAll('.k-qty-ctrl')[0].click();
   expect(state.cart[0].qty).toBe(2);
   dom.cartBody.querySelector('.k-cart-item-remove').click();
   expect(state.cart).toHaveLength(0);

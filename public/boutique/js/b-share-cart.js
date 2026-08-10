@@ -44,7 +44,10 @@ const API_MINE = '/api/shared-carts/mine';
 // afficher le badge/bandeau « actif ». Seul 'open' qualifie.
 const ACTIVE_STATUSES = new Set(['open']);
 const DEFAULT_LIST_TITLE = 'Ma liste';
-const SHARE_BUTTON_LABEL = '📤 Partager cette liste';
+// Mandat §3 : le libellé du bouton de partage est simplement "Partager"
+// (sans emoji ni "cette liste" — ces deux formes sont interdites dans le
+// panier personnel). Le clic conserve le flux de création existant.
+const SHARE_BUTTON_LABEL = 'Partager';
 
 /* ── Helpers ───────────────────────────────────────────────────── */
 

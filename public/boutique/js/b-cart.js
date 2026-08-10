@@ -31,6 +31,7 @@ import { scrollToCategorySection } from './b-catalog.js';
 import {
   sanitize, fmt, fmtPrice, optimizeImgUrl,
   productEmoji, _currency, apiGet, apiPost,
+  productImageFallbackAttr, PRODUCT_IMAGE_FALLBACK_URL,
 }                         from './b-utils.js';
 import {
   showToast, saveCart, cartQty, cartTotal, saveFavs,
@@ -728,12 +729,11 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   }
 
   function snapshotStatusLabel(status) {
-    // Mandat cohérence post-LOT 13, §8 — "Fermer" est déjà le verbe
-    // standard pour dismiss un panneau/une modale ailleurs dans l'app ;
-    // réutiliser "Fermée" ici pour l'état de fin de vie irréversible de
-    // la liste créait une ambiguïté avec "fermer ce panneau". La valeur
-    // backend/interne 'closed' ne change pas, seul ce libellé change.
-    return { open: 'Ouverte', closed: 'Clôturée', cancelled: 'Annulée' }[status] || status;
+    // Doctrine (mandat initial + post-LOT 13) — "Si une liste apparaît, elle
+    // est nécessairement active : ne jamais afficher `Ouverte`, `Fermée`,
+    // `Admin` ou un autre statut technique." open → chaîne vide (implicite).
+    // closed → 'Clôturée' (remplace l'ancien 'Fermée', ambiguïté évitée).
+    return { open: '', closed: 'Clôturée', cancelled: 'Annulée' }[status] ?? '';
   }
 
   /**
@@ -1302,17 +1302,41 @@ export function cleanupCartSnapshotDom() {
       row.className = 'k-cart-item' + (isNew ? ' new-item' : '');
       row.dataset.pid = String(p.id);
 
-      // Image
+      // Image — fallback universel : onerror prévient l'icône cassée native.
+      // L'alt est intentionnellement vide sur l'image pour éviter que le texte
+      // alternatif n'agrandisse la boîte en cas d'échec (mandat §4).
       const imgBox = document.createElement('div');
       imgBox.className = 'k-cart-item-img';
       if (p.image_url) {
         const img = document.createElement('img');
-        img.src = optimizeImgUrl(p.image_url, 100);
-        img.alt = p.name || '';
+        img.src = optimizeImgUrl(p.image_url, 128);
+        img.alt = '';
         img.loading = 'lazy';
+        // Même mécanisme que productImageFallbackAttr() : marqueur anti-boucle
+        // kFallbackApplied pour ne pas rappeler onerror sur le placeholder lui-même.
+        img.setAttribute('onerror',
+          `if(this.dataset.kFallbackApplied!=='1'){` +
+            `this.dataset.kFallbackApplied='1';` +
+            `this.removeAttribute('srcset');` +
+            `this.classList.add('is-image-fallback');` +
+            `this.src='${PRODUCT_IMAGE_FALLBACK_URL}'` +
+          `}`
+        );
         imgBox.appendChild(img);
+        // Pictogramme de repli : affiché uniquement si is-img-error est posé
+        // (CSS : .k-cart-item-img.is-img-error .k-cart-item-img-fallback { display: inline-flex })
+        // Jamais visible si l'image charge correctement.
+        const fallback = document.createElement('span');
+        fallback.className = 'k-cart-item-img-fallback';
+        fallback.setAttribute('aria-hidden', 'true');
+        fallback.textContent = productEmoji(p);
+        imgBox.appendChild(fallback);
       } else {
-        imgBox.textContent = productEmoji(p);
+        const fallback = document.createElement('span');
+        fallback.className = 'k-cart-item-img-fallback k-cart-item-img-fallback--visible';
+        fallback.setAttribute('aria-hidden', 'true');
+        fallback.textContent = productEmoji(p);
+        imgBox.appendChild(fallback);
       }
       // Clic sur l'image → fermer le panier puis rouvrir la fiche produit
       imgBox.addEventListener('click', () => {
@@ -1347,24 +1371,32 @@ export function cleanupCartSnapshotDom() {
       price.textContent = fmt(unitKmf * item.qty, 'KMF');
       info.appendChild(price);
 
-      // Qty controls
+      // Stepper compact — .k-qty-ctrl (classe CSS canonique dans cart.css).
+      // Ancienne classe .k-qty-btn n'était jamais stylée (mismatch détecté
+      // lors de l'audit mandat §2) : correction ici, CSS inchangé.
       const qtyRow = document.createElement('div');
       qtyRow.className = 'k-cart-item-qty';
+      qtyRow.setAttribute('role', 'group');
+      qtyRow.setAttribute('aria-label', 'Quantité');
 
       const minusBtn = document.createElement('button');
-      minusBtn.className = 'k-qty-btn';
+      minusBtn.type = 'button';
+      minusBtn.className = 'k-qty-ctrl';
       minusBtn.textContent = '−';
+      minusBtn.setAttribute('aria-label', 'Retirer un');
       minusBtn.addEventListener('click', () => setQty(p.id, item.qty - 1, item));
       qtyRow.appendChild(minusBtn);
 
       const qtyVal = document.createElement('span');
-      qtyVal.className = 'k-qty-val';
+      qtyVal.className = 'k-qty-ctrl-val';
       qtyVal.textContent = item.qty;
       qtyRow.appendChild(qtyVal);
 
       const plusBtn = document.createElement('button');
-      plusBtn.className = 'k-qty-btn';
+      plusBtn.type = 'button';
+      plusBtn.className = 'k-qty-ctrl';
       plusBtn.textContent = '+';
+      plusBtn.setAttribute('aria-label', 'Ajouter un');
       plusBtn.addEventListener('click', () => setQty(p.id, item.qty + 1, item));
       qtyRow.appendChild(plusBtn);
 
@@ -1380,11 +1412,15 @@ export function cleanupCartSnapshotDom() {
 
       row.appendChild(info);
 
-      // Remove button
+      // Bouton retrait discret — zone tactile 44 px minimum (mandat §2).
       const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
       removeBtn.className = 'k-cart-item-remove';
-      removeBtn.textContent = '✕';
-      removeBtn.title = 'Retirer';
+      removeBtn.setAttribute('aria-label', 'Retirer ' + (p.name || 'cet article'));
+      removeBtn.innerHTML =
+        `<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">` +
+        `<line x1="1.5" y1="1.5" x2="8.5" y2="8.5"/><line x1="8.5" y1="1.5" x2="1.5" y2="8.5"/>` +
+        `</svg>`;
       removeBtn.addEventListener('click', () => removeFromCart(p.id, item));
       row.appendChild(removeBtn);
 
@@ -1408,12 +1444,21 @@ export function cleanupCartSnapshotDom() {
     if (itemPluralEl) itemPluralEl.textContent = qty > 1 ? 's' : '';
     if (subtotalEl) subtotalEl.textContent = fmt(total, 'KMF');
 
-    // Total
+    // Total — affiché une seule fois dans la ligne récap (mandat §3, suppression
+    // du doublon .k-cart-total-row masquée par CSS). Le bouton Commander
+    // porte également le montant pour visibilité immédiate.
+    // aucun montant vert dans le panier personnel (mandat §3).
     dom.cartTotalVal.textContent = fmt(total, 'KMF');
     if (_currency === 'EUR') {
       dom.cartTotalConv.textContent = '≈ ' + fmt(total, 'EUR');
     } else {
       dom.cartTotalConv.textContent = '';
+    }
+
+    // Commander · 17 000 KMF — aucun emoji ✅ (mandat §3)
+    const checkoutBtn = document.getElementById('k-cart-checkout');
+    if (checkoutBtn) {
+      checkoutBtn.textContent = 'Commander · ' + fmt(total, 'KMF');
     }
   }
 
@@ -1767,8 +1812,10 @@ function renderSideCart() {
         ? `<span class="k-sc-item-variant">${sanitize(variant)}</span>`
         : '';
 
+      // Fallback universel side cart : même mécanisme anti-boucle que renderCartBody.
+      const imgFallbackAttr = `onerror="if(this.dataset.kFallbackApplied!=='1'){this.dataset.kFallbackApplied='1';this.removeAttribute('srcset');this.classList.add('is-image-fallback');this.src='${PRODUCT_IMAGE_FALLBACK_URL}'}"`;
       el.innerHTML =
-        `<img class="k-sc-item-img" src="${imgSrc}" alt="" loading="lazy">` +
+        `<img class="k-sc-item-img" src="${imgSrc}" alt="" loading="lazy" ${imgFallbackAttr}>` +
         `<div class="k-sc-item-info">` +
           `<div class="k-sc-item-name">${sanitize(item.product.name || '')}</div>` +
           variantHtml +

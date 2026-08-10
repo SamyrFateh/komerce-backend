@@ -70,7 +70,7 @@ function setNavigatorShare(value) {
 beforeEach(() => {
   jest.clearAllMocks();
   document.body.innerHTML = `
-    <button id="k-cart-share">📤 Partager cette liste</button>
+    <button id="k-cart-share">Partager</button>
     <button class="k-bnav-item" data-tab="komerce"></button>
     <button class="k-header-nav-btn" data-tab="komerce"></button>
   `;
@@ -181,7 +181,7 @@ test('crée immédiatement une liste, diffuse son lien et ouvre sa vue', async (
   );
   expect(document.getElementById('k-cart-share')).toMatchObject({
     disabled: false,
-    textContent: '📤 Partager cette liste',
+    textContent: 'Partager',
   });
 });
 
@@ -212,7 +212,7 @@ test('une erreur API remonte le message et réactive le bouton', async () => {
   expect(mockClearCart).not.toHaveBeenCalled();
   expect(document.getElementById('k-cart-share')).toMatchObject({
     disabled: false,
-    textContent: '📤 Partager cette liste',
+    textContent: 'Partager',
   });
 });
 

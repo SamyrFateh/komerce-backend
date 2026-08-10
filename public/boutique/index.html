@@ -39,7 +39,7 @@
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=164">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=431">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=435">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=88">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
@@ -332,9 +332,9 @@
         </button>
         <button id="k-sc-cta" class="k-sc-btn-cart" type="button">Voir le panier</button>
         <!-- Bouton "Partager" (PR-1) — géré par b-share-cart.js -->
-        <button id="k-sc-share" class="k-sc-btn-share" type="button" aria-label="📤 Partager">
+        <button id="k-sc-share" class="k-sc-btn-share" type="button" aria-label="Partager">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          <span class="k-sc-btn-share-label">📤 Partager</span>
+          <span class="k-sc-btn-share-label">Partager</span>
         </button>
         <button id="k-sc-clear" class="k-sc-clear" type="button" aria-label="Vider le panier" title="Vider le panier">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6h12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -486,13 +486,16 @@
       </div>
     </div>
     <div id="k-cart-footer-btns" class="k-cart-footer-btns">
-      <button id="k-cart-continue" class="kcf-btn kcf-secondary">← Continuer</button>
-      <button id="k-cart-clear" class="kcf-btn kcf-danger">🗑</button>
-      <button id="k-cart-share" class="kcf-btn kcf-share" type="button" aria-label="📤 Partager">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        📤 Partager
+      <!-- Ordre : Continuer | Partager | Vider (mandat §3) -->
+      <button id="k-cart-continue" class="kcf-btn kcf-secondary" type="button">← Continuer</button>
+      <button id="k-cart-share" class="kcf-btn kcf-share" type="button" aria-label="Partager">
+        Partager
       </button>
-      <button id="k-cart-checkout" class="kcf-btn kcf-primary">✅ Commander</button>
+      <button id="k-cart-clear" class="kcf-btn kcf-danger" type="button" aria-label="Vider le panier">
+        Vider
+      </button>
+      <!-- Commander · <montant> — libellé mis à jour dynamiquement par renderCartBody() -->
+      <button id="k-cart-checkout" class="kcf-btn kcf-primary" type="button">Commander</button>
     </div>
   </div>
 </div>

@@ -130,10 +130,10 @@ describe('b-share-cart', () => {
       refreshSharedBadges(true);
 
       expect(document.getElementById('k-cart-share').textContent)
-        .toBe('📤 Partager cette liste');
+        .toBe('Partager');
       expect(document.getElementById('k-sc-share').hidden).toBe(false);
       expect(document.getElementById('k-sc-share').textContent)
-        .toBe('📤 Partager cette liste');
+        .toBe('Partager');
       expect(document.getElementById('k-share-badge-row')).toBeNull();
       expect(document.getElementById('k-cart-reshare')).toBeNull();
       expect(document.getElementById('k-sc-reshare')).toBeNull();
