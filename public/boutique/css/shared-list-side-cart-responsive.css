@@ -82,3 +82,52 @@
   font-weight: 500;
   color: var(--text-muted);
 }
+
+/* Desktop : panier personnel et liste partagée utilisent exactement la
+ * même géométrie de carte. Seuls les contrôles de droite diffèrent
+ * (stepper/retrait versus sélection/état acheté). Cette parité évite le
+ * saut vertical du texte et l'impression que la liste commence plus haut. */
+@media (min-width: 900px) {
+  #k-side-cart .k-cart-snapshot-item {
+    align-items: center;
+    gap: 8px;
+    min-height: 66px;
+    padding: 8px;
+    border-color: var(--border-text-06);
+    border-radius: 10px;
+  }
+
+  #k-side-cart .k-cart-snapshot-item-open {
+    align-items: center;
+    gap: 8px;
+  }
+
+  #k-side-cart .k-cart-snapshot-item .k-cart-item-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 7px;
+  }
+
+  #k-side-cart .k-cart-snapshot-item .k-cart-item-img-el {
+    border-radius: 6px;
+  }
+
+  #k-side-cart .k-cart-snapshot-item .k-cart-item-info {
+    min-height: 48px;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  #k-side-cart .k-cart-snapshot-item .k-cart-item-name {
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  #k-side-cart .k-cart-snapshot-item-meta {
+    margin-top: 0;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+}

@@ -62,6 +62,15 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       const block = css.match(/\.k-list-indicator\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(block).toMatch(/display\s*:\s*none/);
     });
+
+    it('LOT1-g : les deux onglets occupent deux colonnes égales et leur contenu est centré', () => {
+      const tabs = css.match(/\.k-cart-tabs\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const tab = css.match(/\.k-cart-tab\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(tabs).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)/);
+      expect(tab).toMatch(/display\s*:\s*flex/);
+      expect(tab).toMatch(/align-items\s*:\s*center/);
+      expect(tab).toMatch(/justify-content\s*:\s*center/);
+    });
   });
 
   // ── LOT 2 — Récapitulatif checkout ───────────────────────────────────────
@@ -164,6 +173,19 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       const block = css.match(/\.k-cart-drawer\[data-mode="shared-list"\]\s+#k-cart-body\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(block).toMatch(/gap\s*:\s*6px/);
       expect(block).toMatch(/padding\s*:\s*8px\s+10px/);
+    });
+
+    it('LOT6-c : le side cart personnel possède un contour corail complet', () => {
+      const css = readCss('boutique-desktop.css');
+      const block = css.match(/\.k-side-cart\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(block).toMatch(/border\s*:\s*1px\s+solid\s+var\(--coral\)/);
+      expect(block).toMatch(/border-top-width\s*:\s*3px/);
+    });
+
+    it('LOT6-d : la liste recolore le contour entier en vert', () => {
+      const css = readCss('shared-list-side-cart.css');
+      const block = css.match(/#k-side-cart\[data-mode="shared-list"\]\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(block).toMatch(/border-color\s*:\s*var\(--cta-green\)/);
     });
   });
 
