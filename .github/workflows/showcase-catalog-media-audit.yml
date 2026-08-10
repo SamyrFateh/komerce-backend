@@ -32,7 +32,6 @@ jobs:
       - name: Showcase catalog unit tests
         run: npx jest tests/unit/showcase-catalog.test.js --runInBand
 
-      # Dette initiale explicitée : le cloud historique n'est plus une source.
       - name: Prove legacy Cloudinary is unavailable
         run: |
           node - <<'NODE'
@@ -40,32 +39,22 @@ jobs:
           const url = products[0].image_url;
           (async () => {
             const response = await fetch(url, { redirect: 'follow' });
-            console.log(JSON.stringify({
-              url,
-              status: response.status,
-              ok: response.ok,
-              type: response.headers.get('content-type'),
-            }, null, 2));
-            if (response.status !== 401) {
-              console.log('Legacy cloud state changed; re-evaluate whether old media can be recovered.');
-            }
-          })().catch((error) => {
-            console.error(error);
-            process.exitCode = 1;
-          });
+            console.log(JSON.stringify({ url, status: response.status, ok: response.ok, type: response.headers.get('content-type') }, null, 2));
+          })().catch((error) => { console.error(error); process.exitCode = 1; });
           NODE
 
-      # Gate sans secret : 500 parents distincts ET hero réellement chargeable.
-      - name: Build and network-verify 500-product source catalogue
+      # Construit d'abord tout ce qui est réellement valide. Le step suivant
+      # affiche la répartition puis applique le seuil 500 : on garde le diagnostic
+      # exploitable même quand une source publique se dégrade.
+      - name: Build network-verified source catalogue
         run: |
           node scripts/showcase-catalog.js source \
             --target 500 \
             --source-manifest /tmp/showcase-catalog-v1-source.json \
             --network \
-            --strict \
             --concurrency 12
 
-      - name: Source catalogue distribution
+      - name: Source catalogue distribution and 500 gate
         run: |
           node - <<'NODE'
           const products = require('/tmp/showcase-catalog-v1-source.json');
@@ -78,22 +67,30 @@ jobs:
             byCategory[p.category] = (byCategory[p.category] || 0) + 1;
             if ((p.images || []).length >= 2) galleryRich += 1;
           }
-          console.log(JSON.stringify({
+          const summary = {
             products: products.length,
             unique_refs: new Set(products.map((p) => p.product_ref)).size,
             unique_heroes: new Set(products.map((p) => p.image_url)).size,
             gallery_rich_products: galleryRich,
             by_source: bySource,
             by_category: byCategory,
-          }, null, 2));
-          if (products.length !== 500) process.exitCode = 1;
-          if (new Set(products.map((p) => p.image_url)).size !== 500) process.exitCode = 1;
+          };
+          console.log(JSON.stringify(summary, null, 2));
+          if (summary.products !== 500) {
+            console.error(`SHOWCASE SOURCE GATE: ${summary.products}/500 seulement`);
+            process.exitCode = 1;
+          }
+          if (summary.unique_heroes !== summary.products) {
+            console.error('SHOWCASE SOURCE GATE: héros non uniques');
+            process.exitCode = 1;
+          }
           NODE
 
       - name: Upload source proof
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: showcase-catalog-v1-source
           path: /tmp/showcase-catalog-v1-source.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
