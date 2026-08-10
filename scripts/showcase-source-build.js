@@ -125,10 +125,12 @@ function stripHtml(value) {
 }
 
 function isReusableCommonsLicense(value) {
-  const license = String(value || '').toLowerCase();
-  return license.includes('public domain') ||
+  const license = String(value || '').toLowerCase().replace(/[_\s]+/g, '-');
+  if (!license) return false;
+  if (license.includes('noncommercial') || license.includes('-nc') || license.includes('-nd')) return false;
+  return license.includes('public-domain') ||
+    license.includes('publicdomain') ||
     license.includes('cc0') ||
-    license.includes('cc by') ||
     license.includes('cc-by');
 }
 
