@@ -10,7 +10,7 @@
  *
  * Le module ne porte plus de "wow layer" visuelle. Il possède un seul rôle :
  * transformer le fallback technique image en fallback vitrine Komerce et
- * intercepter les erreurs IMG de façon idempotente.
+ * intercepter les erreurs/loads IMG de façon idempotente.
  */
 
 const {
@@ -23,19 +23,19 @@ describe('b-boutique-wow-style — product image fallback polish', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     delete window.__kProductFallbackPolishInstalled;
-    if (window.__kProductFallbackPolishObserver) {
-      window.__kProductFallbackPolishObserver.disconnect();
-      delete window.__kProductFallbackPolishObserver;
-    }
   });
 
   test('fallback vitrine est autonome et brandé', () => {
     expect(SHOWCASE_PRODUCT_FALLBACK_URL).toMatch(/^data:image\/svg\+xml,/);
-    expect(decodeURIComponent(SHOWCASE_PRODUCT_FALLBACK_URL)).toContain('KOMERCE');
-    expect(decodeURIComponent(SHOWCASE_PRODUCT_FALLBACK_URL)).toContain('#ffe11a');
+    const decoded = decodeURIComponent(SHOWCASE_PRODUCT_FALLBACK_URL);
+    expect(decoded).toContain('KOMERCE');
+    expect(decoded).toContain('#ffe11a');
+    expect(decoded).toContain('IMAGE BIENTÔT DISPONIBLE');
   });
 
-  test('polishFallbackImage remplace le broken image sans boucle', () => {
+  test('polishFallbackImage remplace le broken image, gère null et reste idempotent', () => {
+    expect(polishFallbackImage(null)).toBe(false);
+
     const img = document.createElement('img');
     img.src = '/broken.jpg';
     img.srcset = '/broken-2x.jpg 2x';
@@ -45,13 +45,19 @@ describe('b-boutique-wow-style — product image fallback polish', () => {
     expect(img.dataset.kFallbackPolished).toBe('1');
     expect(img.classList.contains('is-image-fallback')).toBe(true);
     expect(img.hasAttribute('srcset')).toBe(false);
+    expect(img.alt).toBe('');
     expect(img.src).toContain('data:image/svg+xml');
 
     expect(polishFallbackImage(img)).toBe(false);
   });
 
-  test('setup intercepte une erreur IMG et applique le fallback vitrine', () => {
+  test('setup intercepte une erreur IMG et ignore une erreur non-image', () => {
     setupBoutiqueWowStyle();
+
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+    div.dispatchEvent(new Event('error'));
+    expect(div.dataset.kFallbackPolished).toBeUndefined();
 
     const img = document.createElement('img');
     document.body.appendChild(img);
@@ -61,12 +67,40 @@ describe('b-boutique-wow-style — product image fallback polish', () => {
     expect(img.src).toContain('data:image/svg+xml');
   });
 
+  test('setup upgrade après load le fallback technique posé par b-utils', async () => {
+    setupBoutiqueWowStyle();
+
+    const img = document.createElement('img');
+    img.classList.add('is-image-fallback');
+    document.body.appendChild(img);
+    img.dispatchEvent(new Event('load'));
+
+    await Promise.resolve();
+    expect(img.dataset.kFallbackPolished).toBe('1');
+    expect(img.src).toContain('data:image/svg+xml');
+  });
+
+  test('load normal et load non-image ne déclenchent aucun fallback', async () => {
+    setupBoutiqueWowStyle();
+
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+    div.dispatchEvent(new Event('load'));
+
+    const img = document.createElement('img');
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+    document.body.appendChild(img);
+    img.dispatchEvent(new Event('load'));
+
+    await Promise.resolve();
+    expect(div.dataset.kFallbackPolished).toBeUndefined();
+    expect(img.dataset.kFallbackPolished).toBeUndefined();
+    expect(img.classList.contains('is-image-fallback')).toBe(false);
+  });
+
   test('setup est idempotent', () => {
-    expect(() => {
-      setupBoutiqueWowStyle();
-      setupBoutiqueWowStyle();
-      setupBoutiqueWowStyle();
-    }).not.toThrow();
+    setupBoutiqueWowStyle();
     expect(window.__kProductFallbackPolishInstalled).toBe(true);
+    expect(() => setupBoutiqueWowStyle()).not.toThrow();
   });
 });
