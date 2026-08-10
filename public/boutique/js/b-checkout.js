@@ -278,7 +278,7 @@ function _renderPaymentHeader(container) {
   container.innerHTML = '';
   const title = document.createElement('div');
   title.className = 'ck-section-title';
-  title.textContent = 'Comment r\u00e9gler le solde ?';
+  title.textContent = 'Comment payer ?';
   container.appendChild(title);
 }
 
@@ -454,7 +454,7 @@ function refreshCheckoutComputedUI() {
   // CTA, quel que soit le moyen de paiement ou l'usage du wallet : jamais
   // « Payer » (Stripe) ni « (net wallet) » (cash), toujours le même libellé
   // portant le montant net réellement dû (après déduction wallet).
-  const mainText = 'Confirmer la commande · ' + fmt(netAmount, 'KMF');
+  const mainText = '\u2713 Confirmer la commande · ' + fmt(netAmount, 'KMF');
   let subText = mode === 'stripe_eur'
     ? (where ? 'Carte via Stripe • ' + where : 'Carte via Stripe')
     : (where ? 'Cash au relais • ' + where : 'Cash au relais');
@@ -775,7 +775,7 @@ export function renderCheckout() {
       '<div class="ck-secure-pickup-title">🔒 Retrait sécurisé</div>'
       + '<div class="ck-secure-pickup-line">Le code de retrait sera envoyé sur votre WhatsApp vérifié '
       + 'lorsque votre commande sera prête. Vous pourrez le transmettre à la personne de votre choix.</div>'
-      + '<span class="ck-secure-pickup-short">🔒 Code de retrait envoyé sur WhatsApp une fois prête</span>';
+      + '<span class="ck-secure-pickup-short">🔒 Code envoyé sur WhatsApp quand la commande est pr\u00eate</span>';
     // Insertion différée : appendChild plus bas, après le bloc paiement (cf. suite du fichier)
 
     // ── Destinataire du code de retrait — commande issue d'une liste reçue ─

@@ -968,7 +968,7 @@ describe('b-checkout', () => {
         await flush();
 
         const lastCall = setCheckoutConfirmButton.mock.calls.at(-1);
-        expect(lastCall[1]).toBe('Confirmer la commande · 2000 KMF');
+        expect(lastCall[1]).toBe('✓ Confirmer la commande · 2000 KMF');
         expect(lastCall[1]).not.toMatch(/Payer|net wallet/);
       });
 
@@ -983,7 +983,7 @@ describe('b-checkout', () => {
         await flush();
 
         const lastCall = setCheckoutConfirmButton.mock.calls.at(-1);
-        expect(lastCall[1]).toBe('Confirmer la commande · 2000 KMF');
+        expect(lastCall[1]).toBe('✓ Confirmer la commande · 2000 KMF');
         expect(lastCall[1]).not.toMatch(/Payer/);
       });
 
@@ -999,7 +999,7 @@ describe('b-checkout', () => {
         await flush();
 
         const lastCall = setCheckoutConfirmButton.mock.calls.at(-1);
-        expect(lastCall[1]).toBe('Confirmer la commande · 1200 KMF');
+        expect(lastCall[1]).toBe('✓ Confirmer la commande · 1200 KMF');
       });
     });
 

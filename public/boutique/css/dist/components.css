@@ -11480,13 +11480,14 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 .ck-order-title-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: 12px;
   font-size: 1rem;
   letter-spacing: .015em;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  max-width: calc(100% - 168px);
+  position: static;
+  transform: none;
+  max-width: calc(100% - 130px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -11889,6 +11890,16 @@ body.k-id-scroll-lock { overflow: hidden; }
   font-size: 1rem;
   font-weight: 800;
   color: var(--text);
+}
+
+#ck-payment-summary .ck-section-title {
+  padding: 0 0 8px;
+  font-size: .68rem;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .ck-pay-grid {
