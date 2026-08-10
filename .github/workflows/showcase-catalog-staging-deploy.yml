@@ -1,0 +1,80 @@
+name: Deploy staging showcase catalogue
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_ENV: staging
+  KOMERCE_ALLOW_SHOWCASE_SEED: '1'
+  DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+  CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+  CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+  CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
+jobs:
+  deploy-showcase:
+    name: Build, mirror, audit and seed 500 products
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require staging secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for var in DATABASE_URL CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET; do
+            if [ -z "${!var:-}" ]; then
+              echo "::error::$var manquant dans les secrets GitHub"
+              exit 1
+            fi
+          done
+
+      - name: Build and verify 500 source products
+        run: |
+          node scripts/showcase-source-build.js \
+            --target 500 \
+            --output data/catalogue-test-raw/showcase-catalog-v1-source.json \
+            --concurrency 3
+
+      - name: Mirror showcase media to Cloudinary staging
+        run: |
+          node scripts/showcase-catalog.js prepare \
+            --target 500 \
+            --source-manifest data/catalogue-test-raw/showcase-catalog-v1-source.json
+
+      - name: Strict Cloudinary audit
+        run: |
+          node scripts/showcase-catalog.js audit \
+            --target 500 \
+            --network \
+            --strict \
+            --concurrency 12
+
+      - name: Seed Railway staging catalogue
+        run: |
+          node scripts/showcase-catalog.js seed \
+            --target 500 \
+            --replace-active
+
+      - name: Preserve manifests as evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-catalog-500-manifests
+          path: |
+            data/catalogue-test-raw/showcase-catalog-v1-source.json
+            data/catalogue-test-raw/showcase-catalog-v1.json
+          if-no-files-found: error
+          retention-days: 14

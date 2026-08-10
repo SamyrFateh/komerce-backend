@@ -20,11 +20,11 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 770,
-    "edges": 4133,
+    "graphNodes": 771,
+    "edges": 4135,
     "dbTables": 108,
     "doctrines": 168,
-    "impactAreas": 130,
+    "impactAreas": 131,
     "unresolvedCodeEdges": 417,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 61
@@ -1067,12 +1067,12 @@
       "file": "public/boutique/js/b-boutique-wow-style.js",
       "type": "file-lite",
       "headerType": "lite",
-      "role": "boutique-b-boutique-wow-style",
+      "role": "boutique-product-image-fallback-polish",
       "domain": "boutique",
       "layer": "ui-component",
       "criticality": "low",
       "owner": "public/boutique/js/boutique.js",
-      "purpose": "supports public/boutique/js/boutique.js",
+      "purpose": "Preserve a showcase-quality product surface when a media asset fails.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -1083,9 +1083,11 @@
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
-        "boutique"
+        "boutique",
+        "catalog",
+        "product-media"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "public/boutique/js/b-bus.js",
@@ -18429,6 +18431,16 @@
       "area": "csp"
     },
     {
+      "id": "impact:catalog",
+      "type": "impact-area",
+      "area": "catalog"
+    },
+    {
+      "id": "impact:product-media",
+      "type": "impact-area",
+      "area": "product-media"
+    },
+    {
       "id": "impact:cart",
       "type": "impact-area",
       "area": "cart"
@@ -18447,11 +18459,6 @@
       "id": "impact:desktop-layout",
       "type": "impact-area",
       "area": "desktop-layout"
-    },
-    {
-      "id": "impact:catalog",
-      "type": "impact-area",
-      "area": "catalog"
     },
     {
       "id": "impact:product-discovery",
@@ -20437,6 +20444,18 @@
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/b-boutique-wow-style.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "public/boutique/js/b-boutique-wow-style.js",
+      "to": "impact:product-media",
+      "type": "impact",
+      "label": "product-media"
     },
     {
       "from": "public/boutique/js/b-cart-core.js",
@@ -44862,12 +44881,12 @@
       ]
     },
     "public/boutique/js/b-boutique-wow-style.js": {
-      "role": "boutique-b-boutique-wow-style",
+      "role": "boutique-product-image-fallback-polish",
       "domain": "boutique",
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/boutique.js",
-      "purpose": "supports public/boutique/js/boutique.js",
+      "purpose": "Preserve a showcase-quality product surface when a media asset fails.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -44876,10 +44895,14 @@
       "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
-        "boutique"
+        "boutique",
+        "catalog",
+        "product-media"
       ],
       "mustCheck": [
         "impact:boutique",
+        "impact:catalog",
+        "impact:product-media",
         "public/boutique/js/boutique.js"
       ]
     },

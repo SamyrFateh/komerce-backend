@@ -1,0 +1,91 @@
+name: Showcase catalog media audit
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/showcase-catalog.js'
+      - 'scripts/showcase-source-build.js'
+      - 'tests/unit/showcase-catalog.test.js'
+      - 'tests/unit/showcase-source-build.test.js'
+      - 'db/seed-products-v2.json'
+      - '.github/workflows/showcase-catalog-media-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    name: 500-product source + media proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Showcase catalog unit tests
+        run: |
+          npx jest \
+            tests/unit/showcase-catalog.test.js \
+            tests/unit/showcase-source-build.test.js \
+            --runInBand
+
+      - name: Prove legacy Cloudinary is unavailable
+        run: |
+          node - <<'NODE'
+          const products = require('./db/seed-products-v2.json');
+          const url = products[0].image_url;
+          (async () => {
+            const response = await fetch(url, { redirect: 'follow' });
+            console.log(JSON.stringify({ url, status: response.status, ok: response.ok, type: response.headers.get('content-type') }, null, 2));
+          })().catch((error) => { console.error(error); process.exitCode = 1; });
+          NODE
+
+      - name: Build network-verified source catalogue
+        run: |
+          node scripts/showcase-source-build.js \
+            --target 500 \
+            --output /tmp/showcase-catalog-v1-source.json \
+            --concurrency 3
+
+      - name: Source catalogue distribution and 500 gate
+        run: |
+          node - <<'NODE'
+          const products = require('/tmp/showcase-catalog-v1-source.json');
+          const bySource = {};
+          const byCategory = {};
+          let galleryRich = 0;
+          for (const p of products) {
+            const source = String(p.source || '').split(':')[0] || 'unknown';
+            bySource[source] = (bySource[source] || 0) + 1;
+            byCategory[p.category] = (byCategory[p.category] || 0) + 1;
+            if ((p.images || []).length >= 2) galleryRich += 1;
+          }
+          const summary = {
+            products: products.length,
+            unique_refs: new Set(products.map((p) => p.product_ref)).size,
+            unique_heroes: new Set(products.map((p) => p.image_url)).size,
+            gallery_rich_products: galleryRich,
+            by_source: bySource,
+            by_category: byCategory,
+          };
+          console.log(JSON.stringify(summary, null, 2));
+          if (summary.products !== 500 || summary.unique_heroes !== 500) process.exitCode = 1;
+          NODE
+
+      - name: Upload source proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-catalog-v1-source
+          path: /tmp/showcase-catalog-v1-source.json
+          if-no-files-found: warn
+          retention-days: 7
