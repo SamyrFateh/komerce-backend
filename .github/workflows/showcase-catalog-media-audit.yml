@@ -51,6 +51,7 @@ jobs:
                 content_length: response.headers.get('content-length'),
                 content_range: response.headers.get('content-range'),
                 bytes_received: buffer.length,
+                body_preview: buffer.toString('utf8', 0, Math.min(120, buffer.length)),
                 magic: buffer.subarray(0, 16).toString('hex'),
               }, null, 2));
             } catch (error) {
@@ -61,6 +62,49 @@ jobs:
           (async () => {
             await inspect('plain-get');
             await inspect('range-get', { Range: 'bytes=0-4095' });
+          })().catch((error) => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE
+
+      - name: Measure replacement source pools
+        run: |
+          node - <<'NODE'
+          async function getJson(url) {
+            const response = await fetch(url, { headers: { 'User-Agent': 'KomerceShowcaseSourceAudit/1.0' } });
+            if (!response.ok) throw new Error(`${url} -> ${response.status}`);
+            return response.json();
+          }
+
+          function imageUrls(items, field) {
+            return items.flatMap((item) => field(item)).filter(Boolean);
+          }
+
+          (async () => {
+            const dummy = await getJson('https://dummyjson.com/products?limit=0');
+            const platzi = await getJson('https://api.escuelajs.co/api/v1/products?offset=0&limit=500');
+            const dummyProducts = dummy.products || [];
+            const platziProducts = Array.isArray(platzi) ? platzi : [];
+            const dummyImages = imageUrls(dummyProducts, (p) => [p.thumbnail, ...(p.images || [])]);
+            const platziImages = imageUrls(platziProducts, (p) => p.images || []);
+
+            console.log(JSON.stringify({
+              dummyjson: {
+                products: dummyProducts.length,
+                reported_total: dummy.total,
+                image_refs: dummyImages.length,
+                unique_images: new Set(dummyImages).size,
+                categories: new Set(dummyProducts.map((p) => p.category)).size,
+              },
+              platzi: {
+                products: platziProducts.length,
+                image_refs: platziImages.length,
+                unique_images: new Set(platziImages).size,
+                categories: new Set(platziProducts.map((p) => p.category?.name).filter(Boolean)).size,
+              },
+              combined_products: dummyProducts.length + platziProducts.length,
+            }, null, 2));
           })().catch((error) => {
             console.error(error);
             process.exitCode = 1;
