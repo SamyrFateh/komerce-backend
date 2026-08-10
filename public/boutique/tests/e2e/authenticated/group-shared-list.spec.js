@@ -689,34 +689,86 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     expect(check.exists).toBe(true);
   });
 
-  test('F22-12 — reload : la liste active se restaure dans la même surface canonique, sans reclic ni bascule', async ({ page }) => {
-    // P0 — RESTORE (restoreSharedCartFromBackend() est désormais awaited
-    // avant de résoudre, voir js/b-share-cart.js). Ce scénario vérifie le
-    // contrat côté UI qui en dépend : après un simple rechargement de page,
-    // sans aucune action de l'utilisateur, le side cart doit retrouver la
-    // liste comme panier canonique visible — pas seulement un token en
-    // cache de session, pas de flash intermédiaire sur le panier personnel
-    // vide qui resterait affiché.
+  test('F22-12 — reload : créateur ET participant restaurent la liste active sans reclic ni bascule', async ({ page, browser }) => {
     const { token } = await createSharedList(page, 2);
 
+    // 1. Créateur : couverture historique.
     await page.reload();
-    await page.waitForFunction(
-      () => !!sessionStorage.getItem('kmrc_share'),
-      { timeout: 15_000 },
-    ).catch(() => {});
 
-    // É4 — le conteneur est .k-cart-tabs, l'onglet actif est #k-tab-shared-list.
-    const tabs = page.locator('#k-cart-surface-switch');
-    await expect(tabs).toBeVisible({ timeout: 10_000 });
-    await expect(tabs.locator('.k-tab-shared-list')).toHaveClass(/k-cart-tab--active/);
+    const creatorTabs = page.locator('#k-cart-surface-switch');
+    await expect(creatorTabs).toBeVisible({ timeout: 10_000 });
+    await expect(
+      creatorTabs.locator('.k-tab-shared-list'),
+    ).toHaveClass(/k-cart-tab--active/);
 
-    const rows = page.locator('#k-side-cart .k-cart-snapshot-item');
-    await expect(rows).toHaveCount(2, { timeout: 10_000 });
+    await expect(
+      page.locator('#k-side-cart .k-cart-snapshot-item'),
+    ).toHaveCount(2, { timeout: 10_000 });
 
-    const stateAfterReload = await getClientShareState(page);
-    expect(stateAfterReload?.token).toBe(token);
+    const creatorState = await getClientShareState(page);
+    expect(creatorState?.token).toBe(token);
+
+    // 2. Participant : cas manquant qui reproduit la régression terrain.
+    const participantContext = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+    await participantContext.clearCookies();
+
+    const participantPage = await participantContext.newPage();
+
+    try {
+      await participantPage.goto(getSharePageUrl(token));
+
+      const participantTabs = participantPage.locator('#k-cart-surface-switch');
+      await expect(participantTabs).toBeVisible({ timeout: 10_000 });
+      await expect(
+        participantTabs.locator('.k-tab-shared-list'),
+      ).toHaveClass(/k-cart-tab--active/);
+
+      await expect(
+        participantPage.locator('#k-side-cart .k-cart-snapshot-item'),
+      ).toHaveCount(2, { timeout: 10_000 });
+
+      // ?p=token a été consommé/nettoyé : le reload ne pourra pas
+      // récupérer le token depuis l'URL.
+      expect(participantPage.url()).not.toContain(`p=${token}`);
+
+      const beforeReload = await participantPage.evaluate(() => {
+        try {
+          return JSON.parse(sessionStorage.getItem('kmrc_share') || 'null');
+        } catch (_) {
+          return null;
+        }
+      });
+
+      expect(beforeReload?.token).toBe(token);
+
+      // Régression P0 réelle.
+      await participantPage.reload();
+
+      const tabsAfterReload = participantPage.locator('#k-cart-surface-switch');
+      await expect(tabsAfterReload).toBeVisible({ timeout: 10_000 });
+      await expect(
+        tabsAfterReload.locator('.k-tab-shared-list'),
+      ).toHaveClass(/k-cart-tab--active/);
+
+      await expect(
+        participantPage.locator('#k-side-cart .k-cart-snapshot-item'),
+      ).toHaveCount(2, { timeout: 10_000 });
+
+      const afterReload = await participantPage.evaluate(() => {
+        try {
+          return JSON.parse(sessionStorage.getItem('kmrc_share') || 'null');
+        } catch (_) {
+          return null;
+        }
+      });
+
+      expect(afterReload?.token).toBe(token);
+    } finally {
+      await participantContext.close();
+    }
   });
-
   test('F22-13 — Règle V1 : 1 liste OPEN max par créateur, le slot se libère immédiatement après fermeture', async ({ page }) => {
     // Règle V1 (2026-08) — 1 liste OPEN par organisateur (remplace l'ancien
     // quota de 5). Garanti par UNIQUE INDEX shared_carts_one_open_per_organizer

@@ -549,10 +549,40 @@ export function install() {
   state._pendingParticipantToken = null;
 
   if (participantToken) {
+    // 1. Lien explicite reçu : autorité maximale.
     _restorePromise = import('./group/group-side-cart.js')
       .then(({ activateFromParticipantUrl }) => activateFromParticipantUrl(participantToken))
       .then(() => null);
+  } else if (state.shareToken) {
+    // 2. Reload : restaurer d'abord LE token exact de la liste qui était
+    // réellement affichée. C'est indispensable côté participant : /mine ne
+    // contient par définition que les listes créées par l'utilisateur.
+    //
+    // clearSharedListContext() retire désormais kmrc_share quand la liste est
+    // quittée/clôturée/invalide. La présence de ce cache signifie donc qu'une
+    // liste occupait effectivement le slot au moment du reload.
+    const cachedToken = state.shareToken;
+
+    _restorePromise = import('./group/group-side-cart.js')
+      .then(async ({ activateFromParticipantUrl }) => {
+        const restored = await activateFromParticipantUrl(
+          cachedToken,
+          { silent: true },
+        );
+
+        // 3. Le cache exact n'est plus exploitable : /mine reste uniquement
+        // le fallback propriétaire historique.
+        if (!restored) {
+          return restoreSharedCartFromBackend({ silent: true });
+        }
+
+        return null;
+      })
+      // Timeout/réseau sur le public : ne jamais casser tout le boot.
+      // Le fallback propriétaire peut encore résoudre une liste du créateur.
+      .catch(() => restoreSharedCartFromBackend({ silent: true }));
   } else {
+    // Aucun contexte exact en session : fallback propriétaire uniquement.
     _restorePromise = restoreSharedCartFromBackend({ silent: true });
   }
 
