@@ -13,11 +13,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 770
-- Edges: 4133
+- Graph nodes: 771
+- Edges: 4135
 - DB tables: 108
 - Doctrines: 168
-- Impact areas: 130
+- Impact areas: 131
 - Unresolved code edges: 417
 - Tables multi-écrivains directs (>=2): 61
 - Avertissements db-write / db-write-via en chevauchement: 0
@@ -28,9 +28,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 8
 - auth-identity: 5
 - bootstrap: 2
-- boutique: 19
+- boutique: 18
 - business-rules: 1
-- catalog: 64
+- catalog: 65
 - checkout: 2
 - customs: 6
 - dashboard: 26
@@ -324,7 +324,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Lite Aggregated Files
 
 - public/boutique/js/anti-fouc.js -> owner public/boutique/js/b-home-premium-v1.js (boutique-anti-fouc)
-- public/boutique/js/b-boutique-wow-style.js -> owner public/boutique/js/boutique.js (boutique-b-boutique-wow-style)
+- public/boutique/js/b-boutique-wow-style.js -> owner public/boutique/js/boutique.js (boutique-product-image-fallback-polish)
 - public/boutique/js/b-cart-product-open-style.js -> owner public/boutique/js/b-modal-core.js (catalog-b-cart-product-open-style)
 - public/boutique/js/b-desktop-global-cart-access.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-global-cart-access)
 - public/boutique/js/b-desktop-sidebar.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-sidebar)
