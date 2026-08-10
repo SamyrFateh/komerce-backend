@@ -2,16 +2,6 @@ name: Deploy staging showcase catalogue
 
 on:
   workflow_dispatch:
-    inputs:
-      target:
-        description: 'Nombre de produits showcase à publier'
-        required: true
-        default: '500'
-        type: choice
-        options:
-          - '500'
-          - '750'
-          - '1000'
 
 permissions:
   contents: read
@@ -26,9 +16,9 @@ env:
 
 jobs:
   deploy-showcase:
-    name: Build, mirror, audit and seed
+    name: Build, mirror, audit and seed 500 products
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -52,23 +42,23 @@ jobs:
             fi
           done
 
-      - name: Build source catalogue
+      - name: Build and verify 500 source products
         run: |
-          node scripts/showcase-catalog.js source \
-            --target '${{ inputs.target }}' \
-            --network \
-            --strict \
-            --concurrency 12
+          node scripts/showcase-source-build.js \
+            --target 500 \
+            --output data/catalogue-test-raw/showcase-catalog-v1-source.json \
+            --concurrency 3
 
-      - name: Mirror all showcase media to Cloudinary staging
+      - name: Mirror showcase media to Cloudinary staging
         run: |
           node scripts/showcase-catalog.js prepare \
-            --target '${{ inputs.target }}'
+            --target 500 \
+            --source-manifest data/catalogue-test-raw/showcase-catalog-v1-source.json
 
       - name: Strict Cloudinary audit
         run: |
           node scripts/showcase-catalog.js audit \
-            --target '${{ inputs.target }}' \
+            --target 500 \
             --network \
             --strict \
             --concurrency 12
@@ -76,13 +66,13 @@ jobs:
       - name: Seed Railway staging catalogue
         run: |
           node scripts/showcase-catalog.js seed \
-            --target '${{ inputs.target }}' \
+            --target 500 \
             --replace-active
 
       - name: Preserve manifests as evidence
         uses: actions/upload-artifact@v4
         with:
-          name: showcase-catalog-${{ inputs.target }}-manifests
+          name: showcase-catalog-500-manifests
           path: |
             data/catalogue-test-raw/showcase-catalog-v1-source.json
             data/catalogue-test-raw/showcase-catalog-v1.json
