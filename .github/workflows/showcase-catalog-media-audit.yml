@@ -32,6 +32,41 @@ jobs:
       - name: Showcase catalog unit tests
         run: npx jest tests/unit/showcase-catalog.test.js --runInBand
 
+      - name: Diagnose first Cloudinary asset
+        run: |
+          node - <<'NODE'
+          const products = require('./db/seed-products-v2.json');
+          const url = products[0].image_url;
+
+          async function inspect(label, headers = {}) {
+            try {
+              const response = await fetch(url, { method: 'GET', headers, redirect: 'follow' });
+              const buffer = Buffer.from(await response.arrayBuffer());
+              console.log(JSON.stringify({
+                label,
+                url,
+                status: response.status,
+                ok: response.ok,
+                type: response.headers.get('content-type'),
+                content_length: response.headers.get('content-length'),
+                content_range: response.headers.get('content-range'),
+                bytes_received: buffer.length,
+                magic: buffer.subarray(0, 16).toString('hex'),
+              }, null, 2));
+            } catch (error) {
+              console.log(JSON.stringify({ label, url, error: error.message, cause: error.cause?.message }, null, 2));
+            }
+          }
+
+          (async () => {
+            await inspect('plain-get');
+            await inspect('range-get', { Range: 'bytes=0-4095' });
+          })().catch((error) => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE
+
       # Preuve réseau sans secret : on audite le seed historique de 467 produits
       # tel qu'il est servi aujourd'hui. Ce passage est volontairement non-strict
       # car l'objectif de cette étape est de mesurer la dette initiale (URLs
