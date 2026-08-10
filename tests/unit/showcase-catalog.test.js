@@ -21,10 +21,13 @@ const {
 } = require('../../scripts/showcase-catalog');
 
 describe('showcase-catalog', () => {
-  test('parseArgs vise 500 produits par défaut', () => {
-    const options = parseArgs(['prepare']);
-    expect(options.command).toBe('prepare');
-    expect(options.target).toBe(500);
+  test('parseArgs vise 500 produits par défaut et autorise 1000', () => {
+    const defaults = parseArgs(['prepare']);
+    expect(defaults.command).toBe('prepare');
+    expect(defaults.target).toBe(500);
+
+    const max = parseArgs(['prepare', '--target', '1000']);
+    expect(max.target).toBe(1000);
   });
 
   test('parseArgs refuse une cible hors borne', () => {
