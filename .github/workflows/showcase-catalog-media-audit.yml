@@ -1,0 +1,47 @@
+name: Showcase catalog media audit
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/showcase-catalog.js'
+      - 'tests/unit/showcase-catalog.test.js'
+      - 'db/seed-products-v2.json'
+      - '.github/workflows/showcase-catalog-media-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    name: Unit + current Cloudinary media health
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Showcase catalog unit tests
+        run: npx jest tests/unit/showcase-catalog.test.js --runInBand
+
+      # Preuve réseau sans secret : on audite le seed historique de 467 produits
+      # tel qu'il est servi aujourd'hui. Ce passage est volontairement non-strict
+      # car l'objectif de cette étape est de mesurer la dette initiale (URLs
+      # /image/fetch/, assets cassés, etc.). Le manifest V1 produit par `prepare`
+      # devra, lui, passer `audit --network --strict` avant tout seed staging.
+      - name: Audit current 467-product media pool
+        run: |
+          node scripts/showcase-catalog.js audit \
+            --input db/seed-products-v2.json \
+            --manifest /tmp/showcase-manifest-not-built.json \
+            --target 467 \
+            --network \
+            --concurrency 12
