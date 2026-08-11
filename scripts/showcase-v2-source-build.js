@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
- * @version       2026-08-v1
+ * @version       2026-08-v2
  */
 'use strict';
 
@@ -29,7 +29,39 @@ const USER_AGENT = 'KomerceShowcaseBot/2.2 (https://komerce.co)';
 const API_MIN_DELAY_MS = 650;
 const API_RETRIES = 5;
 const PAGE_SIZE = 50;
-const MAX_PAGES_PER_QUERY = 4;
+const MAX_PAGES_PER_QUERY = 6;
+
+// Réserve métier : Commons peut être pauvre sur une formulation précise alors
+// qu'un vocabulaire voisin contient largement assez de médias. On élargit les
+// requêtes, jamais les invariants de licence/résolution/unicité.
+const FALLBACK_QUERIES = Object.freeze({
+  'Mode & Beauté/Femme': ['women clothing', 'dress', 'blouse', 'skirt', 'women shoes', 'handbag'],
+  'Mode & Beauté/Homme': ['men clothing', 'shirt', 'mens jacket', 'trousers', 'men shoes', 'mens fashion'],
+  'Mode & Beauté/Enfant': ['children clothing', 'kids clothing', 'children shoes', 'school uniform', 'childrens fashion'],
+  'Mode & Beauté/Beauté': ['cosmetics', 'makeup', 'skin care', 'perfume bottle', 'lipstick', 'beauty product'],
+
+  'Maison/Confort': ['home appliance', 'electric fan', 'vacuum cleaner', 'clothes iron', 'space heater', 'household appliance'],
+  'Maison/Cuisine': ['kitchen utensil', 'cookware', 'kettle', 'frying pan', 'cutlery', 'kitchen appliance'],
+  'Maison/Déco': ['home decoration', 'vase', 'table lamp', 'cushion', 'wall clock', 'decorative object'],
+  'Maison/Enfants': ['school supplies', 'children furniture', 'backpack', 'pencil case', 'notebook', 'desk accessory'],
+
+  'Tech/Phones': ['smartphone', 'mobile phone', 'cell phone', 'telephone handset'],
+  'Tech/Audio': ['headphones', 'earphones', 'loudspeaker', 'portable speaker', 'radio receiver', 'audio equipment'],
+  'Tech/Montres': ['wristwatch', 'smartwatch', 'watch', 'digital watch', 'mechanical watch'],
+
+  'Bricolage/Outillage': ['hand tool', 'power tool', 'screwdriver', 'hammer', 'electric drill', 'pliers'],
+  'Bricolage/Electricité': ['electrical connector', 'electric cable', 'electrical socket', 'light switch', 'extension cord', 'electrical equipment'],
+  'Bricolage/Sécurité': ['padlock', 'door lock', 'security camera', 'safe lock', 'door security', 'lock hardware'],
+
+  'Créations personnelles/Cérémonie': ['formal dress', 'wedding dress', 'suit clothing', 'ceremonial clothing', 'formal wear'],
+  'Créations personnelles/Cadeau': ['gift box', 'souvenir object', 'gift item', 'decorative mug', 'keepsake', 'present box'],
+  'Créations personnelles/Impression': ['printed mug', 'printed stationery', 'greeting card', 'poster print', 'printed notebook', 'printed paper product'],
+
+  'Auto/Filtres': ['oil filter', 'air filter automotive', 'automotive filter', 'fuel filter', 'car filter'],
+  'Auto/Freinage': ['brake disc', 'brake pad', 'automotive brake', 'disc brake', 'brake caliper'],
+  'Auto/Éclairage': ['car headlight', 'automotive lamp', 'tail light', 'vehicle headlamp', 'car light'],
+  'Auto/Moto': ['motorcycle part', 'motorcycle accessory', 'motorcycle helmet', 'motorcycle mirror', 'motorcycle light'],
+});
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -156,6 +188,21 @@ async function searchCommons(query) {
   return rows;
 }
 
+function segmentKey(target) {
+  return `${target.category}/${target.subcategory}`;
+}
+
+function queriesForTarget(target) {
+  const all = [...(target.queries || []), ...(FALLBACK_QUERIES[segmentKey(target)] || [])];
+  const seen = new Set();
+  return all.filter((query) => {
+    const normalized = String(query || '').trim().toLowerCase();
+    if (!normalized || seen.has(normalized)) return false;
+    seen.add(normalized);
+    return true;
+  });
+}
+
 function decorate(row, slot) {
   const priceKmf = roundKmf(stableInt(`${row.source}:${slot.category}:${slot.subcategory}`, 2500, 85000));
   const promoSeed = stableInt(`${row.source}:promo`, 0, 99);
@@ -183,15 +230,24 @@ async function buildCatalogue() {
   const slots = buildSlots();
   const globalSources = new Set();
   const globalHeroes = new Set();
+  const queryCache = new Map();
   const output = [];
   let slotCursor = 0;
 
+  async function candidatesFor(query) {
+    if (!queryCache.has(query)) queryCache.set(query, searchCommons(query));
+    return queryCache.get(query);
+  }
+
   for (const target of TAXONOMY_TARGETS) {
+    const key = segmentKey(target);
     const segment = [];
     const seenSegment = new Set();
-    for (const query of target.queries) {
-      const candidates = await searchCommons(query);
-      console.log(`[showcase-v2-source] ${target.category}/${target.subcategory} · "${query}" -> ${candidates.length}`);
+    const queries = queriesForTarget(target);
+
+    for (const query of queries) {
+      const candidates = await candidatesFor(query);
+      let accepted = 0;
       for (const row of candidates) {
         if (segment.length >= target.count) break;
         if (seenSegment.has(row.source) || globalSources.has(row.source) || globalHeroes.has(row.image_url)) continue;
@@ -199,16 +255,19 @@ async function buildCatalogue() {
         globalSources.add(row.source);
         globalHeroes.add(row.image_url);
         segment.push(row);
+        accepted += 1;
       }
+      console.log(`[showcase-v2-source] ${key} · "${query}" -> ${candidates.length}, +${accepted}, pool=${segment.length}/${target.count}`);
       if (segment.length >= target.count) break;
     }
+
     if (segment.length < target.count) {
-      throw new Error(`Pool insuffisant ${target.category}/${target.subcategory}: ${segment.length}/${target.count}`);
+      throw new Error(`Pool insuffisant ${key}: ${segment.length}/${target.count} après ${queries.length} requêtes`);
     }
     for (const row of segment) {
       output.push(decorate(row, slots[slotCursor++]));
     }
-    console.log(`[showcase-v2-source] ✓ ${target.category}/${target.subcategory}: ${segment.length}`);
+    console.log(`[showcase-v2-source] ✓ ${key}: ${segment.length}`);
   }
 
   if (output.length !== 500 || globalSources.size !== 500 || globalHeroes.size !== 500) {
@@ -235,10 +294,13 @@ if (require.main === module) {
 }
 
 module.exports = {
+  FALLBACK_QUERIES,
   parseArgs,
   retryDelayMs,
   stripHtml,
   isReusableLicense,
   mapPage,
+  segmentKey,
+  queriesForTarget,
   decorate,
 };
