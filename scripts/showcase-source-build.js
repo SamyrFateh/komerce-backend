@@ -32,7 +32,6 @@ const {
   localizeTitle,
   mapDummyProduct,
   mapPlatziProduct,
-  verifyImageUrl,
 } = require('./showcase-catalog');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -41,7 +40,9 @@ const DEFAULT_TARGET = 500;
 const DUMMY_URL = 'https://dummyjson.com/products?limit=0';
 const PLATZI_URL = 'https://api.escuelajs.co/api/v1/products?offset=0&limit=500';
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
-const USER_AGENT = 'KomerceShowcaseBuilder/2.0 (https://komerce.co)';
+const USER_AGENT = 'KomerceShowcaseBot/2.1 (https://komerce.co)';
+const COMMONS_MEDIA_MIN_DELAY_MS = 1200;
+const COMMONS_MEDIA_RETRIES = 4;
 
 const COMMONS_CATEGORIES = Object.freeze([
   ['Clothing on white background', 'Mode', 'Vêtements'],
@@ -127,6 +128,57 @@ async function fetchJson(url, { retries = 0, minDelayMs = 0 } = {}) {
     throw new Error(`${url} -> HTTP ${response.status}`);
   }
   throw new Error(`${url} -> HTTP ${lastStatus || 'unknown'}`);
+}
+
+async function verifyImageUrl(url, timeoutMs = 15000, { retries = 0, minDelayMs = 0 } = {}) {
+  if (!url) return { ok: false, reason: 'missing-url' };
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    if (minDelayMs > 0) await sleep(minDelayMs);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'image/avif,image/webp,image/*,*/*;q=0.8',
+          'User-Agent': USER_AGENT,
+        },
+        redirect: 'follow',
+        signal: controller.signal,
+      });
+
+      if ((response.status === 429 || response.status === 503) && attempt < retries) {
+        const waitMs = retryDelayMs(response, attempt);
+        if (response.body && typeof response.body.cancel === 'function') {
+          await response.body.cancel().catch(() => {});
+        }
+        clearTimeout(timer);
+        console.log(`[showcase-source] média ${response.status} ${new URL(url).hostname}; retry ${attempt + 1}/${retries} dans ${waitMs}ms`);
+        await sleep(waitMs);
+        continue;
+      }
+
+      const type = response.headers.get('content-type') || '';
+      const reader = response.body?.getReader?.();
+      const firstChunk = reader ? await reader.read() : { value: null };
+      if (reader) await reader.cancel().catch(() => {});
+      const sampledBytes = firstChunk.value?.byteLength || 0;
+      return {
+        ok: response.ok && type.startsWith('image/') && sampledBytes > 64,
+        status: response.status,
+        type,
+        bytes: sampledBytes,
+      };
+    } catch (error) {
+      return { ok: false, reason: error.name === 'AbortError' ? 'timeout' : error.message };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  return { ok: false, reason: 'retry-exhausted' };
 }
 
 function stripHtml(value) {
@@ -233,6 +285,10 @@ function dedupe(products) {
   });
 }
 
+function isCommonsProduct(product) {
+  return String(product?.source || '').startsWith('commons:');
+}
+
 async function collectCandidates(target) {
   const [dummyBody, platziBody] = await Promise.all([
     fetchJson(DUMMY_URL),
@@ -265,33 +321,67 @@ async function collectCandidates(target) {
 async function verifyCandidates(products, target, concurrency = 3) {
   const valid = [];
   const stats = new Map();
-  let cursor = 0;
 
-  function bump(product, key) {
+  function rowFor(product) {
     const source = String(product.source || 'unknown').split(':')[0];
-    const row = stats.get(source) || { checked: 0, valid: 0, invalid: 0 };
-    row[key] += 1;
+    const row = stats.get(source) || { checked: 0, valid: 0, invalid: 0, failures: {} };
     stats.set(source, row);
+    return row;
   }
 
-  async function worker() {
-    while (true) {
-      const index = cursor++;
-      if (index >= products.length) return;
-      if (valid.length >= target) return;
-      const product = products[index];
-      bump(product, 'checked');
-      const result = await verifyImageUrl(product.image_url, 15000);
-      if (result.ok) {
-        valid.push({ index, product });
-        bump(product, 'valid');
-      } else {
-        bump(product, 'invalid');
-      }
+  function bump(product, key) {
+    rowFor(product)[key] += 1;
+  }
+
+  function bumpFailure(product, result) {
+    const row = rowFor(product);
+    row.invalid += 1;
+    const reason = result.status
+      ? `http-${result.status}:${result.type || 'unknown-type'}:${result.bytes || 0}b`
+      : `reason:${result.reason || 'unknown'}`;
+    row.failures[reason] = (row.failures[reason] || 0) + 1;
+  }
+
+  async function verifyEntry(entry, options = {}) {
+    if (valid.length >= target) return;
+    const { index, product } = entry;
+    bump(product, 'checked');
+    const result = await verifyImageUrl(product.image_url, 15000, options);
+    if (result.ok) {
+      valid.push({ index, product });
+      bump(product, 'valid');
+    } else {
+      bumpFailure(product, result);
     }
   }
 
-  await Promise.all(Array.from({ length: Math.min(concurrency, 3) }, worker));
+  const entries = products.map((product, index) => ({ index, product }));
+  const regularEntries = entries.filter(({ product }) => !isCommonsProduct(product));
+  const commonsEntries = entries.filter(({ product }) => isCommonsProduct(product));
+
+  let cursor = 0;
+  async function regularWorker() {
+    while (true) {
+      const entry = regularEntries[cursor++];
+      if (!entry || valid.length >= target) return;
+      await verifyEntry(entry);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, 3) }, regularWorker));
+
+  if (valid.length < target && commonsEntries.length > 0) {
+    console.log(`[showcase-source] Commons media: vérification séquentielle, délai ${COMMONS_MEDIA_MIN_DELAY_MS}ms, ${COMMONS_MEDIA_RETRIES} retries 429/503`);
+  }
+
+  for (const entry of commonsEntries) {
+    if (valid.length >= target) break;
+    await verifyEntry(entry, {
+      retries: COMMONS_MEDIA_RETRIES,
+      minDelayMs: COMMONS_MEDIA_MIN_DELAY_MS,
+    });
+  }
+
   valid.sort((a, b) => a.index - b.index);
   console.log('[showcase-source] validation par source:', JSON.stringify(Object.fromEntries(stats), null, 2));
   return valid.slice(0, target).map(({ product }) => product);
@@ -332,12 +422,16 @@ if (require.main === module) {
 
 module.exports = {
   USER_AGENT,
+  COMMONS_MEDIA_MIN_DELAY_MS,
+  COMMONS_MEDIA_RETRIES,
   COMMONS_CATEGORIES,
   parseArgs,
   retryDelayMs,
+  verifyImageUrl,
   isReusableCommonsLicense,
   isShowcaseRaster,
   mapCommonsPage,
   dedupe,
   decorate,
+  isCommonsProduct,
 };
