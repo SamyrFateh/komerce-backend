@@ -40,11 +40,11 @@
 .k-cart-snapshot-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 66px;
-  padding: 8px 9px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  gap: 10px;
+  min-height: 70px;
+  padding: 8px;
+  border: 1px solid var(--item-card-border);
+  border-radius: 13px;
   background: var(--white);
 }
 

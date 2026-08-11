@@ -1070,14 +1070,14 @@ html.k-mobile-premium-v1 .k-chip-label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--coral);
-  color: var(--white);
+  background: var(--commerce-yellow);
+  color: var(--text);
   font-size: 11px;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 7px;
   letter-spacing: .2px;
-  box-shadow: 0 2px 8px rgba(200,92,45,.22);
+  box-shadow: var(--commerce-yellow-shadow-sm);
   z-index: 4;
 }
 
@@ -1120,7 +1120,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 
 /* ── BOUTON AJOUTER AU PANIER ────────────────────────────────── */
-/* Harmonisé sur le design plein de la modal (cercle corail plein,
+/* Accent commerce : cercle jaune plein pour l’action d’ajout,
    pilule verte pleine — cf. #k-modal .k-sug-add / .k-sug-card-actions.is-filled,
    css/modal-product-polish.css) plutôt que le glyphe plat sans fond. */
 .k-card-add {
@@ -1129,10 +1129,10 @@ html.k-mobile-premium-v1 .k-chip-label {
   right: 7px;
   width: 32px;
   height: 32px;
-  background: var(--coral);
+  background: var(--commerce-yellow);
   border-radius: 50%;
-  box-shadow: 0 3px 9px rgba(200,92,45,.22);
-  border: 1px solid var(--coral);
+  box-shadow: var(--commerce-yellow-shadow);
+  border: 1px solid var(--commerce-yellow);
   padding: 0;
   z-index: 5;
   cursor: pointer;
@@ -1158,14 +1158,14 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 .k-card-add:active {
   transform: scale(.90);
-  background: var(--coral-dark);
-  border-color: var(--coral-dark);
+  background: var(--commerce-yellow-hover);
+  border-color: var(--commerce-yellow-hover);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .k-card-add:hover {
-    background: var(--coral-dark);
-    border-color: var(--coral-dark);
+    background: var(--commerce-yellow-hover);
+    border-color: var(--commerce-yellow-hover);
   }
 }
 
@@ -1255,12 +1255,12 @@ html.k-mobile-premium-v1 .k-chip-label {
   100% { transform: scale(1) rotate(0deg);     opacity: 1; }
 }
 
-/* Glyphe "+" du bouton .k-card-add — blanc sur fond corail plein
+/* Glyphe "+" du bouton .k-card-add — encre sombre sur jaune commerce
    (cf. harmonisation ci-dessus, plus de fond transparent). */
 .k-card-add-plus {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 900;
-  color: var(--white);
+  color: var(--text);
   line-height: 1;
   pointer-events: none;
 }
@@ -6950,7 +6950,7 @@ body.cart-open .k-wa-fab {
    Les deux coexistent l�gitimement � propri�t�s disjointes. */
 @media (min-width: 900px) {
   body { padding-bottom: 0; }
-  .k-card-add        { width: 38px; height: 38px; bottom: 10px; right: 10px; }
+  .k-card-add        { width: 34px; height: 34px; bottom: 10px; right: 10px; }
   .k-card-add.in-cart{ width: 80px; }
   .k-card-fav        { width: 32px; height: 32px; top: 10px; right: 10px; font-size: 15px; }
 }
@@ -9406,11 +9406,11 @@ body.cart-open  #k-section-index { display:none; }
 .k-cart-snapshot-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 66px;
-  padding: 8px 9px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  gap: 10px;
+  min-height: 70px;
+  padding: 8px;
+  border: 1px solid var(--item-card-border);
+  border-radius: 13px;
   background: var(--white);
 }
 
@@ -10172,54 +10172,11 @@ body.is-shared-list-context #k-cart-recap-word {
   color: var(--text-muted);
 }
 
-/* Desktop : panier personnel et liste partagée utilisent exactement la
- * même géométrie de carte. Seuls les contrôles de droite diffèrent
- * (stepper/retrait versus sélection/état acheté). Cette parité évite le
- * saut vertical du texte et l'impression que la liste commence plus haut. */
-@media (min-width: 900px) {
-  #k-side-cart .k-cart-snapshot-item {
-    align-items: center;
-    gap: 8px;
-    min-height: 66px;
-    padding: 8px;
-    border-color: var(--border-text-06);
-    border-radius: 10px;
-  }
-
-  #k-side-cart .k-cart-snapshot-item-open {
-    align-items: center;
-    gap: 8px;
-  }
-
-  #k-side-cart .k-cart-snapshot-item .k-cart-item-img {
-    width: 48px;
-    height: 48px;
-    border-radius: 7px;
-  }
-
-  #k-side-cart .k-cart-snapshot-item .k-cart-item-img-el {
-    border-radius: 6px;
-  }
-
-  #k-side-cart .k-cart-snapshot-item .k-cart-item-info {
-    min-height: 48px;
-    justify-content: center;
-    gap: 3px;
-  }
-
-  #k-side-cart .k-cart-snapshot-item .k-cart-item-name {
-    font-size: 11.5px;
-    font-weight: 600;
-    line-height: 1.3;
-  }
-
-  #k-side-cart .k-cart-snapshot-item-meta {
-    margin-top: 0;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.3;
-  }
-}
+/* Parité panier / liste (2026-08)
+ * La ligne snapshot réutilise désormais directement la géométrie canonique
+ * de cart.css : image, typographie, espacement et alignement du bloc texte.
+ * Aucune surcharge desktop de ces dimensions ne doit être réintroduite ici.
+ */
 
 
 /* ── shared-list-library-remove.css ──────────────────────── */

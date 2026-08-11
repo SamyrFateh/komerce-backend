@@ -512,7 +512,7 @@ body.cart-open .k-wa-fab {
    Les deux coexistent l�gitimement � propri�t�s disjointes. */
 @media (min-width: 900px) {
   body { padding-bottom: 0; }
-  .k-card-add        { width: 38px; height: 38px; bottom: 10px; right: 10px; }
+  .k-card-add        { width: 34px; height: 34px; bottom: 10px; right: 10px; }
   .k-card-add.in-cart{ width: 80px; }
   .k-card-fav        { width: 32px; height: 32px; top: 10px; right: 10px; font-size: 15px; }
 }

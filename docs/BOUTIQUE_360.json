@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-10T17:59:49.163Z",
+  "generatedAt": "2026-08-11T11:40:09.586Z",
   "summary": {
     "modules": 77,
     "withHeader": 77,
@@ -40,7 +40,7 @@
       "file": "public/boutique/js/b-boutique-wow-style.js",
       "id": "b-boutique-wow-style",
       "hasHeader": true,
-      "role": "boutique-b-boutique-wow-style",
+      "role": "boutique-product-image-fallback-polish",
       "domain": "boutique",
       "layer": "ui-component",
       "criticality": null,
