@@ -2,6 +2,15 @@ name: Deploy staging showcase V2 refinery
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/showcase-v2-plan.js'
+      - 'scripts/showcase-v2-source-build.js'
+      - 'scripts/showcase-v2-seed.js'
+      - 'scripts/showcase-media-mirror.js'
+      - 'tests/unit/showcase-v2-plan.test.js'
+      - 'tests/unit/showcase-media-mirror.test.js'
+      - '.github/workflows/showcase-v2-staging-deploy.yml'
 
 permissions:
   contents: read
@@ -10,8 +19,71 @@ env:
   KOMERCE_ALLOW_SHOWCASE_SEED: '1'
 
 jobs:
+  preflight:
+    name: V2 contract and refinery preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: V2 plan and Wikimedia policy tests
+        run: |
+          npx jest \
+            tests/unit/showcase-v2-plan.test.js \
+            tests/unit/showcase-media-mirror.test.js \
+            --runInBand
+
+      - name: Prove 500 normalized V2 contracts without network
+        run: |
+          node - <<'NODE'
+          const { buildSlots, buildV2Contract, summary } = require('./scripts/showcase-v2-plan');
+          const manualConnector = require('./services/suppliers/connectors/manual-connector');
+          const { buildNormalizedSourceContractSnapshot } = require('./services/suppliers/normalized-product');
+          const { validateForPromotion } = require('./services/catalog-promotion');
+
+          const slots = buildSlots();
+          const items = slots.map((slot, index) => ({
+            ...buildV2Contract({
+              name: `Showcase V2 preflight ${index + 1}`,
+              description: 'Produit fournisseur synthétique réservé au préflight contractuel Komerce.',
+              price_kmf: 10000 + index * 50,
+              stock: 10,
+              image_url: `https://example.test/showcase-v2/${slot.product_ref}/hero.jpg`,
+              images: [`https://example.test/showcase-v2/${slot.product_ref}/hero.jpg`],
+              source: `preflight:${slot.product_ref}`,
+              source_url: `https://example.test/source/${slot.product_ref}`,
+              source_locale: 'en',
+            }, slot),
+            supplier_name: 'Komerce Showcase V2',
+            supplier_product_id: slot.product_ref,
+          }));
+
+          const connector = manualConnector.fetchProducts({ supplier_name: 'Komerce Showcase V2', items });
+          if (connector.products.length !== 500 || connector.invalid.length !== 0) {
+            console.error(JSON.stringify({ valid: connector.products.length, invalid: connector.invalid.slice(0, 10) }, null, 2));
+            process.exit(1);
+          }
+          const snapshots = connector.products.map(buildNormalizedSourceContractSnapshot);
+          snapshots.forEach(validateForPromotion);
+          const richSnapshots = snapshots.filter((row) => Array.isArray(row.sellable_units) && row.sellable_units.length > 0).length;
+          const proof = { ...summary(), normalized_v2: snapshots.length, rich_snapshots: richSnapshots };
+          console.log(JSON.stringify(proof, null, 2));
+          if (proof.products !== 500 || proof.rich_products !== 350 || proof.rich_snapshots !== 350 || proof.subcategories.length !== 21) process.exit(1);
+          NODE
+
   build-media:
     name: Build and mirror 500 V2 products
+    needs: preflight
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -41,20 +113,13 @@ jobs:
             fi
           done
 
-      - name: V2 plan and Wikimedia policy tests
-        run: |
-          npx jest \
-            tests/unit/showcase-v2-plan.test.js \
-            tests/unit/showcase-media-mirror.test.js \
-            --runInBand
-
       - name: Build 500 taxonomy-covered source products
         run: |
           node scripts/showcase-v2-source-build.js \
             --target 500 \
             --output data/catalogue-test-raw/showcase-catalog-v2-source.json
 
-      - name: Validate 500 source contracts through refinery preflight
+      - name: Validate real source contracts through refinery preflight
         run: |
           node - <<'NODE'
           const fs = require('fs');
