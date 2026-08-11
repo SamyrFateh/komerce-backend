@@ -13,6 +13,7 @@ const {
   segmentKey,
   queriesForTarget,
   boundedDescription,
+  absoluteExclusionFor,
   decorate,
 } = require('../../scripts/showcase-v2-source-build');
 
@@ -59,5 +60,31 @@ describe('showcase-v2-source-build query resilience', () => {
     const product = decorate(row, slot);
     expect(product.description).toHaveLength(DESCRIPTION_MAX_LENGTH);
     expect(product.source_description).toBe(sourceDescription);
+  });
+
+  test('écarte avant miroir une exclusion absolue mais conserve une restriction transport', () => {
+    const target = { category: 'Auto', subcategory: 'Freinage' };
+    const absolute = [{
+      layer: 'absolute',
+      label: 'Armes',
+      keywords: ['rifle'],
+      categories: [],
+    }];
+    const restricted = [{
+      layer: 'restricted',
+      label: 'Batteries lithium',
+      keywords: ['battery pack'],
+      categories: [],
+    }];
+
+    expect(absoluteExclusionFor({
+      name: 'M107 sniper rifle',
+      source_description: 'Commercial weapon system',
+    }, target, absolute)).toMatchObject({ layer: 'absolute', label: 'Armes' });
+
+    expect(absoluteExclusionFor({
+      name: 'Battery pack accessory',
+      source_description: 'Lithium transport constraint',
+    }, target, restricted)).toBeNull();
   });
 });
