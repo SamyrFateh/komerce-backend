@@ -680,6 +680,13 @@ function _buildRecapItemsBlock(items, selectionTotal = null) {
 }
 
 function _insertCheckoutIdentity(body, node) {
+  const aside = body.querySelector('.ck-checkout-aside');
+
+  if (aside) {
+    aside.insertBefore(node, aside.firstChild);
+    return;
+  }
+
   const summary = body.querySelector('#ck-order-summary');
 
   if (summary) {
@@ -708,6 +715,32 @@ export function renderCheckout() {
 
     if (!od.fulfillment_zone) od.fulfillment_zone = 'comoros';
 
+    /*
+     * LOT 3 — projection responsive uniquement.
+     *
+     * Mobile : les trois wrappers sont display:contents → ordre vertical
+     * historique strictement conservé.
+     *
+     * Desktop : primary = matière commande ; aside = décision transactionnelle.
+     * Aucun état, calcul, paiement ou lifecycle n'est dupliqué.
+     */
+    const checkoutLayout = document.createElement('div');
+    checkoutLayout.className = 'ck-checkout-layout';
+
+    const checkoutPrimary = document.createElement('section');
+    checkoutPrimary.className = 'ck-checkout-primary';
+
+    const checkoutPrimaryHeading = document.createElement('h2');
+    checkoutPrimaryHeading.className = 'ck-checkout-desktop-heading';
+    checkoutPrimaryHeading.textContent = 'Votre commande';
+    checkoutPrimary.appendChild(checkoutPrimaryHeading);
+
+    const checkoutAside = document.createElement('div');
+    checkoutAside.className = 'ck-checkout-aside';
+
+    checkoutLayout.append(checkoutPrimary, checkoutAside);
+    body.appendChild(checkoutLayout);
+
     const headerBackBtn = dom.orderTitle.querySelector('.ck-modal-back-btn--header');
 
     if (headerBackBtn) {
@@ -730,7 +763,7 @@ export function renderCheckout() {
       const ctxBanner = document.createElement('div');
       ctxBanner.className = 'ck-shared-list-context-banner';
       ctxBanner.textContent = state.checkoutDisplayContext.title;
-      body.appendChild(ctxBanner);
+      checkoutPrimary.appendChild(ctxBanner);
     }
 
     const orderSummary = _buildRecapItemsBlock(
@@ -741,7 +774,7 @@ export function renderCheckout() {
     if (orderSummary) {
       orderSummary.id = 'ck-order-summary';
       orderSummary.classList.add('ck-recap-step--embedded');
-      body.appendChild(orderSummary);
+      checkoutPrimary.appendChild(orderSummary);
     }
 
     // Pays/zone (Comores/France) déplacé DANS le picker de relais (cf. _openRelaisPicker) :
@@ -801,7 +834,7 @@ export function renderCheckout() {
     // ── Fin restauration silencieuse ─────────────────────────────────────────
 
     // ── Variation de prix liste partagée (V2-E §2/§3) ─────────────────────────
-    _renderPriceVariationRecap(body);
+    _renderPriceVariationRecap(checkoutAside);
     // ── Fin variation de prix ──────────────────────────────────────────────────
 
     // ── Retrait sécurisé (Lot 3 — remplace « Qui récupère ? ») ────────────────
@@ -863,12 +896,12 @@ export function renderCheckout() {
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
     sRelais.className = 'ck-section-block';
-    body.appendChild(sRelais);
+    checkoutAside.appendChild(sRelais);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
     relaisSection.className = 'ck-relais-section';
     relaisSection.innerHTML = '<div class="ck-relais-loading">⏳ Chargement des relais...</div>';
-    body.appendChild(relaisSection);
+    checkoutAside.appendChild(relaisSection);
     _loadRelaisSection(relaisSection, od);
 
     /* ── 3. Wallet (règle §3 — précède le paiement dans le mock : son
@@ -885,7 +918,7 @@ export function renderCheckout() {
       + '<div id="wallet-expiry-text" class="k-wallet-expiry-text"></div></div></label>'
       + '<div id="wallet-deduction" class="k-wallet-ded"></div>'
       + '<button type="button" id="wallet-goto-komerce" class="k-wallet-goto-komerce">Voir mon wallet dans Mon Komerce</button>';
-    body.appendChild(walletSection);
+    checkoutAside.appendChild(walletSection);
     // Lot 4 §5 — lien discret, jamais l'écran de gestion du wallet lui-même.
     document.getElementById('wallet-goto-komerce')?.addEventListener('click', () => {
       bus.emit('nav:goto-komerce-wallet');
@@ -912,7 +945,7 @@ export function renderCheckout() {
     fullCoverMsg.className = 'ck-wallet-full-cover-msg';
     fullCoverMsg.textContent = '✓ Votre crédit couvre toute la commande.';
     s2.appendChild(fullCoverMsg);
-    body.appendChild(s2);
+    checkoutAside.appendChild(s2);
 
     const payGrid = document.createElement('div');
     payGrid.id = 'ck-pay-grid';
@@ -935,7 +968,7 @@ export function renderCheckout() {
       + '<input type="radio" name="payment_mode" value="paypal_eur">'
       + '<span class="ck-chip-icon">🅿️</span><span class="ck-chip-lbl">PayPal<br><em class="ck-stripe-tag">4× possible</em></span>'
       + '</label>';
-    body.appendChild(payGrid);
+    checkoutAside.appendChild(payGrid);
 
     // Point 8 : « Un code de paiement vous sera envoyé… » supprimé du formulaire.
     // L'info de paiement arrive au bon moment — sur l'écran de confirmation de commande.
@@ -951,7 +984,7 @@ export function renderCheckout() {
       + '<div id="stripe-card-element" class="k-stripe-element"></div>'
       + '<div id="stripe-card-error" class="k-stripe-error"></div>'
       + '<div id="stripe-eur-display" class="k-stripe-eur"></div>';
-    body.appendChild(stripeCardWrap);
+    checkoutAside.appendChild(stripeCardWrap);
 
     /* PayPal container — affiché quand payment_mode=paypal_eur */
     document.querySelectorAll('#paypal-button-container').forEach(el => el.remove());
@@ -962,7 +995,7 @@ export function renderCheckout() {
       + ' <em class="k-paypal-paylater-tag">Payez en 4× sans frais (éligibilité affichée par PayPal)</em></div>'
       + '<div id="paypal-button-container" class="k-paypal-buttons"></div>'
       + '<div id="paypal-error" class="k-paypal-error"></div>';
-    body.appendChild(paypalWrap);
+    checkoutAside.appendChild(paypalWrap);
 
     /* Détection serveur PayPal activé → affiche la chip */
     isPayPalEnabled().then(enabled => {
@@ -971,15 +1004,15 @@ export function renderCheckout() {
     });
 
 
-    if (recipientBlock) body.appendChild(recipientBlock);
-    else body.appendChild(secureNotice);
+    if (recipientBlock) checkoutAside.appendChild(recipientBlock);
+    else checkoutAside.appendChild(secureNotice);
 
     const finalTotal = document.createElement('div');
     finalTotal.className = 'ck-final-total';
     finalTotal.innerHTML =
       '<span id="ck-final-total-label">\u00c0 r\u00e9gler</span>'
       + '<strong id="ck-final-total-amount">' + fmt(_checkoutTotal(), 'KMF') + '</strong>';
-    body.appendChild(finalTotal);
+    checkoutAside.appendChild(finalTotal);
 
     // Checkout unifié : le récapitulatif de CheckoutSelection vit dans
     // cette même surface, avant identité, retrait et paiement.

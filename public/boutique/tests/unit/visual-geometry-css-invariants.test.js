@@ -269,8 +269,11 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       const modal = css.match(
         /@media\s*\(min-width:\s*900px\)[\s\S]*?\.k-order-overlay\.open\s+\.k-order-modal\s*\{([^}]+)\}/
       )?.[1] ?? '';
-      expect(modal).toMatch(/width\s*:\s*min\(540px,\s*calc\(100vw - 48px\)\)/);
-      expect(modal).toMatch(/max-width\s*:\s*540px/);
+      expect(modal).toMatch(/width\s*:\s*100vw/);
+      expect(modal).toMatch(/max-width\s*:\s*none/);
+      expect(modal).toMatch(/height\s*:\s*100dvh/);
+      expect(modal).toMatch(/max-height\s*:\s*none/);
+      expect(modal).toMatch(/border-radius\s*:\s*0/);
     });
   });
 
@@ -691,4 +694,69 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       );
     });
   });
+
+  // ── LOT 7 — Checkout desktop pleine page ────────────────────────────────
+  describe('LOT 7 — projection responsive checkout', () => {
+    let css;
+    beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
+
+    it('LOT7-a : les wrappers sont transparents sur mobile', () => {
+      const block = css.match(
+        /\.ck-checkout-layout,[\s\S]{0,220}\.ck-checkout-aside\s*\{([^}]+)\}/
+      )?.[1] ?? '';
+
+      expect(block).toMatch(/display\s*:\s*contents/);
+    });
+
+    it('LOT7-b : desktop projette le checkout comme une page pleine', () => {
+      expect(css).toMatch(
+        /@media\s*\(min-width:\s*900px\)[\s\S]*?\.k-order-overlay\.open \.k-order-modal\s*\{[\s\S]*?width\s*:\s*100vw/
+      );
+
+      expect(css).toMatch(/height\s*:\s*100dvh/);
+      expect(css).toMatch(/max-width\s*:\s*none/);
+      expect(css).toMatch(/border-radius\s*:\s*0/);
+    });
+
+    it('LOT7-c : desktop possède deux colonnes et un aside sticky', () => {
+      const layoutBlocks = [
+        ...css.matchAll(/\.ck-checkout-layout\s*\{([^}]+)\}/g),
+      ];
+
+      const layout = layoutBlocks.at(-1)?.[1] ?? '';
+
+      expect(layout).toMatch(/display\s*:\s*grid/);
+      expect(layout).toMatch(/grid-template-columns\s*:/);
+
+      const asideBlocks = [
+        ...css.matchAll(/\.ck-checkout-aside\s*\{([^}]+)\}/g),
+      ];
+
+      const aside = asideBlocks.at(-1)?.[1] ?? '';
+
+      expect(aside).toMatch(/position\s*:\s*sticky/);
+      expect(aside).toMatch(/overflow-y\s*:\s*auto/);
+    });
+
+    it('LOT7-d : CTA final reste hors scroll et aligné sur la colonne droite', () => {
+      const matches = [
+        ...css.matchAll(
+          /\.k-order-overlay\.open \.ck-confirm-btn\s*\{([^}]+)\}/g
+        ),
+      ];
+
+      const desktopCta =
+        matches
+          .map((m) => m[1])
+          .find((block) => /position\s*:\s*absolute/.test(block))
+        ?? '';
+
+      expect(desktopCta).toMatch(/position\s*:\s*absolute/);
+      expect(desktopCta).toMatch(
+        /width\s*:\s*var\(--ck-desktop-aside\)/
+      );
+      expect(desktopCta).toMatch(/bottom\s*:\s*24px/);
+    });
+  });
+
 });
