@@ -245,4 +245,57 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       });
     });
   });
+
+  // ── LOT 7 — Parité ligne produit panier / liste ──────────────────────────
+  describe('LOT 7 — panier et liste : géométrie de ligne canonique', () => {
+    let cart;
+    let shared;
+    let responsive;
+
+    beforeAll(() => {
+      cart = readCss('cart.css');
+      shared = readCss('shared-list-side-cart.css');
+      responsive = readCss('shared-list-side-cart-responsive.css');
+    });
+
+    function prop(block, name) {
+      return block.match(
+        new RegExp(name + '\\s*:\\s*([^;]+)')
+      )?.[1]?.trim();
+    }
+
+    it('LOT7-a : la carte snapshot reprend gap, hauteur, padding et radius du panier', () => {
+      const personal =
+        cart.match(/\\.k-cart-item\\s*\\{([^}]+)\\}/s)?.[1] ?? '';
+      const snapshot =
+        shared.match(/\\.k-cart-snapshot-item\\s*\\{([^}]+)\\}/s)?.[1] ?? '';
+
+      expect(prop(snapshot, 'gap')).toBe(prop(personal, 'gap'));
+      expect(prop(snapshot, 'min-height')).toBe(prop(personal, 'min-height'));
+      expect(prop(snapshot, 'padding')).toBe(prop(personal, 'padding'));
+      expect(prop(snapshot, 'border-radius')).toBe(prop(personal, 'border-radius'));
+    });
+
+    it('LOT7-b : le gap image → texte reste le gap canonique de 10px', () => {
+      const personal =
+        cart.match(/\\.k-cart-item\\s*\\{([^}]+)\\}/s)?.[1] ?? '';
+      const open =
+        shared.match(/\\.k-cart-snapshot-item-open\\s*\\{([^}]+)\\}/s)?.[1] ?? '';
+
+      expect(prop(open, 'gap')).toBe(prop(personal, 'gap'));
+    });
+
+    it('LOT7-c : aucune surcharge desktop ne redimensionne image/info/nom snapshot', () => {
+      expect(responsive).not.toMatch(
+        /#k-side-cart\\s+\\.k-cart-snapshot-item\\s+\\.k-cart-item-img/
+      );
+      expect(responsive).not.toMatch(
+        /#k-side-cart\\s+\\.k-cart-snapshot-item\\s+\\.k-cart-item-info/
+      );
+      expect(responsive).not.toMatch(
+        /#k-side-cart\\s+\\.k-cart-snapshot-item\\s+\\.k-cart-item-name/
+      );
+    });
+  });
+
 });
