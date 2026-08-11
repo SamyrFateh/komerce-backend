@@ -148,8 +148,12 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(box).toMatch(/width\s*:\s*28px/);
       expect(box).toMatch(/height\s*:\s*28px/);
       expect(box).toMatch(/border\s*:\s*1px\s+solid\s+var\(--stepper-border\)/);
-      expect(checked).toMatch(/background\s*:\s*var\(--green-soft\)/);
-      expect(checked).toMatch(/border-color\s*:\s*var\(--cta-green\)/);
+      expect(checked).toMatch(/background\s*:\s*var\(--stone\)/);
+      expect(checked).toMatch(/border-color\s*:\s*var\(--stone-border\)/);
+
+      const tick = css.match(/\.k-cart-item-select\.is-checked::after\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(tick).toMatch(/border\s*:\s*solid\s+var\(--stone-text\)/);
+      expect(css).not.toMatch(/\.k-cart-item-select\.is-checked\s*\{[^}]*--cta-green/s);
     });
   });
 
@@ -168,6 +172,19 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(block).toMatch(/display\s*:\s*flex/);
       expect(block).toMatch(/align-items\s*:\s*center/);
       expect(block).toMatch(/justify-content\s*:\s*center/);
+    });
+
+    it('LOT2-c : le gate de confirmation reste clair et neutre', () => {
+      const header = css.match(/\.k-order-header\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const check = css.match(/\.ck-recap-check\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const cta = css.match(/#btn-confirm-recap\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(header).toMatch(/background\s*:\s*var\(--checkout-cream\)/);
+      expect(header).toMatch(/color\s*:\s*var\(--text\)/);
+      expect(check).toMatch(/background\s*:\s*transparent/);
+      expect(check).toMatch(/border\s*:\s*1px\s+solid\s+var\(--border\)/);
+      expect(cta).toMatch(/background\s*:\s*var\(--stone\)/);
+      expect(cta).toMatch(/color\s*:\s*var\(--stone-text\)/);
     });
   });
 
@@ -218,11 +235,12 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('LOT5-a : le header reprend le graphite neutre du mock, jamais un bandeau vert', () => {
+    it('LOT5-a : le header reste clair et neutre, sans bandeau métier', () => {
       const block = css.match(/\.k-order-header\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/background\s*:\s*var\(--checkout-neutral\)/);
-      expect(block).toMatch(/color\s*:\s*var\(--white\)/);
-      expect(block).not.toMatch(/gradient|checkout-accent|cta-green/);
+      expect(block).toMatch(/background\s*:\s*var\(--checkout-cream\)/);
+      expect(block).toMatch(/color\s*:\s*var\(--text\)/);
+      expect(block).toMatch(/box-shadow\s*:\s*none/);
+      expect(block).not.toMatch(/gradient|checkout-accent|cta-green|checkout-neutral\s*;/);
     });
 
     it('LOT5-b : les moyens de paiement restent compacts en grille 2x2 desktop', () => {

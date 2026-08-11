@@ -1,5 +1,5 @@
 {
-  "total": 157,
+  "total": 154,
   "keys": [
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||height",
     "#k-modal .k-modal-cart-btn|||@media (max-width: 899px) {|||width",
@@ -49,10 +49,7 @@
     ".ck-modal-back-btn--header|||global|||background",
     ".ck-modal-back-btn--header|||global|||border",
     ".ck-modal-back-btn--header|||global|||border-radius",
-    ".ck-modal-back-btn--header|||global|||min-height",
     ".ck-modal-back-btn--header|||global|||padding",
-    ".ck-order-title-text|||global|||font-size",
-    ".ck-order-title-text|||global|||letter-spacing",
     ".ck-pay-chip--active|||global|||background",
     ".ck-pay-chip--active|||global|||box-shadow",
     ".ck-pay-chip--active|||global|||color",
@@ -159,5 +156,5 @@
     ".k-wallet-title|||global|||font-size",
     "html.k-home-premium-v1 .k-hero-badge|||@media (min-width: 900px) {|||letter-spacing"
   ],
-  "savedAt": "2026-08-10T15:20:21.742Z"
+  "savedAt": "2026-08-11T15:50:26.030Z"
 }
