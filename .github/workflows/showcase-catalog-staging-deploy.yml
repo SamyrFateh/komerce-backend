@@ -42,6 +42,9 @@ jobs:
             fi
           done
 
+      - name: Verify Wikimedia mirror policy
+        run: npx jest tests/unit/showcase-media-mirror.test.js --runInBand
+
       - name: Build and verify 500 source products
         run: |
           node scripts/showcase-source-build.js \
@@ -51,9 +54,10 @@ jobs:
 
       - name: Mirror showcase media to Cloudinary staging
         run: |
-          node scripts/showcase-catalog.js prepare \
+          node scripts/showcase-media-mirror.js \
             --target 500 \
-            --source-manifest data/catalogue-test-raw/showcase-catalog-v1-source.json
+            --source-manifest data/catalogue-test-raw/showcase-catalog-v1-source.json \
+            --manifest data/catalogue-test-raw/showcase-catalog-v1.json
 
       - name: Strict Cloudinary audit
         run: |
