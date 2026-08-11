@@ -6,14 +6,14 @@
  * @layer         script
  * @criticality   high
  * @inputs        canonical_cloudinary_manifest_v2, railway_staging
- * @outputs       500 cumulative products, canonical media, axes, SKU, approvals
- * @depends       db.js, scripts/showcase-v2-plan.js, services/catalog-promotion.js, services/product-admin-service.js, services/catalog-approval.js
+ * @outputs       500 cumulative products, sourcing candidates, canonical media, axes, SKU, approvals
+ * @depends       db.js, scripts/showcase-v2-plan.js, services/suppliers/connectors/manual-connector.js, services/suppliers/catalog-import-orchestrator.js, services/catalog-promotion.js, services/product-admin-service.js, services/catalog-approval.js
  * @used-by       showcase v2 staging deploy
- * @db-read       products, product_skus, product_variants
- * @db-write      products, catalog_media, product_variants, product_skus, product_sku_media, product_content_profile, product_content_sections, product_attributes
- * @db-txn        yes (one product per transaction, idempotent resume)
- * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
- * @version       2026-08-v1
+ * @db-read       products, product_skus, product_variants, sourcing_candidates
+ * @db-write      products, catalog_media, product_variants, product_skus, product_sku_media, product_content_profile, product_content_sections, product_attributes, sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports
+ * @db-txn        yes (ingestion orchestrator + one promotion transaction per product, idempotent resume)
+ * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
+ * @version       2026-08-v2
  */
 'use strict';
 
@@ -22,6 +22,8 @@ const path = require('path');
 const db = require('../db');
 const { buildSlots, buildV2Contract, TAXONOMY_TARGETS } = require('./showcase-v2-plan');
 const { roundKmf, stableInt, normalizeImages, isCanonicalCloudinaryUpload } = require('./showcase-catalog');
+const manualConnector = require('../services/suppliers/connectors/manual-connector');
+const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const { validateForPromotion, promoteCatalog } = require('../services/catalog-promotion');
 const { upsertProductSku, auditProductSkuReadiness } = require('../services/product-admin-service');
 const { approveProduct } = require('../services/catalog-approval');
@@ -29,6 +31,7 @@ const { approveProduct } = require('../services/catalog-approval');
 const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v2.json');
 const TARGET = 500;
+const SUPPLIER_NAME = 'Komerce Showcase V2';
 
 function parseArgs(argv) {
   const out = { target: TARGET, manifest: DEFAULT_MANIFEST };
@@ -83,33 +86,115 @@ async function assertV1Foundation() {
   }
 }
 
-async function upsertParent(client, product, slot, contract) {
+function buildImportContracts(products, slots) {
+  return products.map((product, index) => {
+    const contract = buildV2Contract(product, slots[index]);
+    // Identité du fournisseur de TEST stable entre deux campagnes. La vraie
+    // provenance Commons reste dans raw_payload.source/source_url.
+    return {
+      ...contract,
+      supplier_name: SUPPLIER_NAME,
+      supplier_product_id: slots[index].product_ref,
+    };
+  });
+}
+
+async function ingestThroughRefinery(products, slots) {
+  const items = buildImportContracts(products, slots);
+  const body = {
+    supplier_name: SUPPLIER_NAME,
+    source_type: 'manual',
+    notes: 'Showcase V2 — campagne staging contractuelle et rejouable',
+    items,
+  };
+
+  const dispatch = () => manualConnector.fetchProducts({
+    supplier_name: SUPPLIER_NAME,
+    items,
+  });
+
+  const result = await catalogImportOrchestrator.importCatalog(body, null, dispatch);
+  if (result.status !== 200) {
+    throw new Error(`Ingestion raffinerie refusée (${result.status}): ${JSON.stringify(result.body).slice(0, 1200)}`);
+  }
+  if (result.body.accepted !== TARGET || result.body.rejected !== 0) {
+    throw new Error(`Ingestion raffinerie incomplète: accepted=${result.body.accepted}, rejected=${result.body.rejected}`);
+  }
+
+  const refs = slots.map((slot) => slot.product_ref);
+  const { rows } = await db.query(
+    `SELECT id, supplier_product_id, product_name, description,
+            purchase_price_kmf, estimated_weight_kg, scan_result, state,
+            product_id, normalized_source_contract
+       FROM sourcing_candidates
+      WHERE supplier_name=$1 AND supplier_product_id = ANY($2::text[])`,
+    [SUPPLIER_NAME, refs],
+  );
+  if (rows.length !== TARGET) {
+    throw new Error(`Snapshots candidats V2 incomplets: ${rows.length}/${TARGET}`);
+  }
+
+  const byRef = new Map();
+  const badStates = [];
+  for (const row of rows) {
+    if (!row.normalized_source_contract) {
+      throw new Error(`normalized_source_contract absent: ${row.supplier_product_id}`);
+    }
+    if (!['scanned', 'imported_to_catalog'].includes(row.state)) {
+      badStates.push({ ref: row.supplier_product_id, state: row.state, decision: row.scan_result?.sourcing_decision || null });
+    }
+    validateForPromotion(row.normalized_source_contract);
+    byRef.set(row.supplier_product_id, row);
+  }
+  if (badStates.length) {
+    throw new Error(`Candidats non promouvables (${badStates.length}): ${JSON.stringify(badStates.slice(0, 20))}`);
+  }
+
+  console.log(`[showcase-v2-seed] ingestion vraie: import=${result.body.import_id}, candidats=${rows.length}, erreurs=0`);
+  return byRef;
+}
+
+function candidatePrice(candidate, fallback) {
+  const sr = candidate.scan_result || {};
+  return roundKmf(
+    sr.test_price_kmf ||
+    sr.recommended_price_kmf ||
+    sr.minimum_safe_price_kmf ||
+    fallback ||
+    500,
+  );
+}
+
+async function upsertParent(client, product, slot, contract, candidate) {
   const images = normalizeImages(product);
   const stock = Math.max(1, Number(contract.stock_available || product.stock || 1));
+  const priceKmf = candidatePrice(candidate, product.price_kmf);
   const { rows: [row] } = await client.query(
     `INSERT INTO products (
        product_ref, name, description, category, subcategory,
-       price_kmf, promo_pct, is_promo, image_url, images, stock,
-       inventory_model, has_variants, is_active, is_available,
+       cost_kmf, price_kmf, promo_pct, is_promo, image_url, images, stock,
+       weight_kg, inventory_model, has_variants, is_active, is_available,
        lifecycle_status, quality_validated,
        name_source, description_source, source_locale, content_source, sort_order
      ) VALUES (
-       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,
-       'LEGACY_VARIANTS',$12,FALSE,FALSE,
+       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,
+       $13,'LEGACY_VARIANTS',$14,FALSE,FALSE,
        'candidate',FALSE,
-       $13,$14,$15,'connector_raw',$16
+       $15,$16,$17,'connector_raw',$18
      )
      ON CONFLICT (product_ref) DO UPDATE SET
        name=EXCLUDED.name,
        description=EXCLUDED.description,
        category=EXCLUDED.category,
        subcategory=EXCLUDED.subcategory,
+       cost_kmf=EXCLUDED.cost_kmf,
        price_kmf=EXCLUDED.price_kmf,
        promo_pct=EXCLUDED.promo_pct,
        is_promo=EXCLUDED.is_promo,
        image_url=EXCLUDED.image_url,
        images=EXCLUDED.images,
        stock=EXCLUDED.stock,
+       weight_kg=EXCLUDED.weight_kg,
        has_variants=EXCLUDED.has_variants,
        name_source=EXCLUDED.name_source,
        description_source=EXCLUDED.description_source,
@@ -119,20 +204,22 @@ async function upsertParent(client, product, slot, contract) {
      RETURNING *`,
     [
       product.product_ref,
-      product.name,
-      product.description || product.name,
+      candidate.product_name || product.name,
+      candidate.description || product.description || product.name,
       slot.category,
       slot.subcategory,
-      product.price_kmf,
+      Number(candidate.purchase_price_kmf || 0),
+      priceKmf,
       product.promo_pct || null,
       Number(product.promo_pct || 0) > 0,
       product.image_url,
       JSON.stringify(images),
       stock,
+      candidate.estimated_weight_kg || null,
       slot.rich,
-      product.name,
-      product.description || product.name,
-      product.source_locale || 'en',
+      candidate.product_name || product.name,
+      candidate.description || product.description || product.name,
+      contract.source_locale || product.source_locale || 'en',
       product.sort_order || slot.globalIndex + 500,
     ],
   );
@@ -163,20 +250,43 @@ async function applyCommercialSkus(client, product, contract) {
   );
 }
 
-async function processProduct(product, slot) {
+async function markCandidateImported(client, candidate, productId, priceKmf) {
+  if (candidate.state === 'imported_to_catalog' && String(candidate.product_id || '') === String(productId)) return;
+  await client.query(
+    `UPDATE sourcing_candidates
+        SET state='imported_to_catalog', product_id=$1, updated_at=NOW()
+      WHERE id=$2`,
+    [productId, candidate.id],
+  );
+  await client.query(
+    `INSERT INTO sourcing_candidate_events
+       (candidate_id, event_type, old_state, new_state, changes, notes)
+     VALUES ($1, 'imported', $2, 'imported_to_catalog', $3::jsonb, $4)`,
+    [
+      candidate.id,
+      candidate.state,
+      JSON.stringify({ product_id: productId, price_kmf: priceKmf, showcase_v2: true }),
+      'Campagne staging Showcase V2 — promotion via raffinerie canonique',
+    ],
+  );
+}
+
+async function processProduct(product, slot, candidate) {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-    const contract = buildV2Contract(product, slot);
+    const contract = candidate.normalized_source_contract;
     validateForPromotion(contract);
 
-    const parent = await upsertParent(client, product, slot, contract);
+    const parent = await upsertParent(client, product, slot, contract, candidate);
     await promoteCatalog(client, {
       productId: parent.id,
       normalizedSourceContract: contract,
     });
 
     if (slot.rich) await applyCommercialSkus(client, parent, contract);
+
+    await markCandidateImported(client, candidate, parent.id, parent.price_kmf);
 
     if (!parent.is_active || parent.lifecycle_status === 'candidate') {
       const approval = await approveProduct(client, parent.id, { id: 'showcase-v2' });
@@ -236,6 +346,15 @@ async function postSeedAudit() {
       WHERE p.is_active=TRUE AND p.product_ref LIKE 'SHOWCASE-V2-%' AND ps.is_active=TRUE`
   );
 
+  const { rows: decisions } = await db.query(
+    `SELECT COALESCE(scan_result->>'sourcing_decision','UNKNOWN') AS decision,
+            COUNT(*)::int AS count
+       FROM sourcing_candidates
+      WHERE supplier_name=$1 AND supplier_product_id LIKE 'SHOWCASE-V2-%'
+      GROUP BY 1 ORDER BY 1`,
+    [SUPPLIER_NAME],
+  );
+
   if (totals.v1 !== 500 || totals.v2 !== 500 || totals.sku_products !== 350) {
     throw new Error(`Post-seed mismatch: ${JSON.stringify({ ...totals, ...skuStats })}`);
   }
@@ -252,6 +371,7 @@ async function postSeedAudit() {
     out_of_stock_skus: skuStats.out_of_stock_skus,
     promo_products: totals.promo_products,
     taxonomy_rows: distribution.length,
+    sourcing_decisions: decisions,
   }, null, 2));
 }
 
@@ -269,7 +389,18 @@ async function seed(options) {
     if (product.product_ref !== slot.product_ref || product.category !== slot.category || product.subcategory !== slot.subcategory) {
       throw new Error(`Manifest/plan divergent à ${index}: ${product.product_ref}`);
     }
-    await processProduct(product, slot);
+  }
+
+  // Le vrai point d'entrée V2 : connecteur → contrat AJV → normalisation →
+  // éligibilité → scanner/pricing → sourcing_candidates + snapshot V2.
+  const candidates = await ingestThroughRefinery(products, slots);
+
+  for (let index = 0; index < products.length; index += 1) {
+    const product = products[index];
+    const slot = slots[index];
+    const candidate = candidates.get(slot.product_ref);
+    if (!candidate) throw new Error(`Candidat V2 introuvable: ${slot.product_ref}`);
+    await processProduct(product, slot, candidate);
     if ((index + 1) % 25 === 0) console.log(`[showcase-v2-seed] ${index + 1}/${TARGET}`);
   }
   await postSeedAudit();
@@ -295,4 +426,6 @@ if (require.main === module) {
 module.exports = {
   parseArgs,
   validateManifest,
+  buildImportContracts,
+  candidatePrice,
 };
