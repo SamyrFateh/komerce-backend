@@ -1,0 +1,145 @@
+name: Deploy staging showcase V2 refinery
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  KOMERCE_ALLOW_SHOWCASE_SEED: '1'
+
+jobs:
+  build-media:
+    name: Build and mirror 500 V2 products
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require Cloudinary staging secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for var in CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET; do
+            if [ -z "${!var:-}" ]; then
+              echo "::error::$var manquant dans les secrets GitHub"
+              exit 1
+            fi
+          done
+
+      - name: V2 plan and Wikimedia policy tests
+        run: |
+          npx jest \
+            tests/unit/showcase-v2-plan.test.js \
+            tests/unit/showcase-media-mirror.test.js \
+            --runInBand
+
+      - name: Build 500 taxonomy-covered source products
+        run: |
+          node scripts/showcase-v2-source-build.js \
+            --target 500 \
+            --output data/catalogue-test-raw/showcase-catalog-v2-source.json
+
+      - name: Validate 500 source contracts through refinery preflight
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const { buildSlots, buildV2Contract, summary } = require('./scripts/showcase-v2-plan');
+          const { validateForPromotion } = require('./services/catalog-promotion');
+          const products = JSON.parse(fs.readFileSync('data/catalogue-test-raw/showcase-catalog-v2-source.json', 'utf8'));
+          const slots = buildSlots();
+          products.forEach((product, index) => validateForPromotion(buildV2Contract(product, slots[index])));
+          const proof = summary();
+          console.log(JSON.stringify(proof, null, 2));
+          if (products.length !== 500 || proof.rich_products !== 350 || proof.subcategories.length !== 21) process.exit(1);
+          NODE
+
+      - name: Mirror V2 media to Cloudinary staging
+        run: |
+          node scripts/showcase-media-mirror.js \
+            --target 500 \
+            --source-manifest data/catalogue-test-raw/showcase-catalog-v2-source.json \
+            --manifest data/catalogue-test-raw/showcase-catalog-v2.json
+
+      - name: Strict Cloudinary V2 audit
+        run: |
+          node scripts/showcase-catalog.js audit \
+            --target 500 \
+            --manifest data/catalogue-test-raw/showcase-catalog-v2.json \
+            --network \
+            --strict \
+            --concurrency 12
+
+      - name: Preserve V2 media evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-v2-canonical-manifests
+          path: |
+            data/catalogue-test-raw/showcase-catalog-v2-source.json
+            data/catalogue-test-raw/showcase-catalog-v2.json
+          if-no-files-found: error
+          retention-days: 14
+
+  refine-seed:
+    name: Refine, SKU-audit and cumulatively seed Railway
+    needs: build-media
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require Railway staging secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::DATABASE_URL manquant dans les secrets GitHub"
+            exit 1
+          fi
+
+      - name: Restore canonical V2 manifests
+        uses: actions/download-artifact@v4
+        with:
+          name: showcase-v2-canonical-manifests
+          path: data/catalogue-test-raw
+
+      - name: Cumulative refinery seed
+        run: |
+          node scripts/showcase-v2-seed.js \
+            --target 500 \
+            --manifest data/catalogue-test-raw/showcase-catalog-v2.json
+
+      - name: Preserve refinery evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-v2-refinery-input
+          path: data/catalogue-test-raw/showcase-catalog-v2.json
+          if-no-files-found: error
+          retention-days: 14
