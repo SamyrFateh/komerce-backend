@@ -7,7 +7,10 @@ on:
       - 'scripts/showcase-v2-plan.js'
       - 'scripts/showcase-v2-source-build.js'
       - 'scripts/showcase-v2-seed.js'
+      - 'scripts/showcase-v2-reset-rejected.js'
       - 'scripts/showcase-media-mirror.js'
+      - 'services/catalog-eligibility.js'
+      - 'tests/unit/catalog-eligibility.test.js'
       - 'tests/unit/showcase-v2-plan.test.js'
       - 'tests/unit/showcase-v2-source-build.test.js'
       - 'tests/unit/showcase-media-mirror.test.js'
@@ -36,9 +39,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: V2 plan, source resilience and Wikimedia policy tests
+      - name: V2 plan, eligibility, source resilience and Wikimedia policy tests
         run: |
           npx jest \
+            tests/unit/catalog-eligibility.test.js \
             tests/unit/showcase-v2-plan.test.js \
             tests/unit/showcase-v2-source-build.test.js \
             tests/unit/showcase-media-mirror.test.js \
@@ -92,6 +96,8 @@ jobs:
       CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
       CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
       CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      NODE_ENV: test
 
     steps:
       - uses: actions/checkout@v4
@@ -104,18 +110,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Require Cloudinary staging secrets
+      - name: Require staging secrets
         shell: bash
         run: |
           set -euo pipefail
-          for var in CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET; do
+          for var in CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET DATABASE_URL; do
             if [ -z "${!var:-}" ]; then
               echo "::error::$var manquant dans les secrets GitHub"
               exit 1
             fi
           done
 
-      - name: Build 500 taxonomy-covered source products
+      - name: Build 500 taxonomy-covered and eligible source products
         run: |
           node scripts/showcase-v2-source-build.js \
             --target 500 \
@@ -211,6 +217,9 @@ jobs:
         with:
           name: showcase-v2-canonical-manifests
           path: data/catalogue-test-raw
+
+      - name: Reset rejected synthetic V2 candidates for replay
+        run: node scripts/showcase-v2-reset-rejected.js
 
       - name: Cumulative refinery seed
         run: |
