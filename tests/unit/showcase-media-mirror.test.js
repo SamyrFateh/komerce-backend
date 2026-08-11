@@ -10,6 +10,7 @@ const {
   parseArgs,
   isWikimediaMediaUrl,
   mediaFilename,
+  showcaseNamespace,
   retryAfterMs,
   downloadWikimediaMedia,
 } = require('../../scripts/showcase-media-mirror');
@@ -29,6 +30,12 @@ describe('showcase-media-mirror', () => {
   test('nettoie le nom de fichier sans conserver la query string', () => {
     expect(mediaFilename('https://upload.wikimedia.org/wikipedia/commons/7/70/Dusty%20Roy%20Parka.jpg?x=1'))
       .toBe('Dusty-Roy-Parka.jpg');
+  });
+
+  test('isole les campagnes V1 et V2 dans deux namespaces Cloudinary', () => {
+    expect(showcaseNamespace('SHOWCASE-V1-0001')).toBe('showcase-v1');
+    expect(showcaseNamespace('SHOWCASE-V2-0001')).toBe('showcase-v2');
+    expect(showcaseNamespace('autre')).toBe('showcase-v1');
   });
 
   test('respecte Retry-After en secondes ou utilise un backoff borné', () => {
