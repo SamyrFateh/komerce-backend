@@ -787,7 +787,7 @@
 }
 
 .k-confirm-emoji::before {
-  content: "âœ“";
+  content: "\2713";
   color: var(--checkout-accent);
   font-size: 2rem;
   font-weight: 900;
