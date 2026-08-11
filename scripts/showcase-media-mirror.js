@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      DOCTRINE_CATALOGUE.md, staging-only realistic fixtures
- * @version       2026-08-v1
+ * @version       2026-08-v2
  */
 'use strict';
 
@@ -70,6 +70,12 @@ function mediaFilename(value) {
   } catch {
     return 'commons-image';
   }
+}
+
+function showcaseNamespace(productRef) {
+  const ref = String(productRef || '').toUpperCase();
+  if (ref.startsWith('SHOWCASE-V2-')) return 'showcase-v2';
+  return 'showcase-v1';
 }
 
 function retryAfterMs(value, attempt = 0, now = Date.now()) {
@@ -187,7 +193,8 @@ async function mirrorSourceImage(url, uploadOptions) {
 }
 
 async function mirrorProduct(product) {
-  const folder = `komerce/staging/showcase-v1/${product.product_ref.toLowerCase()}`;
+  const namespace = showcaseNamespace(product.product_ref);
+  const folder = `komerce/staging/${namespace}/${product.product_ref.toLowerCase()}`;
   const sourceImages = normalizeImages(product).slice(0, 3);
   const uploaded = [];
   for (let i = 0; i < sourceImages.length; i += 1) {
@@ -227,6 +234,7 @@ module.exports = {
   parseArgs,
   isWikimediaMediaUrl,
   mediaFilename,
+  showcaseNamespace,
   retryAfterMs,
   downloadWikimediaMedia,
 };
