@@ -900,7 +900,7 @@ body.cart-open .k-wa-fab {
    Fix Bug 4 : r�tablit overflow:hidden pour le border-radius sur tablette/desktop,
    compatible avec .ck-confirm-btn toujours visible (dernier enfant flex, hors scroll). */
 @media (min-width: 900px) {
-  .k-order-overlay.open .k-order-modal { height:auto; max-height:92vh; overflow:hidden; }
+  .k-order-overlay.open .k-order-modal { overflow:hidden; }
   /* Sur desktop le modal a une hauteur fixe (92vh) : on r�tablit overflow:hidden pour
      le border-radius, mais le bouton confirmer est le dernier enfant flex ?
      il reste toujours dans le flux et visible, pas clipp� par le scroll. */

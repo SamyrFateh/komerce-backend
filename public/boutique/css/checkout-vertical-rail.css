@@ -134,7 +134,22 @@
   background: var(--checkout-cream);
 }
 
-.k-order-body--checkout > .ck-section-block:empty { display: none; }
+.k-order-body--checkout .ck-section-block:empty { display: none; }
+
+/*
+ * LOT 3 — shell responsive.
+ * Ces wrappers sont structurels uniquement : display:contents maintient
+ * exactement le flux vertical mobile existant.
+ */
+.ck-checkout-layout,
+.ck-checkout-primary,
+.ck-checkout-aside {
+  display: contents;
+}
+
+.ck-checkout-desktop-heading {
+  display: none;
+}
 
 .k-order-body--recap {
   min-height: 0;
@@ -800,25 +815,123 @@
 }
 
 @media (min-width: 900px) {
+  /*
+   * Desktop = page transactionnelle.
+   * L'overlay reste le mécanisme de navigation existant mais cesse
+   * visuellement d'être une modale flottante.
+   */
+  .k-order-overlay.open {
+    background: var(--checkout-cream);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
   .k-order-overlay.open .k-order-modal {
-    width: min(540px, calc(100vw - 48px));
-    max-width: 540px;
-    max-height: 92vh;
-    border-radius: 24px;
+    --ck-desktop-max: 1180px;
+    --ck-desktop-aside: 420px;
+    --ck-desktop-gap: 28px;
+
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    background: var(--checkout-cream);
+    box-shadow: none;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    position: relative;
   }
 
-  .k-order-header { border-radius: 24px 24px 0 0; }
+  .k-order-header {
+    min-height: 68px;
+    padding:
+      14px
+      max(24px, calc((100vw - var(--ck-desktop-max)) / 2));
+    border-radius: 0;
+    background: var(--white);
+  }
+
   .k-order-overlay.open .k-order-body--checkout {
-    flex: 0 1 auto;
+    display: block;
     min-height: 0;
-    padding: 16px 18px 6px;
+    overflow-y: auto;
+    padding: 28px 24px 32px;
+    background: var(--checkout-cream);
   }
 
-  .ck-pay-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .ck-checkout-layout {
+    width: min(var(--ck-desktop-max), 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(360px, var(--ck-desktop-aside));
+    gap: var(--ck-desktop-gap);
+    align-items: start;
+  }
 
+  .ck-checkout-primary,
+  .ck-checkout-aside {
+    display: block;
+    min-width: 0;
+    box-sizing: border-box;
+    background: var(--white);
+    border: 1px solid rgba(31,48,36,.09);
+    border-radius: 18px;
+  }
+
+  .ck-checkout-primary {
+    padding: 20px 22px 22px;
+  }
+
+  .ck-checkout-aside {
+    position: sticky;
+    top: 0;
+    max-height: calc(100dvh - 124px);
+    overflow-y: auto;
+    padding: 18px 18px 96px;
+    scrollbar-width: thin;
+  }
+
+  .ck-checkout-desktop-heading {
+    display: block;
+    margin: 0 0 10px;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 850;
+    letter-spacing: .005em;
+  }
+
+  .ck-checkout-primary #ck-order-summary {
+    margin-bottom: 0;
+  }
+
+  .ck-checkout-primary .ck-recap-item:first-child {
+    padding-top: 8px;
+  }
+
+  .ck-checkout-aside .ck-price-variation-recap {
+    margin-bottom: 10px;
+  }
+
+  .ck-pay-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+  /*
+   * Le CTA reste le seul acte engageant et reste hors de la zone scrollable,
+   * comme sur mobile. Il s'aligne simplement avec la colonne droite.
+   */
   .k-order-overlay.open .ck-confirm-btn {
-    width: calc(100% - 36px);
-    margin: 8px 18px 18px;
+    position: absolute;
+    right: max(
+      24px,
+      calc((100vw - var(--ck-desktop-max)) / 2)
+    );
+    bottom: 24px;
+    width: var(--ck-desktop-aside);
+    margin: 0;
     border-radius: 12px;
   }
 }

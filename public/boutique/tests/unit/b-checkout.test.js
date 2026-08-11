@@ -344,7 +344,19 @@ describe('b-checkout', () => {
       expect(dom.orderBody.contains(confirmBtn)).toBe(false);
       expect(confirmBtn.parentElement).toBe(dom.orderBody.parentElement);
       expect(dom.orderBody.classList.contains('k-order-body--checkout')).toBe(true);
-      expect(dom.orderBody.querySelector('#ck-order-summary')).not.toBeNull();
+
+      const layout = dom.orderBody.querySelector('.ck-checkout-layout');
+      const primary = dom.orderBody.querySelector('.ck-checkout-primary');
+      const aside = dom.orderBody.querySelector('.ck-checkout-aside');
+
+      expect(layout).not.toBeNull();
+      expect(primary).not.toBeNull();
+      expect(aside).not.toBeNull();
+
+      expect(primary.querySelector('#ck-order-summary')).not.toBeNull();
+      expect(aside.querySelector('#ck-relais-section')).not.toBeNull();
+      expect(aside.querySelector('#ck-pay-grid')).not.toBeNull();
+      expect(aside.querySelector('.ck-final-total')).not.toBeNull();
 
       expect(document.getElementById('btn-confirm-recap')).toBeNull();
     });
@@ -734,7 +746,19 @@ describe('b-checkout', () => {
 
       expect(summary).not.toBeNull();
       expect(identity).not.toBeNull();
-      expect(summary.nextElementSibling).toBe(identity);
+      const layout = dom.orderBody.querySelector('.ck-checkout-layout');
+      const primary = layout?.querySelector('.ck-checkout-primary');
+      const aside = layout?.querySelector('.ck-checkout-aside');
+
+      expect(layout).not.toBeNull();
+      expect(primary?.contains(summary)).toBe(true);
+      expect(aside?.contains(identity)).toBe(true);
+
+      // Mobile : primary/aside sont display:contents, donc cet ordre
+      // structurel conserve visuellement récapitulatif → identité.
+      expect(layout.firstElementChild).toBe(primary);
+      expect(primary.nextElementSibling).toBe(aside);
+      expect(aside.firstElementChild).toBe(identity);
       expect(restoreIdentity).not.toHaveBeenCalled();
     });
 
