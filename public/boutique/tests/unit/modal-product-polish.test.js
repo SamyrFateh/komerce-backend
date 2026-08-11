@@ -35,6 +35,24 @@ describe('modal-product-polish — invariants topbar mobile', () => {
     );
   });
 
+  test('la cible tactile et l’asset gardent leur emprise mobile canonique', () => {
+    const mobile = css.match(
+      /@media \(max-width: 899px\) \{([\s\S]*?)\n\}\n\n\/\* ── Desktop/
+    )?.[1] ?? '';
+
+    const cart = mobile.match(
+      /#k-modal \.k-modal-cart-btn\s*\{([^}]+)\}/s
+    )?.[1] ?? '';
+    const icon = mobile.match(
+      /#k-modal \.k-modal-cart-icon\s*\{([^}]+)\}/s
+    )?.[1] ?? '';
+
+    expect(cart).toMatch(/width\s*:\s*42px/);
+    expect(cart).toMatch(/height\s*:\s*42px/);
+    expect(icon).toMatch(/width\s*:\s*31px/);
+    expect(icon).toMatch(/height\s*:\s*31px/);
+  });
+
   test("l'asset panier reste centré dans sa boîte avec ou sans badge", () => {
     const icon = css.match(
       /#k-modal \.k-modal-cart-icon\s*\{([^}]+)\}/s
