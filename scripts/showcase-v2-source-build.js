@@ -5,20 +5,22 @@
  * @domain        catalog
  * @layer         script
  * @criticality   low
- * @inputs        Wikimedia Commons
+ * @inputs        Wikimedia Commons, catalog_exclusions
  * @outputs       data/catalogue-test-raw/showcase-catalog-v2-source.json
- * @depends       scripts/showcase-v2-plan.js, scripts/showcase-catalog.js
+ * @depends       db.js, services/catalog-eligibility.js, scripts/showcase-v2-plan.js, scripts/showcase-catalog.js
  * @used-by       showcase v2 staging deploy
- * @db-read       none
+ * @db-read       catalog_exclusions
  * @db-write      none
  * @db-txn        no
- * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
- * @version       2026-08-v3
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
+ * @version       2026-08-v4
  */
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
+const db = require('../db');
+const catalogEligibility = require('../services/catalog-eligibility');
 const { TAXONOMY_TARGETS, buildSlots } = require('./showcase-v2-plan');
 const { roundKmf, stableInt, localizeTitle } = require('./showcase-catalog');
 
@@ -34,7 +36,7 @@ const DESCRIPTION_MAX_LENGTH = 10000;
 
 // Réserve métier : Commons peut être pauvre sur une formulation précise alors
 // qu'un vocabulaire voisin contient largement assez de médias. On élargit les
-// requêtes, jamais les invariants de licence/résolution/unicité.
+// requêtes, jamais les invariants de licence/résolution/unicité/éligibilité.
 const FALLBACK_QUERIES = Object.freeze({
   'Mode & Beauté/Femme': ['women clothing', 'dress', 'blouse', 'skirt', 'women shoes', 'handbag'],
   'Mode & Beauté/Homme': ['men clothing', 'shirt', 'mens jacket', 'trousers', 'men shoes', 'mens fashion'],
@@ -209,6 +211,23 @@ function boundedDescription(row) {
   return String(row.source_description || fallback).slice(0, DESCRIPTION_MAX_LENGTH);
 }
 
+function eligibilityCandidate(row, target) {
+  return {
+    product_name: row.name || null,
+    description: row.source_description || null,
+    supplier_category: `${target.category} / ${target.subcategory}`,
+    komerce_category: target.category,
+  };
+}
+
+function absoluteExclusionFor(row, target, activeExclusions) {
+  const verdict = catalogEligibility.checkEligibility(
+    eligibilityCandidate(row, target),
+    activeExclusions || [],
+  );
+  return verdict?.layer === 'absolute' ? verdict : null;
+}
+
 function decorate(row, slot) {
   const priceKmf = roundKmf(stableInt(`${row.source}:${slot.category}:${slot.subcategory}`, 2500, 85000));
   const promoSeed = stableInt(`${row.source}:promo`, 0, 99);
@@ -232,13 +251,14 @@ function decorate(row, slot) {
   };
 }
 
-async function buildCatalogue() {
+async function buildCatalogue(activeExclusions = []) {
   const slots = buildSlots();
   const globalSources = new Set();
   const globalHeroes = new Set();
   const queryCache = new Map();
   const output = [];
   let slotCursor = 0;
+  let excludedAbsoluteTotal = 0;
 
   async function candidatesFor(query) {
     if (!queryCache.has(query)) queryCache.set(query, searchCommons(query));
@@ -254,16 +274,25 @@ async function buildCatalogue() {
     for (const query of queries) {
       const candidates = await candidatesFor(query);
       let accepted = 0;
+      let excludedAbsolute = 0;
       for (const row of candidates) {
         if (segment.length >= target.count) break;
         if (seenSegment.has(row.source) || globalSources.has(row.source) || globalHeroes.has(row.image_url)) continue;
+
+        const exclusion = absoluteExclusionFor(row, target, activeExclusions);
+        if (exclusion) {
+          excludedAbsolute += 1;
+          excludedAbsoluteTotal += 1;
+          continue;
+        }
+
         seenSegment.add(row.source);
         globalSources.add(row.source);
         globalHeroes.add(row.image_url);
         segment.push(row);
         accepted += 1;
       }
-      console.log(`[showcase-v2-source] ${key} · "${query}" -> ${candidates.length}, +${accepted}, pool=${segment.length}/${target.count}`);
+      console.log(`[showcase-v2-source] ${key} · "${query}" -> ${candidates.length}, +${accepted}, excluded=${excludedAbsolute}, pool=${segment.length}/${target.count}`);
       if (segment.length >= target.count) break;
     }
 
@@ -279,17 +308,28 @@ async function buildCatalogue() {
   if (output.length !== 500 || globalSources.size !== 500 || globalHeroes.size !== 500) {
     throw new Error(`Invariant V2 cassé: products=${output.length}, sources=${globalSources.size}, heroes=${globalHeroes.size}`);
   }
+  console.log(`[showcase-v2-source] exclusions absolues filtrées avant miroir: ${excludedAbsoluteTotal}`);
   return output;
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const products = await buildCatalogue();
-  fs.mkdirSync(path.dirname(options.output), { recursive: true });
-  fs.writeFileSync(options.output, `${JSON.stringify(products, null, 2)}\n`, 'utf8');
-  const rich = products.filter((p) => p.showcase_v2?.rich).length;
-  console.log(`[showcase-v2-source] manifest: ${products.length}, rich=${rich}, unique heroes=${new Set(products.map((p) => p.image_url)).size}`);
-  console.log(`[showcase-v2-source] -> ${options.output}`);
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL requis pour charger les exclusions actives de la raffinerie');
+  }
+
+  try {
+    const activeExclusions = await catalogEligibility.loadActiveExclusions();
+    console.log(`[showcase-v2-source] exclusions actives Railway: ${activeExclusions.length}`);
+    const products = await buildCatalogue(activeExclusions);
+    fs.mkdirSync(path.dirname(options.output), { recursive: true });
+    fs.writeFileSync(options.output, `${JSON.stringify(products, null, 2)}\n`, 'utf8');
+    const rich = products.filter((p) => p.showcase_v2?.rich).length;
+    console.log(`[showcase-v2-source] manifest: ${products.length}, rich=${rich}, unique heroes=${new Set(products.map((p) => p.image_url)).size}`);
+    console.log(`[showcase-v2-source] -> ${options.output}`);
+  } finally {
+    await db.pool.end().catch(() => {});
+  }
 }
 
 if (require.main === module) {
@@ -310,5 +350,7 @@ module.exports = {
   segmentKey,
   queriesForTarget,
   boundedDescription,
+  eligibilityCandidate,
+  absoluteExclusionFor,
   decorate,
 };
