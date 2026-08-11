@@ -9,6 +9,7 @@ on:
       - 'scripts/showcase-v2-seed.js'
       - 'scripts/showcase-media-mirror.js'
       - 'tests/unit/showcase-v2-plan.test.js'
+      - 'tests/unit/showcase-v2-source-build.test.js'
       - 'tests/unit/showcase-media-mirror.test.js'
       - '.github/workflows/showcase-v2-staging-deploy.yml'
 
@@ -35,10 +36,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: V2 plan and Wikimedia policy tests
+      - name: V2 plan, source resilience and Wikimedia policy tests
         run: |
           npx jest \
             tests/unit/showcase-v2-plan.test.js \
+            tests/unit/showcase-v2-source-build.test.js \
             tests/unit/showcase-media-mirror.test.js \
             --runInBand
 
