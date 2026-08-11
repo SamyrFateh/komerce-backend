@@ -72,16 +72,29 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(tab).toMatch(/justify-content\s*:\s*center/);
     });
 
-    it('LOT1-h : Ma liste + sortie portent un unique focus neutre continu dessiné par le groupe', () => {
-      const indicator = css.match(
-        /\.k-cart-tab-group--active::after\s*\{([^}]+)\}/s
+    it('LOT1-h : panier et liste utilisent le même focus neutre en profondeur, sans trait métier', () => {
+      const personal = css.match(
+        /\.k-cart-tabs\[data-active="personal"\]\s+\.k-tab-personal\.k-cart-tab--active\s*\{([^}]+)\}/s
       )?.[1] ?? '';
 
-      expect(indicator).toMatch(/left\s*:\s*0/);
-      expect(indicator).toMatch(/right\s*:\s*0/);
-      expect(indicator).toMatch(/height\s*:\s*1px/);
-      expect(indicator).toMatch(/background\s*:\s*var\(--text-muted\)/);
-      expect(indicator).not.toMatch(/cta-green|commerce-yellow|green-soft/);
+      const sharedGroup = css.match(
+        /\.k-cart-tab-group--active\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+      expect(personal).toMatch(/background\s*:\s*rgba\(255,255,255,\.98\)/);
+      expect(sharedGroup).toMatch(/background\s*:\s*rgba\(255,255,255,\.98\)/);
+
+      expect(personal).toMatch(/0 6px 16px rgba\(42,33,23,\.10\)/);
+      expect(sharedGroup).toMatch(/0 6px 16px rgba\(42,33,23,\.10\)/);
+
+      const genericActive = css.match(
+        /\.k-cart-tab--active\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+      expect(genericActive).toMatch(/transform\s*:\s*translateY\(-1px\)/);
+      expect(sharedGroup).toMatch(/transform\s*:\s*translateY\(-1px\)/);
+
+      expect(css).not.toMatch(/\.k-cart-tab-group--active::after\s*\{/);
 
       const children = css.match(
         /\.k-cart-tab-group--active\s+\.k-tab-shared-list\.k-cart-tab--active,\s*\.k-cart-tab-group--active\s+\.k-cart-tab-exit\s*\{([^}]+)\}/s
@@ -89,6 +102,7 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
 
       expect(children).toMatch(/box-shadow\s*:\s*none/);
       expect(children).toMatch(/border-bottom\s*:\s*0/);
+      expect(children).toMatch(/transform\s*:\s*none/);
     });
     it('LOT1-i : la sélection liste garde la même hauteur optique que le stepper panier', () => {
       const box = css.match(/\.k-cart-item-select\s*\{([^}]+)\}/s)?.[1] ?? '';
@@ -220,22 +234,26 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(block).toMatch(/padding\s*:\s*8px\s+10px/);
     });
 
-    it('LOT6-c : le side cart personnel possède un contour jaune commerce complet', () => {
+    it('LOT6-c : le side cart desktop utilise une coque neutre sans contour métier', () => {
       const css = readCss('boutique-desktop.css');
       const block = css.match(/\.k-side-cart\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/border\s*:\s*1px\s+solid\s+var\(--commerce-yellow\)/);
-      expect(block).toMatch(/border-top-width\s*:\s*3px/);
-    });
 
-    it('LOT6-d : la liste recolore le contour entier en vert', () => {
+      expect(block).toMatch(/border\s*:\s*none/);
+      expect(block).toMatch(/box-shadow\s*:/);
+      expect(block).not.toMatch(/commerce-yellow|cta-green/);
+      expect(block).not.toMatch(/border-top-width\s*:/);
+    });
+    it('LOT6-d : le mode liste ne recolore plus la coque du side cart', () => {
       const css = readCss('shared-list-side-cart.css');
-      const block = css.match(/#k-side-cart\[data-mode="shared-list"\]\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/border-color\s*:\s*var\(--cta-green\)/);
-    });
-  });
 
-  // ── Intégrité bundle ─────────────────────────────────────────────────────
-  describe('Bundle — components.css inclut les feuilles visuelles concernées', () => {
+      expect(css).not.toMatch(
+        /#k-side-cart\[data-mode="shared-list"\]\s*\{[^}]*border-color/
+      );
+
+      expect(css).not.toMatch(
+        /\.k-cart-drawer\[data-mode="shared-list"\]\s*\{[^}]*border-top-color/
+      );
+    });
     it('LOT-bundle : shared-list-side-cart, checkout-vertical-rail et products dans components.css', () => {
       const { BUNDLES } = require('../../scripts/css-bundles');
       const comp = BUNDLES.find((b) => b.out === 'components.css');
@@ -375,7 +393,7 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
 
   // ── LOT 9 — vérité visuelle side-cart / mobile ──────────────────────
   describe('LOT 9 — vérité visuelle side-cart / mobile', () => {
-    it('LOT9-a : Mon panier est jaune commerce, Ma liste reste verte', () => {
+    it('LOT9-a : la coque panier/liste est strictement neutre', () => {
       const desktop = readCss('boutique-desktop.css');
       const shared = readCss('shared-list-side-cart.css');
       const cart = readCss('cart.css');
@@ -383,46 +401,42 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       const sideCart =
         desktop.match(/\.k-side-cart\s*\{([^}]+)\}/s)?.[1] ?? '';
 
-      const personalTab =
-        shared.match(
-          /\.k-cart-tabs\[data-active="personal"\]\s+\.k-tab-personal\.k-cart-tab--active\s*\{([^}]+)\}/s
-        )?.[1] ?? '';
-
       const drawer =
         cart.match(/\.k-cart-drawer\s*\{([^}]+)\}/s)?.[1] ?? '';
 
-      expect(sideCart).toMatch(
-        /border\s*:\s*1px\s+solid\s+var\(--commerce-yellow\)/
+      expect(sideCart).toMatch(/border\s*:\s*none/);
+      expect(sideCart).not.toMatch(/commerce-yellow|cta-green/);
+
+      expect(drawer).toMatch(/border\s*:\s*0/);
+      expect(drawer).not.toMatch(/commerce-yellow|cta-green/);
+
+      expect(shared).not.toMatch(
+        /#k-side-cart\[data-mode="shared-list"\][^{]*\{[^}]*border-color/
       );
 
-      expect(personalTab).toMatch(
-        /background\s*:\s*var\(--white\)/
-      );
-      expect(personalTab).not.toMatch(
-        /commerce-yellow|cta-green|green-soft/
-      );
-
-      expect(shared).toMatch(
-        /#k-side-cart\[data-mode="shared-list"\][^{]*\{[^}]*border-color\s*:\s*var\(--cta-green\)/
-      );
-
-      expect(drawer).toMatch(
-        /border-top\s*:\s*4px\s+solid\s+var\(--commerce-yellow\)/
+      expect(shared).not.toMatch(
+        /\.k-cart-drawer\[data-mode="shared-list"\]\s*\{[^}]*border-top-color/
       );
     });
-
-    it('LOT9-b : snapshot et panier partagent la géométrie canonique image / texte', () => {
+    it('LOT9-b : snapshot et panier partagent géométrie et départ vertical du texte', () => {
       const cart = readCss('cart.css');
       const shared = readCss('shared-list-side-cart.css');
+      const responsive = readCss('shared-list-side-cart-responsive.css');
 
       const personal =
         cart.match(/\.k-cart-item\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      const info =
+        cart.match(/\.k-cart-item-info\s*\{([^}]+)\}/s)?.[1] ?? '';
 
       const snapshot =
         shared.match(/\.k-cart-snapshot-item\s*\{([^}]+)\}/s)?.[1] ?? '';
 
       const open =
         shared.match(/\.k-cart-snapshot-item-open\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      const meta =
+        responsive.match(/\.k-cart-snapshot-item-meta\s*\{([^}]+)\}/s)?.[1] ?? '';
 
       expect(personal).toMatch(/display\s*:\s*grid/);
       expect(personal).toMatch(
@@ -439,8 +453,13 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
         /grid-template-columns\s*:\s*52px\s+minmax\(0,\s*1fr\)/
       );
       expect(open).toMatch(/gap\s*:\s*10px/);
-    });
 
+      expect(info).toMatch(/align-self\s*:\s*stretch/);
+      expect(info).toMatch(/justify-content\s*:\s*flex-start/);
+
+      expect(meta).toMatch(/margin-top\s*:\s*0/);
+      expect(meta).toMatch(/line-height\s*:\s*1\.3/);
+    });
     it('LOT9-c : layout.css ne possède plus de géométrie panier concurrente', () => {
       const layout = readCss('layout.css');
 

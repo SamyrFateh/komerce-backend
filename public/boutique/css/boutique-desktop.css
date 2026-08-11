@@ -700,13 +700,12 @@
     height: 100dvh;
     border-radius: 0;
     background: var(--surface-sand-94);
-    /* Une seule coque pour les deux surfaces : le panier est identifié par
-       un contour jaune commerce continu, la liste ne fait qu'en changer la couleur
-       (shared-list-side-cart.css). Le précédent contrat ne colorait que le
-       bord haut du panier et donnait visuellement plus de poids à la liste. */
-    border: 1px solid var(--commerce-yellow);
-    border-top-width: 3px;
-    box-shadow: -4px 0 20px var(--shadow-ocean-10);
+    /* Coque unique et neutre : aucun code couleur panier/liste.
+       La séparation avec la boutique vient uniquement de la profondeur. */
+    border: none;
+    box-shadow:
+      -14px 0 32px rgba(42,33,23,.10),
+      -1px 0 0 var(--border-text-08);
     overflow: hidden;
     z-index: 200;
     opacity: 0;
@@ -753,7 +752,7 @@
     padding: 10px 12px;
     box-sizing: border-box;
     background: var(--surface-sand-97);
-    border-bottom: 1px solid var(--border-coral-09);
+    border-bottom: 1px solid var(--border);
   }
   .k-sc-title-label {
     font-size: 13px;
@@ -772,7 +771,7 @@
     flex-shrink: 0;
     padding: 12px 14px 14px;
     background: var(--surface-sand-96);
-    border-top: 1px solid var(--border-coral-09);
+    border-top: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     gap: 8px;
