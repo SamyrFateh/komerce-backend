@@ -194,6 +194,7 @@ module.exports = {
       'products (lecture seule)',
       'notification (émission uniquement — WhatsApp création de liste)',
       'auth',
+      'auth-identity (projection boutique : b-share-cart.js consomme identité et téléphone)',
     ],
   },
 

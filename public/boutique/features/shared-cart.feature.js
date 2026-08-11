@@ -68,6 +68,7 @@ module.exports = {
       'group-api.js / group-state.js',
     ],
     consumes: [
+      'auth-identity — identité et téléphone consommés par b-share-cart.js',
       'auth — identité et téléphone',
       'platform-ops — bus, store et utilitaires',
       'orders — snapshot explicite du panier personnel et arbitrage de la commande',

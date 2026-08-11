@@ -43,23 +43,23 @@
   "summary": {
     "features": 29,
     "healthy": 6,
-    "attention": 19,
-    "blocked": 4,
+    "attention": 23,
+    "blocked": 0,
     "businessDependencies": 111,
-    "directCrossFeatureImports": 8,
+    "directCrossFeatureImports": 4,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 68,
     "ontologyGaps": 0,
-    "debtItemsTotal": 126,
-    "gateHealthy": 14,
+    "debtItemsTotal": 124,
+    "gateHealthy": 15,
     "gateBlocked": 1
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 48,
-    "attributedFindings": 48,
+    "totalFindings": 21,
+    "attributedFindings": 21,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -1141,6 +1141,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "wallet",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -1160,17 +1167,10 @@
         },
         {
           "consumer": "orders",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
-          "channels": [
-            "interface",
-            "static-code"
-          ]
-        },
-        {
-          "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -1178,6 +1178,13 @@
           "disposition": "BUSINESS_FEATURE_INTERFACE",
           "channels": [
             "interface",
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "shared-cart",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
             "static-code"
           ]
         },
@@ -1212,8 +1219,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
-        "directCrossFeatureImports": 1,
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -1232,28 +1239,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 4,
+        "warnCount": 2,
         "gatesReporting": [
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-identity.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-phone.js — 2 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -1273,17 +1263,12 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 2,
+        "debtCount": 1,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table revoked_tokens — écrite par auth-identity (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -1822,6 +1807,26 @@
               }
             ]
           },
+          "ci": {
+            "count": 3,
+            "files": [
+              {
+                "declared": ".github/workflows/showcase-catalog-media-audit.yml",
+                "resolvedPath": ".github/workflows/showcase-catalog-media-audit.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/showcase-catalog-staging-deploy.yml",
+                "resolvedPath": ".github/workflows/showcase-catalog-staging-deploy.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/showcase-v2-staging-deploy.yml",
+                "resolvedPath": ".github/workflows/showcase-v2-staging-deploy.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
           "config": {
             "count": 1,
             "files": [
@@ -2328,7 +2333,7 @@
             ]
           }
         },
-        "totalFiles": 130,
+        "totalFiles": 133,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 31,
@@ -3019,76 +3024,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 9,
+        "warnCount": 1,
         "gatesReporting": [
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-desktop-product.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-pager.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-product-open-contract.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-subcat.js — 2 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -10583,8 +10523,7 @@
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
-            "interface"
+            "static-code"
           ]
         },
         {
@@ -11544,7 +11483,8 @@
           "snapshot de cout a la commande",
           "rattachement aux colis et aux achats fournisseurs",
           "facturation et token public de facture",
-          "collecte QR au retrait"
+          "collecte QR au retrait",
+          "projection checkout boutique : finalisation d’une sélection en commande, sans ownership de l’encaissement"
         ],
         "out": [
           "encaissement du paiement (feature payments)",
@@ -11575,6 +11515,26 @@
       ],
       "implementation": {
         "byCategory": {
+          "boutique": {
+            "count": 3,
+            "files": [
+              {
+                "declared": "css/checkout-vertical-rail.css",
+                "resolvedPath": "public/boutique/css/checkout-vertical-rail.css",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "js/b-checkout-render.js",
+                "resolvedPath": "public/boutique/js/b-checkout-render.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "js/b-checkout.js",
+                "resolvedPath": "public/boutique/js/b-checkout.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
           "routes": {
             "count": 13,
             "files": [
@@ -11861,7 +11821,7 @@
             ]
           }
         },
-        "totalFiles": 53,
+        "totalFiles": 56,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 11,
@@ -12213,6 +12173,16 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "checkoutCart",
+            "file": "public/boutique/js/b-checkout.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "makeInput",
+            "file": "public/boutique/js/b-checkout.js",
+            "status": "resolved"
+          },
+          {
             "fn": "transitionOrderStatus",
             "file": "services/order-status-machine.js",
             "status": "resolved"
@@ -12232,10 +12202,10 @@
         },
         {
           "provider": "auth-identity",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface",
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -12299,7 +12269,8 @@
           "provider": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -12313,7 +12284,8 @@
           "provider": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         }
       ],
@@ -12350,8 +12322,7 @@
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
-            "interface"
+            "static-code"
           ]
         },
         {
@@ -12405,7 +12376,7 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
+        "status": "ATTENTION",
         "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
@@ -12428,61 +12399,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 7,
+        "warnCount": 1,
         "gatesReporting": [
-          "check:body-classes",
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "↳ Référencé en CSS : css/cart.css:1899, css/cart.css:1910 … — sélecteur legacy ou JS manquant"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ 0 erreur, 5 avertissement(s) — exit 0"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-cart.js — 4 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-mini-cart.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-tracking.js — 1 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -12588,6 +12509,7 @@
         ],
         "out": [
           "creation de la commande elle-meme (feature orders)",
+          "orchestration du checkout boutique (projection frontend de orders)",
           "remboursement (feature refunds, qui consomme payments en lecture)",
           "credit wallet (feature wallet-loyalty)"
         ]
@@ -12607,22 +12529,12 @@
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 4,
+            "count": 2,
             "files": [
               {
                 "declared": "css/paypal.css",
                 "resolvedPath": "public/boutique/css/paypal.css",
                 "status": "resolved-on-disk-no-header"
-              },
-              {
-                "declared": "js/b-checkout-render.js",
-                "resolvedPath": "public/boutique/js/b-checkout-render.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "js/b-checkout.js",
-                "resolvedPath": "public/boutique/js/b-checkout.js",
-                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "js/b-paypal.js",
@@ -12827,7 +12739,7 @@
             ]
           }
         },
-        "totalFiles": 39,
+        "totalFiles": 37,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 3,
@@ -13035,11 +12947,6 @@
       "interfaces": {
         "internalApis": [
           {
-            "fn": "makeInput",
-            "file": "public/boutique/js/b-checkout.js",
-            "status": "resolved"
-          },
-          {
             "fn": "markPaid",
             "file": "services/payment-service.js",
             "status": "resolved"
@@ -13063,13 +12970,6 @@
           ]
         },
         {
-          "provider": "auth-identity",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
           "provider": "business-rules",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13087,8 +12987,7 @@
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
-            "interface"
+            "static-code"
           ]
         },
         {
@@ -13109,8 +13008,7 @@
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code",
-            "interface"
+            "static-code"
           ]
         },
         {
@@ -13133,13 +13031,6 @@
           "channels": [
             "static-code"
           ]
-        },
-        {
-          "provider": "wallet",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "interface"
-          ]
         }
       ],
       "consumedBy": [
@@ -13154,7 +13045,8 @@
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -13182,8 +13074,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
-        "directCrossFeatureImports": 1,
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -13202,36 +13094,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 4,
+        "warnCount": 1,
         "gatesReporting": [
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-checkout-render.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-checkout.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-paypal.js — 1 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -13243,7 +13110,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 4,
+        "debtCount": 3,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -13259,11 +13126,6 @@
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table orders — écrite par payments (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -14095,8 +13957,8 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 1,
-        "testOnlyRelations": 0,
-        "compositionRootRelations": 3,
+        "testOnlyRelations": 1,
+        "compositionRootRelations": 2,
         "details": [
           {
             "to": "infrastructure",
@@ -14104,7 +13966,7 @@
           },
           {
             "to": "payments",
-            "family": "COMPOSITION_ROOT_WIRING"
+            "family": "NON_RUNTIME_TEST"
           },
           {
             "to": "recommendations",
@@ -14137,10 +13999,9 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 11,
+        "warnCount": 6,
         "gatesReporting": [
-          "check:body-classes",
-          "check:imports"
+          "check:body-classes"
         ],
         "findings": [
           {
@@ -14149,7 +14010,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "ck-is-me                     0     0     0     ✔      ⚠ warning"
+            "message": "↳ Référencé en CSS : css\\cart.css:2064, css\\cart.css:2075 … — sélecteur legacy ou JS manquant"
           },
           {
             "gate": "check:body-classes",
@@ -14157,15 +14018,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "k-view-komerce               0     1     0     ·      ⚠ warning"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline"
+            "message": "⚠ 0 erreur, 5 avertissement(s) — exit 0"
           },
           {
             "gate": "check:body-classes",
@@ -14198,38 +14051,6 @@
             "verdict": "warn",
             "file": null,
             "message": "⚠ [B-3] CSS utilise body.ck-is-me mais aucun JS ne gère cette classe"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-boutique-wow-style.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-scroll-owner.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-utils.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant."
           }
         ]
       },
@@ -15837,6 +15658,13 @@
           ]
         },
         {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "notifications",
           "disposition": "BUSINESS_TRANSVERSAL_SERVICE",
           "channels": [
@@ -15895,8 +15723,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
-        "directCrossFeatureImports": 3,
+        "status": "ATTENTION",
+        "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -15913,38 +15741,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 3,
-        "gatesReporting": [
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-cart.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal.js — 7 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-share-cart.js — 4 export(s) non consommé(s) :"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 3,
@@ -15962,7 +15763,7 @@
           {
             "type": "DIRECT_CROSS_FEATURE_IMPORT",
             "severity": "high",
-            "evidence": "3 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
+            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -16800,6 +16601,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16810,13 +16618,7 @@
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "consumer": "payments",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
+            "static-code",
             "interface"
           ]
         },

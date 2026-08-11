@@ -32,6 +32,7 @@ module.exports = {
       'rattachement aux colis et aux achats fournisseurs',
       'facturation et token public de facture',
       'collecte QR au retrait',
+      'projection checkout boutique : finalisation d’une sélection en commande, sans ownership de l’encaissement',
     ],
     out: [
       'encaissement du paiement (feature payments)',
@@ -49,6 +50,7 @@ module.exports = {
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   docs: [
     'docs/doctrine/DOCTRINE_ANNULATION.md',
+    'docs/doctrine/CHECKOUT_UNIFIED_ATTACK.md',
   ],
 
   files: {
@@ -82,7 +84,14 @@ module.exports = {
       'routes/invoices.js',
       'routes/order-api-v2.js',
     ],
-      tests: [
+    boutique: [
+      // Projection checkout frontend canonique — décision produit 2026-08.
+      // Le domaine UI reste "checkout", mais l'owner métier est orders.
+      'js/b-checkout.js',
+      'js/b-checkout-render.js',
+      'css/checkout-vertical-rail.css',
+    ],
+    tests: [
       // E2E fonctionnel — preuve d'unicite de remise (Lot 1 retrait-secours).
       'tests/e2e-api/orders.single-collect.e2e.test.js',
       // E2E fonctionnel Feature First — orders est PROPRIETAIRE ;
@@ -223,6 +232,10 @@ module.exports = {
     // non exposé cross-feature. Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
     internalApi: [
       { fn: 'transitionOrderStatus', file: 'services/order-status-machine.js' },
+      // Projection frontend orders : points d'entrée consommés notamment
+      // par shared-cart ; payment reste une capacité traversée.
+      { fn: 'checkoutCart', file: 'public/boutique/js/b-checkout.js' },
+      { fn: 'makeInput', file: 'public/boutique/js/b-checkout.js' },
     ],
     consumes: [
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)",
@@ -234,6 +247,7 @@ module.exports = {
       'loyalty (remise palier au checkout + recalcul apres commande — services/loyalty-service.js getLoyaltyDiscount/recalculateLoyalty, O7.3 provider loyalty)',
       'payments (marque un remboursement — services/payment-service.js markRefunded, O7.3 provider payments)',
       'auth',
+      'auth-identity (projection checkout boutique : identité client et téléphone)',
       'customs',
       'dashboard',
       'documents',
