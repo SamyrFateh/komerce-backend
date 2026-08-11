@@ -35,9 +35,9 @@ Checkout canonique
 
 Le récapitulatif devient une région du checkout, jamais une étape.
 
-## 3. Abstraction canonique
+## 3. Abstraction canonique cible
 
-Toute entrée dans le checkout produit une `CheckoutSelection` indépendante de sa source :
+Toute entrée dans le checkout doit produire une `CheckoutSelection` indépendante de sa source :
 
 ```js
 {
@@ -50,21 +50,26 @@ Toute entrée dans le checkout produit une `CheckoutSelection` indépendante de 
 
 Le checkout ne doit pas avoir deux moteurs selon la provenance des articles.
 
-## 4. Ownership Feature First
+## 4. Verdict Feature First
 
-### checkout
+### Pas de nouvelle feature `checkout`
 
-Propriétaire du parcours transactionnel boutique :
-- construction / validation de `CheckoutSelection` ;
-- orchestration UI ;
-- récapitulatif intégré ;
-- collecte identité / retrait / moyen de paiement ;
-- déclenchement des capacités `orders` et `payments` ;
-- succès / erreur / sortie du parcours.
+La Feature Doctrine interdit les micro-features sans table propriétaire ni lifecycle métier propre. Le checkout boutique n'est donc **pas** une nouvelle `features/checkout.feature.js`.
+
+`checkout` reste un **domaine UI / une projection-orchestration**. Son owner Feature First est **`orders`** : son service principal est de transformer une sélection en commande ; `payments`, identité et logistique sont des capacités traversées.
 
 ### orders
 
-Reste propriétaire de :
+Devient owner explicite de la projection checkout boutique :
+- orchestration du parcours de finalisation ;
+- construction / validation future de `CheckoutSelection` ;
+- récapitulatif intégré ;
+- collecte des informations nécessaires à la commande ;
+- déclenchement de la création de commande ;
+- coordination avec `payments` pour l'encaissement ;
+- succès / erreur / sortie du parcours.
+
+`orders` reste naturellement propriétaire de :
 - création de la commande ;
 - référence et snapshot commande ;
 - cycle de vie de la commande.
@@ -76,24 +81,26 @@ Reste propriétaire de :
 - intents et événements ;
 - confirmation / idempotence de l'encaissement.
 
+`payments` ne possède plus les renderers / orchestrateurs généraux du checkout boutique. Il conserve ses composants payment-specific (`b-paypal.js`, `paypal.css`, etc.).
+
 ### shared-cart
 
 Reste propriétaire de :
 - liste partagée ;
 - publication / fermeture / annulation ;
-- disponibilité des lignes.
+- disponibilité des lignes ;
+- adaptateur de sélection de liste vers le checkout canonique.
 
-Il fournit une sélection au checkout, mais ne possède jamais le checkout.
+Il fournit une sélection à la projection checkout d'`orders`, mais ne possède jamais la commande ni le paiement.
 
 ## 5. Graphe cible
 
 ```text
 personal-cart ───┐
-                 ├──▶ checkout ───▶ orders
-shared-cart  ────┘        │
-                          ├───────▶ payments
-identity ─────────────────┤
-logistics / relais ───────┘
+                 ├──▶ orders / projection checkout ───▶ payments
+shared-cart  ────┘                 │
+                                   ├────▶ auth-identity
+                                   └────▶ logistics / relais
 ```
 
 À supprimer conceptuellement :
@@ -105,20 +112,26 @@ payments owns checkout
 
 ## 6. Invariants
 
-- **I-CHECKOUT-1** — toute source produit une `CheckoutSelection` canonique.
+- **I-CHECKOUT-1** — toute source produit à terme une `CheckoutSelection` canonique.
 - **I-CHECKOUT-2** — panier personnel et liste partagée utilisent le même checkout.
 - **I-CHECKOUT-3** — le récapitulatif appartient au checkout ; il n'est pas une étape.
 - **I-CHECKOUT-4** — ouvrir, modifier ou quitter le checkout ne crée ni commande ni paiement.
 - **I-CHECKOUT-5** — le CTA final est le seul acte engageant du parcours.
-- **I-CHECKOUT-6** — `orders` reste lifecycle owner de la commande.
+- **I-CHECKOUT-6** — `orders` reste lifecycle owner de la commande et owner Feature First de la projection checkout.
 - **I-CHECKOUT-7** — `payments` reste owner de l'encaissement.
-- **I-CHECKOUT-8** — `shared-cart` reste owner de la liste, jamais du checkout.
+- **I-CHECKOUT-8** — `shared-cart` reste owner de la liste, jamais de la commande ni du checkout.
 - **I-CHECKOUT-9** — aucun renderer / checkout parallèle selon la source.
 - **I-CHECKOUT-10** — desktop et mobile partagent le même state et les mêmes renderers métier ; seule la projection responsive diffère.
 
 ## 7. Headers cibles
 
+Le champ `@domain checkout` reste valide : un domaine technique/UI n'est pas nécessairement une feature métier.
+
 ### `public/boutique/js/b-checkout.js`
+
+Lot 1 conserve les inputs/outputs qui décrivent le code réel. Lot 2 les fait évoluer vers `checkout_selection` lorsque l'abstraction existe effectivement.
+
+Cible finale :
 
 ```text
 @role          boutique-checkout-orchestrator
@@ -131,6 +144,8 @@ payments owns checkout
 
 ### `public/boutique/js/b-checkout-render.js`
 
+Cible finale :
+
 ```text
 @role          checkout-dom-renderer
 @domain        checkout
@@ -141,18 +156,20 @@ payments owns checkout
 
 ### `public/boutique/css/checkout-vertical-rail.css`
 
-Le CSS projette sélection, informations de commande et paiement dans une surface transactionnelle unique. Le CTA final porte seul l'acte engageant.
+Cible : projeter sélection, informations de commande et paiement dans une surface transactionnelle unique. Le CTA final porte seul l'acte engageant.
 
 ## 8. Séquence de livraison
 
-### Lot 1 — Feature First / headers / graphes
+### Lot 1 — Feature First / ownership / headers / graphes
 
 Zéro changement UX.
 
-- créer `features/checkout.feature.js` ;
-- retirer l'ownership boutique checkout de `payments.feature.js` ;
-- mettre à jour les headers de `b-checkout.js`, `b-checkout-render.js`, CSS checkout ;
-- mettre à jour la doctrine `shared-cart` : plus de « récap puis checkout » ;
+- **ne pas** créer `features/checkout.feature.js` ;
+- déplacer l'ownership de `b-checkout.js` / `b-checkout-render.js` de `payments.feature.js` vers `orders.feature.js` ;
+- rattacher le CSS checkout spécifique à `orders` ;
+- conserver `b-paypal.js` / `paypal.css` dans `payments` ;
+- mettre à jour les headers sans prétendre que `CheckoutSelection` existe déjà ;
+- mettre à jour `shared-cart` : l'achat passe par le checkout canonique d'`orders`, sans faire du récapitulatif une frontière métier ;
 - régénérer graphes / docs ;
 - `map:check` et gates verts.
 
@@ -160,10 +177,11 @@ Zéro changement UX.
 
 - introduire `CheckoutSelection` ;
 - faire entrer panier personnel et liste partagée par cette abstraction ;
+- faire disparaître le panier éphémère comme contrat entre shared-list et checkout si l'abstraction permet de l'éviter ;
 - transformer `renderOrderRecapGate()` en résumé intégré au checkout ;
 - supprimer le bouton / événement `Confirmer et continuer` ;
-- ouvrir directement `renderCheckout()` avec la sélection canonique ;
-- conserver création de commande et paiement inchangés.
+- ouvrir directement le checkout avec la sélection canonique ;
+- conserver création de commande et paiement métier inchangés.
 
 ### Lot 3 — projection responsive + dette morte
 
@@ -188,4 +206,4 @@ Ce chantier ne change pas :
 - lifecycle shared-cart ;
 - logique de retrait.
 
-La première attaque est architecturale : mettre les owners et headers au niveau du modèle cible avant de modifier le flow.
+La première attaque est architecturale : corriger l'ownership Feature First avant de modifier le flow.
