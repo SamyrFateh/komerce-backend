@@ -4,6 +4,8 @@
 
 const {
   USER_AGENT,
+  COMMONS_MEDIA_MIN_DELAY_MS,
+  COMMONS_MEDIA_RETRIES,
   COMMONS_CATEGORIES,
   parseArgs,
   retryDelayMs,
@@ -13,16 +15,25 @@ const {
   mapCommonsPage,
   dedupe,
   decorate,
+  isCommonsProduct,
 } = require('../../scripts/showcase-source-build');
 
 describe('showcase-source-build', () => {
-  test('identifie le client Wikimedia et limite la concurrence', () => {
+  test('identifie le client Wikimedia et régule les médias Commons', () => {
     expect(USER_AGENT).toContain('https://komerce.co');
     expect(USER_AGENT).toMatch(/bot/i);
+    expect(COMMONS_MEDIA_MIN_DELAY_MS).toBeGreaterThanOrEqual(1000);
+    expect(COMMONS_MEDIA_RETRIES).toBeGreaterThanOrEqual(3);
     expect(COMMONS_CATEGORIES.length).toBeGreaterThanOrEqual(10);
     expect(COMMONS_CATEGORIES.some(([name]) => name.includes('white background'))).toBe(true);
     expect(parseArgs([])).toMatchObject({ target: 500, concurrency: 3 });
     expect(() => parseArgs(['--concurrency', '4'])).toThrow(/entre 1 et 3/);
+  });
+
+  test('reconnaît les produits Commons à throttler', () => {
+    expect(isCommonsProduct({ source: 'commons:42' })).toBe(true);
+    expect(isCommonsProduct({ source: 'dummyjson:42' })).toBe(false);
+    expect(isCommonsProduct({ source: 'platzi:42' })).toBe(false);
   });
 
   test('verifyImageUrl réutilise le User-Agent Wikimedia conforme', async () => {
@@ -46,6 +57,29 @@ describe('showcase-source-build', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1);
       expect(global.fetch.mock.calls[0][1].headers['User-Agent']).toBe(USER_AGENT);
       expect(cancel).toHaveBeenCalledTimes(1);
+    } finally {
+      global.fetch = previousFetch;
+    }
+  });
+
+  test('verifyImageUrl expose un 429 non retenté pour le diagnostic', async () => {
+    const previousFetch = global.fetch;
+    global.fetch = jest.fn(async () => ({
+      ok: false,
+      status: 429,
+      headers: { get: (name) => name === 'content-type' ? 'text/html; charset=utf-8' : null },
+      body: {
+        getReader: () => ({
+          read: async () => ({ value: new Uint8Array(128) }),
+          cancel: async () => {},
+        }),
+      },
+    }));
+
+    try {
+      const result = await verifyImageUrl('https://upload.wikimedia.org/rate-limited.jpg', 1000);
+      expect(result).toMatchObject({ ok: false, status: 429, type: 'text/html; charset=utf-8' });
+      expect(global.fetch).toHaveBeenCalledTimes(1);
     } finally {
       global.fetch = previousFetch;
     }
