@@ -759,4 +759,52 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
     });
   });
 
+
+  describe('HOTFIX mobile — vérité modale', () => {
+    let polish;
+    let checkout;
+
+    beforeAll(() => {
+      polish = readCss('modal-product-polish.css');
+      checkout = readCss('checkout-vertical-rail.css');
+    });
+
+    it('MOB-H1 : aucun override is-scrolled ne décentre le panier', () => {
+      const base = polish.match(
+        /#k-modal \.k-modal-cart-btn\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+      expect(base).toMatch(/position\s*:\s*absolute/);
+      expect(base).toMatch(/top\s*:\s*50%/);
+      expect(base).toMatch(/left\s*:\s*50%/);
+      expect(base).toMatch(
+        /transform\s*:\s*translate\(-50%,\s*-50%\)/
+      );
+
+      expect(polish).not.toMatch(
+        /#k-modal\.is-scrolled \.k-modal-cart-btn\s*\{/
+      );
+    });
+
+    it('MOB-H2 : reason_label ne pollue pas les cartes mobiles', () => {
+      const desktopAt = polish.indexOf('@media (min-width: 900px)');
+      expect(desktopAt).toBeGreaterThan(0);
+
+      const mobile = polish.slice(0, desktopAt);
+
+      expect(mobile).toMatch(
+        /#k-modal \.k-sug-card-reason\s*\{[^}]*display\s*:\s*none/s
+      );
+    });
+
+    it('MOB-H3 : le check confirmation utilise un escape Unicode stable', () => {
+      const pseudo = checkout.match(
+        /\.k-confirm-emoji::before\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+      expect(pseudo).toContain('content: "\\2713";');
+      expect(pseudo).not.toContain('âœ“');
+    });
+  });
+
 });

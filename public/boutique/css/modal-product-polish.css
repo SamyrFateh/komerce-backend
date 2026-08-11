@@ -261,14 +261,9 @@
 
   /* Au scroll, l'identité produit prend la place centrale. Le panier revient
      alors dans le groupe d'actions de droite au lieu de flotter sur le titre. */
-  #k-modal.is-scrolled .k-modal-cart-btn {
-    position: static;
-    transform: none;
-  }
 
-  #k-modal.is-scrolled .k-modal-cart-btn:active {
-    transform: scale(.94);
-  }
+  /* Le panier reste ancré au centre optique pendant tout le scroll.
+     Aucun changement de propriétaire géométrique en état is-scrolled. */
 
   #k-modal.is-scrolled .k-modal-topbar-product {
     margin-left: 0;
@@ -334,6 +329,13 @@
 }
 
 /* ── Desktop ─────────────────────────────────────────────────── */
+
+
+  /* Mobile : le ranking reste une donnée de recommandation,
+     pas une ligne de texte répétitive dans la carte compacte. */
+  #k-modal .k-sug-card-reason {
+    display: none;
+  }
 
 @media (min-width: 900px) {
   #k-modal .k-modal-promo-badge {
