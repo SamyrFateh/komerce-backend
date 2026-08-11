@@ -32,7 +32,6 @@ const {
   localizeTitle,
   mapDummyProduct,
   mapPlatziProduct,
-  verifyImageUrl,
 } = require('./showcase-catalog');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -41,7 +40,7 @@ const DEFAULT_TARGET = 500;
 const DUMMY_URL = 'https://dummyjson.com/products?limit=0';
 const PLATZI_URL = 'https://api.escuelajs.co/api/v1/products?offset=0&limit=500';
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
-const USER_AGENT = 'KomerceShowcaseBuilder/2.0 (https://komerce.co)';
+const USER_AGENT = 'KomerceShowcaseBot/2.1 (https://komerce.co)';
 
 const COMMONS_CATEGORIES = Object.freeze([
   ['Clothing on white background', 'Mode', 'Vêtements'],
@@ -127,6 +126,38 @@ async function fetchJson(url, { retries = 0, minDelayMs = 0 } = {}) {
     throw new Error(`${url} -> HTTP ${response.status}`);
   }
   throw new Error(`${url} -> HTTP ${lastStatus || 'unknown'}`);
+}
+
+async function verifyImageUrl(url, timeoutMs = 15000) {
+  if (!url) return { ok: false, reason: 'missing-url' };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'image/avif,image/webp,image/*,*/*;q=0.8',
+        'User-Agent': USER_AGENT,
+      },
+      redirect: 'follow',
+      signal: controller.signal,
+    });
+    const type = response.headers.get('content-type') || '';
+    const reader = response.body?.getReader?.();
+    const firstChunk = reader ? await reader.read() : { value: null };
+    if (reader) await reader.cancel().catch(() => {});
+    const sampledBytes = firstChunk.value?.byteLength || 0;
+    return {
+      ok: response.ok && type.startsWith('image/') && sampledBytes > 64,
+      status: response.status,
+      type,
+      bytes: sampledBytes,
+    };
+  } catch (error) {
+    return { ok: false, reason: error.name === 'AbortError' ? 'timeout' : error.message };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function stripHtml(value) {
@@ -267,11 +298,24 @@ async function verifyCandidates(products, target, concurrency = 3) {
   const stats = new Map();
   let cursor = 0;
 
-  function bump(product, key) {
+  function rowFor(product) {
     const source = String(product.source || 'unknown').split(':')[0];
-    const row = stats.get(source) || { checked: 0, valid: 0, invalid: 0 };
-    row[key] += 1;
+    const row = stats.get(source) || { checked: 0, valid: 0, invalid: 0, failures: {} };
     stats.set(source, row);
+    return row;
+  }
+
+  function bump(product, key) {
+    rowFor(product)[key] += 1;
+  }
+
+  function bumpFailure(product, result) {
+    const row = rowFor(product);
+    row.invalid += 1;
+    const reason = result.status
+      ? `http-${result.status}:${result.type || 'unknown-type'}:${result.bytes || 0}b`
+      : `reason:${result.reason || 'unknown'}`;
+    row.failures[reason] = (row.failures[reason] || 0) + 1;
   }
 
   async function worker() {
@@ -286,7 +330,7 @@ async function verifyCandidates(products, target, concurrency = 3) {
         valid.push({ index, product });
         bump(product, 'valid');
       } else {
-        bump(product, 'invalid');
+        bumpFailure(product, result);
       }
     }
   }
@@ -335,6 +379,7 @@ module.exports = {
   COMMONS_CATEGORIES,
   parseArgs,
   retryDelayMs,
+  verifyImageUrl,
   isReusableCommonsLicense,
   isShowcaseRaster,
   mapCommonsPage,
