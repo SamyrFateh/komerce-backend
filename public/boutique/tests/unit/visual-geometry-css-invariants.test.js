@@ -84,8 +84,8 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(personal).toMatch(/background\s*:\s*rgba\(255,255,255,\.98\)/);
       expect(sharedGroup).toMatch(/background\s*:\s*rgba\(255,255,255,\.98\)/);
 
-      expect(personal).toMatch(/0 6px 16px rgba\(42,33,23,\.10\)/);
-      expect(sharedGroup).toMatch(/0 6px 16px rgba\(42,33,23,\.10\)/);
+      expect(personal).toMatch(/0 4px 14px rgba\(42,33,23,\.08\)/);
+      expect(sharedGroup).toMatch(/0 4px 14px rgba\(42,33,23,\.08\)/);
 
       const genericActive = css.match(
         /\.k-cart-tab--active\s*\{([^}]+)\}/s
@@ -104,6 +104,20 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(children).toMatch(/border-bottom\s*:\s*0/);
       expect(children).toMatch(/transform\s*:\s*none/);
     });
+    it('LOT1-j : les tabs sont le titre unique du side cart desktop', () => {
+      const desktop = readCss('boutique-desktop.css');
+
+      const label = desktop.match(
+        /#k-side-cart:has\(\.k-cart-tabs\)\s+\.k-sc-title-label\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+      expect(label).toMatch(/display\s*:\s*none/);
+
+      expect(desktop).toMatch(
+        /#k-side-cart:has\(\.k-cart-tabs\)\s+\.k-sc-title-bar:not\([\s\S]*?display:\s*none/
+      );
+    });
+
     it('LOT1-i : la sélection liste garde la même hauteur optique que le stepper panier', () => {
       const box = css.match(/\.k-cart-item-select\s*\{([^}]+)\}/s)?.[1] ?? '';
       const checked = css.match(/\.k-cart-item-select\.is-checked\s*\{([^}]+)\}/s)?.[1] ?? '';
