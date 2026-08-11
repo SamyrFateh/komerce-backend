@@ -7,6 +7,7 @@ const {
   COMMONS_CATEGORIES,
   parseArgs,
   retryDelayMs,
+  verifyImageUrl,
   isReusableCommonsLicense,
   isShowcaseRaster,
   mapCommonsPage,
@@ -17,10 +18,37 @@ const {
 describe('showcase-source-build', () => {
   test('identifie le client Wikimedia et limite la concurrence', () => {
     expect(USER_AGENT).toContain('https://komerce.co');
+    expect(USER_AGENT).toMatch(/bot/i);
     expect(COMMONS_CATEGORIES.length).toBeGreaterThanOrEqual(10);
     expect(COMMONS_CATEGORIES.some(([name]) => name.includes('white background'))).toBe(true);
     expect(parseArgs([])).toMatchObject({ target: 500, concurrency: 3 });
     expect(() => parseArgs(['--concurrency', '4'])).toThrow(/entre 1 et 3/);
+  });
+
+  test('verifyImageUrl réutilise le User-Agent Wikimedia conforme', async () => {
+    const previousFetch = global.fetch;
+    const cancel = jest.fn(async () => {});
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: { get: (name) => name === 'content-type' ? 'image/jpeg' : null },
+      body: {
+        getReader: () => ({
+          read: async () => ({ value: new Uint8Array(128) }),
+          cancel,
+        }),
+      },
+    }));
+
+    try {
+      const result = await verifyImageUrl('https://upload.wikimedia.org/example.jpg', 1000);
+      expect(result).toMatchObject({ ok: true, status: 200, type: 'image/jpeg' });
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch.mock.calls[0][1].headers['User-Agent']).toBe(USER_AGENT);
+      expect(cancel).toHaveBeenCalledTimes(1);
+    } finally {
+      global.fetch = previousFetch;
+    }
   });
 
   test('retryDelayMs respecte Retry-After et le backoff', () => {
