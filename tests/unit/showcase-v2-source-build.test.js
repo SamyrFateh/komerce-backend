@@ -8,9 +8,12 @@
 
 const { TAXONOMY_TARGETS } = require('../../scripts/showcase-v2-plan');
 const {
+  DESCRIPTION_MAX_LENGTH,
   FALLBACK_QUERIES,
   segmentKey,
   queriesForTarget,
+  boundedDescription,
+  decorate,
 } = require('../../scripts/showcase-v2-source-build');
 
 describe('showcase-v2-source-build query resilience', () => {
@@ -35,5 +38,26 @@ describe('showcase-v2-source-build query resilience', () => {
     for (const target of TAXONOMY_TARGETS) {
       expect(queriesForTarget(target).length).toBeGreaterThanOrEqual(6);
     }
+  });
+
+  test('borne la description normalisée sans perdre le texte source brut', () => {
+    const sourceDescription = 'x'.repeat(DESCRIPTION_MAX_LENGTH + 2500);
+    const row = {
+      source: 'commons:oversized',
+      name: 'Produit source très documenté',
+      source_description: sourceDescription,
+    };
+    const slot = {
+      product_ref: 'SHOWCASE-V2-0001',
+      category: 'Auto',
+      subcategory: 'Éclairage',
+      globalIndex: 0,
+      rich: true,
+    };
+
+    expect(boundedDescription(row)).toHaveLength(DESCRIPTION_MAX_LENGTH);
+    const product = decorate(row, slot);
+    expect(product.description).toHaveLength(DESCRIPTION_MAX_LENGTH);
+    expect(product.source_description).toBe(sourceDescription);
   });
 });
