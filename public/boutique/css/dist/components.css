@@ -3499,7 +3499,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 .k-modal-promo-badge {
   display: none; position: absolute; top: 8px; left: 8px;
-  background: var(--coral); color: var(--white);
+  background: var(--commerce-yellow); color: var(--text);
   font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
   letter-spacing: .2px;
 }
@@ -3631,7 +3631,7 @@ html.k-mobile-premium-v1 .k-chip-label {
    Voir interactions.css pour la variante catalogue (40×40, rond, fond blanc). */
 .k-sug-add { background: var(--sand); border: 1px solid var(--border); border-radius: 50%; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; touch-action: manipulation; box-shadow: var(--elev-1); transition: background .15s, transform .15s var(--ease); }
 .k-sug-add:active { transform: scale(.88); background: var(--sand-dark); }
-.k-sug-promo-badge { position: absolute; top: 5px; left: 5px; background: var(--coral); color: var(--white); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
+.k-sug-promo-badge { position: absolute; top: 5px; left: 5px; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
 
 /* FIX desktop — même bug déjà corrigé côté mobile (voir modal-mobile-canonical.css
    §"FIX layout carte suggestion") : une fois le produit en panier, le stepper
@@ -6471,7 +6471,7 @@ body.cart-open .k-hero { pointer-events: none; }
   grid-template-rows: auto auto 1fr auto;
   transform: translateX(100%);
   transition: transform .35s var(--ease);
-  border-top: 4px solid var(--coral);
+  border-top: 4px solid var(--commerce-yellow);
 }
 .k-cart-drawer[data-mode="shared-list"] { border-top-color: var(--cta-green); }
 .k-cart-drawer.open { transform: translateX(0); }
@@ -8767,7 +8767,7 @@ body.cart-open  #k-section-index { display:none; }
 .k-sug-card-actions  { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 8px; }
 .k-sug-card-bottom   { padding:4px 8px 8px; }
 .k-sug-grid--other   { grid-template-columns:repeat(2,1fr); gap:8px; }
-.k-sug-promo-badge   { position:absolute; top:6px; left:6px; background:var(--coral); color:var(--white); font-size:9px; font-weight:700; padding:2px 6px; border-radius:50px; z-index:2; }
+.k-sug-promo-badge   { position:absolute; top:6px; left:6px; background:var(--commerce-yellow); color:var(--text); font-size:9px; font-weight:700; padding:2px 6px; border-radius:50px; z-index:2; }
 .k-sug-qty           { font-size:11px; color:var(--text-muted); }
 /* Renommé phase7 : était .k-sug-step (conflit de nom avec modal.css).
    Composant : ligne d'étape de commande (texte flex), sans lien avec les boutons ±.
@@ -8914,9 +8914,9 @@ body.cart-open  #k-section-index { display:none; }
     width: 30px;
     height: 30px;
     padding: 0;
-    background: var(--coral);
-    color: var(--white);
-    border: 1px solid var(--coral);
+    background: var(--commerce-yellow);
+    color: var(--text);
+    border: 1px solid var(--commerce-yellow);
     border-radius: 50%;
     box-shadow: none;
     display: grid;
@@ -8925,7 +8925,7 @@ body.cart-open  #k-section-index { display:none; }
   }
 
   #k-modal .k-sug-add:active {
-    background: var(--coral-dark);
+    background: var(--commerce-yellow-hover);
     transform: scale(.88);
   }
 
@@ -8977,7 +8977,7 @@ body.cart-open  #k-section-index { display:none; }
 
 /*
  * Contraintes produit :
- * - + coral comme sur l’accueil ;
+ * - + jaune commerce comme sur l’accueil ;
  * - état ajouté vert ;
  * - stepper dans la même emprise, sans saut de layout ;
  * - panier centré dans le header ;
@@ -9127,21 +9127,21 @@ body.cart-open  #k-section-index { display:none; }
   height: 30px;
   min-width: 30px;
   padding: 0;
-  border: 1px solid var(--coral);
+  border: 1px solid var(--commerce-yellow);
   border-radius: 50%;
-  background: var(--coral);
-  color: var(--white);
-  box-shadow: 0 2px 7px rgba(200,92,45,.22);
+  background: var(--commerce-yellow);
+  color: var(--text);
+  box-shadow: var(--commerce-yellow-shadow-sm);
 }
 
 #k-modal .k-sug-add:hover {
-  background: var(--coral-dark);
-  border-color: var(--coral-dark);
+  background: var(--commerce-yellow-hover);
+  border-color: var(--commerce-yellow-hover);
   transform: scale(1.1);
 }
 
 #k-modal .k-sug-add:active {
-  background: var(--coral-dark);
+  background: var(--commerce-yellow-hover);
   transform: scale(.88);
 }
 
@@ -9404,7 +9404,8 @@ body.cart-open  #k-section-index { display:none; }
  */
 
 .k-cart-snapshot-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-height: 70px;
@@ -9458,9 +9459,9 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 .k-cart-snapshot-item-open {
-  flex: 1 1 auto;
   min-width: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   padding: 0;
@@ -9631,11 +9632,11 @@ body.cart-open  #k-section-index { display:none; }
   font-weight: 760;
 }
 
-/* Corail pour Mon panier quand actif */
+/* Jaune commerce pour Mon panier quand actif */
 .k-cart-tabs[data-active="personal"] .k-tab-personal.k-cart-tab--active {
-  color: var(--coral);
-  background: var(--coral-soft);
-  box-shadow: inset 0 -3px 0 var(--coral);
+  color: var(--text);
+  background: var(--commerce-yellow);
+  box-shadow: inset 0 -3px 0 var(--commerce-yellow-hover);
 }
 
 /* Correctif archéologie (mandat §2/§11) — le × de sortie d'affichage doit

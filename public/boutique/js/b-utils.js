@@ -228,7 +228,7 @@ export function renderProductCarousel(p, width) {
     return `<img class="k-card-img is-image-fallback" src="${PRODUCT_IMAGE_FALLBACK_URL}" alt="" loading="lazy" decoding="async">`;
   }
   const slides = imgs.map((src, i) =>
-    `<div class="k-card-slide"><img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="${sanitize(p.name || '')} ${i + 1}" loading="lazy" decoding="async" ${productImageFallbackAttr()}></div>`
+    `<div class="k-card-slide"><img class="k-card-slide-img" src="${optimizeImgUrl(src, width)}" alt="" loading="lazy" decoding="async" ${productImageFallbackAttr()}></div>`
   ).join('');
   const dots = imgs.length > 1
     ? `<div class="k-card-dots">${imgs.map((_, i) => `<span class="k-card-dot${i === 0 ? ' active' : ''}"></span>`).join('')}</div>`

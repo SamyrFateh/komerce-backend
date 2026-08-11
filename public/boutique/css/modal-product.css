@@ -19,7 +19,7 @@
 }
 .k-modal-promo-badge {
   display: none; position: absolute; top: 8px; left: 8px;
-  background: var(--coral); color: var(--white);
+  background: var(--commerce-yellow); color: var(--text);
   font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
   letter-spacing: .2px;
 }
@@ -151,7 +151,7 @@
    Voir interactions.css pour la variante catalogue (40×40, rond, fond blanc). */
 .k-sug-add { background: var(--sand); border: 1px solid var(--border); border-radius: 50%; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; touch-action: manipulation; box-shadow: var(--elev-1); transition: background .15s, transform .15s var(--ease); }
 .k-sug-add:active { transform: scale(.88); background: var(--sand-dark); }
-.k-sug-promo-badge { position: absolute; top: 5px; left: 5px; background: var(--coral); color: var(--white); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
+.k-sug-promo-badge { position: absolute; top: 5px; left: 5px; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
 
 /* FIX desktop — même bug déjà corrigé côté mobile (voir modal-mobile-canonical.css
    §"FIX layout carte suggestion") : une fois le produit en panier, le stepper

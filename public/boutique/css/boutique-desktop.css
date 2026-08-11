@@ -701,10 +701,10 @@
     border-radius: 0;
     background: var(--surface-sand-94);
     /* Une seule coque pour les deux surfaces : le panier est identifié par
-       un contour corail continu, la liste ne fait qu'en changer la couleur
+       un contour jaune commerce continu, la liste ne fait qu'en changer la couleur
        (shared-list-side-cart.css). Le précédent contrat ne colorait que le
        bord haut du panier et donnait visuellement plus de poids à la liste. */
-    border: 1px solid var(--coral);
+    border: 1px solid var(--commerce-yellow);
     border-top-width: 3px;
     box-shadow: -4px 0 20px var(--shadow-ocean-10);
     overflow: hidden;

@@ -38,7 +38,8 @@
  */
 
 .k-cart-snapshot-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-height: 70px;
@@ -92,9 +93,9 @@
 }
 
 .k-cart-snapshot-item-open {
-  flex: 1 1 auto;
   min-width: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   padding: 0;
@@ -265,11 +266,11 @@
   font-weight: 760;
 }
 
-/* Corail pour Mon panier quand actif */
+/* Jaune commerce pour Mon panier quand actif */
 .k-cart-tabs[data-active="personal"] .k-tab-personal.k-cart-tab--active {
-  color: var(--coral);
-  background: var(--coral-soft);
-  box-shadow: inset 0 -3px 0 var(--coral);
+  color: var(--text);
+  background: var(--commerce-yellow);
+  box-shadow: inset 0 -3px 0 var(--commerce-yellow-hover);
 }
 
 /* Correctif archéologie (mandat §2/§11) — le × de sortie d'affichage doit
