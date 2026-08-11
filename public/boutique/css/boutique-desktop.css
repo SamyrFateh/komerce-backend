@@ -760,6 +760,33 @@
     color: var(--text);
     letter-spacing: .01em;
   }
+
+  /* UX premium 2026-08 — tabs = titre canonique.
+     Le label historique reste dans le DOM pour la logique JS,
+     mais n'est plus répété visuellement sous les onglets. */
+  #k-side-cart:has(.k-cart-tabs) .k-sc-title-label {
+    display: none;
+  }
+
+  /* Aucun statut/contributeur utile :
+     supprimer entièrement la seconde barre. */
+  #k-side-cart:has(.k-cart-tabs) .k-sc-title-bar:not(
+    :has(.k-cart-snapshot-status, .k-cart-snapshot-contributors)
+  ) {
+    display: none;
+  }
+
+  /* Si une vraie information métier existe, conserver uniquement
+     une ligne de méta compacte — jamais un deuxième titre. */
+  #k-side-cart:has(.k-cart-tabs) .k-sc-title-bar:has(
+    .k-cart-snapshot-status,
+    .k-cart-snapshot-contributors
+  ) {
+    min-height: 0;
+    padding: 6px 12px;
+    background: transparent;
+    border-bottom: 1px solid var(--border);
+  }
   /* .k-sc-title-badge retiré (audit 2026-07) : bulle "Mon panier (N)"
      redondante avec la liste d'articles et le CTA Commander(N). */
 

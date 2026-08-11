@@ -262,9 +262,7 @@
   color: var(--text);
   background: rgba(255,255,255,.98);
   border-radius: 12px;
-  box-shadow:
-    0 6px 16px rgba(42,33,23,.10),
-    inset 0 0 0 1px var(--border-text-08);
+  box-shadow: 0 4px 14px rgba(42,33,23,.08);
   transform: translateY(-1px);
   font-weight: 760;
 }
@@ -272,9 +270,7 @@
 .k-cart-tabs[data-active="personal"] .k-tab-personal.k-cart-tab--active {
   color: var(--text);
   background: rgba(255,255,255,.98);
-  box-shadow:
-    0 6px 16px rgba(42,33,23,.10),
-    inset 0 0 0 1px var(--border-text-08);
+  box-shadow: 0 4px 14px rgba(42,33,23,.08);
 }
 
 /* Correctif archéologie (mandat §2/§11) — le × de sortie d'affichage doit
@@ -331,9 +327,7 @@
   position: relative;
   border-radius: 12px;
   background: rgba(255,255,255,.98);
-  box-shadow:
-    0 6px 16px rgba(42,33,23,.10),
-    inset 0 0 0 1px var(--border-text-08);
+  box-shadow: 0 4px 14px rgba(42,33,23,.08);
   transform: translateY(-1px);
   overflow: hidden;
 }
