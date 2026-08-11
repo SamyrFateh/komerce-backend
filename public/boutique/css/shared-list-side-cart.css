@@ -248,7 +248,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition: color .15s, background .15s, box-shadow .15s, transform .15s;
   text-align: center;
   display: flex;
   align-items: center;
@@ -260,15 +260,21 @@
 /* Onglet actif — focus neutre : lumière/profondeur, jamais couleur métier. */
 .k-cart-tab--active {
   color: var(--text);
-  background: var(--white);
-  box-shadow: inset 0 0 0 1px var(--border), var(--elev-1);
+  background: rgba(255,255,255,.98);
+  border-radius: 12px;
+  box-shadow:
+    0 6px 16px rgba(42,33,23,.10),
+    inset 0 0 0 1px var(--border-text-08);
+  transform: translateY(-1px);
   font-weight: 760;
 }
 
 .k-cart-tabs[data-active="personal"] .k-tab-personal.k-cart-tab--active {
   color: var(--text);
-  background: var(--white);
-  box-shadow: inset 0 0 0 1px var(--border), var(--elev-1);
+  background: rgba(255,255,255,.98);
+  box-shadow:
+    0 6px 16px rgba(42,33,23,.10),
+    inset 0 0 0 1px var(--border-text-08);
 }
 
 /* Correctif archéologie (mandat §2/§11) — le × de sortie d'affichage doit
@@ -323,23 +329,13 @@
  * Aucun enfant ne dessine l'indicateur : le groupe possède l'unique trait. */
 .k-cart-tab-group--active {
   position: relative;
-  border-radius: 12px 12px 0 0;
-  background: var(--white);
-  box-shadow: inset 0 0 0 1px var(--border), var(--elev-1);
+  border-radius: 12px;
+  background: rgba(255,255,255,.98);
+  box-shadow:
+    0 6px 16px rgba(42,33,23,.10),
+    inset 0 0 0 1px var(--border-text-08);
+  transform: translateY(-1px);
   overflow: hidden;
-}
-
-/* Trait unique, physiquement continu sur 100 % du groupe. */
-.k-cart-tab-group--active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: var(--text-muted);
-  pointer-events: none;
-  z-index: 2;
 }
 
 /* Neutraliser TOUT trait hérité des deux enfants. */
@@ -348,6 +344,7 @@
   background: transparent;
   box-shadow: none;
   border-bottom: 0;
+  transform: none;
 }
 
 .k-cart-tab-group--active .k-cart-tab-exit {
@@ -706,15 +703,11 @@ body.is-shared-list-context #k-cart-recap-word {
  * base .k-side-cart (border-top corail, boutique-desktop.css), sans
  * dépendre de l'ordre de chargement des feuilles ni d'!important.
  */
-#k-side-cart[data-mode="shared-list"] {
-  border-color: var(--cta-green);
-}
+/* La coque desktop est volontairement identique dans les deux modes. */
 
 /* Contour vert complet quand la liste est active (mandat §12).
  * Surcharge border-top et border-bottom ajoutés dans cart.css
  * pour l'identité corail — ils restaient coral en mode liste car
  * la règle précédente ne ciblait que border-left. */
 /* Mode liste : passe la bordure TOP en vert (bordure top-only depuis cart.css) */
-.k-cart-drawer[data-mode="shared-list"] {
-  border-top-color: var(--cta-green);
-}
+/* La coque mobile est volontairement identique dans les deux modes. */
