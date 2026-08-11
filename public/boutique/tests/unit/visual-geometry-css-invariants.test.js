@@ -298,4 +298,78 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
     });
   });
 
+
+  // ── LOT 8 — accent commerce jaune ─────────────────────────────
+  describe('LOT 8 — accent commerce jaune', () => {
+    let tokens;
+    let products;
+    let cart;
+    let layout;
+
+    beforeAll(() => {
+      tokens = readCss('tokens.css');
+      products = readCss('products.css');
+      cart = readCss('cart.css');
+      layout = readCss('layout.css');
+    });
+
+    it('LOT8-a : le jaune commerce est tokenisé', () => {
+      expect(tokens).toMatch(/--commerce-yellow\s*:\s*#FFD400/);
+    });
+
+    it('LOT8-b : promo = jaune + texte sombre', () => {
+      const block =
+        products.match(/\.k-card-promo\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(block).toMatch(
+        /background\s*:\s*var\(--commerce-yellow\)/
+      );
+      expect(block).toMatch(/color\s*:\s*var\(--text\)/);
+    });
+
+    it('LOT8-c : ajouter = jaune et in-cart reste vert', () => {
+      const add =
+        products.match(/\.k-card-add\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const plus =
+        products.match(/\.k-card-add-plus\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const inCart =
+        products.match(/\.k-card-add\.in-cart\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(add).toMatch(
+        /background\s*:\s*var\(--commerce-yellow\)/
+      );
+      expect(plus).toMatch(/font-size\s*:\s*18px/);
+      expect(plus).toMatch(/color\s*:\s*var\(--text\)/);
+      expect(inCart).toMatch(
+        /background\s*:\s*var\(--cta-green\)/
+      );
+    });
+
+    it('LOT8-d : cercle ajouter desktop = 34x34', () => {
+      expect(cart).toMatch(
+        /@media\s*\(min-width:\s*900px\)[\s\S]*?\.k-card-add\s*\{[^}]*width:\s*34px[^}]*height:\s*34px/
+      );
+    });
+
+    it('LOT8-e : badge panier header = jaune commerce', () => {
+      const badge =
+        layout.match(/\.k-cart-badge\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(badge).toMatch(
+        /background\s*:\s*var\(--commerce-yellow\)/
+      );
+      expect(badge).toMatch(/color\s*:\s*var\(--text\)/);
+    });
+
+    it('LOT8-f : logo et avatar desktop sans marge parasite', () => {
+      expect(layout).toMatch(
+        /\.k-logo\s*\{\s*min-width:\s*148px;\s*justify-content:\s*center;\s*\}/
+      );
+
+      expect(layout).toMatch(
+        /@media\s*\(min-width:\s*900px\)[\s\S]*?\.k-cart-btn\s*\{[^}]*margin-left:\s*0;[^}]*margin-right:\s*0;/
+      );
+    });
+  });
+
 });

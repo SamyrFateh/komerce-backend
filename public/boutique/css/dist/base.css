@@ -149,6 +149,13 @@
 
   --coral:        #C85C2D;
   --coral-dark:   #A84820;
+
+  /* Accent commerce — acheter / opportunité / promo */
+  --commerce-yellow:           #FFD400;
+  --commerce-yellow-hover:     #F2C800;
+  --commerce-yellow-shadow:    0 3px 9px rgba(171,137,0,.20);
+  --commerce-yellow-shadow-sm: 0 2px 8px rgba(171,137,0,.18);
+
   --hero-red:     #e53935;
 
   --white:        #ffffff;
@@ -882,8 +889,8 @@ body {
   right: -2px;
   min-width: 20px;
   height: 20px;
-  background: var(--coral);
-  color: var(--white);
+  background: var(--commerce-yellow);
+  color: var(--text);
   font-size: 10px;
   font-weight: 800;
   display: flex;
@@ -1193,7 +1200,7 @@ body:has(#k-page-scroll.k-pager-active) {
     padding-inline: clamp(24px, 3vw, 32px);
   }
 
-  .k-logo { min-width: 148px; }
+  .k-logo { min-width: 148px; justify-content: center; }
   .k-logo-img, .k-logo-svg { height: 44px; }
   .k-logo-text { display: none; }
   .k-logo-icon { display: none; }
@@ -1225,6 +1232,8 @@ body:has(#k-page-scroll.k-pager-active) {
     border: none;
     border-radius: 0;
     padding: 4px;
+    margin-left: 0;
+    margin-right: 0;
   }
   .k-cart-avatar { width: 36px; height: 36px; }
 

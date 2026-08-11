@@ -144,6 +144,13 @@
 
   --coral:        #C85C2D;
   --coral-dark:   #A84820;
+
+  /* Accent commerce — acheter / opportunité / promo */
+  --commerce-yellow:           #FFD400;
+  --commerce-yellow-hover:     #F2C800;
+  --commerce-yellow-shadow:    0 3px 9px rgba(171,137,0,.20);
+  --commerce-yellow-shadow-sm: 0 2px 8px rgba(171,137,0,.18);
+
   --hero-red:     #e53935;
 
   --white:        #ffffff;
