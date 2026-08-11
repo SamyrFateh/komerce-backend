@@ -995,12 +995,17 @@ function mountSurfaceSwitchTabs(id, host, insertFn) {
 export function renderCartSurfaceSwitch() {
   const sc = document.getElementById('k-side-cart');
   const drawerHeader = document.getElementById('k-cart-header');
+  const drawerClose = document.getElementById('k-cart-close');
   const ctx = state.sharedListContext;
   const hasOpenList = isActiveContext() && ctx?.status === 'open';
 
   if (!hasOpenList) {
     document.getElementById('k-cart-surface-switch')?.remove();
     document.getElementById('k-cart-surface-switch-drawer')?.remove();
+    if (drawerClose) {
+      drawerClose.textContent = '✕';
+      drawerClose.setAttribute('aria-label', 'Fermer le panier');
+    }
     return;
   }
 
@@ -1009,10 +1014,21 @@ export function renderCartSurfaceSwitch() {
 
   const desktopTabs = mountSurfaceSwitchTabs(
     'k-cart-surface-switch', sc, (host, tabs) => host.prepend(tabs));
-  // Drawer mobile : insérer juste après le header, avant #k-cart-body.
+  // Drawer mobile : les tabs vivent DANS le header canonique.
+  // Une seule barre visuelle : ← + [Mon panier | Ma liste ×].
   const mobileTabs = mountSurfaceSwitchTabs(
     'k-cart-surface-switch-drawer', drawerHeader,
-    (host, tabs) => host.insertAdjacentElement('afterend', tabs));
+    (host, tabs) => host.appendChild(tabs));
+
+  // Même bouton, même handler de fermeture : seule sa sémantique visuelle
+  // devient un retour afin de ne jamais le confondre avec le × de sortie liste.
+  if (drawerClose) {
+    drawerClose.textContent = '←';
+    drawerClose.setAttribute(
+      'aria-label',
+      'Fermer le panier et revenir à la boutique'
+    );
+  }
 
   for (const tabs of [desktopTabs, mobileTabs]) {
     if (!tabs) continue;

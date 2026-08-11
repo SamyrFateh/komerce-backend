@@ -123,6 +123,24 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(tabs).toMatch(/border-bottom\s*:\s*0/);
     });
 
+    it('LOT1-l : le drawer mobile possède un header-navigation unique', () => {
+      const cart = readCss('cart.css');
+
+      const drawer = cart.match(/\.k-cart-drawer\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(drawer).toMatch(/grid-template-rows\s*:\s*auto\s+1fr\s+auto/);
+
+      const sharedHeader = cart.match(
+        /\.k-cart-header:has\(#k-cart-surface-switch-drawer\)\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+      expect(sharedHeader).toMatch(/grid-template-columns\s*:\s*34px\s+minmax\(0,\s*1fr\)/);
+      expect(sharedHeader).toMatch(/border-bottom\s*:\s*0/);
+
+      expect(cart).toMatch(
+        />\s*#k-cart-header-title\s*\{[^}]*display\s*:\s*none/s
+      );
+    });
+
     it('LOT1-i : la sélection liste garde la même hauteur optique que le stepper panier', () => {
       const box = css.match(/\.k-cart-item-select\s*\{([^}]+)\}/s)?.[1] ?? '';
       const checked = css.match(/\.k-cart-item-select\.is-checked\s*\{([^}]+)\}/s)?.[1] ?? '';
