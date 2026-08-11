@@ -118,6 +118,11 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       );
     });
 
+    it('LOT1-k : aucun séparateur sous les tabs', () => {
+      const tabs = css.match(/\.k-cart-tabs\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(tabs).toMatch(/border-bottom\s*:\s*0/);
+    });
+
     it('LOT1-i : la sélection liste garde la même hauteur optique que le stepper panier', () => {
       const box = css.match(/\.k-cart-item-select\s*\{([^}]+)\}/s)?.[1] ?? '';
       const checked = css.match(/\.k-cart-item-select\.is-checked\s*\{([^}]+)\}/s)?.[1] ?? '';
