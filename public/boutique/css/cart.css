@@ -33,7 +33,7 @@ body.cart-open .k-hero { pointer-events: none; }
   grid-template-rows: auto auto 1fr auto;
   transform: translateX(100%);
   transition: transform .35s var(--ease);
-  border-top: 4px solid var(--coral);
+  border-top: 4px solid var(--commerce-yellow);
 }
 .k-cart-drawer[data-mode="shared-list"] { border-top-color: var(--cta-green); }
 .k-cart-drawer.open { transform: translateX(0); }

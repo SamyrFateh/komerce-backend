@@ -219,10 +219,10 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(block).toMatch(/padding\s*:\s*8px\s+10px/);
     });
 
-    it('LOT6-c : le side cart personnel possède un contour corail complet', () => {
+    it('LOT6-c : le side cart personnel possède un contour jaune commerce complet', () => {
       const css = readCss('boutique-desktop.css');
       const block = css.match(/\.k-side-cart\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/border\s*:\s*1px\s+solid\s+var\(--coral\)/);
+      expect(block).toMatch(/border\s*:\s*1px\s+solid\s+var\(--commerce-yellow\)/);
       expect(block).toMatch(/border-top-width\s*:\s*3px/);
     });
 
@@ -372,4 +372,140 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
     });
   });
 
+  // ── LOT 9 — vérité visuelle side-cart / mobile ──────────────────────
+  describe('LOT 9 — vérité visuelle side-cart / mobile', () => {
+    it('LOT9-a : Mon panier est jaune commerce, Ma liste reste verte', () => {
+      const desktop = readCss('boutique-desktop.css');
+      const shared = readCss('shared-list-side-cart.css');
+      const cart = readCss('cart.css');
+
+      const sideCart =
+        desktop.match(/\.k-side-cart\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      const personalTab =
+        shared.match(
+          /\.k-cart-tabs\[data-active="personal"\]\s+\.k-tab-personal\.k-cart-tab--active\s*\{([^}]+)\}/s
+        )?.[1] ?? '';
+
+      const drawer =
+        cart.match(/\.k-cart-drawer\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(sideCart).toMatch(
+        /border\s*:\s*1px\s+solid\s+var\(--commerce-yellow\)/
+      );
+
+      expect(personalTab).toMatch(
+        /background\s*:\s*var\(--commerce-yellow\)/
+      );
+
+      expect(shared).toMatch(
+        /#k-side-cart\[data-mode="shared-list"\][^{]*\{[^}]*border-color\s*:\s*var\(--cta-green\)/
+      );
+
+      expect(drawer).toMatch(
+        /border-top\s*:\s*4px\s+solid\s+var\(--commerce-yellow\)/
+      );
+    });
+
+    it('LOT9-b : snapshot et panier partagent la géométrie canonique image / texte', () => {
+      const cart = readCss('cart.css');
+      const shared = readCss('shared-list-side-cart.css');
+
+      const personal =
+        cart.match(/\.k-cart-item\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      const snapshot =
+        shared.match(/\.k-cart-snapshot-item\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      const open =
+        shared.match(/\.k-cart-snapshot-item-open\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(personal).toMatch(/display\s*:\s*grid/);
+      expect(personal).toMatch(
+        /grid-template-columns\s*:\s*52px\s+minmax\(0,1fr\)\s+auto/
+      );
+
+      expect(snapshot).toMatch(/display\s*:\s*grid/);
+      expect(snapshot).toMatch(
+        /grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+auto/
+      );
+
+      expect(open).toMatch(/display\s*:\s*grid/);
+      expect(open).toMatch(
+        /grid-template-columns\s*:\s*52px\s+minmax\(0,\s*1fr\)/
+      );
+      expect(open).toMatch(/gap\s*:\s*10px/);
+    });
+
+    it('LOT9-c : layout.css ne possède plus de géométrie panier concurrente', () => {
+      const layout = readCss('layout.css');
+
+      expect(layout).not.toMatch(
+        /\.k-cart-item\s*\{[^}]*padding:\s*10px\s+0[^}]*gap:\s*12px/
+      );
+
+      expect(layout).not.toMatch(
+        /\.k-cart-item-img\s*\{[^}]*width:\s*60px[^}]*height:\s*60px/
+      );
+    });
+
+    it('LOT9-d : le stepper suggestion mobile reste compact à 76x30', () => {
+      const polish = readCss('modal-product-polish.css');
+
+      expect(polish).toMatch(
+        /@media\s*\(max-width:\s*899px\)[\s\S]*?--k-sug-action-width:\s*76px;[\s\S]*?--k-sug-action-height:\s*30px;/
+      );
+    });
+
+    it('LOT9-e : badges et + de la modale utilisent le jaune commerce avec un owner unique', () => {
+      const modal = readCss('modal-product.css');
+      const polish = readCss('modal-product-polish.css');
+      const interactions = readCss('interactions.css');
+
+      const promo =
+        modal.match(/\.k-modal-promo-badge\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      const sugPromo =
+        interactions.match(/\.k-sug-promo-badge\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      const modalSugPromo =
+        modal.match(/\.k-sug-promo-badge\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      const add =
+        polish.match(/#k-modal\s+\.k-sug-add\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(promo).toMatch(
+        /background\s*:\s*var\(--commerce-yellow\)/
+      );
+
+      expect(sugPromo).toMatch(
+        /background\s*:\s*var\(--commerce-yellow\)/
+      );
+
+      expect(sugPromo).toMatch(
+        /color\s*:\s*var\(--text\)/
+      );
+
+      expect(modalSugPromo).not.toMatch(/\bbackground\s*:/);
+      expect(modalSugPromo).not.toMatch(/\bcolor\s*:/);
+
+      expect(add).toMatch(
+        /background\s*:\s*var\(--commerce-yellow\)/
+      );
+    });
+    it('LOT9-f : le carousel catalogue ne peut plus afficher le nom produit comme alt', () => {
+      const utils = fs.readFileSync(
+        path.resolve(__dirname, '../../js/b-utils.js'),
+        'utf8'
+      );
+
+      expect(utils).toMatch(
+        /class="k-card-slide-img"[^>]*alt=""/
+      );
+
+      expect(utils).not.toMatch(
+        /class="k-card-slide-img"[^>]*alt="\$\{sanitize\(p\.name/
+      );
+    });
+  });
 });

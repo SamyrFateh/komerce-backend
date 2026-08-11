@@ -307,7 +307,7 @@ body.cart-open  #k-section-index { display:none; }
 .k-sug-card-actions  { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 8px; }
 .k-sug-card-bottom   { padding:4px 8px 8px; }
 .k-sug-grid--other   { grid-template-columns:repeat(2,1fr); gap:8px; }
-.k-sug-promo-badge   { position:absolute; top:6px; left:6px; background:var(--coral); color:var(--white); font-size:9px; font-weight:700; padding:2px 6px; border-radius:50px; z-index:2; }
+.k-sug-promo-badge   { position:absolute; top:6px; left:6px; background:var(--commerce-yellow); color:var(--text); font-size:9px; font-weight:700; padding:2px 6px; border-radius:50px; z-index:2; }
 .k-sug-qty           { font-size:11px; color:var(--text-muted); }
 /* Renommé phase7 : était .k-sug-step (conflit de nom avec modal.css).
    Composant : ligne d'étape de commande (texte flex), sans lien avec les boutons ±.

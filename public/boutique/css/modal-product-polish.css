@@ -11,7 +11,7 @@
 
 /*
  * Contraintes produit :
- * - + coral comme sur l’accueil ;
+ * - + jaune commerce comme sur l’accueil ;
  * - état ajouté vert ;
  * - stepper dans la même emprise, sans saut de layout ;
  * - panier centré dans le header ;
@@ -161,21 +161,21 @@
   height: 30px;
   min-width: 30px;
   padding: 0;
-  border: 1px solid var(--coral);
+  border: 1px solid var(--commerce-yellow);
   border-radius: 50%;
-  background: var(--coral);
-  color: var(--white);
-  box-shadow: 0 2px 7px rgba(200,92,45,.22);
+  background: var(--commerce-yellow);
+  color: var(--text);
+  box-shadow: var(--commerce-yellow-shadow-sm);
 }
 
 #k-modal .k-sug-add:hover {
-  background: var(--coral-dark);
-  border-color: var(--coral-dark);
+  background: var(--commerce-yellow-hover);
+  border-color: var(--commerce-yellow-hover);
   transform: scale(1.1);
 }
 
 #k-modal .k-sug-add:active {
-  background: var(--coral-dark);
+  background: var(--commerce-yellow-hover);
   transform: scale(.88);
 }
 

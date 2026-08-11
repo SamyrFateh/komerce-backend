@@ -15,9 +15,9 @@
     width: 30px;
     height: 30px;
     padding: 0;
-    background: var(--coral);
-    color: var(--white);
-    border: 1px solid var(--coral);
+    background: var(--commerce-yellow);
+    color: var(--text);
+    border: 1px solid var(--commerce-yellow);
     border-radius: 50%;
     box-shadow: none;
     display: grid;
@@ -26,7 +26,7 @@
   }
 
   #k-modal .k-sug-add:active {
-    background: var(--coral-dark);
+    background: var(--commerce-yellow-hover);
     transform: scale(.88);
   }
 
