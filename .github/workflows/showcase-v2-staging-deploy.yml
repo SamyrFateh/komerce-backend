@@ -59,13 +59,29 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
           const { buildSlots, buildV2Contract, summary } = require('./scripts/showcase-v2-plan');
+          const manualConnector = require('./services/suppliers/connectors/manual-connector');
+          const { buildNormalizedSourceContractSnapshot } = require('./services/suppliers/normalized-product');
           const { validateForPromotion } = require('./services/catalog-promotion');
+
           const products = JSON.parse(fs.readFileSync('data/catalogue-test-raw/showcase-catalog-v2-source.json', 'utf8'));
           const slots = buildSlots();
-          products.forEach((product, index) => validateForPromotion(buildV2Contract(product, slots[index])));
-          const proof = summary();
+          const items = products.map((product, index) => ({
+            ...buildV2Contract(product, slots[index]),
+            supplier_name: 'Komerce Showcase V2',
+            supplier_product_id: slots[index].product_ref,
+          }));
+          const connector = manualConnector.fetchProducts({ supplier_name: 'Komerce Showcase V2', items });
+          if (connector.products.length !== 500 || connector.invalid.length !== 0) {
+            console.error(JSON.stringify({ valid: connector.products.length, invalid: connector.invalid.slice(0, 10) }, null, 2));
+            process.exit(1);
+          }
+
+          const snapshots = connector.products.map(buildNormalizedSourceContractSnapshot);
+          snapshots.forEach(validateForPromotion);
+          const richSnapshots = snapshots.filter((row) => Array.isArray(row.sellable_units) && row.sellable_units.length > 0).length;
+          const proof = { ...summary(), normalized_v2: snapshots.length, rich_snapshots: richSnapshots };
           console.log(JSON.stringify(proof, null, 2));
-          if (products.length !== 500 || proof.rich_products !== 350 || proof.subcategories.length !== 21) process.exit(1);
+          if (products.length !== 500 || proof.rich_products !== 350 || proof.rich_snapshots !== 350 || proof.subcategories.length !== 21) process.exit(1);
           NODE
 
       - name: Mirror V2 media to Cloudinary staging
