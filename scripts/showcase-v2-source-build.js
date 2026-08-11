@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
- * @version       2026-08-v2
+ * @version       2026-08-v3
  */
 'use strict';
 
@@ -30,6 +30,7 @@ const API_MIN_DELAY_MS = 650;
 const API_RETRIES = 5;
 const PAGE_SIZE = 50;
 const MAX_PAGES_PER_QUERY = 6;
+const DESCRIPTION_MAX_LENGTH = 10000;
 
 // Réserve métier : Commons peut être pauvre sur une formulation précise alors
 // qu'un vocabulaire voisin contient largement assez de médias. On élargit les
@@ -203,6 +204,11 @@ function queriesForTarget(target) {
   });
 }
 
+function boundedDescription(row) {
+  const fallback = `${row.name}. Produit de démonstration issu d'une source traçable pour éprouver la raffinerie Komerce.`;
+  return String(row.source_description || fallback).slice(0, DESCRIPTION_MAX_LENGTH);
+}
+
 function decorate(row, slot) {
   const priceKmf = roundKmf(stableInt(`${row.source}:${slot.category}:${slot.subcategory}`, 2500, 85000));
   const promoSeed = stableInt(`${row.source}:promo`, 0, 99);
@@ -211,7 +217,7 @@ function decorate(row, slot) {
     product_ref: slot.product_ref,
     category: slot.category,
     subcategory: slot.subcategory,
-    description: row.source_description || `${row.name}. Produit de démonstration issu d'une source traçable pour éprouver la raffinerie Komerce.`,
+    description: boundedDescription(row),
     source_locale: 'en',
     price_kmf: priceKmf,
     promo_pct: promoSeed < 25 ? stableInt(`${row.source}:promo-pct`, 8, 40) : null,
@@ -294,6 +300,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  DESCRIPTION_MAX_LENGTH,
   FALLBACK_QUERIES,
   parseArgs,
   retryDelayMs,
@@ -302,5 +309,6 @@ module.exports = {
   mapPage,
   segmentKey,
   queriesForTarget,
+  boundedDescription,
   decorate,
 };
