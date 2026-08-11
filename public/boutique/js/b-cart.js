@@ -817,7 +817,7 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
           `<div class="k-cart-item-info">` +
             `<div class="k-cart-item-name">${sanitize(item.name || '')}</div>` +
             variantHtml +
-            `<div class="k-cart-snapshot-item-meta k-cart-item-context-note">${priceText}${quantityText}${statusHtml}</div>` +
+            `<div class="k-cart-snapshot-item-meta k-cart-item-context-note"><span class="k-cart-item-price">${priceText}</span>${quantityText}${statusHtml}</div>` +
           `</div>` +
         `</button>` +
         `<div class="k-cart-snapshot-item-controls">${control}</div>` +

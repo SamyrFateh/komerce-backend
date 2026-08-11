@@ -301,10 +301,19 @@
   #k-modal .k-sug-card-actions {
     --k-sug-action-width: 76px;
     --k-sug-action-height: 30px;
+    height: var(--k-sug-action-height);
+    max-height: var(--k-sug-action-height);
+    aspect-ratio: auto;
+    align-self: flex-start;
+    box-sizing: border-box;
   }
 
   #k-modal .k-sug-card-actions.is-filled {
     grid-template-columns: 25px 26px 25px;
+    height: var(--k-sug-action-height);
+    max-height: var(--k-sug-action-height);
+    aspect-ratio: auto;
+    align-self: flex-start;
   }
 
   #k-modal .k-sug-card-actions.is-filled .k-sug-step {
