@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md
  * @impact-areas  catalog, sourcing
- * @version       2026-07
+ * @version       2026-08
  */
 
 'use strict';
@@ -61,6 +61,23 @@ async function loadActiveExclusions() {
   });
 }
 
+function escapeRegex(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Les mots-clés métier sont des termes/phrases, pas des sous-chaînes.
+ * Exemple : `gun` ne doit jamais exclure Gyeongbokgung et `replica` ne doit
+ * pas exclure Replicant. Les bornes sont alphanumériques ASCII car le
+ * vocabulaire d'exclusion source est actuellement anglais/technique.
+ */
+function keywordMatches(haystack, keyword) {
+  const term = String(keyword || '').trim().toLowerCase();
+  if (!term) return false;
+  const pattern = new RegExp(`(^|[^a-z0-9])${escapeRegex(term)}([^a-z0-9]|$)`, 'i');
+  return pattern.test(String(haystack || ''));
+}
+
 /**
  * Vérifie un candidat normalisé contre la liste d'exclusions actives.
  * Fonction PURE — aucun accès DB ici : permet de tester sans mock DB,
@@ -93,7 +110,7 @@ function checkEligibility(candidate, exclusions) {
     const keywords = rule.keywords || [];
     const categories = rule.categories || [];
 
-    const keywordHit = haystack && keywords.some(k => haystack.includes(String(k).toLowerCase()));
+    const keywordHit = haystack && keywords.some(k => keywordMatches(haystack, k));
     const categoryHit = categories.some(c => categoryValues.includes(String(c).toLowerCase()));
 
     if (keywordHit || categoryHit) {
@@ -111,4 +128,5 @@ function checkEligibility(candidate, exclusions) {
 module.exports = {
   loadActiveExclusions,
   checkEligibility,
+  keywordMatches,
 };
