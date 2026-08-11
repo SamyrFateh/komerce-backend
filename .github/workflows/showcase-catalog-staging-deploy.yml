@@ -18,7 +18,7 @@ jobs:
   deploy-showcase:
     name: Build, mirror, audit and seed 500 products
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     steps:
       - uses: actions/checkout@v4
@@ -68,8 +68,11 @@ jobs:
             --concurrency 12
 
       - name: Seed Railway staging catalogue
+        # db.js active un monitoring périodique hors NODE_ENV=test. Sans ce
+        # scope local, le seed peut avoir COMMIT puis garder Node vivant et
+        # finir artificiellement rouge sur timeout GitHub.
         run: |
-          node scripts/showcase-catalog.js seed \
+          NODE_ENV=test node scripts/showcase-catalog.js seed \
             --target 500 \
             --replace-active
 
