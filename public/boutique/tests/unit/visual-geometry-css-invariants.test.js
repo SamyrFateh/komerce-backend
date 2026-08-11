@@ -769,35 +769,64 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       checkout = readCss('checkout-vertical-rail.css');
     });
 
-    it('MOB-H1 : aucun override is-scrolled ne décentre le panier', () => {
-      const base = polish.match(
+    it('MOB-H1 : panier et asset gardent un centre géométrique unique', () => {
+      const cart = polish.match(
         /#k-modal \.k-modal-cart-btn\s*\{([^}]+)\}/s
       )?.[1] ?? '';
 
-      expect(base).toMatch(/position\s*:\s*absolute/);
-      expect(base).toMatch(/top\s*:\s*50%/);
-      expect(base).toMatch(/left\s*:\s*50%/);
-      expect(base).toMatch(
+      expect(cart).toMatch(/position\s*:\s*absolute/);
+      expect(cart).toMatch(/top\s*:\s*50%/);
+      expect(cart).toMatch(/left\s*:\s*50%/);
+      expect(cart).toMatch(
+        /transform\s*:\s*translate\(-50%,\s*-50%\)/
+      );
+
+      const icon = polish.match(
+        /#k-modal \.k-modal-cart-icon\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+      expect(icon).toMatch(/position\s*:\s*absolute/);
+      expect(icon).toMatch(/top\s*:\s*50%/);
+      expect(icon).toMatch(/left\s*:\s*50%/);
+      expect(icon).toMatch(
         /transform\s*:\s*translate\(-50%,\s*-50%\)/
       );
 
       expect(polish).not.toMatch(
-        /#k-modal\.is-scrolled \.k-modal-cart-btn\s*\{/
+        /#k-modal\.is-scrolled \.k-modal-cart-btn(?::active)?\s*\{/
       );
     });
 
-    it('MOB-H2 : reason_label ne pollue pas les cartes mobiles', () => {
-      const desktopAt = polish.indexOf('@media (min-width: 900px)');
-      expect(desktopAt).toBeGreaterThan(0);
+    it('MOB-H2 : le titre scrollé ne traverse pas la zone du panier', () => {
+      const product = polish.match(
+        /#k-modal\.is-scrolled \.k-modal-topbar-product\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
 
-      const mobile = polish.slice(0, desktopAt);
+      expect(product).toMatch(
+        /max-width\s*:\s*calc\(50%\s*-\s*34px\)/
+      );
+      expect(product).toMatch(/margin-left\s*:\s*0/);
+    });
+
+    it('MOB-H3 : reason_label est masqué une seule fois et dans le media mobile', () => {
+      const mobile = polish.match(
+        /@media \(max-width: 899px\) \{([\s\S]*?)\n\}\n\n\/\* ── Desktop/
+      )?.[1] ?? '';
 
       expect(mobile).toMatch(
         /#k-modal \.k-sug-card-reason\s*\{[^}]*display\s*:\s*none/s
       );
+
+      const owners = [
+        ...polish.matchAll(
+          /#k-modal \.k-sug-card-reason\s*\{/g
+        ),
+      ];
+
+      expect(owners).toHaveLength(1);
     });
 
-    it('MOB-H3 : le check confirmation utilise un escape Unicode stable', () => {
+    it('MOB-H4 : le check confirmation utilise un escape Unicode stable', () => {
       const pseudo = checkout.match(
         /\.k-confirm-emoji::before\s*\{([^}]+)\}/s
       )?.[1] ?? '';
