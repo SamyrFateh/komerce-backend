@@ -23,24 +23,24 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
-  // Lot O4 (cross-repo feature coverage) : canonicalFeature fixe a 'payments'
-  // sur PREUVE FICHIER (backend:payments.files.boutique revendique
-  // factuellement b-checkout.js + b-checkout-render.js ; backend:orders.files.boutique
-  // est vide). sliceKind='ui-orchestration' (pas 'frontend-slice' pur) car ce
-  // manifeste orchestre a la fois la soumission de commande ET la selection du
-  // moyen de paiement, sans etre l'implementation exclusive de l'un ou l'autre.
-  // ONTOLOGY GAP documente et NON tranche silencieusement — voir
-  // governance/business-graph-ontology-gaps.json (id: checkout-orders-boutique-coverage) :
-  // backend:orders devrait-il revendiquer une part de ce fichier (rendu
-  // recapitulatif / soumission) ? Decision produit non prise par O4.
-  canonicalFeature: 'payments',
+  // Décision produit 2026-08 — résolution de l'ONTOLOGY GAP O4
+  // checkout-orders-boutique-coverage : le checkout boutique est une
+  // projection/orchestration de la feature canonique orders. Son service
+  // principal est de transformer une sélection en commande ; payment est une
+  // capacité traversée pour l'encaissement, pas l'owner du tunnel complet.
+  // Le domaine frontend checkout reste autonome pour sa gouvernance locale
+  // (renderers, responsive, tests), sans créer de micro-feature backend.
+  canonicalFeature: 'orders',
   sliceKind: 'ui-orchestration',
 
   service: "Tunnel de commande canonique : récapitulatif, identité, point de retrait, paiement et confirmation en cartes indépendantes.",
 
   perimeter: {
     in:  ['fichiers js/* annotes @domain checkout', 'présentation responsive du tunnel checkout'],
-    out: ['logique backend equivalente (repo komerce-backend, feature orders)'],
+    out: [
+      'cycle de vie backend de la commande (feature orders, owner canonique)',
+      'encaissement Stripe/PayPal/cash (feature payments, capacité consommée)',
+    ],
   },
 
   files: {
@@ -62,7 +62,9 @@ module.exports = {
     ],
   },
 
-  docs: [],
+  docs: [
+    '../../../docs/doctrine/CHECKOUT_UNIFIED_ATTACK.md',
+  ],
 
   contract: {
     exposes: [],
@@ -73,18 +75,20 @@ module.exports = {
       'checkout-vertical-rail.css (projection UI identité → relais → paiement)',
     ],
     consumes: [
+      'orders — feature canonique : création et cycle de vie de la commande',
       'auth — b-checkout.js importe b-identity.js, b-phone.js',
       'boutique — b-checkout.js importe b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-scroll-owner.js',
-      'payment — b-checkout.js importe b-paypal.js',
+      'payment — b-checkout.js importe b-paypal.js ; l’encaissement reste possédé par payments',
       'wallet — b-checkout.js appelle /api/wallet',
     ],
   },
 
-  authority: 'boutique — tout changement de perimetre de ce domaine doit etre reflete ici.',
+  authority: 'boutique — tout changement de perimetre de ce domaine doit etre reflete ici ; orders reste l’owner canonique du service métier.',
 
   invariants: [
     'tout fichier js/* portant @domain checkout doit etre liste dans files.js de ce manifeste',
     'le skin checkout ne modifie jamais les calculs, contrats API, OTP ou transitions de paiement',
+    'orders est l’owner canonique du checkout ; payments ne possède que l’encaissement et ses intégrations spécifiques',
     'le checkout final présente des cartes indépendantes sans fausse progression ; son chrome est neutre, les moyens de paiement restent compacts et le wallet ne devient jamais une étape obligatoire',
   ],
 
