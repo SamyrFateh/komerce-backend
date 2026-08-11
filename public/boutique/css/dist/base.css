@@ -1211,9 +1211,9 @@ body:has(#k-page-scroll.k-pager-active) {
     max-width: 680px;
     height: 44px;
     border-radius: 999px;
-    border: 1px solid var(--border-text-12);
+    border: 1px solid rgba(42,33,23,.10);
     background: var(--white);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 4px 16px var(--border-text-06);
+    box-shadow: 0 2px 10px rgba(42,33,23,.05);
   }
   .k-search input {
     height: 44px;
@@ -1242,12 +1242,14 @@ body:has(#k-page-scroll.k-pager-active) {
      Badge 16px → bottom: calc(50% - 15px - 8px) = calc(50% - 23px) */
   .k-header .k-cart-btn.k-header-action .k-cart-badge {
     top: auto;
-    bottom: calc(50% - 23px);
-    left: calc(50% + 7px);
+    bottom: calc(50% - 20px);
+    left: calc(50% + 6px);
     right: auto;
-    min-width: 16px;
-    height: 16px;
-    font-size: 9px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 4px;
+    font-size: 8px;
+    border-width: 1.5px;
     z-index: 20;
   }
 
@@ -1678,22 +1680,18 @@ body:has(#k-page-scroll.k-pager-active) {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
-    border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
     color: var(--text);
-    background: transparent;
-    border: 1px solid transparent;
     cursor: pointer;
-    transition: background .15s var(--ease), border-color .15s, color .15s;
+    transition: background .15s var(--ease), border-color .15s, color .15s, box-shadow .15s, transform .15s;
     white-space: nowrap;
-    /* Skeleton override: height 38px, padding 0 13px, border-radius 999px merged below */
-    height: 38px;
-    padding: 0 13px;
+    height: 36px;
+    padding: 0 12px;
     border-radius: 999px;
-    background: rgba(255,255,255,.58);
-    border: 1px solid rgba(100,175,90, .08);
+    background: rgba(255,255,255,.72);
+    border: 1px solid rgba(42,33,23,.08);
+    box-shadow: none;
   }
   .k-header-nav-btn svg {
     width: 18px; height: 18px;
@@ -1702,31 +1700,37 @@ body:has(#k-page-scroll.k-pager-active) {
   }
   .k-header-nav-btn:hover {
     background: var(--white);
-    border-color: rgba(198, 168, 93, .38);
+    border-color: rgba(42,33,23,.12);
+    box-shadow: 0 3px 10px rgba(42,33,23,.06);
   }
-  .k-header-nav-btn:active { background: var(--sand-dark); }
+  .k-header-nav-btn:active {
+    background: rgba(255,255,255,.92);
+    transform: translateY(1px);
+  }
   .k-header-nav-btn.active {
-    background: var(--sand-warm);
-    border-color: var(--border);
+    background: rgba(255,255,255,.96);
+    border-color: rgba(42,33,23,.10);
+    box-shadow: 0 3px 10px rgba(42,33,23,.06);
     font-weight: 700;
   }
 
   /* Bouton Groupe desktop */
   .k-header-nav-btn--group { position: relative; }
   .k-header-nav-btn--group.has-active {
-    background: var(--green-bg-leaf);
-    border-color: var(--cta-green);
-    color: var(--green-text-strong);
+    background: rgba(255,255,255,.98);
+    border-color: rgba(42,33,23,.12);
+    color: var(--text);
+    box-shadow: 0 3px 12px rgba(42,33,23,.08);
   }
   .k-header-group-badge {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 7px;
-    height: 7px;
+    top: 5px;
+    right: 5px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: var(--cta-green);
-    border: 2px solid var(--white);
+    border: 1.5px solid var(--white);
     display: none;
   }
   .k-header-group-badge.show { display: block; }
@@ -1735,7 +1739,7 @@ body:has(#k-page-scroll.k-pager-active) {
   .k-header-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
   }
 
   /* k-cart-btn.k-header-action desktop — BUG-AVATAR-2 :
@@ -1744,20 +1748,21 @@ body:has(#k-page-scroll.k-pager-active) {
      Fix : fond transparent, hauteur étendue vers le haut pour absorber le débordement,
      overflow:visible confirmé, badge repositionné sur l'épaule (déjà dans les règles .k-header). */
   .k-cart-btn.k-header-action {
-    width: 40px;
-    height: 44px;
+    width: 36px;
+    height: 40px;
     border-radius: 0;
     background: transparent;
     border: none;
     box-shadow: none;
   }
 
+
   /* Header glass effect (ex desktop-commerce-skeleton.css) */
   .k-header {
     z-index: 220;
-    background: rgba(255, 252, 244, .92);
-    border-bottom: 1px solid rgba(100,175,90, .10);
-    box-shadow: 0 8px 24px rgba(100,175,90, .07);
+    background: rgba(255,255,255,.94);
+    border-bottom: 1px solid rgba(42,33,23,.08);
+    box-shadow: 0 4px 16px rgba(42,33,23,.06);
     backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
   }
@@ -1789,8 +1794,6 @@ body:has(#k-page-scroll.k-pager-active) {
 @media (min-width: 900px) {
   html.k-home-premium-v1 .k-header {
     backdrop-filter: blur(18px);
-    background: color-mix(in srgb, var(--sand) 82%, var(--white));
-    border-bottom: 1px solid var(--border-text-06);
   }
 
   html.k-home-premium-v1 .k-logo-text {
@@ -1799,9 +1802,8 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   html.k-home-premium-v1 .k-search {
-    min-height: 54px;
     border-radius: 999px;
-    box-shadow: 0 14px 36px var(--border-text-06);
+    box-shadow: 0 2px 10px rgba(42,33,23,.05);
   }
 
   html.k-home-premium-v1 .k-search input::placeholder {

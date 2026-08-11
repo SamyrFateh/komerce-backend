@@ -446,6 +446,105 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
     });
   });
 
+  // ── LOT 10 — bandeau desktop neutre et compact ─────────────────────
+  describe('LOT 10 — bandeau desktop premium', () => {
+    let layout;
+
+    beforeAll(() => {
+      layout = readCss('layout.css');
+    });
+
+    it('LOT10-a : les actions desktop utilisent un matériau neutre', () => {
+      const blocks = [...layout.matchAll(/\.k-header-nav-btn\s*\{([^}]+)\}/gs)]
+        .map(m => m[1]);
+
+      const desktop =
+        blocks.find(b => /height\s*:\s*36px/.test(b)) || '';
+
+      expect(desktop).toMatch(
+        /background\s*:\s*rgba\(255,255,255,\.72\)/
+      );
+      expect(desktop).toMatch(
+        /border\s*:\s*1px solid rgba\(42,33,23,\.08\)/
+      );
+      expect(desktop).not.toMatch(/cta-green|100,175,90/);
+    });
+
+    it('LOT10-b : Mon Komerce actif reste neutre', () => {
+      const block =
+        layout.match(/\.k-header-nav-btn--group\.has-active\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(block).toMatch(/color\s*:\s*var\(--text\)/);
+      expect(block).toMatch(/box-shadow\s*:/);
+      expect(block).not.toMatch(/green-bg|cta-green|green-text/);
+    });
+
+    it('LOT10-c : le shell desktop est blanc avec profondeur neutre', () => {
+      const blocks = [...layout.matchAll(/\.k-header\s*\{([^}]+)\}/gs)]
+        .map(m => m[1]);
+
+      const desktop =
+        blocks.find(b => /z-index\s*:\s*220/.test(b)) || '';
+
+      expect(desktop).toMatch(
+        /background\s*:\s*rgba\(255,255,255,\.94\)/
+      );
+      expect(desktop).toMatch(
+        /border-bottom\s*:\s*1px solid rgba\(42,33,23,\.08\)/
+      );
+      expect(desktop).toMatch(
+        /box-shadow\s*:\s*0 4px 16px rgba\(42,33,23,\.06\)/
+      );
+      expect(desktop).not.toMatch(/100,175,90/);
+    });
+
+    it('LOT10-d : le premium ne regonfle plus la recherche à 54px', () => {
+      const premium =
+        layout.match(/html\.k-home-premium-v1 \.k-search\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(premium).not.toMatch(/min-height\s*:\s*54px/);
+      expect(premium).not.toMatch(/14px 36px/);
+
+      expect(layout).toMatch(/max-width\s*:\s*680px/);
+      expect(layout).toMatch(/max-width\s*:\s*760px/);
+    });
+
+    it('LOT10-e : le groupe actions et avatar sont resserrés', () => {
+      const actions = [...layout.matchAll(/\.k-header-actions\s*\{([^}]+)\}/gs)]
+        .map(m => m[1])
+        .find(b => /gap\s*:\s*6px/.test(b)) || '';
+
+      const carts = [...layout.matchAll(/\.k-cart-btn\.k-header-action\s*\{([^}]+)\}/gs)]
+        .map(m => m[1]);
+
+      const desktopCart =
+        carts.find(b =>
+          /width\s*:\s*36px/.test(b) &&
+          /height\s*:\s*40px/.test(b)
+        ) || '';
+
+      expect(actions).toMatch(/gap\s*:\s*6px/);
+      expect(desktopCart).toMatch(/width\s*:\s*36px/);
+      expect(desktopCart).toMatch(/height\s*:\s*40px/);
+    });
+
+    it('LOT10-f : une seule règle porte la géométrie compacte du badge desktop', () => {
+      const badgeBlocks = [...layout.matchAll(
+        /\.k-header \.k-cart-btn\.k-header-action \.k-cart-badge\s*\{([^}]+)\}/gs
+      )].map(m => m[1]);
+
+      const compact = badgeBlocks.filter(block =>
+        /bottom\s*:\s*calc\(50% - 20px\)/.test(block) &&
+        /left\s*:\s*calc\(50% \+ 6px\)/.test(block) &&
+        /min-width\s*:\s*14px/.test(block) &&
+        /height\s*:\s*14px/.test(block) &&
+        /font-size\s*:\s*8px/.test(block)
+      );
+
+      expect(compact).toHaveLength(1);
+    });
+  });
+
   // ── LOT 9 — vérité visuelle side-cart / mobile ──────────────────────
   describe('LOT 9 — vérité visuelle side-cart / mobile', () => {
     it('LOT9-a : la coque panier/liste est strictement neutre', () => {
