@@ -22,7 +22,7 @@ body.cart-open .k-hero { pointer-events: none; }
 /* -- DRAWER --------------------------------------------------- */
 /* Direction UX 2026-08 :
    · coque neutre identique panier / liste
-   · grid 4 rangées : tabs / title / body scrollable / footer
+   · grid 3 rangées : header-navigation unique / body scrollable / footer
    · mobile plein écran : profondeur par ombre, aucun contour métier */
 .k-cart-drawer {
   position: fixed; top: 0; right: 0; bottom: 0;
@@ -30,7 +30,7 @@ body.cart-open .k-hero { pointer-events: none; }
   background: var(--white);
   box-shadow: -12px 0 32px rgba(44,34,24,.08);
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto 1fr auto;
   transform: translateX(100%);
   transition: transform .35s var(--ease);
   border: 0;
@@ -58,6 +58,57 @@ body.cart-open .k-hero { pointer-events: none; }
   transition: background .15s, color .15s;
 }
 #k-cart-close:hover { background: var(--sand-dark); color: var(--text); }
+
+/* Mobile + liste active — le header canonique devient l'unique barre :
+   [←] [Mon panier | Ma liste ×]
+   Le × de l'onglet garde son rôle métier de sortie de liste ; le ← conserve
+   le handler natif de fermeture du drawer. Aucun deuxième titre. */
+.k-cart-header:has(#k-cart-surface-switch-drawer) {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 4px;
+  min-height: 60px;
+  padding: 8px 10px;
+  border-bottom: 0;
+  background: var(--white);
+}
+
+.k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-header-title {
+  display: none;
+}
+
+.k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-close {
+  grid-column: 1;
+  grid-row: 1;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 20px;
+  color: var(--text-muted);
+}
+
+.k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-surface-switch-drawer {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  min-height: 0;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* Une vraie méta métier reste possible, mais sous forme compacte,
+   jamais comme un deuxième header. */
+.k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-snapshot-status,
+.k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-snapshot-contributors {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
 
 /* Corps scrollable — 1fr dans la grid (footer jamais recouvert) */
 .k-cart-body { overflow-y: auto; min-height: 0; padding: 10px 10px 14px; scrollbar-width: thin; }
