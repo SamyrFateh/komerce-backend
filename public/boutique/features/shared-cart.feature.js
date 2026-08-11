@@ -68,10 +68,11 @@ module.exports = {
       'group-api.js / group-state.js',
     ],
     consumes: [
+      'auth-identity — identité et téléphone consommés par b-share-cart.js',
       'auth — identité et téléphone',
       'platform-ops — bus, store et utilitaires',
-      'orders — snapshot explicite du panier personnel',
-      'payments — checkout canonique',
+      'orders — snapshot explicite du panier personnel et arbitrage de la commande',
+      'checkout — projection UI canonique de orders, appelée par group-checkout-adapter.js',
     ],
   },
   authority: 'boutique — shared-cart possède seul le cycle groupe et la vue participant.',

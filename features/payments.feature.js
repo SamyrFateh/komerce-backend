@@ -33,6 +33,7 @@ module.exports = {
     ],
     out: [
       'creation de la commande elle-meme (feature orders)',
+      'orchestration du checkout boutique (projection frontend de orders)',
       'remboursement (feature refunds, qui consomme payments en lecture)',
       'credit wallet (feature wallet-loyalty)',
     ],
@@ -64,12 +65,9 @@ module.exports = {
       'migrations/079_paypal_payment_mode.sql',
     ],
     boutique: [
-      'js/b-checkout.js',
-      'js/b-checkout-render.js',
+      // Payment-specific uniquement. Le tunnel général b-checkout* appartient
+      // désormais à la projection frontend de orders.
       'js/b-paypal.js',
-      // Backfill gouvernance globale : css/paypal.css est le seul CSS payment-specific
-      // pertinent (cart.css est multi-domaine — panier personnel/checkout/OTP — laissé
-      // en dette explicite, voir BOUTIQUE_COMPONENT_OWNERSHIP.md §Backfill).
       'css/paypal.css',
     ],
     tests: [
@@ -102,7 +100,7 @@ module.exports = {
   // ── Dépôts ───────────────────────────────────────────────────────────────
   repos: {
     backend: 'services/ + routes/ ci-dessus',
-    boutique: 'js/b-checkout*.js + js/b-paypal.js — dépôt "bout", voir docs/BOUTIQUE_OWNERSHIP_LIVE.md',
+    boutique: 'js/b-paypal.js + css/paypal.css — dépôt "bout", checkout général rattaché à orders',
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
@@ -171,23 +169,12 @@ module.exports = {
       'GET /api/payments/rates',
       'POST /api/payments/stripe/webhook',
     ],
-    // O7.3 (provider payments) : surface unique regroupant TOUS les
-    // consumers cross-feature de payments (mission §7 — un provider, une
-    // surface, pas une par consumer) :
-    //   - markPaid : consommé par logistics (parcel-auto-create-service.js)
-    //     et wallet (wallet-service.js), déclaré depuis O7.2 Cycle B/D.
-    //   - markRefunded : consommé par orders (admin-order-refund.js), O7.3.
-    //   - makeInput (frontend, b-checkout-render.js via b-checkout.js) :
-    //     consommé par shared-cart (b-share-cart.js) pour un style de champ
-    //     uniforme — réutilisation d'utilitaire UI, scope boutique, pas un
-    //     service métier backend. Reste un import ES nommé simple (pas un
-    //     barrel), déjà minimal. makeIntlPhoneInput a été retiré de ce
-    //     périmètre (appartenait réellement à auth-identity, via b-phone.js —
-    //     voir docs/O7_3_BOUNDARY_ANALYSIS.md).
+    // O7.3 (provider payments) : surface des capacités de paiement.
+    // Les utilitaires du tunnel checkout ne sont plus exposés par payments :
+    // la projection frontend checkout appartient désormais à orders.
     internalApi: [
       { fn: 'markPaid', file: 'services/payment-service.js' },
       { fn: 'markRefunded', file: 'services/payment-service.js' },
-      { fn: 'makeInput', file: 'public/boutique/js/b-checkout.js' },
     ],
     consumes: [
       "platform-ops (FF-C1 2026-07-29 — monitoring et exploitation technique ; preuve: routes/payments.js -> services/monitoring.js)",
@@ -203,9 +190,7 @@ module.exports = {
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/cash-reminder-service.js -> utils/rules.js)",
 
       'orders (commande a payer)',
-      'auth-identity (verification du payeur)',
       'logistics (generation du code retrait pickup au moment du paiement — services/pickup-secret-service.js ; lecture du statut agrege colis pour reconciliation — utils/parcels.js ; O7.2 Cycle B)',
-      'wallet (checkout consulte le solde applicable via /api/wallet — public/boutique/js/b-checkout.js, O7.2 Cycle D)',
       'loyalty (declenche le recalcul de palier apres paiement confirme — services/loyalty-service.js handleOrderConfirmed, O7.3 provider loyalty)',
       'purchasing (declenche verification/reapprovisionnement apres encaissement — services/purchasing-trigger-service.js triggerPurchasing, O7.3 provider purchasing)',
     ],

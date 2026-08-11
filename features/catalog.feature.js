@@ -58,6 +58,11 @@ module.exports = {
   },
 
   files: {
+    ci: [
+      '.github/workflows/showcase-catalog-media-audit.yml',
+      '.github/workflows/showcase-catalog-staging-deploy.yml',
+      '.github/workflows/showcase-v2-staging-deploy.yml',
+    ],
     utils: [
       'utils/categories-cache.js',
     ],

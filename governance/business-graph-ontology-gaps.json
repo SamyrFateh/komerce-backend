@@ -2,13 +2,6 @@
   "_comment": "Lot O4 — ONTOLOGY GAP explicites (mission O4 §3, §12). Un gap ici signale une décision produit encore à trancher — ce fichier ne doit jamais être utilisé pour créer silencieusement une business feature. Lu par scripts/business-graph-gen.js, affiché dans bigMap.canonical.ontologyGaps et dans BUSINESS_FEATURE_GRAPH.md.",
   "gaps": [
     {
-      "id": "checkout-orders-boutique-coverage",
-      "boutiqueManifest": "checkout",
-      "finding": "boutique/features/checkout.feature.js décrit un service quasi identique à backend:orders (\"tunnel de commande, du panier valide à la confirmation\") et son perimeter.out cite 'orders' — mais backend:orders.files.boutique est vide (0 fichier revendiqué), alors que backend:payments.files.boutique revendique factuellement b-checkout.js + b-checkout-render.js.",
-      "currentDecision": "canonicalFeature fixé à 'payments' (preuve fichier, priorité 1 de la mission O4 §6), sliceKind 'ui-orchestration' — pas 'frontend-slice' pur, car ce manifeste orchestre la soumission de commande ET la sélection du moyen de paiement sans être l'implémentation exclusive de l'un ou l'autre.",
-      "openQuestion": "backend:orders devrait-il revendiquer explicitement une part de b-checkout.js (rendu récapitulatif / soumission commande), avec backend:payments ne gardant que la partie encaissement (b-paypal.js) ? Décision produit non tranchée par O4 — cf. mission §3 \"si le cas est E, ne crée pas silencieusement, signale l'ONTOLOGY GAP\"."
-    },
-    {
       "id": "tracking-no-canonical-owner",
       "boutiqueManifest": "tracking",
       "finding": "boutique/features/tracking.feature.js décrit un service d'analytics/tracking événementiel UI (suivi parcours, événements). Aucune feature backend ou dash canonique ne représente ce service : vérifié explicitement contre logistics (tracking colis physique — identité métier différente malgré le nom proche), infrastructure (middlewares/bootstrap transverses), notifications (émission de messages sortants, pas de collecte d'événements) et platform-ops (santé applicative). C'est un cas E pur (mission O4 §3) : véritable ONTOLOGY GAP, pas une erreur de nommage à corriger par une fusion.",

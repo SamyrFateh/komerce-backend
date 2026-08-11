@@ -1,12 +1,12 @@
 # Security 360 — couverture des gardes (hybride runtime + statique)
 
-> 2026-08-07T20:27:46.725Z — 475 endpoints
+> 2026-08-11T17:01:58.591Z — 473 endpoints
 
 | Niveau | Compte |
 |---|---|
 | 🟢 PROTECTED | 426 |
 | ⚪ PUBLIC (légitime) | 5 |
-| 🟠 UNPROTECTED | 42 |
+| 🟠 UNPROTECTED | 40 |
 | 🔴 ADMIN_NO_GUARD | 0 |
 | ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 2 |
 
@@ -45,8 +45,6 @@
 - 🟠 `GET /api/relais/{id}` — UNPROTECTED
 - 🟠 `GET /api/relais/public` — UNPROTECTED
 - 🟠 `GET /api/relais` — UNPROTECTED
-- 🟠 `PATCH /api/shares/{token}/contributions/{id}` — UNPROTECTED
-- 🟠 `POST /api/shares/{token}/contributions` — UNPROTECTED
 - 🟠 `GET /api/shares/{token}` — UNPROTECTED
 - 🟠 `POST /api/shares` — UNPROTECTED
 - 🟠 `POST /api/tracking/{token}/verify-pickup` — UNPROTECTED

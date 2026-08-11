@@ -549,7 +549,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     actions.onSelectAll();
     actions.onCommand();
 
-    // Aucun produit ne résout : le panier éphémère est vide, donc aucun
+    // Aucun produit ne résout : la sélection transactionnelle est vide, donc aucun
     // checkout n'est lancé (rien à commander), mais le message
     // "indisponibles" reste émis pour les deux lignes exclues.
     expect(checkoutSharedListSelection).not.toHaveBeenCalled();

@@ -55,7 +55,6 @@ module.exports = {
     '../admin/js/views/CustomsView.js',
     '../admin/js/views/EconomicFlowView.js',
     '../admin/js/views/EconomicView.js',
-    '../admin/js/views/EventWorkspacesView.js',
     '../admin/js/views/HubRelaisView.js',
     '../admin/js/views/InventoryView.js',
     '../admin/js/views/InvoicesView.js',

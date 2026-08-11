@@ -20,11 +20,11 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 771,
-    "edges": 4135,
+    "graphNodes": 773,
+    "edges": 4138,
     "dbTables": 108,
-    "doctrines": 168,
-    "impactAreas": 131,
+    "doctrines": 171,
+    "impactAreas": 130,
     "unresolvedCodeEdges": 417,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 61
@@ -1536,16 +1536,17 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "cart_state",
+        "checkout_selection",
         "identity",
         "phone",
         "relais",
         "payment_mode"
       ],
       "outputs": [
-        "order_creation",
-        "stripe_payment_intent",
-        "checkout_modal_state"
+        "checkout_state",
+        "order_creation_request",
+        "payment_initialization",
+        "order_success"
       ],
       "depends": [
         "b-store.js",
@@ -1569,13 +1570,15 @@
       "doctrine": [
         "paiement_seul_acte_engageant",
         "otp_une_fois",
+        "recap_integre_checkout",
+        "surface_transactionnelle_unique",
         "checkout_sans_friction"
       ],
       "impactAreas": [
         "checkout",
+        "orders",
         "payments",
         "otp",
-        "order-creation",
         "cart",
         "shared-cart"
       ],
@@ -3365,7 +3368,7 @@
         "shared_list_selection"
       ],
       "outputs": [
-        "ephemeral_canonical_cart",
+        "checkout_selection",
         "checkout_invocation"
       ],
       "depends": [
@@ -3381,7 +3384,8 @@
       "dbTxn": [],
       "doctrine": [
         "checkout_logic_agnostic_of_shared_list",
-        "panier_personnel_source_de_verite"
+        "checkout_selection_source_de_verite",
+        "panier_personnel_intact"
       ],
       "impactAreas": [
         "shared-cart",
@@ -3494,7 +3498,7 @@
       ],
       "depends": [],
       "usedBy": [
-        "../b-checkout.js"
+        "group-checkout-adapter.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -17616,6 +17620,16 @@
       "doctrine": "paiement_seul_acte_engageant"
     },
     {
+      "id": "doctrine:recap_integre_checkout",
+      "type": "doctrine",
+      "doctrine": "recap_integre_checkout"
+    },
+    {
+      "id": "doctrine:surface_transactionnelle_unique",
+      "type": "doctrine",
+      "doctrine": "surface_transactionnelle_unique"
+    },
+    {
       "id": "doctrine:favoris_locaux_simples",
       "type": "doctrine",
       "doctrine": "favoris_locaux_simples"
@@ -17791,9 +17805,14 @@
       "doctrine": "checkout_logic_agnostic_of_shared_list"
     },
     {
-      "id": "doctrine:panier_personnel_source_de_verite",
+      "id": "doctrine:checkout_selection_source_de_verite",
       "type": "doctrine",
-      "doctrine": "panier_personnel_source_de_verite"
+      "doctrine": "checkout_selection_source_de_verite"
+    },
+    {
+      "id": "doctrine:panier_personnel_intact",
+      "type": "doctrine",
+      "doctrine": "panier_personnel_intact"
     },
     {
       "id": "doctrine:retirer_le_signet_jamais_la_liste",
@@ -18536,14 +18555,14 @@
       "area": "order-success"
     },
     {
+      "id": "impact:orders",
+      "type": "impact-area",
+      "area": "orders"
+    },
+    {
       "id": "impact:payments",
       "type": "impact-area",
       "area": "payments"
-    },
-    {
-      "id": "impact:order-creation",
-      "type": "impact-area",
-      "area": "order-creation"
     },
     {
       "id": "impact:favorites",
@@ -18734,11 +18753,6 @@
       "id": "impact:header-position",
       "type": "impact-area",
       "area": "header-position"
-    },
-    {
-      "id": "impact:orders",
-      "type": "impact-area",
-      "area": "orders"
     },
     {
       "id": "impact:customer-support",
@@ -21341,6 +21355,18 @@
     },
     {
       "from": "public/boutique/js/b-checkout.js",
+      "to": "doctrine:recap_integre_checkout",
+      "type": "doctrine",
+      "label": "recap_integre_checkout"
+    },
+    {
+      "from": "public/boutique/js/b-checkout.js",
+      "to": "doctrine:surface_transactionnelle_unique",
+      "type": "doctrine",
+      "label": "surface_transactionnelle_unique"
+    },
+    {
+      "from": "public/boutique/js/b-checkout.js",
       "to": "doctrine:checkout_sans_friction",
       "type": "doctrine",
       "label": "checkout_sans_friction"
@@ -21353,6 +21379,12 @@
     },
     {
       "from": "public/boutique/js/b-checkout.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "public/boutique/js/b-checkout.js",
       "to": "impact:payments",
       "type": "impact",
       "label": "payments"
@@ -21362,12 +21394,6 @@
       "to": "impact:otp",
       "type": "impact",
       "label": "otp"
-    },
-    {
-      "from": "public/boutique/js/b-checkout.js",
-      "to": "impact:order-creation",
-      "type": "impact",
-      "label": "order-creation"
     },
     {
       "from": "public/boutique/js/b-checkout.js",
@@ -23885,9 +23911,15 @@
     },
     {
       "from": "public/boutique/js/group/group-checkout-adapter.js",
-      "to": "doctrine:panier_personnel_source_de_verite",
+      "to": "doctrine:checkout_selection_source_de_verite",
       "type": "doctrine",
-      "label": "panier_personnel_source_de_verite"
+      "label": "checkout_selection_source_de_verite"
+    },
+    {
+      "from": "public/boutique/js/group/group-checkout-adapter.js",
+      "to": "doctrine:panier_personnel_intact",
+      "type": "doctrine",
+      "label": "panier_personnel_intact"
     },
     {
       "from": "public/boutique/js/group/group-checkout-adapter.js",
@@ -24022,10 +24054,10 @@
       "label": "account"
     },
     {
-      "from": "public/boutique/js/b-checkout.js",
+      "from": "public/boutique/js/group/group-checkout-adapter.js",
       "to": "public/boutique/js/group/group-price-variation.js",
       "type": "uses",
-      "label": "../b-checkout.js"
+      "label": "group-checkout-adapter.js"
     },
     {
       "from": "public/boutique/js/group/group-price-variation.js",
@@ -45435,13 +45467,15 @@
       "doctrines": [
         "paiement_seul_acte_engageant",
         "otp_une_fois",
+        "recap_integre_checkout",
+        "surface_transactionnelle_unique",
         "checkout_sans_friction"
       ],
       "impactAreas": [
         "checkout",
+        "orders",
         "payments",
         "otp",
-        "order-creation",
         "cart",
         "shared-cart"
       ],
@@ -45449,9 +45483,11 @@
         "doctrine:checkout_sans_friction",
         "doctrine:otp_une_fois",
         "doctrine:paiement_seul_acte_engageant",
+        "doctrine:recap_integre_checkout",
+        "doctrine:surface_transactionnelle_unique",
         "impact:cart",
         "impact:checkout",
-        "impact:order-creation",
+        "impact:orders",
         "impact:otp",
         "impact:payments",
         "impact:shared-cart",
@@ -45467,7 +45503,6 @@
         "public/boutique/js/b-store.js",
         "public/boutique/js/boutique.js",
         "public/boutique/js/group/group-checkout-adapter.js",
-        "public/boutique/js/group/group-price-variation.js",
         "routes/orders.js",
         "routes/payments.js",
         "routes/wallet.js"
@@ -47347,7 +47382,8 @@
       "dbWriteVia": [],
       "doctrines": [
         "checkout_logic_agnostic_of_shared_list",
-        "panier_personnel_source_de_verite"
+        "checkout_selection_source_de_verite",
+        "panier_personnel_intact"
       ],
       "impactAreas": [
         "shared-cart",
@@ -47355,11 +47391,13 @@
       ],
       "mustCheck": [
         "doctrine:checkout_logic_agnostic_of_shared_list",
-        "doctrine:panier_personnel_source_de_verite",
+        "doctrine:checkout_selection_source_de_verite",
+        "doctrine:panier_personnel_intact",
         "impact:checkout",
         "impact:shared-cart",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-store.js",
+        "public/boutique/js/group/group-price-variation.js",
         "public/boutique/js/group/group-side-cart.js"
       ]
     },
@@ -47455,7 +47493,7 @@
       "purpose": null,
       "directDependsOn": [],
       "directUsedBy": [
-        "public/boutique/js/b-checkout.js"
+        "public/boutique/js/group/group-checkout-adapter.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -47472,7 +47510,7 @@
         "doctrine:prix_snapshot_liste_prix_actuel_checkout",
         "impact:checkout",
         "impact:shared-cart",
-        "public/boutique/js/b-checkout.js"
+        "public/boutique/js/group/group-checkout-adapter.js"
       ]
     },
     "public/boutique/js/group/group-side-cart.js": {

@@ -7,7 +7,7 @@
  * @inputs        cart_line_items
  * @outputs       price_variation_lines, summary_message
  * @depends       none
- * @used-by       ../b-checkout.js
+ * @used-by       group-checkout-adapter.js
  * @doctrine      prix_snapshot_liste_prix_actuel_checkout
  * @impact-areas  shared-cart, checkout
  * @version       2026-08
@@ -18,7 +18,8 @@
  * @module group/group-price-variation.js
  * @owner Boutique First — logique pure de comparaison prix snapshot (liste
  * partagée) / prix catalogue actuel (checkout). Module sans DOM, testable
- * isolément ; b-checkout.js ne fait que peindre ce que ce module calcule.
+ * isolément ; group-checkout-adapter.js calcule cette information avant
+ * de remettre la CheckoutSelection au checkout canonique.
  *
  * Doctrine V2-E §2/§3 : la liste affiche le prix figé au partage, le
  * checkout affiche et facture toujours le prix catalogue courant. Ce
@@ -27,11 +28,11 @@
  */
 
 /**
- * Calcule, pour une ligne de panier éphémère issue d'une liste partagée,
+ * Calcule, pour une ligne de CheckoutSelection issue d'une liste partagée,
  * la variation entre le prix snapshot (figé au partage) et le prix
  * catalogue courant.
  *
- * @param {object} item - Ligne de state.cart (product, shared_list_context)
+ * @param {object} item - Ligne de CheckoutSelection (product, shared_list_context)
  * @returns {{snapshotPrice: number, currentPrice: number, changed: boolean}|null}
  *   null si l'item n'est pas issu d'une liste partagée, si le snapshot est
  *   absent/nul, ou si le prix actuel est absent — dans tous ces cas aucun

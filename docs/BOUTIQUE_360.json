@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-11T16:25:15.949Z",
+  "generatedAt": "2026-08-11T19:49:30.206Z",
   "summary": {
     "modules": 77,
     "withHeader": 77,
@@ -468,6 +468,8 @@
       "doctrine": [
         "paiement_seul_acte_engageant",
         "otp_une_fois",
+        "recap_integre_checkout",
+        "surface_transactionnelle_unique",
         "checkout_sans_friction"
       ],
       "depends": [
@@ -502,13 +504,12 @@
         "b-scroll-owner",
         "b-identity",
         "b-checkout-render",
-        "group-price-variation",
         "b-phone"
       ],
       "bodyClasses": [
         "cart-open",
-        "k-order-body--checkout",
-        "k-order-body--recap"
+        "k-order-body--recap",
+        "k-order-body--checkout"
       ],
       "emitCalls": [
         {
@@ -1984,7 +1985,8 @@
       "criticality": "critical",
       "doctrine": [
         "checkout_logic_agnostic_of_shared_list",
-        "panier_personnel_source_de_verite"
+        "checkout_selection_source_de_verite",
+        "panier_personnel_intact"
       ],
       "depends": [
         "../b-store.js",
@@ -1998,7 +2000,7 @@
       "imports": [
         "b-store",
         "b-checkout",
-        "b-cart-core"
+        "group-price-variation"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2079,7 +2081,7 @@
         "none"
       ],
       "usedBy": [
-        "../b-checkout.js"
+        "group-checkout-adapter.js"
       ],
       "emits": [],
       "listens": [],
@@ -3619,10 +3621,10 @@
       "sc-reserve": [
         "b-cart"
       ],
-      "k-order-body--checkout": [
+      "k-order-body--recap": [
         "b-checkout"
       ],
-      "k-order-body--recap": [
+      "k-order-body--checkout": [
         "b-checkout"
       ],
       "k-id-scroll-lock": [

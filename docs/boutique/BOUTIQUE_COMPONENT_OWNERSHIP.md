@@ -48,7 +48,7 @@ Le panier personnel et la liste partageable restent deux surfaces distinctes. Le
 | Création / partage d'une liste | `public/boutique/js/b-share-cart.js` | création depuis la sélection initiale, lien stable, partage natif | rendu complet de la liste, checkout |
 | Entrée par lien | `public/boutique/js/b-group-banner.js` | détection du token et activation du contexte | rendu détaillé, mutation métier |
 | Vue liste et bibliothèque | `public/boutique/js/group/group-side-cart.js` | rendu participant/créateur, sélection locale, bibliothèque, actions propriétaire, retour modal | panier personnel, calcul transactionnel |
-| Adapter liste → checkout | `public/boutique/js/group/group-checkout-adapter.js` | panier éphémère et restauration du panier personnel | calcul serveur du prix, mutation de liste |
+| Adapter liste → checkout | `public/boutique/js/group/group-checkout-adapter.js` | projection de la sélection vers `CheckoutSelection` et contexte relationnel temporaire | mutation du panier personnel, calcul serveur du prix, mutation de liste |
 | Variation de prix | `public/boutique/js/group/group-price-variation.js` | comparaison snapshot/prix actuel et présentation | calcul transactionnel serveur |
 | API liste frontend | `public/boutique/js/group/group-api.js` | transport HTTP liste/bibliothèque/actions unitaires | rendu UI, logique métier |
 | État partagé résiduel actif | `public/boutique/js/group/group-state.js` | badge et petits helpers encore consommés | ancien switcher d'onglet Groupe |
