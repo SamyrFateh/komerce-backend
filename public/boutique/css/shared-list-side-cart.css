@@ -257,20 +257,18 @@
 
 .k-cart-tab:hover { color: var(--text); }
 
-/* Onglet actif — fond teinté + indicateur bas (mockup direction UX 2026-08) */
-/* Vert pour Ma liste (défaut) */
+/* Onglet actif — focus neutre : lumière/profondeur, jamais couleur métier. */
 .k-cart-tab--active {
-  color: var(--cta-green);
-  background: var(--green-soft);
-  box-shadow: inset 0 -3px 0 var(--cta-green);
+  color: var(--text);
+  background: var(--white);
+  box-shadow: inset 0 0 0 1px var(--border), var(--elev-1);
   font-weight: 760;
 }
 
-/* Jaune commerce pour Mon panier quand actif */
 .k-cart-tabs[data-active="personal"] .k-tab-personal.k-cart-tab--active {
   color: var(--text);
-  background: var(--commerce-yellow);
-  box-shadow: inset 0 -3px 0 var(--commerce-yellow-hover);
+  background: var(--white);
+  box-shadow: inset 0 0 0 1px var(--border), var(--elev-1);
 }
 
 /* Correctif archéologie (mandat §2/§11) — le × de sortie d'affichage doit
@@ -326,7 +324,8 @@
 .k-cart-tab-group--active {
   position: relative;
   border-radius: 12px 12px 0 0;
-  background: var(--green-soft);
+  background: var(--white);
+  box-shadow: inset 0 0 0 1px var(--border), var(--elev-1);
   overflow: hidden;
 }
 
@@ -337,8 +336,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 3px;
-  background: var(--cta-green);
+  height: 1px;
+  background: var(--text-muted);
   pointer-events: none;
   z-index: 2;
 }
@@ -352,7 +351,7 @@
 }
 
 .k-cart-tab-group--active .k-cart-tab-exit {
-  color: var(--cta-green);
+  color: var(--text-muted);
 }
 
 /* Conserver .k-list-indicator pour rétrocompatibilité éventuelle — à

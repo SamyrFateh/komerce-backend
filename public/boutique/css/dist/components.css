@@ -6579,7 +6579,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-item-info { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
 /* Nom : 1 ligne tronquée (compact) ou 2 lignes max pour les titres longs */
 .k-cart-item-name  {
-  font-weight: 760; font-size: 12px; color: var(--text);
+  font-weight: 500; font-size: 12px; color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   cursor: pointer; line-height: 1.3;
 }
@@ -9267,10 +9267,19 @@ body.cart-open  #k-section-index { display:none; }
   #k-modal .k-sug-card-actions {
     --k-sug-action-width: 76px;
     --k-sug-action-height: 30px;
+    height: var(--k-sug-action-height);
+    max-height: var(--k-sug-action-height);
+    aspect-ratio: auto;
+    align-self: flex-start;
+    box-sizing: border-box;
   }
 
   #k-modal .k-sug-card-actions.is-filled {
     grid-template-columns: 25px 26px 25px;
+    height: var(--k-sug-action-height);
+    max-height: var(--k-sug-action-height);
+    aspect-ratio: auto;
+    align-self: flex-start;
   }
 
   #k-modal .k-sug-card-actions.is-filled .k-sug-step {
@@ -9623,20 +9632,18 @@ body.cart-open  #k-section-index { display:none; }
 
 .k-cart-tab:hover { color: var(--text); }
 
-/* Onglet actif — fond teinté + indicateur bas (mockup direction UX 2026-08) */
-/* Vert pour Ma liste (défaut) */
+/* Onglet actif — focus neutre : lumière/profondeur, jamais couleur métier. */
 .k-cart-tab--active {
-  color: var(--cta-green);
-  background: var(--green-soft);
-  box-shadow: inset 0 -3px 0 var(--cta-green);
+  color: var(--text);
+  background: var(--white);
+  box-shadow: inset 0 0 0 1px var(--border), var(--elev-1);
   font-weight: 760;
 }
 
-/* Jaune commerce pour Mon panier quand actif */
 .k-cart-tabs[data-active="personal"] .k-tab-personal.k-cart-tab--active {
   color: var(--text);
-  background: var(--commerce-yellow);
-  box-shadow: inset 0 -3px 0 var(--commerce-yellow-hover);
+  background: var(--white);
+  box-shadow: inset 0 0 0 1px var(--border), var(--elev-1);
 }
 
 /* Correctif archéologie (mandat §2/§11) — le × de sortie d'affichage doit
@@ -9692,7 +9699,8 @@ body.cart-open  #k-section-index { display:none; }
 .k-cart-tab-group--active {
   position: relative;
   border-radius: 12px 12px 0 0;
-  background: var(--green-soft);
+  background: var(--white);
+  box-shadow: inset 0 0 0 1px var(--border), var(--elev-1);
   overflow: hidden;
 }
 
@@ -9703,8 +9711,8 @@ body.cart-open  #k-section-index { display:none; }
   left: 0;
   right: 0;
   bottom: 0;
-  height: 3px;
-  background: var(--cta-green);
+  height: 1px;
+  background: var(--text-muted);
   pointer-events: none;
   z-index: 2;
 }
@@ -9718,7 +9726,7 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 .k-cart-tab-group--active .k-cart-tab-exit {
-  color: var(--cta-green);
+  color: var(--text-muted);
 }
 
 /* Conserver .k-list-indicator pour rétrocompatibilité éventuelle — à
@@ -10162,7 +10170,7 @@ body.is-shared-list-context #k-cart-recap-word {
   min-width: 0;
   margin-top: 2px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.35;
   color: var(--text);
 }

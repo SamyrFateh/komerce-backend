@@ -87,7 +87,7 @@ describe('liste partageable — layout étroit side cart / drawer', () => {
   });
 
   it('garde le prix/statut lisibles en flex-row (plus de grid-area)', () => {
-    expect(css).toMatch(/\.k-cart-snapshot-item-meta\s*\{[^}]*display:\s*flex[^}]*font-weight:\s*700/s);
+    expect(css).toMatch(/\.k-cart-snapshot-item-meta\s*\{[^}]*display:\s*flex[^}]*font-weight:\s*500/s);
     expect(css).toMatch(/\.k-cart-snapshot-item-status\s*\{[^}]*font-size:\s*11\.5px/s);
     expect(css).not.toMatch(/\.k-cart-snapshot-item-meta\s*\{[^}]*grid-area/s);
     expect(css).not.toMatch(/\.k-cart-snapshot-item-controls\s*\{[^}]*grid-area/s);

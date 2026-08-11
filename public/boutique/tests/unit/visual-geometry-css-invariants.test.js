@@ -72,15 +72,16 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(tab).toMatch(/justify-content\s*:\s*center/);
     });
 
-    it('LOT1-h : Ma liste + sortie portent un unique trait continu dessiné par le groupe', () => {
+    it('LOT1-h : Ma liste + sortie portent un unique focus neutre continu dessiné par le groupe', () => {
       const indicator = css.match(
         /\.k-cart-tab-group--active::after\s*\{([^}]+)\}/s
       )?.[1] ?? '';
 
       expect(indicator).toMatch(/left\s*:\s*0/);
       expect(indicator).toMatch(/right\s*:\s*0/);
-      expect(indicator).toMatch(/height\s*:\s*3px/);
-      expect(indicator).toMatch(/background\s*:\s*var\(--cta-green\)/);
+      expect(indicator).toMatch(/height\s*:\s*1px/);
+      expect(indicator).toMatch(/background\s*:\s*var\(--text-muted\)/);
+      expect(indicator).not.toMatch(/cta-green|commerce-yellow|green-soft/);
 
       const children = css.match(
         /\.k-cart-tab-group--active\s+\.k-tab-shared-list\.k-cart-tab--active,\s*\.k-cart-tab-group--active\s+\.k-cart-tab-exit\s*\{([^}]+)\}/s
@@ -363,7 +364,7 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
 
     it('LOT8-f : logo et avatar desktop sans marge parasite', () => {
       expect(layout).toMatch(
-        /\.k-logo\s*\{\s*min-width:\s*148px;\s*justify-content:\s*center;\s*\}/
+        /\.k-logo\s*\{[^}]*width:\s*148px;[^}]*min-width:\s*148px;[^}]*justify-content:\s*center;[^}]*\}/
       );
 
       expect(layout).toMatch(
@@ -395,7 +396,10 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       );
 
       expect(personalTab).toMatch(
-        /background\s*:\s*var\(--commerce-yellow\)/
+        /background\s*:\s*var\(--white\)/
+      );
+      expect(personalTab).not.toMatch(
+        /commerce-yellow|cta-green|green-soft/
       );
 
       expect(shared).toMatch(
@@ -449,11 +453,17 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       );
     });
 
-    it('LOT9-d : le stepper suggestion mobile reste compact à 76x30', () => {
+    it('LOT9-d : le stepper suggestion mobile impose réellement son bounding 76x30', () => {
       const polish = readCss('modal-product-polish.css');
 
       expect(polish).toMatch(
         /@media\s*\(max-width:\s*899px\)[\s\S]*?--k-sug-action-width:\s*76px;[\s\S]*?--k-sug-action-height:\s*30px;/
+      );
+      expect(polish).toMatch(
+        /#k-modal\s+\.k-sug-card-actions\s*\{[^}]*height:\s*var\(--k-sug-action-height\)[^}]*max-height:\s*var\(--k-sug-action-height\)[^}]*aspect-ratio:\s*auto/s
+      );
+      expect(polish).toMatch(
+        /#k-modal\s+\.k-sug-card-actions\.is-filled\s*\{[^}]*height:\s*var\(--k-sug-action-height\)[^}]*max-height:\s*var\(--k-sug-action-height\)/s
       );
     });
 

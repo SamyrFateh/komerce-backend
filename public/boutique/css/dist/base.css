@@ -928,9 +928,9 @@ body {
 /* BUG-AVATAR-ANIM : translateY(-50%) doit être présent dans chaque keyframe,
    sinon l'animation l'écrase et la dame saute au chargement / à chaque ajout. */
 @keyframes panierArrive {
-  0%   { transform: translate(-4px,-50%) scale(.85) rotate(-8deg); }
-  50%  { transform: translate(-4px,-50%) scale(1.12) rotate(4deg); }
-  100% { transform: translate(-4px,-50%) scale(1) rotate(0deg); }
+  0%   { transform: translate(0,-50%) scale(.85) rotate(-8deg); }
+  50%  { transform: translate(0,-50%) scale(1.12) rotate(4deg); }
+  100% { transform: translate(0,-50%) scale(1) rotate(0deg); }
 }
 .k-cart-btn.has-items .k-cart-avatar,
 .k-modal-cart-btn.has-items .k-cart-avatar {
@@ -940,12 +940,12 @@ body {
 .k-modal-cart-btn.is-empty .k-modal-cart-badge { display: none; }
 
 @keyframes avatarWave {
-  0%   { transform: translate(-4px,-50%) scale(1) rotate(0deg); }
-  20%  { transform: translate(-4px,-50%) scale(1.25) rotate(-10deg); }
-  40%  { transform: translate(-4px,-50%) scale(1.2) rotate(12deg); }
-  60%  { transform: translate(-4px,-50%) scale(1.22) rotate(-8deg); }
-  80%  { transform: translate(-4px,-50%) scale(1.18) rotate(6deg); }
-  100% { transform: translate(-4px,-50%) scale(1) rotate(0deg); }
+  0%   { transform: translate(0,-50%) scale(1) rotate(0deg); }
+  20%  { transform: translate(0,-50%) scale(1.25) rotate(-10deg); }
+  40%  { transform: translate(0,-50%) scale(1.2) rotate(12deg); }
+  60%  { transform: translate(0,-50%) scale(1.22) rotate(-8deg); }
+  80%  { transform: translate(0,-50%) scale(1.18) rotate(6deg); }
+  100% { transform: translate(0,-50%) scale(1) rotate(0deg); }
 }
 .k-cart-btn.avatar-wave .k-cart-avatar { animation: avatarWave .9s cubic-bezier(.34,1.56,.64,1); }
 
@@ -1200,8 +1200,8 @@ body:has(#k-page-scroll.k-pager-active) {
     padding-inline: clamp(24px, 3vw, 32px);
   }
 
-  .k-logo { min-width: 148px; justify-content: center; }
-  .k-logo-img, .k-logo-svg { height: 44px; }
+  .k-logo { width: 148px; min-width: 148px; justify-content: center; }
+  .k-logo-img, .k-logo-svg { height: 44px; margin-inline: auto; }
   .k-logo-text { display: none; }
   .k-logo-icon { display: none; }
 
