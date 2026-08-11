@@ -1149,8 +1149,8 @@ async function handleShareClick() {
  * la liste partagée, quel que soit N (1..N lignes cochées). Remplace
  * définitivement handleBuySingleItem et handleBuyAllAvailable : plus
  * aucune branche par taille de sélection, plus de chemin d'achat séparé.
- * Construit un panier éphémère depuis selectedItemIds et lance un unique
- * checkout — le récapitulatif (générique, §3.c) est ensuite porté par
+ * Construit une CheckoutSelection depuis selectedItemIds et lance un unique
+ * checkout — le récapitulatif intégré (générique, §3.c) est porté par
  * b-checkout.js lui-même, pas par ce contrôleur.
  * Même garde de catalogue que l'ancien code : toute ligne dont le
  * product_id ne résout plus dans state.products est exclue et signalée,
@@ -1212,7 +1212,7 @@ function handleCommand() {
   // Correctif mandat §10 : la sélection n'est plus réinitialisée ici. Un
   // resetSelection() prématuré à ce point perdait la sélection dès le
   // premier onCommand(), alors que Retour/Annulation depuis le
-  // récapitulatif (b-checkout.js::renderOrderRecapGate) doivent pouvoir
+  // checkout unifié doivent pouvoir
   // relancer le même achat sans tout recocher. La sélection reste donc
   // intacte tant qu'aucun rafraîchissement de contexte ne survient ;
   // c'est pruneSelectionAgainstItems() (déclenché par

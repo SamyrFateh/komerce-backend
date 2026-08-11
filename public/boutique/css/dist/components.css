@@ -11727,15 +11727,10 @@ body.k-id-scroll-lock { overflow: hidden; }
   font-weight: 800;
 }
 
-/* â”€â”€ RÃ©capitulatif de votre commande (mandat Â§7/Â§8) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
- * Bloc lecture seule commun au panier personnel et Ã  toute sÃ©lection de
- * liste partagÃ©e (b-checkout.js::_buildRecapItemsBlock). N'est plus un
- * accordÃ©on repliÃ© planquÃ© en bas du formulaire : c'est tout le contenu de
- * l'Ã©cran dÃ©diÃ© renderOrderRecapGate(), affichÃ© AVANT identitÃ©/retrait/
- * paiement â€” voir le garde en tÃªte de renderCheckout(). .ck-recap-toggle*
- * ci-dessous n'a plus de consommateur JS (l'accordÃ©on a Ã©tÃ© retirÃ©) ; les
- * rÃ¨gles restent pour compat visuelle si un appelant externe les rÃ©utilise,
- * mais peuvent Ãªtre supprimÃ©es lors d'un nettoyage CSS ultÃ©rieur.
+/* Récapitulatif de commande intégré
+ * Bloc lecture seule commun au panier personnel et aux sélections de listes
+ * partagées. Il est rendu dans la même surface transactionnelle que
+ * l'identité, le retrait et le paiement.
  */
 .ck-recap-step {
   margin: 0 0 12px;

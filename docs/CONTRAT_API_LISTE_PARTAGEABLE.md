@@ -70,10 +70,10 @@ state.checkoutDisplayContext = {
 
 Contraintes :
 
-- `state.cart` n'est jamais remplacé durablement par une liste ;
-- l'adaptateur peut construire un panier éphémère uniquement pendant le checkout ;
+- `state.cart` reste en permanence le panier personnel et n'est jamais remplacé par une sélection de liste ;
+- l'adaptateur construit une `CheckoutSelection` à partir des lignes sélectionnées et la transmet au checkout ;
 - le contexte checkout est structuré, pas réduit à une chaîne d'affichage ;
-- toute sortie du modal restaure le panier personnel et efface le contexte éphémère.
+- toute sortie du modal efface le contexte checkout temporaire ; aucune restauration de panier n'est nécessaire.
 
 ## 5. Side-cart
 
@@ -131,7 +131,7 @@ Le total affiché par le CTA et le récapitulatif vaut la somme du **prix marcha
 
 Une action « Tout sélectionner » peut remplir la sélection avec toutes les lignes disponibles. Elle ne déclenche jamais directement le checkout.
 
-Le récapitulatif :
+Le récapitulatif intégré à la surface checkout :
 
 - est obligatoire pour N ≥ 1 ;
 - affiche uniquement les lignes sélectionnées ;
@@ -142,8 +142,8 @@ Le récapitulatif :
 ## 8. Checkout canonique
 
 ~~~text
-PERSONAL_CART → panier personnel → récapitulatif → checkout
-SHARED_LIST   → sélection locale → panier éphémère → récapitulatif → checkout
+PERSONAL_CART → CheckoutSelection → récapitulatif intégré + identité/retrait/paiement
+SHARED_LIST   → sélection locale → CheckoutSelection → récapitulatif intégré + identité/retrait/paiement
 ~~~
 
 Chaque ligne SHARED_LIST transmise à `POST /api/orders` contient `shared_cart_item_id`.

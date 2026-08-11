@@ -177,8 +177,8 @@ Zéro changement UX.
 
 - introduire `CheckoutSelection` ;
 - faire entrer panier personnel et liste partagée par cette abstraction ;
-- faire disparaître le panier éphémère comme contrat entre shared-list et checkout si l'abstraction permet de l'éviter ;
-- transformer `renderOrderRecapGate()` en résumé intégré au checkout ;
+- shared-list transmet directement une `CheckoutSelection` sans détourner le panier personnel ;
+- intégrer le récapitulatif à la surface checkout et supprimer l'ancien écran intermédiaire ;
 - supprimer le bouton / événement `Confirmer et continuer` ;
 - ouvrir directement le checkout avec la sélection canonique ;
 - conserver création de commande et paiement métier inchangés.

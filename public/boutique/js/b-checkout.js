@@ -4,12 +4,12 @@
  * @domain        checkout
  * @layer         ui-component
  * @criticality   critical
- * @inputs        cart_state, identity, phone, relais, payment_mode
- * @outputs       order_creation, stripe_payment_intent, checkout_modal_state
+ * @inputs        checkout_selection, identity, phone, relais, payment_mode
+ * @outputs       checkout_state, order_creation_request, payment_initialization, order_success
  * @depends       b-store.js, b-cart-core.js, b-cart.js, b-identity.js, b-checkout-render.js, b-phone.js, routes/orders.js, routes/payments.js
  * @used-by       boutique.js, b-nav.js, b-share-cart.js
- * @doctrine      paiement_seul_acte_engageant, otp_une_fois, checkout_sans_friction
- * @impact-areas  checkout, payments, otp, order-creation, cart, shared-cart
+ * @doctrine      paiement_seul_acte_engageant, otp_une_fois, recap_integre_checkout, surface_transactionnelle_unique, checkout_sans_friction
+ * @impact-areas  checkout, orders, payments, otp, cart, shared-cart
  * @version       2026-06
  */
 'use strict';
@@ -24,7 +24,7 @@
 import { bus }           from './b-bus.js';
 import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost, optimizeImgUrl } from './b-utils.js';
-import { showToast, cartTotal }   from './b-cart-core.js';
+import { showToast }   from './b-cart-core.js';
 import { renderPayPalButton, isPayPalEnabled } from './b-paypal.js'; // Migration 079
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
@@ -37,7 +37,6 @@ import {
   makeInput                 as _makeInputRender,
   makePhoneInput            as _makePhoneInputRender,
 } from './b-checkout-render.js';
-import { computePriceVariations, buildPriceVariationSummary } from './group/group-price-variation.js';
 import {
   digitsOnly as _digitsOnly,
   normalizeLocal as _normalizeLocal,
@@ -57,7 +56,79 @@ export function normalizeLocal(c, d)    { return _normalizeLocal(c, d); }
 export function prettifyLocal(r, co)    { return _prettifyLocal(r, co); }
 export function buildE164(code, raw)    { return _buildE164(code, raw); }
 
+/**
+ * Vue canonique de ce qui doit être finalisé.
+ *
+ * Lot 2B : CheckoutSelection est la source de vérité transactionnelle.
+ * state.cart n'est lu qu'à l'entrée d'un checkout de panier personnel.
+ */
+export function buildCheckoutSelection(
+  items = state.cart,
+  context = state.checkoutDisplayContext
+) {
+  const normalizedItems = Array.isArray(items)
+    ? items.filter(Boolean).map(item => ({
+        ...item,
+        qty: Number(item.qty ?? item.quantity ?? 1) || 1,
+      }))
+    : [];
 
+  const total = normalizedItems.reduce((sum, item) => {
+    const product = item.product || {};
+    const price = Number(
+      item.price ??
+      product.price_kmf ??
+      product.price ??
+      0
+    ) || 0;
+
+    return sum + (price * item.qty);
+  }, 0);
+
+  const shared = context?.origin === 'SHARED_LIST';
+
+  return {
+    source: shared ? 'shared-list' : 'personal-cart',
+    sourceId: shared ? (context.sharedCartId || null) : null,
+    items: normalizedItems,
+    total,
+  };
+}
+
+
+
+function _currentCheckoutSelection() {
+  const selection = state.orderData?.checkoutSelection;
+
+  if (selection && Array.isArray(selection.items)) {
+    return selection;
+  }
+
+  return buildCheckoutSelection();
+}
+
+function _checkoutItems() {
+  return _currentCheckoutSelection().items;
+}
+
+function _checkoutTotal() {
+  const selection = _currentCheckoutSelection();
+  const total = Number(selection.total);
+
+  if (Number.isFinite(total)) return total;
+
+  return buildCheckoutSelection(selection.items).total;
+}
+
+/**
+ * Seul un checkout issu du panier personnel a le droit
+ * de vider ce panier après engagement réussi.
+ */
+function _clearCommittedCheckoutSource() {
+  if (_currentCheckoutSelection().source === 'personal-cart') {
+    clearCart();
+  }
+}
 
 async function ensureStripe() {
   if (_stripe) return _stripe;
@@ -90,8 +161,15 @@ async function ensureStripe() {
    * Prérequis : panier non vide (sinon toast error)
    * Ferme le tiroir panier, initialise state.orderData, affiche renderCheckout()
    */
-export function checkoutCart() {
-    if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
+export function checkoutCart(checkoutSelection = null) {
+    const selection = checkoutSelection && Array.isArray(checkoutSelection.items)
+      ? checkoutSelection
+      : buildCheckoutSelection();
+
+    if (!selection.items.length) {
+      showToast('Votre panier est vide.', 'error');
+      return;
+    }
     // FIX 2026-05-19 : si on commande depuis la fiche produit Temu, fermer d'abord
     // la modale produit. Sans ça, deux overlays s'empilent (k-modal-overlay +
     // k-order-modal) ce qui casse le scroll et laisse la fiche produit visible
@@ -100,13 +178,15 @@ export function checkoutCart() {
       bus.emit('modal:close');
     }
     closeCart();
-    state.orderData = { payment_mode: 'cash_relais' };
-    // Mandat §7/§8 — l'écran de récapitulatif est désormais le premier
-    // écran du checkout canonique, pour N>=1 sans exception (plus de
-    // raccourci N=1). Son bouton "Confirmer et continuer" appelle
-    // renderCheckout() (formulaire identité/livraison/paiement, inchangé)
-    // à l'étape suivante — jamais l'inverse.
-    renderOrderRecapGate();
+
+    state.orderData = {
+      payment_mode: 'cash_relais',
+      checkoutSelection: selection,
+    };
+
+    // Une seule surface transactionnelle :
+    // le récapitulatif fait partie du checkout.
+    renderCheckout();
     dom.orderModal.classList.add('open');
     scroll.savedY = getScrollY();
     document.body.classList.add('cart-open');
@@ -435,7 +515,7 @@ function refreshCheckoutComputedUI() {
   const relayName = getRelayDisplayName(od.selectedRelaisName);
   const island    = od.selectedIsland || '';
   const where     = relayName ? (relayName + (island ? ' • ' + island : '')) : '';
-  const total = cartTotal();
+  const total = _checkoutTotal();
   const cb = document.getElementById('cb-use-wallet');
   const walletApplied = (cb && cb.checked && state.walletBalance > 0) ? Math.min(state.walletBalance, total) : 0;
   const netAmount = total - walletApplied;
@@ -506,14 +586,18 @@ function _buildIdentityHeader(identity) {
  * bloque jamais la confirmation. Absent si aucune ligne n'a de contexte
  * liste, ou si aucune ligne n'a réellement changé de prix (doctrine §3 :
  * rien à afficher si snapshot absent/nul, prix actuel absent, ou prix
- * identiques). Le total (cartTotal(), en dehors de ce bloc) utilise
+ * identiques). Le total (_checkoutTotal(), en dehors de ce bloc) utilise
  * toujours le prix catalogue actuel, avec ou sans variation.
  */
 function _renderPriceVariationRecap(body) {
-  const variations = computePriceVariations(state.cart);
+  const selection = _currentCheckoutSelection();
+  const variations = Array.isArray(selection.priceVariations)
+    ? selection.priceVariations
+    : [];
+
   if (!variations.length) return;
 
-  const summary = buildPriceVariationSummary(variations);
+  const summary = selection.priceVariationSummary || null;
   const box = document.createElement('div');
   box.className = 'ck-section-block ck-price-variation-recap';
   box.id = 'ck-price-variation-recap';
@@ -536,34 +620,27 @@ function _renderPriceVariationRecap(body) {
 
 /**
  * Mandat §7/§8 — bloc lecture seule des lignes de la commande + total.
- * Fonction pure : lit uniquement state.cart (qui contient déjà, selon
- * l'origine, soit le panier personnel soit le panier canonique éphémère
- * construit par checkoutSharedListSelection — voir
- * group-checkout-adapter.js), sans jamais distinguer la provenance ni lire
- * shared_list_context/shared_cart_item_id pour une décision d'affichage.
+ * Fonction pure : reçoit les lignes de CheckoutSelection, quelle que soit
+ * leur provenance. shared_cart_item_id reste une donnée du contrat de
+ * commande, jamais une décision d'affichage.
  * Aucun retrait, aucune modification de quantité, aucun `<input>`. Le
  * marqueur par ligne (`.ck-recap-check`) n'est PAS une checkbox — non
  * focusable, non cliquable, `aria-hidden`, avec un texte accessible
  * ("Inclus dans cette commande") porté séparément sur la ligne
  * (`.sr-only`), jamais un contrôle de formulaire fictif.
  *
- * Correctif archéologie (2026-08) — remplace l'ancien accordéon replié
- * (.ck-recap-toggle, aria-expanded) qui vivait tout en bas du formulaire
- * identité/relais/paiement/wallet : repliée par défaut et invisible sans
- * action volontaire, cette présentation ne constituait pas l'étape de
- * confirmation exigée par le mandat §7 ("Sélection → Commander →
- * Récapitulatif → confirmation → checkout paiement", même pour un seul
- * article). Ce bloc est maintenant tout l'écran de renderOrderRecapGate()
- * ci-dessous, entièrement visible, affiché AVANT identité/livraison/
- * paiement — jamais après.
+ * Doctrine checkout unifié (2026-08) — ce bloc est la projection lecture
+ * seule de CheckoutSelection. Il vit dans la même surface que l'identité,
+ * le retrait et le paiement : le récapitulatif n'est plus une étape ni
+ * une confirmation intermédiaire.
  * @returns {HTMLElement|null} null si le panier est vide (ne devrait pas
  *   arriver ici, mais défensif — jamais de section vide dans le DOM).
  */
-function _buildRecapItemsBlock(items) {
+function _buildRecapItemsBlock(items, selectionTotal = null) {
   if (!Array.isArray(items) || !items.length) return null;
 
   const wrap = document.createElement('div');
-  wrap.className = 'ck-recap-step ck-recap-step--gate';
+  wrap.className = 'ck-recap-step';
 
   const list = document.createElement('div');
   list.className = 'ck-recap-items';
@@ -591,106 +668,55 @@ function _buildRecapItemsBlock(items) {
 
   const totalRow = document.createElement('div');
   totalRow.className = 'ck-recap-total';
-  totalRow.innerHTML = '<span>Total</span><span>' + fmt(cartTotal(), 'KMF') + '</span>';
+  const total = selectionTotal == null
+    ? buildCheckoutSelection(items).total
+    : selectionTotal;
+
+  totalRow.innerHTML = '<span>Total</span><span>' + fmt(total, 'KMF') + '</span>';
   list.appendChild(totalRow);
 
   wrap.appendChild(list);
   return wrap;
 }
 
-/**
- * Mandat §7/§8 — écran de récapitulatif, premier écran du checkout
- * canonique, pour N>=1 sans exception (plus de raccourci N=1). Appelé par
- * checkoutCart() uniquement ; son bouton "Confirmer et continuer" appelle
- * ensuite renderCheckout() (formulaire identité/livraison/paiement,
- * contrat inchangé — appelable directement, notamment par les tests,
- * sans jamais repasser par ce gate). "← Retour" ferme le checkout et
- * rouvre le panier/la liste, sélection intacte (mandat §7, §10 — voir
- * aussi le retrait du resetSelection() prématuré dans
- * group-side-cart.js::handleCommand).
- */
-function renderOrderRecapGate() {
-  const body = dom.orderBody;
-  body.innerHTML = '';
-  body.classList.remove('k-order-body--checkout');
-  body.classList.add('k-order-body--recap');
-  body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
-  dom.orderTitle.innerHTML = '<button type="button" class="ck-modal-back-btn ck-modal-back-btn--header" aria-label="Retour">← Retour</button><span class="ck-order-title-text">Récapitulatif de votre commande</span>';
+function _insertCheckoutIdentity(body, node) {
+  const summary = body.querySelector('#ck-order-summary');
 
-  const headerBackBtn = dom.orderTitle.querySelector('.ck-modal-back-btn--header');
-  if (headerBackBtn) {
-    headerBackBtn.addEventListener('click', () => {
-      closeOrderModal();
-      setTimeout(() => { if (typeof openCart === 'function') openCart(); }, 150);
-    });
+  if (summary) {
+    summary.insertAdjacentElement('afterend', node);
+  } else {
+    body.insertBefore(node, body.firstChild);
   }
-
-  // Même bandeau décoratif que le formulaire identité/paiement (LOT 13 §F) —
-  // sur l'écran récap ici plutôt que là-bas, cf. mock ("Achat pour Ma liste").
-  if (state.checkoutDisplayContext?.title) {
-    const ctxBanner = document.createElement('div');
-    ctxBanner.className = 'ck-shared-list-context-banner';
-    ctxBanner.textContent = state.checkoutDisplayContext.title;
-    body.appendChild(ctxBanner);
-  }
-
-  // Le chrome porte déjà « Récapitulatif de votre commande ». Le titre du
-  // corps donne donc l'instruction utile sans répéter mot pour mot le header.
-  const heading = document.createElement('h2');
-  heading.className = 'ck-recap-gate-heading';
-  heading.textContent = 'Vérifiez vos articles';
-  body.appendChild(heading);
-
-  const block = _buildRecapItemsBlock(state.cart);
-  if (block) body.appendChild(block);
-
-  const confirmBtn = document.createElement('button');
-  confirmBtn.type = 'button';
-  confirmBtn.id = 'btn-confirm-recap';
-  confirmBtn.className = 'ck-confirm-btn';
-  confirmBtn.textContent = 'Confirmer et continuer · ' + fmt(cartTotal(), 'KMF');
-  confirmBtn.addEventListener('click', () => {
-    renderCheckout();
-  });
-  // Même invariant que le bouton final de paiement : le CTA de confirmation
-  // appartient au shell du modal, jamais à la zone scrollable des articles.
-  // Une liste longue peut défiler sans jamais masquer l'action principale.
-  body.parentElement.appendChild(confirmBtn);
 }
 
 // renderCheckoutCompact supprimée — doublon de renderCheckout(), jamais activée (07/05/2026)
 export function renderCheckout() {
-    // Mandat §7/§8 — renderCheckout() construit toujours le formulaire
-    // identité/livraison/paiement complet (contrat inchangé, cf. suite de
-    // tests b-checkout.test.js qui l'appelle directement). Le gate
-    // récapitulatif (renderOrderRecapGate()) est un écran distinct, en
-    // amont : c'est checkoutCart() qui l'affiche en premier, et c'est son
-    // bouton "Confirmer et continuer" qui appelle renderCheckout() ensuite
-    // — jamais l'inverse, jamais de garde ici pour ne pas changer le
-    // comportement d'un appel direct à renderCheckout() (tests, éventuels
-    // futurs appelants).
+    // Surface transactionnelle unique :
+    // sélection + identité + retrait + paiement cohabitent.
     const body = dom.orderBody;
     body.innerHTML = '';
     body.classList.remove('k-order-body--recap');
     body.classList.add('k-order-body--checkout');
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
-    dom.orderTitle.innerHTML = '<button type="button" class="ck-modal-back-btn ck-modal-back-btn--header" aria-label="Retour au récapitulatif">← Récap</button><span class="ck-order-title-text">🛒 Commander</span>';
+    dom.orderTitle.innerHTML = '<button type="button" class="ck-modal-back-btn ck-modal-back-btn--header" aria-label="Retour">← Retour</button><span class="ck-order-title-text">Finaliser ma commande</span>';
 
     const od = state.orderData;
+
+    if (!od.checkoutSelection) {
+      od.checkoutSelection = buildCheckoutSelection();
+    }
+
     if (!od.fulfillment_zone) od.fulfillment_zone = 'comoros';
 
-    // Règle §9 (simplification checkout final, cf. mock "← Récap") — le
-    // retour depuis cet écran mène au récapitulatif des articles
-    // (renderOrderRecapGate(), écran précédent du même modal), jamais à la
-    // fermeture du checkout. Avant : "← Panier" fermait le modal et
-    // rouvrait le tiroir panier, sautant le récapitulatif — ce que ce même
-    // écran affiche pourtant déjà un bouton dédié pour faire ("← Retour" en
-    // tête de renderOrderRecapGate(), inchangé, qui lui ferme bien le modal
-    // et rouvre le panier).
     const headerBackBtn = dom.orderTitle.querySelector('.ck-modal-back-btn--header');
+
     if (headerBackBtn) {
       headerBackBtn.addEventListener('click', () => {
-        renderOrderRecapGate();
+        closeOrderModal();
+
+        setTimeout(() => {
+          if (typeof openCart === 'function') openCart();
+        }, 150);
       });
     }
 
@@ -704,7 +730,18 @@ export function renderCheckout() {
       const ctxBanner = document.createElement('div');
       ctxBanner.className = 'ck-shared-list-context-banner';
       ctxBanner.textContent = state.checkoutDisplayContext.title;
-      body.insertBefore(ctxBanner, body.firstChild);
+      body.appendChild(ctxBanner);
+    }
+
+    const orderSummary = _buildRecapItemsBlock(
+      od.checkoutSelection.items,
+      od.checkoutSelection.total
+    );
+
+    if (orderSummary) {
+      orderSummary.id = 'ck-order-summary';
+      orderSummary.classList.add('ck-recap-step--embedded');
+      body.appendChild(orderSummary);
     }
 
     // Pays/zone (Comores/France) déplacé DANS le picker de relais (cf. _openRelaisPicker) :
@@ -718,7 +755,7 @@ export function renderCheckout() {
     const _knownUser = getCurrentIdentity();
     if (_knownUser) {
       const idRecap = _buildIdentityHeader(_knownUser);
-      body.insertBefore(idRecap, body.firstChild); // ligne en tête du checkout
+      _insertCheckoutIdentity(body, idRecap); // ligne en tête du checkout
     }
     // ── Fin récap identité ───────────────────────────────────────────────────
 
@@ -741,7 +778,7 @@ export function renderCheckout() {
             hint.className = 'k-ck-guest-hint';
             hint.innerHTML = '<span class="k-ck-guest-ic" aria-hidden="true">✍️</span>'
               + '<span><b>Première commande ?</b> Votre compte se crée en validant votre numéro WhatsApp.</span>';
-            body.insertBefore(hint, body.firstChild);
+            _insertCheckoutIdentity(body, hint);
           }
           return;
         }
@@ -754,7 +791,7 @@ export function renderCheckout() {
         // Construction + insertion EN TÊTE du body (fiable, indépendant de la
         // structure interne — on ne cherche plus un .k-ck-group qui peut manquer).
         const idRecap = _buildIdentityHeader(restoredUser);
-        body.insertBefore(idRecap, body.firstChild); // toujours en haut
+        _insertCheckoutIdentity(body, idRecap); // toujours en haut
       }).catch(err => {
         // On n'avale plus silencieusement : une erreur réseau est normale (non
         // connecté), mais une erreur de construction DOM doit être visible.
@@ -941,12 +978,12 @@ export function renderCheckout() {
     finalTotal.className = 'ck-final-total';
     finalTotal.innerHTML =
       '<span id="ck-final-total-label">\u00c0 r\u00e9gler</span>'
-      + '<strong id="ck-final-total-amount">' + fmt(cartTotal(), 'KMF') + '</strong>';
+      + '<strong id="ck-final-total-amount">' + fmt(_checkoutTotal(), 'KMF') + '</strong>';
     body.appendChild(finalTotal);
 
-    // Le récapitulatif (mandat §7/§8) n'est plus ici : c'est désormais
-    // l'écran dédié renderOrderRecapGate(), affiché AVANT ce formulaire par
-    // checkoutCart() — renderCheckout() lui-même reste inchangé.
+    // Checkout unifié : le récapitulatif de CheckoutSelection vit dans
+    // cette même surface, avant identité, retrait et paiement.
+    // Aucun écran de confirmation intermédiaire.
 
     /* ── 5. Confirm (sticky) ── */
     // FIX: supprimer tout ancien bouton confirm
@@ -960,7 +997,7 @@ export function renderCheckout() {
     confirmBtn.disabled = true;
     // Règle §8 — même gabarit de libellé qu'à l'état stabilisé (refreshCheckoutComputedUI) ;
     // seul le sous-texte change tant que le relais n'est pas chargé.
-    setCheckoutConfirmButton(confirmBtn, 'Confirmer la commande · ' + fmt(cartTotal(), 'KMF'), 'Chargement du relais…');
+    setCheckoutConfirmButton(confirmBtn, 'Confirmer la commande · ' + fmt(_checkoutTotal(), 'KMF'), 'Chargement du relais…');
     // Bouton confirm HORS du scroll area → toujours visible en bas du modal
     body.parentElement.appendChild(confirmBtn);
 
@@ -1173,7 +1210,7 @@ export function updateWalletDisplay() {
     if (!ded) return;
     const cb = document.getElementById('cb-use-wallet');
     if (cb && cb.checked && state.walletBalance > 0) {
-      const total = cartTotal();
+      const total = _checkoutTotal();
       const applied = Math.min(state.walletBalance, total);
       const remaining = total - applied;
       ded.classList.add('is-visible');
@@ -1243,7 +1280,7 @@ export async function submitOrder(btn) {
       ? (od.pickupCodeRecipient === 'organizer' ? 'organizer' : 'buyer')
       : undefined;
 
-    const items = state.cart.map(i => ({
+    const items = _checkoutItems().map(i => ({
       product_id: String(i.product.id),
       quantity: i.qty,
       confection_type: 'aucun',
@@ -1306,7 +1343,7 @@ export async function submitOrder(btn) {
       state.pendingStripeOrderRef = null;
     }
 
-    clearCart();
+    _clearCommittedCheckoutSource();
     renderOrderSuccess(orderData, recipName, clientEmail, apiResult || orderData);
     showToast('Commande confirmée !', 'success');
     btn.dataset.busy = '0';
@@ -1430,7 +1467,7 @@ async function _createKomerceOrderForPayPal() {
   const recipName  = (identity?.full_name || identity?.name || '').trim();
   const trackingPhone = identity?.phone || undefined;
 
-  const items = state.cart.map(i => ({
+  const items = _checkoutItems().map(i => ({
     product_id: String(i.product.id),
     quantity:   i.qty,
     confection_type: 'aucun',
@@ -1470,7 +1507,7 @@ function _onPayPalSuccess(captureRes) {
   const orderRef  = state.pendingPaypalOrderRef;
   // Reconstruire un orderData minimal pour renderOrderSuccess
   const orderData = state.lastApiResult?.order || { reference: orderRef };
-  clearCart();
+  _clearCommittedCheckoutSource();
   state.pendingPaypalOrderRef = null;
   renderOrderSuccess(orderData, recipName, undefined, state.lastApiResult || orderData);
 }

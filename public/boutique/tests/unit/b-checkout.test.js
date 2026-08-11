@@ -122,12 +122,11 @@ jest.mock('../../js/b-utils.js', () => ({
 
 jest.mock('../../js/b-cart-core.js', () => ({
   showToast: jest.fn(),
-  cartTotal: jest.fn(() => 0),
 }));
 
 const { bus } = require('../../js/b-bus.js');
 const { state, dom, scroll } = require('../../js/b-store.js');
-const { showToast, cartTotal } = require('../../js/b-cart-core.js');
+const { showToast } = require('../../js/b-cart-core.js');
 const { apiPost, apiGet } = require('../../js/b-utils.js');
 const { clearCart, openCart, closeCart } = require('../../js/b-cart.js');
 const { requireIdentity, getCurrentIdentity, restoreIdentity, bindChangeIdentity, openIdentityModal } = require('../../js/b-identity.js');
@@ -145,6 +144,22 @@ const {
   makeInput, makePhoneInput, makeIntlPhoneInput,
   getDefaultPhoneCodeForZone,
 } = require('../../js/b-checkout.js');
+
+function setCheckoutTotal(total) {
+  state.orderData.checkoutSelection = {
+    source: 'personal-cart',
+    sourceId: null,
+    items: [{
+      product: {
+        id: 'test-checkout-total',
+        name: 'Produit test',
+        price_kmf: total,
+      },
+      qty: 1,
+    }],
+    total,
+  };
+}
 
 function resetDom() {
   document.body.innerHTML = '';
@@ -268,7 +283,7 @@ describe('b-checkout', () => {
       document.body.appendChild(cb);
 
       state.walletBalance = 5000;
-      cartTotal.mockReturnValue(3000);
+      setCheckoutTotal(3000);
 
       updateWalletDisplay();
 
@@ -287,7 +302,7 @@ describe('b-checkout', () => {
       document.body.appendChild(cb);
 
       state.walletBalance = 1000;
-      cartTotal.mockReturnValue(3000);
+      setCheckoutTotal(3000);
 
       updateWalletDisplay();
 
@@ -315,7 +330,7 @@ describe('b-checkout', () => {
       expect(dom.orderModal.classList.contains('open')).toBe(false);
     });
 
-    it('panier non vide → le CTA du récap reste hors de la zone scrollable', () => {
+    it('panier non vide → le CTA final reste hors de la zone scrollable du checkout unifié', () => {
       state.cart = [{
         product: { id: 'p1', name: 'Produit test', price_kmf: 4500 },
         qty: 1,
@@ -323,11 +338,15 @@ describe('b-checkout', () => {
 
       checkoutCart();
 
-      const recapBtn = document.getElementById('btn-confirm-recap');
-      expect(recapBtn).not.toBeNull();
-      expect(dom.orderBody.contains(recapBtn)).toBe(false);
-      expect(recapBtn.parentElement).toBe(dom.orderBody.parentElement);
-      expect(dom.orderBody.classList.contains('k-order-body--recap')).toBe(true);
+      const confirmBtn = document.getElementById('btn-confirm-order');
+
+      expect(confirmBtn).not.toBeNull();
+      expect(dom.orderBody.contains(confirmBtn)).toBe(false);
+      expect(confirmBtn.parentElement).toBe(dom.orderBody.parentElement);
+      expect(dom.orderBody.classList.contains('k-order-body--checkout')).toBe(true);
+      expect(dom.orderBody.querySelector('#ck-order-summary')).not.toBeNull();
+
+      expect(document.getElementById('btn-confirm-recap')).toBeNull();
     });
   });
 
@@ -568,40 +587,57 @@ describe('b-checkout', () => {
   }
 
   describe('checkoutCart — orchestration', () => {
-    it('panier non vide → ferme le panier, initialise orderData, ouvre la modale sur le récapitulatif (mandat §7/§8)', async () => {
-      state.cart = [{ product: { id: 1 }, qty: 1 }];
+    it('panier non vide → construit CheckoutSelection et ouvre directement le checkout unifié', async () => {
+      state.cart = [{
+        product: { id: 1, name: 'Produit test', price_kmf: 3000 },
+        qty: 1,
+      }];
 
       checkoutCart();
       await flush();
 
       expect(closeCart).toHaveBeenCalled();
       expect(state.orderData.payment_mode).toBe('cash_relais');
+
+      expect(state.orderData.checkoutSelection).toMatchObject({
+        source: 'personal-cart',
+        sourceId: null,
+        total: 3000,
+      });
+
+      expect(state.orderData.checkoutSelection.items).toHaveLength(1);
+
       expect(dom.orderModal.classList.contains('open')).toBe(true);
       expect(document.body.classList.contains('cart-open')).toBe(true);
-      // Premier écran affiché : le récapitulatif dédié, jamais directement
-      // le formulaire identité/paiement — plus de raccourci, même pour un
-      // seul article (mandat §7 : "Sélection → Commander → Récapitulatif
-      // → confirmation → checkout paiement", toujours la même séquence).
-      expect(dom.orderBody.textContent).toContain('Vérifiez vos articles');
-      expect(dom.orderBody.textContent).not.toContain('Retrait sécurisé');
-      const recapBtn = document.getElementById('btn-confirm-recap');
-      expect(recapBtn).not.toBeNull();
-      expect(dom.orderBody.contains(recapBtn)).toBe(false);
-      expect(recapBtn.parentElement).toBe(dom.orderBody.parentElement);
+      expect(dom.orderTitle.textContent).toContain('Finaliser ma commande');
+
+      const summary = dom.orderBody.querySelector('#ck-order-summary');
+
+      expect(summary).not.toBeNull();
+      expect(summary.querySelectorAll('.ck-recap-item')).toHaveLength(1);
+
+      // Récapitulatif + checkout = une seule surface.
+      expect(dom.orderBody.textContent).toContain('Retrait sécurisé');
+
+      expect(document.getElementById('btn-confirm-recap')).toBeNull();
+      expect(document.getElementById('btn-confirm-order')).not.toBeNull();
     });
 
-    it('confirmation du récapitulatif → avance vers le formulaire identité/livraison/paiement', async () => {
-      state.cart = [{ product: { id: 1 }, qty: 1 }];
+    it('récapitulatif et paiement cohabitent sans confirmation intermédiaire', async () => {
+      state.cart = [{
+        product: { id: 1, name: 'Produit test', price_kmf: 3000 },
+        qty: 1,
+      }];
 
       checkoutCart();
       await flush();
 
-      document.getElementById('btn-confirm-recap').click();
-      await flush();
-
+      expect(dom.orderBody.querySelector('#ck-order-summary')).not.toBeNull();
+      expect(dom.orderBody.querySelector('#ck-pay-grid')).not.toBeNull();
       expect(dom.orderBody.textContent).toContain('Retrait sécurisé');
-      expect(dom.orderBody.textContent).not.toContain('Vérifiez vos articles');
-      expect(dom.orderBody.textContent).not.toContain('QUI RÉCUPÈRE');
+
+      expect(document.getElementById('btn-confirm-recap')).toBeNull();
+      expect(document.getElementById('btn-confirm-order')).not.toBeNull();
     });
 
     it('modale produit ouverte au moment du checkout → fermée en premier (bus modal:close)', async () => {
@@ -646,38 +682,59 @@ describe('b-checkout', () => {
       restoreIdentity.mockResolvedValue(null);
     });
 
-    it('construit le titre avec bouton retour « ← Récap », qui rouvre le récapitulatif sans fermer le checkout', async () => {
-      // Règle §9 (simplification checkout final, cf. mock) : depuis ce
-      // formulaire, "← Récap" ramène au récapitulatif des articles dans le
-      // même modal — il ne ferme plus le checkout / ne rouvre plus le
-      // tiroir panier (ancien comportement "← Panier", retiré).
+    it('construit « ← Retour » : ferme le checkout unifié puis rouvre le panier', async () => {
+      state.cart = [{
+        product: { id: 1, name: 'Produit test', price_kmf: 3000 },
+        qty: 1,
+      }];
+
       renderCheckout();
       dom.orderModal.classList.add('open');
 
-      let backBtn = dom.orderTitle.querySelector('.ck-modal-back-btn--header');
+      const backBtn =
+        dom.orderTitle.querySelector('.ck-modal-back-btn--header');
+
       expect(backBtn).not.toBeNull();
-      expect(backBtn.textContent).toContain('Récap');
+      expect(backBtn.textContent).toContain('Retour');
+
       backBtn.click();
 
-      expect(dom.orderModal.classList.contains('open')).toBe(true);
-      expect(openCart).not.toHaveBeenCalled();
-      // Le récapitulatif redevient le contenu du modal (heading dédié).
-      expect(dom.orderBody.querySelector('.ck-recap-gate-heading')).not.toBeNull();
+      expect(dom.orderModal.classList.contains('open')).toBe(false);
+
+      await tick(170);
+
+      expect(openCart).toHaveBeenCalled();
     });
 
-    it('identité déjà connue → ligne repliée (renderStepHeader) insérée en tête, sans passer par restoreIdentity', async () => {
-      getCurrentIdentity.mockReturnValue({ full_name: 'Amina', phone: '+269123456' });
+    it('identité déjà connue → ligne repliée placée après le récap, sans restoreIdentity', async () => {
+      state.cart = [{
+        product: { id: 1, name: 'Produit test', price_kmf: 3000 },
+        qty: 1,
+      }];
+
+      getCurrentIdentity.mockReturnValue({
+        full_name: 'Amina',
+        phone: '+269123456',
+      });
 
       renderCheckout();
       await flush();
 
-      expect(renderStepHeader).toHaveBeenCalledWith(expect.objectContaining({
-        state: 'done',
-        label: 'Amina',
-        sublabel: expect.stringContaining('+269123456'),
-        onChange: expect.any(Function),
-      }));
-      expect(dom.orderBody.firstChild.id).toBe('ck-identity-recap');
+      expect(renderStepHeader).toHaveBeenCalledWith(
+        expect.objectContaining({
+          state: 'done',
+          label: 'Amina',
+          sublabel: expect.stringContaining('+269123456'),
+          onChange: expect.any(Function),
+        })
+      );
+
+      const summary = dom.orderBody.querySelector('#ck-order-summary');
+      const identity = dom.orderBody.querySelector('#ck-identity-recap');
+
+      expect(summary).not.toBeNull();
+      expect(identity).not.toBeNull();
+      expect(summary.nextElementSibling).toBe(identity);
       expect(restoreIdentity).not.toHaveBeenCalled();
     });
 
@@ -981,7 +1038,7 @@ describe('b-checkout', () => {
 
     describe('règle §8 — CTA "Confirmer la commande · X KMF" (jamais "Payer", jamais "(net wallet)")', () => {
       it('mode cash, sans wallet → CTA uniforme avec le total', async () => {
-        cartTotal.mockReturnValue(2000);
+        setCheckoutTotal(2000);
         renderCheckout();
         await flush();
 
@@ -991,7 +1048,7 @@ describe('b-checkout', () => {
       });
 
       it('mode Stripe sélectionné → même gabarit de CTA (jamais "💳 Payer")', async () => {
-        cartTotal.mockReturnValue(2000);
+        setCheckoutTotal(2000);
         renderCheckout();
         await flush();
 
@@ -1007,7 +1064,7 @@ describe('b-checkout', () => {
 
       it('wallet coché, couverture partielle → CTA porte le montant NET (après déduction), toujours le même gabarit', async () => {
         global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 800 }) });
-        cartTotal.mockReturnValue(2000);
+        setCheckoutTotal(2000);
         renderCheckout();
         await flush();
 
@@ -1036,7 +1093,7 @@ describe('b-checkout', () => {
 
       it('wallet coché + solde couvrant tout le total → masque le choix du moyen de paiement, affiche le message de couverture', async () => {
         global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 5000 }) });
-        cartTotal.mockReturnValue(2000);
+        setCheckoutTotal(2000);
         renderCheckout();
         await flush();
 
@@ -1053,7 +1110,7 @@ describe('b-checkout', () => {
 
       it('wallet décoché après avoir tout couvert → réaffiche le choix du moyen de paiement', async () => {
         global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 5000 }) });
-        cartTotal.mockReturnValue(2000);
+        setCheckoutTotal(2000);
         renderCheckout();
         await flush();
 
@@ -1072,7 +1129,7 @@ describe('b-checkout', () => {
 
       it('od.payment_mode n\'est jamais modifié par le masquage — décoration pure (invariant commande/paiement préservé)', async () => {
         global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 5000 }) });
-        cartTotal.mockReturnValue(2000);
+        setCheckoutTotal(2000);
         renderCheckout();
         await flush();
 
