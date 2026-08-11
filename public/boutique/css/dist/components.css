@@ -9507,19 +9507,20 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 .k-cart-item-select:hover {
-  border-color: var(--cta-green);
+  border-color: var(--stone-border);
+  background: var(--sand);
 }
 
 .k-cart-item-select.is-checked {
-  background: var(--green-soft);
-  border-color: var(--cta-green);
+  background: var(--stone);
+  border-color: var(--stone-border);
 }
 
 .k-cart-item-select.is-checked::after {
   content: '';
   width: 6px;
   height: 11px;
-  border: solid var(--cta-green);
+  border: solid var(--stone-text);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
 }
@@ -11432,18 +11433,18 @@ body.k-id-scroll-lock { overflow: hidden; }
  * @domain        checkout
  * @layer         ui-style
  * @owner         public/boutique/js/b-checkout.js
- * @purpose       Projette le checkout canonique en cartes indépendantes, sans fausse progression.
+ * @purpose       Projette le checkout canonique en cartes indÃ©pendantes, sans fausse progression.
  * @impact-areas  checkout, payment-ui, relay-ui, order-success, responsive-layout
  * @version       2026-08
  */
 
 /*
- * Référence produit : identité, point de retrait et paiement restent visibles
- * comme informations indépendantes ; le CTA final porte l'acte engageant.
- * Aucun contrat métier, calcul, paiement, OTP ou création de commande n'est modifié.
+ * RÃ©fÃ©rence produit : identitÃ©, point de retrait et paiement restent visibles
+ * comme informations indÃ©pendantes ; le CTA final porte l'acte engageant.
+ * Aucun contrat mÃ©tier, calcul, paiement, OTP ou crÃ©ation de commande n'est modifiÃ©.
  */
 
-/* ── Shell ────────────────────────────────────────────────────── */
+/* â”€â”€ Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .k-order-overlay.open {
   background: rgba(31,48,36,.38);
@@ -11456,89 +11457,102 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-order-header {
   min-height: 58px;
   padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
-  background: var(--checkout-neutral);
-  color: var(--white);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 4px 16px rgba(31,48,36,.07);
-  /* Le titre doit rester centré dans le header, quelle que soit la largeur
-     du bouton retour (variable : "← Retour" / "← Récap") — cf. mock. Le
-     bouton retour reste au fil normal (gauche), le texte est positionné
-     indépendamment au centre du header (voir .ck-order-title-text). */
+  background: var(--checkout-cream);
+  color: var(--text);
+  border-bottom: 1px solid rgba(31,48,36,.10);
+  box-shadow: none;
+  /* Chrome volontairement calme : le header informe, il n'engage rien.
+     La hiÃ©rarchie forte reste rÃ©servÃ©e aux CTA transactionnels. */
   position: relative;
 }
 
 .ck-modal-back-btn--header {
-  min-height: 36px;
-  padding: 0 13px;
+  min-height: 32px;
+  padding: 0 4px;
   background: transparent;
-  border: 1px solid rgba(255,255,255,.50);
+  border: 0;
+  border-radius: 8px;
   box-shadow: none;
+  font-weight: 700;
 }
 
-.k-order-header .ck-modal-back-btn--header { color: var(--white); }
+.k-order-header .ck-modal-back-btn--header { color: var(--text-muted); }
 
-/* Titre visible dans le corps du récap (h2, distinct du chrome du header
-   ci-dessus) — aucune règle CSS ne le stylait jusqu'ici : héritait de
-   l'alignement par défaut (gauche) au lieu du centrage du mock. */
+.k-order-header #k-order-close {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--text-muted);
+  box-shadow: none;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+/* Titre visible dans le corps du rÃ©cap (h2, distinct du chrome du header
+   ci-dessus) â€” aucune rÃ¨gle CSS ne le stylait jusqu'ici : hÃ©ritait de
+   l'alignement par dÃ©faut (gauche) au lieu du centrage du mock. */
 .ck-recap-gate-heading {
   text-align: left;
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: .01em;
+  font-size: .92rem;
+  font-weight: 700;
+  letter-spacing: .005em;
   color: var(--text);
-  margin: 0 0 14px;
+  margin: 0 0 10px;
 }
 
 .ck-order-title-text {
   flex: 0 1 auto;
   min-width: 0;
-  margin-left: 12px;
-  font-size: 1rem;
-  letter-spacing: .015em;
+  margin-left: 8px;
+  font-size: .92rem;
+  letter-spacing: .01em;
+  color: var(--text);
   position: static;
   transform: none;
-  max-width: calc(100% - 130px);
+  max-width: calc(100% - 118px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   pointer-events: none;
 }
 
-/* ── Bandeau contexte liste partagée (LOT 13 §F) ─────────────────
- * Purement décoratif — alimenté par state.checkoutDisplayContext
- * (group-checkout-adapter.js), jamais lu pour une décision métier.
+/* â”€â”€ Bandeau contexte liste partagÃ©e (LOT 13 Â§F) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * Purement dÃ©coratif â€” alimentÃ© par state.checkoutDisplayContext
+ * (group-checkout-adapter.js), jamais lu pour une dÃ©cision mÃ©tier.
  * Absent sur un checkout panier personnel classique.
  */
 .ck-shared-list-context-banner {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0 0 14px;
-  padding: 9px 13px;
+  margin: 0 0 10px;
+  padding: 8px 11px;
   border-radius: var(--radius-sm);
-  background: var(--terracotta-bg-pale);
-  border: 1px solid var(--border-terra-22);
-  color: var(--terracotta-dark);
-  font-size: .82rem;
-  font-weight: 700;
+  background: rgba(255,255,255,.72);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: .78rem;
+  font-weight: 650;
   line-height: 1.3;
 }
 
 .ck-shared-list-context-banner::before {
-  content: '🎁';
-  font-size: .95rem;
-  line-height: 1;
+  content: none;
 }
 
-/* ── Corps du checkout — cartes compactes (règle §1) ─────────────
+/* â”€â”€ Corps du checkout â€” cartes compactes (rÃ¨gle Â§1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  * Anciennement un "rail vertical" (ligne de progression + pastilles
- * numérotées empruntées à b-tracking.js, .k-track-step-dot) qui simulait
- * une logique d'étapes/timeline à franchir. Retiré (simplification
- * checkout final, cf. mock_checkout_final_simplifie.html) : identité,
- * point de retrait et paiement ne sont pas des étapes séquentielles mais
- * des informations déjà connues, chacune modifiable indépendamment via
- * « Changer ». Les cartes s'empilent maintenant à plat, sans ligne ni
- * numérotation reliant les blocs entre eux.
+ * numÃ©rotÃ©es empruntÃ©es Ã  b-tracking.js, .k-track-step-dot) qui simulait
+ * une logique d'Ã©tapes/timeline Ã  franchir. RetirÃ© (simplification
+ * checkout final, cf. mock_checkout_final_simplifie.html) : identitÃ©,
+ * point de retrait et paiement ne sont pas des Ã©tapes sÃ©quentielles mais
+ * des informations dÃ©jÃ  connues, chacune modifiable indÃ©pendamment via
+ * Â« Changer Â». Les cartes s'empilent maintenant Ã  plat, sans ligne ni
+ * numÃ©rotation reliant les blocs entre eux.
  */
 
 .k-order-overlay.open .k-order-body--checkout {
@@ -11550,6 +11564,12 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 .k-order-body--checkout > .ck-section-block:empty { display: none; }
+
+.k-order-body--recap {
+  min-height: 0;
+  padding: 14px 18px 8px;
+  background: var(--checkout-cream);
+}
 
 .ck-step-header {
   width: 100%;
@@ -11636,7 +11656,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   color: var(--text);
 }
 
-/* ── Identité ────────────────────────────────────────────────── */
+/* â”€â”€ IdentitÃ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ck-identity-summary { margin: 0 0 7px; }
 
@@ -11667,7 +11687,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   background: rgba(232,131,90,.12);
 }
 
-/* ── Relais ──────────────────────────────────────────────────── */
+/* â”€â”€ Relais â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ck-relais-section {
   margin: 0 0 11px;
@@ -11707,15 +11727,15 @@ body.k-id-scroll-lock { overflow: hidden; }
   font-weight: 800;
 }
 
-/* ── Récapitulatif de votre commande (mandat §7/§8) ────────────────────────
- * Bloc lecture seule commun au panier personnel et à toute sélection de
- * liste partagée (b-checkout.js::_buildRecapItemsBlock). N'est plus un
- * accordéon replié planqué en bas du formulaire : c'est tout le contenu de
- * l'écran dédié renderOrderRecapGate(), affiché AVANT identité/retrait/
- * paiement — voir le garde en tête de renderCheckout(). .ck-recap-toggle*
- * ci-dessous n'a plus de consommateur JS (l'accordéon a été retiré) ; les
- * règles restent pour compat visuelle si un appelant externe les réutilise,
- * mais peuvent être supprimées lors d'un nettoyage CSS ultérieur.
+/* â”€â”€ RÃ©capitulatif de votre commande (mandat Â§7/Â§8) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * Bloc lecture seule commun au panier personnel et Ã  toute sÃ©lection de
+ * liste partagÃ©e (b-checkout.js::_buildRecapItemsBlock). N'est plus un
+ * accordÃ©on repliÃ© planquÃ© en bas du formulaire : c'est tout le contenu de
+ * l'Ã©cran dÃ©diÃ© renderOrderRecapGate(), affichÃ© AVANT identitÃ©/retrait/
+ * paiement â€” voir le garde en tÃªte de renderCheckout(). .ck-recap-toggle*
+ * ci-dessous n'a plus de consommateur JS (l'accordÃ©on a Ã©tÃ© retirÃ©) ; les
+ * rÃ¨gles restent pour compat visuelle si un appelant externe les rÃ©utilise,
+ * mais peuvent Ãªtre supprimÃ©es lors d'un nettoyage CSS ultÃ©rieur.
  */
 .ck-recap-step {
   margin: 0 0 12px;
@@ -11815,7 +11835,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 
 .ck-recap-item-name {
   font-size: .82rem;
-  font-weight: 700;
+  font-weight: 650;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -11835,34 +11855,32 @@ body.k-id-scroll-lock { overflow: hidden; }
   white-space: nowrap;
 }
 
-/* Marqueur "inclus dans cette commande" — jamais une checkbox : non
- * focusable, non cliquable, aria-hidden (texte accessible séparé en
- * .sr-only sur la même ligne). Sémantique volontairement distincte de la
- * case à cocher de la liste (group-side-cart.js) : ici on ne sélectionne
- * plus, on relit ce qui a déjà été choisi. */
+/* Marqueur "inclus dans cette commande" â€” jamais une checkbox : non
+ * focusable, non cliquable, aria-hidden (texte accessible sÃ©parÃ© en
+ * .sr-only sur la mÃªme ligne). SÃ©mantique volontairement distincte de la
+ * case Ã  cocher de la liste (group-side-cart.js) : ici on ne sÃ©lectionne
+ * plus, on relit ce qui a dÃ©jÃ  Ã©tÃ© choisi. */
 .ck-recap-check {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--cta-green);
-  color: var(--white);
-  font-size: .72rem;
-  font-weight: 900;
-  /* line-height:1 garantit que ✓ (U+2713) est centré optiquement dans
-     le cercle 20×20, sans être déplacé par la boîte typographique par
-     défaut (qui varie selon les moteurs). */
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: .64rem;
+  font-weight: 850;
   line-height: 1;
 }
 
-/* Scopé sous .ck-recap-step (wrapper posé par b-checkout.js) : cart.css
- * possède déjà un .ck-recap-total pour le mini-récap existant (autre
- * composant, autre contexte). Éviter le sélecteur global évite une
- * collision de cascade entre les deux tout en gardant le même nom de
- * classe côté JS (§3.c). */
+/* ScopÃ© sous .ck-recap-step (wrapper posÃ© par b-checkout.js) : cart.css
+ * possÃ¨de dÃ©jÃ  un .ck-recap-total pour le mini-rÃ©cap existant (autre
+ * composant, autre contexte). Ã‰viter le sÃ©lecteur global Ã©vite une
+ * collision de cascade entre les deux tout en gardant le mÃªme nom de
+ * classe cÃ´tÃ© JS (Â§3.c). */
 .ck-recap-step .ck-recap-total {
   display: flex;
   align-items: center;
@@ -11875,16 +11893,27 @@ body.k-id-scroll-lock { overflow: hidden; }
   color: var(--text);
 }
 
-/* Gate récapitulatif — CTA rattaché visuellement au contenu. */
+/* Gate rÃ©capitulatif â€” CTA rattachÃ© visuellement au contenu. */
 #btn-confirm-recap {
-  width: 100%;
-  min-height: 52px;
-  margin: 2px 0 0;
+  flex-shrink: 0;
+  width: calc(100% - 32px);
+  min-height: 48px;
+  margin: 8px 16px calc(12px + env(safe-area-inset-bottom));
+  padding: 10px 16px;
+  border: 1px solid var(--stone-border);
   border-radius: 12px;
-  box-shadow: none;
+  background: var(--stone);
+  color: var(--stone-text);
+  box-shadow: var(--stone-shadow, 0 5px 13px rgba(42,33,23,.08));
 }
 
-/* ── Paiement ────────────────────────────────────────────────── */
+#btn-confirm-recap:not(:disabled):hover {
+  background: var(--stone-hover);
+  color: var(--stone-text);
+  transform: translateY(-1px);
+}
+
+/* â”€â”€ Paiement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ck-payment-section {
   padding: 11px 0 0;
@@ -11893,8 +11922,8 @@ body.k-id-scroll-lock { overflow: hidden; }
   border-top: 1px solid rgba(31,48,36,.10);
 }
 
-/* Titre de section statique — règle §4, remplace l'ancien résumé
- * "PAIEMENT · <moyen choisi>" (renderStepHeader, pastille "current"). */
+/* Titre de section statique â€” rÃ¨gle Â§4, remplace l'ancien rÃ©sumÃ©
+ * "PAIEMENT Â· <moyen choisi>" (renderStepHeader, pastille "current"). */
 .ck-section-title {
   padding: 4px 0 11px;
   font-size: 1rem;
@@ -11948,13 +11977,13 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-chip-lbl { font-size: .78rem; line-height: 1.2; }
 
 /* Badges secondaires sur les chips de paiement.
- * Surcharge uniquement les propriétés géométriques qui diffèrent du gabarit
- * cart.css dans le contexte checkout (border-radius:4px→999px, padding plus
- * généreux, margin-top ajusté). background/color restent dans cart.css avec
+ * Surcharge uniquement les propriÃ©tÃ©s gÃ©omÃ©triques qui diffÃ¨rent du gabarit
+ * cart.css dans le contexte checkout (border-radius:4pxâ†’999px, padding plus
+ * gÃ©nÃ©reux, margin-top ajustÃ©). background/color restent dans cart.css avec
  * leurs tokens (var(--coral)/var(--white) pour ck-soon,
  * var(--blue-stripe-bg)/var(--blue-stripe-text) pour ck-stripe-tag).
- * Ne pas splitter en règles séparées — le sélecteur combiné ci-dessous
- * correspond à la baseline css-guard ; des règles individuelles créeraient
+ * Ne pas splitter en rÃ¨gles sÃ©parÃ©es â€” le sÃ©lecteur combinÃ© ci-dessous
+ * correspond Ã  la baseline css-guard ; des rÃ¨gles individuelles crÃ©eraient
  * de nouveaux conflits sur ck-soon qui ne sont pas dans la baseline. */
 .ck-chip-lbl em.ck-soon,
 .ck-chip-lbl em.ck-stripe-tag {
@@ -11973,16 +12002,16 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 .k-stripe-wrap { padding: 13px 14px; }
-/* Règle §3 — le wallet précède désormais le paiement (cf. mock) : marge
+/* RÃ¨gle Â§3 â€” le wallet prÃ©cÃ¨de dÃ©sormais le paiement (cf. mock) : marge
  * basse propre au lieu de compter sur le bloc suivant pour l'espacement. */
 .k-wallet-section { margin: 0 0 10px; padding: 12px 14px; }
 
-/* Règle §3 — masque intégralement un bloc (titre paiement, puces,
- * Stripe/PayPal) quand le wallet couvre déjà tout le montant dû. Sélecteurs
- * ID+classe (jamais `!important`, gate check-important.js à 0 pour ce
- * fichier) : la spécificité id l'emporte sur les combos `.k-stripe-wrap
- * .is-visible` / `.k-paypal-wrap.is-visible` (2 classes) sans dépendre de
- * l'ordre des règles dans la feuille.
+/* RÃ¨gle Â§3 â€” masque intÃ©gralement un bloc (titre paiement, puces,
+ * Stripe/PayPal) quand le wallet couvre dÃ©jÃ  tout le montant dÃ». SÃ©lecteurs
+ * ID+classe (jamais `!important`, gate check-important.js Ã  0 pour ce
+ * fichier) : la spÃ©cificitÃ© id l'emporte sur les combos `.k-stripe-wrap
+ * .is-visible` / `.k-paypal-wrap.is-visible` (2 classes) sans dÃ©pendre de
+ * l'ordre des rÃ¨gles dans la feuille.
  */
 #ck-payment-summary.ck-force-hidden,
 #ck-pay-grid.ck-force-hidden,
@@ -11991,11 +12020,11 @@ body.k-id-scroll-lock { overflow: hidden; }
   display: none;
 }
 
-/* ── Message crédit couvrant tout (règle §3) ─────────────────────
+/* â”€â”€ Message crÃ©dit couvrant tout (rÃ¨gle Â§3) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  * Remplace le titre "Comment souhaitez-vous payer ?" + les moyens de
- * paiement quand le wallet couvre déjà l'intégralité du montant dû —
- * cf. mock_checkout_final_simplifie.html ("Votre crédit couvre toute la
- * commande."). Masqué par défaut ; basculé par
+ * paiement quand le wallet couvre dÃ©jÃ  l'intÃ©gralitÃ© du montant dÃ» â€”
+ * cf. mock_checkout_final_simplifie.html ("Votre crÃ©dit couvre toute la
+ * commande."). MasquÃ© par dÃ©faut ; basculÃ© par
  * _togglePaymentMethodVisibility() (b-checkout.js).
  */
 .ck-wallet-full-cover-msg {
@@ -12026,7 +12055,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   line-height: 1.35;
 }
 
-/* ── Destinataire du code de retrait — commande liée à une liste (règle §7) ── */
+/* â”€â”€ Destinataire du code de retrait â€” commande liÃ©e Ã  une liste (rÃ¨gle Â§7) â”€â”€ */
 
 .ck-recipient-section { margin: 12px 0 4px; }
 
@@ -12064,7 +12093,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   .ck-recipient-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Total final ─────────────────────────────────────────────── */
+/* â”€â”€ Total final â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .ck-final-total {
   display: flex;
   align-items: flex-end;
@@ -12089,7 +12118,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   white-space: nowrap;
 }
 
-/* ── CTA final ───────────────────────────────────────────────── */
+/* â”€â”€ CTA final â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .k-order-overlay.open .ck-confirm-btn {
   width: calc(100% - 32px);
@@ -12117,7 +12146,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-confirm-main { font-size: .88rem; font-weight: 900; }
 .ck-confirm-subtext { color: var(--white); font-size: .62rem; opacity: .78; }
 
-/* ── Informations secondaires ───────────────────────────────── */
+/* â”€â”€ Informations secondaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .ck-price-variation-recap {
   margin: 0 0 18px;
@@ -12136,7 +12165,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-price-variation-caption { grid-column: 1; }
 .ck-price-variation-prices { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
 
-/* ── Confirmation ────────────────────────────────────────────── */
+/* â”€â”€ Confirmation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .k-confirm-simple {
   position: relative;
@@ -12177,7 +12206,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 .k-confirm-emoji::before {
-  content: "✓";
+  content: "âœ“";
   color: var(--checkout-accent);
   font-size: 2rem;
   font-weight: 900;
@@ -12195,7 +12224,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 
 .k-confirm-actions { width: 100%; }
 
-/* ── Responsive ──────────────────────────────────────────────── */
+/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 @media (max-width: 380px) {
   .k-order-overlay.open .k-order-body--checkout { padding-right: 12px; padding-left: 12px; }

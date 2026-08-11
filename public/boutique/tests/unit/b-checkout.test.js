@@ -314,6 +314,21 @@ describe('b-checkout', () => {
       expect(showToast).toHaveBeenCalledWith('Votre panier est vide.', 'error');
       expect(dom.orderModal.classList.contains('open')).toBe(false);
     });
+
+    it('panier non vide → le CTA du récap reste hors de la zone scrollable', () => {
+      state.cart = [{
+        product: { id: 'p1', name: 'Produit test', price_kmf: 4500 },
+        qty: 1,
+      }];
+
+      checkoutCart();
+
+      const recapBtn = document.getElementById('btn-confirm-recap');
+      expect(recapBtn).not.toBeNull();
+      expect(dom.orderBody.contains(recapBtn)).toBe(false);
+      expect(recapBtn.parentElement).toBe(dom.orderBody.parentElement);
+      expect(dom.orderBody.classList.contains('k-order-body--recap')).toBe(true);
+    });
   });
 
   describe('submitOrder — validations', () => {
@@ -569,7 +584,10 @@ describe('b-checkout', () => {
       // → confirmation → checkout paiement", toujours la même séquence).
       expect(dom.orderBody.textContent).toContain('Vérifiez vos articles');
       expect(dom.orderBody.textContent).not.toContain('Retrait sécurisé');
-      expect(dom.orderBody.querySelector('#btn-confirm-recap')).not.toBeNull();
+      const recapBtn = document.getElementById('btn-confirm-recap');
+      expect(recapBtn).not.toBeNull();
+      expect(dom.orderBody.contains(recapBtn)).toBe(false);
+      expect(recapBtn.parentElement).toBe(dom.orderBody.parentElement);
     });
 
     it('confirmation du récapitulatif → avance vers le formulaire identité/livraison/paiement', async () => {
@@ -578,7 +596,7 @@ describe('b-checkout', () => {
       checkoutCart();
       await flush();
 
-      dom.orderBody.querySelector('#btn-confirm-recap').click();
+      document.getElementById('btn-confirm-recap').click();
       await flush();
 
       expect(dom.orderBody.textContent).toContain('Retrait sécurisé');

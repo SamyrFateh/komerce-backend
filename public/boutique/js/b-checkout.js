@@ -613,6 +613,7 @@ function renderOrderRecapGate() {
   const body = dom.orderBody;
   body.innerHTML = '';
   body.classList.remove('k-order-body--checkout');
+  body.classList.add('k-order-body--recap');
   body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
   dom.orderTitle.innerHTML = '<button type="button" class="ck-modal-back-btn ck-modal-back-btn--header" aria-label="Retour">← Retour</button><span class="ck-order-title-text">Récapitulatif de votre commande</span>';
 
@@ -651,7 +652,10 @@ function renderOrderRecapGate() {
   confirmBtn.addEventListener('click', () => {
     renderCheckout();
   });
-  body.appendChild(confirmBtn);
+  // Même invariant que le bouton final de paiement : le CTA de confirmation
+  // appartient au shell du modal, jamais à la zone scrollable des articles.
+  // Une liste longue peut défiler sans jamais masquer l'action principale.
+  body.parentElement.appendChild(confirmBtn);
 }
 
 // renderCheckoutCompact supprimée — doublon de renderCheckout(), jamais activée (07/05/2026)
@@ -667,6 +671,7 @@ export function renderCheckout() {
     // futurs appelants).
     const body = dom.orderBody;
     body.innerHTML = '';
+    body.classList.remove('k-order-body--recap');
     body.classList.add('k-order-body--checkout');
     body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
     dom.orderTitle.innerHTML = '<button type="button" class="ck-modal-back-btn ck-modal-back-btn--header" aria-label="Retour au récapitulatif">← Récap</button><span class="ck-order-title-text">🛒 Commander</span>';

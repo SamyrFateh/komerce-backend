@@ -75,19 +75,20 @@
 }
 
 .k-cart-item-select:hover {
-  border-color: var(--cta-green);
+  border-color: var(--stone-border);
+  background: var(--sand);
 }
 
 .k-cart-item-select.is-checked {
-  background: var(--green-soft);
-  border-color: var(--cta-green);
+  background: var(--stone);
+  border-color: var(--stone-border);
 }
 
 .k-cart-item-select.is-checked::after {
   content: '';
   width: 6px;
   height: 11px;
-  border: solid var(--cta-green);
+  border: solid var(--stone-text);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
 }
