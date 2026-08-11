@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -13,6 +12,7 @@
  *   - absolute avant restricted : un candidat qui matche les deux couches
  *     est écarté, pas seulement contraint.
  *   - matching insensible à la casse, sur mots-clés ET catégories.
+ *   - les mots-clés sont des termes/phrases, jamais des sous-chaînes arbitraires.
  *   - aucune exclusion active → candidat pleinement éligible (null).
  *   - loadActiveExclusions ne lit QUE les lignes is_active = TRUE et trie
  *     absolute en premier.
@@ -20,7 +20,7 @@
 
 jest.mock('../../db');
 const db = require('../../db');
-const { checkEligibility, loadActiveExclusions } = require('../../services/catalog-eligibility');
+const { checkEligibility, loadActiveExclusions, keywordMatches } = require('../../services/catalog-eligibility');
 
 function rule(overrides = {}) {
   return {
@@ -49,6 +49,20 @@ describe('checkEligibility', () => {
     expect(verdict).toEqual({ layer: 'absolute', label: 'Armes', constraint_note: null, legal_note: null });
   });
 
+  test('ne matche jamais une sous-chaîne à l’intérieur d’un autre mot', () => {
+    const exclusions = [rule({ label: 'Armes', keywords: ['gun', 'replica'] })];
+    expect(checkEligibility({ product_name: 'Gyeongbokgung traditional clothing' }, exclusions)).toBeNull();
+    expect(checkEligibility({ product_name: 'Samsung phone running Replicant 6.0' }, exclusions)).toBeNull();
+    expect(keywordMatches('commercial replica rifle', 'replica')).toBe(true);
+    expect(keywordMatches('Replicant operating system', 'replica')).toBe(false);
+  });
+
+  test('conserve le matching des phrases et termes ponctués', () => {
+    expect(keywordMatches('portable power bank 20000mAh', 'power bank')).toBe(true);
+    expect(keywordMatches('seller claims 1:1 quality item', '1:1 quality')).toBe(true);
+    expect(keywordMatches('uses an 18650 battery cell', '18650')).toBe(true);
+  });
+
   test('matche un mot-clé dans description ou supplier_category, pas seulement product_name', () => {
     const exclusions = [rule({ label: 'Batteries lithium', layer: 'restricted', keywords: ['power bank'] })];
     const verdict = checkEligibility(
@@ -73,9 +87,6 @@ describe('checkEligibility', () => {
       rule({ layer: 'restricted', label: 'Restreint', keywords: ['spray'] }),
       rule({ layer: 'absolute', label: 'Absolu', keywords: ['spray', 'weapon'] }),
     ];
-    // Même si "restricted" est en tête de tableau, absolute doit gagner —
-    // c'est loadActiveExclusions qui garantit l'ordre en amont ; ce test
-    // documente que checkEligibility fait confiance à l'ordre reçu.
     const sorted = [...exclusions].sort((a, b) => (a.layer === 'absolute' ? -1 : 1) - (b.layer === 'absolute' ? -1 : 1));
     const verdict = checkEligibility({ product_name: 'Spray can aerosol' }, sorted);
     expect(verdict.layer).toBe('absolute');
