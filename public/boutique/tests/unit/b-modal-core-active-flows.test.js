@@ -260,6 +260,8 @@ test('openModal charge les suggestions sans fetch legacy /api/products/:id puis 
 
   expect(dom.modalSku.textContent).toBe('Réf. TECH-001');
   expect(document.getElementById('k-modal-fav-btn').classList.contains('liked')).toBe(true);
+  expect(document.getElementById('k-modal-fav-btn').getAttribute('aria-pressed')).toBe('true');
+  expect(document.getElementById('k-modal-fav-btn').getAttribute('aria-label')).toBe('Retirer des favoris');
   // PDC-6 : le fetch legacy /api/products/:id + _renderVariants n'existent plus.
   expect(global.fetch).not.toHaveBeenCalledWith(
     expect.stringMatching(/^\/api\/products\//),

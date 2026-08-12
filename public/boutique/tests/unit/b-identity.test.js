@@ -217,7 +217,19 @@ describe('requireIdentity — step phone (utilisateur inconnu)', () => {
 
     document.getElementById('k-id-phone-cta').click();
     await flush();
-    expect(document.getElementById('k-id-err-phone').textContent).toContain('prénom');
+    const error = document.getElementById('k-id-err-phone');
+    const name = document.getElementById('k-id-name');
+    expect(error.textContent).toContain('prénom');
+    expect(error.getAttribute('role')).toBe('alert');
+    expect(name.getAttribute('aria-invalid')).toBe('true');
+    expect(name.getAttribute('aria-describedby')).toBe(error.id);
+    expect(document.activeElement).toBe(name);
+
+    name.value = 'Ali';
+    name.dispatchEvent(new Event('input'));
+    expect(name.hasAttribute('aria-invalid')).toBe(false);
+    expect(name.hasAttribute('aria-describedby')).toBe(false);
+    expect(error.textContent).toBe('');
   });
 
   it('affiche une erreur si le numéro est trop court', async () => {
@@ -466,6 +478,37 @@ describe('requireIdentity — step OTP', () => {
 });
 
 describe('requireIdentity — fermeture / annulation', () => {
+  it('confine le focus, neutralise le fond puis restaure le déclencheur à la fermeture', async () => {
+    const trigger = document.createElement('button');
+    trigger.textContent = 'Mon Komerce';
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    const promise = requireIdentity();
+    await flush();
+    await new Promise(r => setTimeout(r, 100));
+
+    const overlay = document.querySelector('.k-id-overlay');
+    const close = overlay.querySelector('.k-id-close');
+    const cancel = overlay.querySelector('#k-id-phone-cancel');
+    expect(document.activeElement).toBe(document.getElementById('k-id-name'));
+    expect(trigger.hasAttribute('inert')).toBe(true);
+    expect(trigger.getAttribute('aria-hidden')).toBe('true');
+
+    cancel.focus();
+    cancel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(close);
+    close.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(cancel);
+
+    close.click();
+    await promise;
+    await new Promise(r => setTimeout(r, 180));
+    expect(trigger.hasAttribute('inert')).toBe(false);
+    expect(trigger.hasAttribute('aria-hidden')).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it('la croix de fermeture résout la promesse avec null', async () => {
     const promise = requireIdentity();
     await flush();

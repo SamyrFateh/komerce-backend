@@ -230,7 +230,7 @@ bus.on('nav:goto-track', () => { renderTrackView(); switchView('track'); });
 // Lot 4 — lien discret checkout → Mon Komerce > Mon wallet (§5 : le checkout
 // ne devient jamais l'écran de gestion du wallet, il ne fait que pointer).
 bus.on('nav:goto-komerce-wallet', () => { openMonKomerce({ focus: 'wallet' }); });
-bus.on('komerce:show', () => { switchView('komerce'); });
+bus.on('komerce:show', () => { activateNavTab('komerce'); switchView('komerce'); });
 
 // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2_D — l'onglet
 // L'écouteur bus de l'événement nav:goto-group a été retiré (2026-08) : c'était l'unique
@@ -254,12 +254,19 @@ export function setupBnav() {
   allNavBtns.forEach(item => {
     item.addEventListener('click', () => {
       const tab = item.dataset.tab;
+      if (tab === 'komerce') {
+        // Une identification éventuelle s'ouvre sur un fond neutre : ne pas
+        // laisser visible une erreur de Suivi/Mes Partages sous la modal.
+        activateNavTab(null);
+        switchView('shop');
+        openMonKomerce();
+        return;
+      }
       activateNavTab(tab);
       if (tab === 'cart')  { openCart(); return; }
       if (tab === 'fav')   { renderFavView(); switchView('fav'); return; }
       if (tab === 'track')  { renderTrackView(); switchView('track'); return; }
       if (tab === 'shares') { renderListsView(); switchView('track'); return; }
-      if (tab === 'komerce') { openMonKomerce(); return; }
       switchView('shop');
     });
   });
@@ -356,4 +363,3 @@ export async function loadRelais() {
     state.relais = [];
   }
 }
-

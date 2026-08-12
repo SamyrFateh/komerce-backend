@@ -244,6 +244,14 @@ function setupFooterLinks() {
       if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
+
+  document.querySelectorAll('[data-footer-action="share-list"]').forEach(function(button) {
+    button.addEventListener('click', function() {
+      // Le tiroir panier est l'entrée canonique : son action « Partager »
+      // crée la liste sans réintroduire l'ancienne route /event/create.
+      openCart();
+    });
+  });
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────

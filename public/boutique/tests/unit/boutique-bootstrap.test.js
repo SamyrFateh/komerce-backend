@@ -29,6 +29,7 @@ const mockLoadRelais = jest.fn();
 const mockInstallScrollOwner = jest.fn();
 const mockCheckoutCart = jest.fn();
 const mockSetQty = jest.fn();
+const mockOpenCart = jest.fn();
 
 jest.mock('../../js/b-bus.js', () => ({ bus: mockBus }));
 jest.mock('../../js/b-store.js', () => ({
@@ -66,7 +67,7 @@ jest.mock('../../js/b-modal.js', () => ({
   setupModal: mockSetupModal,
 }));
 jest.mock('../../js/b-cart.js', () => ({
-  addToCart: jest.fn(), openCart: jest.fn(), closeCart: jest.fn(), renderCartBody: jest.fn(),
+  addToCart: jest.fn(), openCart: mockOpenCart, closeCart: jest.fn(), renderCartBody: jest.fn(),
   quickAdd: jest.fn(), quickRemove: jest.fn(), setQty: mockSetQty,
   loadSharedCart: jest.fn(),
 }));
@@ -110,6 +111,7 @@ test('boutique câble le boot, les événements globaux et le reset desktop', ()
     <div id="k-page-scroll" style="top:10px;position:fixed;height:20px;overflow:hidden"></div>
     <div id="k-grid"></div>
     <a data-footer-cat="Mode"></a>
+    <button data-footer-action="share-list"></button>
     <button class="k-chip" data-cat="Mode"></button>
   `;
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
@@ -152,6 +154,8 @@ test('boutique câble le boot, les événements globaux et le reset desktop', ()
 
   document.querySelector('[data-footer-cat="Mode"]').click();
   expect(chip.click).toHaveBeenCalledTimes(1);
+  document.querySelector('[data-footer-action="share-list"]').click();
+  expect(mockOpenCart).toHaveBeenCalledTimes(1);
 });
 
 describe('syncModalViewportOwner (fix Samsung Internet)', () => {

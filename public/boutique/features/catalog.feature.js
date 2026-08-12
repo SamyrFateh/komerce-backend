@@ -107,5 +107,6 @@ module.exports = {
     'aucun renderer ne reconstruit un stock par axe',
     'les adaptations desktop du catalogue ne deviennent jamais un shell applicatif global',
     'les catégories restent sur une ligne et défilent horizontalement quand la largeur disponible ne suffit pas',
+    'chaque bouton favori expose son état réel par aria-pressed et un libellé Ajouter ou Retirer synchronisé',
   ],
 };

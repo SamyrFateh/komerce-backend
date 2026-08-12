@@ -94,6 +94,7 @@ module.exports = {
   invariants: [
     'tout fichier js/* portant @domain shared-cart-modal doit être listé dans files.js de ce manifeste',
     'tout test unitaire couvrant un fichier files.js de ce manifeste doit être listé dans files.tests',
+    'le bouton favori de la fiche produit garde aria-pressed et son libellé Ajouter ou Retirer synchronisés avec l état réel',
   ],
 
   // Dette consignée (R7 — hors périmètre de ce palier) :

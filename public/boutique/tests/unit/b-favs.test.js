@@ -28,7 +28,7 @@ const {
 } = require('./helpers/boutiqueTestKit');
 
 const { state } = require('../../js/b-store.js');
-const { showToast } = require('../../js/b-cart-core.js');
+const { showToast, isFav } = require('../../js/b-cart-core.js');
 const { toggleFav, quickAdd, quickRemove } = require('../../js/b-cart.js');
 const { openModal } = require('../../js/b-modal.js');
 const { renderFavView, updateFavPromoBadge, shareWishlistWhatsApp } = require('../../js/b-favs.js');
@@ -60,6 +60,7 @@ describe('b-favs', () => {
     it('favoris présents dont un en promo → renderer canonique + bannière + badge', () => {
       state.products = PRODUCTS;
       state.favs = [1, 2];
+      isFav.mockImplementation(id => state.favs.includes(id));
       renderFavView();
       const el = document.getElementById('k-fav-view');
       expect(el.innerHTML).toContain('2 produits');
@@ -70,6 +71,10 @@ describe('b-favs', () => {
       const badge = document.querySelector('.k-bnav-item[data-tab="fav"] .k-bnav-promo-badge');
       expect(badge).not.toBeNull();
       expect(badge.textContent).toBe('🎉');
+      expect(el.textContent).toContain('1 de vos favoris est en promo !');
+      const favoriteButton = el.querySelector('.k-card-fav[data-fav="1"]');
+      expect(favoriteButton.getAttribute('aria-pressed')).toBe('true');
+      expect(favoriteButton.getAttribute('aria-label')).toBe('Retirer des favoris');
     });
 
     it('ne réinstalle pas de listener carte/modal local', () => {

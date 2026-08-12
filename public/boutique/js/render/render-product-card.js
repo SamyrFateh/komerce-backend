@@ -110,14 +110,15 @@ function renderGridCard(product, cartSummary) {
   });
   const hasQty = cartSummary.totalQty > 0;
   const canAdjust = hasQty && cartSummary.canQuickAdjust;
+  const favorite = isFav(vm.id);
 
   return `
     <div class="k-card ${vm.cssClassName}" data-id="${vm.id}">
       <div class="k-card-img-wrap">
         ${renderProductCarousel(vm.raw, 400)}
         ${vm.promoLabel ? `<span class="k-card-promo">${vm.promoLabel}</span>` : ''}
-        <button class="k-card-fav${isFav(vm.id) ? ' liked' : ''}" data-fav="${vm.id}" aria-label="Favori">
-          ${isFav(vm.id) ? '❤️' : '🤍'}
+        <button class="k-card-fav${favorite ? ' liked' : ''}" data-fav="${vm.id}" aria-label="${favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}" aria-pressed="${favorite}">
+          ${favorite ? '❤️' : '🤍'}
         </button>
       </div>
       <div class="k-card-info">

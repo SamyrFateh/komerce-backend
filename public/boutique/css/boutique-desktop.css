@@ -247,6 +247,11 @@
 
   .k-footer-col-link {
     display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    text-align: left;
     font-size: 13px;
     color: var(--text-muted);
     margin-bottom: 9px;

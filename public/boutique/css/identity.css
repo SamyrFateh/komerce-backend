@@ -210,6 +210,10 @@ body.k-id-scroll-lock { overflow: hidden; }
   border-color: var(--coral);
   box-shadow: 0 0 0 3px rgba(200,92,45,.1);
 }
+.k-id-sheet .k-ck-phone-input[aria-invalid="true"],
+.k-id-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
 
 /* ── Message code envoyé ─────────────────────────────────────────────── */
 .k-id-sent {

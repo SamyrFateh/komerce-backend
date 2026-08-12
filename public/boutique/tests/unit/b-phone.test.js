@@ -30,6 +30,7 @@
 
 const {
   PHONE_COUNTRIES,
+  DEFAULT_IDENTITY_PHONE_CODE,
   digitsOnly,
   normalizeLocal,
   prettifyLocal,
@@ -57,6 +58,10 @@ describe('digitsOnly', () => {
     expect(digitsOnly(undefined)).toBe('');
     expect(digitsOnly('')).toBe('');
   });
+});
+
+it('définit +269 comme indicatif par défaut de l’identité client', () => {
+  expect(DEFAULT_IDENTITY_PHONE_CODE).toBe('+269');
 });
 
 describe('normalizeLocal', () => {
@@ -299,7 +304,10 @@ describe('makeIntlPhoneInput', () => {
     expect(group.className).toBe('k-ck-group');
     expect(document.getElementById('k-id-phone')).not.toBeNull();
     expect(document.getElementById('k-id-phone-country')).not.toBeNull();
-    expect(group.querySelector('.k-ck-label').textContent).toBe('Votre WhatsApp');
+    const label = group.querySelector('.k-ck-label');
+    expect(label.textContent).toBe('Votre WhatsApp');
+    expect(label.htmlFor).toBe('k-id-phone');
+    expect(document.getElementById('k-id-phone-country').getAttribute('aria-label')).toBe('Indicatif téléphonique');
   });
 
   it('sélectionne +269 par défaut', () => {

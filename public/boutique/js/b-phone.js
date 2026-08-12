@@ -42,6 +42,10 @@ export const PHONE_COUNTRIES = [
   { code: '+212', flag: '🇲🇦', name: 'Maroc',            digits: 9,  max: 10, ph: '0612 345678' },
 ];
 
+// Identité Komerce et historique client : même défaut Comores. Les écrans
+// d'expédition peuvent choisir explicitement un autre pays selon leur contexte.
+export const DEFAULT_IDENTITY_PHONE_CODE = '+269';
+
 // ── Helpers bas niveau ────────────────────────────────────────────
 
 /** Retourne uniquement les chiffres d'une chaîne. */
@@ -257,6 +261,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
 
   const lbl = document.createElement('label');
   lbl.className = 'k-ck-label';
+  lbl.htmlFor = id;
   lbl.textContent = label;
   group.appendChild(lbl);
 
@@ -271,6 +276,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
 
   const sel = document.createElement('select');
   sel.id = id + '-country';
+  sel.setAttribute('aria-label', 'Indicatif téléphonique');
   sel.className = 'k-ck-phone-select';
   sel.style.width = '82px';
   sel.style.height = '42px';
@@ -280,7 +286,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
     const opt = document.createElement('option');
     opt.value = c.code;
     opt.textContent = c.flag + ' ' + c.code;
-    if (c.code === '+269') opt.selected = true;
+    if (c.code === DEFAULT_IDENTITY_PHONE_CODE) opt.selected = true;
     sel.appendChild(opt);
   });
 

@@ -161,6 +161,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Invariants** :
 - [object Object]
 - les routes de ce manifeste s'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc
+- la projection boutique de l identité protège le focus du dialogue et associe chaque erreur de validation au champ concerné
 - une seule autorisation nominative active par utilisateur, consultée au moment exact de la remise — jamais figée par commande
 - le nom autorisé n'est jamais exposé au relais : logistics ne reçoit que des champs normalisés via getActiveAuthorizationForUpdate, jamais authorized_given_names/authorized_family_name en clair
 

@@ -65,7 +65,7 @@ export function renderFavView() {
     ? `<div class="k-fav-promo-banner">
          <span class="k-fav-promo-icon">🎉</span>
          <div class="k-fav-promo-text">
-           <strong>${promoFavs.length} de vos favori${promoFavs.length > 1 ? 's sont' : ' est'} en promo !</strong>
+           <strong>${promoFavs.length} de vos favoris ${promoFavs.length > 1 ? 'sont' : 'est'} en promo !</strong>
            <span>Profitez des réductions avant qu'elles disparaissent</span>
          </div>
        </div>`

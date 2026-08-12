@@ -31,6 +31,7 @@ import { showToast }                                       from './b-cart-core.j
 import { state }                                            from './b-store.js';
 import {
   PHONE_COUNTRIES,
+  DEFAULT_IDENTITY_PHONE_CODE,
   phoneBlockHTML,
   buildPhoneSelect,
   buildE164,
@@ -528,7 +529,7 @@ export function renderTrackViewSearchMode(el) {
           <p class="k-otp-hint">Entrez votre numéro pour recevoir un code WhatsApp et voir toutes vos commandes.</p>
           <div class="k-track-form">
             <div class="k-track-phone-wrap">
-              ${phoneBlockHTML('k-otp-country', 'k-otp-phone', '+33')}
+              ${phoneBlockHTML('k-otp-country', 'k-otp-phone', DEFAULT_IDENTITY_PHONE_CODE)}
             </div>
             <button class="k-track-btn" id="k-otp-request-btn">📲 Envoyer le code</button>
           </div>
@@ -585,20 +586,20 @@ export function renderTrackViewSearchMode(el) {
     el.querySelector('#k-track-quick').classList.remove('u-hidden');
   });
 
-  buildPhoneSelect('k-otp-country', 'k-otp-phone', '+33', null);
+  buildPhoneSelect('k-otp-country', 'k-otp-phone', DEFAULT_IDENTITY_PHONE_CODE, null);
   const otpSel = el.querySelector('#k-otp-country');
   if (otpSel) otpSel.className = 'k-track-country';
   const otpInput = el.querySelector('#k-otp-phone');
   if (otpInput) otpInput.className = 'k-track-input k-track-input--phone';
 
   function getFullPhone() {
-    const code = el.querySelector('#k-otp-country')?.value || '+33';
+    const code = el.querySelector('#k-otp-country')?.value || DEFAULT_IDENTITY_PHONE_CODE;
     const raw  = el.querySelector('#k-otp-phone')?.value || '';
     return buildE164(code, raw);
   }
 
   function isPhoneValid() {
-    const code = el.querySelector('#k-otp-country')?.value || '+33';
+    const code = el.querySelector('#k-otp-country')?.value || DEFAULT_IDENTITY_PHONE_CODE;
     const raw  = el.querySelector('#k-otp-phone')?.value || '';
     const country = PHONE_COUNTRIES.find(c => c.code === code);
     if (!country) return false;

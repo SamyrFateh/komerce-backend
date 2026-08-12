@@ -47,7 +47,8 @@ jest.mock('../../js/b-cart-core.js', () => ({
   showToast: jest.fn(),
 }));
 jest.mock('../../js/b-phone.js', () => ({
-  PHONE_COUNTRIES: [{ code: '+33', name: 'France', digits: 9 }],
+  PHONE_COUNTRIES: [{ code: '+269', name: 'Comores', digits: 7 }],
+  DEFAULT_IDENTITY_PHONE_CODE: '+269',
   phoneBlockHTML: jest.fn(
     (selId, inpId, code) =>
       `<select id="${selId}"></select><input id="${inpId}" type="tel" data-default="${code}">`
@@ -413,14 +414,11 @@ describe('renderTrackViewSearchMode', () => {
 
   describe('flux OTP historique', () => {
     function fillValidPhone(el) {
-      // Le mock de b-phone.js déclare digits:9 pour '+33' et applique
-      // normalizeLocal en identité (pas de retrait du 0 initial) : on
-      // saisit donc directement 9 chiffres sans 0 pour que
-      // isValidLocalLength (via le mock) valide le numéro.
+      // L'identité et l'historique partagent le défaut Comores (+269).
       const country = el.querySelector('#k-otp-country');
       const input = el.querySelector('#k-otp-phone');
-      country.value = '+33';
-      input.value = '612345678';
+      country.value = '+269';
+      input.value = '3211234';
     }
 
     it("demande de code : numéro invalide -> toast, pas d'appel réseau", async () => {
@@ -442,7 +440,7 @@ describe('renderTrackViewSearchMode', () => {
       el.querySelector('#k-otp-request-btn').click();
       await flush();
 
-      expect(apiPost).toHaveBeenCalledWith('/api/auth/otp/request', { phone: '+33612345678' });
+      expect(apiPost).toHaveBeenCalledWith('/api/auth/otp/request', { phone: '+2693211234' });
       expect(el.querySelector('#k-otp-step2').classList.contains('u-hidden')).toBe(false);
     });
 
@@ -574,7 +572,7 @@ describe('renderTrackViewSearchMode', () => {
       apiPost.mockResolvedValue({ success: true });
       resendBtn.click();
       await flush();
-      expect(apiPost).toHaveBeenCalledWith('/api/auth/otp/request', { phone: '+33612345678' });
+      expect(apiPost).toHaveBeenCalledWith('/api/auth/otp/request', { phone: '+2693211234' });
       jest.useRealTimers();
     });
 

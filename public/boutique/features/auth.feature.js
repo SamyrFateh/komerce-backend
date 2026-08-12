@@ -78,6 +78,10 @@ module.exports = {
 
   invariants: [
     'tout fichier js/* portant @domain auth doit etre liste dans files.js de ce manifeste',
+    'la modale identité confine le focus, rend le fond inerte, ferme avec Échap et restitue le focus au déclencheur',
+    'toute erreur de validation identité est annoncée et reliée au champ invalide via aria-invalid et aria-describedby',
+    'l indicatif par défaut de l identité client est +269 ; un autre défaut exige une règle de contexte explicite',
+    'la création de profil demande prénom, nom et WhatsApp ; une simple recherche d historique peut rester limitée au WhatsApp',
   ],
 
 };

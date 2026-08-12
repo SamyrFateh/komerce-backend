@@ -535,11 +535,15 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       state.favs.splice(idx, 1);
       btnEl.classList.remove('liked');
       btnEl.innerHTML = '🤍';
+      btnEl.setAttribute('aria-pressed', 'false');
+      btnEl.setAttribute('aria-label', 'Ajouter aux favoris');
       showToast('Retiré des favoris');
     } else {
       state.favs.push(id);
       btnEl.classList.add('liked');
       btnEl.innerHTML = '❤️';
+      btnEl.setAttribute('aria-pressed', 'true');
+      btnEl.setAttribute('aria-label', 'Retirer des favoris');
       btnEl.classList.add('k-pop');
       setTimeout(() => btnEl.classList.remove('k-pop'), 300);
       showToast('❤️ Ajouté aux favoris');

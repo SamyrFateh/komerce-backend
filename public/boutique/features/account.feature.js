@@ -89,6 +89,7 @@ module.exports = {
     "le bloc autorisation de retrait exceptionnel n'affiche jamais un statut ACTIVE sans que l'utilisateur ait lui-même enregistré un nom",
     "le code de retrait est annoncé lorsque la commande est prête au relais",
     "Suivi reste un espace autonome consacré aux achats",
+    "avant une identification Mon Komerce, la navigation revient sur un fond Boutique neutre ; une erreur Suivi ou Mes Partages ne reste jamais exposée sous la modale",
   ],
 
 };

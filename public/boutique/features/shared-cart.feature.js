@@ -86,5 +86,6 @@ module.exports = {
     'quitter × ne ferme ni ne modifie la liste',
     'CLOSED/CANCELLED restent historiques et ne résident jamais dans le side cart',
     'retirer une liste sauvegardée ne supprime jamais la liste ni son token public',
+    'la création d une liste partagée part toujours du panier canonique via Partager, y compris depuis le pied de page',
   ],
 };

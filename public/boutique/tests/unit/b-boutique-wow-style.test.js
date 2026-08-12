@@ -3,7 +3,7 @@
 /**
  * @test-kind unit
  * @test-runner jest
- * @test-requires jsdom
+ * @test-requires none
  */
 /**
  * public/boutique/tests/unit/b-boutique-wow-style.test.js

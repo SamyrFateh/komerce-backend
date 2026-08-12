@@ -246,6 +246,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       const favState = state.favs.includes(product.id);
       modalFavBtn.classList.toggle('liked', favState);
       modalFavBtn.innerHTML = favState ? '❤️' : '🤍';
+      modalFavBtn.setAttribute('aria-pressed', String(favState));
+      modalFavBtn.setAttribute('aria-label', favState ? 'Retirer des favoris' : 'Ajouter aux favoris');
     }
 
     dom.modalBackLabel.textContent = state.modalHistory.length > 0 ? 'Retour' : 'Catalogue';
@@ -628,6 +630,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
           const isNowFav = state.favs.includes(state.modalProduct.id);
           gridFavBtn.classList.toggle('liked', isNowFav);
           gridFavBtn.innerHTML = isNowFav ? '❤️' : '🤍';
+          gridFavBtn.setAttribute('aria-pressed', String(isNowFav));
+          gridFavBtn.setAttribute('aria-label', isNowFav ? 'Retirer des favoris' : 'Ajouter aux favoris');
         }
       });
     }

@@ -80,11 +80,48 @@ function reasonText(reason) {
   return 'Confirmez votre WhatsApp pour continuer en sécurité.';
 }
 
-function closeOverlay(ov) {
+const overlayLifecycles = new WeakMap();
+
+function closeOverlay(ov, { restoreFocus = true } = {}) {
   if (!ov) return;
+  const lifecycle = overlayLifecycles.get(ov);
+  if (lifecycle?.closed) return;
+  if (lifecycle) {
+    lifecycle.closed = true;
+    lifecycle.background.forEach(({ el, hadInert, ariaHidden }) => {
+      if (hadInert) el.setAttribute('inert', '');
+      else el.removeAttribute('inert');
+      if (ariaHidden === null) el.removeAttribute('aria-hidden');
+      else el.setAttribute('aria-hidden', ariaHidden);
+    });
+  }
   ov.classList.add('k-id-overlay--out');
   document.body.classList.remove('k-id-scroll-lock');
-  setTimeout(() => ov.remove(), 150);
+  setTimeout(() => {
+    ov.remove();
+    if (restoreFocus && lifecycle?.focusOrigin?.isConnected) lifecycle.focusOrigin.focus();
+  }, 150);
+}
+
+function installDialogLifecycle(ov, focusOrigin) {
+  const background = Array.from(document.body.children)
+    .filter(el => el !== ov)
+    .map(el => ({
+      el,
+      hadInert: el.hasAttribute('inert'),
+      ariaHidden: el.getAttribute('aria-hidden'),
+    }));
+  background.forEach(({ el }) => {
+    el.setAttribute('inert', '');
+    el.setAttribute('aria-hidden', 'true');
+  });
+  overlayLifecycles.set(ov, { background, focusOrigin, closed: false });
+}
+
+function getDialogFocusable(ov) {
+  return Array.from(ov.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )).filter(el => !el.hidden && !el.closest('[hidden]') && el.getAttribute('aria-hidden') !== 'true');
 }
 
 function readValidatedPhoneFromField(id) {
@@ -127,7 +164,7 @@ export async function restoreIdentity() {
 // requireIdentity() appelle directement openIdentityModal(), qui gère
 // le cas « utilisateur reconnu » via le step 'recap'.
 
-export function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre WhatsApp', phone = '' } = {}) {
+export function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre WhatsApp', phone = '', returnFocusTo = null } = {}) {
   ensureStyles();
   return new Promise(resolve => {
 
@@ -174,7 +211,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
             <button class="k-id-num-link" type="button" id="k-id-num-changed">Numéro changé&nbsp;?</button>
             <button class="k-id-num-link k-id-num-link--muted" type="button" id="k-id-not-you">Pas vous&nbsp;?</button>
           </div>
-          <p class="k-id-error" id="k-id-err-recap"></p>
+          <p class="k-id-error" id="k-id-err-recap" role="alert" aria-live="assertive" aria-atomic="true"></p>
           <button class="k-id-btn k-id-btn--sending" type="button" id="k-id-recap-cta" disabled aria-live="polite">
             <span class="k-id-sending-dot"></span>
             <span class="k-id-sending-dot"></span>
@@ -186,7 +223,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
         <!-- Step phone : inconnu -->
         <div id="k-id-step-phone" class="k-id-step" hidden>
           <div id="k-id-fields-host"></div>
-          <p class="k-id-error" id="k-id-err-phone"></p>
+          <p class="k-id-error" id="k-id-err-phone" role="alert" aria-live="assertive" aria-atomic="true"></p>
           <button class="k-id-btn" type="button" id="k-id-phone-cta">Recevoir le code</button>
           <button class="k-id-btn k-id-secondary" type="button" id="k-id-phone-cancel">Annuler</button>
         </div>
@@ -206,7 +243,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
             <span id="k-id-timer-text">Renvoyer dans <strong id="k-id-timer-count">30</strong>s</span>
             <button class="k-id-resend-now" type="button" id="k-id-resend" style="display:none">Renvoyer maintenant</button>
           </div>
-          <p class="k-id-error" id="k-id-err-otp"></p>
+          <p class="k-id-error" id="k-id-err-otp" role="alert" aria-live="assertive" aria-atomic="true"></p>
           <button class="k-id-btn" type="button" id="k-id-otp-cta" disabled>Confirmer</button>
           <button class="k-id-btn k-id-secondary" type="button" id="k-id-otp-cancel">Annuler</button>
         </div>
@@ -231,6 +268,28 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
     const timerCount = ov.querySelector('#k-id-timer-count');
     const resendBtn  = ov.querySelector('#k-id-resend');
     const sentEl     = ov.querySelector('#k-id-sent');
+
+    function clearPhoneFieldError(field) {
+      if (!field || field.getAttribute('aria-describedby') !== 'k-id-err-phone') return;
+      field.removeAttribute('aria-invalid');
+      field.removeAttribute('aria-describedby');
+      errPhone.textContent = '';
+    }
+
+    function setPhoneFieldError(message, fieldId = '') {
+      ['k-id-name', 'k-id-lastname', 'k-id-phone'].forEach(id => {
+        const field = ov.querySelector('#' + id);
+        field?.removeAttribute('aria-invalid');
+        field?.removeAttribute('aria-describedby');
+      });
+      errPhone.textContent = message;
+      const field = fieldId ? ov.querySelector('#' + fieldId) : null;
+      if (field) {
+        field.setAttribute('aria-invalid', 'true');
+        field.setAttribute('aria-describedby', 'k-id-err-phone');
+        field.focus();
+      }
+    }
 
     // ── Step switcher ──────────────────────────────────────────────────
     function showStep(name) {
@@ -327,11 +386,13 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
       const nameValue  = String(phoneData.name  || '').trim();
       const lastValue  = String(phoneData.lastName || '').trim();
 
-      if (!fromRecap && !nameValue) { errPhone.textContent = 'Indiquez votre prénom.'; return; }
-      if (!fromRecap && !lastValue) { errPhone.textContent = 'Indiquez votre nom.'; return; }
+      if (!fromRecap && !nameValue) { setPhoneFieldError('Indiquez votre prénom.', 'k-id-name'); return; }
+      if (!fromRecap && !lastValue) { setPhoneFieldError('Indiquez votre nom.', 'k-id-lastname'); return; }
       if (phoneValue.length < 8)   {
         const errEl = fromRecap ? errRecap : errPhone;
-        errEl.textContent = 'Numéro WhatsApp invalide.'; return;
+        if (fromRecap) errEl.textContent = 'Numéro WhatsApp invalide.';
+        else setPhoneFieldError('Numéro WhatsApp invalide.', 'k-id-phone');
+        return;
       }
 
       sending = true;
@@ -421,14 +482,24 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
     // Step recap
     ov.querySelector('#k-id-num-changed')?.addEventListener('click', async () => {
       clearInterval(timerInterval);
-      closeOverlay(ov);
-      const newUser = await openIdentityModal({ reason: 'changer de num\u00e9ro', title: 'Utiliser un autre num\u00e9ro', phone: '' });
+      closeOverlay(ov, { restoreFocus: false });
+      const newUser = await openIdentityModal({
+        reason: 'changer de num\u00e9ro',
+        title: 'Utiliser un autre num\u00e9ro',
+        phone: '',
+        returnFocusTo: overlayLifecycles.get(ov)?.focusOrigin || null,
+      });
       resolve(newUser);
     });
     ov.querySelector('#k-id-not-you')?.addEventListener('click', async () => {
       clearInterval(timerInterval);
-      closeOverlay(ov);
-      const newUser = await openIdentityModal({ reason: 'changer d\u2019identit\u00e9', title: 'Utiliser un autre num\u00e9ro', phone: '' });
+      closeOverlay(ov, { restoreFocus: false });
+      const newUser = await openIdentityModal({
+        reason: 'changer d\u2019identit\u00e9',
+        title: 'Utiliser un autre num\u00e9ro',
+        phone: '',
+        returnFocusTo: overlayLifecycles.get(ov)?.focusOrigin || null,
+      });
       resolve(newUser);
     });
     ov.querySelector('#k-id-recap-cancel')?.addEventListener('click', () => { clearInterval(timerInterval); closeOverlay(ov); resolve(null); });
@@ -441,14 +512,21 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
       nameField.innerHTML = '<label for="k-id-name">Votre pr\u00e9nom</label>'
         + '<input id="k-id-name" class="k-id-input" type="text" autocomplete="given-name" placeholder="Pr\u00e9nom">';
       host.appendChild(nameField);
-      nameField.querySelector('#k-id-name').addEventListener('input', e => { phoneData.name = e.target.value.trim(); });
+      nameField.querySelector('#k-id-name').addEventListener('input', e => {
+        phoneData.name = e.target.value.trim();
+        clearPhoneFieldError(e.target);
+      });
       const lastNameField = document.createElement('div');
       lastNameField.className = 'k-id-field';
       lastNameField.innerHTML = '<label for="k-id-lastname">Votre nom</label>'
         + '<input id="k-id-lastname" class="k-id-input" type="text" autocomplete="family-name" placeholder="Nom">';
       host.appendChild(lastNameField);
-      lastNameField.querySelector('#k-id-lastname').addEventListener('input', e => { phoneData.lastName = e.target.value.trim(); });
+      lastNameField.querySelector('#k-id-lastname').addEventListener('input', e => {
+        phoneData.lastName = e.target.value.trim();
+        clearPhoneFieldError(e.target);
+      });
       host.appendChild(makeIntlPhoneInput('k-id-phone', 'Votre WhatsApp', phoneData, 'phone'));
+      ov.querySelector('#k-id-phone')?.addEventListener('input', e => clearPhoneFieldError(e.target));
     }
     phoneCta.addEventListener('click', () => { if (!sending) requestCode(false); });
     ov.querySelector('#k-id-phone-cancel')?.addEventListener('click', () => { clearInterval(timerInterval); closeOverlay(ov); resolve(null); });
@@ -465,11 +543,32 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
     // Fermeture universelle
     ov.querySelector('.k-id-close')?.addEventListener('click', () => { clearInterval(timerInterval); closeOverlay(ov); resolve(null); });
     ov.addEventListener('click', e => { if (e.target === ov) { clearInterval(timerInterval); closeOverlay(ov); resolve(null); } });
-    ov.addEventListener('keydown', e => { if (e.key === 'Escape') { clearInterval(timerInterval); closeOverlay(ov); resolve(null); } });
+    ov.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        clearInterval(timerInterval);
+        closeOverlay(ov);
+        resolve(null);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const focusable = getDialogFocusable(ov);
+      if (!focusable.length) { e.preventDefault(); return; }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !ov.contains(document.activeElement))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !ov.contains(document.activeElement))) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
     ov.addEventListener('keydown', e => { if (e.key === 'Enter' && !stepOtp.hidden) otpCta.click(); });
 
     // ── Mount ──────────────────────────────────────────────────────────
+    const focusOrigin = returnFocusTo || document.activeElement;
     document.body.appendChild(ov);
+    installDialogLifecycle(ov, focusOrigin);
     document.body.classList.add('k-id-scroll-lock');
 
     if (startWithRecap) {
@@ -479,7 +578,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
       setTimeout(() => requestCode(true), 80);
     } else {
       showStep('phone');
-      setTimeout(() => ov.querySelector('#k-id-phone')?.focus(), 80);
+      setTimeout(() => ov.querySelector('#k-id-name')?.focus(), 80);
     }
   });
 }

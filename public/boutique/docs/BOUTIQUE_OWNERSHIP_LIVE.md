@@ -14,13 +14,13 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
 | **Modal produit** `.k-modal*` | modal-shell.css (29), modal-product.css (4), interactions.css (2), boutique-desktop.css (1), modal-mobile-canonical.css (1) | 5 | 🔴 |
-| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (18), layout.css (11), shared-list-side-cart.css (4), hero.css (1) | 4 | 🔴 |
+| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (10), layout.css (7), shared-list-side-cart.css (4) | 3 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (23), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
 | **Header** `.k-header*` | layout.css (21), hero.css (2), tokens.css (1) | 3 | 🔴 |
 | **Hero** `.k-hero*` | hero.css (9), cart.css (1) | 2 | 🔴 |
 | **Chips catégories** `.k-chip*` | categories.css (61), layout.css (2), interactions.css (1) | 3 | 🔴 |
-| **Bottom-nav mobile** `.k-bnav*` | interactions.css (2), layout.css (2) | 2 | 🔴 |
+| **Bottom-nav mobile** `.k-bnav*` | layout.css (3), interactions.css (2) | 2 | 🔴 |
 
 ---
 
@@ -30,11 +30,11 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 
 | Module JS | DOM | CSS-inj | bus on/emit | Composants ciblés |
 |-----------|:---:|:-------:|:-----------:|-------------------|
-| `b-cart.js` | 74 | 26 | 5/8 | Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
+| `b-cart.js` | 85 | 24 | 5/8 | Modal produit, Side-cart desktop, Panier, Carte produit, Chips catégories, Bottom-nav mobile |
 | `b-modal-desktop-product.js` | 94 | 1 | 0/0 | Modal produit |
+| `b-checkout.js` | 82 | 4 | 0/4 | Bottom-nav mobile |
 | `b-modal-mobile-product.js` | 81 | 1 | 0/0 | Modal produit |
-| `b-checkout.js` | 77 | 4 | 0/4 | Bottom-nav mobile |
-| `b-modal-core.js` | 17 | 49 | 4/2 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
+| `b-modal-core.js` | 17 | 49 | 4/3 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout-render.js` | 58 | 0 | 0/0 | — |
 | `b-modal-product.js` | 25 | 12 | 0/1 | Modal produit |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
@@ -43,13 +43,12 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-mini-cart.js` | 4 | 19 | 2/0 | Panier |
 | `b-modal-buybox-shared.js` | 22 | 0 | 0/0 | Modal produit |
 | `b-modal-nav.js` | 10 | 10 | 1/4 | Modal produit |
+| `b-tracking.js` | 20 | 0 | 0/0 | Section catalogue |
 | `b-pager.js` | 3 | 16 | 2/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
-| `b-tracking.js` | 19 | 0 | 0/0 | Section catalogue |
 | `b-identity.js` | 11 | 5 | 0/0 | — |
-| `b-catalog.js` | 11 | 2 | 3/3 | Carte produit, Grille produits, Chips catégories, Section catalogue |
+| `b-catalog.js` | 12 | 2 | 3/3 | Carte produit, Grille produits, Chips catégories, Section catalogue |
 | `b-modal-image-ux.js` | 8 | 5 | 1/1 | Modal produit |
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
-| `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
 | `b-komerce.js` | 11 | 0 | 0/1 | Section catalogue |
 | `boutique.js` | 0 | 11 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/2 | Modal produit |
@@ -67,6 +66,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-cart.js` | 1 | 2 | 1/0 | Modal produit |
 | `b-utils.js` | 3 | 0 | 0/0 | Carte produit |
 | `b-greeting.js` | 2 | 0 | 0/0 | — |
+| `b-pdp-curation-suggestions.js` | 2 | 0 | 2/0 | Modal produit |
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |
 | `b-desktop-sidebar.js` | 1 | 0 | 0/1 | Chips catégories |
 | `b-store.js` | 0 | 1 | 1/2 | Modal produit, Panier, Grille produits, Hero |

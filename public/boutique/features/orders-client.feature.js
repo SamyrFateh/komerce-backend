@@ -78,5 +78,6 @@ module.exports = {
     'une répétition UI ne crée pas une seconde commande par elle-même',
     'le suivi ne modifie jamais le statut de commande',
     'la timeline reflète les statuts canoniques reçus du backend',
+    'la recherche d historique client partage le défaut téléphonique +269 avec l identité, sans demander les champs de profil inutiles à une simple consultation',
   ],
 };

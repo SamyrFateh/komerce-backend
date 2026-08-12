@@ -419,6 +419,8 @@ describe('b-cart', () => {
       expect(state.favs).toContain(7);
       expect(btn.classList.contains('liked')).toBe(true);
       expect(btn.innerHTML).toBe('❤️');
+      expect(btn.getAttribute('aria-pressed')).toBe('true');
+      expect(btn.getAttribute('aria-label')).toBe('Retirer des favoris');
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Ajouté aux favoris'));
       expect(saveFavs).toHaveBeenCalled();
       jest.advanceTimersByTime(300);
@@ -434,6 +436,8 @@ describe('b-cart', () => {
       expect(state.favs).not.toContain(7);
       expect(btn.classList.contains('liked')).toBe(false);
       expect(btn.innerHTML).toBe('🤍');
+      expect(btn.getAttribute('aria-pressed')).toBe('false');
+      expect(btn.getAttribute('aria-label')).toBe('Ajouter aux favoris');
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Retiré des favoris'));
       expect(saveFavs).toHaveBeenCalled();
     });

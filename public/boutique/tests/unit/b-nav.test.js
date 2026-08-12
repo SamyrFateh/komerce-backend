@@ -388,6 +388,15 @@ describe('setupBnav', () => {
     setupBnav();
     document.querySelector('[data-tab="komerce"]').click();
     expect(openMonKomerce).toHaveBeenCalled();
+    expect(document.body.classList.contains('k-view-shop')).toBe(true);
+    expect(document.querySelector('[data-tab="komerce"]').classList.contains('active')).toBe(false);
+  });
+
+  test('komerce:show active l’onglet seulement après identification', () => {
+    mountNavButtons();
+    bus.emit('komerce:show');
+    expect(document.querySelector('[data-tab="komerce"]').classList.contains('active')).toBe(true);
+    expect(document.body.classList.contains('k-view-komerce')).toBe(true);
   });
 
   test('active la classe "active" uniquement sur le bouton cliqué', () => {

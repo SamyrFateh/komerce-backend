@@ -89,5 +89,6 @@ module.exports = {
     'les tokens et règles de layout transverses ont un propriétaire unique',
     'les adapters propres à une feature restent dans le manifeste de cette feature',
     'sur desktop, l avatar panier non vide ouvre le récapitulatif canonique ; sur mobile il ouvre le drawer pour permettre la relecture et la modification',
+    'le pied de page ne pointe vers aucune ancienne route de panier collectif ; son entrée de création ouvre le panier canonique et son action Partager',
   ],
 };
