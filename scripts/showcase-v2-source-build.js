@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
- * @version       2026-08-v5
+ * @version       2026-08-v6
  */
 'use strict';
 
@@ -34,63 +34,48 @@ const PAGE_SIZE = 50;
 const MAX_PAGES_PER_QUERY = 6;
 const DESCRIPTION_MAX_LENGTH = 10000;
 
-// Réserve métier : Commons peut être pauvre sur une formulation précise alors
-// qu'un vocabulaire voisin contient largement assez de médias. On élargit les
-// requêtes, jamais les invariants de licence/résolution/unicité/éligibilité.
 const FALLBACK_QUERIES = Object.freeze({
   'Mode & Beauté/Femme': ['dress isolated', 'blouse isolated', 'skirt isolated', 'women shoes product', 'handbag product', 'women jacket product'],
   'Mode & Beauté/Homme': ['shirt isolated', 'mens jacket product', 'trousers isolated', 'men shoes product', 'suit isolated', 'mens belt product'],
   'Mode & Beauté/Enfant': ['children clothing product', 'kids shirt isolated', 'children shoes product', 'school uniform product', 'kids jacket product', 'children backpack product'],
   'Mode & Beauté/Beauté': ['cosmetics product', 'makeup product', 'skin care product', 'perfume bottle', 'lipstick product', 'beauty product'],
-
   'Maison/Confort': ['home appliance product', 'electric fan product', 'vacuum cleaner product', 'clothes iron product', 'space heater product', 'household appliance product'],
   'Maison/Cuisine': ['kitchen utensil product', 'cookware product', 'kettle product', 'frying pan product', 'cutlery product', 'kitchen appliance product'],
   'Maison/Déco': ['home decoration product', 'vase product', 'table lamp product', 'cushion product', 'wall clock product', 'decorative object product'],
   'Maison/Enfants': ['school supplies product', 'children furniture product', 'backpack product', 'pencil case product', 'notebook product', 'desk accessory product'],
-
   'Tech/Phones': ['smartphone product', 'mobile phone product', 'cell phone product', 'telephone handset product'],
   'Tech/Audio': ['headphones product', 'earphones product', 'loudspeaker product', 'portable speaker product', 'radio receiver product', 'audio equipment product'],
   'Tech/Montres': ['wristwatch product', 'smartwatch product', 'watch product', 'digital watch product', 'mechanical watch product'],
-
   'Bricolage/Outillage': ['hand tool product', 'power tool product', 'screwdriver product', 'hammer product', 'electric drill product', 'pliers product'],
   'Bricolage/Electricité': ['electrical connector product', 'electric cable product', 'electrical socket product', 'light switch product', 'extension cord product', 'electrical equipment product'],
   'Bricolage/Sécurité': ['padlock product', 'door lock product', 'security camera product', 'safe lock product', 'door security product', 'lock hardware product'],
-
   'Créations personnelles/Cérémonie': ['formal dress product', 'wedding dress product', 'suit clothing product', 'ceremonial dress product', 'tuxedo product', 'formal wear product'],
   'Créations personnelles/Cadeau': ['gift box product', 'souvenir object product', 'gift item product', 'decorative mug product', 'keepsake product', 'present box product'],
   'Créations personnelles/Impression': ['printed mug product', 'printed stationery product', 'greeting card product', 'poster print product', 'printed notebook product', 'printed paper product'],
-
   'Auto/Filtres': ['oil filter product', 'air filter automotive product', 'automotive filter product', 'fuel filter product', 'car filter product'],
   'Auto/Freinage': ['brake disc product', 'brake pad product', 'automotive brake product', 'disc brake product', 'brake caliper product'],
   'Auto/Éclairage': ['car headlight product', 'automotive lamp product', 'tail light product', 'vehicle headlamp product', 'car light product'],
   'Auto/Moto': ['motorcycle part product', 'motorcycle accessory product', 'motorcycle helmet product', 'motorcycle mirror product', 'motorcycle light product'],
 });
 
-// Un média n'est pas un produit parce qu'une requête de recherche l'a trouvé.
-// Il doit porter dans SON TITRE une identité d'objet compatible avec le segment.
 const PRODUCT_TERMS = Object.freeze({
   'Mode & Beauté/Femme': ['dress', 'blouse', 'skirt', 'shirt', 'jacket', 'coat', 'trousers', 'pants', 'shoe', 'shoes', 'handbag', 'purse', 'sandal', 'sandals', 'boot', 'boots'],
   'Mode & Beauté/Homme': ['shirt', 'jacket', 'coat', 'trousers', 'pants', 'shoe', 'shoes', 'suit', 'blazer', 'tie', 'belt', 'boot', 'boots'],
   'Mode & Beauté/Enfant': ['shirt', 't-shirt', 'tshirt', 'jacket', 'trousers', 'pants', 'dress', 'skirt', 'shoe', 'shoes', 'uniform', 'backpack', 'sweater'],
   'Mode & Beauté/Beauté': ['cosmetic', 'cosmetics', 'makeup', 'lipstick', 'perfume', 'lotion', 'cream', 'mascara', 'foundation', 'skincare', 'skin care', 'soap'],
-
   'Maison/Confort': ['fan', 'vacuum cleaner', 'iron', 'heater', 'appliance', 'humidifier', 'air conditioner', 'pillow'],
   'Maison/Cuisine': ['kettle', 'pan', 'pot', 'knife', 'knives', 'cutlery', 'spoon', 'fork', 'cookware', 'utensil', 'plate', 'bowl', 'mug', 'blender', 'toaster'],
   'Maison/Déco': ['vase', 'lamp', 'cushion', 'clock', 'candle', 'frame', 'decoration', 'decorative', 'ornament'],
   'Maison/Enfants': ['backpack', 'pencil case', 'notebook', 'desk', 'chair', 'stationery', 'pencil', 'pen', 'ruler', 'school bag'],
-
   'Tech/Phones': ['smartphone', 'phone', 'telephone', 'handset', 'mobile'],
   'Tech/Audio': ['headphone', 'headphones', 'earphone', 'earphones', 'speaker', 'loudspeaker', 'radio', 'microphone', 'headset', 'earbud', 'earbuds'],
   'Tech/Montres': ['watch', 'wristwatch', 'smartwatch', 'timepiece'],
-
   'Bricolage/Outillage': ['tool', 'screwdriver', 'hammer', 'drill', 'pliers', 'wrench', 'spanner', 'saw'],
   'Bricolage/Electricité': ['connector', 'cable', 'socket', 'switch', 'cord', 'plug', 'outlet', 'adapter', 'electrical'],
   'Bricolage/Sécurité': ['padlock', 'lock', 'camera', 'safe', 'latch', 'alarm', 'security'],
-
   'Créations personnelles/Cérémonie': ['dress', 'gown', 'suit', 'tuxedo', 'tie', 'veil', 'formal wear', 'ceremonial dress'],
   'Créations personnelles/Cadeau': ['gift box', 'gift', 'souvenir', 'keepsake', 'mug', 'present', 'box'],
   'Créations personnelles/Impression': ['mug', 'stationery', 'greeting card', 'poster', 'notebook', 'print', 'printed', 'card'],
-
   'Auto/Filtres': ['filter', 'oil filter', 'air filter', 'fuel filter'],
   'Auto/Freinage': ['brake', 'brake disc', 'brake pad', 'disc brake', 'rotor', 'caliper'],
   'Auto/Éclairage': ['headlight', 'headlamp', 'lamp', 'tail light', 'taillight', 'car light'],
@@ -98,28 +83,47 @@ const PRODUCT_TERMS = Object.freeze({
 });
 
 const EDITORIAL_MARKERS = Object.freeze([
-  'portrait',
-  'headshot',
-  'fashion show',
-  'fashion week',
-  'runway',
-  'red carpet',
-  'press conference',
-  'selfie',
-  'group photo',
-  'team photo',
-  'model wearing',
-  'model in',
-  'models wearing',
-  'modelled by',
-  'modeled by',
-  'bride and groom',
+  'portrait', 'headshot', 'fashion show', 'fashion week', 'runway', 'red carpet',
+  'press conference', 'selfie', 'group photo', 'team photo', 'model wearing',
+  'model in', 'models wearing', 'modelled by', 'modeled by', 'bride and groom',
   'wedding ceremony',
 ]);
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+const HUMAN_MEDIA_MARKERS = Object.freeze([
+  'woman wearing', 'women wearing', 'man wearing', 'men wearing', 'girl wearing',
+  'girls wearing', 'boy wearing', 'boys wearing', 'person wearing', 'people wearing',
+  'woman in a', 'woman in the', 'man in a', 'man in the', 'girl in a', 'boy in a',
+]);
+
+const APPAREL_SEGMENTS = new Set([
+  'Mode & Beauté/Femme', 'Mode & Beauté/Homme', 'Mode & Beauté/Enfant',
+  'Créations personnelles/Cérémonie',
+]);
+
+const V2_TITLE_REPLACEMENTS = [
+  [/\bblouse\b/gi, 'blouse'], [/\bskirt\b/gi, 'jupe'], [/\bjacket\b/gi, 'veste'],
+  [/\bcoat\b/gi, 'manteau'], [/\btrousers?\b/gi, 'pantalon'], [/\bpants\b/gi, 'pantalon'],
+  [/\bhandbag\b/gi, 'sac à main'], [/\bpurse\b/gi, 'sac à main'], [/\bsandals?\b/gi, 'sandales'],
+  [/\bboots?\b/gi, 'bottes'], [/\bsuit\b/gi, 'costume'], [/\bblazer\b/gi, 'blazer'],
+  [/\btie\b/gi, 'cravate'], [/\bbelt\b/gi, 'ceinture'], [/\bmakeup\b/gi, 'maquillage'],
+  [/\bcosmetics?\b/gi, 'cosmétique'], [/\blotion\b/gi, 'lotion'], [/\bmascara\b/gi, 'mascara'],
+  [/\bfoundation\b/gi, 'fond de teint'], [/\bsoap\b/gi, 'savon'], [/\bfan\b/gi, 'ventilateur'],
+  [/\bvacuum cleaner\b/gi, 'aspirateur'], [/\bheater\b/gi, 'chauffage'], [/\bpillow\b/gi, 'oreiller'],
+  [/\bkettle\b/gi, 'bouilloire'], [/\bfrying pan\b/gi, 'poêle'], [/\bpan\b/gi, 'poêle'],
+  [/\bknife\b/gi, 'couteau'], [/\bknives\b/gi, 'couteaux'], [/\bcutlery\b/gi, 'couverts'],
+  [/\bspoon\b/gi, 'cuillère'], [/\bfork\b/gi, 'fourchette'], [/\bbowl\b/gi, 'bol'],
+  [/\bblender\b/gi, 'mixeur'], [/\btoaster\b/gi, 'grille-pain'], [/\bcushion\b/gi, 'coussin'],
+  [/\bclock\b/gi, 'horloge'], [/\bcandle\b/gi, 'bougie'], [/\bbackpack\b/gi, 'sac à dos'],
+  [/\bpencil case\b/gi, 'trousse'], [/\bnotebook\b/gi, 'carnet'], [/\bheadphones?\b/gi, 'casque audio'],
+  [/\bearphones?\b/gi, 'écouteurs'], [/\bspeaker\b/gi, 'enceinte'], [/\bmicrophone\b/gi, 'microphone'],
+  [/\bscrewdriver\b/gi, 'tournevis'], [/\bhammer\b/gi, 'marteau'], [/\bdrill\b/gi, 'perceuse'],
+  [/\bpliers\b/gi, 'pince'], [/\bpadlock\b/gi, 'cadenas'], [/\bfilter\b/gi, 'filtre'],
+  [/\bbrake disc\b/gi, 'disque de frein'], [/\bbrake pad\b/gi, 'plaquette de frein'],
+  [/\bheadlight\b/gi, 'phare'], [/\bheadlamp\b/gi, 'phare'], [/\bmotorcycle\b/gi, 'moto'],
+  [/\bhelmet\b/gi, 'casque'], [/\bmirror\b/gi, 'rétroviseur'],
+];
+
+function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
 function parseArgs(argv) {
   const out = { target: 500, output: DEFAULT_OUTPUT };
@@ -130,9 +134,7 @@ function parseArgs(argv) {
     else if (key === '--output') out.output = path.resolve(next());
     else throw new Error(`Argument inconnu: ${argv[i]}`);
   }
-  if (!Number.isInteger(out.target) || out.target !== 500) {
-    throw new Error('--target doit être exactement 500 pour la campagne Showcase V2');
-  }
+  if (!Number.isInteger(out.target) || out.target !== 500) throw new Error('--target doit être exactement 500 pour la campagne Showcase V2');
   return out;
 }
 
@@ -145,10 +147,7 @@ function retryDelayMs(response, attempt) {
 async function fetchJson(url) {
   for (let attempt = 0; attempt <= API_RETRIES; attempt += 1) {
     await sleep(API_MIN_DELAY_MS);
-    const response = await fetch(url, {
-      headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
-      redirect: 'follow',
-    });
+    const response = await fetch(url, { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' }, redirect: 'follow' });
     if (response.ok) {
       const body = await response.json();
       if (body?.error?.code === 'maxlag' && attempt < API_RETRIES) {
@@ -169,11 +168,17 @@ async function fetchJson(url) {
 }
 
 function stripHtml(value) {
-  return String(value || '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&(?:nbsp|amp|quot|lt|gt);/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return String(value || '').replace(/<[^>]+>/g, ' ').replace(/&(?:nbsp|amp|quot|lt|gt);/gi, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function cleanSourceTitle(title) {
+  return String(title || '').replace(/^File:/i, '').replace(/[_-]+/g, ' ').replace(/\.(jpe?g|png|webp|gif|tiff?)$/i, '').replace(/\s+/g, ' ').trim().slice(0, 300);
+}
+
+function localizeV2Title(title) {
+  let value = localizeTitle(title);
+  for (const [pattern, replacement] of V2_TITLE_REPLACEMENTS) value = value.replace(pattern, replacement);
+  return value.replace(/\s+/g, ' ').trim().slice(0, 120) || 'Produit Komerce';
 }
 
 function isReusableLicense(value) {
@@ -205,12 +210,10 @@ function mapPage(page) {
     source_url: info.descriptionurl || `https://commons.wikimedia.org/?curid=${page.pageid}`,
     image_url: url,
     images: [url],
-    name: localizeTitle(page.title),
+    source_title: cleanSourceTitle(page.title),
+    name: localizeV2Title(page.title),
     source_description: stripHtml(meta.ImageDescription?.value),
-    source_attribution: {
-      license,
-      artist: stripHtml(meta.Artist?.value || 'Contributeur Wikimedia Commons'),
-    },
+    source_attribution: { license, artist: stripHtml(meta.Artist?.value || 'Contributeur Wikimedia Commons') },
   };
 }
 
@@ -219,19 +222,9 @@ async function searchCommons(query) {
   let offset = 0;
   for (let pageIndex = 0; pageIndex < MAX_PAGES_PER_QUERY; pageIndex += 1) {
     const params = new URLSearchParams({
-      action: 'query',
-      generator: 'search',
-      gsrsearch: query,
-      gsrnamespace: '6',
-      gsrlimit: String(PAGE_SIZE),
-      gsroffset: String(offset),
-      prop: 'imageinfo',
-      iiprop: 'url|mime|size|extmetadata',
-      iiurlwidth: '900',
-      iiextmetadatafilter: 'LicenseShortName|UsageTerms|Artist|ImageDescription',
-      maxlag: '5',
-      format: 'json',
-      formatversion: '2',
+      action: 'query', generator: 'search', gsrsearch: query, gsrnamespace: '6', gsrlimit: String(PAGE_SIZE), gsroffset: String(offset),
+      prop: 'imageinfo', iiprop: 'url|mime|size|extmetadata', iiurlwidth: '900',
+      iiextmetadatafilter: 'LicenseShortName|UsageTerms|Artist|ImageDescription', maxlag: '5', format: 'json', formatversion: '2',
     });
     const body = await fetchJson(`${COMMONS_API}?${params}`);
     rows.push(...(body.query?.pages || []).map(mapPage).filter(Boolean));
@@ -242,12 +235,14 @@ async function searchCommons(query) {
   return rows;
 }
 
-function segmentKey(target) {
-  return `${target.category}/${target.subcategory}`;
+function segmentKey(target) { return `${target.category}/${target.subcategory}`; }
+
+function identityQueriesForTarget(target) {
+  return (PRODUCT_TERMS[segmentKey(target)] || []).slice(0, 8).map((term) => `intitle:${term.includes(' ') ? `"${term}"` : term}`);
 }
 
 function queriesForTarget(target) {
-  const all = [...(target.queries || []), ...(FALLBACK_QUERIES[segmentKey(target)] || [])];
+  const all = [...(target.queries || []), ...(FALLBACK_QUERIES[segmentKey(target)] || []), ...identityQueriesForTarget(target)];
   const seen = new Set();
   return all.filter((query) => {
     const normalized = String(query || '').trim().toLowerCase();
@@ -259,32 +254,38 @@ function queriesForTarget(target) {
 
 function productIdentityFor(row, target) {
   const key = segmentKey(target);
-  const title = String(row?.name || '');
-  const context = `${title} ${row?.source_description || ''}`;
+  const sourceTitle = String(row?.source_title || row?.name || '');
+  const description = String(row?.source_description || '');
+  const context = `${sourceTitle} ${description}`;
   const terms = PRODUCT_TERMS[key] || [];
-  const term = terms.find((candidate) => catalogEligibility.keywordMatches(title, candidate));
-  if (!term) {
-    return { ok: false, reason: 'missing-product-term', term: null, editorial: null };
-  }
+  const titleTerm = terms.find((candidate) => catalogEligibility.keywordMatches(sourceTitle, candidate));
+  const descriptionTerm = titleTerm ? null : terms.find((candidate) => catalogEligibility.keywordMatches(description, candidate));
+  const term = titleTerm || descriptionTerm;
+  if (!term) return { ok: false, reason: 'missing-product-term', term: null, term_source: null, editorial: null };
+
   const editorial = EDITORIAL_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));
-  if (editorial) {
-    return { ok: false, reason: 'editorial-media', term, editorial };
+  if (editorial) return { ok: false, reason: 'editorial-media', term, term_source: titleTerm ? 'title' : 'description', editorial };
+
+  if (APPAREL_SEGMENTS.has(key)) {
+    const human = HUMAN_MEDIA_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));
+    if (human) return { ok: false, reason: 'human-media', term, term_source: titleTerm ? 'title' : 'description', editorial: human };
   }
-  return { ok: true, reason: null, term, editorial: null };
+
+  return { ok: true, reason: null, term, term_source: titleTerm ? 'title' : 'description', editorial: null };
 }
 
-function isProductLike(row, target) {
-  return productIdentityFor(row, target).ok;
-}
+function isProductLike(row, target) { return productIdentityFor(row, target).ok; }
 
-function boundedDescription(row) {
-  const fallback = `${row.name}. Produit de démonstration issu d'une source traçable pour éprouver la raffinerie Komerce.`;
-  return String(row.source_description || fallback).slice(0, DESCRIPTION_MAX_LENGTH);
+function boundedDescription(row, target) {
+  const title = row?.name || 'Produit Komerce';
+  const category = target?.category || 'Catalogue';
+  const subcategory = target?.subcategory || 'Produit';
+  return `${title}. Article de démonstration classé ${category} · ${subcategory}, sélectionné depuis une source traçable pour éprouver la raffinerie Komerce.`.slice(0, DESCRIPTION_MAX_LENGTH);
 }
 
 function eligibilityCandidate(row, target) {
   return {
-    product_name: row.name || null,
+    product_name: row.source_title || row.name || null,
     description: row.source_description || null,
     supplier_category: `${target.category} / ${target.subcategory}`,
     komerce_category: target.category,
@@ -292,10 +293,7 @@ function eligibilityCandidate(row, target) {
 }
 
 function absoluteExclusionFor(row, target, activeExclusions) {
-  const verdict = catalogEligibility.checkEligibility(
-    eligibilityCandidate(row, target),
-    activeExclusions || [],
-  );
+  const verdict = catalogEligibility.checkEligibility(eligibilityCandidate(row, target), activeExclusions || []);
   return verdict?.layer === 'absolute' ? verdict : null;
 }
 
@@ -308,7 +306,7 @@ function decorate(row, slot) {
     product_ref: slot.product_ref,
     category: slot.category,
     subcategory: slot.subcategory,
-    description: boundedDescription(row),
+    description: boundedDescription(row, slot),
     source_locale: 'en',
     price_kmf: priceKmf,
     promo_pct: promoSeed < 25 ? stableInt(`${row.source}:promo-pct`, 8, 40) : null,
@@ -320,6 +318,7 @@ function decorate(row, slot) {
       category: slot.category,
       subcategory: slot.subcategory,
       product_identity_term: identity.term,
+      product_identity_source: identity.term_source,
     },
   };
 }
@@ -378,12 +377,8 @@ async function buildCatalogue(activeExclusions = []) {
       if (segment.length >= target.count) break;
     }
 
-    if (segment.length < target.count) {
-      throw new Error(`Pool insuffisant ${key}: ${segment.length}/${target.count} après ${queries.length} requêtes`);
-    }
-    for (const row of segment) {
-      output.push(decorate(row, slots[slotCursor++]));
-    }
+    if (segment.length < target.count) throw new Error(`Pool insuffisant ${key}: ${segment.length}/${target.count} après ${queries.length} requêtes`);
+    for (const row of segment) output.push(decorate(row, slots[slotCursor++]));
     console.log(`[showcase-v2-source] ✓ ${key}: ${segment.length}`);
   }
 
@@ -397,10 +392,7 @@ async function buildCatalogue(activeExclusions = []) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL requis pour charger les exclusions actives de la raffinerie');
-  }
-
+  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL requis pour charger les exclusions actives de la raffinerie');
   try {
     const activeExclusions = await catalogEligibility.loadActiveExclusions();
     console.log(`[showcase-v2-source] exclusions actives Railway: ${activeExclusions.length}`);
@@ -427,12 +419,16 @@ module.exports = {
   FALLBACK_QUERIES,
   PRODUCT_TERMS,
   EDITORIAL_MARKERS,
+  HUMAN_MEDIA_MARKERS,
   parseArgs,
   retryDelayMs,
   stripHtml,
+  cleanSourceTitle,
+  localizeV2Title,
   isReusableLicense,
   mapPage,
   segmentKey,
+  identityQueriesForTarget,
   queriesForTarget,
   productIdentityFor,
   isProductLike,
