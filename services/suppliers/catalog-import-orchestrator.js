@@ -13,7 +13,7 @@
  * @db-txn        resolve_before_behavior_change
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
  * @impact-areas  catalog, product-detail
- * @version       2026-07
+ * @version       2026-08
  */
 
 'use strict';
@@ -52,6 +52,26 @@ function aggregateReasons(invalidArr) {
   return counts;
 }
 
+function eligibilityMatchLabel(verdict) {
+  const match = verdict?.match;
+  if (!match?.type || match.value == null) return null;
+  return `${match.type}=${JSON.stringify(String(match.value))}`;
+}
+
+function eligibilityReason(verdict) {
+  if (!verdict) return null;
+  const parts = [verdict.label];
+  const evidence = eligibilityMatchLabel(verdict);
+  if (evidence) parts.push(evidence);
+  if (verdict.legal_note) parts.push(verdict.legal_note);
+  return parts.filter(Boolean).join(' — ');
+}
+
+function automaticRejectedReason(verdict) {
+  const evidence = eligibilityMatchLabel(verdict);
+  return `[auto-exclusion] ${verdict?.label || 'Exclusion'}${evidence ? ` [${evidence}]` : ''}`;
+}
+
 /**
  * Importe un catalogue fournisseur : dispatch connecteur → normalisation →
  * éligibilité/scan → upsert sourcing_candidates → archivage optionnel.
@@ -68,12 +88,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     return { status: 400, body: { error: 'source_type doit être csv, manual, api ou json' } };
   }
 
-  // ING-6 — la source JSON emprunte un chemin transactionnel dédié
-  // (services/suppliers/catalog-import-json.js), volontairement séparé du
-  // legacy ci-dessous : batch créé AVANT classification, staging
-  // ready/quarantined/rejected, transaction propre. Le SQL et le
-  // comportement legacy (csv/manual/api) ne sont ni lus ni modifiés par
-  // cette branche — court-circuit avant tout appel à dispatchToConnector.
+  // ING-6 — la source JSON emprunte un chemin transactionnel dédié.
   if (sourceType === 'json') {
     return importJsonCatalog(b, userId);
   }
@@ -136,12 +151,12 @@ async function importCatalog(body, userId, dispatchToConnector) {
   for (const product of products) {
     try {
       // PDC-1 : snapshot du mapping fournisseur → contrat normalisé. V1 = null.
-      // On le construit AVANT le scanner : le scanner n'a pas le droit de
-      // réinterpréter ou d'aplatir media/axes/unités vendables.
       const normalizedSourceContract = buildNormalizedSourceContractSnapshot(product);
       const normalized = await scanner.normalizeCandidate(product, { config });
 
       // ③ Éligibilité — avant pricing, sur la donnée SOURCE.
+      // Le verdict inclut la preuve du match (mot-clé/catégorie), persistée
+      // dans scan_result.eligibility et dans rejected_reason pour audit humain.
       const verdict = eligibility.checkEligibility(normalized, activeExclusions);
       const isAbsoluteExclusion = verdict?.layer === 'absolute';
 
@@ -149,14 +164,14 @@ async function importCatalog(body, userId, dispatchToConnector) {
         ? {
             scan_result: null,
             sourcing_decision: 'EXCLUDED',
-            reason: verdict.legal_note ? `${verdict.label} — ${verdict.legal_note}` : verdict.label,
+            reason: eligibilityReason(verdict),
             recommended_action: 'Ne pas importer — exclusion douane/légale.',
             confidence: normalized.confidence || 'low',
           }
         : await scanner.scanCandidate(normalized, { config });
 
       const autoState = isAbsoluteExclusion ? 'rejected' : 'scanned';
-      const autoRejectedReason = isAbsoluteExclusion ? `[auto-exclusion] ${verdict.label}` : null;
+      const autoRejectedReason = isAbsoluteExclusion ? automaticRejectedReason(verdict) : null;
 
       const scanJson = JSON.stringify({
         ...scan.scan_result,
@@ -252,9 +267,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
           normalized.purchase_price_kmf, normalized.target_margin_pct,
           incomingDataSources, scanJson, scan.confidence,
           autoState, autoRejectedReason, userId || null,
-          // ING-I3 : source brute intégrale, non modifiée.
           product.raw_payload ? JSON.stringify(product.raw_payload) : null,
-          // PDC-1 : mapping riche validé, séparé du brut. V1 reste NULL.
           normalizedSourceContract ? JSON.stringify(normalizedSourceContract) : null,
         ]
       );
@@ -343,4 +356,10 @@ async function importCatalog(body, userId, dispatchToConnector) {
   };
 }
 
-module.exports = { importCatalog, aggregateReasons };
+module.exports = {
+  importCatalog,
+  aggregateReasons,
+  eligibilityMatchLabel,
+  eligibilityReason,
+  automaticRejectedReason,
+};
