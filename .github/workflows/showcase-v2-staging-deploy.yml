@@ -48,6 +48,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Syntax-check V2 runtime scripts
+        run: |
+          node --check scripts/showcase-v2-seed.js
+          node --check scripts/showcase-v2-source-build.js
+
       - name: V2 plan, refinery, editorial, source resilience and Wikimedia policy tests
         run: |
           npx jest \
@@ -125,6 +130,7 @@ jobs:
       CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
       CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       NODE_ENV: test
 
     steps:
@@ -138,11 +144,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Require staging secrets
+      - name: Require staging and French-enrichment secrets before reset
         shell: bash
         run: |
           set -euo pipefail
-          for var in CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET DATABASE_URL; do
+          for var in CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET DATABASE_URL ANTHROPIC_API_KEY; do
             if [ -z "${!var:-}" ]; then
               echo "::error::$var manquant dans les secrets GitHub"
               exit 1
