@@ -75,6 +75,8 @@ module.exports = {
   authority: 'boutique — ce slice possède l intention d achat locale et sa projection de suivi, jamais la vérité stock ni la machine de statut.',
   invariants: [
     'total panier dérivé uniquement des lignes réellement persistées',
+    'une mutation panier synchronise état, badge, lignes et total avant toute ouverture de checkout',
+    'le drawer fermé est invisible et absent de l arbre d accessibilité ; une seule action Commander est exposée par contexte',
     'une répétition UI ne crée pas une seconde commande par elle-même',
     'le suivi ne modifie jamais le statut de commande',
     'la timeline reflète les statuts canoniques reçus du backend',

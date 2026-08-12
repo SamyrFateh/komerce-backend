@@ -72,6 +72,7 @@ module.exports = {
 
   invariants: [
     'tout fichier js/* portant @domain payment doit etre liste dans files.js de ce manifeste',
+    'chaque fournisseur tiers expose un chargement local borné, puis un message de repli actionnable sans bloquer le checkout',
   ],
 
 };

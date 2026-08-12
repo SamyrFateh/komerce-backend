@@ -10,12 +10,12 @@ jest.mock('../../js/b-utils.js', () => ({
   fmtPrice: (value) => (value == null ? '' : `${value} KMF`),
 }));
 
-jest.mock('../../js/b-modal.js', () => ({ closeModal: jest.fn() }));
-jest.mock('../../js/b-cart.js', () => ({ addToCart: jest.fn(), openCart: jest.fn() }));
+jest.mock('../../js/b-bus.js', () => ({ bus: { emit: jest.fn() } }));
+jest.mock('../../js/b-cart.js', () => ({ addToCart: jest.fn() }));
 
 const { state } = require('../../js/b-store.js');
-const { closeModal } = require('../../js/b-modal.js');
-const { addToCart, openCart } = require('../../js/b-cart.js');
+const { bus } = require('../../js/b-bus.js');
+const { addToCart } = require('../../js/b-cart.js');
 const {
   wireBuyNowButton,
   getCurrentPrice,
@@ -90,8 +90,7 @@ describe('b-modal-buybox-shared — achat immédiat', () => {
     expect(addToCart).not.toHaveBeenCalled();
   });
 
-  test('Buy Now ajoute le snapshot SKU puis restaure le bouton et ouvre le panier', () => {
-    jest.useFakeTimers();
+  test('Buy Now ajoute le snapshot SKU puis ouvre immédiatement le checkout sur cette seule ligne', () => {
     installSkuState();
     state.modalQty = 1;
     const button = document.createElement('button');
@@ -99,12 +98,16 @@ describe('b-modal-buybox-shared — achat immédiat', () => {
     initialLabel.textContent = 'Acheter';
     button.appendChild(initialLabel);
 
+    const checkoutLine = { id: 1, sku_id: 'sku-1', qty: 1, price: 9000 };
+    addToCart.mockImplementation(() => {
+      expect(button.disabled).toBe(true);
+      expect(button.textContent).toContain('Ouverture du paiement');
+      return checkoutLine;
+    });
+
     wireBuyNowButton(button);
     button.click();
 
-    expect(button.disabled).toBe(true);
-    expect(button.classList.contains('buy-confirmed')).toBe(true);
-    expect(button.textContent).toContain('Ajouté au panier');
     expect(addToCart).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 1,
@@ -117,15 +120,13 @@ describe('b-modal-buybox-shared — achat immédiat', () => {
       { requested_transport_rail: null }
     );
 
-    jest.advanceTimersByTime(1200);
     expect(button.disabled).toBe(false);
     expect(button.classList.contains('buy-confirmed')).toBe(false);
     expect(button.textContent).toBe('Acheter');
-    expect(closeModal).toHaveBeenCalledTimes(1);
-    expect(openCart).not.toHaveBeenCalled();
-
-    jest.advanceTimersByTime(400);
-    expect(openCart).toHaveBeenCalledTimes(1);
+    expect(bus.emit).toHaveBeenCalledWith('checkout:open', {
+      lines: [checkoutLine],
+      context: { origin: 'BUY_NOW' },
+    });
   });
 
   test('currentCartProduct accepte le produit explicite et le produit modal par défaut', () => {

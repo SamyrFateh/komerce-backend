@@ -614,6 +614,12 @@
 }
 
 .k-stripe-wrap { padding: 13px 14px; }
+.k-payment-provider-status {
+  margin: 0 0 9px;
+  color: var(--text-muted);
+  font-size: .78rem;
+}
+.k-payment-provider-status.is-hidden { display: none; }
 /* RÃ¨gle Â§3 â€” le wallet prÃ©cÃ¨de dÃ©sormais le paiement (cf. mock) : marge
  * basse propre au lieu de compter sur le bloc suivant pour l'espacement. */
 .k-wallet-section { margin: 0 0 10px; padding: 12px 14px; }

@@ -87,5 +87,6 @@ module.exports = {
     'CLOSED/CANCELLED restent historiques et ne résident jamais dans le side cart',
     'retirer une liste sauvegardée ne supprime jamais la liste ni son token public',
     'la création d une liste partagée part toujours du panier canonique via Partager, y compris depuis le pied de page',
+    'toute confirmation de liste nomme son dialogue, confine le focus, rend le fond inerte, accepte Échap et restaure le focus au déclencheur',
   ],
 };

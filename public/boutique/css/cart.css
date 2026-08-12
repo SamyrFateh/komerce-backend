@@ -32,10 +32,15 @@ body.cart-open .k-hero { pointer-events: none; }
   display: grid;
   grid-template-rows: auto 1fr auto;
   transform: translateX(100%);
-  transition: transform .35s var(--ease);
+  visibility: hidden;
+  transition: transform .35s var(--ease), visibility 0s linear .35s;
   border: 0;
 }
-.k-cart-drawer.open { transform: translateX(0); }
+.k-cart-drawer.open {
+  transform: translateX(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
 
 /* Header — titre surface + compteur (rows 2) */
 .k-cart-header {

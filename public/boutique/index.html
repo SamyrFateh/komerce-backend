@@ -39,7 +39,7 @@
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=175">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=480">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=481">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=102">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
@@ -48,8 +48,8 @@
      dans tokens.css était silencieusement réimposé à son ancienne valeur par
      ce fichier. Aucune page /event/* n'existe dans le repo ni dans les routes. -->
 
-<!-- Stripe: NO defer — must be ready before boutique.js runs -->
-<script src="https://js.stripe.com/v3/"></script>
+<!-- Précharge Stripe sans bloquer le parsing ; le checkout gère délai et repli. -->
+<script src="https://js.stripe.com/v3/" defer data-k-stripe-sdk></script>
 
 <!-- v11: inline mobile CSS removed — all styles in boutique.css -->
 </head>
@@ -651,7 +651,6 @@
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
 <!-- fixMobile removed v19 -->
 </html>
-
 
 
 

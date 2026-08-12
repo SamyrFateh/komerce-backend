@@ -114,6 +114,7 @@ const {
   renderCartSurfaceSwitch,
   isDismissedSharedListToken,
   isSharedListSurfaceActive,
+  showKomerceConfirm,
 } = require('../../js/group/group-side-cart.js');
 
 function mountShell() {
@@ -176,6 +177,41 @@ afterEach(() => {
   // contexte", lot temps réel 2026-08).
   clearSharedListContext();
   jest.useRealTimers();
+});
+
+describe('showKomerceConfirm — accessibilité modale', () => {
+  it('nomme le dialogue, confine le focus, rend le fond inerte et restaure le déclencheur', async () => {
+    const trigger = document.createElement('button');
+    trigger.textContent = 'Partager';
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    const resultPromise = showKomerceConfirm({
+      title: 'Créer cette liste ?',
+      body: 'Le contenu sera figé.',
+      confirmLabel: 'Créer la liste',
+    });
+
+    const dialog = document.querySelector('.k-confirm-dialog');
+    const cancel = dialog.querySelector('.k-confirm-dialog-btn-secondary');
+    const confirm = dialog.querySelector('.k-confirm-dialog-btn-primary');
+    expect(dialog.getAttribute('aria-labelledby')).toBe(dialog.querySelector('.k-confirm-dialog-title').id);
+    expect(dialog.getAttribute('aria-describedby')).toBe(dialog.querySelector('.k-confirm-dialog-body').id);
+    expect(trigger.inert).toBe(true);
+    expect(trigger.getAttribute('aria-hidden')).toBe('true');
+    expect(document.activeElement).toBe(confirm);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(cancel);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+    expect(document.activeElement).toBe(confirm);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await expect(resultPromise).resolves.toBe(false);
+    expect(trigger.inert).toBe(false);
+    expect(trigger.hasAttribute('aria-hidden')).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+  });
 });
 
 describe('group-side-cart — chargement du snapshot', () => {

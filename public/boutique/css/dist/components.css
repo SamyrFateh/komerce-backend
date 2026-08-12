@@ -6470,10 +6470,15 @@ body.cart-open .k-hero { pointer-events: none; }
   display: grid;
   grid-template-rows: auto 1fr auto;
   transform: translateX(100%);
-  transition: transform .35s var(--ease);
+  visibility: hidden;
+  transition: transform .35s var(--ease), visibility 0s linear .35s;
   border: 0;
 }
-.k-cart-drawer.open { transform: translateX(0); }
+.k-cart-drawer.open {
+  transform: translateX(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
 
 /* Header — titre surface + compteur (rows 2) */
 .k-cart-header {
@@ -12069,6 +12074,12 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 .k-stripe-wrap { padding: 13px 14px; }
+.k-payment-provider-status {
+  margin: 0 0 9px;
+  color: var(--text-muted);
+  font-size: .78rem;
+}
+.k-payment-provider-status.is-hidden { display: none; }
 /* RÃ¨gle Â§3 â€” le wallet prÃ©cÃ¨de dÃ©sormais le paiement (cf. mock) : marge
  * basse propre au lieu de compter sur le bloc suivant pour l'espacement. */
 .k-wallet-section { margin: 0 0 10px; padding: 12px 14px; }

@@ -274,15 +274,16 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     && (i.requested_transport_rail ?? null) === requestedTransportRail
   );
 
-  if (existing) {
-    existing.qty += qty;
-    if (!existing.product) existing.product = product;
-    if (!existing.id) existing.id = product.id;
-    if (!existing.name) existing.name = product.name;
-    if (existing.price == null) existing.price = product.price_kmf ?? product.price ?? 0;
-    if (!existing.image) existing.image = product.image_url || product.image || '';
+  let cartLine = existing;
+  if (cartLine) {
+    cartLine.qty += qty;
+    if (!cartLine.product) cartLine.product = product;
+    if (!cartLine.id) cartLine.id = product.id;
+    if (!cartLine.name) cartLine.name = product.name;
+    if (cartLine.price == null) cartLine.price = product.price_kmf ?? product.price ?? 0;
+    if (!cartLine.image) cartLine.image = product.image_url || product.image || '';
   } else {
-    state.cart.push({
+    cartLine = {
       product: product,
       id: product.id,
       name: product.name,
@@ -292,7 +293,8 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       variant_combo: combo,
       variant_label: comboLabel,
       requested_transport_rail: requestedTransportRail,
-    });
+    };
+    state.cart.push(cartLine);
   }
 
   // Fly animation
@@ -381,6 +383,7 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     // Toast de confirmation (grid / rail uniquement)
     showToast('✓ ' + (product.name || 'Produit') + ' ajouté', 'success');
   }
+  return cartLine;
 }
 
   /**

@@ -25,7 +25,7 @@ import { bus }           from './b-bus.js';
 import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost, optimizeImgUrl } from './b-utils.js';
 import { showToast }   from './b-cart-core.js';
-import { renderPayPalButton, isPayPalEnabled } from './b-paypal.js'; // Migration 079
+import { renderPayPalButton, isPayPalEnabled, ensurePayPalSDK } from './b-paypal.js'; // Migration 079
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
 import { requireIdentity, getCurrentIdentity, restoreIdentity, openIdentityModal }  from './b-identity.js';
@@ -47,8 +47,10 @@ import {
 
 // Stripe globals (initialized on demand)
 let _stripe = (typeof window !== 'undefined' && window.Stripe) ? null : null;
+let _stripeLoading = null;
 let _stripeCard = null;
 let _stripeElements = null;
+const PAYMENT_PROVIDER_TIMEOUT_MS = 8000;
 
 const CHECKOUT_FOCUSABLE = [
   'a[href]',
@@ -121,7 +123,7 @@ function _activateCheckoutFocus() {
     el.setAttribute('aria-hidden', 'true');
   });
 
-  _checkoutKeydownHandler = (event) => {
+  const activeKeydownHandler = (event) => {
     if (document.querySelector('.ck-relais-overlay.is-open, .k-id-overlay')) return;
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -130,9 +132,10 @@ function _activateCheckoutFocus() {
     }
     _trapTabWithin(event, dialog);
   };
+  _checkoutKeydownHandler = activeKeydownHandler;
   document.addEventListener('keydown', _checkoutKeydownHandler);
   requestAnimationFrame(() => {
-    if (!overlay.classList.contains('open') || !_checkoutKeydownHandler) return;
+    if (!overlay.classList.contains('open') || _checkoutKeydownHandler !== activeKeydownHandler) return;
     const initial = dialog.querySelector('.ck-modal-back-btn--header, #k-order-close')
       || _focusableWithin(dialog)[0]
       || dialog;
@@ -153,7 +156,7 @@ function _deactivateCheckoutFocus({ restoreFocus = true } = {}) {
   _checkoutBackgroundState = [];
   const origin = _checkoutFocusOrigin;
   _checkoutFocusOrigin = null;
-  if (restoreFocus && origin?.isConnected) requestAnimationFrame(() => origin.focus?.());
+  if (restoreFocus && origin?.isConnected) origin.focus?.();
 }
 
 // ── Helpers téléphone — délégués à b-phone.js (source de vérité) ─
@@ -238,22 +241,44 @@ function _clearCommittedCheckoutSource() {
 
 async function ensureStripe() {
   if (_stripe) return _stripe;
-  try {
+  if (_stripeLoading) return _stripeLoading;
+
+  const withTimeout = (promise, message) => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), PAYMENT_PROVIDER_TIMEOUT_MS);
+    Promise.resolve(promise).then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); }
+    );
+  });
+
+  _stripeLoading = (async () => {
     if (typeof window.Stripe !== 'function') {
-      await new Promise((resolve, reject) => {
-        const s = document.createElement('script');
+      await withTimeout(new Promise((resolve, reject) => {
+        const existing = document.querySelector('script[data-k-stripe-sdk]');
+        const s = existing || document.createElement('script');
+        s.dataset.kStripeSdk = '1';
         s.src = 'https://js.stripe.com/v3/';
-        s.onload = resolve; s.onerror = reject;
-        document.head.appendChild(s);
-      });
+        s.addEventListener('load', resolve, { once: true });
+        s.addEventListener('error', () => reject(new Error('Chargement SDK Stripe échoué')), { once: true });
+        if (!existing) document.head.appendChild(s);
+      }), 'Délai de chargement du SDK Stripe dépassé');
     }
-    const cfg = await apiGet('/api/public/config');
+    const cfg = await withTimeout(
+      apiGet('/api/public/config'),
+      'Délai de chargement de la configuration Stripe dépassé'
+    );
     const key = cfg && cfg.stripe_public_key;
     if (key && typeof window.Stripe === 'function') {
       _stripe = window.Stripe(key);
     }
-  } catch(e) { console.warn('[Stripe] init failed:', e.message || e); }
-  return _stripe;
+    return _stripe;
+  })().catch((e) => {
+    console.warn('[Stripe] init failed:', e.message || e);
+    _stripeLoading = null;
+    return null;
+  });
+
+  return _stripeLoading;
 }
 
 
@@ -270,6 +295,8 @@ async function ensureStripe() {
 export function checkoutCart(checkoutSelection = null) {
     const selection = checkoutSelection && Array.isArray(checkoutSelection.items)
       ? checkoutSelection
+      : checkoutSelection && Array.isArray(checkoutSelection.lines)
+        ? buildCheckoutSelection(checkoutSelection.lines, checkoutSelection.context)
       : buildCheckoutSelection();
 
     if (!selection.items.length) {
@@ -1169,6 +1196,7 @@ export function renderCheckout() {
     stripeCardWrap.id = 'stripe-card-wrap';
     stripeCardWrap.className = 'k-stripe-wrap';
     stripeCardWrap.innerHTML = '<div class="k-stripe-title">🔒 Informations de carte</div>'
+      + '<div id="stripe-card-status" class="k-payment-provider-status" role="status" aria-live="polite">Préparation du paiement sécurisé…</div>'
       + '<div id="stripe-card-element" class="k-stripe-element"></div>'
       + '<div id="stripe-card-error" class="k-stripe-error"></div>'
       + '<div id="stripe-eur-display" class="k-stripe-eur"></div>';
@@ -1181,14 +1209,17 @@ export function renderCheckout() {
     paypalWrap.className = 'k-paypal-wrap';
     paypalWrap.innerHTML = '<div class="k-paypal-title">🅿️ Paiement PayPal'
       + ' <em class="k-paypal-paylater-tag">Payez en 4× sans frais (éligibilité affichée par PayPal)</em></div>'
-      + '<div id="paypal-button-container" class="k-paypal-buttons"></div>'
+      + '<div id="paypal-button-container" class="k-paypal-buttons" role="status" aria-live="polite"></div>'
       + '<div id="paypal-error" class="k-paypal-error"></div>';
     checkoutAside.appendChild(paypalWrap);
 
     /* Détection serveur PayPal activé → affiche la chip */
     isPayPalEnabled().then(enabled => {
       const chip = document.getElementById('ck-chip-paypal');
-      if (chip && enabled) chip.style.display = '';
+      if (chip && enabled) {
+        chip.style.display = '';
+        ensurePayPalSDK().catch(() => {});
+      }
     });
 
 
@@ -1286,10 +1317,16 @@ export function renderCheckout() {
       }
 
       if (isStripe && !_stripeCard) {
+        const statusEl = document.getElementById('stripe-card-status');
+        if (statusEl) {
+          statusEl.textContent = 'Préparation du paiement sécurisé…';
+          statusEl.classList.remove('is-hidden');
+        }
         ensureStripe().then(stripe => {
           if (!stripe) {
             const errEl = document.getElementById('stripe-card-error');
-            if (errEl) { errEl.textContent = 'Paiement carte indisponible.'; errEl.classList.add('is-visible'); }
+            if (statusEl) statusEl.classList.add('is-hidden');
+            if (errEl) { errEl.textContent = 'Paiement carte indisponible. Choisissez PayPal ou le paiement à la livraison.'; errEl.classList.add('is-visible'); }
             return;
           }
           if (_stripeCard) return;
@@ -1299,6 +1336,7 @@ export function renderCheckout() {
             hidePostalCode: true
           });
           _stripeCard.mount('#stripe-card-element');
+          if (statusEl) statusEl.classList.add('is-hidden');
           _stripeCard.on('change', ev => {
             const errEl = document.getElementById('stripe-card-error');
             if (errEl) { errEl.textContent = ev.error ? ev.error.message : ''; errEl.classList.toggle('is-visible', !!ev.error); }

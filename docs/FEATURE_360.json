@@ -58,8 +58,8 @@
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 51,
-    "attributedFindings": 51,
+    "totalFindings": 50,
+    "attributedFindings": 50,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -12505,7 +12505,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "↳ Référencé en CSS : css/cart.css:2064, css/cart.css:2075 … — sélecteur legacy ou JS manquant"
+            "message": "↳ Référencé en CSS : css/cart.css:2069, css/cart.css:2080 … — sélecteur legacy ou JS manquant"
           },
           {
             "gate": "check:body-classes",
@@ -13261,20 +13261,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 2,
+        "warnCount": 1,
         "gatesReporting": [
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-paypal.js — 1 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",

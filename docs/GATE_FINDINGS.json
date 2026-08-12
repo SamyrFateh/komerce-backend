@@ -90,7 +90,7 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 0,
-      "warningCount": 25,
+      "warningCount": 24,
       "coverageCount": 78,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
@@ -287,7 +287,7 @@
       "type": "TEXT-GATE-DIAGNOSTIC",
       "feature": "orders",
       "file": null,
-      "message": "↳ Référencé en CSS : css/cart.css:2064, css/cart.css:2075 … — sélecteur legacy ou JS manquant",
+      "message": "↳ Référencé en CSS : css/cart.css:2069, css/cart.css:2080 … — sélecteur legacy ou JS manquant",
       "sourceFile": "public/boutique/css/cart.css"
     },
     {
@@ -549,16 +549,6 @@
       "file": null,
       "message": "⚠ js/b-pager.js — 1 export(s) non consommé(s) :",
       "sourceFile": "public/boutique/js/b-pager.js"
-    },
-    {
-      "gate": "check:imports",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "payments",
-      "file": null,
-      "message": "⚠ js/b-paypal.js — 1 export(s) non consommé(s) :",
-      "sourceFile": "public/boutique/js/b-paypal.js"
     },
     {
       "gate": "check:imports",

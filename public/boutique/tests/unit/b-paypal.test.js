@@ -52,6 +52,15 @@ function mockScriptInjection() {
   return () => lastScript;
 }
 
+async function waitForScriptInjection(getLastScript) {
+  for (let i = 0; i < 12; i += 1) {
+    const script = getLastScript();
+    if (script) return script;
+    await Promise.resolve();
+  }
+  throw new Error('Le script PayPal n’a pas été injecté');
+}
+
 function mockConfigFetch(opts) {
   const ok = opts && 'ok' in opts ? opts.ok : true;
   const paypal_client_id = opts && 'paypal_client_id' in opts ? opts.paypal_client_id : 'client-abc';
@@ -86,6 +95,21 @@ beforeEach(() => {
 });
 
 describe('ensurePayPalSDK', () => {
+  it('borne le chargement de la configuration pour ne jamais laisser le checkout attendre indéfiniment', async () => {
+    jest.useFakeTimers();
+    let mod;
+    await jest.isolateModulesAsync(async () => {
+      mod = require('../../js/b-paypal.js');
+    });
+    global.fetch = jest.fn(() => new Promise(() => {}));
+
+    const promise = mod.ensurePayPalSDK();
+    jest.advanceTimersByTime(8000);
+
+    await expect(promise).rejects.toThrow('Délai de chargement de la configuration PayPal dépassé');
+    jest.useRealTimers();
+  });
+
   it('résout avec window.paypal après un chargement réussi du SDK', async () => {
     let mod;
     await jest.isolateModulesAsync(async () => {
@@ -101,7 +125,7 @@ describe('ensurePayPalSDK', () => {
     await Promise.resolve();
 
     window.paypal = { fake: true };
-    getLastScript().onload();
+    (await waitForScriptInjection(getLastScript)).onload();
 
     const result = await promise;
 
@@ -130,7 +154,7 @@ describe('ensurePayPalSDK', () => {
     await Promise.resolve();
     await Promise.resolve();
     window.paypal = { fake: true };
-    getLastScript().onload();
+    (await waitForScriptInjection(getLastScript)).onload();
     await p1;
 
     const p2 = mod.ensurePayPalSDK();
@@ -176,7 +200,7 @@ describe('ensurePayPalSDK', () => {
     const promise = mod.ensurePayPalSDK();
     await Promise.resolve();
     await Promise.resolve();
-    getLastScript().onerror();
+    (await waitForScriptInjection(getLastScript)).onerror();
 
     await expect(promise).rejects.toThrow('Chargement SDK PayPal échoué (adblock ?)');
   });
@@ -194,7 +218,7 @@ describe('ensurePayPalSDK', () => {
     await Promise.resolve();
     await Promise.resolve();
     // Pas de window.paypal assigné avant le onload.
-    getLastScript().onload();
+    (await waitForScriptInjection(getLastScript)).onload();
 
     await expect(promise).rejects.toThrow('window.paypal non disponible après chargement');
   });
@@ -217,7 +241,7 @@ describe('ensurePayPalSDK', () => {
     await Promise.resolve();
     await Promise.resolve();
     window.paypal = { fake: true };
-    getLastScript().onload();
+    (await waitForScriptInjection(getLastScript)).onload();
 
     await expect(p1).resolves.toBe(window.paypal);
     await expect(p2).resolves.toBe(window.paypal);
@@ -241,7 +265,7 @@ describe('renderPayPalButton', () => {
     await Promise.resolve();
     await Promise.resolve();
     window.paypal = paypal;
-    getLastScript().onload();
+    (await waitForScriptInjection(getLastScript)).onload();
     await p;
   }
 

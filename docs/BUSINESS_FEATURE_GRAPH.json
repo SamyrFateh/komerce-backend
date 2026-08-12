@@ -16430,6 +16430,10 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-modal-buybox-shared.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-modal-buybox-shared.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
               {
@@ -16455,6 +16459,10 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
+                "targetFile": "public/boutique/js/b-bus.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/modal-mobile-desktop-parity.test.js",
@@ -16525,20 +16533,12 @@
                 "targetFile": "public/boutique/js/b-modal.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-modal-buybox-shared.js",
-                "targetFile": "public/boutique/js/b-modal.js"
-              },
-              {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-desktop-product.test.js",
                 "targetFile": "public/boutique/js/b-modal-product.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-desktop-product.test.js",
                 "targetFile": "public/boutique/js/b-modal-image-ux.js"
-              },
-              {
-                "sourceFileId": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
-                "targetFile": "public/boutique/js/b-modal.js"
               }
             ]
           },
@@ -25688,7 +25688,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 59 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 61 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

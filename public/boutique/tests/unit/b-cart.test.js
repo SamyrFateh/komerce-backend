@@ -154,8 +154,9 @@ describe('b-cart', () => {
   describe('addToCart', () => {
     it("ajoute un nouvel article au panier avec qty par défaut = 1", () => {
       const product = makeProduct();
-      addToCart(product);
+      const line = addToCart(product);
       expect(state.cart).toHaveLength(1);
+      expect(line).toBe(state.cart[0]);
       expect(state.cart[0]).toMatchObject({
         id: 1, name: 'Riz basmati 5kg', price: 5000, qty: 1,
       });
@@ -170,9 +171,10 @@ describe('b-cart', () => {
     it('incrémente la qty si le produit est déjà dans le panier', () => {
       const product = makeProduct();
       addToCart(product, 2);
-      addToCart(product, 1);
+      const line = addToCart(product, 1);
       expect(state.cart).toHaveLength(1);
       expect(state.cart[0].qty).toBe(3);
+      expect(line).toBe(state.cart[0]);
     });
 
     it('complète les champs manquants (id/name/price/image) sur un item existant incomplet', () => {

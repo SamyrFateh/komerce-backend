@@ -50,8 +50,18 @@ import {
  * Volontairement locale à ce module (déjà propriétaire de shared-cart.feature.js)
  * plutôt qu'un nouveau fichier — réutilisation > nouveau composant.
  */
+let confirmDialogSequence = 0;
+
 export function showKomerceConfirm({ title, body, confirmLabel, cancelLabel = 'Annuler', danger = false }) {
   return new Promise((resolve) => {
+    const focusOrigin = document.activeElement;
+    const backgroundState = Array.from(document.body.children).map((el) => ({
+      el,
+      inert: !!el.inert,
+      ariaHidden: el.getAttribute('aria-hidden'),
+    }));
+    const dialogId = ++confirmDialogSequence;
+    let settled = false;
     const overlay = document.createElement('div');
     overlay.className = 'k-confirm-overlay';
 
@@ -59,13 +69,17 @@ export function showKomerceConfirm({ title, body, confirmLabel, cancelLabel = 'A
     dialog.className = 'k-confirm-dialog';
     dialog.setAttribute('role', 'alertdialog');
     dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', `k-confirm-title-${dialogId}`);
+    dialog.setAttribute('aria-describedby', `k-confirm-body-${dialogId}`);
 
     const titleEl = document.createElement('div');
     titleEl.className = 'k-confirm-dialog-title';
+    titleEl.id = `k-confirm-title-${dialogId}`;
     titleEl.textContent = title;
 
     const bodyEl = document.createElement('div');
     bodyEl.className = 'k-confirm-dialog-body';
+    bodyEl.id = `k-confirm-body-${dialogId}`;
     bodyEl.textContent = body;
 
     const actions = document.createElement('div');
@@ -84,16 +98,38 @@ export function showKomerceConfirm({ title, body, confirmLabel, cancelLabel = 'A
     confirmBtn.textContent = confirmLabel;
 
     function settle(result) {
+      if (settled) return;
+      settled = true;
       overlay.removeEventListener('click', onOverlayClick);
       document.removeEventListener('keydown', onKeydown);
       overlay.remove();
+      backgroundState.forEach(({ el, inert, ariaHidden }) => {
+        el.inert = inert;
+        if (ariaHidden == null) el.removeAttribute('aria-hidden');
+        else el.setAttribute('aria-hidden', ariaHidden);
+      });
+      if (focusOrigin?.isConnected && focusOrigin !== document.body) {
+        focusOrigin.focus?.();
+      }
       resolve(result);
     }
     function onOverlayClick(e) {
       if (e.target === overlay) settle(false);
     }
     function onKeydown(e) {
-      if (e.key === 'Escape') settle(false);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        settle(false);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && document.activeElement === cancelBtn) {
+        e.preventDefault();
+        confirmBtn.focus();
+      } else if (!e.shiftKey && document.activeElement === confirmBtn) {
+        e.preventDefault();
+        cancelBtn.focus();
+      }
     }
 
     cancelBtn.addEventListener('click', () => settle(false));
@@ -105,6 +141,10 @@ export function showKomerceConfirm({ title, body, confirmLabel, cancelLabel = 'A
     dialog.append(titleEl, bodyEl, actions);
     overlay.append(dialog);
     document.body.append(overlay);
+    backgroundState.forEach(({ el }) => {
+      el.inert = true;
+      el.setAttribute('aria-hidden', 'true');
+    });
     confirmBtn.focus();
   });
 }

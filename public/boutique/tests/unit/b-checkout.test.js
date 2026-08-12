@@ -57,6 +57,7 @@
 jest.mock('../../js/b-paypal.js', () => ({
   renderPayPalButton: jest.fn(() => Promise.resolve()),
   isPayPalEnabled: jest.fn(() => Promise.resolve(false)),
+  ensurePayPalSDK: jest.fn(() => Promise.resolve({})),
 }));
 
 jest.mock('../../js/b-cart.js', () => ({
@@ -135,7 +136,7 @@ const { digitsOnly: _digitsOnly, normalizeLocal: _normalizeLocal, prettifyLocal:
 const { buildOrderSuccessDOM, buildIdentityRecapDOM, applyIdentityToCard, renderStepHeader, setCheckoutConfirmButton, makeInput: _makeInputRender, makePhoneInput: _makePhoneInputRender } =
   require('../../js/b-checkout-render.js');
 const { scrollToPosition } = require('../../js/b-scroll-owner.js');
-const { renderPayPalButton, isPayPalEnabled } = require('../../js/b-paypal.js');
+const { renderPayPalButton, isPayPalEnabled, ensurePayPalSDK } = require('../../js/b-paypal.js');
 
 const {
   digitsOnly, normalizeLocal, prettifyLocal, buildE164,
@@ -702,6 +703,21 @@ describe('b-checkout', () => {
       expect(document.getElementById('btn-confirm-order')).not.toBeNull();
     });
 
+    it('Buy Now → finalise uniquement la ligne transmise, sans fusionner le reste du panier', async () => {
+      state.cart = [
+        { product: { id: 1, name: 'Déjà au panier', price_kmf: 10000 }, qty: 1 },
+        { product: { id: 2, name: 'Produit courant', price_kmf: 25000 }, qty: 1 },
+      ];
+
+      checkoutCart({ lines: [state.cart[1]], context: { origin: 'BUY_NOW' } });
+      await flush();
+
+      expect(state.orderData.checkoutSelection.items).toHaveLength(1);
+      expect(state.orderData.checkoutSelection.items[0].product.id).toBe(2);
+      expect(state.orderData.checkoutSelection.total).toBe(25000);
+      expect(state.cart).toHaveLength(2);
+    });
+
     it('récapitulatif et paiement cohabitent sans confirmation intermédiaire', async () => {
       state.cart = [{
         product: { id: 1, name: 'Produit test', price_kmf: 3000 },
@@ -1069,6 +1085,9 @@ describe('b-checkout', () => {
       let wrap = document.getElementById('stripe-card-wrap');
       expect(wrap.classList.contains('is-visible')).toBe(true);
       expect(document.getElementById('stripe-card-error').textContent).toContain('Paiement carte indisponible');
+      expect(document.getElementById('stripe-card-error').textContent).toContain('Choisissez PayPal');
+      expect(document.getElementById('stripe-card-status').getAttribute('role')).toBe('status');
+      expect(document.getElementById('stripe-card-status').classList.contains('is-hidden')).toBe(true);
     });
 
     it('bascule sur PayPal → révèle le bloc PayPal, câble le bouton officiel, masque "Confirmer"', async () => {
@@ -1081,6 +1100,7 @@ describe('b-checkout', () => {
       await flush();
 
       expect(document.getElementById('paypal-wrap').classList.contains('is-visible')).toBe(true);
+      expect(document.getElementById('paypal-button-container').getAttribute('aria-live')).toBe('polite');
       expect(renderPayPalButton).toHaveBeenCalledWith('paypal-button-container', expect.objectContaining({
         validateBeforeClick: expect.any(Function),
         prepareKomerceOrder: expect.any(Function),
@@ -1096,6 +1116,7 @@ describe('b-checkout', () => {
       await flush();
 
       expect(document.getElementById('ck-chip-paypal').style.display).toBe('');
+      expect(ensurePayPalSDK).toHaveBeenCalledTimes(1);
     });
 
     it('checkWalletBalance : solde 0 → section masquée, pas de crédit proposé (règle §3, simplification checkout final)', async () => {

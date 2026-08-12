@@ -34,8 +34,8 @@
  */
 
 import { fmtPrice } from './b-utils.js';
-import { closeModal } from './b-modal.js';
-import { addToCart, openCart } from './b-cart.js';
+import { bus } from './b-bus.js';
+import { addToCart } from './b-cart.js';
 import { state, getRequestedTransportRail } from './b-store.js';
 import {
   buildModalCartProduct,
@@ -71,28 +71,33 @@ export function wireBuyNowButton(buyNowBtn) {
       state.modalSelection
     )) return;
 
-    // 1. Feedback visuel immédiat : bouton se transforme en "✓ Ajouté !"
+    // 1. Feedback visuel immédiat : l'intention est un checkout direct,
+    //    jamais un détour temporisé par le panier.
     const originalContent = buyNowBtn.innerHTML;
-    buyNowBtn.innerHTML = '<span style="display:flex;align-items:center;gap:8px;justify-content:center"><span>✓</span><span>Ajouté au panier !</span></span>';
+    buyNowBtn.innerHTML = '<span style="display:flex;align-items:center;gap:8px;justify-content:center"><span>⚡</span><span>Ouverture du paiement…</span></span>';
     buyNowBtn.disabled = true;
     buyNowBtn.classList.add('buy-confirmed');
 
     // 2. Ajout au panier avec snapshot du SKU sélectionné. Même helper
     //    partagé que "Ajouter au panier" et "Panier partagé" — le rail
     //    demandé ne doit jamais différer selon le CTA cliqué.
-    addToCart(currentCartProduct(), state.modalQty, buyNowBtn, {
+    const checkoutLine = addToCart(currentCartProduct(), state.modalQty, buyNowBtn, {
       requested_transport_rail: getRequestedTransportRail(),
     });
 
-    // 3. Transition ÉTENDUE : 1200ms pour voir le feedback + coucou dame
-    //    puis fermeture douce et ouverture panier avec 400ms entre les 2
-    setTimeout(() => {
-      buyNowBtn.innerHTML = originalContent;
-      buyNowBtn.disabled = false;
-      buyNowBtn.classList.remove('buy-confirmed');
-      closeModal();
-      setTimeout(openCart, 400);
-    }, 1200);
+    // 3. CheckoutSelection exacte : la ligne courante seulement. Le panier
+    //    existant demeure intact mais ne se mélange jamais à l'intention
+    //    « Acheter maintenant ».
+    if (checkoutLine) {
+      bus.emit('checkout:open', {
+        lines: [checkoutLine],
+        context: { origin: 'BUY_NOW' },
+      });
+    }
+
+    buyNowBtn.innerHTML = originalContent;
+    buyNowBtn.disabled = false;
+    buyNowBtn.classList.remove('buy-confirmed');
   };
 }
 

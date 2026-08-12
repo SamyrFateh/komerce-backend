@@ -34,6 +34,40 @@ import { showToast } from './b-cart-core.js';
 let _sdkLoading = null;
 let _sdkLoaded  = false;
 let _config     = null;
+let _configLoading = null;
+
+const PAYMENT_PROVIDER_TIMEOUT_MS = 8000;
+
+function withTimeout(promise, message) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), PAYMENT_PROVIDER_TIMEOUT_MS);
+    Promise.resolve(promise).then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); }
+    );
+  });
+}
+
+async function getPublicConfig() {
+  if (_config) return _config;
+  if (_configLoading) return _configLoading;
+
+  _configLoading = withTimeout(
+    fetch('/api/public/config', { credentials: 'include' }).then(async (res) => {
+      if (!res.ok) throw new Error('Config publique indisponible');
+      return res.json();
+    }),
+    'Délai de chargement de la configuration PayPal dépassé'
+  ).then((config) => {
+    _config = config;
+    return config;
+  }).catch((error) => {
+    _configLoading = null;
+    throw error;
+  });
+
+  return _configLoading;
+}
 
 /**
  * Charge le SDK PayPal une seule fois.
@@ -45,16 +79,14 @@ export async function ensurePayPalSDK() {
 
   _sdkLoading = (async () => {
     // 1. Récupérer config publique
-    const cfgRes = await fetch('/api/public/config', { credentials: 'include' });
-    if (!cfgRes.ok) throw new Error('Config publique indisponible');
-    _config = await cfgRes.json();
+    _config = await getPublicConfig();
 
     if (!_config.paypal_client_id) {
       throw new Error('PayPal non configuré (client_id absent)');
     }
 
     // 2. Injecter le script SDK avec Pay-in-4 (enable-funding=paylater)
-    await new Promise((resolve, reject) => {
+    await withTimeout(new Promise((resolve, reject) => {
       const script = document.createElement('script');
       const params = new URLSearchParams({
         'client-id':     _config.paypal_client_id,
@@ -69,12 +101,15 @@ export async function ensurePayPalSDK() {
       script.onload  = resolve;
       script.onerror = () => reject(new Error('Chargement SDK PayPal échoué (adblock ?)'));
       document.head.appendChild(script);
-    });
+    }), 'Délai de chargement du SDK PayPal dépassé');
 
     if (!window.paypal) throw new Error('window.paypal non disponible après chargement');
     _sdkLoaded = true;
     return window.paypal;
-  })();
+  })().catch((error) => {
+    _sdkLoading = null;
+    throw error;
+  });
 
   return _sdkLoading;
 }
@@ -211,9 +246,7 @@ export async function renderPayPalButton(containerId, opts = {}) {
  */
 export async function isPayPalEnabled() {
   try {
-    const res = await fetch('/api/public/config', { credentials: 'include' });
-    if (!res.ok) return false;
-    const cfg = await res.json();
+    const cfg = await getPublicConfig();
     return !!cfg.paypal_client_id;
   } catch {
     return false;

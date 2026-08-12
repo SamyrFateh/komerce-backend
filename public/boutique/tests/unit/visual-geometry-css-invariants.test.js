@@ -28,6 +28,14 @@ function readCss(name) {
 }
 
 describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => {
+  describe('LOT 5 — surfaces transactionnelles accessibles', () => {
+    it('retire le drawer fermé de l’arbre visuel et le révèle uniquement à l’ouverture', () => {
+      const cart = readCss('cart.css');
+      expect(cart).toMatch(/\.k-cart-drawer\s*\{[^}]*visibility:\s*hidden/s);
+      expect(cart).toMatch(/\.k-cart-drawer\.open\s*\{[^}]*visibility:\s*visible/s);
+    });
+  });
+
   // ── LOT 1 — Onglets side cart ─────────────────────────────────────────────
   describe('LOT 1 — shared-list-side-cart.css : centrage onglets', () => {
     let css;
