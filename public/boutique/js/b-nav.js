@@ -243,16 +243,22 @@ bus.on('komerce:show', () => { switchView('komerce'); });
 /**
  * Branche la bottom nav mobile + les boutons nav desktop.
  */
+export function activateNavTab(tab) {
+  document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach((item) => {
+    item.classList.toggle('active', !!tab && item.dataset.tab === tab);
+  });
+}
+
 export function setupBnav() {
   const allNavBtns = document.querySelectorAll('.k-bnav-item, .k-header-nav-btn');
   allNavBtns.forEach(item => {
     item.addEventListener('click', () => {
       const tab = item.dataset.tab;
-      allNavBtns.forEach(i => i.classList.remove('active'));
-      allNavBtns.forEach(i => { if (i.dataset.tab === tab) i.classList.add('active'); });
+      activateNavTab(tab);
       if (tab === 'cart')  { openCart(); return; }
       if (tab === 'fav')   { renderFavView(); switchView('fav'); return; }
-      if (tab === 'track') { renderTrackView(); switchView('track'); return; }
+      if (tab === 'track')  { renderTrackView(); switchView('track'); return; }
+      if (tab === 'shares') { renderListsView(); switchView('track'); return; }
       if (tab === 'komerce') { openMonKomerce(); return; }
       switchView('shop');
     });
@@ -313,9 +319,12 @@ function handleTabDeepLink() {
     // autonome a disparu, tout lien ?tab=wallet encore actif ouvre désormais
     // Mon Komerce > Mon wallet. À retirer si aucun consommateur réel ne
     // justifie plus cette redirection.
-    const validTabs = ['track', 'group', 'fav', 'komerce', 'wallet'];
+    const validTabs = ['track', 'shares', 'group', 'fav', 'komerce', 'wallet'];
     if (!validTabs.includes(tab)) return;
-    const resolvedTab = tab === 'wallet' ? 'komerce' : tab;
+    const resolvedTab =
+      tab === 'wallet' ? 'komerce' :
+      tab === 'group' ? 'shares' :
+      tab;
 
     // Nettoyer ?tab= de l'URL
     params.delete('tab');
@@ -324,16 +333,14 @@ function handleTabDeepLink() {
     window.history.replaceState({}, '', clean);
 
     // Activer l'onglet
-    document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
-      i.classList.toggle('active', i.dataset.tab === (resolvedTab === 'group' ? 'komerce' : resolvedTab));
-    });
+    activateNavTab(resolvedTab);
 
     if (resolvedTab === 'fav')     { renderFavView(); switchView('fav'); }
     if (resolvedTab === 'track')   { renderTrackView(); switchView('track'); }
     // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2_D — ?tab=group
     // legacy : ouvre directement le sous-onglet Listes de l'onglet Suivi
     // (voir l'historique de l'événement nav:goto-group plus haut, même logique).
-    if (resolvedTab === 'group')   { renderListsView(); switchView('track'); }
+    if (resolvedTab === 'shares')  { renderListsView(); switchView('track'); }
     if (resolvedTab === 'komerce') { openMonKomerce(tab === 'wallet' ? { focus: 'wallet' } : {}); }
   } catch (_) {}
 }

@@ -338,6 +338,7 @@ describe('setupBnav', () => {
       '<button class="k-bnav-item" data-tab="cart"></button>' +
       '<button class="k-bnav-item" data-tab="fav"></button>' +
       '<button class="k-bnav-item" data-tab="track"></button>' +
+      '<button class="k-bnav-item" data-tab="shares"></button>' +
       '<button class="k-bnav-item" data-tab="komerce"></button>' +
       '<button class="k-bnav-item" data-tab="shop"></button>'
     );
@@ -363,6 +364,18 @@ describe('setupBnav', () => {
     setupBnav();
     document.querySelector('[data-tab="track"]').click();
     expect(renderTrackView).toHaveBeenCalled();
+  });
+
+  test('tab=shares -> Mes Partages', () => {
+    mountNavButtons();
+    setupBnav();
+
+    document.querySelector('[data-tab="shares"]').click();
+
+    expect(renderListsView).toHaveBeenCalled();
+    expect(renderTrackView).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-tab="shares"]').classList.contains('active')).toBe(true);
+    expect(document.body.classList.contains('k-view-track')).toBe(true);
   });
 
   // bus 'nav:goto-group' retiré (2026-08) avec le raccourci "Mes listes" de

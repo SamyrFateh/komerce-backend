@@ -66,6 +66,7 @@ jest.mock('../../js/group/group-side-cart.js', () => ({
 }));
 jest.mock('../../js/b-nav.js', () => ({
   switchView: jest.fn(),
+  activateNavTab: jest.fn(),
 }));
 
 const { apiGet, apiPost } = require('../../js/b-utils.js');
@@ -73,7 +74,7 @@ const { showToast } = require('../../js/b-cart-core.js');
 const { flush } = require('./helpers/boutiqueTestKit');
 const { getSharedCartLibrary } = require('../../js/group/group-api.js');
 const { activateFromParticipantUrl } = require('../../js/group/group-side-cart.js');
-const { switchView } = require('../../js/b-nav.js');
+const { switchView, activateNavTab } = require('../../js/b-nav.js');
 const {
   buildTimeline,
   getStatusDisplay,
@@ -650,6 +651,7 @@ describe('renderListsTab — bibliothèque de listes (GAP-01/02)', () => {
     btn.click();
     await flush();
 
+    expect(activateNavTab).toHaveBeenCalledWith('shop');
     expect(switchView).toHaveBeenCalledWith('shop');
     expect(activateFromParticipantUrl).toHaveBeenCalledWith('tok-open');
     // GAP-01 : la Boutique doit être activée avant le contexte de liste.

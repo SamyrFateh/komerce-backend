@@ -210,18 +210,10 @@ function ensureTrackShell() {
     favEl.after(el);
   }
 
-  if (!el.querySelector('.k-track-subnav')) {
+  if (!el.querySelector('#k-track-orders-panel-wrap')) {
     el.innerHTML =
-      '<div class="k-track-subnav" role="tablist">' +
-        '<button type="button" class="k-track-subnav-tab active" data-track-tab="orders" role="tab" aria-selected="true">📦 Commandes</button>' +
-        '<button type="button" class="k-track-subnav-tab" data-track-tab="lists" role="tab" aria-selected="false">📋 Listes</button>' +
-      '</div>' +
       '<div id="k-track-orders-panel-wrap" class="k-track-tab-panel"></div>' +
       '<div id="k-track-lists-panel-wrap" class="k-track-tab-panel u-hidden"></div>';
-
-    el.querySelectorAll('.k-track-subnav-tab').forEach((btn) => {
-      btn.addEventListener('click', () => switchTrackTab(btn.dataset.trackTab));
-    });
   }
 
   return el;
@@ -399,7 +391,8 @@ function wireLibraryItemOpen(el) {
         // GAP-01 — basculer vers la Boutique AVANT d'activer le contexte
         // de liste. Import dynamique pour éviter le cycle
         // b-tracking.js → b-nav.js → b-tracking.js.
-        const { switchView } = await import('./b-nav.js');
+        const { switchView, activateNavTab } = await import('./b-nav.js');
+        activateNavTab('shop');
         switchView('shop');
         const { activateFromParticipantUrl } = await import('./group/group-side-cart.js');
         await activateFromParticipantUrl(token);
