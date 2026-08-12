@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
- * @version       2026-08-v4
+ * @version       2026-08-v5
  */
 'use strict';
 
@@ -38,33 +38,84 @@ const DESCRIPTION_MAX_LENGTH = 10000;
 // qu'un vocabulaire voisin contient largement assez de médias. On élargit les
 // requêtes, jamais les invariants de licence/résolution/unicité/éligibilité.
 const FALLBACK_QUERIES = Object.freeze({
-  'Mode & Beauté/Femme': ['women clothing', 'dress', 'blouse', 'skirt', 'women shoes', 'handbag'],
-  'Mode & Beauté/Homme': ['men clothing', 'shirt', 'mens jacket', 'trousers', 'men shoes', 'mens fashion'],
-  'Mode & Beauté/Enfant': ['children clothing', 'kids clothing', 'children shoes', 'school uniform', 'childrens fashion'],
-  'Mode & Beauté/Beauté': ['cosmetics', 'makeup', 'skin care', 'perfume bottle', 'lipstick', 'beauty product'],
+  'Mode & Beauté/Femme': ['dress isolated', 'blouse isolated', 'skirt isolated', 'women shoes product', 'handbag product', 'women jacket product'],
+  'Mode & Beauté/Homme': ['shirt isolated', 'mens jacket product', 'trousers isolated', 'men shoes product', 'suit isolated', 'mens belt product'],
+  'Mode & Beauté/Enfant': ['children clothing product', 'kids shirt isolated', 'children shoes product', 'school uniform product', 'kids jacket product', 'children backpack product'],
+  'Mode & Beauté/Beauté': ['cosmetics product', 'makeup product', 'skin care product', 'perfume bottle', 'lipstick product', 'beauty product'],
 
-  'Maison/Confort': ['home appliance', 'electric fan', 'vacuum cleaner', 'clothes iron', 'space heater', 'household appliance'],
-  'Maison/Cuisine': ['kitchen utensil', 'cookware', 'kettle', 'frying pan', 'cutlery', 'kitchen appliance'],
-  'Maison/Déco': ['home decoration', 'vase', 'table lamp', 'cushion', 'wall clock', 'decorative object'],
-  'Maison/Enfants': ['school supplies', 'children furniture', 'backpack', 'pencil case', 'notebook', 'desk accessory'],
+  'Maison/Confort': ['home appliance product', 'electric fan product', 'vacuum cleaner product', 'clothes iron product', 'space heater product', 'household appliance product'],
+  'Maison/Cuisine': ['kitchen utensil product', 'cookware product', 'kettle product', 'frying pan product', 'cutlery product', 'kitchen appliance product'],
+  'Maison/Déco': ['home decoration product', 'vase product', 'table lamp product', 'cushion product', 'wall clock product', 'decorative object product'],
+  'Maison/Enfants': ['school supplies product', 'children furniture product', 'backpack product', 'pencil case product', 'notebook product', 'desk accessory product'],
 
-  'Tech/Phones': ['smartphone', 'mobile phone', 'cell phone', 'telephone handset'],
-  'Tech/Audio': ['headphones', 'earphones', 'loudspeaker', 'portable speaker', 'radio receiver', 'audio equipment'],
-  'Tech/Montres': ['wristwatch', 'smartwatch', 'watch', 'digital watch', 'mechanical watch'],
+  'Tech/Phones': ['smartphone product', 'mobile phone product', 'cell phone product', 'telephone handset product'],
+  'Tech/Audio': ['headphones product', 'earphones product', 'loudspeaker product', 'portable speaker product', 'radio receiver product', 'audio equipment product'],
+  'Tech/Montres': ['wristwatch product', 'smartwatch product', 'watch product', 'digital watch product', 'mechanical watch product'],
 
-  'Bricolage/Outillage': ['hand tool', 'power tool', 'screwdriver', 'hammer', 'electric drill', 'pliers'],
-  'Bricolage/Electricité': ['electrical connector', 'electric cable', 'electrical socket', 'light switch', 'extension cord', 'electrical equipment'],
-  'Bricolage/Sécurité': ['padlock', 'door lock', 'security camera', 'safe lock', 'door security', 'lock hardware'],
+  'Bricolage/Outillage': ['hand tool product', 'power tool product', 'screwdriver product', 'hammer product', 'electric drill product', 'pliers product'],
+  'Bricolage/Electricité': ['electrical connector product', 'electric cable product', 'electrical socket product', 'light switch product', 'extension cord product', 'electrical equipment product'],
+  'Bricolage/Sécurité': ['padlock product', 'door lock product', 'security camera product', 'safe lock product', 'door security product', 'lock hardware product'],
 
-  'Créations personnelles/Cérémonie': ['formal dress', 'wedding dress', 'suit clothing', 'ceremonial clothing', 'formal wear'],
-  'Créations personnelles/Cadeau': ['gift box', 'souvenir object', 'gift item', 'decorative mug', 'keepsake', 'present box'],
-  'Créations personnelles/Impression': ['printed mug', 'printed stationery', 'greeting card', 'poster print', 'printed notebook', 'printed paper product'],
+  'Créations personnelles/Cérémonie': ['formal dress product', 'wedding dress product', 'suit clothing product', 'ceremonial dress product', 'tuxedo product', 'formal wear product'],
+  'Créations personnelles/Cadeau': ['gift box product', 'souvenir object product', 'gift item product', 'decorative mug product', 'keepsake product', 'present box product'],
+  'Créations personnelles/Impression': ['printed mug product', 'printed stationery product', 'greeting card product', 'poster print product', 'printed notebook product', 'printed paper product'],
 
-  'Auto/Filtres': ['oil filter', 'air filter automotive', 'automotive filter', 'fuel filter', 'car filter'],
-  'Auto/Freinage': ['brake disc', 'brake pad', 'automotive brake', 'disc brake', 'brake caliper'],
-  'Auto/Éclairage': ['car headlight', 'automotive lamp', 'tail light', 'vehicle headlamp', 'car light'],
-  'Auto/Moto': ['motorcycle part', 'motorcycle accessory', 'motorcycle helmet', 'motorcycle mirror', 'motorcycle light'],
+  'Auto/Filtres': ['oil filter product', 'air filter automotive product', 'automotive filter product', 'fuel filter product', 'car filter product'],
+  'Auto/Freinage': ['brake disc product', 'brake pad product', 'automotive brake product', 'disc brake product', 'brake caliper product'],
+  'Auto/Éclairage': ['car headlight product', 'automotive lamp product', 'tail light product', 'vehicle headlamp product', 'car light product'],
+  'Auto/Moto': ['motorcycle part product', 'motorcycle accessory product', 'motorcycle helmet product', 'motorcycle mirror product', 'motorcycle light product'],
 });
+
+// Un média n'est pas un produit parce qu'une requête de recherche l'a trouvé.
+// Il doit porter dans SON TITRE une identité d'objet compatible avec le segment.
+const PRODUCT_TERMS = Object.freeze({
+  'Mode & Beauté/Femme': ['dress', 'blouse', 'skirt', 'shirt', 'jacket', 'coat', 'trousers', 'pants', 'shoe', 'shoes', 'handbag', 'purse', 'sandal', 'sandals', 'boot', 'boots'],
+  'Mode & Beauté/Homme': ['shirt', 'jacket', 'coat', 'trousers', 'pants', 'shoe', 'shoes', 'suit', 'blazer', 'tie', 'belt', 'boot', 'boots'],
+  'Mode & Beauté/Enfant': ['shirt', 't-shirt', 'tshirt', 'jacket', 'trousers', 'pants', 'dress', 'skirt', 'shoe', 'shoes', 'uniform', 'backpack', 'sweater'],
+  'Mode & Beauté/Beauté': ['cosmetic', 'cosmetics', 'makeup', 'lipstick', 'perfume', 'lotion', 'cream', 'mascara', 'foundation', 'skincare', 'skin care', 'soap'],
+
+  'Maison/Confort': ['fan', 'vacuum cleaner', 'iron', 'heater', 'appliance', 'humidifier', 'air conditioner', 'pillow'],
+  'Maison/Cuisine': ['kettle', 'pan', 'pot', 'knife', 'knives', 'cutlery', 'spoon', 'fork', 'cookware', 'utensil', 'plate', 'bowl', 'mug', 'blender', 'toaster'],
+  'Maison/Déco': ['vase', 'lamp', 'cushion', 'clock', 'candle', 'frame', 'decoration', 'decorative', 'ornament'],
+  'Maison/Enfants': ['backpack', 'pencil case', 'notebook', 'desk', 'chair', 'stationery', 'pencil', 'pen', 'ruler', 'school bag'],
+
+  'Tech/Phones': ['smartphone', 'phone', 'telephone', 'handset', 'mobile'],
+  'Tech/Audio': ['headphone', 'headphones', 'earphone', 'earphones', 'speaker', 'loudspeaker', 'radio', 'microphone', 'headset', 'earbud', 'earbuds'],
+  'Tech/Montres': ['watch', 'wristwatch', 'smartwatch', 'timepiece'],
+
+  'Bricolage/Outillage': ['tool', 'screwdriver', 'hammer', 'drill', 'pliers', 'wrench', 'spanner', 'saw'],
+  'Bricolage/Electricité': ['connector', 'cable', 'socket', 'switch', 'cord', 'plug', 'outlet', 'adapter', 'electrical'],
+  'Bricolage/Sécurité': ['padlock', 'lock', 'camera', 'safe', 'latch', 'alarm', 'security'],
+
+  'Créations personnelles/Cérémonie': ['dress', 'gown', 'suit', 'tuxedo', 'tie', 'veil', 'formal wear', 'ceremonial dress'],
+  'Créations personnelles/Cadeau': ['gift box', 'gift', 'souvenir', 'keepsake', 'mug', 'present', 'box'],
+  'Créations personnelles/Impression': ['mug', 'stationery', 'greeting card', 'poster', 'notebook', 'print', 'printed', 'card'],
+
+  'Auto/Filtres': ['filter', 'oil filter', 'air filter', 'fuel filter'],
+  'Auto/Freinage': ['brake', 'brake disc', 'brake pad', 'disc brake', 'rotor', 'caliper'],
+  'Auto/Éclairage': ['headlight', 'headlamp', 'lamp', 'tail light', 'taillight', 'car light'],
+  'Auto/Moto': ['motorcycle', 'motorbike', 'helmet', 'mirror', 'scooter', 'motorcycle light'],
+});
+
+const EDITORIAL_MARKERS = Object.freeze([
+  'portrait',
+  'headshot',
+  'fashion show',
+  'fashion week',
+  'runway',
+  'red carpet',
+  'press conference',
+  'selfie',
+  'group photo',
+  'team photo',
+  'model wearing',
+  'model in',
+  'models wearing',
+  'modelled by',
+  'modeled by',
+  'bride and groom',
+  'wedding ceremony',
+]);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -206,6 +257,26 @@ function queriesForTarget(target) {
   });
 }
 
+function productIdentityFor(row, target) {
+  const key = segmentKey(target);
+  const title = String(row?.name || '');
+  const context = `${title} ${row?.source_description || ''}`;
+  const terms = PRODUCT_TERMS[key] || [];
+  const term = terms.find((candidate) => catalogEligibility.keywordMatches(title, candidate));
+  if (!term) {
+    return { ok: false, reason: 'missing-product-term', term: null, editorial: null };
+  }
+  const editorial = EDITORIAL_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));
+  if (editorial) {
+    return { ok: false, reason: 'editorial-media', term, editorial };
+  }
+  return { ok: true, reason: null, term, editorial: null };
+}
+
+function isProductLike(row, target) {
+  return productIdentityFor(row, target).ok;
+}
+
 function boundedDescription(row) {
   const fallback = `${row.name}. Produit de démonstration issu d'une source traçable pour éprouver la raffinerie Komerce.`;
   return String(row.source_description || fallback).slice(0, DESCRIPTION_MAX_LENGTH);
@@ -231,6 +302,7 @@ function absoluteExclusionFor(row, target, activeExclusions) {
 function decorate(row, slot) {
   const priceKmf = roundKmf(stableInt(`${row.source}:${slot.category}:${slot.subcategory}`, 2500, 85000));
   const promoSeed = stableInt(`${row.source}:promo`, 0, 99);
+  const identity = productIdentityFor(row, slot);
   return {
     ...row,
     product_ref: slot.product_ref,
@@ -247,6 +319,7 @@ function decorate(row, slot) {
       rich: slot.rich,
       category: slot.category,
       subcategory: slot.subcategory,
+      product_identity_term: identity.term,
     },
   };
 }
@@ -259,6 +332,7 @@ async function buildCatalogue(activeExclusions = []) {
   const output = [];
   let slotCursor = 0;
   let excludedAbsoluteTotal = 0;
+  let rejectedProductIdentityTotal = 0;
 
   async function candidatesFor(query) {
     if (!queryCache.has(query)) queryCache.set(query, searchCommons(query));
@@ -275,9 +349,17 @@ async function buildCatalogue(activeExclusions = []) {
       const candidates = await candidatesFor(query);
       let accepted = 0;
       let excludedAbsolute = 0;
+      let rejectedProductIdentity = 0;
       for (const row of candidates) {
         if (segment.length >= target.count) break;
         if (seenSegment.has(row.source) || globalSources.has(row.source) || globalHeroes.has(row.image_url)) continue;
+
+        const identity = productIdentityFor(row, target);
+        if (!identity.ok) {
+          rejectedProductIdentity += 1;
+          rejectedProductIdentityTotal += 1;
+          continue;
+        }
 
         const exclusion = absoluteExclusionFor(row, target, activeExclusions);
         if (exclusion) {
@@ -292,7 +374,7 @@ async function buildCatalogue(activeExclusions = []) {
         segment.push(row);
         accepted += 1;
       }
-      console.log(`[showcase-v2-source] ${key} · "${query}" -> ${candidates.length}, +${accepted}, excluded=${excludedAbsolute}, pool=${segment.length}/${target.count}`);
+      console.log(`[showcase-v2-source] ${key} · "${query}" -> ${candidates.length}, +${accepted}, non-product=${rejectedProductIdentity}, excluded=${excludedAbsolute}, pool=${segment.length}/${target.count}`);
       if (segment.length >= target.count) break;
     }
 
@@ -308,6 +390,7 @@ async function buildCatalogue(activeExclusions = []) {
   if (output.length !== 500 || globalSources.size !== 500 || globalHeroes.size !== 500) {
     throw new Error(`Invariant V2 cassé: products=${output.length}, sources=${globalSources.size}, heroes=${globalHeroes.size}`);
   }
+  console.log(`[showcase-v2-source] médias sans identité produit rejetés avant miroir: ${rejectedProductIdentityTotal}`);
   console.log(`[showcase-v2-source] exclusions absolues filtrées avant miroir: ${excludedAbsoluteTotal}`);
   return output;
 }
@@ -342,6 +425,8 @@ if (require.main === module) {
 module.exports = {
   DESCRIPTION_MAX_LENGTH,
   FALLBACK_QUERIES,
+  PRODUCT_TERMS,
+  EDITORIAL_MARKERS,
   parseArgs,
   retryDelayMs,
   stripHtml,
@@ -349,6 +434,8 @@ module.exports = {
   mapPage,
   segmentKey,
   queriesForTarget,
+  productIdentityFor,
+  isProductLike,
   boundedDescription,
   eligibilityCandidate,
   absoluteExclusionFor,
