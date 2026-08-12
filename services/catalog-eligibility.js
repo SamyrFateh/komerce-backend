@@ -36,18 +36,28 @@
  * Matching sur la donnée SOURCE (EN) : product_name, description,
  * supplier_category, komerce_category — insensible à la casse.
  * Une correspondance mot-clé OU catégorie suffit à qualifier une règle.
+ *
+ * IMPORTANT : la priorité absolute > restricted est garantie ICI, même si
+ * un appelant fournit une liste non triée. Le verdict porte aussi la preuve
+ * exacte du match pour rendre tout rejet explicable et auditable.
  */
 
 const db = require('../db');
+
+function layerRank(layer) {
+  if (layer === 'absolute') return 0;
+  if (layer === 'restricted') return 1;
+  return 2;
+}
+
+function orderRules(exclusions) {
+  return [...(exclusions || [])].sort((a, b) => layerRank(a?.layer) - layerRank(b?.layer));
+}
 
 /**
  * Charge les exclusions actives depuis catalog_exclusions.
  * Une seule requête par import (comme pricingEngine.loadGlobalConfig()),
  * jamais une requête par produit.
- *
- * @returns {Promise<Array>} lignes { layer, label, keywords, categories, constraint_note, legal_note }
- *          triées absolute d'abord (un candidat à la fois absolu et
- *          restreint doit être écarté, pas seulement contraint).
  */
 async function loadActiveExclusions() {
   const res = await db.query(
@@ -55,10 +65,7 @@ async function loadActiveExclusions() {
        FROM catalog_exclusions
       WHERE is_active = TRUE`
   );
-  return res.rows.sort((a, b) => {
-    if (a.layer === b.layer) return 0;
-    return a.layer === 'absolute' ? -1 : 1;
-  });
+  return orderRules(res.rows);
 }
 
 function escapeRegex(value) {
@@ -78,16 +85,29 @@ function keywordMatches(haystack, keyword) {
   return pattern.test(String(haystack || ''));
 }
 
+function matchEvidence(haystack, categoryValues, rule) {
+  const matchedKeyword = (rule.keywords || []).find((keyword) => keywordMatches(haystack, keyword));
+  if (matchedKeyword != null) {
+    return { type: 'keyword', value: String(matchedKeyword) };
+  }
+
+  const matchedCategory = (rule.categories || []).find((category) =>
+    categoryValues.includes(String(category).toLowerCase())
+  );
+  if (matchedCategory != null) {
+    return { type: 'category', value: String(matchedCategory) };
+  }
+
+  return null;
+}
+
 /**
  * Vérifie un candidat normalisé contre la liste d'exclusions actives.
  * Fonction PURE — aucun accès DB ici : permet de tester sans mock DB,
  * et de vérifier tout un import avec une seule liste chargée en amont.
  *
- * @param {Object} candidate    — sortie de scanner.normalizeCandidate() (ou tout objet
- *                                portant product_name/description/supplier_category/komerce_category)
- * @param {Array}  exclusions   — sortie de loadActiveExclusions()
- * @returns {{layer:'absolute'|'restricted', label:string, constraint_note:?string, legal_note:?string}|null}
- *          null = aucune règle ne matche, candidat pleinement éligible.
+ * @returns {{layer:'absolute'|'restricted', label:string, constraint_note:?string,
+ *            legal_note:?string, match:{type:'keyword'|'category',value:string}}|null}
  */
 function checkEligibility(candidate, exclusions) {
   if (!candidate || !Array.isArray(exclusions) || !exclusions.length) return null;
@@ -106,21 +126,17 @@ function checkEligibility(candidate, exclusions) {
     .filter(Boolean)
     .map(c => String(c).toLowerCase());
 
-  for (const rule of exclusions) {
-    const keywords = rule.keywords || [];
-    const categories = rule.categories || [];
+  for (const rule of orderRules(exclusions)) {
+    const match = matchEvidence(haystack, categoryValues, rule);
+    if (!match) continue;
 
-    const keywordHit = haystack && keywords.some(k => keywordMatches(haystack, k));
-    const categoryHit = categories.some(c => categoryValues.includes(String(c).toLowerCase()));
-
-    if (keywordHit || categoryHit) {
-      return {
-        layer: rule.layer,
-        label: rule.label,
-        constraint_note: rule.constraint_note || null,
-        legal_note: rule.legal_note || null,
-      };
-    }
+    return {
+      layer: rule.layer,
+      label: rule.label,
+      constraint_note: rule.constraint_note || null,
+      legal_note: rule.legal_note || null,
+      match,
+    };
   }
   return null;
 }
@@ -129,4 +145,6 @@ module.exports = {
   loadActiveExclusions,
   checkEligibility,
   keywordMatches,
+  orderRules,
+  matchEvidence,
 };
