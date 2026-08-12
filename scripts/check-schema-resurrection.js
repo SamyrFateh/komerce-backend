@@ -72,6 +72,7 @@ const DROP_TABLE_RE   = /DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?(?:public
 const DROP_TYPE_RE    = /DROP\s+TYPE\s+(?:IF\s+EXISTS\s+)?(?:public\.)?"?([a-zA-Z_][a-zA-Z0-9_]*)"?/gi;
 const CREATE_TABLE_RE = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?"?([a-zA-Z_][a-zA-Z0-9_]*)"?/gi;
 const CREATE_TYPE_RE  = /CREATE\s+TYPE\s+(?:public\.)?"?([a-zA-Z_][a-zA-Z0-9_]*)"?/gi;
+const ALTER_TYPE_RENAME_RE = /ALTER\s+TYPE\s+(?:public\.)?"?([a-zA-Z_][a-zA-Z0-9_]*)"?\s+RENAME\s+TO\s+"?([a-zA-Z_][a-zA-Z0-9_]*)"?/gi;
 
 function parseMigrationNumber(filename) {
   const m = filename.match(/^(\d+)/);
@@ -104,6 +105,29 @@ function collectFileEvents(sql, re, kind, eventType, out) {
   }
 }
 
+function collectTypeRenameEvents(sql, out) {
+  ALTER_TYPE_RENAME_RE.lastIndex = 0;
+  let m;
+
+  while ((m = ALTER_TYPE_RENAME_RE.exec(sql)) !== null) {
+    out.push({
+      index: m.index,
+      order: 0,
+      kind: 'type',
+      eventType: 'drop',
+      name: m[1].toLowerCase(),
+    });
+
+    out.push({
+      index: m.index,
+      order: 1,
+      kind: 'type',
+      eventType: 'create',
+      name: m[2].toLowerCase(),
+    });
+  }
+}
+
 /**
  * Applique les evenements d'un fichier au timeline global, dans l'ordre
  * TEXTUEL reel (m.index), pas dans l'ordre d'appel des regex -- au cas ou
@@ -111,7 +135,9 @@ function collectFileEvents(sql, re, kind, eventType, out) {
  * l'inverse, l'ordre d'ecriture doit trancher, pas l'ordre de scan.
  */
 function applyFileEvents(fileEvents, fname, num, timeline) {
-  fileEvents.sort((a, b) => a.index - b.index);
+  fileEvents.sort((a, b) =>
+    (a.index - b.index) || ((a.order || 0) - (b.order || 0))
+  );
   for (const ev of fileEvents) {
     const key = `${ev.kind}:${ev.name}`;
     timeline.set(key, { num, fname, eventType: ev.eventType, kind: ev.kind, name: ev.name });
@@ -133,6 +159,7 @@ function main() {
     collectFileEvents(sql, DROP_TABLE_RE,   'table', 'drop',   fileEvents);
     collectFileEvents(sql, CREATE_TYPE_RE,  'type',  'create', fileEvents);
     collectFileEvents(sql, DROP_TYPE_RE,    'type',  'drop',   fileEvents);
+    collectTypeRenameEvents(sql, fileEvents);
     applyFileEvents(fileEvents, fname, num, timeline);
   }
 
@@ -175,4 +202,9 @@ Action requise :
   process.exit(WARN_ONLY ? 0 : 1);
 }
 
-main();
+if (require.main === module) main();
+
+module.exports = {
+  applyFileEvents,
+  collectTypeRenameEvents,
+};

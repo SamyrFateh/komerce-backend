@@ -62,6 +62,10 @@ const REQUIRE_ALL = process.argv.includes('--all');
 
 // ALTER TABLE [ONLY] [public.]table ADD COLUMN [IF NOT EXISTS] colname
 const ADD_COL_RE = /ALTER\s+TABLE\s+(?:ONLY\s+)?(?:public\.)?(\w+)\s+ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/gi;
+// ALTER TABLE table ... ; — permet de suivre tous les DROP COLUMN d'une
+// instruction, y compris les clauses multiples séparées par des virgules.
+const ALTER_TABLE_STMT_RE = /ALTER\s+TABLE\s+(?:ONLY\s+)?(?:public\.)?(\w+)\s+([\s\S]*?);/gi;
+const DROP_COL_CLAUSE_RE = /DROP\s+COLUMN\s+(?:IF\s+EXISTS\s+)?(\w+)/gi;
 // CREATE TABLE [IF NOT EXISTS] [public.]name
 const CREATE_TABLE_RE = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?(\w+)/gi;
 // CREATE [OR REPLACE] VIEW [public.]name
@@ -102,6 +106,43 @@ function extractAddColumns(sql) {
   while ((match = ADD_COL_RE.exec(clean)) !== null) {
     results.push({ table: match[1].toLowerCase(), col: match[2].toLowerCase() });
   }
+  return results;
+}
+
+/**
+ * Détecte les DROP COLUMN portés par ALTER TABLE.
+ *
+ * Supporte notamment :
+ *
+ *   ALTER TABLE shared_carts
+ *     DROP COLUMN IF EXISTS split_mode,
+ *     DROP COLUMN IF EXISTS target_date;
+ *
+ * Le nom de table n'est présent qu'une fois mais chaque clause DROP COLUMN
+ * constitue un événement de lifecycle distinct.
+ */
+function extractDroppedColumns(sql) {
+  const clean = stripSqlComments(sql);
+  const results = [];
+  let stmt;
+
+  ALTER_TABLE_STMT_RE.lastIndex = 0;
+
+  while ((stmt = ALTER_TABLE_STMT_RE.exec(clean)) !== null) {
+    const table = stmt[1].toLowerCase();
+    const body = stmt[2];
+    let match;
+
+    DROP_COL_CLAUSE_RE.lastIndex = 0;
+
+    while ((match = DROP_COL_CLAUSE_RE.exec(body)) !== null) {
+      results.push({
+        table,
+        col: match[1].toLowerCase(),
+      });
+    }
+  }
+
   return results;
 }
 
@@ -225,6 +266,26 @@ function buildObjectLifecycle(inScopeMigrations) {
   return lifecycle;
 }
 
+/**
+ * Rejoue le lifecycle ADD COLUMN / DROP COLUMN uniquement sur les migrations
+ * dans le périmètre courant (même règle que pour les tables/vues).
+ */
+function buildColumnLifecycle(inScopeMigrations) {
+  const lifecycle = new Map(); // "table.column" -> 'add' | 'drop'
+
+  for (const migration of inScopeMigrations) {
+    for (const { table, col } of extractAddColumns(migration.sql)) {
+      lifecycle.set(`${table}.${col}`, 'add');
+    }
+
+    for (const { table, col } of extractDroppedColumns(migration.sql)) {
+      lifecycle.set(`${table}.${col}`, 'drop');
+    }
+  }
+
+  return lifecycle;
+}
+
 function evaluateFreshness({ schema, migrations, baselineFiles, requireAll = false }) {
   const normalizedSchema = schema.toLowerCase();
   const missing = [];
@@ -239,9 +300,18 @@ function evaluateFreshness({ schema, migrations, baselineFiles, requireAll = fal
   });
 
   const lifecycle = buildObjectLifecycle(inScopeMigrations);
+  const columnLifecycle = buildColumnLifecycle(inScopeMigrations);
 
   for (const migration of inScopeMigrations) {
     for (const { table, col } of extractAddColumns(migration.sql)) {
+      // Une table créée historiquement mais supprimée plus tard dans le même
+      // périmètre ne doit évidemment plus exposer ses anciennes colonnes.
+      if (lifecycle.get(`table:${table}`) === 'drop') continue;
+
+      // Une colonne ADD puis DROP dans le périmètre courant est correctement
+      // absente du dump final.
+      if (columnLifecycle.get(`${table}.${col}`) === 'drop') continue;
+
       if (!normalizedSchema.includes(col)) {
         missing.push({ fname: migration.fname, kind: 'column', table, col });
       }
@@ -330,6 +400,7 @@ if (require.main === module) main();
 
 module.exports = {
   extractAddColumns,
+  extractDroppedColumns,
   extractCreatedObjects,
   extractDroppedObjects,
   objectExistsInSchema,
