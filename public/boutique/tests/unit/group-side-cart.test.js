@@ -249,10 +249,35 @@ describe('group-side-cart — adaptation du payload (contrat contextuel)', () =>
     });
   });
 
-  it('readOnly reflète le statut de la liste (fermée = lecture seule)', () => {
+  it('snapshot CLOSED : ne monte jamais une liste terminale dans la surface canonique', () => {
     activateSharedListContext(payload({ cart: { ...payload().cart, status: 'closed' } }), 'tok-1');
-    const [context] = renderCartSnapshot.mock.calls.at(-1);
-    expect(context.readOnly).toBe(true);
+
+    expect(state.sharedListContext.token).toBeNull();
+    expect(state.cartSurface).toBe('personal');
+    expect(renderCartSnapshot).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('kmrc_share')).toBeNull();
+  });
+
+  it('poll OPEN → CLOSED : démonte immédiatement la liste et revient au panier personnel', async () => {
+    activateSharedListContext(payload(), 'tok-1');
+
+    cleanupCartSnapshotDom.mockClear();
+    renderCartBody.mockClear();
+    renderCartSnapshot.mockClear();
+
+    getSharedCartPublic.mockResolvedValueOnce(payload({
+      cart: { ...payload().cart, status: 'closed' },
+    }));
+
+    const refreshed = await refreshSharedListContext();
+
+    expect(refreshed.cart.status).toBe('closed');
+    expect(state.sharedListContext.token).toBeNull();
+    expect(state.cartSurface).toBe('personal');
+    expect(sessionStorage.getItem('kmrc_share')).toBeNull();
+    expect(cleanupCartSnapshotDom).toHaveBeenCalled();
+    expect(renderCartBody).toHaveBeenCalled();
+    expect(renderCartSnapshot).not.toHaveBeenCalled();
   });
 
   it("showSaveAction/saved : uniquement pour un participant (non organisateur), pas l'organisateur", () => {
