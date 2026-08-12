@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
- * @version       2026-08-v6
+ * @version       2026-08-v7
  */
 'use strict';
 
@@ -144,6 +144,11 @@ function retryDelayMs(response, attempt) {
   return Math.min(1000 * (2 ** attempt), 15000);
 }
 
+function isRetryableHttpStatus(status) {
+  const code = Number(status);
+  return code === 429 || (code >= 500 && code <= 599);
+}
+
 async function fetchJson(url) {
   for (let attempt = 0; attempt <= API_RETRIES; attempt += 1) {
     await sleep(API_MIN_DELAY_MS);
@@ -156,7 +161,7 @@ async function fetchJson(url) {
       }
       return body;
     }
-    if ((response.status === 429 || response.status === 503) && attempt < API_RETRIES) {
+    if (isRetryableHttpStatus(response.status) && attempt < API_RETRIES) {
       const waitMs = retryDelayMs(response, attempt);
       console.log(`[showcase-v2-source] ${response.status}; retry ${attempt + 1}/${API_RETRIES} dans ${waitMs}ms`);
       await sleep(waitMs);
@@ -422,6 +427,7 @@ module.exports = {
   HUMAN_MEDIA_MARKERS,
   parseArgs,
   retryDelayMs,
+  isRetryableHttpStatus,
   stripHtml,
   cleanSourceTitle,
   localizeV2Title,
