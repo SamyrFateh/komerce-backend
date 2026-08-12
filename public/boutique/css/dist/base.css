@@ -998,7 +998,7 @@ body {
   display: flex;
   align-items: stretch;
   padding-bottom: env(safe-area-inset-bottom);
-  padding-right: 12px; /* décale le panier du bord droit */
+  padding-inline: 6px; /* 5 primary entries */
 }
 .k-bnav-btn, .k-bnav-item {
   flex: 1;
@@ -1014,6 +1014,24 @@ body {
   position: relative;
 }
 .k-bnav-btn.active, .k-bnav-item.active { color: var(--ocean-dark); }
+
+/* NAV5-MOBILE */
+/* Cart stays in the DOM for JS compatibility, but the header avatar
+   is the canonical mobile cart entry. */
+.k-bnav .k-bnav-item[data-tab="cart"] {
+  display: none;
+}
+
+.k-bnav-btn,
+.k-bnav-item {
+  min-width: 0;
+}
+
+.k-bnav-btn > span:not(.k-bnav-badge),
+.k-bnav-item > span:not(.k-bnav-badge) {
+  white-space: nowrap;
+  line-height: 1.1;
+}
 .k-bnav-btn svg, .k-bnav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
 .k-bnav-badge {
   top: 4px;
