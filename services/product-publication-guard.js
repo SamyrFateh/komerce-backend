@@ -13,7 +13,7 @@
  * @db-txn        resolve_before_behavior_change
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md
  * @impact-areas  catalog, product-discovery
- * @version       2026-07
+ * @version       2026-08
  */
 
 'use strict';
@@ -24,11 +24,40 @@
  * Sans migration DB : les mouvements de stock catalogue sont tracés dans
  * `alerts` avec une source dédiée. La publication est refusée si prix/stock
  * incohérents.
+ *
+ * Invariants éditoriaux de première publication :
+ * - une donnée source étrangère ne devient jamais une fiche client brute ;
+ * - le titre client reste court et débarrassé du bruit de provenance ;
+ * - la source brute reste un fait de traçabilité, jamais une présentation.
  */
 
 const db = require('../db');
 const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'product-publication-guard' });
+
+const CLIENT_TITLE_MAX_LENGTH = 80;
+const SOURCE_FILE_PATTERN = /(?:^|\s)file\s*:|\.(?:jpe?g|png|webp|gif|tiff?)(?:\s|$)/i;
+const URL_PATTERN = /https?:\/\/|www\./i;
+
+function isFrenchLocale(locale) {
+  const value = String(locale || '').trim().toLowerCase().replace('_', '-');
+  return value === 'fr' || value.startsWith('fr-');
+}
+
+function editorialTitleError(name) {
+  const title = String(name || '').replace(/\s+/g, ' ').trim();
+  if (title.length > CLIENT_TITLE_MAX_LENGTH) {
+    return { code: 'title_too_long', error: `Publication refusée : titre client limité à ${CLIENT_TITLE_MAX_LENGTH} caractères` };
+  }
+  if (URL_PATTERN.test(title) || SOURCE_FILE_PATTERN.test(title)) {
+    return { code: 'title_source_noise', error: 'Publication refusée : le titre client contient du bruit de source ou un nom de fichier' };
+  }
+  const acronymTokens = title.match(/\b[A-Z][A-Z0-9]{1,8}\b/g) || [];
+  if (acronymTokens.length >= 4) {
+    return { code: 'title_source_noise', error: 'Publication refusée : le titre client ressemble à des métadonnées de source' };
+  }
+  return null;
+}
 
 async function auditProductStockChange(q = db, {
   productId,
@@ -103,7 +132,29 @@ function validatePublicationUpdate({ before, patch }) {
     }
   }
 
+  const firstActivation = wantsActive && before.is_active !== true;
+  if (firstActivation) {
+    const contentSource = patch.content_source !== undefined ? patch.content_source : before.content_source;
+    const sourceLocale = patch.source_locale !== undefined ? patch.source_locale : before.source_locale;
+    if (contentSource === 'connector_raw' && sourceLocale && !isFrenchLocale(sourceLocale)) {
+      return {
+        ok: false,
+        code: 'enrichment_required',
+        error: `Publication refusée : une source ${sourceLocale} doit être enrichie en français avant activation`,
+      };
+    }
+
+    const editorialError = editorialTitleError(name);
+    if (editorialError) return { ok: false, ...editorialError };
+  }
+
   return { ok: true };
 }
 
-module.exports = { auditProductStockChange, validatePublicationUpdate };
+module.exports = {
+  CLIENT_TITLE_MAX_LENGTH,
+  auditProductStockChange,
+  validatePublicationUpdate,
+  _isFrenchLocale: isFrenchLocale,
+  _editorialTitleError: editorialTitleError,
+};
