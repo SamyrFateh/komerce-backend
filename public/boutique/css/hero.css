@@ -916,13 +916,8 @@
      <body> (toute la hauteur du document) → elle colle sur tout le
      catalogue.
 
-   Réserve side-cart : body.sc-reserve / :has(.k-side-cart.has-items)
-     pose déjà padding-right sur <body> (cf. BOUTIQUE_SIDE_CART_DOCTRINE).
-     La barre, désormais enfant <body> comme le footer, s'arrête donc
-     d'elle-même avant le panneau fixed. L'ancienne réserve de largeur
-     posée sur #k-hero-fixed-wrap (boutique-desktop.css) devient inerte
-     sous display:contents — sans effet de bord (la .k-hero-img garde sa
-     propre contrainte max-width).
+   Le side-cart est un overlay : la barre et le hero conservent exactement
+   leur largeur avant et après son ouverture.
 
    --header-h aligné à 72px (= header premium) → top exact, et corrige
      au passage l'écart 68/72 sur la home premium.

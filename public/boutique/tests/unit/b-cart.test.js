@@ -61,6 +61,7 @@ jest.mock('../../js/b-utils.js', () => ({
   fmtPrice: jest.fn((n) => String(n)),
   optimizeImgUrl: jest.fn((url) => url),
   productEmoji: jest.fn(() => '📦'),
+  productImageFallbackAttr: jest.fn(() => ''),
   _currency: 'KMF',
   apiGet: jest.fn(),
   apiPost: jest.fn(),
@@ -253,6 +254,33 @@ describe('b-cart', () => {
 
       expect(gridBtn.classList.contains('in-cart')).toBe(true);
       expect(gridBtn.innerHTML).toContain('k-add-qty');
+    });
+  });
+
+  describe('side-cart de la fiche produit', () => {
+    it('rend un état vide utile et désactive la commande quand le panier est vide', () => {
+      const sideCart = document.getElementById('k-side-cart');
+      sideCart.classList.add('k-side-cart--in-modal');
+
+      bus.emit('side-cart:render');
+
+      const empty = sideCart.querySelector('.k-sc-empty');
+      expect(empty).not.toBeNull();
+      expect(empty.textContent).toContain('Votre panier est vide');
+      expect(empty.textContent).toContain('Ajoutez ce produit');
+      expect(sideCart.querySelector('#k-sc-checkout').disabled).toBe(true);
+    });
+
+    it('réactive la commande et rend une ligne complète après ajout', () => {
+      state.cart = [{ product: makeProduct({ name: 'Produit au titre lisible' }), qty: 1 }];
+      const sideCart = document.getElementById('k-side-cart');
+      sideCart.classList.add('k-side-cart--in-modal');
+
+      bus.emit('side-cart:render');
+
+      expect(sideCart.querySelectorAll('.k-sc-item-info')).toHaveLength(1);
+      expect(sideCart.querySelector('.k-sc-item-name').textContent).toBe('Produit au titre lisible');
+      expect(sideCart.querySelector('#k-sc-checkout').disabled).toBe(false);
     });
   });
 

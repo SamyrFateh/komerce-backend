@@ -2429,7 +2429,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      display:contents / display:none, non touchées ici). */
   #k-modal .k-modal-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(220px, 18vw, 260px);
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 22vw, 320px);
     flex: 1;
     min-height: 0;
     overflow: hidden;

@@ -285,6 +285,18 @@ function _renderCard(p) {
  * @param {string|null} [sub=null] - Sous-catégorie active (null = toutes)
  */
 export function setActiveCat(cat, sub = null) {
+  // Une recherche appartient au contexte de catégorie dans lequel elle a été
+  // lancée. La conserver au changement d'univers produit une intersection
+  // invisible (ex. « chemise » + Tech) et fait croire que la catégorie est
+  // vide. Le changement de catégorie clôt donc explicitement la recherche.
+  clearTimeout(state.searchTimeout);
+  if (dom.searchInput) dom.searchInput.value = '';
+  if (dom.searchDrop) {
+    dom.searchDrop.classList.remove('open');
+    dom.searchDrop.innerHTML = '';
+  }
+  state.filtered = [...state.products];
+
   state.activeCat    = cat;
   state.activeSubcat = sub;
   state.flatSubcat   = null;
@@ -651,12 +663,10 @@ function _bindGridEvents() {
       e.preventDefault(); e.stopPropagation();
       const cat = btn.dataset.seeCat;
       if (!cat) return;
-      state.activeCat = cat;
-      state.activeSubcat = null;
+      setActiveCat(cat);
       $$('.k-chip').forEach(c => c.classList.remove('active'));
       const chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
       if (chip) { chip.classList.add('active'); centerActiveChip(chip); }
-      renderGrid();
       // Fix: sync subcats rail + sidebar desktop (était absent → orphelins desktop)
       _toggleSidebarForCat(cat);
       if (isDesktop()) {

@@ -518,30 +518,8 @@ body:has(#k-page-scroll.k-pager-active) {
 
   /* #k-page-scroll reset desktop — source de vérité : body:not(.modal-open):not(.cart-open) #k-page-scroll @media 900px (ligne ~756) */
 
-  /* VIS-1 FIX — Token de réserve side-cart (source de vérité partagée avec boutique-desktop.css).
-     Problème : body.sc-reserve pose padding-right:240px, mais #k-catalog-section et .k-header-inner
-     sont en max-width:var(--container)=1400px + margin:0 auto. Dès que (100vw - réserve) < 1400px
-     (typique Windows 125% → viewport effectif ~1520px → 1266px dispo < 1400), margin:0 auto
-     part en marges négatives → clip gauche (logo + titre + 1ère carte). Solution : caper la
-     largeur des conteneurs centrés à l'espace réellement disponible quand le panier est docké. */
-  :root { --sc-reserve-w: 296px; } /* largeur utile aux libellés + contrôles, alignée sur boutique-desktop.css */
-
-  /* ROOT CAUSE FIX : le max-width de #k-catalog-section a UN SEUL owner
-     (#k-desktop-catalog-wrap #k-catalog-section, plus bas). On ne se bat plus
-     en spécificité : l'état "panier docké" bascule juste une variable.
-     Panier vide → --catalog-max absent → fallback none (pleine largeur).
-     Panier docké → --catalog-max = zone utile → la section se cappe. */
-  body.sc-reserve,
-  body:has(.k-side-cart.has-items) {
-    --catalog-max: min(var(--container), calc(100vw - var(--sc-reserve-w) - 16px));
-  }
-
-  body.sc-reserve .k-header-inner,
-  body:has(.k-side-cart.has-items) .k-header-inner {
-    max-width: min(var(--container), calc(100vw - var(--sc-reserve-w) - 16px));
-    margin-left: 0;
-    margin-right: auto;
-  }
+  /* Le side-cart desktop est un overlay : son ouverture ne modifie jamais la
+     largeur du shell, du header ou du catalogue. */
 
   #k-catalog-section {
     max-width: var(--container);
@@ -681,9 +659,6 @@ body:has(#k-page-scroll.k-pager-active) {
 /* ── 1200px : raffinements supplémentaires ───────────────────── */
 @media (min-width: 1200px) {
 
-  /* VIS-1 FIX — réserve alignée sur boutique-desktop.css (@1200px) */
-  :root { --sc-reserve-w: 320px; } /* largeur confortable sur grand desktop, alignée sur boutique-desktop.css */
-
   .k-header { height: 72px; }
   .k-header-inner { height: 72px; }
   .k-logo-img { height: 44px; }
@@ -741,20 +716,12 @@ body:has(#k-page-scroll.k-pager-active) {
 
   /* ── Wrapper principal ──────────────────────────────────────
      Élargi par rapport au --container global : le wrapper du
-     catalogue exploite toute la zone utile restante après le
-     side-cart (240px réservé par body padding-right). Marges
-     latérales visuelles ~20px de chaque côté pour respirer.
-     PR-SC2 v3.3 (chantier 1, marges symétriques). */
+     catalogue exploite toute la largeur du shell. Le side-cart est un
+     overlay et ne participe pas au calcul de cette géométrie. */
   #k-desktop-catalog-wrap {
     display: flex;
     align-items: flex-start;
     gap: 20px;
-    /* FIX décalage gauche :
-       body:has(.k-side-cart.has-items) pose padding-right:240px sur body.
-       margin:0 auto centrait dans (100vw - 240px) → contenu décalé à gauche de 120px.
-       On supprime margin:0 auto et on laisse le wrap s'étirer naturellement
-       dans l'espace utile du body (width:100% implicite suffit).
-       Le side-cart fixed reste collé à droite, hors du flux. */
     margin: 0;
     padding: 12px 20px 0;
   }
@@ -763,7 +730,7 @@ body:has(#k-page-scroll.k-pager-active) {
   #k-desktop-catalog-wrap #k-catalog-section {
     flex: 1 1 0;
     min-width: 0;
-    max-width: var(--catalog-max, none);
+    max-width: none;
     margin: 0;
     padding: 0;
     /* overflow-x:clip au lieu de hidden: rogne sans créer de scroll container */
@@ -776,21 +743,6 @@ body:has(#k-page-scroll.k-pager-active) {
 @media (min-width: 1200px) {
   #k-desktop-catalog-wrap { gap: 24px; }
 }
-
-/* ── Centrage symétrique quand le side-cart est docké ──────────
-   Sans correction : body pose padding-right:240px → le wrap colle
-   au bord gauche, les cartes ne sont pas centrées dans l'espace utile.
-   Fix : padding-left = sc-reserve-w / 2 pour rééquilibrer visuellement.
-   Normalisé 1100px → 900px (doctrine breakpoints 2026-07).
-   ──────────────────────────────────────────────────────────────── */
-@media (min-width: 900px) {
-  body:has(.k-side-cart.has-items) #k-desktop-catalog-wrap,
-  body.sc-reserve #k-desktop-catalog-wrap {
-    padding-left: calc(var(--sc-reserve-w, 240px) / 2);
-  }
-}
-
-
 
 /* PATCH #227 — desktop stabilization (consolidé) */
 @media (min-width: 900px) {

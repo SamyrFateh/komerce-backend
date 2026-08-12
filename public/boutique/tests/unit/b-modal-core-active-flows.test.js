@@ -131,6 +131,7 @@ function mountDom() {
             <div class="k-modal-actions"><button id="k-buy-now-btn">Acheter</button></div>
           </div>
         </div>
+        <div id="k-modal-cart-slot"></div>
       </section>
     </div>
     <button class="k-card-fav" data-fav="1"></button>
@@ -282,6 +283,20 @@ test('openModal charge les suggestions sans fetch legacy /api/products/:id puis 
   expect(mockScrollToPosition).toHaveBeenCalledWith(321);
   expect(dom.grid.scrollLeft).toBe(140);
   expect(dom.grid.style.scrollSnapType).toBe('');
+});
+
+test('openModal desktop monte le side-cart dans la colonne produit dédiée', () => {
+  mockIsDesktop.mockReturnValue(true);
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
+
+  openModal(1);
+
+  const sideCart = document.getElementById('k-side-cart');
+  expect(sideCart.parentElement).toBe(document.getElementById('k-modal-cart-slot'));
+  expect(sideCart.classList.contains('k-side-cart--in-modal')).toBe(true);
+
+  closeModal();
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
 });
 
 // MDP-PROP1 (2.5) : le test "Acheter ajoute la quantité puis ouvre le panier" a été

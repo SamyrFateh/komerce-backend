@@ -1769,6 +1769,7 @@ function renderSideCart() {
   const bnavLbl  = document.getElementById('k-bnav-cart-label');
   const items    = state.cart;
   const hasItems = items.length > 0;
+  const isModalCart = sc?.classList.contains('k-side-cart--in-modal') === true;
   // P0-1 (mandat §3) — invariant : le SHELL (panneau + onglets) reste
   // visible tant qu'une liste OPEN occupe le slot partagé, même si le
   // panier personnel est vide. Ne pas confondre avec hasItems, qui ne
@@ -1792,14 +1793,11 @@ function renderSideCart() {
   // dès que le panier personnel repasse à zéro (cf. publication).
   sc.classList.toggle('has-items', sideCartVisible);
 
-  // Réserve la place du side cart en bordure droite du body.
-  // Double-mécanisme avec body:has(.k-side-cart.has-items) en CSS :
-  // si :has() n'est pas supporté (Firefox <121), cette classe prend le relais.
+  // Classe d'état conservée pour les consommateurs historiques et les probes
+  // E2E. Le layout desktop ne l'utilise plus pour réduire la boutique : le
+  // side-cart se superpose désormais sans déplacer hero, recherche ou grille.
   document.body.classList.toggle('sc-reserve', sideCartVisible);
 
-  // (--sc-offset / sc-open : plus utilisés depuis que .k-side-cart est en
-  // position: fixed. La réserve de place est gérée par body.sc-reserve +
-  // body:has(.k-side-cart.has-items) en CSS — voir boutique-desktop.css.)
   if (!hasItems) {
     // Panier personnel vide : vider explicitement la liste DOM pour éviter
     // les items fantômes si renderSideCart() est rappelé plus tard avec un
@@ -1807,14 +1805,23 @@ function renderSideCart() {
     // le slot), afficher un état vide explicite plutôt qu'un panneau vide.
     const itemsElEmpty = sc.querySelector('#k-sc-items');
     if (itemsElEmpty) {
-      itemsElEmpty.innerHTML = sideCartVisible
-        ? '<div class="k-sc-empty">Votre panier est vide.</div>'
+      itemsElEmpty.innerHTML = (sideCartVisible || isModalCart)
+        ? '<div class="k-sc-empty" role="status">' +
+            '<span class="k-sc-empty-icon" aria-hidden="true">🛒</span>' +
+            '<strong>Votre panier est vide</strong>' +
+            '<span>Ajoutez ce produit pour le retrouver ici.</span>' +
+          '</div>'
         : '';
     }
     const totalElEmpty = sc.querySelector('#k-sc-total');
     if (totalElEmpty) totalElEmpty.textContent = fmtPrice(0);
     const countInlineEmpty = sc.querySelector('#k-sc-count-inline');
     if (countInlineEmpty) countInlineEmpty.textContent = '0';
+    const checkoutBtnEmpty = sc.querySelector('#k-sc-checkout');
+    if (checkoutBtnEmpty) {
+      checkoutBtnEmpty.textContent = 'Commander · ' + fmtPrice(0);
+      checkoutBtnEmpty.disabled = true;
+    }
     return;
   }
 
@@ -1830,6 +1837,7 @@ function renderSideCart() {
   const checkoutBtn = sc.querySelector('#k-sc-checkout');
   if (checkoutBtn) {
     checkoutBtn.textContent = 'Commander · ' + fmtPrice(cartTotal());
+    checkoutBtn.disabled = false;
   }
 
   // Articles (plus récents en premier)

@@ -173,20 +173,14 @@
     border-top: 2px solid var(--ocean-light);
   }
 
-  /* Le footer est enfant direct de <body> ; quand le panier est docké, le
-     padding-right du body (body.sc-reserve / :has(.k-side-cart.has-items),
-     = largeur exacte du side-cart) confine DÉJÀ le footer : son fond s'arrête
-     pile au bord gauche du panneau. L'ancien margin-right ajoutait une SECONDE
-     réserve → bande vide visible entre footer et side-cart. Supprimé : le
-     footer est désormais collé au side-cart. (Voir BOUTIQUE_SIDE_CART_DOCTRINE.) */
+  /* Le footer conserve sa géométrie stable quand le side-cart overlay est
+     visible ; aucun retrait ou élargissement conditionnel. */
 
   .k-footer-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
     gap: 32px;
-    /* max-width = --container : le parent .k-footer réserve déjà l'espace
-       side-cart via margin-right, donc le contenu se cale dedans normalement
-       (pas de double réserve). minmax(0,…) garde les colonnes rétractables. */
+    /* minmax(0,…) garde les colonnes rétractables. */
     max-width: var(--container);
     margin: 0 auto;
     padding-bottom: 32px;
@@ -332,14 +326,7 @@
   .k-footer-legal-link:hover { color: var(--violet-mid-bright); }
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   FOOTER — stratégie RÉSERVE (unifiée avec la grille).
-   Le footer est enfant direct de <body>, donc body.sc-reserve { padding-right }
-   le contraint déjà dans la zone utile : il s'arrête avant le side-cart, comme
-   les cartes. Aucun owner spécifique nécessaire — pas d'extension sous le panneau.
-   (Anciens blocs `width: calc(100% + --sc-reserve-w)` supprimés le 31/05 :
-    ils faisaient l'inverse de la doctrine. Voir BOUTIQUE_SIDE_CART_DOCTRINE.md.)
-   ══════════════════════════════════════════════════════════════════ */
+/* Le footer reste indépendant du side-cart overlay. */
 
 /* ══════════════════════════════════════════════════════════════════
    12. SECTION SUBCATS — chips Temu-style desktop (LOT 12)
@@ -687,8 +674,7 @@
 @media (min-width: 900px) {
 
   /* ── Conteneur fixed, full-height, collé au bord droit ──
-     Sort du flux : padding-right sur body réserve la place
-     (voir bloc "BODY PADDING RIGHT — side cart fixed" plus bas). */
+     Sort du flux et se superpose à la boutique sans modifier sa largeur. */
   .k-side-cart {
     display: flex;
     flex-direction: column;
@@ -916,6 +902,12 @@
     transform: translateY(-1px);
   }
   .k-sc-btn-checkout:active { transform: scale(.98); }
+  .k-sc-btn-checkout:disabled {
+    cursor: not-allowed;
+    opacity: .52;
+    transform: none;
+    box-shadow: none;
+  }
 
   /* ── Séparateur Commander / Voir le panier ── */
   .k-sc-btn-checkout + .k-sc-btn-cart {
@@ -1054,6 +1046,38 @@
     flex-direction: column;
     gap: 8px;
   }
+  .k-sc-empty {
+    flex: 1 1 auto;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 18px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+  .k-sc-empty-icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 1px solid var(--border-text-08);
+    font-size: 23px;
+  }
+  .k-sc-empty strong {
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.25;
+  }
+  .k-sc-empty span:last-child {
+    max-width: 210px;
+    font-size: 11.5px;
+    line-height: 1.45;
+  }
   /* Plus de limite à 4 items : tout scrolle (mode Temu) */
 
   /* ── Item carte ── */
@@ -1092,6 +1116,22 @@
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+  .k-side-cart--in-modal .k-sc-item {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+  }
+  .k-side-cart--in-modal .k-sc-item-img {
+    width: 56px;
+    height: 56px;
+  }
+  .k-side-cart--in-modal .k-sc-item-info {
+    min-height: 56px;
+  }
+  .k-side-cart--in-modal .k-sc-item-name {
+    font-size: 12.5px;
+    -webkit-line-clamp: 2;
   }
   .k-sc-item-variant {
     font-size: 9.5px; font-weight: 600; color: var(--text-muted);
@@ -1184,31 +1224,10 @@
      encore toggler la classe. */
   #k-side-cart.is-expanded .k-sc-items > * { display: flex; }
 
-  /* ──────────────────────────────────────────────────────────
-     BODY PADDING RIGHT — side cart fixed.
-     Réserve la place du side-cart sur le bord droit,
-     mais SEULEMENT quand le panier a des items. Sinon le
-     panneau est en display:none et on ne veut pas de bande
-     vide à droite.
-
-     STRATÉGIE EN DEUX TEMPS (ceinture + bretelles) :
-     1. body:has(.k-side-cart.has-items) (CSS pur, navigateurs modernes)
-     2. body.sc-reserve (toggle JS, fallback universel)
-     Le `body` reçoit le padding par une OU l'autre — pas un + un,
-     donc pas de risque de doublage.
-     ────────────────────────────────────────────────────────── */
-  /* :where() zéroïse la spécificité du has() → 0-1-0
-     body.modal-open (0-1-1) gagne par ordre source ✓ */
-  body:where(:has(.k-side-cart.has-items)),
-  body.sc-reserve {
-    padding-right: var(--sc-reserve-w, 296px); /* VIS-1 — token défini dans layout.css */
-  }
-
-  /* Pendant qu'un overlay plein écran est ouvert (modal/cart drawer),
-     on libère le padding : 0-1-1 > 0-1-0 ✓ */
+  /* Pendant qu'un overlay plein écran est ouvert, verrouiller le fond sans
+     appliquer de compensation horizontale. */
   body.modal-open,
   body.cart-open {
-    padding-right: 0;
     overflow: hidden; /* BUG-SCROLL-3 — lock scroll fond pendant overlay checkout/modal */
   }
   /* Side cart masqué quand le drawer panier est ouvert (chevauchement).
@@ -1232,14 +1251,9 @@
   .k-side-cart--in-modal {
     width: 100%;
   }
-  body:has(.k-side-cart.has-items),
-  body.sc-reserve {
-    padding-right: var(--sc-reserve-w, 320px); /* VIS-1 — token défini dans layout.css @1200px */
-  }
   /* Largeur "wide" des conteneurs de centrage ≥1200px.
      Rapatrié de desktop-commerce-skeleton.css (supprimé le 31/05 — fichier mort).
-     NB : .k-header-inner reçoit aussi un max-width conditionnel via VIS-1 FIX
-     (layout.css) quand le side-cart est actif — tension à arbitrer en phase rendu. */
+     Le side-cart overlay ne modifie pas cette largeur. */
   .k-header-inner,
   .k-hero-inner,
   .k-cats-shell {
@@ -1247,41 +1261,6 @@
   }
 }
 
-
-/* ══════════════════════════════════════════════════════════════
-   HERO — RÉSERVE SIDE-CART (VIS-1 extension)
-   Owner : boutique-desktop.css (owner side-cart, charge en dernier).
-   Problème : #k-hero-fixed-wrap reste width:100% quand le side-cart
-   est actif → l'image déborde sous le panneau fixed et la dame
-   de droite se fait écraser par le compteur panier.
-   Fix : on cale le hero sur la même largeur utile que le catalog.
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  body:has(.k-side-cart.has-items) #k-hero-fixed-wrap,
-  body.sc-reserve #k-hero-fixed-wrap {
-    max-width: calc(100vw - var(--sc-reserve-w, 296px));
-    overflow: clip;
-  }
-  /* L'image elle-même doit aussi être contrainte à la largeur utile
-     pour que object-fit:cover centre bien sur la zone visible,
-     et non sur toute la largeur viewport avec la dame coupée à droite. */
-  body:has(.k-side-cart.has-items) .k-hero-img,
-  body.sc-reserve .k-hero-img {
-    max-width: calc(100vw - var(--sc-reserve-w, 296px));
-    object-position: 48% 35%;
-  }
-}
-@media (min-width: 1200px) {
-  body:has(.k-side-cart.has-items) #k-hero-fixed-wrap,
-  body.sc-reserve #k-hero-fixed-wrap {
-    max-width: calc(100vw - var(--sc-reserve-w, 320px));
-  }
-  body:has(.k-side-cart.has-items) .k-hero-img,
-  body.sc-reserve .k-hero-img {
-    max-width: calc(100vw - var(--sc-reserve-w, 320px));
-  }
-}
-/* ══ FIN HERO RÉSERVE SIDE-CART ════════════════════════════════ */
 
 /* ── GARDE DESKTOP : le panier plein écran (drawer mobile) ne s'affiche jamais
    en desktop, même si un JS lui ajoute .open (boutons "Voir le panier", dame,

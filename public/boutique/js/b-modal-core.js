@@ -560,6 +560,10 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     _cartHome = { parent: cart.parentNode, nextSibling: cart.nextSibling };
     slot.appendChild(cart);
     cart.classList.add('k-side-cart--in-modal');
+    // Le panier standalone vide n'a volontairement aucun contenu. Une fois
+    // monté dans la fiche produit il devient toutefois une colonne visible :
+    // demander au renderer canonique de produire son état vide utile.
+    bus.emit('side-cart:render');
   }
 
   function restoreSideCartHome() {

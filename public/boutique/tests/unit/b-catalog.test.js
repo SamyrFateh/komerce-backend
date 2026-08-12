@@ -339,6 +339,25 @@ describe('b-catalog — rendu et pagination', () => {
     expect(mockState.page).toBe(0);
     expect(mockBus.emit).toHaveBeenCalledWith('catalog:cat-changed', 'Maison');
   });
+
+  test('setActiveCat clôt la recherche active avant de changer d’univers', () => {
+    mockState.products = [
+      product(1, 'Mode', { name: 'Chemise' }),
+      product(2, 'Tech', { name: 'Téléphone' }),
+    ];
+    mockState.filtered = [mockState.products[0]];
+    mockDom.searchInput.value = 'chemise';
+    mockDom.searchDrop.classList.add('open');
+    mockDom.searchDrop.innerHTML = '<div class="k-search-item">Chemise</div>';
+
+    catalog.setActiveCat('Tech');
+
+    expect(mockDom.searchInput.value).toBe('');
+    expect(mockDom.searchDrop.classList.contains('open')).toBe(false);
+    expect(mockDom.searchDrop.innerHTML).toBe('');
+    expect(mockState.filtered).toEqual(mockState.products);
+    expect(mockDom.grid.querySelector('[data-id="2"]')).not.toBeNull();
+  });
 });
 
 describe('b-catalog — navigation et recherche', () => {

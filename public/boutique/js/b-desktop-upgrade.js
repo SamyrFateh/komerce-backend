@@ -76,10 +76,9 @@ function setupScrollToTop() {
  * Historique : posée à l'époque où .k-side-cart était en position:sticky.
  * Sans guard, le sticky chevauchait visuellement le footer au bas de page.
  *
- * Pourquoi désactivée maintenant : le pattern actuel est position:fixed +
- * body { padding-right: 240px } sur body:has(.k-side-cart.has-items) /
- * body.sc-reserve. Le footer respecte donc déjà les 240px en bordure
- * droite, le side-cart n'a plus à se cacher pour libérer le footer.
+ * Pourquoi désactivée maintenant : le pattern actuel est un overlay fixed.
+ * La boutique garde sa géométrie et le side-cart n'a plus à se cacher pour
+ * libérer le footer.
  *
  * Pour réactiver (en cas de retour à sticky), supprimer le `return` en
  * tête de fonction.
