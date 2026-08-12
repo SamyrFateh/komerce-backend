@@ -205,6 +205,32 @@ describe('requireIdentity — step phone (utilisateur inconnu)', () => {
     expect(document.getElementById('k-id-step-recap').hidden).toBe(true);
     expect(document.getElementById('k-id-name')).not.toBeNull();
     expect(document.getElementById('k-id-phone')).not.toBeNull();
+    const cta = document.getElementById('k-id-phone-cta');
+    expect(cta.getAttribute('aria-disabled')).toBe('true');
+    expect(cta.classList.contains('k-id-btn--incomplete')).toBe(true);
+  });
+
+  it('rend le CTA disponible seulement quand prénom, nom et téléphone sont complets', async () => {
+    requireIdentity();
+    await flush();
+    const cta = document.getElementById('k-id-phone-cta');
+
+    document.getElementById('k-id-name').value = 'Ali';
+    document.getElementById('k-id-name').dispatchEvent(new Event('input'));
+    document.getElementById('k-id-lastname').value = 'Said';
+    document.getElementById('k-id-lastname').dispatchEvent(new Event('input'));
+    expect(cta.getAttribute('aria-disabled')).toBe('true');
+
+    document.getElementById('k-id-phone').value = '3211234';
+    document.getElementById('k-id-phone').dispatchEvent(new Event('input'));
+    expect(cta.getAttribute('aria-disabled')).toBe('false');
+    expect(cta.classList.contains('k-id-btn--incomplete')).toBe(false);
+
+    const country = document.getElementById('k-id-phone-country');
+    country.value = '+33';
+    country.dispatchEvent(new Event('change'));
+    expect(cta.getAttribute('aria-disabled')).toBe('true');
+    expect(cta.classList.contains('k-id-btn--incomplete')).toBe(true);
   });
 
   it('affiche une erreur si le prénom est manquant', async () => {

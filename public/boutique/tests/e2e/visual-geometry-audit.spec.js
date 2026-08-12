@@ -1538,6 +1538,66 @@ for (const vp of VIEWPORTS) {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GROUPE 17 — Réserve side cart desktop (régression terrain 2026-08-12)
+// ─────────────────────────────────────────────────────────────────────────────
+
+for (const vp of VIEWPORTS.filter(({ width }) => width >= 900)) {
+  test.describe(`[${vp.name}] G17 — Side cart sans recouvrement`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+
+    test('G17-a — cartes, hero et actions header s’arrêtent avant le panneau', async ({ page }) => {
+      const products = Array.from({ length: 8 }, (_, index) => buildMinimalProduct({
+        id: `reserve-prod-${index + 1}`,
+        name: `Produit de contrôle géométrique ${index + 1}`,
+        category: 'mode',
+      }));
+      await stubMinimalApi(page, products);
+      await loadBoutique(page);
+      await injectSharedListSnapshot(page, {
+        creatorName: 'Admin',
+        items: products.slice(0, 6).map((product, index) => ({
+          id: `reserve-item-${index + 1}`,
+          product_id: product.id,
+          name: product.name,
+          price_kmf: product.price_kmf,
+          quantity: 1,
+          claimed: false,
+          image_url: product.image_url,
+        })),
+      });
+
+      const geometry = await page.evaluate(() => {
+        const sideCart = document.getElementById('k-side-cart');
+        if (!sideCart) return null;
+        const side = sideCart.getBoundingClientRect();
+        const visibleRects = (selector) => Array.from(document.querySelectorAll(selector))
+          .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+          .filter(({ rect }) => rect.width > 0 && rect.height > 0)
+          .map(({ element, rect }) => ({
+            label: element.id || element.className || element.tagName,
+            left: rect.left,
+            right: rect.right,
+          }));
+        return {
+          side: { left: side.left, width: side.width },
+          reserve: getComputedStyle(document.body).paddingRight,
+          cards: visibleRects('#k-catalog-section .k-card'),
+          shells: visibleRects('.k-header-inner, #k-hero-fixed-wrap, .k-cats-shell'),
+        };
+      });
+
+      expect(geometry).not.toBeNull();
+      expect(geometry.side.width).toBeGreaterThanOrEqual(290);
+      expect(parseFloat(geometry.reserve)).toBeCloseTo(geometry.side.width, 0);
+      [...geometry.cards, ...geometry.shells].forEach(({ label, right }) => {
+        expect(right, `${label} passe sous le side cart (${right}px > ${geometry.side.left}px)`)
+          .toBeLessThanOrEqual(geometry.side.left + 1);
+      });
+    });
+  });
+}
+
 
 
 test.describe('G6 — Invariants CSS statiques des corrections LOT 1–4', () => {

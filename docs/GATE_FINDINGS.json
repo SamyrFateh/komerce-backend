@@ -287,7 +287,7 @@
       "type": "TEXT-GATE-DIAGNOSTIC",
       "feature": "orders",
       "file": null,
-      "message": "↳ Référencé en CSS : css/cart.css:2069, css/cart.css:2080 … — sélecteur legacy ou JS manquant",
+      "message": "↳ Référencé en CSS : css/cart.css:2143, css/cart.css:2154 … — sélecteur legacy ou JS manquant",
       "sourceFile": "public/boutique/css/cart.css"
     },
     {

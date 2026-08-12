@@ -1252,6 +1252,10 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
    */
 export function renderCartSnapshot(context, items, actions) {
     document.body.classList.add('is-shared-list-context');
+    // Le snapshot liste contourne renderSideCart() (qui synchronise cette
+    // classe pour le panier personnel). La poser ici garantit le même contrat
+    // de réserve desktop, y compris sans support CSS :has().
+    document.body.classList.add('sc-reserve');
     const rowsHtml = items.map((it) => snapshotItemRowHtml(it, context)).join('');
 
     const sc = document.getElementById('k-side-cart');
@@ -1804,9 +1808,8 @@ function renderSideCart() {
   // dès que le panier personnel repasse à zéro (cf. publication).
   sc.classList.toggle('has-items', sideCartVisible);
 
-  // Classe d'état conservée pour les consommateurs historiques et les probes
-  // E2E. Le layout desktop ne l'utilise plus pour réduire la boutique : le
-  // side-cart se superpose désormais sans déplacer hero, recherche ou grille.
+  // Classe d'état partagée avec le layout desktop : elle réserve exactement
+  // la largeur du side cart et sert de fallback aux navigateurs sans :has().
   document.body.classList.toggle('sc-reserve', sideCartVisible);
 
   if (!hasItems) {

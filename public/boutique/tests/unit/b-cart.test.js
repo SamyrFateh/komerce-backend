@@ -639,6 +639,7 @@ describe('b-cart', () => {
       expect(drawerItems).toHaveLength(2);
       expect(dom.cartBody.textContent).toContain('Riz');
       expect(dom.cartBody.textContent).toContain('6500 KMF');
+      expect(document.body.classList.contains('sc-reserve')).toBe(true);
     });
 
     it('P0 (audit terrain — F22-6/F22-7) : un side-cart:render externe (panier personnel vide) ne vide jamais le panneau pendant qu\'une liste est active', () => {
@@ -928,6 +929,7 @@ describe('b-cart', () => {
       expect(dom.cartBody.querySelectorAll('.k-cart-snapshot-item')).toHaveLength(0);
       expect(dom.cartBody.querySelectorAll('.k-cart-item')).toHaveLength(1);
       expect(document.body.classList.contains('is-shared-list-context')).toBe(false);
+      expect(document.body.classList.contains('sc-reserve')).toBe(false);
     });
 
     // Mandat §13 — bug réel trouvé en test navigateur réel : le titre du

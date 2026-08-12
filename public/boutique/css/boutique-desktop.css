@@ -679,7 +679,8 @@
 @media (min-width: 900px) {
 
   /* ── Conteneur fixed, full-height, collé au bord droit ──
-     Sort du flux et se superpose à la boutique sans modifier sa largeur. */
+     Sort du flux, tandis que la réserve posée sur body ci-dessous garantit
+     qu'aucune surface de la boutique ne passe sous le panneau. */
   .k-side-cart {
     display: flex;
     flex-direction: column;
@@ -1229,10 +1230,20 @@
      encore toggler la classe. */
   #k-side-cart.is-expanded .k-sc-items > * { display: flex; }
 
-  /* Pendant qu'un overlay plein écran est ouvert, verrouiller le fond sans
-     appliquer de compensation horizontale. */
+  /* Réserve unique : la largeur utile du document s'arrête exactement au
+     bord gauche du side cart. `:has()` couvre les navigateurs modernes et
+     `.sc-reserve`, synchronisée par le renderer, reste le fallback. */
+  :root { --sc-reserve-w: 296px; }
+  body:where(:has(.k-side-cart.has-items)),
+  body.sc-reserve {
+    padding-right: var(--sc-reserve-w);
+  }
+
+  /* Les overlays plein écran récupèrent tout le viewport ; le side cart y
+     est masqué ou reparenté dans la modale et ne doit plus réserver de place. */
   body.modal-open,
   body.cart-open {
+    padding-right: 0;
     overflow: hidden; /* BUG-SCROLL-3 — lock scroll fond pendant overlay checkout/modal */
   }
   /* Side cart masqué quand le drawer panier est ouvert (chevauchement).
@@ -1247,7 +1258,7 @@
 
 @media (min-width: 1200px) {
   .k-side-cart {
-    width: 320px; /* largeur confortable sur grand desktop */
+    width: var(--sc-reserve-w, 296px);
   }
   /* Le panneau reparenté doit rester à 100% de .k-modal-cart-slot (largeur
      pilotée par la grille de la coque, modal-shell.css), pas à largeur fixe —
@@ -1258,7 +1269,7 @@
   }
   /* Largeur "wide" des conteneurs de centrage ≥1200px.
      Rapatrié de desktop-commerce-skeleton.css (supprimé le 31/05 — fichier mort).
-     Le side-cart overlay ne modifie pas cette largeur. */
+     La réserve du side cart borne ensuite cette largeur dans le viewport. */
   .k-header-inner,
   .k-hero-inner,
   .k-cats-shell {

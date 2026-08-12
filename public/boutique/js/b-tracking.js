@@ -128,9 +128,12 @@ export function renderOrderDetail(order, container) {
 }
 
 export function renderMyOrdersList(el, orders) {
-  const header = '<section class="k-track-orders-panel"><h2>📦 Mes commandes</h2>' +
-    '<p class="k-track-sub-hint">' + orders.length + ' commande' + (orders.length > 1 ? 's' : '') +
-    ' trouvée' + (orders.length > 1 ? 's' : '') + '</p>';
+  const header = '<div class="k-secondary-page-head">' +
+    '<div class="k-secondary-page-copy"><span class="k-secondary-page-eyebrow">Votre historique</span>' +
+    '<h2>📦 Mes commandes</h2><p>' + orders.length + ' commande' + (orders.length > 1 ? 's' : '') +
+    ' trouvée' + (orders.length > 1 ? 's' : '') + '. Consultez leur avancement et leurs détails.</p></div>' +
+    '<div class="k-secondary-page-visual" aria-hidden="true">✓</div></div>' +
+    '<section class="k-track-orders-panel k-secondary-page-panel">';
 
   const cards = orders.map(o => {
     const statusInfo   = getStatusDisplay(o.status || 'pending', o.payment_status);
@@ -509,8 +512,16 @@ export function renderTrackViewSearchMode(el) {
 
   el.innerHTML = `
     <div class="k-track-dashboard k-track-dashboard--search">
-      <section class="k-track-orders-panel">
-        <h2>📦 Suivi de commande</h2>
+      <div class="k-secondary-page-head">
+        <div class="k-secondary-page-copy">
+          <span class="k-secondary-page-eyebrow">Après votre achat</span>
+          <h2>📦 Suivi de commande</h2>
+          <p>Retrouvez une commande avec sa référence, ou identifiez-vous pour consulter tout votre historique.</p>
+        </div>
+        <div class="k-secondary-page-visual" aria-hidden="true">↗</div>
+      </div>
+      <section class="k-track-orders-panel k-secondary-page-panel">
+        <h3>Retrouver une commande</h3>
 
         <div id="k-track-quick">
           <p class="k-otp-hint">Entrez votre référence de commande (ex : K3XR7F)</p>

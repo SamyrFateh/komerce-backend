@@ -224,7 +224,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
         <div id="k-id-step-phone" class="k-id-step" hidden>
           <div id="k-id-fields-host"></div>
           <p class="k-id-error" id="k-id-err-phone" role="alert" aria-live="assertive" aria-atomic="true"></p>
-          <button class="k-id-btn" type="button" id="k-id-phone-cta">Recevoir le code</button>
+          <button class="k-id-btn k-id-btn--incomplete" type="button" id="k-id-phone-cta" aria-disabled="true">Recevoir le code</button>
           <button class="k-id-btn k-id-secondary" type="button" id="k-id-phone-cancel">Annuler</button>
         </div>
 
@@ -289,6 +289,20 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
         field.setAttribute('aria-describedby', 'k-id-err-phone');
         field.focus();
       }
+    }
+
+    function isPhoneStepComplete() {
+      return Boolean(
+        String(phoneData.name || '').trim() &&
+        String(phoneData.lastName || '').trim() &&
+        readValidatedPhoneFromField('k-id-phone')
+      );
+    }
+
+    function syncPhoneCtaState() {
+      const complete = isPhoneStepComplete();
+      phoneCta.setAttribute('aria-disabled', String(!complete));
+      phoneCta.classList.toggle('k-id-btn--incomplete', !complete);
     }
 
     // ── Step switcher ──────────────────────────────────────────────────
@@ -427,6 +441,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
           phoneCta.disabled    = false;
           phoneCta.classList.remove('k-id-btn--sending');
           phoneCta.textContent = 'Recevoir le code';
+          syncPhoneCtaState();
         }
       } finally {
         sending = false;
@@ -515,6 +530,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
       nameField.querySelector('#k-id-name').addEventListener('input', e => {
         phoneData.name = e.target.value.trim();
         clearPhoneFieldError(e.target);
+        syncPhoneCtaState();
       });
       const lastNameField = document.createElement('div');
       lastNameField.className = 'k-id-field';
@@ -524,9 +540,15 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
       lastNameField.querySelector('#k-id-lastname').addEventListener('input', e => {
         phoneData.lastName = e.target.value.trim();
         clearPhoneFieldError(e.target);
+        syncPhoneCtaState();
       });
       host.appendChild(makeIntlPhoneInput('k-id-phone', 'Votre WhatsApp', phoneData, 'phone'));
-      ov.querySelector('#k-id-phone')?.addEventListener('input', e => clearPhoneFieldError(e.target));
+      ov.querySelector('#k-id-phone')?.addEventListener('input', e => {
+        clearPhoneFieldError(e.target);
+        syncPhoneCtaState();
+      });
+      ov.querySelector('#k-id-phone-country')?.addEventListener('change', syncPhoneCtaState);
+      syncPhoneCtaState();
     }
     phoneCta.addEventListener('click', () => { if (!sending) requestCode(false); });
     ov.querySelector('#k-id-phone-cancel')?.addEventListener('click', () => { clearInterval(timerInterval); closeOverlay(ov); resolve(null); });

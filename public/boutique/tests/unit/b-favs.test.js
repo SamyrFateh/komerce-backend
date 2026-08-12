@@ -55,6 +55,8 @@ describe('b-favs', () => {
       expect(el).not.toBeNull();
       expect(el.innerHTML).toContain('Aucun favori');
       expect(el.classList.contains('k-fav-promo-active')).toBe(false);
+      expect(el.querySelector('.k-secondary-page-head')).not.toBeNull();
+      expect(el.querySelector('.k-secondary-page-panel .k-fav-empty')).not.toBeNull();
     });
 
     it('favoris présents dont un en promo → renderer canonique + bannière + badge', () => {
@@ -67,6 +69,7 @@ describe('b-favs', () => {
       expect(el.innerHTML).toContain('k-fav-promo-banner');
       expect(el.classList.contains('k-fav-promo-active')).toBe(true);
       expect(el.querySelectorAll('#k-fav-grid .k-card')).toHaveLength(2);
+      expect(el.querySelector('.k-secondary-page-panel #k-fav-grid')).not.toBeNull();
       expect(el.querySelector('.k-card-add-trigger')).not.toBeNull();
       const badge = document.querySelector('.k-bnav-item[data-tab="fav"] .k-bnav-promo-badge');
       expect(badge).not.toBeNull();

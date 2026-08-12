@@ -359,6 +359,13 @@ describe('renderTrackViewSearchMode', () => {
     return el;
   }
 
+  it('projette une introduction et le formulaire dans deux panneaux dédiés', () => {
+    const el = mountSearchMode();
+    expect(el.querySelector('.k-track-dashboard--search > .k-secondary-page-head')).not.toBeNull();
+    expect(el.querySelector('.k-track-dashboard--search > .k-secondary-page-panel')).not.toBeNull();
+    expect(el.querySelector('.k-secondary-page-panel #k-track-quick')).not.toBeNull();
+  });
+
   it('recherche rapide par référence : succès -> affiche le détail', async () => {
     const el = mountSearchMode();
     apiGet.mockResolvedValue({ order: { reference: 'K3XR7FZ', status: 'pending', total_amount: 500 } });

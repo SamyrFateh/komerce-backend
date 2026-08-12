@@ -518,8 +518,8 @@ body:has(#k-page-scroll.k-pager-active) {
 
   /* #k-page-scroll reset desktop — source de vérité : body:not(.modal-open):not(.cart-open) #k-page-scroll @media 900px (ligne ~756) */
 
-  /* Le side-cart desktop est un overlay : son ouverture ne modifie jamais la
-     largeur du shell, du header ou du catalogue. */
+  /* Le side-cart desktop est fixed, mais body réserve exactement sa largeur :
+     le shell, le header et le catalogue se recalculent dans la zone utile. */
 
   #k-catalog-section {
     max-width: var(--container);
@@ -716,8 +716,8 @@ body:has(#k-page-scroll.k-pager-active) {
 
   /* ── Wrapper principal ──────────────────────────────────────
      Élargi par rapport au --container global : le wrapper du
-     catalogue exploite toute la largeur du shell. Le side-cart est un
-     overlay et ne participe pas au calcul de cette géométrie. */
+     catalogue exploite toute la largeur utile du shell, déjà bornée par la
+     réserve unique du side cart sur body. */
   #k-desktop-catalog-wrap {
     display: flex;
     align-items: flex-start;

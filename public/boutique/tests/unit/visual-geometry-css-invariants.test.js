@@ -322,14 +322,14 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
 
   // ── LOT 6 — Drawers lisibles desktop et mobile ───────────────────────────
   describe('LOT 6 — drawers : largeur et respiration', () => {
-    it('LOT6-a : le side cart desktop se superpose sans comprimer le shell', () => {
-      const layout = readCss('layout.css');
+    it('LOT6-a : le side cart desktop réserve sa largeur exacte sans recouvrir le shell', () => {
       const desktop = readCss('boutique-desktop.css');
 
-      expect(layout).not.toMatch(/--sc-reserve-w|--catalog-max/);
-      expect(desktop).not.toMatch(/body\.sc-reserve\s*\{[^}]*padding-right/s);
-      expect(desktop).not.toMatch(/:has\(\.k-side-cart\.has-items\)[^{]*\{[^}]*padding-right/s);
-      expect(desktop).not.toMatch(/:has\(\.k-side-cart\.has-items\)[^{]*(?:#k-hero-fixed-wrap|\.k-hero-img)/s);
+      expect(desktop).toMatch(/:root\s*\{\s*--sc-reserve-w:\s*296px/);
+      expect(desktop).toMatch(/body:where\(:has\(\.k-side-cart\.has-items\)\),\s*body\.sc-reserve\s*\{[^}]*padding-right:\s*var\(--sc-reserve-w\)/s);
+      expect(desktop).toMatch(/\.k-side-cart\s*\{[^}]*width:\s*296px/s);
+      expect(desktop).toMatch(/@media\s*\(min-width:\s*1200px\)[\s\S]*?\.k-side-cart\s*\{[^}]*width:\s*var\(--sc-reserve-w,\s*296px\)/);
+      expect(desktop).toMatch(/body\.modal-open,\s*body\.cart-open\s*\{[^}]*padding-right:\s*0/s);
     });
 
     it('LOT6-a2 : la fiche produit élargit le panier et possède un état vide composé', () => {

@@ -51,6 +51,7 @@ module.exports = {
       '../css/cart.css',
     ],
     tests: [
+      '../tests/unit/b-tracking.test.js',
       '../tests/unit/b-cart-core.test.js',
       '../tests/unit/b-cart.test.js',
       '../tests/unit/b-mini-cart.test.js',
@@ -81,5 +82,6 @@ module.exports = {
     'le suivi ne modifie jamais le statut de commande',
     'la timeline reflète les statuts canoniques reçus du backend',
     'la recherche d historique client partage le défaut téléphonique +269 avec l identité, sans demander les champs de profil inutiles à une simple consultation',
+    'le suivi et l historique utilisent sur desktop une composition dédiée sans étirer le formulaire de recherche',
   ],
 };

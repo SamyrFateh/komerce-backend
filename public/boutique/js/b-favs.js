@@ -46,13 +46,22 @@ export function renderFavView() {
   updateFavPromoBadge(promoFavs.length);
 
   if (!favProducts.length) {
-    el.innerHTML = `<h2>❤️ Favoris</h2>
-      <div class="k-fav-empty">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-        <p>Aucun favori pour l'instant</p>
-        <p class="k-fav-hint">Appuie sur 🤍 sur un produit pour l'ajouter ici</p>
+    el.innerHTML = `<div class="k-secondary-page-head">
+        <div class="k-secondary-page-copy">
+          <span class="k-secondary-page-eyebrow">Votre sélection</span>
+          <h2>❤️ Favoris</h2>
+          <p>Gardez ici les produits qui vous plaisent pour les retrouver sans recommencer votre recherche.</p>
+        </div>
+        <div class="k-secondary-page-visual" aria-hidden="true">♡</div>
+      </div>
+      <div class="k-secondary-page-panel k-fav-content">
+        <div class="k-fav-empty">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <strong>Aucun favori pour l'instant</strong>
+          <p class="k-fav-hint">Appuyez sur le cœur d’un produit pour le retrouver ici.</p>
+        </div>
       </div>`;
     return;
   }
@@ -76,9 +85,18 @@ export function renderFavView() {
     <span>Envoyer ma liste de souhaits</span>
   </button>`;
 
-  el.innerHTML = `<h2>❤️ Favoris <span class="k-fav-count">${favProducts.length} produit${favProducts.length > 1 ? 's' : ''}</span></h2>
-    ${promoBanner}${shareBtn}
-    <div class="k-grid" id="k-fav-grid">${cardsHTML}</div>`;
+  el.innerHTML = `<div class="k-secondary-page-head">
+      <div class="k-secondary-page-copy">
+        <span class="k-secondary-page-eyebrow">Votre sélection</span>
+        <h2>❤️ Favoris <span class="k-fav-count">${favProducts.length} produit${favProducts.length > 1 ? 's' : ''}</span></h2>
+        <p>Comparez vos envies et partagez votre sélection quand elle est prête.</p>
+      </div>
+      <div class="k-secondary-page-visual" aria-hidden="true">♥</div>
+    </div>
+    <div class="k-secondary-page-panel k-fav-content">
+      ${promoBanner}${shareBtn}
+      <div class="k-grid" id="k-fav-grid">${cardsHTML}</div>
+    </div>`;
 
   // Active le style WA vert sur .k-fav-share-btn uniquement si des favoris sont en promo.
   // Sans cette classe → style ghost (neutre, défini dans interactions.css ~L38).
