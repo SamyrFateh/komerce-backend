@@ -9,18 +9,21 @@
  * Tests unitaires — services/catalog-eligibility.js (K-2, DOCTRINE_CATALOGUE §3)
  *
  * Verrouille les promesses doctrinales de l'étage ③ :
- *   - absolute avant restricted : un candidat qui matche les deux couches
- *     est écarté, pas seulement contraint.
- *   - matching insensible à la casse, sur mots-clés ET catégories.
- *   - les mots-clés sont des termes/phrases, jamais des sous-chaînes arbitraires.
+ *   - absolute prime sur restricted même si la liste fournie n'est pas triée ;
+ *   - matching insensible à la casse, sur mots-clés ET catégories ;
+ *   - les mots-clés sont des termes/phrases, jamais des sous-chaînes arbitraires ;
+ *   - chaque exclusion expose la preuve exacte du match ;
  *   - aucune exclusion active → candidat pleinement éligible (null).
- *   - loadActiveExclusions ne lit QUE les lignes is_active = TRUE et trie
- *     absolute en premier.
  */
 
 jest.mock('../../db');
 const db = require('../../db');
-const { checkEligibility, loadActiveExclusions, keywordMatches } = require('../../services/catalog-eligibility');
+const {
+  checkEligibility,
+  loadActiveExclusions,
+  keywordMatches,
+  orderRules,
+} = require('../../services/catalog-eligibility');
 
 function rule(overrides = {}) {
   return {
@@ -43,10 +46,16 @@ describe('checkEligibility', () => {
     expect(checkEligibility(null, [rule()])).toBeNull();
   });
 
-  test('matche un mot-clé insensible à la casse dans product_name', () => {
+  test('matche un mot-clé insensible à la casse et expose la preuve', () => {
     const exclusions = [rule({ label: 'Armes', keywords: ['weapon', 'knife'] })];
     const verdict = checkEligibility({ product_name: 'Tactical KNIFE stainless' }, exclusions);
-    expect(verdict).toEqual({ layer: 'absolute', label: 'Armes', constraint_note: null, legal_note: null });
+    expect(verdict).toEqual({
+      layer: 'absolute',
+      label: 'Armes',
+      constraint_note: null,
+      legal_note: null,
+      match: { type: 'keyword', value: 'knife' },
+    });
   });
 
   test('ne matche jamais une sous-chaîne à l’intérieur d’un autre mot', () => {
@@ -63,7 +72,7 @@ describe('checkEligibility', () => {
     expect(keywordMatches('uses an 18650 battery cell', '18650')).toBe(true);
   });
 
-  test('matche un mot-clé dans description ou supplier_category, pas seulement product_name', () => {
+  test('matche un mot-clé dans description et expose le terme déclencheur', () => {
     const exclusions = [rule({ label: 'Batteries lithium', layer: 'restricted', keywords: ['power bank'] })];
     const verdict = checkEligibility(
       { product_name: 'Chargeur voyage', description: 'Portable power bank 20000mAh' },
@@ -71,26 +80,28 @@ describe('checkEligibility', () => {
     );
     expect(verdict.layer).toBe('restricted');
     expect(verdict.label).toBe('Batteries lithium');
+    expect(verdict.match).toEqual({ type: 'keyword', value: 'power bank' });
   });
 
-  test('matche par catégorie (supplier_category ou komerce_category)', () => {
+  test('matche par catégorie et expose la catégorie déclencheuse', () => {
     const exclusions = [rule({ label: 'Périssables', categories: ['frozen-food'] })];
     const verdict = checkEligibility(
       { product_name: 'Sac isotherme', supplier_category: 'Frozen-Food' },
       exclusions
     );
     expect(verdict.label).toBe('Périssables');
+    expect(verdict.match).toEqual({ type: 'category', value: 'frozen-food' });
   });
 
-  test('absolute prime sur restricted si un candidat matche les deux couches', () => {
+  test('absolute prime dans le moteur même si restricted arrive en premier', () => {
     const exclusions = [
       rule({ layer: 'restricted', label: 'Restreint', keywords: ['spray'] }),
-      rule({ layer: 'absolute', label: 'Absolu', keywords: ['spray', 'weapon'] }),
+      rule({ layer: 'absolute', label: 'Absolu', keywords: ['weapon'] }),
     ];
-    const sorted = [...exclusions].sort((a, b) => (a.layer === 'absolute' ? -1 : 1) - (b.layer === 'absolute' ? -1 : 1));
-    const verdict = checkEligibility({ product_name: 'Spray can aerosol' }, sorted);
+    const verdict = checkEligibility({ product_name: 'Weapon spray can aerosol' }, exclusions);
     expect(verdict.layer).toBe('absolute');
     expect(verdict.label).toBe('Absolu');
+    expect(verdict.match).toEqual({ type: 'keyword', value: 'weapon' });
   });
 
   test('candidat sans aucun champ texte ne matche jamais (pas de crash)', () => {
@@ -98,7 +109,7 @@ describe('checkEligibility', () => {
     expect(checkEligibility({}, exclusions)).toBeNull();
   });
 
-  test('renvoie constraint_note et legal_note pour une règle restricted', () => {
+  test('renvoie contrainte, base légale et preuve pour une règle restricted', () => {
     const exclusions = [
       rule({
         layer: 'restricted',
@@ -114,11 +125,24 @@ describe('checkEligibility', () => {
       label: 'Batteries lithium seules',
       constraint_note: 'Maritime uniquement',
       legal_note: 'IATA DGR',
+      match: { type: 'keyword', value: '18650' },
     });
   });
 });
 
-describe('loadActiveExclusions', () => {
+describe('orderRules / loadActiveExclusions', () => {
+  test('orderRules garantit absolute puis restricted sans muter la liste source', () => {
+    const source = [
+      { layer: 'restricted', label: 'R1' },
+      { layer: 'absolute', label: 'A1' },
+      { layer: 'restricted', label: 'R2' },
+      { layer: 'absolute', label: 'A2' },
+    ];
+    const ordered = orderRules(source);
+    expect(ordered.map(r => r.layer)).toEqual(['absolute', 'absolute', 'restricted', 'restricted']);
+    expect(source.map(r => r.layer)).toEqual(['restricted', 'absolute', 'restricted', 'absolute']);
+  });
+
   test('interroge catalog_exclusions filtré sur is_active', async () => {
     db.query.mockResolvedValue({ rows: [] });
     await loadActiveExclusions();
