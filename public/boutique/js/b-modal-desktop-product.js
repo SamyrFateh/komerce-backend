@@ -742,6 +742,16 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
     ? { ...selection.selected_options }
     : {};
 
+  // Le shell desktop partage le même contrat d'état que le mobile : cette
+  // classe distingue un produit réellement configurable d'un produit simple.
+  // La géométrie du média peut ainsi utiliser l'espace libre d'un produit sans
+  // variantes sans modifier la densité des fiches qui doivent afficher des
+  // axes de sélection.
+  dom.modal?.classList.toggle(
+    'k-modal--has-variants',
+    Boolean(selection.selection_supported)
+  );
+
   function rerender() {
     renderDesktopProductDetail(detail, state.modalSelection);
   }

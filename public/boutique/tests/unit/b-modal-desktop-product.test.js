@@ -215,6 +215,7 @@ describe('desktop product detail renderer', () => {
     renderDesktopProductDetail(product, createModalSelection(product));
 
     expect(dom.addCartBtn.disabled).toBe(false);
+    expect(dom.modal.classList.contains('k-modal--has-variants')).toBe(false);
     expect(document.getElementById('k-buy-now-btn').disabled).toBe(false);
     stepperControls().forEach((control) => expect(control.disabled).toBe(false));
   });
@@ -235,6 +236,7 @@ describe('desktop product detail renderer', () => {
     const selection = createModalSelection(product);
     renderDesktopProductDetail(product, selection);
 
+    expect(dom.modal.classList.contains('k-modal--has-variants')).toBe(true);
     expect(selection.selected_sku_id).toBeNull();
     expect(dom.addCartBtn.disabled).toBe(true);
     expect(document.getElementById('k-buy-now-btn').disabled).toBe(true);

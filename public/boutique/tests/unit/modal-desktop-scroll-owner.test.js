@@ -113,4 +113,17 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
     expect(imgRule).toMatch(/max-height\s*:\s*500px/);
     expect(imgRule).toMatch(/align-self\s*:\s*start/);
   });
+
+  test('un média unique sans variantes utilise le carré disponible et retire le gutter miniatures', () => {
+    const simpleHero = media.match(
+      /#k-modal:not\(\.k-modal--has-variants\)[\s\S]{0,120}\.k-modal-product-zone \.k-modal-img-wrap\[data-gallery-mode="single"\]\s*\{([^}]*)\}/
+    )?.[1] ?? '';
+    const simpleSlide = media.match(
+      /#k-modal:not\(\.k-modal--has-variants\)[\s\S]{0,120}\.k-modal-img-wrap\[data-gallery-mode="single"\] \.k-modal-slide\s*\{([^}]*)\}/
+    )?.[1] ?? '';
+
+    expect(simpleHero).toMatch(/aspect-ratio\s*:\s*1\s*\/\s*1/);
+    expect(simpleSlide).toMatch(/padding\s*:\s*16px\s+20px/);
+    expect(simpleSlide).toMatch(/object-position\s*:\s*center\s+center/);
+  });
 });

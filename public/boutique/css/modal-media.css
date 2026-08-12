@@ -65,9 +65,10 @@
 }
 .k-modal-counter.is-visible { display: block; }
 
-/* ── BOUTON "VOIR EN GRAND" — mobile, bas-gauche de l'image ──────
+/* ── BOUTON "VOIR EN GRAND" — bas-gauche de l'image ──────────────
    Pill semi-transparent injecté par b-modal-image-ux.js.
-   Masqué sur desktop (le zoom loupe suffit). */
+   Mobile : toujours visible. Desktop : révélé uniquement pour un média
+   unique sans variantes, là où toute la surface image ouvre la lightbox. */
 .k-modal-view-full {
   position: absolute; bottom: 12px; left: 10px; z-index: 3; /* S2.3 — bottom revient à 12px ; était 28px pour éviter la zone de chevauchement margin-top:-20px, supprimée en S2.2 */
   display: flex; align-items: center; gap: 5px;
@@ -81,6 +82,10 @@
 .k-modal-view-full svg { width: 13px; height: 13px; flex-shrink: 0; }
 @media (min-width: 900px) {
   .k-modal-view-full { display: none; }
+  #k-modal:not(.k-modal--has-variants)
+  .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-view-full {
+    display: flex;
+  }
 }
 
 /* ── EDGE-TO-EDGE mobile — supprimé Sprint 1 (30/05/2026)
@@ -185,14 +190,12 @@
   -webkit-user-drag: none;
 }
 
-/* Désactivé sur desktop : le zoom-on-hover existant suffit */
+/* ── Desktop : le curseur annonce uniquement un zoom réellement actif. */
 @media (min-width: 900px) {
-#k-modal .k-modal-fullscreen { display: none; }
-}
-
-/* ── Desktop : zoom carousel (ex boutique-desktop.css) ─────────── */
-@media (min-width: 900px) {
-  #k-modal .k-modal-carousel { cursor: zoom-in; }
+  #k-modal:not(.k-modal--has-variants)
+  .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-carousel {
+    cursor: zoom-in;
+  }
 
   #k-modal .k-modal-slide {
     transition: transform .25s var(--ease);
@@ -335,5 +338,22 @@
        dans modal-shell.css, bloc sticky ≥900px — coins carrés assumés). */
     border: 1px solid var(--border);
   }
-}
 
+  /* UX-REVUE KRF-033 — produit simple, média unique : la fiche n'a aucun
+     axe de variantes à préserver dans le premier écran. Le hero utilise donc
+     la hauteur déjà créée par le récit voisin (carré, borné à 500px) au lieu
+     de rester figé en 4:3 avec une zone morte sous lui. Le gutter de 92px,
+     réservé au rail de miniatures, disparaît puisqu'il n'existe aucune
+     miniature dans ce mode. Résultat sur le témoin Arnaud Rousseau : zone
+     utile du média sensiblement agrandie sans déplacer le configurateur. */
+  #k-modal:not(.k-modal--has-variants)
+  .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
+    aspect-ratio: 1 / 1;
+  }
+
+  #k-modal:not(.k-modal--has-variants)
+  .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {
+    padding: 16px 20px;
+    object-position: center center;
+  }
+}

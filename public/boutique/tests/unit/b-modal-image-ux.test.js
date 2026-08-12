@@ -239,6 +239,33 @@ describe('b-modal-image-ux', () => {
       document.querySelector('.k-modal-carousel').click();
       expect(document.querySelector('.k-modal-fullscreen').classList.contains('is-open')).toBe(false);
     });
+
+    test('desktop, média unique sans variantes -> clic ouvre la lightbox', () => {
+      buildModalDom(1);
+      state.modalSelection = { selection_supported: false };
+      window.matchMedia = jest.fn().mockReturnValue({ matches: false });
+      setupImageUX();
+
+      document.querySelector('.k-modal-carousel').click();
+
+      const fs = document.querySelector('.k-modal-fullscreen');
+      expect(fs).not.toBeNull();
+      expect(fs.classList.contains('is-open')).toBe(true);
+      expect(fs.getAttribute('role')).toBe('dialog');
+      expect(fs.querySelector('.k-modal-fullscreen-slide img').src).toContain('w_1600');
+    });
+
+    test('desktop, média unique avec variantes -> clic ne détourne pas le configurateur', () => {
+      buildModalDom(1);
+      dom.modal.classList.add('k-modal--has-variants');
+      state.modalSelection = { selection_supported: true };
+      window.matchMedia = jest.fn().mockReturnValue({ matches: false });
+      setupImageUX();
+
+      document.querySelector('.k-modal-carousel').click();
+
+      expect(document.querySelector('.k-modal-fullscreen').classList.contains('is-open')).toBe(false);
+    });
   });
 
   describe('sync carousel:changed', () => {

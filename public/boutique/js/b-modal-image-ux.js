@@ -55,6 +55,7 @@ let _fsTouchX    = 0;
 let _fsImages    = [];
 let _fsTrack     = null;
 let _fsCounter   = null;
+let _fsRoot      = null;
 let _installed   = false;
 
 // ═══════════════════════════════════════════════════════════════
@@ -151,13 +152,44 @@ function _goTo(i) {
   }
 }
 
+function _ensureFs() {
+  let fs = document.querySelector('.k-modal-fullscreen');
+  if (!fs) {
+    fs = document.createElement('div');
+    fs.className = 'k-modal-fullscreen';
+    fs.innerHTML =
+      '<button type="button" class="k-modal-fullscreen-close" aria-label="Fermer">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">' +
+          '<path d="M18 6L6 18M6 6l12 12"/>' +
+        '</svg>' +
+      '</button>' +
+      '<div class="k-modal-fullscreen-counter"></div>' +
+      '<div class="k-modal-fullscreen-track"></div>';
+    document.body.appendChild(fs);
+  }
+
+  // Le markup peut déjà exister (fixtures, ancien shell ou réouverture) :
+  // l'enrichissement a11y ne dépend pas de qui a créé l'overlay.
+  fs.setAttribute('role', 'dialog');
+  fs.setAttribute('aria-modal', 'true');
+  fs.setAttribute('aria-label', 'Image produit agrandie');
+
+  if (_fsRoot !== fs) {
+    _setupFsHandlers(fs);
+    _fsRoot = fs;
+  }
+  return fs;
+}
+
 function _openFs(startIdx) {
   if (_fsOpen || _fsImages.length === 0) return;
+  let fs = _ensureFs();
+  if (!fs) return;
   _fsOpen = true;
   _buildFsSlides();
   _goTo(startIdx);
-  let fs = document.querySelector('.k-modal-fullscreen');
-  if (fs) fs.classList.add('is-open');
+  fs.classList.add('is-open');
+  fs.querySelector('.k-modal-fullscreen-close')?.focus();
   document.body.style.overflow = 'hidden';
 }
 
@@ -169,8 +201,7 @@ function _closeFs() {
   document.body.style.overflow = '';
 }
 
-function _setupFsHandlers() {
-  let fs = document.querySelector('.k-modal-fullscreen');
+function _setupFsHandlers(fs) {
   if (!fs) return;
 
   _fsTrack   = fs.querySelector('.k-modal-fullscreen-track');
@@ -212,7 +243,14 @@ function _setupCarouselTap() {
   let carousel = modalZone('.k-modal-carousel');
   if (!carousel) return;
   carousel.addEventListener('click', function() {
-    if (window.matchMedia('(max-width: 899px)').matches) {
+    const isMobile = window.matchMedia('(max-width: 899px)').matches;
+    const isInspectableDesktopSingle =
+      !isMobile &&
+      _getSlides().length === 1 &&
+      !state.modalSelection?.selection_supported &&
+      !modalZone('.k-modal')?.classList.contains('k-modal--has-variants');
+
+    if (isMobile || isInspectableDesktopSingle) {
       _openFs(state.carouselIndex || 0);
     }
   });
@@ -249,7 +287,6 @@ export function setupImageUX() {
 
     if (!_installed) {
       _installed = true;
-      _setupFsHandlers();
       _setupCarouselTap();
       _setupCarouselSync();
     }
