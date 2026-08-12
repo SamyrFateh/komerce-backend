@@ -21,6 +21,8 @@ const {
   decorate,
   cleanSourceTitle,
   localizeV2Title,
+  isRetryableHttpStatus,
+  retryDelayMs,
 } = require('../../scripts/showcase-v2-source-build');
 
 describe('showcase-v2-source-build query resilience', () => {
@@ -47,6 +49,21 @@ describe('showcase-v2-source-build query resilience', () => {
     expect(queries.slice(0, target.queries.length)).toEqual(target.queries);
     expect(queries.some((query) => query.startsWith('intitle:'))).toBe(true);
     expect(new Set(queries.map((query) => query.toLowerCase())).size).toBe(queries.length);
+  });
+
+  test('rejoue les erreurs HTTP transitoires Wikimedia sans masquer les erreurs client permanentes', () => {
+    for (const status of [429, 500, 502, 503, 504]) {
+      expect(isRetryableHttpStatus(status)).toBe(true);
+    }
+    for (const status of [400, 401, 403, 404, 422]) {
+      expect(isRetryableHttpStatus(status)).toBe(false);
+    }
+  });
+
+  test('respecte Retry-After puis le backoff exponentiel borné', () => {
+    expect(retryDelayMs({ headers: { get: () => '2' } }, 0)).toBe(2000);
+    expect(retryDelayMs({ headers: { get: () => null } }, 3)).toBe(8000);
+    expect(retryDelayMs({ headers: { get: () => null } }, 9)).toBe(15000);
   });
 
   test('la preuve produit se fait sur le titre source avant traduction française', () => {
