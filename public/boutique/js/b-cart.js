@@ -210,12 +210,11 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
         particle.style.transition = 'transform 0.15s ease-in, opacity 0.15s ease-in';
         particle.style.transform = 'translate(-50%,-50%) scale(0)';
         particle.style.opacity = '0';
-        cartIcon.style.transition = 'transform 0.15s ease-out';
-        cartIcon.style.transform = 'scale(1.3)';
-        setTimeout(() => {
-          cartIcon.style.transition = 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)';
-          cartIcon.style.transform = 'scale(1)';
-        }, 150);
+        // FLY-CART-GEOMETRY ? ne jamais ?crire transform sur le bouton
+        // cible. #k-modal-cart-btn est centr? par translate(-50%, -50%) :
+        // un scale() inline ?craserait ce transform CSS et d?placerait
+        // durablement le panier apr?s un ajout. Le feedback d'impact reste
+        // port? par la particule + le bump du badge.
         setTimeout(() => {
           particle.remove();
           sparkles.forEach(sp => sp.remove());
@@ -322,21 +321,25 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   // L'avatar du catalogue ne s'anime jamais derrière une modale ouverte.
   const feedbackTarget = getFlyToCartTarget();
   if (feedbackTarget === dom.cartBtn) {
-    dom.cartBtn.classList.remove('ring-pulse');
-    void dom.cartBtn.offsetWidth;
-    dom.cartBtn.classList.add('ring-pulse');
-    setTimeout(() => dom.cartBtn.classList.remove('ring-pulse'), 1500);
+    // La cible est captur?e maintenant : les timers ne doivent jamais
+    // relire dom.cartBtn, qui peut changer avant leur ex?cution.
+    feedbackTarget.classList.remove('ring-pulse');
+    void feedbackTarget.offsetWidth;
+    feedbackTarget.classList.add('ring-pulse');
+    setTimeout(() => feedbackTarget.classList.remove('ring-pulse'), 1500);
 
-    dom.cartBtn.classList.remove('avatar-wave');
-    void dom.cartBtn.offsetWidth;
-    dom.cartBtn.classList.add('avatar-wave');
-    setTimeout(() => dom.cartBtn.classList.remove('avatar-wave'), 900);
+    feedbackTarget.classList.remove('avatar-wave');
+    void feedbackTarget.offsetWidth;
+    feedbackTarget.classList.add('avatar-wave');
+    setTimeout(() => feedbackTarget.classList.remove('avatar-wave'), 900);
   } else if (feedbackTarget === dom.modalCartBtn) {
-    dom.modalCartBtn.classList.remove('ring-pulse', 'cart-icon-pulse');
-    void dom.modalCartBtn.offsetWidth;
-    dom.modalCartBtn.classList.add('ring-pulse', 'cart-icon-pulse');
-    setTimeout(() => dom.modalCartBtn.classList.remove('ring-pulse'), 1500);
-    setTimeout(() => dom.modalCartBtn.classList.remove('cart-icon-pulse'), 350);
+    // M?me invariant pour la modale : la r?f?rence DOM peut ?tre restaur?e
+    // ou remplac?e avant la fin des animations.
+    feedbackTarget.classList.remove('ring-pulse', 'cart-icon-pulse');
+    void feedbackTarget.offsetWidth;
+    feedbackTarget.classList.add('ring-pulse', 'cart-icon-pulse');
+    setTimeout(() => feedbackTarget.classList.remove('ring-pulse'), 1500);
+    setTimeout(() => feedbackTarget.classList.remove('cart-icon-pulse'), 350);
   }
 
   if (isModalAdd) {

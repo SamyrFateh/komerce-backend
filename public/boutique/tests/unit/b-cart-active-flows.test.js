@@ -216,6 +216,64 @@ test('termine l’animation fly-to-cart et nettoie ses particules', () => {
   expect(document.body.querySelectorAll('.k-fly-particle')).toHaveLength(0);
 });
 
+
+/* FLY-CART-GEOMETRY regression :
+   un ajout depuis une modale ouverte ne doit jamais remplacer le transform
+   CSS qui centre #k-modal-cart-btn. */
+test('fly-to-cart vers le panier modal conserve sa g?om?trie apr?s impact', () => {
+  const source = document.createElement('button');
+  source.getBoundingClientRect = () => ({
+    left: 10, top: 300, width: 40, height: 40,
+  });
+
+  const modalOverlay = document.createElement('div');
+  modalOverlay.classList.add('open');
+
+  const modalCartBtn = document.getElementById('k-modal-cart-btn');
+  const modalBadge = document.createElement('span');
+  modalBadge.className = 'k-modal-cart-badge';
+  modalCartBtn.appendChild(modalBadge);
+
+  modalCartBtn.getBoundingClientRect = () => ({
+    left: 180, top: 20, width: 42, height: 42,
+  });
+
+  const previousOverlay = dom.modalOverlay;
+  const previousModalCartBtn = dom.modalCartBtn;
+  const previousModalBadge = dom.modalCartBadge;
+
+  dom.modalOverlay = modalOverlay;
+  dom.modalCartBtn = modalCartBtn;
+  dom.modalCartBadge = modalBadge;
+
+  const timestamps = [1, 501];
+  global.requestAnimationFrame = jest.fn((callback) => {
+    callback(timestamps.shift() || 501);
+    return 1;
+  });
+
+  try {
+    addToCart(product(22, { image_url: '/img/p22.jpg' }), 1, source);
+
+    // 150 ms : d?part de l'arc puis impact synchrone via le rAF stub.
+    jest.advanceTimersByTime(150);
+
+    expect(modalBadge.classList.contains('bump')).toBe(true);
+
+    // Invariant m?tier/visuel : le JS ne poss?de pas la g?om?trie du bouton.
+    // Le translate(-50%, -50%) reste donc exclusivement dans le CSS.
+    expect(modalCartBtn.style.transform).toBe('');
+    expect(modalCartBtn.style.transition).toBe('');
+
+    jest.advanceTimersByTime(120);
+    expect(document.querySelectorAll('.k-fly-particle')).toHaveLength(0);
+  } finally {
+    dom.modalOverlay = previousOverlay;
+    dom.modalCartBtn = previousModalCartBtn;
+    dom.modalCartBadge = previousModalBadge;
+  }
+});
+
 test('le bouton modal ouvre le drawer mobile et recentre le side-cart desktop', () => {
   const emitSpy = jest.spyOn(bus, 'emit');
   addToCart(product(3), 1, dom.addCartBtn);
