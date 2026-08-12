@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -9,7 +8,11 @@
 jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })) }));
 
-const { auditProductStockChange, validatePublicationUpdate } = require('../../services/product-publication-guard');
+const {
+  CLIENT_TITLE_MAX_LENGTH,
+  auditProductStockChange,
+  validatePublicationUpdate,
+} = require('../../services/product-publication-guard');
 
 describe('product-publication-guard', () => {
   it('validatePublicationUpdate laisse passer si le produit reste non publie', () => {
@@ -23,6 +26,75 @@ describe('product-publication-guard', () => {
     expect(validatePublicationUpdate({ before: base, patch: { is_active: true, category: '' } })).toMatchObject({ ok: false, code: 'missing_category' });
     expect(validatePublicationUpdate({ before: base, patch: { is_active: true, price_kmf: 0 } })).toMatchObject({ ok: false, code: 'invalid_price' });
     expect(validatePublicationUpdate({ before: base, patch: { is_active: true, stock: -1 } })).toMatchObject({ ok: false, code: 'invalid_stock' });
+  });
+
+  it('refuse une source étrangère brute à la première activation', () => {
+    const before = {
+      name: 'Gift box product',
+      category: 'Créations personnelles',
+      price_kmf: 15000,
+      stock: 4,
+      is_active: false,
+      is_available: false,
+      content_source: 'connector_raw',
+      source_locale: 'en',
+    };
+    expect(validatePublicationUpdate({ before, patch: { is_active: true } }))
+      .toMatchObject({ ok: false, code: 'enrichment_required' });
+  });
+
+  it('accepte la même source après enrichissement français', () => {
+    const before = {
+      name: 'Coffret cadeau artistique',
+      category: 'Créations personnelles',
+      price_kmf: 15000,
+      stock: 4,
+      is_active: false,
+      is_available: false,
+      content_source: 'ai_enriched',
+      source_locale: 'en',
+    };
+    expect(validatePublicationUpdate({ before, patch: { is_active: true } })).toEqual({ ok: true });
+  });
+
+  it('refuse un titre client trop long ou ressemblant à des métadonnées source', () => {
+    const base = {
+      category: 'Créations personnelles',
+      price_kmf: 15000,
+      stock: 4,
+      is_active: false,
+      is_available: false,
+      content_source: 'ai_enriched',
+      source_locale: 'en',
+    };
+    expect(validatePublicationUpdate({
+      before: { ...base, name: 'x'.repeat(CLIENT_TITLE_MAX_LENGTH + 1) },
+      patch: { is_active: true },
+    })).toMatchObject({ ok: false, code: 'title_too_long' });
+
+    expect(validatePublicationUpdate({
+      before: { ...base, name: 'HK LCSD HKHM SS2 coffret cadeau' },
+      patch: { is_active: true },
+    })).toMatchObject({ ok: false, code: 'title_source_noise' });
+
+    expect(validatePublicationUpdate({
+      before: { ...base, name: 'File:gift-box.jpg' },
+      patch: { is_active: true },
+    })).toMatchObject({ ok: false, code: 'title_source_noise' });
+  });
+
+  it('ne réapplique pas les invariants de première activation aux mises à jour d’un produit déjà actif', () => {
+    const before = {
+      name: 'Titre historique extrêmement long qui reste toléré pendant une simple mise à jour de stock du produit déjà publié',
+      category: 'Maison',
+      price_kmf: 10000,
+      stock: 2,
+      is_active: true,
+      is_available: true,
+      content_source: 'connector_raw',
+      source_locale: 'en',
+    };
+    expect(validatePublicationUpdate({ before, patch: { stock: 3 } })).toEqual({ ok: true });
   });
 
   it('validatePublicationUpdate accepte publication avec stock null et prix strictement positif', () => {
@@ -42,9 +114,9 @@ describe('product-publication-guard', () => {
 
   it('auditProductStockChange insere une alerte avec delta', async () => {
     const q = { query: jest.fn()
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 })     // SAVEPOINT product_stock_audit
-      .mockResolvedValueOnce({ rows: [{ id: 'alert-1' }] }) // INSERT alerts (createAlert)
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }),    // RELEASE SAVEPOINT product_stock_audit
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [{ id: 'alert-1' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }),
     };
 
     await expect(auditProductStockChange(q, { productId: 'prod-001', oldStock: 1, newStock: 4, actor: 'admin', source: 'test', note: 'ok' }))
@@ -57,9 +129,9 @@ describe('product-publication-guard', () => {
 
   it('auditProductStockChange ne bloque pas si alert insert echoue', async () => {
     const q = { query: jest.fn()
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 })  // SAVEPOINT product_stock_audit
-      .mockRejectedValueOnce(new Error('alerts_down'))   // INSERT alerts (createAlert) échoue
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }), // ROLLBACK TO SAVEPOINT product_stock_audit
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockRejectedValueOnce(new Error('alerts_down'))
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }),
     };
 
     await expect(auditProductStockChange(q, { productId: 'prod-001', oldStock: 1, newStock: 4 }))
