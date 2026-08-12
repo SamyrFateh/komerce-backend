@@ -271,11 +271,19 @@ export function handleParticipantUrl() {
     handleTabDeepLink();
     return;
   }
-  // Nettoyer l'URL sans recharger la page
+
+  // P0 — le lien partagé est une adresse de transport autosuffisante.
+  // Ne JAMAIS retirer le token au boot : un WebView WhatsApp peut transmettre
+  // son URL courante à Chrome/Safari sans partager son sessionStorage. Si
+  // `?p=token` était effacé ici, le handoff inter-navigateur perdrait la seule
+  // information permettant de reconstruire la liste côté serveur. On conserve
+  // donc volontairement l'URL complète ; replaceState reste sans navigation et
+  // préserve le contrat historique du bootstrap.
   try {
-    const clean = window.location.origin + window.location.pathname;
-    window.history.replaceState({}, '', clean);
+    const deepLink = new URL(window.location.href);
+    window.history.replaceState({}, '', deepLink.toString());
   } catch (_) {}
+
   // Lien reçu : la boutique reste affichée, la liste se projette dans le
   // side cart / drawer canonique (mandat §1/§4). Aucun onglet dédié.
   document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
@@ -341,6 +349,4 @@ export async function loadRelais() {
     state.relais = [];
   }
 }
-
-
 
