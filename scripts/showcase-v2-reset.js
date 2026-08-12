@@ -10,10 +10,10 @@
  * @depends       db.js
  * @used-by       showcase v2 staging deploy
  * @db-read       products, order_items, sourcing_candidates, supplier_catalog_imports
- * @db-write      products, sourcing_candidates, supplier_catalog_imports
+ * @db-write      order_items, products, sourcing_candidates, supplier_catalog_imports
  * @db-txn        yes
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
- * @version       2026-08-v1
+ * @version       2026-08-v2
  */
 'use strict';
 
@@ -40,23 +40,33 @@ async function snapshot(client) {
        (SELECT COUNT(*)::int FROM products WHERE product_ref LIKE $2) AS v2_products,
        (SELECT COUNT(*)::int FROM sourcing_candidates
           WHERE supplier_name=$3 AND supplier_product_id LIKE $2) AS v2_candidates,
-       (SELECT COUNT(*)::int FROM supplier_catalog_imports WHERE supplier_name=$3) AS v2_imports`,
+       (SELECT COUNT(*)::int FROM supplier_catalog_imports WHERE supplier_name=$3) AS v2_imports,
+       (SELECT COUNT(*)::int
+          FROM order_items oi
+          JOIN products p ON p.id=oi.product_id
+         WHERE p.product_ref LIKE $2) AS v2_order_items`,
     [V1_PATTERN, V2_PATTERN, SUPPLIER_NAME],
   );
   return row;
 }
 
-async function assertNoOrderedV2(client) {
-  const { rows: [row] } = await client.query(
-    `SELECT COUNT(*)::int AS count
-       FROM order_items oi
-       JOIN products p ON p.id=oi.product_id
-      WHERE p.product_ref LIKE $1`,
+/**
+ * Staging Showcase uniquement : l'historique de commande qui référence V2
+ * est jetable entre deux campagnes. On supprime seulement les lignes reliées
+ * aux produits SHOWCASE-V2 ; aucune ligne V1 ni produit réel n'est ciblé.
+ *
+ * Les commandes parentes peuvent rester vides : on préfère ne pas élargir le
+ * rayon destructif du reset à tout le graphe commande/paiement/logistique.
+ */
+async function purgeOrderedV2History(client) {
+  return client.query(
+    `DELETE FROM order_items oi
+      USING products p
+      WHERE oi.product_id=p.id
+        AND p.product_ref LIKE $1
+      RETURNING oi.id, oi.order_id`,
     [V2_PATTERN],
   );
-  if (row.count > 0) {
-    throw new Error(`REFUS reset V2: ${row.count} ligne(s) de commande référencent SHOWCASE-V2`);
-  }
 }
 
 async function resetShowcaseV2() {
@@ -65,7 +75,8 @@ async function resetShowcaseV2() {
   try {
     await client.query('BEGIN');
     const before = await snapshot(client);
-    await assertNoOrderedV2(client);
+
+    const orderItems = await purgeOrderedV2History(client);
 
     // Les events candidats sont ON DELETE CASCADE. Les enfants catalogue V2
     // (SKU, média, contenu...) sont également attachés aux products en CASCADE.
@@ -92,9 +103,9 @@ async function resetShowcaseV2() {
     );
 
     const after = await snapshot(client);
-    if (after.v2_products !== 0 || after.v2_candidates !== 0) {
+    if (after.v2_products !== 0 || after.v2_candidates !== 0 || after.v2_order_items !== 0) {
       throw new Error(
-        `Reset V2 incomplet: products=${after.v2_products}, candidates=${after.v2_candidates}`
+        `Reset V2 incomplet: products=${after.v2_products}, candidates=${after.v2_candidates}, order_items=${after.v2_order_items}`
       );
     }
     if (after.v1_active !== before.v1_active) {
@@ -105,6 +116,7 @@ async function resetShowcaseV2() {
     const result = {
       before,
       deleted: {
+        order_items: orderItems.rowCount,
         candidates: candidates.rowCount,
         products: products.rowCount,
         imports: imports.rowCount,
@@ -142,6 +154,6 @@ module.exports = {
   V2_PATTERN,
   assertStaging,
   snapshot,
-  assertNoOrderedV2,
+  purgeOrderedV2History,
   resetShowcaseV2,
 };
