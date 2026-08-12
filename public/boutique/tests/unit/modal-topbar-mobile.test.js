@@ -177,11 +177,45 @@ describe('topbar mobile canonique — oracle REF-2026-07e', () => {
     expect(shell).toMatch(/\.k-modal-actions\s*\{[^}]*env\(safe-area-inset-bottom/);
   });
 
-  test("le panier revient dans le flux à l'état scrollé et ne masque pas le titre produit", () => {
-    const polish = fs.readFileSync(path.join(ROOT, 'css/modal-product-polish.css'), 'utf8');
-    const rule = polish.match(/#k-modal\.is-scrolled \.k-modal-cart-btn\s*\{([^}]*)\}/)?.[1] ?? '';
-    expect(rule).toMatch(/position\s*:\s*static/);
-    expect(rule).toMatch(/transform\s*:\s*none/);
+  test("le panier reste au centre et le titre respecte sa zone de clearance", () => {
+    const polish = fs.readFileSync(
+      path.join(ROOT, 'css/modal-product-polish.css'),
+      'utf8'
+    );
+
+    const cartRule = polish.match(
+      /#k-modal \.k-modal-cart-btn\s*\{([^}]*)\}/
+    )?.[1] ?? '';
+
+    expect(cartRule).toMatch(/position\s*:\s*absolute/);
+    expect(cartRule).toMatch(/top\s*:\s*50%/);
+    expect(cartRule).toMatch(/left\s*:\s*50%/);
+    expect(cartRule).toMatch(
+      /transform\s*:\s*translate\(-50%,\s*-50%\)/
+    );
+
+    const iconRule = polish.match(
+      /#k-modal \.k-modal-cart-icon\s*\{([^}]*)\}/
+    )?.[1] ?? '';
+
+    expect(iconRule).toMatch(/position\s*:\s*absolute/);
+    expect(iconRule).toMatch(/top\s*:\s*50%/);
+    expect(iconRule).toMatch(/left\s*:\s*50%/);
+    expect(iconRule).toMatch(
+      /transform\s*:\s*translate\(-50%,\s*-50%\)/
+    );
+
+    const productRule = polish.match(
+      /#k-modal\.is-scrolled \.k-modal-topbar-product\s*\{([^}]*)\}/
+    )?.[1] ?? '';
+
+    expect(productRule).toMatch(
+      /max-width\s*:\s*calc\(50%\s*-\s*34px\)/
+    );
+
+    expect(polish).not.toMatch(
+      /#k-modal\.is-scrolled \.k-modal-cart-btn(?::active)?\s*\{/
+    );
   });
 
   test('le bouton retour-haut reste au-dessus de la barre transactionnelle mobile', () => {

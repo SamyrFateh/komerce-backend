@@ -257,15 +257,20 @@
   #k-modal .k-modal-cart-icon {
     width: 31px;
     height: 31px;
+
+    /* L'asset reste centré dans sa propre boîte, indépendamment
+       du badge et des classes has-items / is-empty du bouton. */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
-  /* Au scroll, l'identité produit prend la place centrale. Le panier revient
-     alors dans le groupe d'actions de droite au lieu de flotter sur le titre. */
-
-  /* Le panier reste ancré au centre optique pendant tout le scroll.
-     Aucun changement de propriétaire géométrique en état is-scrolled. */
-
+  /* Le panier garde le centre optique pendant tout le scroll.
+     L'identité produit reste strictement dans la moitié gauche et
+     ne peut jamais passer sous le panier. */
   #k-modal.is-scrolled .k-modal-topbar-product {
+    max-width: calc(50% - 34px);
     margin-left: 0;
     gap: 6px;
   }
@@ -326,16 +331,16 @@
     line-height: 1.25;
     -webkit-line-clamp: 2;
   }
-}
-
-/* ── Desktop ─────────────────────────────────────────────────── */
-
 
   /* Mobile : le ranking reste une donnée de recommandation,
      pas une ligne de texte répétitive dans la carte compacte. */
   #k-modal .k-sug-card-reason {
     display: none;
   }
+}
+
+/* ── Desktop ─────────────────────────────────────────────────── */
+
 
 @media (min-width: 900px) {
   #k-modal .k-modal-promo-badge {
