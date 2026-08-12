@@ -32,6 +32,7 @@ const mockOpenModal = jest.fn();
 const mockToggleFav = jest.fn();
 const mockQuickAdd = jest.fn();
 const mockQuickRemove = jest.fn();
+const mockOpenCartWithHighlight = jest.fn();
 const mockMarkAllCartButtons = jest.fn();
 const mockPruneObsoleteCart = jest.fn();
 const mockShowToast = jest.fn();
@@ -99,6 +100,7 @@ jest.mock('../../js/b-cart.js', () => ({
   toggleFav: mockToggleFav,
   quickAdd: mockQuickAdd,
   quickRemove: mockQuickRemove,
+  openCartWithHighlight: mockOpenCartWithHighlight,
   markAllCartButtons: mockMarkAllCartButtons,
   pruneObsoleteCart: mockPruneObsoleteCart,
 }));
@@ -381,6 +383,20 @@ describe('b-catalog — navigation et recherche', () => {
     card.querySelector('.k-card-add').remove();
     card.click();
     expect(mockOpenModal).toHaveBeenCalledWith('1');
+  });
+
+  test('un contrôle multi-variante ouvre le panier, jamais la modale produit', () => {
+    mockState.activeCat = 'Tech';
+    mockState.filtered = [product(1)];
+    catalog.renderGrid();
+
+    const card = mockDom.grid.querySelector('.k-card');
+    const control = card.querySelector('.k-card-add');
+    control.innerHTML = '<button type="button" data-action="review">3</button>';
+    control.querySelector('[data-action="review"]').click();
+
+    expect(mockOpenCartWithHighlight).toHaveBeenCalledWith('1');
+    expect(mockOpenModal).not.toHaveBeenCalled();
   });
 
   test('route le scroll vers le pager mobile puis une section desktop', () => {

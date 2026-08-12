@@ -12,6 +12,7 @@ const mockOpenModal = jest.fn();
 const mockToggleFav = jest.fn();
 const mockQuickAdd = jest.fn();
 const mockQuickRemove = jest.fn();
+const mockOpenCartWithHighlight = jest.fn();
 const mockBindCarouselDots = jest.fn();
 const mockGetSubcategories = jest.fn(() => [
   { key: 'fruits', label: 'Fruits', icon: '🍎' },
@@ -42,6 +43,7 @@ jest.mock('../../js/b-cart.js', () => ({
   toggleFav: mockToggleFav,
   quickAdd: mockQuickAdd,
   quickRemove: mockQuickRemove,
+  openCartWithHighlight: mockOpenCartWithHighlight,
 }));
 jest.mock('../../js/b-cart-core.js', () => ({ showToast: jest.fn() }));
 jest.mock('../../js/shop-schema.js', () => ({

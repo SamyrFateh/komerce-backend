@@ -38,7 +38,7 @@ import {
 }                         from './b-pager.js';
 import { _renderCard, renderGrid } from './b-catalog.js';
 import { openModal }               from './b-modal.js';
-import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
+import { toggleFav, quickAdd, quickRemove, openCartWithHighlight } from './b-cart.js';
 import { isDesktop }               from './b-scroll-owner.js';
 
 
@@ -120,9 +120,19 @@ import { isDesktop }               from './b-scroll-owner.js';
     dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(function(btn) {
       btn.dataset.bound = '1';
       btn.addEventListener('click', function(e) {
+        e.preventDefault();
         e.stopPropagation();
-        if (e.target.closest('.k-add-minus')) { quickRemove(btn.dataset.add, btn); }
-        else { quickAdd(btn.dataset.add, btn); }
+        const actionBtn = e.target.closest('button[data-action]');
+        const action = actionBtn?.dataset.action;
+        if (action === 'review') {
+          openCartWithHighlight(btn.dataset.add);
+        } else if (action === 'decrement' || e.target.closest('.k-add-minus')) {
+          quickRemove(btn.dataset.add, actionBtn || btn);
+        } else if (action === 'add' && btn.dataset.hasVariants === '1') {
+          quickAdd(btn.dataset.add, actionBtn, { hasVariants: true });
+        } else {
+          quickAdd(btn.dataset.add, actionBtn || btn);
+        }
       });
     });
   }

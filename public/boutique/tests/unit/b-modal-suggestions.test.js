@@ -9,6 +9,7 @@
 jest.mock('../../js/b-cart.js', () => ({
   quickAdd: jest.fn(),
   quickRemove: jest.fn(),
+  openCartWithHighlight: jest.fn(),
 }));
 
 jest.mock('../../js/b-scroll-owner.js', () => ({
@@ -48,7 +49,7 @@ jest.mock('../../js/view-models/product-card-view-model.js', () => ({
 
 const { state, dom } = require('../../js/b-store.js');
 const { bus } = require('../../js/b-bus.js');
-const { quickAdd, quickRemove } = require('../../js/b-cart.js');
+const { quickAdd, quickRemove, openCartWithHighlight } = require('../../js/b-cart.js');
 const { isDesktop } = require('../../js/b-scroll-owner.js');
 const { renderSuggestions } = require('../../js/b-modal-suggestions.js');
 
@@ -174,6 +175,13 @@ describe('b-modal-suggestions — renderer et délégation uniques', () => {
     expect(actions.querySelector('[data-action="review"]')).not.toBeNull();
     expect(actions.textContent).toContain('5');
     expect(actions.querySelector('.k-sug-minus')).toBeNull();
+
+    const emitSpy = jest.spyOn(bus, 'emit');
+    actions.querySelector('[data-action="review"]')
+      .dispatchEvent(new window.Event('click', { bubbles: true }));
+    expect(openCartWithHighlight).toHaveBeenCalledWith('7');
+    expect(emitSpy).not.toHaveBeenCalledWith('modal:open', expect.anything());
+    emitSpy.mockRestore();
   });
 });
 

@@ -18,7 +18,7 @@ import { bus } from './b-bus.js';
 import { state, dom, modalZone } from './b-store.js';
 import { sanitize } from './b-utils.js';
 import { isDesktop } from './b-scroll-owner.js';
-import { quickAdd, quickRemove } from './b-cart.js';
+import { quickAdd, quickRemove, openCartWithHighlight } from './b-cart.js';
 import { getProductCartSummary } from './cart-product-summary.js';
 import { renderProductCard, renderAddControl } from './render/render-product-card.js';
 
@@ -148,7 +148,7 @@ function _installSuggestionDelegation(root) {
         quickRemove(pid, actionButton);
         _syncSuggestionControls(pid);
       } else if (action === 'review') {
-        bus.emit('modal:open', { id: pid });
+        openCartWithHighlight(pid);
       } else if (action === 'increment') {
         quickAdd(pid, actionButton);
         _syncSuggestionControls(pid);

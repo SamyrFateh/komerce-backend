@@ -84,6 +84,8 @@ describe('renderProductCard — contrôle panier neutre', () => {
     expect(html).toContain('data-cart-lines="2"');
     expect(html).toContain('data-action="review"');
     expect(html).toContain('quantité totale 6');
+    expect(html).toContain('Modifier dans le panier');
+    expect(html).toContain('k-card-add-review-icon');
     expect(html).not.toContain('k-add-minus');
   });
 

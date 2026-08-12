@@ -229,17 +229,28 @@
 
 /* Plusieurs variantes : conserve exactement le même slot transactionnel. */
 #k-modal .k-sug-card-actions.has-multiple-lines .k-card-add-review {
-  width: var(--k-sug-action-height);
+  width: auto;
+  min-width: calc(var(--k-sug-action-height) + 16px);
   height: var(--k-sug-action-height);
   margin-left: auto;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   border: 1px solid var(--cta-green);
-  border-radius: 50%;
+  border-radius: 999px;
   background: var(--cta-green);
   color: var(--white);
 }
 
 #k-modal .k-sug-card-actions.has-multiple-lines .k-sug-qty {
   color: var(--white);
+}
+
+#k-modal .k-sug-card-actions.has-multiple-lines .k-card-add-review-icon {
+  color: var(--white);
+  font-size: 12px;
 }
 
 /* ── Mobile ──────────────────────────────────────────────────── */

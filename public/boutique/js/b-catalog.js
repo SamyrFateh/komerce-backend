@@ -44,7 +44,7 @@ import {
 import {
   renderCartBody,
   toggleFav, quickAdd, quickRemove, markAllCartButtons,
-  pruneObsoleteCart,
+  pruneObsoleteCart, openCartWithHighlight,
 }                         from './b-cart.js';
 import {
   initFlatSubcat, renderSubcatChips,
@@ -611,7 +611,10 @@ function _installGridDelegation() {
       if (action === 'decrement') {
         quickRemove(id, actionBtn);
       } else if (action === 'review') {
-        openModal(id);
+        // Plusieurs lignes variantes ne forment pas un stepper agrégé fiable :
+        // chaque +/- doit viser une ligne exacte. Ouvrir le panier permet cette
+        // modification sans transformer le contrôle quantité en raccourci PDP.
+        openCartWithHighlight(id);
       } else if (addControl.dataset.hasVariants === '1') {
         quickAdd(id, actionBtn, { hasVariants: true });
       } else {

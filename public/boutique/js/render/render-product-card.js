@@ -86,11 +86,12 @@ export function renderAddControl(productId, cartState, safeName, variant) {
   }
 
   // Plusieurs lignes (ex. plusieurs tailles/couleurs) : afficher le total sans
-  // proposer un +/- trompeur. Le clic ouvre la fiche pour modifier précisément.
+  // proposer un +/- trompeur. Le clic ouvre les lignes exactes dans le panier.
   if (qty > 0) {
     return (
-      `<button type="button" class="${addClass} k-card-add-review" data-action="review" aria-label="Modifier les variantes de ${label}, quantité totale ${qty}">` +
+      `<button type="button" class="${addClass} k-card-add-review" data-action="review" aria-label="Modifier dans le panier les variantes de ${label}, quantité totale ${qty}">` +
         `<span class="${qtyClass}" aria-hidden="true">${qty}</span>` +
+        `<span class="k-card-add-review-icon" aria-hidden="true">✎</span>` +
       `</button>`
     );
   }
