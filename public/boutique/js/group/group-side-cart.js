@@ -384,6 +384,18 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
   const previousToken = state.sharedListContext.token;
   const nextToken = cart.token || token;
 
+  // P0 — invariant de lifecycle : seule une liste OPEN peut occuper
+  // la surface canonique shared-list. Un snapshot terminal reçu pendant
+  // le polling doit démonter immédiatement CETTE liste au lieu de la
+  // rerendre en lecture seule avec un reliquat / CTA incohérents.
+  const nextStatus = String(cart.status || '').toLowerCase();
+  if (nextStatus !== 'open') {
+    if (previousToken && previousToken === nextToken) {
+      clearSharedListContext();
+    }
+    return;
+  }
+
   const items = Array.isArray(data.items) ? data.items : [];
   const contributors = Array.isArray(data.contributors) ? data.contributors : [];
   const signature = computeSnapshotSignature(cart, items, contributors);
@@ -393,12 +405,9 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
   state.sharedListContext = {
     sharedCartId: cart.id ?? state.sharedListContext.sharedCartId,
     token: nextToken,
-    // É3 fail-closed — un payload sans statut est traité comme CLOSED,
-    // jamais comme OPEN (un statut absent ne peut pas accorder des droits
-    // d'achat ; l'inverse aurait exposé des boutons Acheter sur une liste
-    // potentiellement fermée). Le chemin normal passe toujours la garde de
-    // activateFromParticipantUrl avant d'arriver ici.
-    status: cart.status || 'closed',
+    // É3 fail-closed — le statut a déjà été normalisé et validé plus haut.
+    // Seul "open" peut atteindre ce contexte actif.
+    status: nextStatus,
     isCreator: !!data.is_creator,
     creatorFirstName: cart.creator_first_name || null,
     // GAP-05 (Lot 2) — [{first_name, items_count}], jamais présent côté
@@ -470,7 +479,9 @@ export async function refreshSharedListContext() {
  * @returns {boolean}
  */
 export function isSharedListSurfaceActive() {
-  return state.cartSurface === 'shared-list' && isActiveContext();
+  return state.cartSurface === 'shared-list'
+    && isActiveContext()
+    && state.sharedListContext?.status === 'open';
 }
 
 /**
@@ -762,7 +773,7 @@ function buildSnapshotRenderActions() {
  * direct depuis Lot D+ (correctif cycle d'import, voir en-tête fichier).
  */
 export function renderSharedListInCart() {
-  if (!isActiveContext() || state.cartSurface !== 'shared-list') return;
+  if (!isSharedListSurfaceActive()) return;
 
   bus.emit('cart-snapshot:render', {
     context: buildSnapshotRenderContext(),

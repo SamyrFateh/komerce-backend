@@ -787,12 +787,11 @@ describe('b-cart', () => {
       expect(dom.cartBody.textContent).not.toMatch(/Commander \(/);
     });
 
-    // Mandat §4 — une liste fermée est entièrement non opérationnelle :
-    // aucun CTA d'achat, ni par ligne ni global, jamais laissé actif. Bug
-    // réel trouvé en test Playwright contre un serveur/DB réel (invisible
-    // aux tests jsdom précédents) : un CTA restait affiché et cliquable
-    // sur une liste fermée.
-    it('liste clôturée (readOnly) → aucune case à cocher, "Commander" absent, même avec des lignes disponibles (§8 — Clôturer)', () => {
+    // P0 lifecycle — CLOSED n'est plus un état visuel du panier canonique.
+    // Le contrôleur shared-list doit filtrer l'état terminal AVANT le rendu :
+    // aucun snapshot, reliquat ou CTA "Liste clôturée" ne doit atteindre
+    // b-cart.js.
+    it('liste clôturée → aucun snapshot terminal n’atteint le chrome panier', () => {
       activateList({
         isCreator: true,
         cart: { status: 'closed' },
@@ -800,12 +799,20 @@ describe('b-cart', () => {
           { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
         ],
       });
+
+      expect(state.cartSurface).toBe('personal');
+      expect(state.sharedListContext.token).toBeNull();
+
+      expect(
+        document.querySelectorAll('.k-cart-snapshot-item')
+      ).toHaveLength(0);
+
       expect(dom.cartBody.querySelector('.k-cart-item-select')).toBeNull();
       expect(findButtonByText('Tout sélectionner')).toBeNull();
+      expect(findButtonByText('Liste clôturée')).toBeNull();
+
       expect(dom.cartBody.textContent).not.toMatch(/Commander \(/);
-      const closeLink = findButtonByText('Liste clôturée');
-      expect(closeLink).not.toBeNull();
-      expect(closeLink.disabled).toBe(true);
+      expect(dom.cartBody.textContent).not.toMatch(/Reste\s*:/i);
     });
 
     it('participant (non organisateur) : lecture seule, aucun contrôle d\'édition, mais garde sa case à cocher par ligne', () => {
