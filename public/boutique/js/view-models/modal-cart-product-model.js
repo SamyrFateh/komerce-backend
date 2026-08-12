@@ -7,7 +7,7 @@
  * @inputs        catalog_product, product_detail_v1, modal_selection_state
  * @outputs       cart_product_snapshot
  * @depends       none
- * @used-by       b-modal-cart.js, b-modal-buybox-shared.js
+ * @used-by       b-modal-cart.js, b-modal-buybox-shared.js, b-modal-mobile-product.js, b-modal-desktop-product.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -24,6 +24,34 @@ function activeSellableUnit(detail, selection) {
   return (detail?.sellable_units || []).find(
     (unit) => String(unit.sku_id) === String(selectedSkuId)
   ) || null;
+}
+
+/**
+ * Frontiere transactionnelle unique de la modale produit.
+ *
+ * - SKU : une unite vendable reelle et disponible doit etre resolue ;
+ * - LEGACY_VARIANTS avec axes : le contrat sait qu'un choix existe mais ne
+ *   sait pas le convertir en SKU canonique, donc l'achat reste bloque ;
+ * - SIMPLE / legacy sans axe : le produit parent reste l'unite vendable.
+ *
+ * Le second cas est volontairement fail-closed : fabriquer un faux SKU depuis
+ * les anciens axes remettrait exactement la divergence stock/prix que le
+ * Product Detail Contract est charge d'eliminer.
+ */
+export function isModalPurchaseReady(product, detail, selection) {
+  if (!product || !detail || !detail.inventory_model) return false;
+
+  if (detail.inventory_model === 'SKU') {
+    const unit = activeSellableUnit(detail, selection);
+    return Boolean(unit && unit.stock_status !== 'OUT_OF_STOCK');
+  }
+
+  const hasLegacyOptions = Boolean(product.has_variants)
+    || (Array.isArray(detail.option_axes) && detail.option_axes.length > 0);
+  if (detail.inventory_model === 'LEGACY_VARIANTS' && hasLegacyOptions) return false;
+
+  return detail.inventory_model === 'SIMPLE'
+    || detail.inventory_model === 'LEGACY_VARIANTS';
 }
 
 /**

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_detail_v1, modal_selection_state
  * @outputs       desktop_product_modal_dom
- * @depends       b-store.js, b-utils.js, b-scroll-owner.js, b-modal-product.js, b-modal-image-ux.js, view-models/modal-selection-model.js, view-models/product-content-model.js
+ * @depends       b-store.js, b-utils.js, b-scroll-owner.js, b-modal-product.js, b-modal-image-ux.js, view-models/modal-selection-model.js, view-models/modal-cart-product-model.js, view-models/product-content-model.js
  * @used-by       b-modal-product-detail-bootstrap.js
  * @db-read       none
  * @db-write      none
@@ -36,6 +36,7 @@ import {
   shouldOfferReadMore,
   CONTENT_LABELS,
 } from './view-models/product-content-model.js';
+import { isModalPurchaseReady } from './view-models/modal-cart-product-model.js';
 
 let _qtyObserver = null;
 let _qtyObservedEl = null;
@@ -166,7 +167,12 @@ function renderStock(selection) {
 
 function renderActions(detail, selection) {
   const isSku = detail.inventory_model === 'SKU';
-  const enabled = !isSku || Boolean(selection.selected_sku_id);
+  const enabled = isModalPurchaseReady(state.modalProduct || detail.product, detail, selection);
+  const message = document.getElementById('k-modal-selection-message');
+  if (!enabled && !isSku && message) {
+    message.textContent = 'Choix d’option momentanément indisponible — achat désactivé.';
+    message.hidden = false;
+  }
   // Mandat §3.2 — remplacement, jamais coexistence. En mode édition d'une
   // liste dont l'utilisateur est le créateur, "Ajouter au panier" et
   // "Acheter maintenant" doivent disparaître (pas seulement se désactiver)
@@ -187,7 +193,7 @@ function renderActions(detail, selection) {
   // uniquement pour l'inventaire historique/non-SKU où cette mutation reste valide.
   [dom.qtyMinus, dom.qtyPlus].forEach((control) => {
     if (!control) return;
-    control.disabled = isSku;
+    control.disabled = isSku || !enabled;
   });
 
   wireBuyNowButton(document.getElementById('k-buy-now-btn'));

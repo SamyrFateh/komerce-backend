@@ -163,7 +163,10 @@ describe('b-modal-mobile-product — renderActions (CTA + stepper, PDC-6)', () =
   });
 
   test('SKU résolu (selected_sku_id présent) : CTA actif, mais stepper TOUJOURS verrouillé', () => {
-    const detail = baseDetail({ inventory_model: 'SKU' });
+    const detail = baseDetail({
+      inventory_model: 'SKU',
+      sellable_units: [{ sku_id: 'sku-42', stock_status: 'AVAILABLE' }],
+    });
     const selection = baseSelection({ selected_sku_id: 'sku-42' });
 
     renderMobileProductDetail(detail, selection);
@@ -172,6 +175,21 @@ describe('b-modal-mobile-product — renderActions (CTA + stepper, PDC-6)', () =
     // Preuve : aucune mutation panier "product-id first" possible même une
     // fois le SKU résolu — le stepper reste hors service en SKU.
     stepperControls().forEach((btn) => expect(btn.disabled).toBe(true));
+  });
+
+  test('LEGACY_VARIANTS avec options : CTA et stepper bloqués avec message explicite', () => {
+    const detail = baseDetail({
+      inventory_model: 'LEGACY_VARIANTS',
+      option_axes: [{ key: 'Pointure', display_name: 'Pointure', values: [] }],
+    });
+    const selection = baseSelection();
+
+    renderMobileProductDetail(detail, selection);
+
+    transactionalControls().forEach((btn) => expect(btn.disabled).toBe(true));
+    stepperControls().forEach((btn) => expect(btn.disabled).toBe(true));
+    expect(document.getElementById('k-modal-selection-message').textContent)
+      .toContain('achat désactivé');
   });
 });
 

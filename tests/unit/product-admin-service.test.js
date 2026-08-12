@@ -65,8 +65,30 @@ describe('product-admin-service', () => {
 
     await expect(svc.createProduct(db, { name: 'Riz', category: 'food', price_kmf: 1000, stock: 5 }, { id: 'admin' }))
       .resolves.toEqual({ status: 201, body: product });
+    const insertCall = db.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO products'));
+    expect(insertCall[0]).toContain('is_available');
+    expect(insertCall[0]).toContain('is_active');
+    expect(insertCall[1]).toEqual(expect.arrayContaining([false, false]));
     expect(recordProductPriceChange).toHaveBeenCalledWith(db, expect.objectContaining({ productId: 'prod-001', oldPriceKmf: 0, newPriceKmf: 1000 }));
     expect(auditProductStockChange).toHaveBeenCalledWith(db, expect.objectContaining({ productId: 'prod-001', oldStock: null, newStock: 5 }));
+  });
+
+  it('createProduct ne publie que sur demande explicite et passe alors par le garde', async () => {
+    const product = { id: 'prod-002', name: 'Riz premium', category: 'food', price_kmf: 2000, is_active: true, is_available: true };
+    const db = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ key: 'food' }] })
+      .mockResolvedValueOnce({ rows: [product] }) };
+
+    await expect(svc.createProduct(db, {
+      name: 'Riz premium', category: 'food', price_kmf: 2000,
+      is_active: true, is_available: true,
+    }, { id: 'admin' })).resolves.toEqual({ status: 201, body: product });
+
+    expect(validatePublicationUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      patch: expect.objectContaining({ is_active: true, is_available: true }),
+    }));
+    const insertCall = db.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO products'));
+    expect(insertCall[1]).toEqual(expect.arrayContaining([true, true]));
   });
 
   it('updateProduct retourne 404 si produit introuvable', async () => {

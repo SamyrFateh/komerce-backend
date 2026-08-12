@@ -18,7 +18,10 @@
 import { bus } from './b-bus.js';
 import { state, dom, getRequestedTransportRail } from './b-store.js';
 import { addToCart, quickAdd, quickRemove } from './b-cart.js';
-import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
+import {
+  buildModalCartProduct,
+  isModalPurchaseReady,
+} from './view-models/modal-cart-product-model.js';
 
 let _selectionReconcileInstalled = false;
 let _detailReadyReconcileInstalled = false;
@@ -106,7 +109,12 @@ function _syncModalQtyUI() {
   const item = currentModalCartItem();
   const inventoryModel = state.modalProductDetail?.inventory_model;
   const isSku = inventoryModel === 'SKU';
-  const canUseProductStepper = Boolean(inventoryModel) && !isSku;
+  const purchaseReady = isModalPurchaseReady(
+    state.modalProduct,
+    state.modalProductDetail,
+    state.modalSelection
+  );
+  const canUseProductStepper = purchaseReady && !isSku;
 
   // Pour un SKU, le stepper est interdit : l'intention d'un clic CTA reste donc
   // toujours une unité. Avant résolution du contrat, le chemin reste fail-closed.
@@ -180,6 +188,11 @@ function setupModalCart() {
 
   dom.addCartBtn.addEventListener('click', () => {
     if (!state.modalProduct || dom.addCartBtn.disabled || dom.addCartBtn.classList.contains('confirmed')) return;
+    if (!isModalPurchaseReady(
+      state.modalProduct,
+      state.modalProductDetail,
+      state.modalSelection
+    )) return;
     const cartProduct = buildModalCartProduct(
       state.modalProduct,
       state.modalProductDetail,

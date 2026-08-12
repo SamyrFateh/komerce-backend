@@ -988,7 +988,11 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
    */
   function applySnapshotDrawerFooter(context, items, actions) {
     const header = document.getElementById('k-cart-header');
-    applySnapshotStatusBadge(header, 'k-cart-snapshot-status', context, '#k-cart-close');
+    // Le drawer mobile porte déjà "Ma liste" / "Liste de …" : le badge
+    // Ouverte/Clôturée ajoutait un libellé d'administration dans le parcours
+    // client. Le side-cart desktop conserve son statut compact ; le drawer le
+    // retire explicitement, y compris après un rendu précédent.
+    header?.querySelector('#k-cart-snapshot-status')?.remove();
     applySnapshotContributorsSummary(header, 'k-cart-snapshot-status', 'k-cart-snapshot-contributors', context);
 
     if (!dom.cartFooter) return;

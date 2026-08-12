@@ -36,6 +36,7 @@ jest.mock('../../services/transport-rails', () => ({
   listCommercialTransportRails: jest.fn(),
 }));
 
+const db = require('../../db');
 const { listCommercialTransportRails } = require('../../services/transport-rails');
 const { getProductDetail } = require('../../services/catalog-product-detail');
 const {
@@ -65,27 +66,40 @@ function promotedRowsFromContract() {
 function mockDbRich() {
   const { profileRow, sectionRows, attributeRows } = promotedRowsFromContract();
   return {
-    query: jest.fn()
-      .mockResolvedValueOnce({ rows: [golden.productRow()] })
-      .mockResolvedValueOnce({ rows: golden.variantRows() })
-      .mockResolvedValueOnce({ rows: golden.skuRows() })
-      .mockResolvedValueOnce({ rows: golden.catalogMediaRows() })
-      .mockResolvedValueOnce({ rows: golden.skuMediaRows() })
-      .mockResolvedValueOnce({ rows: [profileRow] })
-      .mockResolvedValueOnce({ rows: sectionRows })
-      .mockResolvedValueOnce({ rows: attributeRows }),
+    query: jest.fn(async (sql) => {
+      if (sql.includes('FROM products')) return { rows: [golden.productRow()] };
+      if (sql.includes('FROM product_variants')) return { rows: golden.variantRows() };
+      if (sql.includes('FROM product_skus')) return { rows: golden.skuRows() };
+      if (sql.includes('FROM catalog_media')) return { rows: golden.catalogMediaRows() };
+      if (sql.includes('FROM product_sku_media')) return { rows: golden.skuMediaRows() };
+      if (sql.includes('FROM product_content_profile')) return { rows: [profileRow] };
+      if (sql.includes('FROM product_content_sections')) return { rows: sectionRows };
+      if (sql.includes('FROM product_attributes')) return { rows: attributeRows };
+      throw new Error(`Requête SQL inattendue dans mockDbRich: ${sql}`);
+    }),
   };
 }
 
 function mockDbPoor() {
+  const poorProduct = {
+    ...golden.productRow(),
+    id: 'bbbbbbbb-2222-4bbb-8bbb-bbbbbbbb0001',
+    product_ref: 'POOR-1',
+    has_variants: false,
+    inventory_model: 'LEGACY_VARIANTS',
+  };
   return {
-    query: jest.fn()
-      .mockResolvedValueOnce({ rows: [{ ...golden.productRow(), id: 'bbbbbbbb-2222-4bbb-8bbb-bbbbbbbb0001', product_ref: 'POOR-1', has_variants: false, inventory_model: 'LEGACY_VARIANTS' }] })
-      .mockResolvedValueOnce({ rows: [] }) // variants
-      .mockResolvedValueOnce({ rows: [] }) // catalog_media
-      .mockResolvedValueOnce({ rows: [] }) // content_profile
-      .mockResolvedValueOnce({ rows: [] }) // content_sections
-      .mockResolvedValueOnce({ rows: [] }), // content_attributes
+    query: jest.fn(async (sql) => {
+      if (sql.includes('FROM products')) return { rows: [poorProduct] };
+      if (
+        sql.includes('FROM product_variants')
+        || sql.includes('FROM catalog_media')
+        || sql.includes('FROM product_content_profile')
+        || sql.includes('FROM product_content_sections')
+        || sql.includes('FROM product_attributes')
+      ) return { rows: [] };
+      throw new Error(`Requête SQL inattendue dans mockDbPoor: ${sql}`);
+    }),
   };
 }
 
@@ -94,6 +108,7 @@ describe('Lot Content — preuve E2E Golden Product enrichi (commit 5)', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    db.query.mockResolvedValue({ rows: [] });
     listCommercialTransportRails.mockReturnValue(golden.commercialTransportRails());
     detail = await getProductDetail(mockDbRich(), golden.PRODUCT_ID);
   });

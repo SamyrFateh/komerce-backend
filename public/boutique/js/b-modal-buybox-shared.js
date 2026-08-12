@@ -37,7 +37,10 @@ import { fmtPrice } from './b-utils.js';
 import { closeModal } from './b-modal.js';
 import { addToCart, openCart } from './b-cart.js';
 import { state, getRequestedTransportRail } from './b-store.js';
-import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
+import {
+  buildModalCartProduct,
+  isModalPurchaseReady,
+} from './view-models/modal-cart-product-model.js';
 
 function currentCartProduct(product = state.modalProduct) {
   return buildModalCartProduct(
@@ -62,6 +65,11 @@ export function wireBuyNowButton(buyNowBtn) {
   if (!buyNowBtn) return;
   buyNowBtn.onclick = () => {
     if (!state.modalProduct) return;
+    if (!isModalPurchaseReady(
+      state.modalProduct,
+      state.modalProductDetail,
+      state.modalSelection
+    )) return;
 
     // 1. Feedback visuel immédiat : bouton se transforme en "✓ Ajouté !"
     const originalContent = buyNowBtn.innerHTML;

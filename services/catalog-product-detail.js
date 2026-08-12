@@ -416,35 +416,73 @@ async function getProductDetail(dbClient, productId) {
   );
   if (!product) return null;
 
-  const { rows: variantRows } = await dbClient.query(
-    `SELECT variant_type, variant_value, image_url, images, display_order
-       FROM product_variants
-      WHERE product_id = $1
-      ORDER BY variant_type, display_order ASC, variant_value ASC`,
-    [productId]
-  );
-
-  let skuRows = [];
-  if (product.inventory_model === 'SKU') {
-    const result = await dbClient.query(
-      `SELECT id, sku, variant_combo, stock, price_kmf
-         FROM product_skus
-        WHERE product_id = $1 AND is_active = TRUE
-        ORDER BY created_at ASC, id ASC`,
+  // Toutes ces lectures sont indépendantes une fois le produit parent résolu.
+  // Les exécuter séquentiellement ajoutait un aller-retour DB par bloc (jusqu'à
+  // huit sur une fiche enrichie) et maintenait la modale au skeleton alors que
+  // son image catalogue était déjà peinte. Une seule vague concurrente garde
+  // exactement les mêmes autorités et réduit le chemin critique au plus lent
+  // des blocs, pas à leur somme.
+  const [
+    { rows: variantRows },
+    { rows: skuRows },
+    { rows: catalogMediaRows },
+    { rows: [profileRow] },
+    { rows: sectionRows },
+    { rows: attributeRows },
+    seaKmfPerKgCommercial,
+    airKmfPerKgTaxable,
+    airVolumetricDivisor,
+  ] = await Promise.all([
+    dbClient.query(
+      `SELECT variant_type, variant_value, image_url, images, display_order
+         FROM product_variants
+        WHERE product_id = $1
+        ORDER BY variant_type, display_order ASC, variant_value ASC`,
       [productId]
-    );
-    skuRows = result.rows;
-  }
+    ),
+    product.inventory_model === 'SKU'
+      ? dbClient.query(
+        `SELECT id, sku, variant_combo, stock, price_kmf
+           FROM product_skus
+          WHERE product_id = $1 AND is_active = TRUE
+          ORDER BY created_at ASC, id ASC`,
+        [productId]
+      )
+      : Promise.resolve({ rows: [] }),
+    dbClient.query(
+      `SELECT id, url, role, alt, option_values
+         FROM catalog_media
+        WHERE product_id = $1 AND is_active = TRUE
+        ORDER BY display_order ASC NULLS LAST, created_at ASC`,
+      [productId]
+    ),
+    dbClient.query(
+      `SELECT brand, short_description, source, enrichment_version, reviewed
+         FROM product_content_profile
+        WHERE product_id = $1`,
+      [productId]
+    ),
+    dbClient.query(
+      `SELECT section_key, title, section_type, content_json, display_order
+         FROM product_content_sections
+        WHERE product_id = $1 AND is_active = TRUE
+        ORDER BY display_order ASC, section_key ASC`,
+      [productId]
+    ),
+    dbClient.query(
+      `SELECT kind, group_key, attribute_key, label, value_text, unit, display_order
+         FROM product_attributes
+        WHERE product_id = $1 AND is_active = TRUE
+        ORDER BY kind ASC, display_order ASC, attribute_key ASC`,
+      [productId]
+    ),
+    getRule('SEA_KMF_PER_KG_COMMERCIAL', 65),
+    getRule('AIR_KMF_PER_KG_TAXABLE', 2500),
+    getRule('AIR_VOLUMETRIC_DIVISOR', 6000),
+  ]);
 
   // Média canonique (PDC-8) prioritaire ; fallback legacy uniquement si le
   // produit n'a jamais été promu — jamais un mélange des deux sources.
-  const { rows: catalogMediaRows } = await dbClient.query(
-    `SELECT id, url, role, alt, option_values
-       FROM catalog_media
-      WHERE product_id = $1 AND is_active = TRUE
-      ORDER BY display_order ASC NULLS LAST, created_at ASC`,
-    [productId]
-  );
   const canonicalMedia = buildCanonicalMedia(catalogMediaRows);
   const usingCanonicalMedia = canonicalMedia.length > 0;
   const media = usingCanonicalMedia ? canonicalMedia : buildMedia(product, variantRows);
@@ -466,42 +504,8 @@ async function getProductDetail(dbClient, productId) {
     }
   }
 
-  // Contenu éditorial canonique — jamais depuis raw_payload ni
-  // normalized_source_contract, toujours depuis les tables promues.
-  const { rows: [profileRow] } = await dbClient.query(
-    `SELECT brand, short_description, source, enrichment_version, reviewed
-       FROM product_content_profile
-      WHERE product_id = $1`,
-    [productId]
-  );
-
-  const { rows: sectionRows } = await dbClient.query(
-    `SELECT section_key, title, section_type, content_json, display_order
-       FROM product_content_sections
-      WHERE product_id = $1 AND is_active = TRUE
-      ORDER BY display_order ASC, section_key ASC`,
-    [productId]
-  );
-
-  const { rows: attributeRows } = await dbClient.query(
-    `SELECT kind, group_key, attribute_key, label, value_text, unit, display_order
-       FROM product_attributes
-      WHERE product_id = $1 AND is_active = TRUE
-      ORDER BY kind ASC, display_order ASC, attribute_key ASC`,
-    [productId]
-  );
-
   // Mêmes clés/fallbacks que routes/orders/create.js — un seul point de
   // vérité pour les tarifs commerciaux transport (business_rules).
-  const [
-    seaKmfPerKgCommercial,
-    airKmfPerKgTaxable,
-    airVolumetricDivisor,
-  ] = await Promise.all([
-    getRule('SEA_KMF_PER_KG_COMMERCIAL', 65),
-    getRule('AIR_KMF_PER_KG_TAXABLE', 2500),
-    getRule('AIR_VOLUMETRIC_DIVISOR', 6000),
-  ]);
   const transportRates = {
     SEA_KMF_PER_KG_COMMERCIAL: seaKmfPerKgCommercial,
     AIR_KMF_PER_KG_TAXABLE: airKmfPerKgTaxable,

@@ -70,6 +70,26 @@ describe('b-modal-buybox-shared — achat immédiat', () => {
     expect(addToCart).not.toHaveBeenCalled();
   });
 
+  test('bloque toute mutation si le SKU manque ou si les variantes restent legacy', () => {
+    const button = document.createElement('button');
+    state.modalProduct = { id: 1, has_variants: true };
+    state.modalProductDetail = {
+      inventory_model: 'SKU',
+      sellable_units: [{ sku_id: 'sku-1', stock_status: 'AVAILABLE' }],
+    };
+    state.modalSelection = { selected_sku_id: null };
+    wireBuyNowButton(button);
+    button.click();
+
+    state.modalProductDetail = {
+      inventory_model: 'LEGACY_VARIANTS',
+      option_axes: [{ key: 'Pointure' }],
+    };
+    button.click();
+
+    expect(addToCart).not.toHaveBeenCalled();
+  });
+
   test('Buy Now ajoute le snapshot SKU puis restaure le bouton et ouvre le panier', () => {
     jest.useFakeTimers();
     installSkuState();

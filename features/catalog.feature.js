@@ -115,6 +115,7 @@ module.exports = {
       // Rattaché (B1, 2026-07-29) : audit d'import, catalogué à tort dans
       // komerce-schema — suit services/suppliers/json-source-pipeline.js.
       'migrations/110_catalog_import_audit.sql',
+      'migrations/130_deactivate_catalog_test_placeholders.sql',
     ],
     config: [
       // Rattaché (B1, 2026-07-29) : profil de test dummyjson, catalogué à tort
@@ -207,6 +208,7 @@ module.exports = {
       'tests/unit/product-publication-guard.test.js',
       'tests/unit/products.test.js',
       'tests/unit/catalog-product-detail.test.js',
+      'tests/unit/catalog-test-placeholder-migration.test.js',
       'tests/unit/modal-mobile-canonical.test.js',
       'tests/unit/supplier-catalog-scanner.test.js',
       'tests/unit/catalog-import-orchestrator.test.js',

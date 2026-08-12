@@ -211,12 +211,23 @@ describe('desktop product detail renderer', () => {
   });
 
   test('LEGACY_VARIANTS (non-SKU) : CTA actif et stepper autorisé', () => {
-    const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
+    const product = detail({ inventory_model: 'LEGACY_VARIANTS', option_axes: [] });
     renderDesktopProductDetail(product, createModalSelection(product));
 
     expect(dom.addCartBtn.disabled).toBe(false);
     expect(document.getElementById('k-buy-now-btn').disabled).toBe(false);
     stepperControls().forEach((control) => expect(control.disabled).toBe(false));
+  });
+
+  test('LEGACY_VARIANTS avec options : achat et stepper bloqués sans faux SKU', () => {
+    const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(dom.addCartBtn.disabled).toBe(true);
+    expect(document.getElementById('k-buy-now-btn').disabled).toBe(true);
+    stepperControls().forEach((control) => expect(control.disabled).toBe(true));
+    expect(document.getElementById('k-modal-selection-message').textContent)
+      .toContain('achat désactivé');
   });
 
   test('SKU sans selected_sku_id : CTA verrouillé ET stepper verrouillé', () => {

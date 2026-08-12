@@ -310,6 +310,30 @@ describe('catalog product detail contract v1', () => {
     expect(db.query).toHaveBeenCalledTimes(1);
   });
 
+  test('lance les lectures détail indépendantes sans attendre la plus lente', async () => {
+    let releaseVariants;
+    const pendingVariants = new Promise((resolve) => { releaseVariants = resolve; });
+    const product = skuProduct({ inventory_model: 'LEGACY_VARIANTS' });
+    const db = { query: jest.fn((sql) => {
+      if (sql.includes('FROM products')) return Promise.resolve({ rows: [product] });
+      if (sql.includes('FROM product_variants')) return pendingVariants;
+      return Promise.resolve({ rows: [] });
+    }) };
+
+    const detailPromise = getProductDetail(db, PRODUCT_ID);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const launchedSql = db.query.mock.calls.map(([sql]) => sql);
+    expect(launchedSql.some((sql) => sql.includes('FROM catalog_media'))).toBe(true);
+    expect(launchedSql.some((sql) => sql.includes('FROM product_content_profile'))).toBe(true);
+    expect(launchedSql.some((sql) => sql.includes('FROM product_content_sections'))).toBe(true);
+    expect(launchedSql.some((sql) => sql.includes('FROM product_attributes'))).toBe(true);
+
+    releaseVariants({ rows: [] });
+    await expect(detailPromise).resolves.toMatchObject({ inventory_model: 'LEGACY_VARIANTS' });
+  });
+
   test('n’expose que les rails déjà commercialement exposables et n’invente ni prix ni délai', async () => {
     const detail = await getProductDetail(dbFor(), PRODUCT_ID);
 

@@ -156,11 +156,22 @@ async function createProduct(db, payload, adminUser) {
   const taxCheck = await validateProductTaxonomyPayload(db, { category: payload.category, subcategory: payload.subcategory });
   if (!taxCheck.ok) return { status: taxCheck.status, body: taxCheck.body };
 
-  // Publication guard (si is_active ou is_available posé)
-  if (payload.is_active || payload.is_available) {
+  // Une création admin est un brouillon tant que la publication n'est pas
+  // explicitement demandée. Sans ces valeurs, les DEFAULT historiques de la
+  // table (TRUE/TRUE) rendaient immédiatement publics les produits de tests
+  // API et leurs libellés techniques. Les tests de charge peuvent désormais
+  // créer leurs fixtures sans polluer le catalogue présenté aux clients.
+  const creationPayload = {
+    ...payload,
+    is_active: payload.is_active === true,
+    is_available: payload.is_available === true,
+  };
+
+  // Publication guard (si l'activation est explicitement demandée)
+  if (creationPayload.is_active || creationPayload.is_available) {
     const pubCheck = validatePublicationUpdate({
       before: { name: '', category: '', price_kmf: 0, stock: null, is_active: false, is_available: false },
-      patch: { ...payload },
+      patch: { ...creationPayload },
     });
     if (!pubCheck.ok) return { status: 422, body: { error: pubCheck.error, code: pubCheck.code } };
   }
@@ -173,12 +184,12 @@ async function createProduct(db, payload, adminUser) {
                      'requires_secure_transport', 'customs_risk_coeff', 'unsold_price_kmf',
                      'unsold_channel', 'has_variants', 'sort_order'];
   for (const f of optionals) {
-    if (payload[f] !== undefined) fields.push(f);
+    if (creationPayload[f] !== undefined) fields.push(f);
   }
 
   const cols        = fields.join(', ');
   const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
-  const values      = fields.map(f => payload[f]);
+  const values      = fields.map(f => creationPayload[f]);
 
   let product;
   try {

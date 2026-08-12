@@ -14,13 +14,13 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Ambiguous ownership signals : **68**
 - Ontology gaps : **0**
 - Debt items (total) : **124**
-- Gate health — healthy : **15** · blocked : **1**
+- Gate health — healthy : **14** · blocked : **1**
 
 ## Gate findings — intégrité de projection
 
 - Source : `docs/GATE_FINDINGS.json` (version GF-2.1)
 - Sources de gates : **18** (0 en échec)
-- Findings : **21** total, **21** attribué(s), **0** sans attribution exploitable
+- Findings : **51** total, **51** attribué(s), **0** sans attribution exploitable
 - Fichiers non projetables : **0**
 - Fichiers multi-projetés : **0**
 
@@ -181,7 +181,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 1, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 2
+**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 4
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-identity.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-phone.js — 2 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
   - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
 
@@ -314,7 +316,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 9, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
+**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 9
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-desktop-product.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-pager.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-product-open-contract.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-subcat.js — 2 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
 
 **Architectural debt** (10) :
@@ -329,17 +339,17 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidates — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
-**Implementation** : 133 fichier(s) déclaré(s), boutique: 31 fichier(s)
+**Implementation** : 135 fichier(s) déclaré(s), boutique: 31 fichier(s)
   - boutique : 38
   - ci : 3
   - config : 1
   - dash : 4
   - docs : 4
-  - migrations : 10
+  - migrations : 11
   - routes : 5
   - schemas : 4
   - services : 26
-  - tests : 37
+  - tests : 38
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_
@@ -1079,7 +1089,16 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 2
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 2, ambiguous ownership: 8, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
+**Gate health** : 🟡 ATTENTION — gates: check:body-classes, check:imports, gate:feature-classification-check, fail: 0, warn: 10
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ↳ Référencé en CSS : css/cart.css:2064, css/cart.css:2075 … — sélecteur legacy ou JS manquant
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ 0 erreur, 6 avertissement(s) — exit 0
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-cart.js — 4 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-checkout-render.js — 3 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-checkout.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-mini-cart.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-tracking.js — 1 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
 
 **Architectural debt** (13) :
@@ -1146,7 +1165,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 3, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
+**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 2
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-paypal.js — 1 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
 
 **Architectural debt** (3) :
@@ -1235,13 +1255,20 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 2, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:body-classes, fail: 0, warn: 6
-  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ↳ Référencé en CSS : css\cart.css:2064, css\cart.css:2075 … — sélecteur legacy ou JS manquant
-  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ 0 erreur, 5 avertissement(s) — exit 0
+**Gate health** : 🟡 ATTENTION — gates: check:body-classes, check:imports, fail: 0, warn: 13
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ck-is-me                     0     0     0     ✔      ⚠ warning
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — k-order-body--recap          0     1     0     ·      ⚠ warning
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — k-view-komerce               0     1     0     ·      ⚠ warning
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-order-body--recap' retirée mais jamais ajoutée dans le JS ou HTML inline
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-group' retirée mais jamais ajoutée dans le JS ou HTML inline
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-komerce' retirée mais jamais ajoutée dans le JS ou HTML inline
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-track' retirée mais jamais ajoutée dans le JS ou HTML inline
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-3] CSS utilise body.ck-is-me mais aucun JS ne gère cette classe
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-boutique-wow-style.js — 3 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-nav.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-scroll-owner.js — 2 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-utils.js — 2 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ✔ Aucun import fantôme ni cycle inconnu ni module manquant.
 
 **Architectural debt** (2) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table notification_log — écrite par platform-ops (W), aucun lifecycle owner résolu (multi-writer non classifié)
@@ -1447,7 +1474,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 2, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
+**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 3
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-cart.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal.js — 7 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-share-cart.js — 4 export(s) non consommé(s) :
 
 **Architectural debt** (3) :
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "notification (émission uniquement — WhatsApp création de liste)" — ne correspond à aucun nom de feature connu

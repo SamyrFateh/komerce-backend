@@ -95,6 +95,14 @@ function _activateCheckoutFocus() {
   const dialog = overlay?.querySelector('.k-order-modal') || overlay;
   if (!overlay || !dialog) return;
 
+  // Une nouvelle ouverture peut suivre un rerender/remplacement d'overlay
+  // avant que l'ancienne surface ait reçu sa fermeture explicite. Purger ce
+  // cycle sans restaurer son focus évite qu'un rAF tardif refocalise un ancien
+  // bouton du checkout et écrase l'origine réelle de la nouvelle session.
+  if (_checkoutKeydownHandler || _checkoutBackgroundState.length || _checkoutFocusOrigin) {
+    _deactivateCheckoutFocus({ restoreFocus: false });
+  }
+
   _checkoutFocusOrigin = document.activeElement;
   dialog.setAttribute('role', 'dialog');
   dialog.setAttribute('aria-modal', 'true');
@@ -132,7 +140,7 @@ function _activateCheckoutFocus() {
   });
 }
 
-function _deactivateCheckoutFocus() {
+function _deactivateCheckoutFocus({ restoreFocus = true } = {}) {
   if (_checkoutKeydownHandler) {
     document.removeEventListener('keydown', _checkoutKeydownHandler);
     _checkoutKeydownHandler = null;
@@ -145,7 +153,7 @@ function _deactivateCheckoutFocus() {
   _checkoutBackgroundState = [];
   const origin = _checkoutFocusOrigin;
   _checkoutFocusOrigin = null;
-  if (origin?.isConnected) requestAnimationFrame(() => origin.focus?.());
+  if (restoreFocus && origin?.isConnected) requestAnimationFrame(() => origin.focus?.());
 }
 
 // ── Helpers téléphone — délégués à b-phone.js (source de vérité) ─

@@ -1217,6 +1217,13 @@
       },
       {
         "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/130_deactivate_catalog_test_placeholders.sql",
+        "resolvedPath": "migrations/130_deactivate_catalog_test_placeholders.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
         "category": "config",
         "declared": "config/import-profiles/komerce-test-dummyjson.v1.json",
         "resolvedPath": "config/import-profiles/komerce-test-dummyjson.v1.json",
@@ -1731,6 +1738,13 @@
         "category": "tests",
         "declared": "tests/unit/catalog-product-detail.test.js",
         "resolvedPath": "tests/unit/catalog-product-detail.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-test-placeholder-migration.test.js",
+        "resolvedPath": "tests/unit/catalog-test-placeholder-migration.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -22616,7 +22630,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 765
+        "filesObserved": 766
       },
       "boutique": {
         "filesObserved": 130,

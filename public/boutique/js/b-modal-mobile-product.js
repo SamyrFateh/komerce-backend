@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_detail_v1, modal_selection_state
  * @outputs       mobile_product_modal_dom
- * @depends       b-store.js, b-utils.js, b-modal-product.js, b-modal-image-ux.js, view-models/modal-selection-model.js
+ * @depends       b-store.js, b-utils.js, b-modal-product.js, b-modal-image-ux.js, view-models/modal-selection-model.js, view-models/modal-cart-product-model.js
  * @used-by       b-modal-product-detail-bootstrap.js
  * @db-read       none
  * @db-write      none
@@ -66,6 +66,7 @@ import {
   CONTENT_LABELS,
 } from './view-models/product-content-model.js';
 import { isDesktop } from './b-scroll-owner.js';
+import { isModalPurchaseReady } from './view-models/modal-cart-product-model.js';
 
 /* ── helpers ──────────────────────────────────────────────────── */
 
@@ -447,7 +448,12 @@ function renderInfoStrip(detail, selection, root) {
 
 function renderActions(detail, selection) {
   const isSku = detail.inventory_model === 'SKU';
-  const enabled = !isSku || Boolean(selection.selected_sku_id);
+  const enabled = isModalPurchaseReady(state.modalProduct || detail.product, detail, selection);
+  const message = document.getElementById('k-modal-selection-message');
+  if (!enabled && !isSku && message) {
+    message.textContent = 'Choix d’option momentanément indisponible — achat désactivé.';
+    message.hidden = false;
+  }
   // Mandat §3.2 — remplacement, jamais coexistence (voir b-modal-desktop-product.js
   // pour le même correctif côté desktop).
   [dom.addCartBtn, document.getElementById('k-buy-now-btn')].forEach(
@@ -465,7 +471,7 @@ function renderActions(detail, selection) {
   // for SKU inventory — see PDC-6 doctrine note)
   [dom.qtyMinus, dom.qtyPlus].forEach((control) => {
     if (!control) return;
-    control.disabled = isSku;
+    control.disabled = isSku || !enabled;
   });
 
   wireBuyNowButton(document.getElementById('k-buy-now-btn'));

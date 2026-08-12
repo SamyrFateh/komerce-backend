@@ -44,20 +44,25 @@ jest.mock('../../services/transport-rails', () => ({
   listCommercialTransportRails: jest.fn(),
 }));
 
+const db = require('../../db');
 const { listCommercialTransportRails } = require('../../services/transport-rails');
 const { getProductDetail } = require('../../services/catalog-product-detail');
 const golden = require('../fixtures/catalog/golden-elite-pro');
 
 function mockDb() {
   return {
-    query: jest.fn()
-      .mockResolvedValueOnce({ rows: [golden.productRow()] })
-      .mockResolvedValueOnce({ rows: golden.variantRows() })
-      .mockResolvedValueOnce({ rows: golden.skuRows() })
-      .mockResolvedValueOnce({ rows: [] }) // catalog_media (pas de média canonique dans ce fixture historique)
-      .mockResolvedValueOnce({ rows: [] }) // product_content_profile
-      .mockResolvedValueOnce({ rows: [] }) // product_content_sections
-      .mockResolvedValueOnce({ rows: [] }), // product_attributes
+    query: jest.fn(async (sql) => {
+      if (sql.includes('FROM products')) return { rows: [golden.productRow()] };
+      if (sql.includes('FROM product_variants')) return { rows: golden.variantRows() };
+      if (sql.includes('FROM product_skus')) return { rows: golden.skuRows() };
+      if (
+        sql.includes('FROM catalog_media')
+        || sql.includes('FROM product_content_profile')
+        || sql.includes('FROM product_content_sections')
+        || sql.includes('FROM product_attributes')
+      ) return { rows: [] };
+      throw new Error(`Requête SQL inattendue dans mockDb: ${sql}`);
+    }),
   };
 }
 
@@ -72,6 +77,7 @@ describe('GPM-1 — Golden Product "Chaussure de football Elite Pro" — Product
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    db.query.mockResolvedValue({ rows: [] });
     listCommercialTransportRails.mockReturnValue(golden.commercialTransportRails());
     detail = await getProductDetail(mockDb(), golden.PRODUCT_ID);
   });

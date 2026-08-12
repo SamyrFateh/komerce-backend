@@ -341,8 +341,22 @@ describe('b-modal-cart', () => {
       setupModalCart();
       const product = { id: 33 };
       state.modalProduct = product;
+      state.modalProductDetail = { inventory_model: 'LEGACY_VARIANTS', option_axes: [] };
       dom.addCartBtn.click();
       expect(addToCart).toHaveBeenCalledWith(product, 1, dom.addCartBtn, { requested_transport_rail: null });
+    });
+
+    test('Ajouter legacy avec variantes sans SKU : fail-closed', () => {
+      setupModalCart();
+      state.modalProduct = { id: 33, has_variants: true };
+      state.modalProductDetail = {
+        inventory_model: 'LEGACY_VARIANTS',
+        option_axes: [{ key: 'Pointure' }],
+      };
+
+      dom.addCartBtn.click();
+
+      expect(addToCart).not.toHaveBeenCalled();
     });
 
     test('Ajouter SKU transmet le snapshot sélectionné', () => {

@@ -8,6 +8,7 @@
  */
 const {
   buildModalCartProduct,
+  isModalPurchaseReady,
   _modalCartProductModelTestApi,
 } = require('../../js/view-models/modal-cart-product-model.js');
 
@@ -37,6 +38,35 @@ const selection = {
 };
 
 describe('modal-cart-product-model', () => {
+  describe('isModalPurchaseReady', () => {
+    test('échoue sans contrat, sans produit ou avec un modèle inconnu', () => {
+      expect(isModalPurchaseReady(null, null, null)).toBe(false);
+      expect(isModalPurchaseReady(product(), null, null)).toBe(false);
+      expect(isModalPurchaseReady(product(), { inventory_model: 'UNKNOWN' }, {})).toBe(false);
+    });
+
+    test('autorise SIMPLE et legacy uniquement sans options', () => {
+      expect(isModalPurchaseReady(product(), { inventory_model: 'SIMPLE', option_axes: [] }, {})).toBe(true);
+      expect(isModalPurchaseReady(product(), { inventory_model: 'LEGACY_VARIANTS', option_axes: [] }, {})).toBe(true);
+      expect(isModalPurchaseReady(product({ has_variants: true }), { inventory_model: 'LEGACY_VARIANTS', option_axes: [] }, {})).toBe(false);
+      expect(isModalPurchaseReady(product(), { inventory_model: 'LEGACY_VARIANTS', option_axes: [{ key: 'Pointure' }] }, {})).toBe(false);
+    });
+
+    test('SKU exige une unité réelle sélectionnée et disponible', () => {
+      const skuDetail = {
+        inventory_model: 'SKU',
+        sellable_units: [
+          { sku_id: 'sku-ok', stock_status: 'AVAILABLE' },
+          { sku_id: 'sku-out', stock_status: 'OUT_OF_STOCK' },
+        ],
+      };
+      expect(isModalPurchaseReady(product(), skuDetail, { selected_sku_id: null })).toBe(false);
+      expect(isModalPurchaseReady(product(), skuDetail, { selected_sku_id: 'missing' })).toBe(false);
+      expect(isModalPurchaseReady(product(), skuDetail, { selected_sku_id: 'sku-out' })).toBe(false);
+      expect(isModalPurchaseReady(product(), skuDetail, { selected_sku_id: 'sku-ok' })).toBe(true);
+    });
+  });
+
   describe('activeSellableUnit', () => {
     test('sans sélection ou sans détail : aucune unité active', () => {
       expect(activeSellableUnit(undefined, undefined)).toBeNull();
