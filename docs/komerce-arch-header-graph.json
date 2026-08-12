@@ -13628,7 +13628,7 @@
       "impactAreas": [
         "catalog"
       ],
-      "version": "2026-07"
+      "version": "2026-08"
     },
     {
       "id": "services/purchasing-admin-service.js",
