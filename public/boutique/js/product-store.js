@@ -22,7 +22,7 @@
  * toutes cette meme couche de produits.
  */
 
-import { getDbKeysForCategory, normalizeCategoryKey } from './shop-schema.js';
+import { getDbKeysForCategory, matchesSubcategory, normalizeCategoryKey } from './shop-schema.js';
 
 const CACHE_KEY = 'komerce_products_cache';
 
@@ -71,7 +71,7 @@ export function getProductsByCategory(categoryKey) {
 export function getProductsBySubcategory(categoryKey, subcategoryKey) {
   let list = getProductsByCategory(categoryKey);
   if (!subcategoryKey) return list;
-  return list.filter((product) => product.subcategory === subcategoryKey);
+  return list.filter((product) => matchesSubcategory(categoryKey, subcategoryKey, product.subcategory));
 }
 
 export function partitionProductsByCategory(products) {

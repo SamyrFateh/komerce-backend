@@ -27,7 +27,10 @@ function buildCartDom() {
       <div class="k-sc-title-bar"><span class="k-sc-title-label">Mon panier</span></div>
       <div id="k-sc-items" class="k-sc-items"></div>
       <div class="k-sc-header">
-        <strong id="k-sc-total"></strong>
+        <div class="k-sc-subtotal-row">
+          <span id="k-sc-subtotal-word">Sous-total</span>
+          <strong id="k-sc-total"></strong>
+        </div>
         <button id="k-sc-checkout" type="button">Commander (<span id="k-sc-count-inline">0</span>)</button>
         <button id="k-sc-cta" type="button">Voir le panier</button>
         <button id="k-sc-share" type="button">Partager</button>

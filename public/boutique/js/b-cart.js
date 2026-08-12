@@ -737,11 +737,10 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   }
 
   function snapshotStatusLabel(status) {
-    // Doctrine (mandat initial + post-LOT 13) — "Si une liste apparaît, elle
-    // est nécessairement active : ne jamais afficher `Ouverte`, `Fermée`,
-    // `Admin` ou un autre statut technique." open → chaîne vide (implicite).
-    // closed → 'Clôturée' (remplace l'ancien 'Fermée', ambiguïté évitée).
-    return { open: '', closed: 'Clôturée', cancelled: 'Annulée' }[status] ?? '';
+    // L'état est explicite dans les deux surfaces : après un rechargement,
+    // l'utilisateur distingue immédiatement une liste encore ouverte d'un
+    // panier personnel ou d'une liste clôturée.
+    return { open: 'Ouverte', closed: 'Clôturée', cancelled: 'Annulée' }[status] ?? '';
   }
 
   /**
@@ -1038,7 +1037,7 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       primaryRow.appendChild(saveBtn);
     }
     // Mandat cohérence post-LOT 13, §3.b — "Acheter le reste" (achat
-    // immédiat sans contrôle) disparaît. "Commander (N · X KMF)"
+    // immédiat sans contrôle) disparaît. "Payer · X KMF"
     // n'apparaît que si la sélection locale n'est pas vide ; c'est
     // désormais l'unique déclencheur d'achat, quel que soit N. Aucun
     // montant de "reste de liste" dans le texte du bouton : uniquement
@@ -1047,8 +1046,8 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     if (!context.readOnly && selection.count > 0) {
       const commandBtn = snapCreateEl('button', 'k-snap-btn-primary');
       commandBtn.type = 'button';
-      // Mockup 2026-08 — libellé "Commander la sélection" (pierre claire)
-      commandBtn.textContent = `Commander la sélection`;
+      commandBtn.textContent = `Payer · ${fmt(selection.total, 'KMF')}`;
+      commandBtn.setAttribute('aria-label', `Payer ${fmt(selection.total, 'KMF')} pour ${selection.count} article${selection.count > 1 ? 's' : ''} sélectionné${selection.count > 1 ? 's' : ''}`);
       commandBtn.onclick = () => actions.onCommand();
       primaryRow.appendChild(commandBtn);
     }
@@ -1125,15 +1124,38 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     removeSnapshotButtons(scHeader);
     if (!scHeader) return;
 
+    // La surface desktop visible porte elle-même le contexte et la
+    // progression de la liste. Ces informations ne doivent pas vivre
+    // uniquement dans le footer du drawer mobile masqué.
+    const claimedCount = items.filter((it) => it.claimed).length;
+    const progressSummary = snapCreateEl('div', 'k-sc-snapshot-progress-summary');
+    const progressCopy = document.createElement('div');
+    progressCopy.className = 'k-sc-snapshot-progress-copy';
+    const organizerCopy = context.organizerName
+      ? ` · Organisée par ${sanitize(context.organizerName)}`
+      : '';
+    progressCopy.textContent = `${claimedCount}/${items.length} achetés${organizerCopy}`;
+    progressSummary.appendChild(progressCopy);
+    if (items.length > 0) {
+      const progress = document.createElement('div');
+      progress.className = 'k-cart-snapshot-progress';
+      const fill = document.createElement('span');
+      fill.style.width = Math.round((claimedCount / items.length) * 100) + '%';
+      progress.appendChild(fill);
+      progressSummary.appendChild(progress);
+    }
+    scHeader.insertBefore(progressSummary, scHeader.firstChild);
+
     // Mandat cohérence post-LOT 13, §3.b — "Acheter le reste" (achat
     // immédiat sans contrôle, en dégradé vert plein-largeur) disparaît.
-    // "Commander (N · X KMF)" prend sa place, mais n'apparaît que si la
+    // "Payer · X KMF" prend sa place, mais n'apparaît que si la
     // sélection locale n'est pas vide — jamais un CTA permanent.
     const selection = selectedSelectionSummary(items, context);
     if (!context.readOnly && selection.count > 0) {
       const commandBtn = snapCreateEl('button', 'k-snap-btn-primary');
       commandBtn.type = 'button';
-      commandBtn.textContent = `Commander (${selection.count} · ${fmt(selection.total, 'KMF')})`;
+      commandBtn.textContent = `Payer · ${fmt(selection.total, 'KMF')}`;
+      commandBtn.setAttribute('aria-label', `Payer ${fmt(selection.total, 'KMF')} pour ${selection.count} article${selection.count > 1 ? 's' : ''} sélectionné${selection.count > 1 ? 's' : ''}`);
       commandBtn.onclick = () => actions.onCommand();
       scHeader.appendChild(commandBtn);
     }

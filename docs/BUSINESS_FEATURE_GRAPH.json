@@ -19305,6 +19305,10 @@
                 "targetFile": "public/boutique/js/b-phone.js"
               },
               {
+                "sourceFileId": "public/boutique/js/b-tracking.js",
+                "targetFile": "public/boutique/js/b-identity.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/b-checkout.js",
                 "targetFile": "public/boutique/js/b-identity.js"
               },

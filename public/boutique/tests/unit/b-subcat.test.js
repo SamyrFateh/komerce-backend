@@ -69,6 +69,7 @@ jest.mock('../../js/shop-schema.js', () => ({
     { key: 'legumes', label: 'Légumes',  icon: '🥦', shortLabel: 'Légumes' },
   ]),
   normalizeCategoryKey: jest.fn((k) => k),
+  matchesSubcategory: jest.fn((category, key, value) => key === value),
 }));
 
 jest.mock('../../js/b-utils.js', () => ({

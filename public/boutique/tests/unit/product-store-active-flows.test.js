@@ -29,7 +29,7 @@ describe('product-store — normalisation et sélections', () => {
       id: 1,
       name: 'Téléphone',
       category: 'Tech',
-      subcategory: 'Phones',
+      subcategory: 'Téléphones',
       image_url: '/phone.jpg',
       promo_pct: 10,
     },
@@ -90,6 +90,7 @@ describe('product-store — normalisation et sélections', () => {
     expect(store.getProductsByCategory('Tech').map(p => p.id)).toEqual([1, '2']);
     expect(store.getProductsByCategory('Mode & Beauté').map(p => p.id)).toEqual([3]);
     expect(store.getProductsBySubcategory('Tech').map(p => p.id)).toEqual([1, '2']);
+    expect(store.getProductsBySubcategory('Tech', 'Phones').map(p => p.id)).toEqual([1]);
     expect(store.getProductsBySubcategory('Tech', 'Audio').map(p => p.id)).toEqual(['2']);
   });
 

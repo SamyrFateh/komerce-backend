@@ -773,6 +773,12 @@
     display: none;
   }
 
+  /* En contexte liste, le titre relationnel fait partie des informations
+     métier et reste visible avec le statut (ex. « Ma liste · Ouverte »). */
+  #k-side-cart[data-mode="shared-list"]:has(.k-cart-tabs) .k-sc-title-label {
+    display: inline;
+  }
+
   /* Aucun statut/contributeur utile :
      supprimer entièrement la seconde barre. */
   #k-side-cart:has(.k-cart-tabs) .k-sc-title-bar:not(

@@ -1562,7 +1562,7 @@ Meta Graph monté : oui.
 | notifications | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | notifications | infrastructure | static-code | 12 | **OBSERVED_UNDECLARED** |
 | orders | auth | static-code | 13 | **DECLARED_AND_OBSERVED** |
-| orders | auth-identity | static-code, interface | 7 | **DECLARED_AND_OBSERVED** |
+| orders | auth-identity | static-code, interface | 8 | **DECLARED_AND_OBSERVED** |
 | orders | business-rules | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | orders | catalog | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | orders | customs | static-code | 3 | **DECLARED_AND_OBSERVED** |

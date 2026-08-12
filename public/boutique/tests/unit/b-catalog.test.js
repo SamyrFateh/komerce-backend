@@ -58,6 +58,13 @@ const mockSetupFlatSubcatPager = jest.fn();
 const mockWriteCache = jest.fn();
 const mockSetProducts = jest.fn((items) => items);
 const mockGetAllProducts = jest.fn(() => mockState.products || []);
+const mockMatchesSubcategory = jest.fn((category, key, value) => {
+  const aliases = {
+    Phones: ['Phones', 'Téléphones'],
+    Audio: ['Audio', 'Accessoires'],
+  };
+  return (aliases[key] || [key]).includes(value);
+});
 
 jest.mock('../../js/b-bus.js', () => ({ bus: mockBus }));
 jest.mock('../../js/b-store.js', () => ({
@@ -122,6 +129,7 @@ jest.mock('../../js/b-modal.js', () => ({ openModal: mockOpenModal }));
 jest.mock('../../js/shop-schema.js', () => ({
   normalizeCategoryKey: jest.fn((category) => category),
   getSectionOrder: jest.fn(() => []),
+  matchesSubcategory: mockMatchesSubcategory,
 }));
 jest.mock('../../js/render/render-product-card.js', () => ({
   renderProductCard: mockRenderProductCard,
@@ -293,6 +301,30 @@ describe('b-catalog — rendu et pagination', () => {
     expect(mockDom.grid.querySelector('[data-id="2"]')).not.toBeNull();
     expect(document.getElementById('k-load-more-spinner').classList.contains('show')).toBe(false);
     expect(document.getElementById('k-catalog-section').classList.contains('k-cat-has-more')).toBe(true);
+  });
+
+  test('filtre une sous-catégorie via ses alias taxonomiques sans retomber sur tout l\'univers', () => {
+    mockState.activeCat = 'Tech';
+    mockState.activeSubcat = 'Phones';
+    mockState.filtered = [
+      product(1, 'Tech', { subcategory: 'Téléphones' }),
+      product(2, 'Tech', { subcategory: 'Ordinateurs' }),
+    ];
+
+    catalog.renderGrid();
+
+    expect(mockDom.grid.querySelector('[data-id="1"]')).not.toBeNull();
+    expect(mockDom.grid.querySelector('[data-id="2"]')).toBeNull();
+  });
+
+  test('une sous-catégorie sans produit affiche un résultat vide', () => {
+    mockState.activeCat = 'Tech';
+    mockState.activeSubcat = 'Montres';
+    mockState.filtered = [product(1, 'Tech', { subcategory: 'Ordinateurs' })];
+
+    catalog.renderGrid();
+
+    expect(mockDom.grid.querySelector('.k-card')).toBeNull();
   });
 
   test('setActiveCat remet la navigation à zéro et émet le changement', () => {

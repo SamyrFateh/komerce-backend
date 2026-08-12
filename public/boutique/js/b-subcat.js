@@ -28,7 +28,7 @@ import {
 import {
   sanitize, fmt, bindCarouselDots,
 }                         from './b-utils.js';
-import { getSubcategories } from './shop-schema.js';
+import { getSubcategories, matchesSubcategory } from './shop-schema.js';
 import {
   showToast,
 }                         from './b-cart-core.js';
@@ -63,7 +63,7 @@ import { isDesktop }               from './b-scroll-owner.js';
    */
   function _productsForSubcat(cat, sub) {
     return state.filtered.filter(function(p) {
-      return p.category === cat && p.subcategory === sub;
+      return p.category === cat && matchesSubcategory(cat, sub, p.subcategory);
     });
   }
 

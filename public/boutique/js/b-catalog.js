@@ -71,6 +71,7 @@ import { openModal }      from './b-modal.js';
 import {
   normalizeCategoryKey,
   getSectionOrder,
+  matchesSubcategory,
 }                         from './shop-schema.js';
 import { renderProductCard }  from './render/render-product-card.js';
 import { renderHomeSections } from './render/render-home-sections.js';
@@ -154,8 +155,7 @@ function appendNextPage() {
       ? state.filtered.filter(p => (p.promo_pct || 0) > 0)
       : state.filtered.filter(p => _normalizeCat(p.category) === state.activeCat);
   if (state.activeSubcat) {
-    const subF = list.filter(p => p.subcategory === state.activeSubcat);
-    if (subF.length > 0) list = subF;
+    list = list.filter(p => matchesSubcategory(state.activeCat, state.activeSubcat, p.subcategory));
   }
   const start = (state.page + 1) * state.pageSize;
   if (start >= list.length) {
@@ -369,8 +369,7 @@ function renderGrid() {
   // Compteur univers (avant filtrage sous-cat) — alimente la barre contextuelle desktop.
   const _catCount = list.length;
   if (!_isMobile && state.activeSubcat) {
-    const subF = list.filter(p => p.subcategory === state.activeSubcat);
-    if (subF.length > 0) list = subF;
+    list = list.filter(p => matchesSubcategory(state.activeCat, state.activeSubcat, p.subcategory));
   }
 
   const useSections = state.activeCat === 'all' || _isMobile;

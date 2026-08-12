@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        order_reference, phone, otp_code, client_session, library_context
  * @outputs       tracking_view, order_history, timeline, otp_state, lists_tab
- * @depends       b-store.js, b-phone.js, b-utils.js, b-cart-core.js, group/group-api.js, routes/otp.js, routes/orders.js, routes/shared-cart.js
+ * @depends       b-store.js, b-phone.js, b-utils.js, b-cart-core.js, b-identity.js, group/group-api.js, routes/otp.js, routes/orders.js, routes/shared-cart.js
  * @used-by       b-nav.js, boutique.js, group/group-library-remove.js
  * @doctrine      otp_une_fois, suivi_client_simple, reference_commande_lisible, sauvegarde_explicite_jamais_implicite
  * @impact-areas  tracking, auth, orders, participant-flow, customer-support, shared-cart, mon-komerce
@@ -39,6 +39,7 @@ import {
 } from './b-phone.js';
 import { getSharedCartLibrary } from './group/group-api.js';
 import { sharedListDisplayLabel } from './group/group-list-labels.js';
+import { requireIdentity, restoreIdentity } from './b-identity.js';
 
 'use strict';
 
@@ -433,6 +434,27 @@ function renderListsError(el, err) {
   el.querySelector('#k-track-lists-retry-btn')?.addEventListener('click', () => renderListsTab(el));
 }
 
+function renderListsAuthRequired(el) {
+  el.innerHTML =
+    '<div class="k-track-error k-track-auth-required">' +
+      '<div class="k-track-error-icon">📲</div>' +
+      '<div class="k-track-error-title">Confirmez votre WhatsApp</div>' +
+      '<div class="k-track-error-sub">Identifiez-vous pour retrouver les listes créées ou enregistrées avec ce numéro.</div>' +
+      '<button class="k-track-retry-btn" id="k-track-lists-auth-btn">Continuer</button>' +
+    '</div>';
+
+  el.querySelector('#k-track-lists-auth-btn')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    const identity = await requireIdentity({
+      reason: 'retrouver vos listes partagées',
+      title: 'Accéder à Mes Partages',
+    });
+    if (identity) await renderListsTab(el);
+    else button.disabled = false;
+  });
+}
+
 /**
  * Rend le contenu de l'onglet Listes dans `el` (#k-track-lists-panel-wrap).
  * Consommé aussi par group/group-library-remove.js::rerenderLibrary()
@@ -444,6 +466,14 @@ export async function renderListsTab(el) {
   el.innerHTML = '<div class="k-track-loading"><div class="k-track-loading-spin"></div><p>Chargement de vos listes…</p></div>';
 
   try {
+    // Ne déclenche pas l'API métier des listes tant que la session client
+    // n'est pas établie. L'anonyme obtient ainsi un état d'identification
+    // explicite, sans faux message réseau ni requête partages vouée à 401.
+    const identity = await restoreIdentity();
+    if (!identity) {
+      renderListsAuthRequired(el);
+      return;
+    }
     const library = await getSharedCartLibrary();
     state.libraryContext = {
       created: Array.isArray(library.created) ? library.created : [],
@@ -452,7 +482,8 @@ export async function renderListsTab(el) {
     renderLibrarySections(el);
   } catch (err) {
     console.warn('[tracking] renderListsTab:', err);
-    renderListsError(el, err);
+    if (err && (err.status === 401 || err.status === 403)) renderListsAuthRequired(el);
+    else renderListsError(el, err);
   }
 }
 
@@ -651,5 +682,3 @@ export function renderTrackViewSearchMode(el) {
 
   el.querySelector('#k-otp-back-btn').addEventListener('click', () => renderTrackView());
 }
-
-

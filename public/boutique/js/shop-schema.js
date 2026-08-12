@@ -85,6 +85,28 @@ const _CATEGORY_IMAGES = {
   'Sur-mesure':     '/boutique/categories/sur-mesure.jpg',   // DSC-A2 : asset à créer
 };
 
+// Les clés de navigation sont stables et lisibles, tandis que le catalogue
+// historique contient encore plusieurs libellés métier. Ce pont reste ici,
+// dans la source de vérité taxonomique, pour que toutes les surfaces filtrent
+// les mêmes ensembles sans heuristique sur le nom des produits.
+const _SUBCATEGORY_DB_KEY_ALIASES = {
+  Tech: {
+    Phones:  ['Phones', 'Téléphones'],
+    Ordi:    ['Ordi', 'Ordinateurs', 'Tablettes'],
+    Audio:   ['Audio', 'Accessoires'],
+    Montres: ['Montres', 'Gadgets'],
+    Gaming:  ['Gaming'],
+  },
+};
+
+function _subcategoryDbKeys(categoryKey, subcategory) {
+  const configured = Array.isArray(subcategory?.dbKeys) && subcategory.dbKeys.length
+    ? subcategory.dbKeys
+    : [subcategory?.key];
+  const aliases = _SUBCATEGORY_DB_KEY_ALIASES[categoryKey]?.[subcategory?.key] || [];
+  return [...new Set([...configured, ...aliases].filter(Boolean))];
+}
+
 // Fallback secours — aligné sur boutique_categories (vérification 2026-07-24).
 // Source unique : la base. Ce fallback n'intervient qu'en cas de panne réseau.
 // Catégories masquées en base (show_in_rail=false) : Enfant, Sport, Sur-mesure — absentes ici.
@@ -298,8 +320,18 @@ export function getCategoryImage(key) { const c = getCategoryByKey(key); return 
 export function getCategoryFilter(key) { return getCategoryByKey(key)?.filter || null; }
 export function normalizeCategoryKey(rawCategory) { if (!rawCategory) return rawCategory; const c = _idx().get(rawCategory); return c ? c.key : rawCategory; }
 export function getDbKeysForCategory(categoryKey) { const c = getCategoryByKey(categoryKey); if (!c) return [categoryKey]; if (Array.isArray(c.dbKeys) && c.dbKeys.length) return [...c.dbKeys]; return [c.key]; }
-export function getSubcategories(categoryKey) { const c = _idx().get(categoryKey); return c?.subcategories ? [...c.subcategories] : []; }
+export function getSubcategories(categoryKey) {
+  const c = _idx().get(categoryKey);
+  return c?.subcategories
+    ? c.subcategories.map(s => ({ ...s, dbKeys: _subcategoryDbKeys(c.key, s) }))
+    : [];
+}
 export function getSubcategoryMeta(categoryKey, subcategoryKey) { const list = getSubcategories(categoryKey); return list.find(s => s.key === subcategoryKey) || { key: subcategoryKey, label: subcategoryKey, shortLabel: subcategoryKey, icon: '✨', dbKeys: [subcategoryKey] }; }
+export function getDbKeysForSubcategory(categoryKey, subcategoryKey) { return getSubcategoryMeta(categoryKey, subcategoryKey).dbKeys; }
+export function matchesSubcategory(categoryKey, subcategoryKey, productSubcategory) {
+  if (!subcategoryKey) return true;
+  return getDbKeysForSubcategory(categoryKey, subcategoryKey).includes(productSubcategory);
+}
 export function getNextSubcategoryKey(categoryKey, currentSubcategoryKey) { const list = getSubcategories(categoryKey); for (let i = 0; i < list.length - 1; i++) { if (list[i].key === currentSubcategoryKey) return list[i + 1].key; } return null; }
 export function createDefaultNavigationState() { return { activeUniverse: 'all', activeSubcategory: null, activeCommercialFilter: null, searchQuery: '', sort: 'recommended' }; }
 export function getLegacySubcatsMap() {

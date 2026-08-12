@@ -699,10 +699,11 @@ describe('b-cart', () => {
 
       dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').click();
 
-      const commandBtn = findButtonByText('Commander (1');
+      const commandBtn = findButtonByText('Payer ·');
       expect(commandBtn).not.toBeNull();
       expect(commandBtn.textContent).toMatch(/6[\s\u00a0\u202f]?500 KMF/);
-      expect(commandBtn.textContent).not.toMatch(/Payer|Total liste à payer/);
+      expect(commandBtn.textContent).not.toMatch(/Commander|Total liste à payer/);
+      expect(commandBtn.getAttribute('aria-label')).toContain('1 article sélectionné');
     });
 
     // Correctif archéologie (mandat §6, F22-F) — le total du CTA doit
@@ -715,7 +716,7 @@ describe('b-cart', () => {
       ] });
       dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').click();
 
-      const commandBtn = findButtonByText('Commander (1');
+      const commandBtn = findButtonByText('Payer ·');
       expect(commandBtn).not.toBeNull();
       expect(commandBtn.textContent).toMatch(/16[\s\u00a0\u202f]?000 KMF/);
       expect(commandBtn.textContent).not.toMatch(/8[\s\u00a0\u202f]?000 KMF/);
@@ -905,13 +906,26 @@ describe('b-cart', () => {
       activateList({ cart: { title: 'Sync multi-client' } });
       const titleLabel = document.getElementById('k-side-cart').querySelector('.k-sc-title-label');
       expect(titleLabel.textContent).toBe('Liste de Samsam');
-      expect(document.getElementById('k-sc-snapshot-status')).toBeNull();
+      expect(document.getElementById('k-sc-snapshot-status').textContent).toBe('Ouverte');
 
       clearSharedListContext();
       state.cart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];
       renderCartBody();
 
       expect(titleLabel.textContent).toBe('Mon panier');
+    });
+
+    it('créateur desktop : expose état, organisateur, progression et reste dans la surface visible', () => {
+      activateList({ isCreator: true });
+      const sideCart = document.getElementById('k-side-cart');
+
+      expect(sideCart.querySelector('.k-sc-title-label').textContent).toBe('Ma liste');
+      expect(sideCart.querySelector('#k-sc-snapshot-status').textContent).toBe('Ouverte');
+      expect(sideCart.querySelector('.k-sc-snapshot-progress-copy').textContent)
+        .toBe('1/2 achetés · Organisée par Samsam');
+      expect(sideCart.querySelector('.k-cart-snapshot-progress span').style.width).toBe('50%');
+      expect(sideCart.querySelector('#k-sc-subtotal-word').textContent).toBe('Reste disponible');
+      expect(sideCart.querySelector('#k-sc-total').textContent).toBe('6500 KMF');
     });
 
     it('preuve de non-régression : aucun panneau parallèle recréé', () => {

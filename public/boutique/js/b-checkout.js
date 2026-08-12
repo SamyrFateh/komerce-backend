@@ -50,6 +50,104 @@ let _stripe = (typeof window !== 'undefined' && window.Stripe) ? null : null;
 let _stripeCard = null;
 let _stripeElements = null;
 
+const CHECKOUT_FOCUSABLE = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  'iframe',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+let _checkoutFocusOrigin = null;
+let _checkoutBackgroundState = [];
+let _checkoutKeydownHandler = null;
+
+function _focusableWithin(root) {
+  if (!root) return [];
+  return Array.from(root.querySelectorAll(CHECKOUT_FOCUSABLE)).filter(el =>
+    !el.hidden && el.getAttribute('aria-hidden') !== 'true' && !el.closest('[inert]')
+  );
+}
+
+function _trapTabWithin(event, root) {
+  if (event.key !== 'Tab') return;
+  const focusable = _focusableWithin(root);
+  if (!focusable.length) {
+    event.preventDefault();
+    root?.focus?.();
+    return;
+  }
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function _activateCheckoutFocus() {
+  const overlay = dom.orderModal;
+  const dialog = overlay?.querySelector('.k-order-modal') || overlay;
+  if (!overlay || !dialog) return;
+
+  _checkoutFocusOrigin = document.activeElement;
+  dialog.setAttribute('role', 'dialog');
+  dialog.setAttribute('aria-modal', 'true');
+  dialog.setAttribute('aria-labelledby', 'k-order-title');
+  dialog.setAttribute('tabindex', '-1');
+
+  _checkoutBackgroundState = Array.from(document.body.children)
+    .filter(el => el !== overlay && !['SCRIPT', 'STYLE'].includes(el.tagName))
+    .map(el => ({
+      el,
+      inert: !!el.inert,
+      ariaHidden: el.getAttribute('aria-hidden'),
+    }));
+  _checkoutBackgroundState.forEach(({ el }) => {
+    el.inert = true;
+    el.setAttribute('aria-hidden', 'true');
+  });
+
+  _checkoutKeydownHandler = (event) => {
+    if (document.querySelector('.ck-relais-overlay.is-open, .k-id-overlay')) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeOrderModal();
+      return;
+    }
+    _trapTabWithin(event, dialog);
+  };
+  document.addEventListener('keydown', _checkoutKeydownHandler);
+  requestAnimationFrame(() => {
+    if (!overlay.classList.contains('open') || !_checkoutKeydownHandler) return;
+    const initial = dialog.querySelector('.ck-modal-back-btn--header, #k-order-close')
+      || _focusableWithin(dialog)[0]
+      || dialog;
+    initial.focus?.();
+  });
+}
+
+function _deactivateCheckoutFocus() {
+  if (_checkoutKeydownHandler) {
+    document.removeEventListener('keydown', _checkoutKeydownHandler);
+    _checkoutKeydownHandler = null;
+  }
+  _checkoutBackgroundState.forEach(({ el, inert, ariaHidden }) => {
+    el.inert = inert;
+    if (ariaHidden == null) el.removeAttribute('aria-hidden');
+    else el.setAttribute('aria-hidden', ariaHidden);
+  });
+  _checkoutBackgroundState = [];
+  const origin = _checkoutFocusOrigin;
+  _checkoutFocusOrigin = null;
+  if (origin?.isConnected) requestAnimationFrame(() => origin.focus?.());
+}
+
 // ── Helpers téléphone — délégués à b-phone.js (source de vérité) ─
 export function digitsOnly(v)           { return _digitsOnly(v); }
 export function normalizeLocal(c, d)    { return _normalizeLocal(c, d); }
@@ -195,19 +293,13 @@ export function checkoutCart(checkoutSelection = null) {
     if (bnav) {
       bnav.classList.add('u-hidden');
     }
+    _activateCheckoutFocus();
 
-    // FIX — Sécurité de sortie : Escape + clic sur l'overlay ferment le checkout
-    // et retirent cart-open. Sans ça, une sortie non standard bloque le scroll body.
-    function _onOrderEscape(e) {
-      if (e.key === 'Escape' && dom.orderModal.classList.contains('open')) {
-        closeOrderModal();
-      }
-    }
-    function _onOrderOverlayClick(e) {
-      if (e.target === dom.orderModal) closeOrderModal();
-    }
-    document.addEventListener('keydown', _onOrderEscape, { once: true });
-    dom.orderModal.addEventListener('click', _onOrderOverlayClick, { once: true });
+    // Le clic sur le fond reste une sortie explicite, sans listener `once`
+    // consommé par un clic interne au formulaire.
+    dom.orderModal.onclick = (event) => {
+      if (event.target === dom.orderModal) closeOrderModal();
+    };
   }
 
   /**
@@ -215,6 +307,7 @@ export function checkoutCart(checkoutSelection = null) {
    */
 export function closeOrderModal() {
     dom.orderModal.classList.remove('open');
+    _deactivateCheckoutFocus();
     document.body.classList.remove('cart-open');
     // FIX : restaurer bnav
     const bnav = document.getElementById('k-bnav');
@@ -376,8 +469,33 @@ function _openRelaisPicker(od, byIle, allIles, onDone) {
   ov.className = 'ck-relais-overlay';
   ov.setAttribute('role', 'dialog');
   ov.setAttribute('aria-modal', 'true');
+  ov.setAttribute('aria-label', 'Choisir un point de retrait');
+  ov.setAttribute('tabindex', '-1');
 
-  function close() { ov.classList.remove('is-open'); setTimeout(() => ov.remove(), 280); }
+  const focusOrigin = document.activeElement;
+  const checkoutDialog = dom.orderModal?.querySelector('.k-order-modal');
+  const checkoutWasInert = !!checkoutDialog?.inert;
+  if (checkoutDialog) checkoutDialog.inert = true;
+  let closed = false;
+
+  function focusPicker(selector) {
+    requestAnimationFrame(() => {
+      const target = (selector && ov.querySelector(selector))
+        || ov.querySelector('.ck-relais-sheet-x')
+        || _focusableWithin(ov)[0]
+        || ov;
+      target.focus?.();
+    });
+  }
+
+  function close() {
+    if (closed) return;
+    closed = true;
+    ov.classList.remove('is-open');
+    if (checkoutDialog) checkoutDialog.inert = checkoutWasInert;
+    setTimeout(() => ov.remove(), 280);
+    if (focusOrigin?.isConnected) requestAnimationFrame(() => focusOrigin.focus?.());
+  }
 
   function paint() {
     const isFr = draft.zone === 'france';
@@ -417,10 +535,12 @@ function _openRelaisPicker(od, byIle, allIles, onDone) {
       if (draft.zone === 'france') draft.island = 'France';
       else if (!islandsComoros.includes(draft.island)) draft.island = islandsComoros[0] || null;
       paint();
+      focusPicker('[data-zone="' + draft.zone + '"]');
     });
     ov.querySelector('.ck-relais-iles')?.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
       draft.island = b.dataset.ile; paint();
+      focusPicker('[data-ile="' + draft.island + '"]');
     });
     ov.querySelector('.ck-relais-sheet-x').addEventListener('click', close);
     ov.querySelector('.ck-relais-sheet-cta').addEventListener('click', () => {
@@ -435,9 +555,21 @@ function _openRelaisPicker(od, byIle, allIles, onDone) {
   }
 
   ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  ov.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      close();
+      return;
+    }
+    _trapTabWithin(event, ov);
+  });
   document.body.appendChild(ov);
   paint();
-  requestAnimationFrame(() => ov.classList.add('is-open'));
+  requestAnimationFrame(() => {
+    ov.classList.add('is-open');
+    focusPicker();
+  });
 }
 
 function classifyRelayGroup(relais) {
@@ -689,7 +821,7 @@ function _buildRecapItemsBlock(items, selectionTotal = null) {
         : '<span class="ck-recap-item-img ck-recap-item-img--empty" aria-hidden="true">??</span>')
       + '<span class="ck-recap-item-info">'
       +   '<span class="ck-recap-item-name">' + sanitize(product.name || '') + '</span>'
-      +   '<span class="ck-recap-item-qty">Qt? ' + qty + '</span>'
+      +   '<span class="ck-recap-item-qty">Qté ' + qty + '</span>'
       + '</span>'
       + '<span class="ck-recap-item-price">' + fmt(unitPrice * qty, 'KMF') + '</span>'
       + '<span class="ck-recap-check" aria-hidden="true">?</span>'
@@ -1079,8 +1211,15 @@ export function renderCheckout() {
     // Règle §8 — même gabarit de libellé qu'à l'état stabilisé (refreshCheckoutComputedUI) ;
     // seul le sous-texte change tant que le relais n'est pas chargé.
     setCheckoutConfirmButton(confirmBtn, 'Confirmer la commande · ' + fmt(_checkoutTotal(), 'KMF'), 'Chargement du relais…');
-    // Bouton confirm HORS du scroll area → toujours visible en bas du modal
-    body.parentElement.appendChild(confirmBtn);
+    // Le CTA appartient à la colonne de finalisation. Sur desktop il suit le
+    // total au lieu d'être artificiellement plaqué au bas du viewport.
+    // Desktop : le CTA appartient à la colonne récapitulative, immédiatement
+    // après le total. Mobile : il reste hors de la zone défilante afin de
+    // conserver le bouton bas toujours accessible.
+    const isDesktopCheckout = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(min-width: 900px)').matches
+      : window.innerWidth >= 900;
+    (isDesktopCheckout ? checkoutAside : body.parentElement).appendChild(confirmBtn);
 
     /* ── Payment switching ── */
     // stripeCardWrap reste dans body (inline sous les chips)

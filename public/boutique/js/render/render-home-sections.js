@@ -24,7 +24,7 @@
  *   - Soldes filtré via getPromoProducts() dans partitionProductsByCategory
  */
 
-import { getCategorySectionEmoji, getSectionOrder, getSubcategories } from '../shop-schema.js';
+import { getCategorySectionEmoji, getSectionOrder, getSubcategories, matchesSubcategory } from '../shop-schema.js';
 import { getPromoProducts, partitionProductsByCategory } from '../product-store.js';
 import { sanitize } from '../b-utils.js';
 import { state } from '../b-store.js';
@@ -140,16 +140,14 @@ export function renderHomeSections({
     // cette catégorie (évite chips orphelines vides). On utilise `products`
     // AVANT filtrage pour conserver toutes les chips quand une est active.
     const schemaSubs = getSubcategories(category) || [];
-    const productSubKeys = new Set(
-      products.map(p => p.subcategory).filter(Boolean)
+    const availableSubs = schemaSubs.filter(s =>
+      products.some(p => matchesSubcategory(category, s.key, p.subcategory))
     );
-    const availableSubs = schemaSubs.filter(s => productSubKeys.has(s.key));
 
     // Appliquer le filtre sectionSubcats si actif pour cette catégorie (desktop)
     const activeSub = state.sectionSubcats && state.sectionSubcats[category];
     if (activeSub) {
-      const filtered = products.filter(p => p.subcategory === activeSub);
-      if (filtered.length > 0) products = filtered;
+      products = products.filter(p => matchesSubcategory(category, activeSub, p.subcategory));
     }
 
     const emoji = getCategorySectionEmoji(category);

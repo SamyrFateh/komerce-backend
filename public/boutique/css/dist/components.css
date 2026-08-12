@@ -9918,6 +9918,21 @@ body.cart-open  #k-section-index { display:none; }
   transition: width .4s ease;
 }
 
+/* Résumé visible dans le side cart desktop : le drawer mobile possède sa
+ * propre projection dans le footer canonique. */
+.k-sc-snapshot-progress-summary {
+  width: 100%;
+}
+.k-sc-snapshot-progress-copy {
+  margin-bottom: 7px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+.k-sc-snapshot-progress-summary .k-cart-snapshot-progress {
+  margin-bottom: 0;
+}
+
 /* -- Rangée primaire (drawer mobile uniquement — §D) ------------------- */
 .k-snap-primary-row {
   display: flex;
@@ -12372,7 +12387,7 @@ body.k-id-scroll-lock { overflow: hidden; }
     top: 0;
     max-height: calc(100dvh - 124px);
     overflow-y: auto;
-    padding: 18px 18px 96px;
+    padding: 18px;
     scrollbar-width: thin;
   }
 
@@ -12401,19 +12416,11 @@ body.k-id-scroll-lock { overflow: hidden; }
     grid-template-columns: repeat(2, minmax(0,1fr));
   }
 
-  /*
-   * Le CTA reste le seul acte engageant et reste hors de la zone scrollable,
-   * comme sur mobile. Il s'aligne simplement avec la colonne droite.
-   */
+  /* Le CTA suit directement le total dans la colonne transactionnelle. */
   .k-order-overlay.open .ck-confirm-btn {
-    position: absolute;
-    right: max(
-      24px,
-      calc((100vw - var(--ck-desktop-max)) / 2)
-    );
-    bottom: 24px;
-    width: var(--ck-desktop-aside);
-    margin: 0;
+    position: static;
+    width: 100%;
+    margin: 14px 0 0;
     border-radius: 12px;
   }
 }

@@ -66,6 +66,11 @@ describe('shop-schema — fallback déclaratif', () => {
     const techSubcats = schema.getSubcategories('Tech');
     expect(techSubcats.length).toBeGreaterThan(1);
     expect(schema.getSubcategoryMeta('Tech', 'Phones').label).toBe('Tél.');
+    expect(schema.getDbKeysForSubcategory('Tech', 'Phones')).toEqual(
+      expect.arrayContaining(['Phones', 'Téléphones'])
+    );
+    expect(schema.matchesSubcategory('Tech', 'Phones', 'Téléphones')).toBe(true);
+    expect(schema.matchesSubcategory('Tech', 'Phones', 'Ordinateurs')).toBe(false);
     expect(schema.getSubcategoryMeta('Tech', 'Absent')).toEqual({
       key: 'Absent', label: 'Absent', shortLabel: 'Absent', icon: '✨', dbKeys: ['Absent'],
     });
@@ -138,6 +143,7 @@ describe('shop-schema — chargement DB', () => {
     expect(schema.getSubcategories('AliasCustom')[0]).toEqual({
       key: 'Sub', label: 'Sous-catégorie', shortLabel: 'Sous', icon: '⭐', dbKeys: ['SubAlias'],
     });
+    expect(schema.matchesSubcategory('Custom', 'Sub', 'SubAlias')).toBe(true);
     expect(schema.getCategoryByKey('Deals').railBadge).toEqual({ kind: 'svg', svg: '<svg></svg>' });
     expect(schema.getCategoryFilter('Deals')).toEqual({ promo: true });
     expect(schema.getCategoryFilter('JsonFilter')).toEqual({ stock: true });

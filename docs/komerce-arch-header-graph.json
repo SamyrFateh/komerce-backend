@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 773,
-    "edges": 4138,
+    "edges": 4139,
     "dbTables": 108,
     "doctrines": 171,
     "impactAreas": 130,
@@ -3024,6 +3024,7 @@
         "b-phone.js",
         "b-utils.js",
         "b-cart-core.js",
+        "b-identity.js",
         "group/group-api.js",
         "routes/otp.js",
         "routes/orders.js",
@@ -23356,6 +23357,12 @@
       "to": "public/boutique/js/b-cart-core.js",
       "type": "depends",
       "label": "b-cart-core.js"
+    },
+    {
+      "from": "public/boutique/js/b-tracking.js",
+      "to": "public/boutique/js/b-identity.js",
+      "type": "depends",
+      "label": "b-identity.js"
     },
     {
       "from": "public/boutique/js/b-tracking.js",
@@ -45759,6 +45766,7 @@
         "public/boutique/js/b-komerce.js",
         "public/boutique/js/b-phone.js",
         "public/boutique/js/b-share-cart.js",
+        "public/boutique/js/b-tracking.js",
         "public/boutique/js/b-utils.js",
         "public/boutique/js/b-wallet.js",
         "public/boutique/js/group/group-side-cart.js",
@@ -46989,6 +46997,7 @@
         "public/boutique/js/b-phone.js",
         "public/boutique/js/b-utils.js",
         "public/boutique/js/b-cart-core.js",
+        "public/boutique/js/b-identity.js",
         "public/boutique/js/group/group-api.js",
         "routes/otp.js",
         "routes/orders.js",
@@ -47031,6 +47040,7 @@
         "impact:shared-cart",
         "impact:tracking",
         "public/boutique/js/b-cart-core.js",
+        "public/boutique/js/b-identity.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-phone.js",
         "public/boutique/js/b-store.js",

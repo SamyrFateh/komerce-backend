@@ -68,6 +68,10 @@ jest.mock('../../js/b-nav.js', () => ({
   switchView: jest.fn(),
   activateNavTab: jest.fn(),
 }));
+jest.mock('../../js/b-identity.js', () => ({
+  requireIdentity: jest.fn(),
+  restoreIdentity: jest.fn(),
+}));
 
 const { apiGet, apiPost } = require('../../js/b-utils.js');
 const { showToast } = require('../../js/b-cart-core.js');
@@ -75,6 +79,7 @@ const { flush } = require('./helpers/boutiqueTestKit');
 const { getSharedCartLibrary } = require('../../js/group/group-api.js');
 const { activateFromParticipantUrl } = require('../../js/group/group-side-cart.js');
 const { switchView, activateNavTab } = require('../../js/b-nav.js');
+const { requireIdentity, restoreIdentity } = require('../../js/b-identity.js');
 const {
   buildTimeline,
   getStatusDisplay,
@@ -90,6 +95,7 @@ const {
 beforeEach(() => {
   document.body.innerHTML = '';
   jest.useRealTimers();
+  restoreIdentity.mockResolvedValue({ phone: '+2691234567' });
 });
 
 describe('buildTimeline', () => {
@@ -596,6 +602,37 @@ describe('renderListsTab — bibliothèque de listes (GAP-01/02)', () => {
     document.body.appendChild(el);
     return el;
   }
+
+  it('un visiteur anonyme voit une demande d\'identification, pas une fausse erreur réseau', async () => {
+    restoreIdentity.mockResolvedValue(null);
+    const el = mountListsPanel();
+
+    await renderListsTab(el);
+
+    expect(el.textContent).toContain('Confirmez votre WhatsApp');
+    expect(el.textContent).not.toContain('Vérifiez votre connexion');
+    expect(el.querySelector('#k-track-lists-auth-btn')).not.toBeNull();
+    expect(getSharedCartLibrary).not.toHaveBeenCalled();
+  });
+
+  it('recharge les listes après une identification réussie', async () => {
+    restoreIdentity
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ phone: '+2691234567' });
+    getSharedCartLibrary.mockResolvedValue({ created: [], saved: [] });
+    requireIdentity.mockResolvedValue({ phone: '+2691234567' });
+    const el = mountListsPanel();
+
+    await renderListsTab(el);
+    el.querySelector('#k-track-lists-auth-btn').click();
+    await flush();
+
+    expect(requireIdentity).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Accéder à Mes Partages',
+    }));
+    expect(getSharedCartLibrary).toHaveBeenCalledTimes(1);
+    expect(el.textContent).toContain('Créées par moi');
+  });
 
   it('rend les cartes de listes fermées avec l\'attribut disabled', async () => {
     getSharedCartLibrary.mockResolvedValue({

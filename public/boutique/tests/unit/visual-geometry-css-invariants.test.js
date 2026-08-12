@@ -785,7 +785,7 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(aside).toMatch(/overflow-y\s*:\s*auto/);
     });
 
-    it('LOT7-d : CTA final reste hors scroll et aligné sur la colonne droite', () => {
+    it('LOT7-d : CTA final suit le total dans la colonne droite', () => {
       const matches = [
         ...css.matchAll(
           /\.k-order-overlay\.open \.ck-confirm-btn\s*\{([^}]+)\}/g
@@ -795,14 +795,12 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       const desktopCta =
         matches
           .map((m) => m[1])
-          .find((block) => /position\s*:\s*absolute/.test(block))
+          .find((block) => /position\s*:\s*static/.test(block))
         ?? '';
 
-      expect(desktopCta).toMatch(/position\s*:\s*absolute/);
-      expect(desktopCta).toMatch(
-        /width\s*:\s*var\(--ck-desktop-aside\)/
-      );
-      expect(desktopCta).toMatch(/bottom\s*:\s*24px/);
+      expect(desktopCta).toMatch(/position\s*:\s*static/);
+      expect(desktopCta).toMatch(/width\s*:\s*100%/);
+      expect(desktopCta).toMatch(/margin\s*:\s*14px 0 0/);
     });
   });
 

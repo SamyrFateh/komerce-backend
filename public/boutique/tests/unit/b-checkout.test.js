@@ -164,13 +164,22 @@ function setCheckoutTotal(total) {
 function resetDom() {
   document.body.innerHTML = '';
   dom.orderModal = document.createElement('div');
+  dom.orderModal.id = 'k-order-modal';
+  dom.orderModal.className = 'k-order-overlay';
   const wrapper = document.createElement('div');
+  wrapper.className = 'k-order-modal';
   dom.orderBody = document.createElement('div');
-  wrapper.appendChild(dom.orderBody);
+  dom.orderBody.id = 'k-order-body';
   dom.orderTitle = document.createElement('div');
+  dom.orderTitle.id = 'k-order-title';
+  const header = document.createElement('div');
+  header.className = 'k-order-header';
+  header.appendChild(dom.orderTitle);
+  wrapper.append(header, dom.orderBody);
+  dom.orderModal.appendChild(wrapper);
   dom.modalOverlay = document.createElement('div');
   document.body.appendChild(dom.orderModal);
-  document.body.appendChild(wrapper);
+  document.body.appendChild(dom.modalOverlay);
 }
 
 describe('b-checkout', () => {
@@ -354,7 +363,7 @@ describe('b-checkout', () => {
       expect(dom.orderModal.classList.contains('open')).toBe(false);
     });
 
-    it('panier non vide → le CTA final reste hors de la zone scrollable du checkout unifié', () => {
+    it('panier non vide → le CTA final suit le total dans la colonne de finalisation', () => {
       state.cart = [{
         product: { id: 'p1', name: 'Produit test', price_kmf: 4500 },
         qty: 1,
@@ -365,13 +374,14 @@ describe('b-checkout', () => {
       const confirmBtn = document.getElementById('btn-confirm-order');
 
       expect(confirmBtn).not.toBeNull();
-      expect(dom.orderBody.contains(confirmBtn)).toBe(false);
-      expect(confirmBtn.parentElement).toBe(dom.orderBody.parentElement);
+      expect(dom.orderBody.contains(confirmBtn)).toBe(true);
       expect(dom.orderBody.classList.contains('k-order-body--checkout')).toBe(true);
 
       const layout = dom.orderBody.querySelector('.ck-checkout-layout');
       const primary = dom.orderBody.querySelector('.ck-checkout-primary');
       const aside = dom.orderBody.querySelector('.ck-checkout-aside');
+
+      expect(confirmBtn.parentElement).toBe(aside);
 
       expect(layout).not.toBeNull();
       expect(primary).not.toBeNull();
@@ -399,6 +409,23 @@ describe('b-checkout', () => {
       expect(aside.querySelector('.ck-final-total')).not.toBeNull();
 
       expect(document.getElementById('btn-confirm-recap')).toBeNull();
+    });
+
+    it('sur mobile, le CTA final reste hors de la zone défilante', () => {
+      const originalWidth = window.innerWidth;
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+      state.cart = [{
+        product: { id: 'p1', name: 'Produit test', price_kmf: 4500 },
+        qty: 1,
+      }];
+
+      checkoutCart();
+
+      const confirmBtn = document.getElementById('btn-confirm-order');
+      const aside = dom.orderBody.querySelector('.ck-checkout-aside');
+      expect(confirmBtn.parentElement).toBe(dom.orderBody.parentElement);
+      expect(aside.contains(confirmBtn)).toBe(false);
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
     });
   });
 
@@ -715,6 +742,35 @@ describe('b-checkout', () => {
       expect(dom.orderModal.classList.contains('open')).toBe(false);
     });
 
+    it('confine le focus dans le checkout et rend l\'arrière-plan inerte', async () => {
+      const outside = document.createElement('button');
+      outside.textContent = 'Action boutique';
+      document.body.appendChild(outside);
+      outside.focus();
+      state.cart = [{ product: { id: 1, name: 'Produit test', price_kmf: 3000 }, qty: 1 }];
+
+      checkoutCart();
+      await flush();
+
+      const dialog = dom.orderModal.querySelector('.k-order-modal');
+      const focusable = Array.from(dialog.querySelectorAll('button:not([disabled]), input:not([disabled])'));
+      const first = focusable[0];
+      const last = focusable.at(-1);
+
+      expect(dialog.getAttribute('role')).toBe('dialog');
+      expect(dialog.getAttribute('aria-modal')).toBe('true');
+      expect(outside.inert).toBe(true);
+
+      last.focus();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      expect(document.activeElement).toBe(first);
+
+      closeOrderModal();
+      await flush();
+      expect(outside.inert).toBe(false);
+      expect(document.activeElement).toBe(outside);
+    });
+
     it('clic sur l\'overlay (en dehors du contenu) → ferme la modale de commande', async () => {
       state.cart = [{ product: { id: 1 }, qty: 1 }];
       checkoutCart();
@@ -956,6 +1012,12 @@ describe('b-checkout', () => {
       dom.orderBody.querySelector('#ck-relais-summary').click();
       let overlay = document.querySelector('.ck-relais-overlay');
       expect(overlay).not.toBeNull();
+      expect(dom.orderModal.querySelector('.k-order-modal').inert).toBe(true);
+
+      const pickerButtons = Array.from(overlay.querySelectorAll('button:not([disabled])'));
+      pickerButtons.at(-1).focus();
+      pickerButtons.at(-1).dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      expect(document.activeElement).toBe(pickerButtons[0]);
 
       let ileBtn = Array.from(overlay.querySelectorAll('.ck-relais-iles button'))
         .find((b) => b.dataset.ile === 'Ngazidja');
@@ -966,6 +1028,7 @@ describe('b-checkout', () => {
 
       expect(state.orderData.selectedRelaisName).toBe('Relais Moroni');
       expect(dom.orderBody.querySelector('#ck-relais-summary').textContent).toContain('Relais Moroni');
+      expect(dom.orderModal.querySelector('.k-order-modal').inert).toBe(false);
     });
   });
 

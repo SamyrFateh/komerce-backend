@@ -47,6 +47,7 @@ jest.mock('../../js/b-cart-core.js', () => ({ showToast: jest.fn() }));
 jest.mock('../../js/shop-schema.js', () => ({
   getSubcategories: mockGetSubcategories,
   normalizeCategoryKey: jest.fn((value) => value),
+  matchesSubcategory: jest.fn((category, key, value) => key === value),
 }));
 jest.mock('../../js/b-utils.js', () => ({
   sanitize: jest.fn((value) => String(value == null ? '' : value)),
