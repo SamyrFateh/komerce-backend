@@ -65,8 +65,7 @@ jobs:
       - name: Prove 500 normalized V2 contracts and source lineage without network
         run: |
           node - <<'NODE'
-          const { buildSlots, summary } = require('./scripts/showcase-v2-plan');
-          const { buildImportContracts } = require('./scripts/showcase-v2-seed');
+          const { buildSlots, buildV2Contract, summary } = require('./scripts/showcase-v2-plan');
           const manualConnector = require('./services/suppliers/connectors/manual-connector');
           const { buildNormalizedSourceContractSnapshot } = require('./services/suppliers/normalized-product');
           const { validateForPromotion } = require('./services/catalog-promotion');
@@ -85,7 +84,21 @@ jobs:
             source_url: `https://example.test/source/${slot.product_ref}`,
             source_locale: 'en',
           }));
-          const items = buildImportContracts(sourceProducts, slots);
+          const items = sourceProducts.map((product, index) => {
+            const slot = slots[index];
+            const contract = buildV2Contract(product, slot);
+            return {
+              ...contract,
+              supplier_name: 'Komerce Showcase V2',
+              supplier_product_id: slot.product_ref,
+              raw_payload: {
+                ...(contract.raw_payload || {}),
+                source_title: product.source_title,
+                source_description: product.source_description,
+                source_locale: product.source_locale,
+              },
+            };
+          });
           if (items.some((item) => !item.raw_payload?.source_title || item.raw_payload?.source_locale !== 'en')) process.exit(1);
 
           const connector = manualConnector.fetchProducts({ supplier_name: 'Komerce Showcase V2', items });
@@ -149,15 +162,28 @@ jobs:
         run: |
           node - <<'NODE'
           const fs = require('fs');
-          const { buildSlots, summary } = require('./scripts/showcase-v2-plan');
-          const { buildImportContracts } = require('./scripts/showcase-v2-seed');
+          const { buildSlots, buildV2Contract, summary } = require('./scripts/showcase-v2-plan');
           const manualConnector = require('./services/suppliers/connectors/manual-connector');
           const { buildNormalizedSourceContractSnapshot } = require('./services/suppliers/normalized-product');
           const { validateForPromotion } = require('./services/catalog-promotion');
 
           const products = JSON.parse(fs.readFileSync('data/catalogue-test-raw/showcase-catalog-v2-source.json', 'utf8'));
           const slots = buildSlots();
-          const items = buildImportContracts(products, slots);
+          const items = products.map((product, index) => {
+            const slot = slots[index];
+            const contract = buildV2Contract(product, slot);
+            return {
+              ...contract,
+              supplier_name: 'Komerce Showcase V2',
+              supplier_product_id: slot.product_ref,
+              raw_payload: {
+                ...(contract.raw_payload || {}),
+                source_title: product.source_title || null,
+                source_description: product.source_description ?? null,
+                source_locale: product.source_locale || 'en',
+              },
+            };
+          });
           if (items.some((item) => !item.raw_payload?.source_title)) {
             console.error('raw_payload.source_title manquant');
             process.exit(1);
