@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 773,
-    "edges": 4143,
+    "edges": 4144,
     "dbTables": 108,
     "doctrines": 171,
     "impactAreas": 130,
-    "unresolvedCodeEdges": 417,
+    "unresolvedCodeEdges": 418,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 61
   },
@@ -9371,7 +9371,8 @@
         "utils/logger.js"
       ],
       "usedBy": [
-        "routes/sourcing-scanner.js"
+        "routes/sourcing-scanner.js",
+        "scripts/showcase-v2-seed.js"
       ],
       "dbRead": [
         "boutique_categories",
@@ -9392,7 +9393,7 @@
         "catalog",
         "sourcing"
       ],
-      "version": "2026-07"
+      "version": "2026-08"
     },
     {
       "id": "services/catalog-overrides.js",
@@ -32260,6 +32261,12 @@
       "label": "routes/sourcing-scanner.js"
     },
     {
+      "from": "scripts/showcase-v2-seed.js",
+      "to": "services/catalog-enrichment.js",
+      "type": "uses",
+      "label": "scripts/showcase-v2-seed.js"
+    },
+    {
       "from": "services/catalog-enrichment.js",
       "to": "db:boutique_categories",
       "type": "db-read",
@@ -53126,7 +53133,8 @@
         "utils/logger.js"
       ],
       "directUsedBy": [
-        "routes/sourcing-scanner.js"
+        "routes/sourcing-scanner.js",
+        "scripts/showcase-v2-seed.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -62613,6 +62621,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "scripts/showcase-v2-seed.js",
+      "to": "services/catalog-enrichment.js",
+      "type": "uses",
+      "label": "scripts/showcase-v2-seed.js"
     },
     {
       "from": "services/catalog-overrides.js",

@@ -14,11 +14,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 773
-- Edges: 4143
+- Edges: 4144
 - DB tables: 108
 - Doctrines: 171
 - Impact areas: 130
-- Unresolved code edges: 417
+- Unresolved code edges: 418
 - Tables multi-écrivains directs (>=2): 61
 - Avertissements db-write / db-write-via en chevauchement: 0
 
