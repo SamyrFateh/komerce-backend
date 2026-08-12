@@ -7,12 +7,15 @@ on:
       - 'scripts/showcase-v2-plan.js'
       - 'scripts/showcase-v2-source-build.js'
       - 'scripts/showcase-v2-seed.js'
-      - 'scripts/showcase-v2-reset-rejected.js'
+      - 'scripts/showcase-v2-reset.js'
       - 'scripts/showcase-media-mirror.js'
       - 'services/catalog-eligibility.js'
+      - 'services/suppliers/catalog-import-orchestrator.js'
       - 'tests/unit/catalog-eligibility.test.js'
+      - 'tests/unit/catalog-import-eligibility-evidence.test.js'
       - 'tests/unit/showcase-v2-plan.test.js'
       - 'tests/unit/showcase-v2-source-build.test.js'
+      - 'tests/unit/showcase-v2-reset.test.js'
       - 'tests/unit/showcase-media-mirror.test.js'
       - '.github/workflows/showcase-v2-staging-deploy.yml'
 
@@ -39,12 +42,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: V2 plan, eligibility, source resilience and Wikimedia policy tests
+      - name: V2 plan, refinery, reset, source resilience and Wikimedia policy tests
         run: |
           npx jest \
             tests/unit/catalog-eligibility.test.js \
+            tests/unit/catalog-import-eligibility-evidence.test.js \
             tests/unit/showcase-v2-plan.test.js \
             tests/unit/showcase-v2-source-build.test.js \
+            tests/unit/showcase-v2-reset.test.js \
             tests/unit/showcase-media-mirror.test.js \
             --runInBand
 
@@ -87,7 +92,7 @@ jobs:
           NODE
 
   build-media:
-    name: Build and mirror 500 V2 products
+    name: Reset, build and mirror 500 V2 products
     needs: preflight
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -120,6 +125,9 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Fresh reset SHOWCASE-V2 staging
+        run: node scripts/showcase-v2-reset.js
 
       - name: Build 500 taxonomy-covered and eligible source products
         run: |
@@ -217,9 +225,6 @@ jobs:
         with:
           name: showcase-v2-canonical-manifests
           path: data/catalogue-test-raw
-
-      - name: Reset rejected synthetic V2 candidates for replay
-        run: node scripts/showcase-v2-reset-rejected.js
 
       - name: Cumulative refinery seed
         run: |
