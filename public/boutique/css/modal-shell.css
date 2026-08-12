@@ -248,14 +248,12 @@
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 500; transition: background .15s; touch-action: manipulation; cursor: pointer; }
 .k-qty-btn:active { background: var(--sand-dark); }
 .k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 500; }
-.k-add-cart-btn { grid-column: 1; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--cta-green); border: 2px solid var(--cta-green); border-radius: 50px; font-size: 14px; font-weight: 500; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; /* P0-fix : overflow:hidden + text-overflow:ellipsis retirés — la troncature "Ajouter au pa…" venait de ce bloc + flex:1 1 0 desktop. Le conteneur .k-modal-actions gère l'overflow. */ }
-/* FIX poids visuel "Ajouter" : bordure sand-dark quasi invisible + texte gris
-   se lisaient comme une action désactivée à côté d'Acheter (vert plein).
-   Bordure épaissie (2px) + teinte verte (texte + bordure) rattache Ajouter à
-   la famille CTA tout en restant outline-only : Acheter reste dominant. */
+.k-add-cart-btn { grid-column: 1; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--action-commerce-text); border: 2px solid var(--action-commerce-border); border-radius: 50px; font-size: 14px; font-weight: 500; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; /* P0-fix : overflow:hidden + text-overflow:ellipsis retirés — la troncature "Ajouter au pa…" venait de ce bloc + flex:1 1 0 desktop. Le conteneur .k-modal-actions gère l'overflow. */ }
+/* Poids visuel "Ajouter" : outline jaune + encre sombre le rattachent à la
+   famille commerce sans rivaliser avec Acheter maintenant, qui reste plein. */
 .k-add-cart-btn svg { width: 18px; height: 18px; }
-.k-add-cart-btn:active { transform: scale(.97); background: var(--green-bg-soft, var(--sand)); }
-.k-modal-actions .k-buy-now-btn { grid-column: 2; grid-row: 1; width: 100%; height: 44px; padding: 0 16px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; /* P0-fix : overflow:hidden retiré */ }
+.k-add-cart-btn:active { transform: scale(.97); background: var(--action-commerce-hover); }
+.k-modal-actions .k-buy-now-btn { grid-column: 2; grid-row: 1; width: 100%; height: 44px; padding: 0 16px; background: var(--action-commerce); color: var(--action-commerce-text); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; /* P0-fix : overflow:hidden retiré */ }
 .k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
 .k-modal-subtotal strong { color: var(--text); font-weight: 500; font-size: 13px; }
 /* Les actions produit peuvent être masquées par leurs propres états ;
@@ -800,7 +798,7 @@
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
     flex: 1 1 0; height: 44px; border-radius: 999px;
-    background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark);
+    background: var(--white); color: var(--action-commerce-text); border: 1.5px solid var(--action-commerce-border);
     /* P0 fix (DIFF-pdp-desktop-simple-vs-enrichi) : overflow:hidden hérité de la
        règle de base fait retomber le min-width automatique du flex-item à 0 au
        lieu de la largeur du texte → troncature ("Ajouter au pa…"). On neutralise
@@ -811,18 +809,18 @@
     display: none;
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover {
-    border-color: var(--sand-dark); background: var(--sand);
+    border-color: var(--action-commerce-border); background: var(--action-commerce-hover);
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
     flex: 1 1 0; height: 44px; border-radius: 999px;
-    background: var(--cta-green); color: var(--white);
+    background: var(--action-commerce); color: var(--action-commerce-text);
     font-size: 15px; font-weight: 500;
     transition: background .18s, transform .1s;
     /* P0 fix — voir .k-add-cart-btn ci-dessus, même cause. */
     overflow: visible; text-overflow: clip; min-width: max-content;
-  } /* [T-029] halo décoratif retiré : le fond ocean plein suffit */
+  } /* [T-029] halo décoratif retiré : le fond commerce plein suffit */
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn:hover {
-    background: var(--cta-green-dark, var(--cta-green));
+    background: var(--action-commerce-hover);
   }
   #k-modal .k-modal-subtotal {
     /* D4 pt.4 — masqué : seconde source transactionnelle hors panier, sous-total
@@ -880,7 +878,7 @@
      (colonne droite). Leur layout est owned par modal-product-lot4-hybrid.css. */
 
   /* ── Hover & focus ───────────────────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); } /* [T-029] halo décoratif retiré */
+  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--action-commerce-border); } /* [T-029] halo décoratif retiré */
   .k-modal, .k-modal * { -webkit-tap-highlight-color: transparent; }
   .k-modal-carousel:focus, .k-modal-carousel:focus-visible,
   .k-modal-slide:focus, .k-modal-slide:focus-visible { outline: none; box-shadow: none; }

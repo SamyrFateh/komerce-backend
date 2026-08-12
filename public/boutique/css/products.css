@@ -75,8 +75,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--commerce-yellow);
-  color: var(--text);
+  background: var(--action-commerce);
+  color: var(--action-commerce-text);
   font-size: 11px;
   font-weight: 700;
   padding: 3px 8px;
@@ -112,9 +112,9 @@
 }
 
 .k-card-fav.liked {
-  color: var(--pink);
-  background: var(--pink-light);
-  box-shadow: 0 0 0 2px var(--pink-shadow);
+  color: var(--accent-editorial);
+  background: var(--accent-editorial-soft);
+  box-shadow: 0 0 0 2px var(--coral-shadow-25);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -134,10 +134,10 @@
   right: 7px;
   width: 32px;
   height: 32px;
-  background: var(--commerce-yellow);
+  background: var(--action-commerce);
   border-radius: 50%;
-  box-shadow: var(--commerce-yellow-shadow);
-  border: 1px solid var(--commerce-yellow);
+  box-shadow: var(--action-commerce-shadow);
+  border: 1px solid var(--action-commerce-border);
   padding: 0;
   z-index: 5;
   cursor: pointer;
@@ -163,14 +163,14 @@
 }
 .k-card-add:active {
   transform: scale(.90);
-  background: var(--commerce-yellow-hover);
-  border-color: var(--commerce-yellow-hover);
+  background: var(--action-commerce-hover);
+  border-color: var(--action-commerce-hover);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .k-card-add:hover {
-    background: var(--commerce-yellow-hover);
-    border-color: var(--commerce-yellow-hover);
+    background: var(--action-commerce-hover);
+    border-color: var(--action-commerce-hover);
   }
 }
 
@@ -181,8 +181,8 @@
   max-width: 86px;
   height: 32px;
   padding: 0;
-  background: var(--cta-green);
-  border: 1px solid var(--cta-green);
+  background: var(--state-positive);
+  border: 1px solid var(--state-positive);
   border-radius: 999px;
   box-shadow: 0 3px 9px rgba(42,122,62,.20);
   display: flex;

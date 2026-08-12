@@ -148,6 +148,7 @@ module.exports = {
     'un produit LEGACY_VARIANTS est explicitement selection_supported=false : aucun faux SKU n est fabriqué',
     'un produit LEGACY_VARIANTS qui expose encore des axes ou has_variants reste non achetable jusqu a sa bascule SKU canonique',
     'sur mobile et desktop, Ajouter et Acheter restent désactivés pour un produit SKU tant que selected_sku_id est null',
+    'sur mobile et desktop, Ajouter et Acheter utilisent le même accent commerce sans modifier leur hiérarchie ni leurs états désactivés',
     'Acheter maintenant ouvre sans délai le checkout sur la seule ligne SKU courante ; il ne redirige jamais vers le panier et ne fusionne jamais son intention avec les lignes déjà présentes',
     'un ajout SKU persiste le prix, la référence et le média de la sellable_unit sélectionnée, jamais seulement les champs catalogue du produit',
     'le stepper product-level reste interdit pour un inventaire SKU ; chaque clic CTA SKU porte une intention de 1 unité',

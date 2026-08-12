@@ -78,6 +78,7 @@ module.exports = {
     'total panier dérivé uniquement des lignes réellement persistées',
     'une mutation panier synchronise état, badge, lignes et total avant toute ouverture de checkout',
     'le drawer fermé est invisible et absent de l arbre d accessibilité ; une seule action Commander est exposée par contexte',
+    'Commander et payer utilisent l accent commerce ; suivre utilise l action de confirmation et les actions réversibles restent secondaires',
     'une répétition UI ne crée pas une seconde commande par elle-même',
     'le suivi ne modifie jamais le statut de commande',
     'la timeline reflète les statuts canoniques reçus du backend',

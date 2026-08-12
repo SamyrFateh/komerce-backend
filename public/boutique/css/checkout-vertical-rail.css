@@ -512,16 +512,16 @@
   min-height: 48px;
   margin: 8px 16px calc(12px + env(safe-area-inset-bottom));
   padding: 10px 16px;
-  border: 1px solid var(--stone-border);
+  border: 1px solid var(--action-commerce-border);
   border-radius: 12px;
-  background: var(--stone);
-  color: var(--stone-text);
-  box-shadow: var(--stone-shadow, 0 5px 13px rgba(42,33,23,.08));
+  background: var(--action-commerce);
+  color: var(--action-commerce-text);
+  box-shadow: var(--action-commerce-shadow);
 }
 
 #btn-confirm-recap:not(:disabled):hover {
-  background: var(--stone-hover);
-  color: var(--stone-text);
+  background: var(--action-commerce-hover);
+  color: var(--action-commerce-text);
   transform: translateY(-1px);
 }
 
@@ -745,13 +745,13 @@
   padding: 10px 16px;
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(90deg, var(--checkout-neutral-deep), var(--checkout-neutral-mid));
-  color: var(--white);
-  box-shadow: 0 5px 14px rgba(52,53,49,.16);
+  background: var(--action-commerce);
+  color: var(--action-commerce-text);
+  box-shadow: var(--action-commerce-shadow);
 }
 
 .k-order-overlay.open .ck-confirm-btn:not(:disabled):hover {
-  background: var(--checkout-neutral-deep);
+  background: var(--action-commerce-hover);
   filter: none;
   transform: translateY(-1px);
 }
@@ -762,7 +762,7 @@
 }
 
 .ck-confirm-main { font-size: .88rem; font-weight: 900; }
-.ck-confirm-subtext { color: var(--white); font-size: .62rem; opacity: .78; }
+.ck-confirm-subtext { color: var(--action-commerce-text); font-size: .62rem; opacity: .72; }
 
 /* â”€â”€ Informations secondaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 

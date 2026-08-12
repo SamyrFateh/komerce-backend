@@ -182,7 +182,7 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(block).toMatch(/justify-content\s*:\s*center/);
     });
 
-    it('LOT2-c : le gate de confirmation reste clair et neutre', () => {
+    it('LOT2-c : le chrome reste neutre et le gate de confirmation porte l accent commerce', () => {
       const header = css.match(/\.k-order-header\s*\{([^}]+)\}/s)?.[1] ?? '';
       const check = css.match(/\.ck-recap-check\s*\{([^}]+)\}/s)?.[1] ?? '';
       const cta = css.match(/#btn-confirm-recap\s*\{([^}]+)\}/s)?.[1] ?? '';
@@ -191,8 +191,8 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(header).toMatch(/color\s*:\s*var\(--text\)/);
       expect(check).toMatch(/background\s*:\s*transparent/);
       expect(check).toMatch(/border\s*:\s*1px\s+solid\s+var\(--border\)/);
-      expect(cta).toMatch(/background\s*:\s*var\(--stone\)/);
-      expect(cta).toMatch(/color\s*:\s*var\(--stone-text\)/);
+      expect(cta).toMatch(/background\s*:\s*var\(--action-commerce\)/);
+      expect(cta).toMatch(/color\s*:\s*var\(--action-commerce-text\)/);
     });
   });
 
@@ -296,11 +296,12 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(desktop).toMatch(/grid-template-columns\s*:\s*repeat\(2,/);
     });
 
-    it('LOT5-c : le CTA engageant reste graphite et compact', () => {
+    it('LOT5-c : le CTA engageant reste commerce et compact', () => {
       const block = css.match(/\.k-order-overlay\.open\s+\.ck-confirm-btn\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(block).toMatch(/min-height\s*:\s*52px/);
       expect(block).toMatch(/border-radius\s*:\s*12px/);
-      expect(block).toMatch(/background\s*:\s*linear-gradient\(90deg,\s*var\(--checkout-neutral-deep\),\s*var\(--checkout-neutral-mid\)\)/);
+      expect(block).toMatch(/background\s*:\s*var\(--action-commerce\)/);
+      expect(block).toMatch(/color\s*:\s*var\(--action-commerce-text\)/);
       expect(block).not.toMatch(/checkout-accent|cta-green/);
     });
 
@@ -448,6 +449,10 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
 
     it('LOT8-a : le jaune commerce est tokenisé', () => {
       expect(tokens).toMatch(/--commerce-yellow\s*:\s*#FFD400/);
+      expect(tokens).toMatch(/--action-commerce\s*:\s*var\(--commerce-yellow\)/);
+      expect(tokens).toMatch(/--action-confirm\s*:\s*var\(--text\)/);
+      expect(tokens).toMatch(/--action-secondary\s*:\s*var\(--stone\)/);
+      expect(tokens).toMatch(/--accent-editorial\s*:\s*var\(--coral\)/);
     });
 
     it('LOT8-b : promo = jaune + texte sombre', () => {
@@ -455,9 +460,9 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
         products.match(/\.k-card-promo\s*\{([^}]+)\}/s)?.[1] ?? '';
 
       expect(block).toMatch(
-        /background\s*:\s*var\(--commerce-yellow\)/
+        /background\s*:\s*var\(--action-commerce\)/
       );
-      expect(block).toMatch(/color\s*:\s*var\(--text\)/);
+      expect(block).toMatch(/color\s*:\s*var\(--action-commerce-text\)/);
     });
 
     it('LOT8-c : ajouter = jaune et in-cart reste vert', () => {
@@ -469,12 +474,12 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
         products.match(/\.k-card-add\.in-cart\s*\{([^}]+)\}/s)?.[1] ?? '';
 
       expect(add).toMatch(
-        /background\s*:\s*var\(--commerce-yellow\)/
+        /background\s*:\s*var\(--action-commerce\)/
       );
       expect(plus).toMatch(/font-size\s*:\s*18px/);
       expect(plus).toMatch(/color\s*:\s*var\(--text\)/);
       expect(inCart).toMatch(
-        /background\s*:\s*var\(--cta-green\)/
+        /background\s*:\s*var\(--state-positive\)/
       );
     });
 
@@ -502,6 +507,74 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(layout).toMatch(
         /@media\s*\(min-width:\s*900px\)[\s\S]*?\.k-cart-btn\s*\{[^}]*margin-left:\s*0;[^}]*margin-right:\s*0;/
       );
+    });
+  });
+
+  // ── LOT 6B — palette sémantique transverse ───────────────────────────
+  describe('LOT 6B — harmonisation chromatique des actions', () => {
+    it('les CTA commerce du panier et de la liste partagée partagent le même rôle', () => {
+      const cart = readCss('cart.css');
+      const desktop = readCss('boutique-desktop.css');
+      const shared = readCss('shared-list-side-cart.css');
+
+      const drawerCheckout = cart.match(/#k-cart-checkout\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const sideCheckout = desktop.match(/\.k-sc-btn-checkout\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const sharedCheckout = shared.match(/\.k-snap-btn-primary\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      for (const block of [drawerCheckout, sideCheckout, sharedCheckout]) {
+        expect(block).toMatch(/background\s*:\s*var\(--action-commerce\)/);
+        expect(block).toMatch(/color\s*:\s*var\(--action-commerce-text\)/);
+      }
+    });
+
+    it('Ajouter et Acheter maintenant portent l accent commerce dans la modal', () => {
+      const modal = readCss('modal-shell.css');
+      const add = [...modal.matchAll(/\.k-add-cart-btn\s*\{([^}]+)\}/gs)]
+        .map(match => match[1])
+        .find(block => /grid-column\s*:\s*1/.test(block)) ?? '';
+      const buy = modal.match(/\.k-modal-actions\s+\.k-buy-now-btn\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(add).toMatch(/border\s*:\s*2px solid var\(--action-commerce-border\)/);
+      expect(buy).toMatch(/background\s*:\s*var\(--action-commerce\)/);
+      expect(buy).toMatch(/color\s*:\s*var\(--action-commerce-text\)/);
+    });
+
+    it('le checkout final garde son chrome neutre et réserve le jaune à la transaction', () => {
+      const checkout = readCss('checkout-vertical-rail.css');
+      const header = checkout.match(/\.k-order-header\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const finalCta = checkout.match(/\.k-order-overlay\.open\s+\.ck-confirm-btn\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(header).toMatch(/background\s*:\s*var\(--checkout-cream\)/);
+      expect(finalCta).toMatch(/background\s*:\s*var\(--action-commerce\)/);
+      expect(finalCta).toMatch(/color\s*:\s*var\(--action-commerce-text\)/);
+    });
+
+    it('confirmation, identité et éditorial restent distincts du commerce', () => {
+      const cart = readCss('cart.css');
+      const identity = readCss('identity.css');
+      const products = readCss('products.css');
+
+      const tracking = cart.match(/\.k-track-btn\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const identityCta = identity.match(/\.k-id-btn\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const liked = products.match(/\.k-card-fav\.liked\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(tracking).toMatch(/background\s*:\s*var\(--action-confirm\)/);
+      expect(identityCta).toMatch(/background\s*:\s*var\(--action-confirm\)/);
+      expect(liked).toMatch(/color\s*:\s*var\(--accent-editorial\)/);
+      expect(liked).toMatch(/background\s*:\s*var\(--accent-editorial-soft\)/);
+    });
+
+    it('une promotion favoris n usurpe plus le rouge danger et WhatsApp reste une exception de marque', () => {
+      const interactions = readCss('interactions.css');
+      const shared = readCss('shared-list-side-cart.css');
+      const promo = interactions.match(/\.k-card-promo-fav\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const whatsapp = interactions.match(/\.k-fav-promo-active\s+\.k-fav-share-btn\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const danger = shared.match(/\.k-confirm-dialog-btn-danger\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(promo).toMatch(/background\s*:\s*var\(--action-commerce\)/);
+      expect(promo).not.toMatch(/red|danger/);
+      expect(whatsapp).toMatch(/var\(--whatsapp\)/);
+      expect(danger).toMatch(/background\s*:\s*var\(--state-danger\)/);
     });
   });
 

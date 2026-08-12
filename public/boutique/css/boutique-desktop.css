@@ -886,25 +886,25 @@
   }
   .k-sc-free-ship svg { width: 12px; height: 12px; flex-shrink: 0; }
 
-  /* ── CTA Commander — pierre claire (doctrine UX 2026-08) ── */
+  /* ── CTA Commander — accent commerce canonique ── */
   .k-sc-btn-checkout {
     width: 100%;
     min-height: 44px;
     padding: 0 14px;
-    border: 1px solid var(--stone-border);
+    border: 1px solid var(--action-commerce-border);
     border-radius: 13px;
-    background: var(--stone);
-    color: var(--stone-text);
+    background: var(--action-commerce);
+    color: var(--action-commerce-text);
     font-size: 13.5px;
     font-weight: 850;
     cursor: pointer;
     font-family: var(--font);
     letter-spacing: .01em;
-    box-shadow: 0 5px 13px rgba(42,33,23,.08);
+    box-shadow: var(--action-commerce-shadow);
     transition: background .15s, transform .12s;
   }
   .k-sc-btn-checkout:hover {
-    background: var(--stone-hover);
+    background: var(--action-commerce-hover);
     transform: translateY(-1px);
   }
   .k-sc-btn-checkout:active { transform: scale(.98); }

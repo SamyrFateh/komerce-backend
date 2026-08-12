@@ -275,22 +275,22 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-total-val   { font-family: Georgia, serif; font-size: 22px; color: var(--text); }
 .k-cart-total-conv  { font-size: 12px; color: var(--text-muted); display: block; text-align: right; margin-top: 2px; }
 
-/* CTA transactionnel principal — pierre claire (doctrine UX 2026-08) */
+/* CTA transactionnel principal — accent commerce canonique. */
 .k-cart-footer-btns { display: flex; flex-direction: column; gap: 8px; }
 
 #k-cart-checkout {
   width: 100%; min-height: 44px;
   padding: 12px 16px;
-  background: var(--stone);
-  border: 1px solid var(--stone-border);
+  background: var(--action-commerce);
+  border: 1px solid var(--action-commerce-border);
   border-radius: 13px;
-  color: var(--stone-text);
+  color: var(--action-commerce-text);
   font-size: 14px; font-weight: 850;
   cursor: pointer;
-  box-shadow: var(--stone-shadow, 0 5px 13px rgba(42,33,23,.08));
+  box-shadow: var(--action-commerce-shadow);
   transition: background .15s, transform .12s;
 }
-#k-cart-checkout:hover  { background: var(--stone-hover); transform: translateY(-1px); }
+#k-cart-checkout:hover  { background: var(--action-commerce-hover); transform: translateY(-1px); }
 #k-cart-checkout:active { transform: scale(.98); }
 
 /* Actions secondaires — 2 colonnes, blanches, contour fin */
@@ -315,7 +315,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .kcf-btn:hover { background: var(--sand); color: var(--text); }
 .kcf-full { width: 100%; padding: 14px 20px; border-radius: 50px; font-size: 15px; font-weight: 700; margin: 6px 0 12px; background: linear-gradient(135deg, var(--cta-green) 0%, var(--status-confirmed-text) 100%); color: var(--white); box-shadow: 0 4px 14px rgba(42,122,62,.3); }
 .kcf-full:hover  { transform: translateY(-1px); }
-.kcf-primary  { background: var(--stone); color: var(--stone-text); border: 1px solid var(--stone-border); }
+.kcf-primary  { background: var(--action-commerce); color: var(--action-commerce-text); border: 1px solid var(--action-commerce-border); }
 .kcf-secondary { background: var(--sand); color: var(--text-muted); border: 1px solid var(--border); }
 .kcf-share { border-color: var(--cta-green); color: var(--cta-green); }
 .kcf-danger-mini { padding: 9px 14px; background: transparent; color: var(--text-form-soft); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
@@ -374,7 +374,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-secondary-page-eyebrow {
   display: block;
   margin-bottom: 5px;
-  color: var(--terracotta);
+  color: var(--accent-editorial);
   font-size: 10px;
   font-weight: 850;
   letter-spacing: .08em;
@@ -408,15 +408,16 @@ body.cart-open .k-hero { pointer-events: none; }
 
 .k-order-card { background: var(--white); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 6px var(--overlay-black-sm); }
 .k-order-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-.k-order-ref { font-weight: 700; font-size: .88rem; color: var(--terracotta); letter-spacing: .02em; }
+.k-order-ref { font-weight: 700; font-size: .88rem; color: var(--accent-editorial); letter-spacing: .02em; }
 .k-order-date { font-size: .75rem; color: var(--text-muted); }
 .k-order-card-total { font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 12px; }
 .k-track-form { background: var(--white); border-radius: 12px; padding: 18px; box-shadow: 0 2px 12px var(--overlay-black-sm); margin-bottom: 16px; }
 .k-track-ref-wrap { display: flex; align-items: center; gap: 0; width: 100%; border: 1.5px solid var(--sand-dark); border-radius: 8px; overflow: hidden; background: var(--white); transition: border-color .2s; }
-.k-track-ref-wrap:focus-within { border-color: var(--coral); }
+.k-track-ref-wrap:focus-within { border-color: var(--accent-editorial); }
 .k-track-ref-prefix { flex: 0 0 auto; padding: 12px 2px 12px 14px; font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; user-select: none; }
 .k-track-input--ref { flex: 1; min-width: 0; border: none; outline: none; padding: 12px 14px 12px 0; font-size: 18px; font-weight: 700; letter-spacing: 4px; background: transparent; }
-.k-track-btn { width: 100%; margin-top: 12px; padding: 13px; background: var(--text); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+.k-track-btn { width: 100%; margin-top: 12px; padding: 13px; background: var(--action-confirm); color: var(--action-confirm-text); border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s, opacity .15s; }
+.k-track-btn:not(:disabled):hover { background: var(--action-confirm-hover); }
 .k-track-btn:active { opacity: .8; }
 
 @media (min-width: 900px) {

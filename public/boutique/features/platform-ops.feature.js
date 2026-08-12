@@ -87,6 +87,7 @@ module.exports = {
     'un seul bus, un seul store et un seul client API partagés',
     'le shell ne recalcule ni prix, ni stock, ni statut métier',
     'les tokens et règles de layout transverses ont un propriétaire unique',
+    'les couleurs des actions visibles passent par les rôles action-commerce, action-confirm, action-secondary et accent-editorial ; statuts, danger et marques tierces restent autonomes',
     'les adapters propres à une feature restent dans le manifeste de cette feature',
     'sur desktop, l avatar panier non vide ouvre le récapitulatif canonique ; sur mobile il ouvre le drawer pour permettre la relecture et la modification',
     'sur desktop, un side cart visible réserve exactement sa largeur ; aucune carte, action de header ou surface éditoriale ne peut être peinte sous le panneau',

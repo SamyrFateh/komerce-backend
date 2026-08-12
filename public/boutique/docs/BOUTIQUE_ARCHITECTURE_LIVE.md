@@ -15,7 +15,7 @@
 | Fichier | Lignes | Bundle |
 |---|---:|---|
 | `boutique-desktop.css` | 1353 | 🔴 **ORPHELIN** |
-| `cart.css` | 2156 | 🔴 **ORPHELIN** |
+| `cart.css` | 2157 | 🔴 **ORPHELIN** |
 | `categories.css` | 988 | 🔴 **ORPHELIN** |
 | `checkout-vertical-rail.css` | 988 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
@@ -32,7 +32,7 @@
 | `modal-product-lot4-hybrid.css` | 502 | 🔴 **ORPHELIN** |
 | `modal-product-polish.css` | 390 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1517 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 1247 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 1245 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 892 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
@@ -41,7 +41,7 @@
 | `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart-responsive.css` | 91 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart.css` | 724 | 🔴 **ORPHELIN** |
-| `tokens.css` | 561 | 🔴 **ORPHELIN** |
+| `tokens.css` | 585 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
@@ -49,9 +49,9 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=176
- 2. /boutique/css/dist/components.css?v=482
- 3. /boutique/css/dist/desktop.css?v=103
+ 1. /boutique/css/dist/base.css?v=177
+ 2. /boutique/css/dist/components.css?v=484
+ 3. /boutique/css/dist/desktop.css?v=104
 ```
 
 ## 3. Cartographie des sélecteurs critiques

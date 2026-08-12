@@ -109,6 +109,7 @@ module.exports = {
     'les adaptations desktop du catalogue ne deviennent jamais un shell applicatif global',
     'les catégories restent sur une ligne et défilent horizontalement quand la largeur disponible ne suffit pas',
     'chaque bouton favori expose son état réel par aria-pressed et un libellé Ajouter ou Retirer synchronisé',
+    'ajout, achat et promotion utilisent l accent commerce ; l état déjà au panier reste positif et le favori actif reste éditorial',
     'la vue Favoris conserve sur desktop une composition intentionnelle pour les états vide et un seul produit',
   ],
 };

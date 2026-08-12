@@ -23,10 +23,10 @@
   --cta-green:        #2a7a3e;
   --cta-green-10:     rgba(46,160,90,.12);  /* bandeau indicateur liste partagée — shared-list-side-cart.css */
 
-  /* ── Pierre claire — CTA transactionnel universel (spec direction UX 2026-08) ──
-   * Remplace les CTA corail/vert/graphite pour TOUS les boutons transactionnels
-   * principaux : Commander, Confirmer, Acheter maintenant, Recevoir le code, Suivre.
-   * WhatsApp reste vert WhatsApp (exception de marque explicite).               */
+  /* ── Pierre claire — actions secondaires et contrôles neutres ───────────────
+   * Réservée aux actions sans engagement : annuler, fermer, changer, revenir.
+   * Les actions de commerce et de confirmation utilisent les rôles sémantiques
+   * déclarés plus bas ; les marques tierces conservent leur couleur propre.     */
   --stone:            #f1eee8;
   --stone-border:     #cfc7bc;
   --stone-hover:      #e9e4dc;
@@ -155,6 +155,30 @@
   --commerce-yellow-hover:     #F2C800;
   --commerce-yellow-shadow:    0 3px 9px rgba(171,137,0,.20);
   --commerce-yellow-shadow-sm: 0 2px 8px rgba(171,137,0,.18);
+
+  /* ── Rôles chromatiques UI — doctrine Boutique 2026-08 ────────────────
+   * Commerce   : ajouter, acheter, commander, payer.
+   * Confirmation : suivre, recevoir un code, valider hors paiement.
+   * Éditorial  : sélection, favori, repère de contenu.
+   * Secondaire : action réversible sans engagement.
+   * Les couleurs de statut, danger et fournisseurs restent autonomes.    */
+  --action-commerce:        var(--commerce-yellow);
+  --action-commerce-hover:  var(--commerce-yellow-hover);
+  --action-commerce-text:   var(--text);
+  --action-commerce-border: var(--commerce-yellow);
+  --action-commerce-shadow: var(--commerce-yellow-shadow);
+  --action-confirm:         var(--text);
+  --action-confirm-hover:   var(--ocean-dark-deep);
+  --action-confirm-text:    var(--white);
+  --action-secondary:       var(--stone);
+  --action-secondary-hover: var(--stone-hover);
+  --action-secondary-text:  var(--stone-text);
+  --accent-editorial:       var(--coral);
+  --accent-editorial-soft:  var(--coral-soft);
+  --state-positive:         var(--cta-green);
+  --state-danger:           var(--red-danger);
+  --surface-base:           var(--sand);
+  --surface-raised:         var(--white);
 
   --hero-red:     #e53935;
 

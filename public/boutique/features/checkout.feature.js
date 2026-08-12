@@ -92,6 +92,7 @@ module.exports = {
     'le checkout final présente des cartes indépendantes sans fausse progression ; son chrome est neutre, les moyens de paiement restent compacts et le wallet ne devient jamais une étape obligatoire',
     'le checkout rend sa coque et son récapitulatif immédiatement, indépendamment du chargement des SDK de paiement',
     'une intention Acheter maintenant finalise uniquement la ligne courante explicitement transmise, sans absorber le panier personnel existant',
+    'les CTA de récapitulatif et de paiement utilisent l accent commerce ; le chrome reste neutre et les couleurs propres aux moyens de paiement sont préservées',
   ],
 
 };
