@@ -68,7 +68,7 @@ describe('showcase-v2-source-build query resilience', () => {
       name: 'Trois hommes devant un studio',
       source_description: 'Men wearing fashionable shirts and jackets for a group photo.',
     };
-    expect(productIdentityFor(row, target)).toMatchObject({ ok: false, reason: 'editorial-media' });
+    expect(productIdentityFor(row, target)).toMatchObject({ ok: false, reason: 'missing-product-term' });
     expect(isProductLike(row, target)).toBe(false);
   });
 
