@@ -10,9 +10,15 @@ on:
       - 'scripts/showcase-v2-reset.js'
       - 'scripts/showcase-media-mirror.js'
       - 'services/catalog-eligibility.js'
+      - 'services/catalog-enrichment.js'
+      - 'services/prompts/catalog-enrichment.prompt.js'
+      - 'services/product-publication-guard.js'
       - 'services/suppliers/catalog-import-orchestrator.js'
       - 'tests/unit/catalog-eligibility.test.js'
       - 'tests/unit/catalog-import-eligibility-evidence.test.js'
+      - 'tests/unit/catalog-enrichment.test.js'
+      - 'tests/unit/catalog-enrichment-editorial-invariants.test.js'
+      - 'tests/unit/product-publication-guard.test.js'
       - 'tests/unit/showcase-v2-plan.test.js'
       - 'tests/unit/showcase-v2-source-build.test.js'
       - 'tests/unit/showcase-v2-reset.test.js'
@@ -27,7 +33,7 @@ env:
 
 jobs:
   preflight:
-    name: V2 contract and refinery preflight
+    name: V2 contract, French editorial and refinery preflight
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -42,41 +48,45 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: V2 plan, refinery, reset, source resilience and Wikimedia policy tests
+      - name: V2 plan, refinery, editorial, source resilience and Wikimedia policy tests
         run: |
           npx jest \
             tests/unit/catalog-eligibility.test.js \
             tests/unit/catalog-import-eligibility-evidence.test.js \
+            tests/unit/catalog-enrichment.test.js \
+            tests/unit/catalog-enrichment-editorial-invariants.test.js \
+            tests/unit/product-publication-guard.test.js \
             tests/unit/showcase-v2-plan.test.js \
             tests/unit/showcase-v2-source-build.test.js \
             tests/unit/showcase-v2-reset.test.js \
             tests/unit/showcase-media-mirror.test.js \
             --runInBand
 
-      - name: Prove 500 normalized V2 contracts without network
+      - name: Prove 500 normalized V2 contracts and source lineage without network
         run: |
           node - <<'NODE'
-          const { buildSlots, buildV2Contract, summary } = require('./scripts/showcase-v2-plan');
+          const { buildSlots, summary } = require('./scripts/showcase-v2-plan');
+          const { buildImportContracts } = require('./scripts/showcase-v2-seed');
           const manualConnector = require('./services/suppliers/connectors/manual-connector');
           const { buildNormalizedSourceContractSnapshot } = require('./services/suppliers/normalized-product');
           const { validateForPromotion } = require('./services/catalog-promotion');
 
           const slots = buildSlots();
-          const items = slots.map((slot, index) => ({
-            ...buildV2Contract({
-              name: `Showcase V2 preflight ${index + 1}`,
-              description: 'Produit fournisseur synthétique réservé au préflight contractuel Komerce.',
-              price_kmf: 10000 + index * 50,
-              stock: 10,
-              image_url: `https://example.test/showcase-v2/${slot.product_ref}/hero.jpg`,
-              images: [`https://example.test/showcase-v2/${slot.product_ref}/hero.jpg`],
-              source: `preflight:${slot.product_ref}`,
-              source_url: `https://example.test/source/${slot.product_ref}`,
-              source_locale: 'en',
-            }, slot),
-            supplier_name: 'Komerce Showcase V2',
-            supplier_product_id: slot.product_ref,
+          const sourceProducts = slots.map((slot, index) => ({
+            name: `Showcase V2 preflight ${index + 1}`,
+            source_title: `Supplier object ${index + 1}`,
+            source_description: `Original supplier description ${index + 1}`,
+            description: 'Produit fournisseur synthétique réservé au préflight contractuel Komerce.',
+            price_kmf: 10000 + index * 50,
+            stock: 10,
+            image_url: `https://example.test/showcase-v2/${slot.product_ref}/hero.jpg`,
+            images: [`https://example.test/showcase-v2/${slot.product_ref}/hero.jpg`],
+            source: `preflight:${slot.product_ref}`,
+            source_url: `https://example.test/source/${slot.product_ref}`,
+            source_locale: 'en',
           }));
+          const items = buildImportContracts(sourceProducts, slots);
+          if (items.some((item) => !item.raw_payload?.source_title || item.raw_payload?.source_locale !== 'en')) process.exit(1);
 
           const connector = manualConnector.fetchProducts({ supplier_name: 'Komerce Showcase V2', items });
           if (connector.products.length !== 500 || connector.invalid.length !== 0) {
@@ -86,9 +96,9 @@ jobs:
           const snapshots = connector.products.map(buildNormalizedSourceContractSnapshot);
           snapshots.forEach(validateForPromotion);
           const richSnapshots = snapshots.filter((row) => Array.isArray(row.sellable_units) && row.sellable_units.length > 0).length;
-          const proof = { ...summary(), normalized_v2: snapshots.length, rich_snapshots: richSnapshots };
+          const proof = { ...summary(), normalized_v2: snapshots.length, rich_snapshots: richSnapshots, raw_source_titles: items.filter((x) => x.raw_payload?.source_title).length };
           console.log(JSON.stringify(proof, null, 2));
-          if (proof.products !== 500 || proof.rich_products !== 350 || proof.rich_snapshots !== 350 || proof.subcategories.length !== 21) process.exit(1);
+          if (proof.products !== 500 || proof.rich_products !== 350 || proof.rich_snapshots !== 350 || proof.subcategories.length !== 21 || proof.raw_source_titles !== 500) process.exit(1);
           NODE
 
   build-media:
@@ -135,22 +145,23 @@ jobs:
             --target 500 \
             --output data/catalogue-test-raw/showcase-catalog-v2-source.json
 
-      - name: Validate real source contracts through refinery preflight
+      - name: Validate real source contracts and lineage through refinery preflight
         run: |
           node - <<'NODE'
           const fs = require('fs');
-          const { buildSlots, buildV2Contract, summary } = require('./scripts/showcase-v2-plan');
+          const { buildSlots, summary } = require('./scripts/showcase-v2-plan');
+          const { buildImportContracts } = require('./scripts/showcase-v2-seed');
           const manualConnector = require('./services/suppliers/connectors/manual-connector');
           const { buildNormalizedSourceContractSnapshot } = require('./services/suppliers/normalized-product');
           const { validateForPromotion } = require('./services/catalog-promotion');
 
           const products = JSON.parse(fs.readFileSync('data/catalogue-test-raw/showcase-catalog-v2-source.json', 'utf8'));
           const slots = buildSlots();
-          const items = products.map((product, index) => ({
-            ...buildV2Contract(product, slots[index]),
-            supplier_name: 'Komerce Showcase V2',
-            supplier_product_id: slots[index].product_ref,
-          }));
+          const items = buildImportContracts(products, slots);
+          if (items.some((item) => !item.raw_payload?.source_title)) {
+            console.error('raw_payload.source_title manquant');
+            process.exit(1);
+          }
           const connector = manualConnector.fetchProducts({ supplier_name: 'Komerce Showcase V2', items });
           if (connector.products.length !== 500 || connector.invalid.length !== 0) {
             console.error(JSON.stringify({ valid: connector.products.length, invalid: connector.invalid.slice(0, 10) }, null, 2));
@@ -160,9 +171,9 @@ jobs:
           const snapshots = connector.products.map(buildNormalizedSourceContractSnapshot);
           snapshots.forEach(validateForPromotion);
           const richSnapshots = snapshots.filter((row) => Array.isArray(row.sellable_units) && row.sellable_units.length > 0).length;
-          const proof = { ...summary(), normalized_v2: snapshots.length, rich_snapshots: richSnapshots };
+          const proof = { ...summary(), normalized_v2: snapshots.length, rich_snapshots: richSnapshots, raw_source_titles: items.filter((x) => x.raw_payload?.source_title).length };
           console.log(JSON.stringify(proof, null, 2));
-          if (products.length !== 500 || proof.rich_products !== 350 || proof.rich_snapshots !== 350 || proof.subcategories.length !== 21) process.exit(1);
+          if (products.length !== 500 || proof.rich_products !== 350 || proof.rich_snapshots !== 350 || proof.subcategories.length !== 21 || proof.raw_source_titles !== 500) process.exit(1);
           NODE
 
       - name: Mirror V2 media to Cloudinary staging
@@ -192,12 +203,13 @@ jobs:
           retention-days: 14
 
   refine-seed:
-    name: Refine, SKU-audit and cumulatively seed Railway
+    name: Refine in French, SKU-audit and cumulatively seed Railway
     needs: build-media
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     env:
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       NODE_ENV: test
 
     steps:
@@ -211,14 +223,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Require Railway staging secret
+      - name: Require Railway and French-enrichment secrets
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${DATABASE_URL:-}" ]; then
-            echo "::error::DATABASE_URL manquant dans les secrets GitHub"
-            exit 1
-          fi
+          for var in DATABASE_URL ANTHROPIC_API_KEY; do
+            if [ -z "${!var:-}" ]; then
+              echo "::error::$var manquant dans les secrets GitHub"
+              exit 1
+            fi
+          done
 
       - name: Restore canonical V2 manifests
         uses: actions/download-artifact@v4
@@ -226,7 +240,7 @@ jobs:
           name: showcase-v2-canonical-manifests
           path: data/catalogue-test-raw
 
-      - name: Cumulative refinery seed
+      - name: Cumulative refinery seed with mandatory French enrichment
         run: |
           node scripts/showcase-v2-seed.js \
             --target 500 \
