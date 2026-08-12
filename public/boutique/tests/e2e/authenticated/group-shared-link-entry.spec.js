@@ -73,7 +73,7 @@ async function createSharedList(page) {
 
 function participantRows(page) {
   return page.locator(
-    '#k-side-cart .k-cart-snapshot-item, #k-cart-body .k-cart-snapshot-item',
+    '#k-cart-drawer.open #k-cart-body .k-cart-snapshot-item:visible',
   );
 }
 
@@ -130,7 +130,7 @@ test.describe('FLOW — entrée nominale par lien partagé (WhatsApp)', () => {
       const webviewPayload = await webviewResponse.json();
       expect(webviewPayload.is_creator).toBe(false);
 
-      await expect(participantRows(webviewPage)).toHaveCount(1, { timeout: 10_000 });
+      await expect(participantRows(webviewPage)).toHaveCount(webviewPayload.items.length, { timeout: 10_000 });
       await expect(webviewPage.locator('#k-cart-drawer')).toHaveClass(/open/);
 
       // Invariant transport : l'URL visible reste porteuse du token. Si le
@@ -150,7 +150,7 @@ test.describe('FLOW — entrée nominale par lien partagé (WhatsApp)', () => {
       const externalPayload = await externalResponse.json();
       expect(externalPayload.is_creator).toBe(false);
 
-      await expect(participantRows(externalPage)).toHaveCount(1, { timeout: 10_000 });
+      await expect(participantRows(externalPage)).toHaveCount(externalPayload.items.length, { timeout: 10_000 });
       await expect(externalPage.locator('#k-cart-drawer')).toHaveClass(/open/);
       expect(externalPage.url()).toContain(`p=${token}`);
 
@@ -164,8 +164,10 @@ test.describe('FLOW — entrée nominale par lien partagé (WhatsApp)', () => {
       await externalPage.reload();
       const reloadResponse = await reloadPublic;
       expect(reloadResponse.status()).toBe(200);
+      const reloadPayload = await reloadResponse.json();
+      expect(reloadPayload.is_creator).toBe(false);
 
-      await expect(participantRows(externalPage)).toHaveCount(1, { timeout: 10_000 });
+      await expect(participantRows(externalPage)).toHaveCount(reloadPayload.items.length, { timeout: 10_000 });
       await expect(externalPage.locator('#k-cart-drawer')).toHaveClass(/open/);
       expect(externalPage.url()).toContain(`p=${token}`);
     } finally {
