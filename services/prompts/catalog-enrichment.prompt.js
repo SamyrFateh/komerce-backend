@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md
  * @impact-areas  catalog
- * @version       2026-07
+ * @version       2026-08
  */
 
 'use strict';
@@ -23,21 +23,53 @@
  * ═══════════════════════════════════════════════════════════════════════
  *
  * §8 : "le prompt est du code" — il vit ici, dans le dépôt, versionné.
- * Un changement de prompt = PROMPT_VERSION incrémenté = une PR = les gates.
+ * Un changement de prompt = PROMPT_VERSION incrémenté = les gates.
  * products.enrichment_version enregistre quelle version a produit chaque
  * fiche : c'est ce qui permet le re-raffinage en masse ciblé (§5).
  *
- * Ce module possède aussi le CONTRAT DE SORTIE (validateOutput) : le schéma
- * et sa validation vivent avec le prompt qui le demande — ils changent
- * ensemble, dans le même commit.
- *
- * Le module est pur (aucun accès DB, aucun réseau) : trivialement testable.
+ * Le module possède aussi le CONTRAT DE SORTIE (validateOutput) : le schéma,
+ * la qualité éditoriale minimale et leur validation changent ensemble.
  */
 
-const PROMPT_VERSION = 1;
+const PROMPT_VERSION = 2;
+const CLIENT_TITLE_MAX_LENGTH = 80;
+const CLIENT_DESCRIPTION_MIN_LENGTH = 20;
 
 // Valeurs conseillées de products.fragility (migration 096, DOCTRINE_NON_CONFORMITE §3).
 const ALLOWED_FRAGILITIES = ['fragile', 'electronique', 'sensible_chaleur', 'sensible_humidite'];
+
+const SOURCE_FILE_PATTERN = /(?:^|\s)file\s*:|\.(?:jpe?g|png|webp|gif|tiff?)(?:\s|$)/i;
+const URL_PATTERN = /https?:\/\/|www\./i;
+const SOURCE_META_PATTERN = /\b(?:wikimedia|commons|uploaded|upload|image id|photo id|archive id)\b/i;
+
+function editorialOutputErrors({ nameFr, descFr }) {
+  const errors = [];
+  const title = String(nameFr || '').replace(/\s+/g, ' ').trim();
+  const description = String(descFr || '').replace(/\s+/g, ' ').trim();
+
+  if (title.length > CLIENT_TITLE_MAX_LENGTH) {
+    errors.push(`name_fr trop long : maximum éditorial ${CLIENT_TITLE_MAX_LENGTH} caractères`);
+  }
+  if (URL_PATTERN.test(title) || SOURCE_FILE_PATTERN.test(title) || SOURCE_META_PATTERN.test(title)) {
+    errors.push('name_fr contient du bruit de source (URL, fichier ou métadonnée)');
+  }
+  const acronymTokens = title.match(/\b[A-Z][A-Z0-9]{1,8}\b/g) || [];
+  if (acronymTokens.length >= 4) {
+    errors.push('name_fr ressemble à une suite de codes/métadonnées');
+  }
+  if (title.split(/\s+/).filter(Boolean).length > 14) {
+    errors.push('name_fr trop verbeux pour un titre catalogue');
+  }
+
+  if (description.length < CLIENT_DESCRIPTION_MIN_LENGTH) {
+    errors.push(`description_fr trop courte : minimum éditorial ${CLIENT_DESCRIPTION_MIN_LENGTH} caractères`);
+  }
+  if (URL_PATTERN.test(description) || SOURCE_FILE_PATTERN.test(description) || SOURCE_META_PATTERN.test(description)) {
+    errors.push('description_fr contient du bruit de source (URL, fichier ou métadonnée)');
+  }
+
+  return errors;
+}
 
 // ── Prompt système ────────────────────────────────────────────────────────────
 
@@ -56,12 +88,16 @@ function buildSystemPrompt({ glossary = [], allowedCategories = [] }) {
 
   return [
     'Tu es le rédacteur catalogue de Komerce, e-commerce comorien qui importe depuis Dubaï.',
-    'On te donne la fiche fournisseur ORIGINALE (généralement en anglais, style SEO marketplace).',
-    'Tu produis la fiche CLIENT en FRANÇAIS. Ce n\'est pas une traduction littérale : c\'est une réécriture orientée client.',
+    'On te donne la donnée SOURCE ORIGINALE d’un fournisseur ou d’un catalogue externe.',
+    'Tu produis la fiche CLIENT en FRANÇAIS. Ce n’est jamais une traduction littérale ni une copie des métadonnées source.',
     '',
-    'Règles :',
-    '- Titre court (max 80 caractères), clair, sans bourrage de mots-clés SEO.',
-    '- Description fidèle à la source : n\'invente AUCUNE caractéristique absente de la donnée fournisseur.',
+    'Règles éditoriales obligatoires :',
+    `- Titre français court (maximum ${CLIENT_TITLE_MAX_LENGTH} caractères), qui nomme clairement L’OBJET VENDU.`,
+    '- Conserve uniquement les marques, références ou termes étrangers indispensables à identifier réellement le produit.',
+    '- Supprime du contenu client les noms de fichiers, crédits photo, noms d’uploader, institutions, dates d’archive, identifiants techniques de la source et URLs.',
+    '- Si le titre source mélange codes, noms propres, langues ou informations éditoriales, n’en reprends que les faits nécessaires pour identifier le produit.',
+    '- N’invente AUCUNE caractéristique absente de la donnée source. En cas d’ambiguïté, baisse confidence et explique-la dans review_notes.',
+    `- Description française d’au moins ${CLIENT_DESCRIPTION_MIN_LENGTH} caractères, naturelle et utile au client ; jamais une recopie brute de la source.`,
     '- Convertis les unités (inches → cm, oz → g, lbs → kg). Explique les tailles (UK/EU) si présentes.',
     '- Si le texte source évoque fragilité, électronique, sensibilité chaleur/humidité : propose le tag correspondant.',
     '',
@@ -72,14 +108,14 @@ function buildSystemPrompt({ glossary = [], allowedCategories = [] }) {
     '',
     'Réponds UNIQUEMENT avec un objet JSON, sans texte autour, sans balises markdown :',
     '{',
-    '  "name_fr": "titre court FR",',
-    '  "description_fr": "description FR adaptée",',
+    '  "name_fr": "titre client court en français",',
+    '  "description_fr": "description client française adaptée",',
     '  "category": "une catégorie autorisée, ou null si aucune ne convient",',
     `  "fragility": "un tag parmi ${ALLOWED_FRAGILITIES.join(' | ')}, ou null",`,
-    '  "confidence": 0.0 à 1.0 — ta confiance dans la fidélité de la fiche produite,',
+    '  "confidence": 0.0 à 1.0 — confiance dans la fidélité et la qualité de la fiche produite,',
     '  "review_notes": ["passages douteux ou ambigus de la source, en FR", ...] (vide si rien)',
     '}',
-    'Baisse "confidence" si la source est ambiguë, incomplète, ou si tu as dû interpréter.',
+    'Baisse confidence si la source est ambiguë, incomplète, bruitée ou si l’objet vendu n’est pas suffisamment certain.',
   ].join('\n');
 }
 
@@ -87,7 +123,8 @@ function buildSystemPrompt({ glossary = [], allowedCategories = [] }) {
 
 /**
  * @param {{ name_source:string, description_source:?string, source_locale:?string,
- *           supplier_category:?string, current_category:?string }} source
+ *           supplier_category:?string, current_category:?string,
+ *           current_subcategory:?string }} source
  * @returns {string}
  */
 function buildUserMessage(source) {
@@ -97,14 +134,16 @@ function buildUserMessage(source) {
     source_locale: source.source_locale || 'en',
     supplier_category: source.supplier_category || null,
     current_category: source.current_category || null,
+    current_subcategory: source.current_subcategory || null,
   });
 }
 
 // ── Contrat de sortie ─────────────────────────────────────────────────────────
 
 /**
- * Valide la sortie du modèle contre le schéma. Zéro confiance : tout champ
- * hors contrat = rejet ('invalid_output' côté service, rien n'est appliqué).
+ * Valide la sortie du modèle contre le schéma ET les invariants éditoriaux.
+ * Tout champ hors contrat ou présentation impropre = rejet ('invalid_output'
+ * côté service, rien n'est appliqué).
  *
  * @param {any} parsed  Objet déjà JSON.parse-é
  * @param {{ allowedCategories: string[] }} ctx
@@ -116,11 +155,16 @@ function validateOutput(parsed, { allowedCategories = [] } = {}) {
     return { ok: false, errors: ['sortie non-objet'] };
   }
 
-  const nameFr = typeof parsed.name_fr === 'string' ? parsed.name_fr.trim() : '';
-  if (!nameFr || nameFr.length > 120) errors.push('name_fr requis, 1..120 caractères');
+  const nameFr = typeof parsed.name_fr === 'string' ? parsed.name_fr.replace(/\s+/g, ' ').trim() : '';
+  if (!nameFr) errors.push('name_fr requis');
+  else errors.push(...editorialOutputErrors({ nameFr, descFr: parsed.description_fr }));
 
-  const descFr = typeof parsed.description_fr === 'string' ? parsed.description_fr.trim() : '';
+  const descFr = typeof parsed.description_fr === 'string' ? parsed.description_fr.replace(/\s+/g, ' ').trim() : '';
   if (!descFr || descFr.length > 4000) errors.push('description_fr requis, 1..4000 caractères');
+
+  // Si name_fr était vide, editorialOutputErrors n'a pas encore pu valider la
+  // description. On applique tout de même ses règles de description.
+  if (!nameFr && descFr) errors.push(...editorialOutputErrors({ nameFr: 'Produit', descFr }).filter((e) => e.startsWith('description_fr')));
 
   let category = null;
   if (parsed.category != null) {
@@ -149,7 +193,7 @@ function validateOutput(parsed, { allowedCategories = [] } = {}) {
     ? parsed.review_notes.filter((n) => typeof n === 'string').slice(0, 20)
     : [];
 
-  if (errors.length) return { ok: false, errors };
+  if (errors.length) return { ok: false, errors: [...new Set(errors)] };
   return {
     ok: true,
     value: { name_fr: nameFr, description_fr: descFr, category, fragility, confidence, review_notes: reviewNotes },
@@ -158,7 +202,10 @@ function validateOutput(parsed, { allowedCategories = [] } = {}) {
 
 module.exports = {
   PROMPT_VERSION,
+  CLIENT_TITLE_MAX_LENGTH,
+  CLIENT_DESCRIPTION_MIN_LENGTH,
   ALLOWED_FRAGILITIES,
+  editorialOutputErrors,
   buildSystemPrompt,
   buildUserMessage,
   validateOutput,
