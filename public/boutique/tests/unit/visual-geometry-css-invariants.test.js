@@ -189,6 +189,41 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
   });
 
   // ── LOT 3 — Badges paiement autonomes ────────────────────────────────────
+  describe('LOT 2d ? checkout : s?paration r?cap / finalisation', () => {
+    let css;
+    beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
+
+    it('le checkout mobile poss?de une vraie surface transactionnelle', () => {
+      const aside = css.match(/\.ck-checkout-aside\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(aside).toMatch(/display\s*:\s*block/);
+      expect(aside).toMatch(/background\s*:\s*var\(--white\)/);
+      expect(aside).toMatch(/border-radius\s*:\s*18px/);
+    });
+
+    it('le r?cap mobile est repliable tandis que desktop reste d?pli?', () => {
+      const content = css.match(/\.ck-recap-content\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const expanded = css.match(
+        /\.ck-recap-step\.is-expanded\s+\.ck-recap-content\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+      expect(content).toMatch(/display\s*:\s*none/);
+      expect(expanded).toMatch(/display\s*:\s*block/);
+
+      const desktopMarker = css.indexOf('@media (min-width: 900px)');
+      expect(desktopMarker).toBeGreaterThan(-1);
+
+      const desktop = css.slice(desktopMarker);
+
+      expect(desktop).toMatch(
+        /\.ck-recap-toggle\s*\{[^}]*display\s*:\s*none/s
+      );
+      expect(desktop).toMatch(
+        /\.ck-recap-content\s*\{[^}]*display\s*:\s*block/s
+      );
+    });
+  });
+
   describe('LOT 3 — checkout-vertical-rail.css : em.ck-soon / em.ck-stripe-tag surcharges géométriques', () => {
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
@@ -343,9 +378,9 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
 
     it('LOT7-a : la carte snapshot reprend gap, hauteur, padding et radius du panier', () => {
       const personal =
-        cart.match(/\\.k-cart-item\\s*\\{([^}]+)\\}/s)?.[1] ?? '';
+        cart.match(/\.k-cart-item\s*\{([^}]+)\}/s)?.[1] ?? '';
       const snapshot =
-        shared.match(/\\.k-cart-snapshot-item\\s*\\{([^}]+)\\}/s)?.[1] ?? '';
+        shared.match(/\.k-cart-snapshot-item\s*\{([^}]+)\}/s)?.[1] ?? '';
 
       expect(prop(snapshot, 'gap')).toBe(prop(personal, 'gap'));
       expect(prop(snapshot, 'min-height')).toBe(prop(personal, 'min-height'));
@@ -700,12 +735,24 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('LOT7-a : les wrappers sont transparents sur mobile', () => {
-      const block = css.match(
-        /\.ck-checkout-layout,[\s\S]{0,220}\.ck-checkout-aside\s*\{([^}]+)\}/
-      )?.[1] ?? '';
+    it('LOT7-a : mobile separe le recap de la surface transactionnelle', () => {
+      const layout =
+        css.match(/\.ck-checkout-layout\s*\{([^}]+)\}/s)?.[1] ?? '';
 
-      expect(block).toMatch(/display\s*:\s*contents/);
+      const primary =
+        css.match(/\.ck-checkout-primary\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      const aside =
+        css.match(/\.ck-checkout-aside\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(layout).toMatch(/display\s*:\s*block/);
+      expect(primary).toMatch(/display\s*:\s*block/);
+
+      // Mobile : la zone de finalisation possede sa propre surface,
+      // distincte du recapitulatif de commande.
+      expect(aside).toMatch(/display\s*:\s*block/);
+      expect(aside).toMatch(/background\s*:\s*var\(--white\)/);
+      expect(aside).toMatch(/border-radius\s*:\s*18px/);
     });
 
     it('LOT7-b : desktop projette le checkout comme une page pleine', () => {

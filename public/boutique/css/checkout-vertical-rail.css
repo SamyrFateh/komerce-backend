@@ -141,14 +141,36 @@
  * Ces wrappers sont structurels uniquement : display:contents maintient
  * exactement le flux vertical mobile existant.
  */
-.ck-checkout-layout,
-.ck-checkout-primary,
+.ck-checkout-layout {
+  display: block;
+}
+
+.ck-checkout-primary {
+  display: block;
+  margin: 0 0 14px;
+}
+
 .ck-checkout-aside {
-  display: contents;
+  display: block;
+  padding: 14px;
+  border: 1px solid rgba(31,48,36,.10);
+  border-radius: 18px;
+  background: var(--white);
+  box-shadow: 0 8px 24px rgba(31,48,36,.05);
 }
 
 .ck-checkout-desktop-heading {
   display: none;
+}
+
+.ck-checkout-heading {
+  margin: 0 0 12px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid rgba(31,48,36,.10);
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 850;
+  letter-spacing: .005em;
 }
 
 .k-order-body--recap {
@@ -366,6 +388,15 @@
 
 .ck-recap-toggle[aria-expanded="true"] .ck-recap-toggle-chevron {
   transform: rotate(90deg);
+}
+
+.ck-recap-content {
+  display: none;
+  padding: 0 12px;
+}
+
+.ck-recap-step.is-expanded .ck-recap-content {
+  display: block;
 }
 
 .ck-recap-items {
@@ -882,7 +913,22 @@
   }
 
   .ck-checkout-primary {
+    margin-bottom: 0;
     padding: 20px 22px 22px;
+  }
+
+  .ck-recap-toggle {
+    display: none;
+  }
+
+  .ck-recap-content {
+    display: block;
+    padding: 0;
+  }
+
+  .ck-checkout-heading {
+    margin-bottom: 12px;
+    font-size: 1rem;
   }
 
   .ck-checkout-aside {

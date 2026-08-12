@@ -642,6 +642,36 @@ function _buildRecapItemsBlock(items, selectionTotal = null) {
   const wrap = document.createElement('div');
   wrap.className = 'ck-recap-step';
 
+  const total = selectionTotal == null
+    ? buildCheckoutSelection(items).total
+    : selectionTotal;
+
+  const itemCount = items.reduce(
+    (sum, it) => sum + (Number(it.qty || 1) || 1),
+    0
+  );
+
+  // Mobile : r?sum? compact repli? par d?faut.
+  // Desktop : le toggle est masqu? par CSS et le contenu reste visible.
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'ck-recap-toggle';
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-controls', 'ck-recap-content');
+  toggle.innerHTML =
+    '<span class="ck-recap-toggle-text">'
+      + '<span class="ck-recap-toggle-label">Votre commande</span>'
+      + '<span class="ck-recap-toggle-sub">'
+        + itemCount + ' article' + (itemCount > 1 ? 's' : '')
+        + ' ? ' + fmt(total, 'KMF')
+      + '</span>'
+    + '</span>'
+    + '<span class="ck-recap-toggle-chevron" aria-hidden="true">?</span>';
+
+  const content = document.createElement('div');
+  content.id = 'ck-recap-content';
+  content.className = 'ck-recap-content';
+
   const list = document.createElement('div');
   list.className = 'ck-recap-items';
 
@@ -650,32 +680,39 @@ function _buildRecapItemsBlock(items, selectionTotal = null) {
     const imgSrc    = product.image_url ? optimizeImgUrl(product.image_url, 96) : '';
     const unitPrice = it.price ?? product.price_kmf ?? product.price ?? 0;
     const qty       = Number(it.qty || 1);
+
     const row = document.createElement('div');
     row.className = 'ck-recap-item';
     row.innerHTML =
       (imgSrc
         ? '<img class="ck-recap-item-img" src="' + imgSrc + '" alt="" loading="lazy">'
-        : '<span class="ck-recap-item-img ck-recap-item-img--empty" aria-hidden="true">📦</span>')
+        : '<span class="ck-recap-item-img ck-recap-item-img--empty" aria-hidden="true">??</span>')
       + '<span class="ck-recap-item-info">'
       +   '<span class="ck-recap-item-name">' + sanitize(product.name || '') + '</span>'
-      +   '<span class="ck-recap-item-qty">Qté ' + qty + '</span>'
+      +   '<span class="ck-recap-item-qty">Qt? ' + qty + '</span>'
       + '</span>'
       + '<span class="ck-recap-item-price">' + fmt(unitPrice * qty, 'KMF') + '</span>'
-      + '<span class="ck-recap-check" aria-hidden="true">✓</span>'
+      + '<span class="ck-recap-check" aria-hidden="true">?</span>'
       + '<span class="sr-only">Inclus dans cette commande</span>';
+
     list.appendChild(row);
   });
 
   const totalRow = document.createElement('div');
   totalRow.className = 'ck-recap-total';
-  const total = selectionTotal == null
-    ? buildCheckoutSelection(items).total
-    : selectionTotal;
+  totalRow.innerHTML =
+    '<span>Total</span><span>' + fmt(total, 'KMF') + '</span>';
 
-  totalRow.innerHTML = '<span>Total</span><span>' + fmt(total, 'KMF') + '</span>';
   list.appendChild(totalRow);
+  content.appendChild(list);
 
-  wrap.appendChild(list);
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') !== 'true';
+    toggle.setAttribute('aria-expanded', String(expanded));
+    wrap.classList.toggle('is-expanded', expanded);
+  });
+
+  wrap.append(toggle, content);
   return wrap;
 }
 
@@ -683,7 +720,13 @@ function _insertCheckoutIdentity(body, node) {
   const aside = body.querySelector('.ck-checkout-aside');
 
   if (aside) {
-    aside.insertBefore(node, aside.firstChild);
+    const heading = aside.querySelector('.ck-checkout-heading');
+
+    if (heading) {
+      heading.insertAdjacentElement('afterend', node);
+    } else {
+      aside.insertBefore(node, aside.firstChild);
+    }
     return;
   }
 
@@ -737,6 +780,11 @@ export function renderCheckout() {
 
     const checkoutAside = document.createElement('div');
     checkoutAside.className = 'ck-checkout-aside';
+
+    const checkoutHeading = document.createElement('h2');
+    checkoutHeading.className = 'ck-checkout-heading';
+    checkoutHeading.textContent = 'Finaliser ma commande';
+    checkoutAside.appendChild(checkoutHeading);
 
     checkoutLayout.append(checkoutPrimary, checkoutAside);
     body.appendChild(checkoutLayout);

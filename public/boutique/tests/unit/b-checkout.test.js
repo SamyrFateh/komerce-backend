@@ -267,6 +267,30 @@ describe('b-checkout', () => {
     });
   });
 
+  describe('hi?rarchie checkout responsive', () => {
+    it('garde une identit? connue sous le titre Finaliser ma commande', () => {
+      state.cart = [{
+        product: { id: 'p-known', name: 'Produit connu', price_kmf: 5000 },
+        qty: 1,
+      }];
+
+      getCurrentIdentity.mockReturnValue({
+        full_name: 'Admin Komerce',
+        phone: '+2693211234',
+      });
+
+      checkoutCart();
+
+      const aside = dom.orderBody.querySelector('.ck-checkout-aside');
+      const heading = aside.querySelector('.ck-checkout-heading');
+      const identity = aside.querySelector('#ck-identity-recap');
+
+      expect(heading).not.toBeNull();
+      expect(identity).not.toBeNull();
+      expect(heading.nextElementSibling).toBe(identity);
+    });
+  });
+
   describe('updateWalletDisplay', () => {
     it("aucun élément #wallet-deduction dans le DOM → ne fait rien, ne throw pas", () => {
       expect(() => updateWalletDisplay()).not.toThrow();
@@ -353,7 +377,23 @@ describe('b-checkout', () => {
       expect(primary).not.toBeNull();
       expect(aside).not.toBeNull();
 
-      expect(primary.querySelector('#ck-order-summary')).not.toBeNull();
+      const recap = primary.querySelector('#ck-order-summary');
+      const recapToggle = recap?.querySelector('.ck-recap-toggle');
+      const checkoutHeading = aside.querySelector('.ck-checkout-heading');
+
+      expect(recap).not.toBeNull();
+      expect(recapToggle).not.toBeNull();
+      expect(recapToggle.getAttribute('aria-expanded')).toBe('false');
+      expect(recap.classList.contains('is-expanded')).toBe(false);
+
+      recapToggle.click();
+
+      expect(recapToggle.getAttribute('aria-expanded')).toBe('true');
+      expect(recap.classList.contains('is-expanded')).toBe(true);
+
+      expect(checkoutHeading).not.toBeNull();
+      expect(checkoutHeading.textContent).toBe('Finaliser ma commande');
+
       expect(aside.querySelector('#ck-relais-section')).not.toBeNull();
       expect(aside.querySelector('#ck-pay-grid')).not.toBeNull();
       expect(aside.querySelector('.ck-final-total')).not.toBeNull();
@@ -756,9 +796,19 @@ describe('b-checkout', () => {
 
       // Mobile : primary/aside sont display:contents, donc cet ordre
       // structurel conserve visuellement récapitulatif → identité.
+      const heading = aside.querySelector('.ck-checkout-heading');
+
       expect(layout.firstElementChild).toBe(primary);
       expect(primary.nextElementSibling).toBe(aside);
-      expect(aside.firstElementChild).toBe(identity);
+
+      expect(heading).not.toBeNull();
+      expect(heading.textContent).toBe('Finaliser ma commande');
+
+      // Nouvelle hi?rarchie volontaire :
+      // titre transactionnel ? identit? ? retrait ? paiement.
+      expect(aside.firstElementChild).toBe(heading);
+      expect(heading.nextElementSibling).toBe(identity);
+
       expect(restoreIdentity).not.toHaveBeenCalled();
     });
 
