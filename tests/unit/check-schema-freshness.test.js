@@ -21,6 +21,7 @@
 
 const {
   extractAddColumns,
+  extractDroppedColumns,
   extractCreatedObjects,
   extractDroppedObjects,
   objectExistsInSchema,
@@ -176,5 +177,101 @@ describe('evaluateFreshness', () => {
     const { missing, pending } = evaluateFreshness({ schema, migrations, baselineFiles, requireAll: false });
     expect(missing).toContainEqual({ fname: '071b_x.sql', kind: 'table', name: 'shared_cart_commitments' });
     expect(pending).toEqual(['099_drop_zombie.sql']);
+  });
+});
+
+
+describe('lifecycle DROP COLUMN', () => {
+  test('détecte plusieurs DROP COLUMN dans un même ALTER TABLE', () => {
+    const sql = `
+      ALTER TABLE shared_carts
+        DROP COLUMN IF EXISTS split_mode,
+        DROP COLUMN IF EXISTS target_date,
+        DROP COLUMN IF EXISTS payment_window_ends_at;
+    `;
+
+    expect(extractDroppedColumns(sql)).toEqual([
+      { table: 'shared_carts', col: 'split_mode' },
+      { table: 'shared_carts', col: 'target_date' },
+      { table: 'shared_carts', col: 'payment_window_ends_at' },
+    ]);
+  });
+
+  test('ADD COLUMN puis DROP COLUMN in-scope ne réclame plus la colonne', () => {
+    const migrations = [
+      migration(
+        '059_group_order.sql',
+        'ALTER TABLE shared_carts ADD COLUMN split_mode text;'
+      ),
+      migration(
+        '125_shared_cart_minimal_domain.sql',
+        'ALTER TABLE shared_carts DROP COLUMN IF EXISTS split_mode;'
+      ),
+    ];
+
+    const schema = 'create table shared_carts (id uuid);';
+
+    const { missing } = evaluateFreshness({
+      schema,
+      migrations,
+      baselineFiles: null,
+      requireAll: true,
+    });
+
+    expect(missing).toHaveLength(0);
+  });
+
+  test('les anciennes colonnes d’une table finalement DROP ne sont plus exigées', () => {
+    const migrations = [
+      migration(
+        '052_contributions.sql',
+        'ALTER TABLE collective_workspace_contributions ADD COLUMN suggestion text;'
+      ),
+      migration(
+        '126_drop_collective.sql',
+        'DROP TABLE IF EXISTS collective_workspace_contributions;'
+      ),
+    ];
+
+    const schema = 'create table products (id uuid);';
+
+    const { missing } = evaluateFreshness({
+      schema,
+      migrations,
+      baselineFiles: null,
+      requireAll: true,
+    });
+
+    expect(missing).toHaveLength(0);
+  });
+
+  test('un DROP COLUMN post-snapshot ne masque pas une absence baseline', () => {
+    const migrations = [
+      migration(
+        '059_baseline.sql',
+        'ALTER TABLE shared_carts ADD COLUMN split_mode text;'
+      ),
+      migration(
+        '125_future.sql',
+        'ALTER TABLE shared_carts DROP COLUMN IF EXISTS split_mode;'
+      ),
+    ];
+
+    const schema = 'create table shared_carts (id uuid);';
+    const baselineFiles = new Set(['059_baseline.sql']);
+
+    const { missing } = evaluateFreshness({
+      schema,
+      migrations,
+      baselineFiles,
+      requireAll: false,
+    });
+
+    expect(missing).toContainEqual({
+      fname: '059_baseline.sql',
+      kind: 'column',
+      table: 'shared_carts',
+      col: 'split_mode',
+    });
   });
 });

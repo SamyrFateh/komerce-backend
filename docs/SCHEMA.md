@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 96 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
-| Vues | 16 | Préfixe `v_` ou `customs_*` |
-| ENUMs | 14 | Types métier critiques |
+| Tables | 104 | Vérifié sur le dump live Railway. |
+| Vues | 17 | Vérifié sur le dump live Railway. |
+| ENUMs | 12 | Types métier présents dans le dump live Railway. |
 | Index | 264 | Performance + contraintes uniques |
 | Foreign keys | 147 | Cohérence relationnelle |
-| Fonctions | 46 | Triggers, helpers, idempotence |
-| Triggers | 31 | `set_updated_at`, guards anti-corruption |
+| Fonctions | 15 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 32 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -63,7 +63,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | ENUM | Valeurs | Source de vérité |
 |---|---|---|
-| `order_status` | `pending`, `pending_group_payment`, `confirmed`, `ordered`, `preparation`, `shipped`, `in_transit`, `available`, `collected`, `cancelled`, `refunded` | `services/order-status-machine.js` |
+| `order_status` | `pending`, `confirmed`, `ordered`, `preparation`, `shipped`, `in_transit`, `available`, `collected`, `cancelled`, `refunded` | `services/order-status-machine.js` |
 | `parcel_status` | `draft`, `preparation`, `shipped`, `in_transit`, `arrived`, `available`, `collected`, `cancelled` | `routes/parcel-api-v2.js` + `services/parcel-service.js` |
 | `payment_status` | `pending`, `paid`, `failed`, `refunded`, `partially_paid` | `routes/payments.js` |
 | `payment_mode` | `stripe_eur`, `cash_relais`, `mixed_shared_cart_cash` | `routes/orders/create.js` |
@@ -71,14 +71,10 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `user_role` | définit les rôles auth | `middleware/auth.js` |
 | `basket_type` | type de panier (boutique / partagé / collectif) | `routes/baskets.js` |
 | `ceremony_order_type` | type de commande module cérémonie | `routes/modules.js` |
-| `collective_workspace_status` | cycle de vie workspace collectif | `services/collective-workspace-engine.js` |
-| `collective_session_status` | cycle de vie session paiement collectif | `services/collective-payment-orchestrator.js` |
-| `collective_token_status` | cycle de vie token paiement individuel | `services/collective-payment-orchestrator.js` |
-| `collective_contribution_status` | statut contribution dans workspace | `services/collective-workspace-engine.js` |
-| `shared_cart_status` | cycle de vie panier partagé MVP | `services/shared-cart-engine.js` |
+| `shared_cart_status` | `open`, `closed`, `cancelled` | `services/shared-cart-engine.js` |
 | `shared_cart_contribution_status` | statut contribution panier partagé | `services/shared-cart-engine.js` |
 
-**Règle absolue** : aucune valeur d'ENUM ne se modifie hors migration SQL. Les valeurs `pending_group_payment` et `in_transit` ont été ajoutées via migrations 059 et `fixMissingSchema()` respectivement.
+**Règle absolue** : aucune valeur d’ENUM ne se modifie hors migration SQL. `pending_group_payment` a été retiré de `order_status` par la migration 124 ; `shared_cart_status` a été réduit à `open` / `closed` / `cancelled` par la migration 125.
 
 ---
 
@@ -170,57 +166,23 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `catalog_media` | Média canonique catalogue (PDC-8 Lot 2). Cible de promotion depuis `normalized_source_contract.media[]`. Identité stable : `product_id` + `source_media_id` lorsque connu (NULL = source pauvre, aucune identité fournisseur fabriquée, pas d'unicité applicable, ré-promotion peut dupliquer honnêtement). Legacy (`products.images` / `product_variants.images`) reste le fallback pour les produits non promus. Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
 | `product_sku_media` | Association explicite SKU ↔ média canonique (PDC-8 Lot 5), source : `sellable_units[].media_refs` (V2). Les références explicites gagnent toujours sur un matching `option_values` heuristique. Table neuve au 2026-07-14, aucun writer avant le service de promotion (Lot 6). Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
 | `catalog_enrichment_runs` | Trace de chaque appel d'enrichissement IA (doctrine catalogue §8 : échecs tracés, coût par produit suivi en tokens). `status` : `ok` (appliqué), `low_confidence` (appliqué + needs_review), `invalid_output` (JSON hors schéma, rien appliqué), `failed` (erreur réseau/modèle, rien appliqué). Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
-
-<!-- schema-pending
-object: product_content_profile
-kind: table
-migration: 111
-section: ### 4.5 Paniers et catalogue
-role: Profil éditorial 1:1 par produit (fiche produit enrichie). brand, short_description, provenance globale (source/enrichment_version/reviewed) exposée par product_detail_v1.content.provenance. Cible de promotion depuis normalized_source_contract V2, jamais servi depuis le raw_payload.
--->
-
-<!-- schema-pending
-object: product_content_sections
-kind: table
-migration: 111
-section: ### 4.5 Paniers et catalogue
-role: Sections éditoriales structurées + materials/care/warnings via section_key réservés (MATERIALS/CARE/WARNINGS, toujours BULLETS). UNIQUE(product_id, section_key) pour ré-promotion idempotente. content_json validé par le service de projection avant de traverser le contrat public.
--->
-
-<!-- schema-pending
-object: product_attributes
-kind: table
-migration: 111
-section: ### 4.5 Paniers et catalogue
-role: Attributs structurés clé/label/valeur. kind=HIGHLIGHT alimente content.highlights, kind=SPECIFICATION alimente content.specifications (group/key/label/value/unit). UNIQUE(product_id, kind, group_key, attribute_key) pour idempotence.
--->
+| `product_content_profile` | Profil éditorial 1:1 par produit (fiche produit enrichie). brand, short_description, provenance globale (source/enrichment_version/reviewed) exposée par product_detail_v1.content.provenance. Cible de promotion depuis normalized_source_contract V2, jamais servi depuis le raw_payload. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
+| `product_content_sections` | Sections éditoriales structurées + materials/care/warnings via section_key réservés (MATERIALS/CARE/WARNINGS, toujours BULLETS). UNIQUE(product_id, section_key) pour ré-promotion idempotente. content_json validé par le service de projection avant de traverser le contrat public. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
+| `product_attributes` | Attributs structurés clé/label/valeur. kind=HIGHLIGHT alimente content.highlights, kind=SPECIFICATION alimente content.specifications (group/key/label/value/unit). UNIQUE(product_id, kind, group_key, attribute_key) pour idempotence. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
 
 
-### 4.6 Paniers partagés (7 tables)
+
+
+
+### 4.6 Paniers partagés (5 tables)
 
 | Table | Rôle |
 |---|---|
 | `shared_carts` | Panier partagé MVP. |
 | `shared_cart_items` | Items panier partagé. |
-| `shared_cart_contributions` | Contributions des participants. |
 | `shared_cart_events` | Événements panier partagé. |
 | `cart_shares` | Partage de panier (token public). |
-| `cart_contributions` | Contributions (legacy, vérifier vs `shared_cart_contributions`). |
-| `shared_cart_estimations` | Estimations de contribution par participant (montant `amount_kmf` > 0, CHECK). PK uuid, FK logique `shared_cart_id`. |
-
-### 4.7 Workspace collectif (7 tables)
-
-| Table | Rôle |
-|---|---|
-| `collective_workspaces` | Workspace collectif (événement, cagnotte). |
-| `collective_workspace_items` | Items du workspace. |
-| `collective_workspace_contributions` | Contributions (intention, suggestion, message). |
-| `collective_workspace_events` | Événements workspace. |
-| `collective_payment_sessions` | Sessions de paiement collectif. |
-| `collective_payment_tokens` | Tokens de paiement individuel. |
-| `collective_stock_reservations` | Réservations de stock par token. |
-
-Source de vérité : `services/collective-workspace-engine.js` + `services/collective-payment-orchestrator.js`.
+| `shared_cart_saved_access` | Bibliothèque « Mes listes » : listes reçues qu’un utilisateur a explicitement choisi de sauvegarder. UNIQUE(user_id, shared_cart_id). Migration 127. |
 
 ### 4.8 Pricing et économie (14 tables)
 
@@ -280,12 +242,13 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `inventory_items` | Inventaire hub. |
 | `carriers` | Transporteurs. |
 
-### 4.12 Utilisateurs et fidélité (6 tables)
+### 4.12 Utilisateurs et fidélité (7 tables)
 
 | Table | Rôle |
 |---|---|
 | `users` | Utilisateurs (rôle via ENUM `user_role`). |
 | `otp_codes` | Codes OTP. |
+| `user_pickup_authorizations` | Autorisation nominative courante de retrait exceptionnel, propriété auth-identity. Une ligne par utilisateur ; aucun numéro, copie ou donnée de pièce d’identité conservé. Migration 121. |
 | `revoked_tokens` | Révocation JWT (logout) : `jti` révoqué, `expires_at` pour purge. Câblage : `routes/auth.js` insère au logout, `middleware/auth.js` vérifie, cron de purge dans `bootstrap/crons.js`. Migration 072. |
 | `recipients` | Destinataires (peuvent être ≠ user). |
 | `loyalty_tiers` | Niveaux fidélité. |
@@ -318,7 +281,6 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `v_sourcing_pipeline` | Pipeline sourcing. | Admin sourcing |
 | `v_unsold_pipeline` | Pipeline invendus. | Admin / alertes |
 | `v_loyalty_summary` | Synthèse fidélité par user. | Admin loyalty |
-| `v_group_orders` | Vue agrégée commandes groupées. | Admin paiements collectifs |
 | `v_ceremony_orders` | Vue agrégée commandes cérémonie. | Admin modules |
 | `v_customs_analysis` | Analyse douane. | Admin douane |
 | `v_active_product_suppliers` | Fournisseurs actifs par produit. | Sourcing |
@@ -360,8 +322,6 @@ Au-delà du code applicatif, la DB enforce elle-même plusieurs invariants :
 | `cost_components_allocation_check` | Méthode d'allocation valide. |
 | `cost_components_island_check` | Île valide. |
 | `competitor_target_check` | Prix concurrent : produit OU catégorie obligatoire. |
-| `collective_workspace_contributions_content_check` | Contribution non-vide. |
-| `collective_workspace_contributions_kind_check` | Kind valide. |
 | `parcels_type_check` | Type de colis valide. |
 
 ---
