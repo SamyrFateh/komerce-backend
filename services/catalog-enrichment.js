@@ -8,13 +8,13 @@
  * @outputs       enriched_product_fields, enrichment_run_trace
  * @depends       db.js, utils/rules.js, utils/logger.js,
  *                services/prompts/catalog-enrichment.prompt.js
- * @used-by       routes/sourcing-scanner.js
+ * @used-by       routes/sourcing-scanner.js, scripts/showcase-v2-seed.js
  * @db-read       boutique_categories, catalog_field_overrides, catalog_glossary, products
  * @db-write      catalog_enrichment_runs, products
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md
  * @impact-areas  catalog, sourcing
- * @version       2026-07
+ * @version       2026-08
  */
 
 'use strict';
@@ -33,7 +33,8 @@
  *   §5 — REJOUABILITÉ : après chaque application, les overrides tracés
  *        (catalog_field_overrides) sont réappliqués champ par champ.
  *        Re-raffiner n'écrase jamais une retouche humaine.
- *   §7 — la donnée source (name_source, ...) n'est JAMAIS écrite ici.
+ *   §7 — la donnée source (name_source, ...) n'est JAMAIS écrite ici et
+ *        n'est JAMAIS reconstruite depuis un champ client.
  *   §8 — échec ≠ silence : chaque run (ok, low_confidence, invalid_output,
  *        failed) laisse une ligne dans catalog_enrichment_runs, tokens
  *        compris. En échec, la fiche publiée n'est PAS modifiée — elle
@@ -54,12 +55,7 @@ const DEFAULT_MODEL = 'claude-haiku-4-5';
 const CALL_TIMEOUT_MS = 45_000;
 const MAX_OUTPUT_TOKENS = 1500;
 
-// §5 — seuls champs publiés que l'enrichissement (et les overrides) peuvent
-// écrire. Whitelist stricte : catalog_field_overrides.field_name est de la
-// donnée admin, jamais interpolée telle quelle dans le SQL.
 const OVERRIDABLE_FIELDS = ['name', 'description', 'category', 'fragility', 'emoji'];
-
-// ── Chargements DB ────────────────────────────────────────────────────────────
 
 async function loadGlossary() {
   const { rows } = await db.query(
@@ -88,12 +84,6 @@ async function loadOverrides(productId) {
   return rows;
 }
 
-// ── Appel modèle ─────────────────────────────────────────────────────────────
-
-/**
- * Appelle le modèle. Retourne texte brut + usage tokens.
- * Isolé pour être mocké en test (module.exports._callModel).
- */
 async function callModel(systemPrompt, userMessage) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -143,13 +133,10 @@ async function callModel(systemPrompt, userMessage) {
   }
 }
 
-/** Le modèle peut baliser malgré la consigne — on déshabille les fences. */
 function parseModelJson(text) {
   const clean = String(text || '').replace(/```json|```/g, '').trim();
   return JSON.parse(clean);
 }
-
-// ── Trace des runs (§8) ──────────────────────────────────────────────────────
 
 async function recordRun({ productId, status, confidence = null, model = null, inputTokens = null, outputTokens = null, durationMs = null, error = null }) {
   try {
@@ -162,22 +149,11 @@ async function recordRun({ productId, status, confidence = null, model = null, i
        inputTokens, outputTokens, durationMs, error]
     );
   } catch (e) {
-    // La trace ne doit jamais faire échouer le flux — mais elle ne se perd
-    // pas en silence non plus.
     log.error({ err: e.message, productId, status }, 'trace enrichissement non écrite');
   }
 }
 
-// ── Application (§4 + §5) ────────────────────────────────────────────────────
-
-/**
- * Applique une sortie VALIDÉE sur la fiche, puis réapplique les overrides.
- * Ne touche jamais aux champs source (§7).
- *
- * @returns {{ needsReview:boolean, appliedOverrides:string[] }}
- */
 async function applyEnrichment(productId, enriched, { confidenceMin }) {
-  // 1. Valeurs générées par le pipeline
   const generated = {
     name: enriched.name_fr,
     description: enriched.description_fr,
@@ -185,7 +161,6 @@ async function applyEnrichment(productId, enriched, { confidenceMin }) {
     ...(enriched.fragility ? { fragility: enriched.fragility } : {}),
   };
 
-  // 2. §5 — les overrides tracés gagnent toujours sur le généré
   const overrides = await loadOverrides(productId);
   const appliedOverrides = [];
   for (const o of overrides) {
@@ -199,7 +174,6 @@ async function applyEnrichment(productId, enriched, { confidenceMin }) {
 
   const needsReview = enriched.confidence < confidenceMin;
 
-  // 3. UPDATE — colonnes construites depuis la whitelist uniquement
   const cols = [];
   const vals = [];
   let i = 1;
@@ -215,41 +189,31 @@ async function applyEnrichment(productId, enriched, { confidenceMin }) {
   cols.push(`updated_at = NOW()`);
   vals.push(productId);
 
-  await db.query(
-    `UPDATE products SET ${cols.join(', ')} WHERE id = $${i}`,
-    vals
-  );
-
+  await db.query(`UPDATE products SET ${cols.join(', ')} WHERE id = $${i}`, vals);
   return { needsReview, appliedOverrides };
 }
-
-// ── Point d'entrée ───────────────────────────────────────────────────────────
 
 /**
  * Enrichit une fiche depuis sa donnée source et applique le résultat.
  * NE JETTE JAMAIS pour un échec d'enrichissement : la fiche est marquée
  * needs_review et le run tracé — l'import qui nous appelle ne doit pas
  * échouer parce que le modèle a hoqueté (§8).
- *
- * @param {string} productId
- * @returns {Promise<{status:string, confidence?:number, needsReview?:boolean,
- *                    appliedOverrides?:string[], error?:string}>}
  */
 async function enrichAndApply(productId) {
   const started = Date.now();
   let model = null; let inputTokens = null; let outputTokens = null;
   try {
     const { rows } = await db.query(
-      `SELECT id, name, name_source, description_source, source_locale, category
+      `SELECT id, name, name_source, description_source, source_locale, category, subcategory
          FROM products WHERE id = $1`,
       [productId]
     );
     if (!rows.length) return { status: 'failed', error: 'produit introuvable' };
     const p = rows[0];
 
-    // §7 — pas de source, pas de raffinage : on ne fabrique pas une "source"
-    // depuis un champ publié potentiellement déjà retouché.
-    const nameSource = p.name_source || p.name;
+    // §7 — pas de source, pas de raffinage. Le champ client `name` ne peut
+    // jamais devenir rétroactivement une vérité fournisseur.
+    const nameSource = p.name_source;
     if (!nameSource) return { status: 'failed', error: 'aucune donnée source' };
 
     const [glossary, allowedCategories, confidenceMin] = await Promise.all([
@@ -264,6 +228,7 @@ async function enrichAndApply(productId) {
       description_source: p.description_source,
       source_locale: p.source_locale || 'en',
       current_category: p.category,
+      current_subcategory: p.subcategory,
     });
 
     const call = await module.exports._callModel(systemPrompt, userMessage);
@@ -297,7 +262,6 @@ async function enrichAndApply(productId) {
       productId, status, model, inputTokens, outputTokens,
       durationMs: Date.now() - started, error: err.message,
     });
-    // Fiche non modifiée, mais l'humain doit la voir passer en review.
     try {
       await db.query(`UPDATE products SET needs_review = TRUE, updated_at = NOW() WHERE id = $1`, [productId]);
     } catch (e2) {
@@ -314,6 +278,5 @@ module.exports = {
   loadGlossary,
   loadAllowedCategories,
   OVERRIDABLE_FIELDS,
-  // exposé pour mock en test uniquement
   _callModel: callModel,
 };
