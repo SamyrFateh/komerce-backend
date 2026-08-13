@@ -13,17 +13,24 @@ const {
   showcaseNamespace,
   retryAfterMs,
   downloadWikimediaMedia,
+  imageKitAuthHeader,
+  imageKitFileName,
 } = require('../../scripts/showcase-media-mirror');
 
 describe('showcase-media-mirror', () => {
-  test('vise 500 produits par défaut', () => {
+  test('vise 500 produits et Cloudinary par défaut, provider surchargeable', () => {
     expect(parseArgs([]).target).toBe(500);
-    expect(parseArgs(['--target', '750']).target).toBe(750);
+    expect(parseArgs([]).mediaProvider).toBe('cloudinary');
+    expect(parseArgs(['--target', '750', '--media-provider', 'imagekit'])).toMatchObject({
+      target: 750,
+      mediaProvider: 'imagekit',
+    });
   });
 
   test('identifie uniquement les médias Wikimedia à bufferiser localement', () => {
     expect(isWikimediaMediaUrl('https://upload.wikimedia.org/wikipedia/commons/a/a1/test.jpg')).toBe(true);
     expect(isWikimediaMediaUrl('https://res.cloudinary.com/demo/image/upload/test.jpg')).toBe(false);
+    expect(isWikimediaMediaUrl('https://ik.imagekit.io/demo/test.jpg')).toBe(false);
     expect(isWikimediaMediaUrl('https://dummyjson.com/image.jpg')).toBe(false);
   });
 
@@ -32,10 +39,19 @@ describe('showcase-media-mirror', () => {
       .toBe('Dusty-Roy-Parka.jpg');
   });
 
-  test('isole les campagnes V1 et V2 dans deux namespaces Cloudinary', () => {
+  test('isole les campagnes V1 et V2 dans deux namespaces média', () => {
     expect(showcaseNamespace('SHOWCASE-V1-0001')).toBe('showcase-v1');
     expect(showcaseNamespace('SHOWCASE-V2-0001')).toBe('showcase-v2');
     expect(showcaseNamespace('autre')).toBe('showcase-v1');
+  });
+
+  test('forme l’auth Basic ImageKit sans exposer de mot de passe', () => {
+    expect(imageKitAuthHeader('private_test')).toBe('Basic cHJpdmF0ZV90ZXN0Og==');
+  });
+
+  test('fabrique des noms de fichiers stables pour ImageKit', () => {
+    expect(imageKitFileName('hero', 'https://example.test/photo.png?x=1')).toBe('hero.png');
+    expect(imageKitFileName('gallery-01', null)).toBe('gallery-01.jpg');
   });
 
   test('respecte Retry-After en secondes ou utilise un backoff borné', () => {
