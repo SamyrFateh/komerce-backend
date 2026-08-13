@@ -14,9 +14,12 @@ const {
   buildV2Contract,
   summary,
 } = require('../../scripts/showcase-v2-plan');
+const manualConnector = require('../../services/suppliers/connectors/manual-connector');
 
 const PRODUCT = {
   name: 'Produit test',
+  source_title: 'Original supplier gift box title',
+  source_description: 'Original supplier description kept verbatim for lineage.',
   description: 'Description fournisseur de test suffisamment riche.',
   price_kmf: 10000,
   stock: 9,
@@ -80,6 +83,18 @@ describe('showcase-v2-plan', () => {
     expect(contract.sellable_units.every((unit) => unit.currency === 'KMF')).toBe(true);
     expect(contract.media[1].option_values).toEqual({ Couleur: 'Noir' });
     expect(contract.raw_payload.showcase_v2.rich).toBe(true);
+  });
+
+  test('préserve la vérité source au bon niveau après passage par le connecteur manuel', () => {
+    const slot = buildSlots()[0];
+    const contract = buildV2Contract(PRODUCT, slot);
+    expect(contract.source_title).toBe(PRODUCT.source_title);
+    expect(contract.source_description).toBe(PRODUCT.source_description);
+
+    const normalized = manualConnector.normalizeFormItem(contract, 'Komerce Showcase V2');
+    expect(normalized.raw_payload.source_title).toBe(PRODUCT.source_title);
+    expect(normalized.raw_payload.source_description).toBe(PRODUCT.source_description);
+    expect(normalized.raw_payload.raw_payload.source).toBe(PRODUCT.source);
   });
 
   test('un slot simple reste honnêtement sans axes ni unités inventées', () => {
