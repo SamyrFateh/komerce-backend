@@ -859,7 +859,7 @@ function _buildRecapItemsBlock(items, selectionTotal = null) {
       +   '<span class="ck-recap-item-qty">Qté ' + qty + '</span>'
       + '</span>'
       + '<span class="ck-recap-item-price">' + fmt(unitPrice * qty, 'KMF') + '</span>'
-      + '<span class="ck-recap-check" aria-hidden="true">?</span>'
+      + '<span class="ck-recap-check" aria-hidden="true">✓</span>'
       + '<span class="sr-only">Inclus dans cette commande</span>';
 
     list.appendChild(row);
