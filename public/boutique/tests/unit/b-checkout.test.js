@@ -277,8 +277,8 @@ describe('b-checkout', () => {
     });
   });
 
-  describe('hi?rarchie checkout responsive', () => {
-    it('garde une identit? connue sous le titre Finaliser ma commande', () => {
+  describe('hiérarchie checkout responsive', () => {
+    it('garde une identité connue sous le titre Finaliser ma commande', () => {
       state.cart = [{
         product: { id: 'p-known', name: 'Produit connu', price_kmf: 5000 },
         qty: 1,
@@ -876,8 +876,8 @@ describe('b-checkout', () => {
       expect(heading).not.toBeNull();
       expect(heading.textContent).toBe('Finaliser ma commande');
 
-      // Nouvelle hi?rarchie volontaire :
-      // titre transactionnel ? identit? ? retrait ? paiement.
+      // Nouvelle hiérarchie volontaire :
+      // titre transactionnel → identité → retrait → paiement.
       expect(aside.firstElementChild).toBe(heading);
       expect(heading.nextElementSibling).toBe(identity);
 

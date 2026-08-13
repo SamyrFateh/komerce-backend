@@ -818,8 +818,8 @@ function _buildRecapItemsBlock(items, selectionTotal = null) {
     0
   );
 
-  // Mobile : r?sum? compact repli? par d?faut.
-  // Desktop : le toggle est masqu? par CSS et le contenu reste visible.
+  // Mobile : résumé compact replié par défaut.
+  // Desktop : le toggle est masqué par CSS et le contenu reste visible.
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'ck-recap-toggle';

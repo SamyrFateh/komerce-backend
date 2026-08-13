@@ -197,11 +197,11 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
   });
 
   // ── LOT 3 — Badges paiement autonomes ────────────────────────────────────
-  describe('LOT 2d ? checkout : s?paration r?cap / finalisation', () => {
+  describe('LOT 2d — checkout : séparation récap / finalisation', () => {
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('le checkout mobile poss?de une vraie surface transactionnelle', () => {
+    it('le checkout mobile possède une vraie surface transactionnelle', () => {
       const aside = css.match(/\.ck-checkout-aside\s*\{([^}]+)\}/s)?.[1] ?? '';
 
       expect(aside).toMatch(/display\s*:\s*block/);
@@ -209,7 +209,7 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(aside).toMatch(/border-radius\s*:\s*18px/);
     });
 
-    it('le r?cap mobile est repliable tandis que desktop reste d?pli?', () => {
+    it('le récap mobile est repliable tandis que desktop reste déplié', () => {
       const content = css.match(/\.ck-recap-content\s*\{([^}]+)\}/s)?.[1] ?? '';
       const expanded = css.match(
         /\.ck-recap-step\.is-expanded\s+\.ck-recap-content\s*\{([^}]+)\}/s

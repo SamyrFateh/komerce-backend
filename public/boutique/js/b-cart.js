@@ -210,11 +210,11 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
         particle.style.transition = 'transform 0.15s ease-in, opacity 0.15s ease-in';
         particle.style.transform = 'translate(-50%,-50%) scale(0)';
         particle.style.opacity = '0';
-        // FLY-CART-GEOMETRY ? ne jamais ?crire transform sur le bouton
-        // cible. #k-modal-cart-btn est centr? par translate(-50%, -50%) :
-        // un scale() inline ?craserait ce transform CSS et d?placerait
-        // durablement le panier apr?s un ajout. Le feedback d'impact reste
-        // port? par la particule + le bump du badge.
+        // FLY-CART-GEOMETRY — ne jamais écrire transform sur le bouton
+        // cible. #k-modal-cart-btn est centré par translate(-50%, -50%) :
+        // un scale() inline écraserait ce transform CSS et déplacerait
+        // durablement le panier après un ajout. Le feedback d'impact reste
+        // porté par la particule + le bump du badge.
         setTimeout(() => {
           particle.remove();
           sparkles.forEach(sp => sp.remove());
@@ -323,8 +323,8 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   // L'avatar du catalogue ne s'anime jamais derrière une modale ouverte.
   const feedbackTarget = getFlyToCartTarget();
   if (feedbackTarget === dom.cartBtn) {
-    // La cible est captur?e maintenant : les timers ne doivent jamais
-    // relire dom.cartBtn, qui peut changer avant leur ex?cution.
+    // La cible est capturée maintenant : les timers ne doivent jamais
+    // relire dom.cartBtn, qui peut changer avant leur exécution.
     feedbackTarget.classList.remove('ring-pulse');
     void feedbackTarget.offsetWidth;
     feedbackTarget.classList.add('ring-pulse');
@@ -335,8 +335,8 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     feedbackTarget.classList.add('avatar-wave');
     setTimeout(() => feedbackTarget.classList.remove('avatar-wave'), 900);
   } else if (feedbackTarget === dom.modalCartBtn) {
-    // M?me invariant pour la modale : la r?f?rence DOM peut ?tre restaur?e
-    // ou remplac?e avant la fin des animations.
+    // Même invariant pour la modale : la référence DOM peut être restaurée
+    // ou remplacée avant la fin des animations.
     feedbackTarget.classList.remove('ring-pulse', 'cart-icon-pulse');
     void feedbackTarget.offsetWidth;
     feedbackTarget.classList.add('ring-pulse', 'cart-icon-pulse');

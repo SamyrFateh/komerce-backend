@@ -202,7 +202,7 @@ function renderProfileBlock(block, me) {
   const emailInput = block.querySelector('#k-kmc-email');
   const phoneInput = block.querySelector('#k-kmc-account-phone');
 
-  // Donn?es API assign?es comme propri?t?s DOM : jamais interpol?es dans HTML.
+  // Données API assignées comme propriétés DOM : jamais interpolées dans HTML.
   nameInput.value = String(fullName0);
   if (emailInput) emailInput.value = String(me?.email || '');
   if (phoneInput) phoneInput.value = phone || '\u2014';

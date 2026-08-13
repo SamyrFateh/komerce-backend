@@ -220,7 +220,7 @@ test('termine l’animation fly-to-cart et nettoie ses particules', () => {
 /* FLY-CART-GEOMETRY regression :
    un ajout depuis une modale ouverte ne doit jamais remplacer le transform
    CSS qui centre #k-modal-cart-btn. */
-test('fly-to-cart vers le panier modal conserve sa g?om?trie apr?s impact', () => {
+test('fly-to-cart vers le panier modal conserve sa géométrie après impact', () => {
   const source = document.createElement('button');
   source.getBoundingClientRect = () => ({
     left: 10, top: 300, width: 40, height: 40,
@@ -255,12 +255,12 @@ test('fly-to-cart vers le panier modal conserve sa g?om?trie apr?s impact', () =
   try {
     addToCart(product(22, { image_url: '/img/p22.jpg' }), 1, source);
 
-    // 150 ms : d?part de l'arc puis impact synchrone via le rAF stub.
+    // 150 ms : départ de l'arc puis impact synchrone via le rAF stub.
     jest.advanceTimersByTime(150);
 
     expect(modalBadge.classList.contains('bump')).toBe(true);
 
-    // Invariant m?tier/visuel : le JS ne poss?de pas la g?om?trie du bouton.
+    // Invariant métier/visuel : le JS ne possède pas la géométrie du bouton.
     // Le translate(-50%, -50%) reste donc exclusivement dans le CSS.
     expect(modalCartBtn.style.transform).toBe('');
     expect(modalCartBtn.style.transition).toBe('');
