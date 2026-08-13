@@ -333,11 +333,11 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(desktop).toMatch(/body\.modal-open,\s*body\.cart-open\s*\{[^}]*padding-right:\s*0/s);
     });
 
-    it('LOT6-a2 : la fiche produit élargit le panier et possède un état vide composé', () => {
+    it('LOT6-a2 : la fiche produit réserve un side-cart stable et possède un état vide composé', () => {
       const shell = readCss('modal-shell.css');
       const desktop = readCss('boutique-desktop.css');
 
-      expect(shell).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+clamp\(260px,\s*22vw,\s*320px\)/);
+      expect(shell).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+260px/);
       expect(desktop).toMatch(/\.k-sc-empty\s*\{[^}]*min-height:\s*220px[^}]*justify-content:\s*center/s);
       expect(desktop).toMatch(/\.k-side-cart--in-modal \.k-sc-item-name\s*\{[^}]*-webkit-line-clamp:\s*2/s);
     });

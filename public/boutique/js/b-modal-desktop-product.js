@@ -108,9 +108,23 @@ function renderMedia(detail, selection, force = false) {
 // Ne restent ici que les zones réellement propres au desktop : desc (le
 // mobile l'efface, MDM-7) et la neutralisation des anciennes zones legacy
 // (aed/flash/stock-bar), qui n'existent pas côté mobile.
+function hasDesktopVariants(detail) {
+  return Array.isArray(detail?.option_axes) && detail.option_axes.length > 0;
+}
+
 function renderIdentity(detail) {
+  /* Doctrine PDP v3.1 — §3 (verrouillée) : la BuyBox n'affiche QUE la
+     short_description, quel que soit le nombre d'axes (0 / 1 / N). La
+     description longue (product.description) vit exclusivement sous le hero
+     (renderLongDescription) — jamais remontée ici pour combler un vide laissé
+     par une BuyBox plus courte que le hero, jamais tronquée côté client. Le
+     vide éventuel de la colonne droite est comblé par les suggestions en rail
+     (§1/§8), pas par la description. */
+  const shortDescription = buildProductContentViewModel(detail.content).shortDescription;
+
   if (dom.modalDesc) {
-    dom.modalDesc.textContent = detail.product.description || '';
+    dom.modalDesc.textContent = shortDescription || '';
+    dom.modalDesc.hidden = !shortDescription;
     dom.modalDesc.classList.remove('is-expanded');
   }
 
@@ -564,6 +578,36 @@ function appendEnrichedTextBlock(container, { heading, text, offerReadMore }) {
   container.appendChild(block);
 }
 
+/* PDP v3.1 — description longue sous le hero.
+   Aucun fallback vers short_description et aucune troncature fabriquée. */
+function renderLongDescription(detail) {
+  const container = document.getElementById('k-modal-long-description');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  /* Doctrine PDP v3.1 — §3 (verrouillée) : product.description descend sous le
+     hero dès qu'elle existe, AVEC OU SANS variantes. La BuyBox ne conserve que
+     la short_description (renderIdentity). Aucun fallback vers short_description
+     ici, aucune troncature fabriquée à partir de la description. */
+  const description =
+    typeof detail?.product?.description === 'string'
+      ? detail.product.description.trim()
+      : '';
+
+  if (!description) {
+    container.hidden = true;
+    return;
+  }
+
+  container.hidden = false;
+  appendEnrichedTextBlock(container, {
+    heading: 'Description',
+    text: description,
+    offerReadMore: shouldOfferReadMore(description),
+  });
+}
+
 function appendEnrichedBulletBlock(container, { heading, items, variant }) {
   if (!items.length) return;
   const block = document.createElement('div');
@@ -662,13 +706,6 @@ function renderEnrichedContent(detail) {
   const zone = container.closest('.k-modal-product-zone');
 
   const vm = buildProductContentViewModel(detail.content);
-  if (!vm.hasEnrichedContent) {
-    container.hidden = true;
-    if (zone) zone.classList.add('k-modal-product-zone--no-enriched');
-    return;
-  }
-  container.hidden = false;
-  if (zone) zone.classList.remove('k-modal-product-zone--no-enriched');
 
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.highlights, items: vm.highlights.map((h) => h.label), variant: 'highlights' });
   appendEnrichedSpecifications(container, vm.specificationGroups);
@@ -685,6 +722,41 @@ function renderEnrichedContent(detail) {
       appendEnrichedKeyValueBlock(container, { heading: section.title, entries: section.entries });
     }
   });
+
+  // short_description et brand ne suffisent pas à créer une section
+  // desktop sous le hero : seules les sections réellement rendues comptent.
+  const hasRenderedBlocks = container.childElementCount > 0;
+  container.hidden = !hasRenderedBlocks;
+  if (zone) {
+    zone.classList.toggle('k-modal-product-zone--no-enriched', !hasRenderedBlocks);
+  }
+}
+
+/* PDP v3.1 — §1 / §8 : placement adaptatif des suggestions desktop.
+ *
+ * Produit SIMPLE (aucun axe) : le hero (jusqu'à ~580px) est plus haut que la
+ * BuyBox courte. Les suggestions remontent alors dans la colonne 2, empilées
+ * immédiatement sous la BuyBox, pour combler le vide sous « Partager » — au
+ * lieu d'atterrir en pleine largeur tout en bas.
+ *
+ * Produit à VARIANTES (§2) : la BuyBox porte déjà les axes et occupe la
+ * hauteur ; les suggestions ne sont PAS forcées dans le rail et restent en
+ * pleine largeur sous le contenu enrichi (layout 5H préservé).
+ *
+ * Le placement réel est porté par la grille CSS (.k-modal-product-zone--
+ * suggestions-in-rail, modal-shell.css). Ce toggle ne fait que déclarer
+ * l'intention : composition structurelle, idempotente et compatible resize,
+ * sans reparentage DOM ni position:absolute, et sans dépendre de l'ordre
+ * d'arrivée du fetch suggestions (la classe et les cartes convergent quel que
+ * soit celui qui peint en premier).
+ */
+function applyDesktopSuggestionRailState(detail) {
+  const zone = modalZone('.k-modal-product-zone');
+  if (!zone) return;
+  zone.classList.toggle(
+    'k-modal-product-zone--suggestions-in-rail',
+    !hasDesktopVariants(detail)
+  );
 }
 
 function renderSubtotal(detail, selection) {
@@ -775,7 +847,9 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
   renderTrust();
   renderShare(detail);
   renderDeliveryOptions(detail);
+  renderLongDescription(detail);
   renderEnrichedContent(detail);
+  applyDesktopSuggestionRailState(detail);
   renderMedia(detail, selection, forceMedia);
   ensureQtyObserver();
 }

@@ -198,12 +198,24 @@ describe('b-modal-suggestions — filtre et composition', () => {
     expect(dom.sugRail.querySelector('.k-sug-card[data-id="2"]').classList.contains('subcat-hidden')).toBe(true);
   });
 
-  it('desktop déplace la section dans le scroll modal de façon idempotente', () => {
+  it('desktop garde la section dans la product-zone (placement grille, jamais reparentée sous .k-modal-scroll) et reste idempotent', () => {
     isDesktop.mockReturnValue(true);
+    // La coque réelle place #k-modal-suggestions DANS .k-modal-product-zone ;
+    // le buildDom du fichier la crée hors zone → la réintégration défensive
+    // desktop doit l'y remettre, sans jamais l'extraire vers .k-modal-scroll.
     renderSuggestions([product({ id: 1 })], [], 'Chaussures');
     renderSuggestions([product({ id: 1 })], [], 'Chaussures');
+
+    const zone = document.querySelector('.k-modal-product-zone');
     const scroll = document.querySelector('.k-modal-scroll');
-    expect(scroll.querySelectorAll('#k-modal-suggestions')).toHaveLength(1);
-    expect(document.getElementById('k-modal-suggestions').classList.contains('k-modal-suggestions--desktop-list')).toBe(true);
+    const suggestions = document.getElementById('k-modal-suggestions');
+
+    // Une seule instance, réintégrée dans la zone (pas dupliquée).
+    expect(zone.querySelectorAll('#k-modal-suggestions')).toHaveLength(1);
+    expect(suggestions.parentElement).toBe(zone);
+    // JAMAIS enfant direct de .k-modal-scroll (l'ancien reparentage est retiré).
+    expect(scroll.querySelectorAll(':scope > #k-modal-suggestions')).toHaveLength(0);
+    // La classe de présentation desktop reste posée.
+    expect(suggestions.classList.contains('k-modal-suggestions--desktop-list')).toBe(true);
   });
 });

@@ -15,8 +15,18 @@
     background: var(--page-bg);
   }
 
+  /* PDP v3.1 — vraie region transactionnelle desktop.
+     Mobile conserve display:contents depuis modal-shell.css. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--page-bg);
+  }
+
   /* ── Composition 2 régions ≥1200px (MIGRATION v3.0, arbitrage LOT4 ProductMedia) ──
-     ProductMedia (rail vignettes + galerie) | ProductNarrative (récit produit).
+     ProductMedia (rail vignettes + galerie) | ProductBuyBox (identité + configuration + actions).
      grid-template-columns/gap/padding de .k-modal-product-zone : seul
      propriétaire ce fichier.
      RETRAIT DE LA 3e PISTE (ex "rail miniatures | média principal | détails",
@@ -39,20 +49,24 @@
       /* REF-2026-07 : même correction qu'à 1024px — image bornée, détails 1fr. */
       /* ProductMedia (ex 64px + minmax(280,420)) → minmax(340,480) : conserve
          l'amplitude combinée précédente (344px→484px) sous une seule piste. */
-      grid-template-columns: minmax(340px, 480px) minmax(340px, 1fr);
-      gap: 22px;
-      padding: 22px;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 330px);
+      gap: 16px;
+      padding: 16px;
     }
+
+    /* Même allocation pour tous les produits :
+       l'absence de variantes libère de la hauteur dans la BuyBox,
+       pas une géométrie horizontale concurrente. */
   }
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
      fond uni --hero-bg, seul le décor radial sobre est conservé,
      le dégradé linéaire sand → sand-warm est retiré. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    background: var(--hero-bg);
+    background: var(--page-bg);
   }
 
-  #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }
+
 
   /* D7 — Panneau détails en aplat (spec §327) : le dégradé linéaire
      white → sand est retiré au profit d'un fond uni --page-bg. */
@@ -61,25 +75,27 @@
     padding: 0 clamp(28px, 4.4vw, 72px);
   }
 
-  /* ── MIGRATION v3.0 (LOT 2) — Configurateur transversal + détails longs ──
-     Reprend le traitement "carte" de la référence canonique (§4, .config) :
-     bordure fine, coins arrondis 18px (cohérent avec .k-buybox-relay-card),
-     fond blanc pour trancher sur --page-bg de la zone produit. */
-  /* P4-fix (audit desktop 2026-07) : le margin horizontal clamp(28,4.4vw,72)
-     s'ajoutait à un second inset déjà posé par le padding:22px de
-     .k-modal-product-zone (≥1200px) — double inset, carte ~83% de la zone.
-     .k-modal-long-details n'a qu'un seul inset (son propre padding) ; la
-     carte configurateur doit occuper la même largeur utile. Le margin
-     horizontal est retiré ; l'inset visuel du contenu passe en padding
-     interne, cohérent avec le reste des lignes transversales. */
-  #k-modal .k-modal-product-zone > .k-modal-configurator {
-    margin: 0 0 18px;
-    padding: 18px clamp(28px, 4.4vw, 72px);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    background: var(--white);
+  /* PDP v3.1 — le configurateur appartient a ProductBuyBox.
+     Plus de carte pleine largeur ni de geometrie transversale. */
+  #k-modal .k-modal-buybox > .k-modal-configurator {
+    margin: 0;
+    padding: 0 clamp(28px, 4.4vw, 72px) 18px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+  }
+
+  #k-modal .k-modal-buybox > .k-modal-details {
+    height: auto;
+    align-self: stretch;
+  }
+
+  #k-modal .k-modal-buybox .k-modal-configurator > .k-modal-actions {
+    align-self: stretch;
+    width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
     padding: 0 clamp(28px, 4.4vw, 72px);
@@ -309,24 +325,21 @@
   /* ── Trust + partage — aération identique mobile et desktop ── */
   #k-modal .k-modal-trust {
     border-top: 0;
-    margin-top: 18px;
+    margin-top: 10px;
     padding: 0;
-    gap: 8px;
+    gap: 6px;
   }
 
   #k-modal .k-modal-trust-item {
-    background: color-mix(in srgb, var(--sand) 76%, var(--white));
-    border: 1px solid var(--border-text-06);
-    min-height: 30px;
+    min-height: 24px;
   }
 
   #k-modal .k-modal-share-row {
     border-top: 0;
-    margin-top: 14px;
+    margin-top: 8px;
     padding-top: 0;
     display: flex;
     align-items: center;
-    gap: 8px;
     justify-content: flex-start;
   }
 
@@ -499,3 +512,166 @@
    cf. bloc ci-dessus). Décision explicite : les cartes s'annoncent
    elles-mêmes par leur visibilité partielle, pas par une ligne de texte
    cliquable séparée. */
+
+/* PDP v3.1 — LOT 4C : ordre interne canonique ProductBuyBox */
+@media (min-width: 900px) {
+
+  /* Une seule colonne transactionnelle : le padding appartient à la BuyBox,
+     plus aux wrappers historiques details/configurator. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox {
+    box-sizing: border-box;
+    padding: clamp(16px, 2vh, 26px) clamp(14px, 1.8vw, 24px) 12px;
+  }
+
+  /* Les wrappers restent sémantiques dans le DOM mais ne créent plus
+     de sous-layout desktop. Leurs enfants deviennent les items flex
+     réels de ProductBuyBox. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox > .k-modal-details,
+  #k-modal .k-modal-product-zone > .k-modal-buybox > .k-modal-details > .k-modal-info,
+  #k-modal .k-modal-product-zone > .k-modal-buybox > .k-modal-configurator,
+  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-meta {
+    display: contents;
+  }
+
+  /* ── Ordre canonique de la BuyBox ─────────────────────── */
+  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-name-row {
+    order: 10;
+    margin-top: 0;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-sku {
+    order: 20;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-cat {
+    order: 21;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-price-row {
+    order: 30;
+    margin-top: 8px;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-aed-price {
+    order: 31;
+  }
+
+  /* Le chapeau éditorial court appartient au hero transactionnel. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-desc {
+    order: 40;
+    margin-top: 6px;
+  }
+
+  /* Tous les axes restent simultanément visibles, quel que soit N. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-variants {
+    order: 50;
+    min-width: 0;
+    margin-top: 12px;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-variants:empty {
+    display: none;
+  }
+
+  /* Disponibilité après la résolution des axes. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-stock {
+    order: 60;
+    margin-top: 2px;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-stock-bar {
+    order: 61;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-delivery {
+    order: 70;
+    margin-top: 8px;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-actions {
+    order: 80;
+    align-self: stretch;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-trust {
+    order: 90;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-share-row {
+    order: 100;
+  }
+
+  /* ── Axes génériques ──────────────────────────────────── */
+  #k-modal .k-modal-buybox .k-vg {
+    min-width: 0;
+    padding: 0;
+    margin: 0 0 10px;
+  }
+
+  #k-modal .k-modal-buybox .k-vg:last-of-type {
+    margin-bottom: 6px;
+  }
+
+  #k-modal .k-modal-buybox .k-vg-label {
+    margin-bottom: 6px;
+    line-height: 1.25;
+  }
+
+  /* Axes texte : largeur naturelle, jamais des colonnes 1fr étirées. */
+  #k-modal .k-modal-buybox .k-vg-sizes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 5px;
+    width: 100%;
+  }
+
+  /* Un même axe utilise toute sa ligne.
+     Les valeurs se contractent ensemble jusqu'au plancher,
+     puis seulement elles passent à la ligne suivante. */
+  #k-modal .k-modal-buybox .k-vg-sizes .k-vp {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 36px;
+    max-width: 120px;
+    min-height: 38px;
+    padding: 5px 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* Axes image/couleur : comportement existant conservé, wrap explicite. */
+  #k-modal .k-modal-buybox .k-vg-skus {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    width: 100%;
+  }
+
+  /* Variante visuelle avec thumbnail :
+     même partage élastique que les valeurs texte. */
+  #k-modal .k-modal-buybox .k-vg-skus .k-sku:not(.k-sku--color) {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 40px;
+    max-width: 104px;
+  }
+
+  #k-modal .k-modal-buybox .k-vg-skus .k-sku:not(.k-sku--color) img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  /* Swatches couleur purs : plus compacts mais eux aussi élastiques. */
+  #k-modal .k-modal-buybox .k-vg-skus .k-sku--color {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 36px;
+    max-width: 72px;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+}

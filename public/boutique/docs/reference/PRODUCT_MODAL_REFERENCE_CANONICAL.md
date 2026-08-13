@@ -1,6 +1,6 @@
 # Modale produit — référence canonique
 
-> **Version** : 3.0 — 2026-07-27  
+> **Version** : 3.1 — 2026-08-13
 > **Statut** : référence normative de rendu  
 > **Doctrine amont** : `docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md`  
 > **Architecture active** : `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`
@@ -22,7 +22,7 @@ La richesse produit ajoute ou retire des capacités. Le responsive change la com
 
 ## 2. Principe UX commun
 
-> **Le hero présente. Le configurateur fait choisir. Le panier ou la barre d'action confirme et fait acheter.**
+> **Le hero présente et permet de configurer. Le panier ou la barre d'action confirme et fait acheter.**
 
 L'ordre fonctionnel est commun à tous les écrans :
 
@@ -53,25 +53,33 @@ ProductModal
 │   │   │   │   ├── MediaPagination             facultatif
 │   │   │   │   ├── PromotionBadge              facultatif
 │   │   │   │   └── FavoriteAction              facultatif
-│   │   │   └── ProductNarrative
+│   │   │   └── ProductBuyBox
 │   │   │       ├── ProductIdentity
-│   │   │       ├── StockStatus
 │   │   │       ├── ProductPrice
-│   │   │       ├── DeliveryPromise
 │   │   │       ├── ProductSummary
-│   │   │       ├── ProductHighlights           facultatif
+│   │   │       ├── ProductVariants              facultatif
+│   │   │       ├── StockStatus
+│   │   │       ├── DeliveryPromise
+│   │   │       ├── QuantitySelector
+│   │   │       ├── DesktopPrimaryActions        desktop uniquement
 │   │   │       ├── Reassurance
 │   │   │       └── ShareActions
-│   │   ├── ProductConfigurator
-│   │   │   ├── SelectionStatus
-│   │   │   ├── ProductVariants                 facultatif
-│   │   │   ├── QuantitySelector
-│   │   │   └── DesktopPrimaryActions           desktop uniquement
-│   │   ├── ProductDetails                      facultatif
-│   │   └── ProductRecommendations              facultatif
-│   └── DesktopCartPanel                        desktop uniquement
-└── MobilePrimaryActions                        mobile uniquement
+│   │   ├── ProductDetails                       facultatif
+│   │   └── ProductRecommendations               facultatif
+│   └── DesktopCartPanel                         desktop uniquement
+└── MobilePrimaryActions                         mobile uniquement
 ```
+
+Le contrat métier et l'état de sélection restent uniques.
+
+Le responsive change uniquement la composition :
+
+- desktop : `ProductMedia | ProductBuyBox` dans le hero ;
+- mobile : les mêmes capacités sont recomposées en flux vertical ;
+- aucun axe de variante n'appartient exclusivement à une surface ;
+- aucun renderer ne recrée localement prix, stock, média ou disponibilité.
+
+Le `ProductBuyBox` constitue la zone transactionnelle de décision rapide. Il contient les informations nécessaires pour comprendre, configurer et acheter le produit sans navigation intermédiaire.
 
 Les capacités du produit activent ou retirent des sections. Elles ne sélectionnent jamais un autre contrat.
 
@@ -87,7 +95,6 @@ Attributs recommandés :
   data-has-details="true"
   data-has-recommendations="true">
 ```
-
 ## 4. Matrice des capacités
 
 | Capacité | Simple | Enrichi |
@@ -115,84 +122,150 @@ Un produit simple se compacte naturellement. Une section absente ne laisse ni tr
 ┌───────────────────────────────────────────────┬──────────────────┐
 │ Zone produit                                  │ Side cart        │
 │                                               │                  │
-│ Hero                                          │ Articles         │
-│ Galerie | récit produit                       │ Quantités        │
-│                                               │ Sous-total       │
-│ Configurateur pleine largeur                  │ Commander        │
-│                                               │                  │
-│ Détails                                       │                  │
+│ ProductMedia | ProductBuyBox                  │ Articles         │
+│                                               │ Quantités        │
+│ ProductDetails                                │ Sous-total       │
+│                                               │ Commander        │
 │ Suggestions                                   │                  │
 └───────────────────────────────────────────────┴──────────────────┘
 ```
 
 Le side cart appartient au shell de la modale, reste indépendant de la zone produit et conserve son propre flux interne si nécessaire.
 
-Le configurateur couvre toute la largeur disponible de la zone produit, c'est-à-dire la largeur de la galerie et du récit produit réunies. Il s'arrête avant le side cart.
+La zone produit possède un seul scroll vertical. Le hero, les détails et les suggestions appartiennent à ce même flux.
 
-### 5.2 Hero desktop
+### 5.2 Hero desktop : média + buybox
 
-Le hero utilise deux colonnes :
-
-```text
-GALERIE / MÉDIAS | IDENTITÉ / PRIX / DESCRIPTION COURTE / BÉNÉFICES
-```
-
-La colonne droite présente le produit. Elle ne porte plus le configurateur complet.
-
-Elle peut contenir :
-
-- nom, référence, prix, promotion et stock ;
-- promesse de livraison ;
-- description courte ;
-- bénéfices ou caractéristiques essentielles ;
-- réassurance et partage.
-
-Les tableaux, consignes d'entretien, avertissements, guides détaillés et descriptions longues ne doivent pas allonger artificiellement cette colonne. Ils appartiennent à `ProductDetails` sous le configurateur.
-
-### 5.3 Configurateur desktop transversal
-
-Le configurateur est un panneau distinct placé immédiatement sous le hero.
+Le hero desktop utilise deux régions :
 
 ```text
-┌────────────────────────────────────────────────────────────┐
-│ Configurez votre produit                                   │
-│                                                            │
-│ Taille                 Couleur                              │
-│ [42] [43] [44]         [Bleu] [Noir]                       │
-│                                                            │
-│ Modèle                 Finition                             │
-│ [Standard] [Premium]   [Mate] [Brillante]                   │
-│                                                            │
-│ Sélection actuelle · disponibilité · quantité · actions    │
-└────────────────────────────────────────────────────────────┘
+PRODUCT MEDIA | PRODUCT BUYBOX
 ```
 
-Règles :
+La colonne gauche est consacrée au produit visuel : image principale, galerie et miniatures lorsqu'elles existent.
 
-- chaque axe garde un libellé explicite ;
-- les options utilisent le `flex-wrap` ou une grille naturelle ;
-- l'espace libre reste de la respiration, il n'est pas rempli artificiellement ;
-- une option indisponible reste visible et explicable ;
-- les choix aval sont réévalués par l'état partagé ;
-- les actions desktop restent dans le configurateur ;
-- le side cart affiche la confirmation après ajout et ne doit pas être dupliqué dans le panneau.
+La colonne droite constitue le cockpit d'achat.
 
-Pour un produit sans variante, le panneau reste présent sous une forme compacte avec disponibilité, quantité et actions. Le shell ne change pas.
+Son ordre nominal est :
 
-### 5.4 Contenu enrichi desktop
+```text
+Nom
+Prix
+Description courte
 
-Après le configurateur, les informations longues occupent la largeur de la zone produit :
+Axe 1
+[options]
 
-- description détaillée ;
-- caractéristiques techniques ;
-- composition ;
-- entretien ;
-- avertissements ;
-- guide des tailles ;
-- contenu éditorial additionnel.
+Axe 2
+[options]
 
-Les suggestions arrivent ensuite. Elles occupent la zone produit, jamais la colonne du side cart.
+Axe N
+[options]
 
+Stock / disponibilité
+Livraison
+Quantité
+Actions
+Réassurance
+Partage
+```
+
+La description courte provient de `content.short_description`.
+
+Le renderer desktop ne fabrique jamais localement un résumé à partir des premiers caractères de la description longue.
+
+La description longue, les caractéristiques, la composition, l'entretien, les avertissements et les guides appartiennent à `ProductDetails` sous le hero.
+
+### 5.3 Variantes desktop : tous les axes visibles
+
+Sur desktop, la sélection de variantes reste inline dans la buybox.
+
+Il n'existe pas de stepper de navigation du type `étape 1/4`, ni de modale de sélection pour les axes produit ordinaires.
+
+Chaque axe possède :
+
+- un libellé explicite ;
+- la valeur actuellement sélectionnée ;
+- ses options visibles dans un flux naturel ;
+- un état disponible, indisponible ou incompatible ;
+- une géométrie indépendante du nombre total d'axes.
+
+Les axes sont rendus dans l'ordre fourni par `option_axes[]`.
+
+```text
+Couleur · Vert
+[●] [●] [●] [●]
+
+Taille · M
+[XS] [S] [M] [L] [XL]
+
+Modèle · Premium
+[Standard] [Premium]
+
+Capacité · 256 Go
+[128 Go] [256 Go] [512 Go]
+```
+
+Les valeurs courtes utilisent des contrôles à largeur naturelle avec retour à la ligne.
+
+Les variantes visuelles utilisent des swatches ou miniatures lorsque le contrat fournit une représentation exploitable.
+
+Un produit peut exposer 0, 1 ou N axes sans changer de shell.
+
+Un axe contenant beaucoup de valeurs peut être compacté avec une action locale telle que `Voir toutes` ou `+ N options`.
+
+Cette expansion reste dans le même bloc. Elle ne remplace jamais le configurateur par une navigation séquentielle.
+
+Une option incompatible ou en rupture reste visible lorsque cela aide à comprendre l'offre. Son état est explicite et elle ne devient jamais une combinaison achetable.
+
+La sélection utilisateur doit converger vers au plus un SKU achetable.
+
+Lorsqu'un SKU unique est résolu, média, prix, stock, disponibilité et actions sont recalculés depuis le même état de sélection.
+
+### 5.4 Résilience aux produits complexes
+
+La composition desktop doit rester lisible avec un nombre élevé d'axes et de valeurs.
+
+Le test de référence doit inclure un produit volontairement complexe comportant plusieurs axes, de nombreuses valeurs et un grand nombre de combinaisons SKU.
+
+La croissance du configurateur se fait verticalement dans le flux naturel de la buybox.
+
+Aucun axe n'impose une hauteur fixe au hero et aucun contenu ne peut être tronqué par une boîte à hauteur constante.
+
+Le média conserve une présence forte, mais sa hauteur ne doit pas être obtenue en imposant artificiellement la hauteur d'un produit complexe à tous les produits.
+
+### 5.5 Produit sans variante
+
+Pour un produit sans variante :
+
+- aucun sélecteur vide n'est rendu ;
+- la buybox se compacte naturellement ;
+- disponibilité, livraison, quantité et actions restent accessibles ;
+- le média peut exploiter davantage d'espace sans créer de grand vide transactionnel.
+
+Le shell reste identique.
+
+### 5.6 Contenu détaillé desktop
+
+`ProductDetails` commence immédiatement sous le hero.
+
+La navigation de contenu peut exposer des entrées telles que :
+
+```text
+Description | Caractéristiques | Guide | Livraison
+```
+
+mais uniquement lorsque la donnée correspondante existe réellement.
+
+Aucun onglet vide, placeholder ou hauteur réservée n'est autorisé.
+
+La description longue constitue la section `Description`.
+
+Les caractéristiques, matériaux, entretien, avertissements, guides et sections éditoriales sont dérivés du contenu canonique.
+
+Le contenu actif commence immédiatement sous sa navigation, sans espace vertical artificiel.
+
+Les suggestions arrivent ensuite et restent dans la zone produit, jamais dans le side cart.
 ## 6. Composition mobile canonique
 
 ### 6.1 Shell mobile robuste
@@ -343,13 +416,13 @@ Le side cart desktop reste la confirmation de ce qui a été ajouté. Le configu
 - Aucun clonage fonctionnel des CTA.
 - Aucun calcul local de prix, stock, livraison ou sous-total.
 - Aucun conditionnement de la réassurance, du partage ou des suggestions à `hasEnrichedContent`.
-- Variantes en flux naturel, `flex-wrap` ou grille auto, jamais dans une hauteur fixe tronquante.
+- Variantes en flux naturel, contrôles à largeur naturelle, `flex-wrap` ou grille auto, jamais dans une hauteur fixe tronquante.
 - Un seul conteneur scrollable par composition produit.
 - Aucune image sticky dans la fiche produit.
 - Aucune hauteur copiée d'une maquette pour contraindre le contenu.
 - Le desktop simple et enrichi partagent le même shell.
 - Le mobile simple et enrichi partagent le même shell.
-- Le configurateur est présent comme section sémantique distincte, même lorsqu'il se compacte.
+- Le configurateur est une capacité sémantique unique : intégré à la buybox desktop et recomposé dans le flux mobile.
 
 ## 11. Gouvernance
 
@@ -368,10 +441,10 @@ Toute évolution doit vérifier :
 - Les quatre états sont rendables depuis le même contrat.
 - Desktop simple et enrichi utilisent le même scroll et le même shell.
 - Mobile simple et enrichi utilisent le même scroll et le même shell.
-- Le hero desktop contient galerie et récit produit.
-- Le configurateur desktop couvre galerie + récit, sans empiéter sur le side cart.
+- Le hero desktop contient ProductMedia et ProductBuyBox.
+- Le configurateur desktop est intégré à ProductBuyBox ; tous les axes sont visibles sans navigation séquentielle.
 - Le configurateur mobile est une section pleine largeur sous le résumé produit.
-- Les détails longs viennent après le configurateur.
+- Les détails longs commencent immédiatement sous le hero.
 - Le side cart desktop reste indépendant.
 - La barre d'action mobile ne masque aucun contenu sur Samsung Internet ou ailleurs.
 - Aucune image produit ne reste fixe pendant que le contenu passe dessous.

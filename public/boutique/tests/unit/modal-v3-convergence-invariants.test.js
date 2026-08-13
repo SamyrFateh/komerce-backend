@@ -34,6 +34,19 @@ function idx(marker) {
 
 describe('convergence v3.0 des quatre états — oracle LOT 4', () => {
 
+  test('la buybox canonique regroupe détails + configurateur avant les détails longs', () => {
+    const iBuy     = idx('id="k-modal-buybox"');
+    const iDetails = idx('id="k-modal-details"');
+    const iConf    = idx('id="k-modal-configurator"');
+    const iBuyEnd  = idx('<!-- end .k-modal-buybox -->');
+    const iLong    = idx('id="k-modal-long-details"');
+
+    expect(iBuy).toBeLessThan(iDetails);
+    expect(iDetails).toBeLessThan(iConf);
+    expect(iConf).toBeLessThan(iBuyEnd);
+    expect(iBuyEnd).toBeLessThan(iLong);
+  });
+
   test('ordre canonique : configurateur → détails longs → suggestions', () => {
     const iConf = idx('id="k-modal-configurator"');
     const iDet  = idx('id="k-modal-long-details"');

@@ -50,20 +50,27 @@ async function expectShellAndHero(page, viewport) {
     const image = document.querySelector('.k-modal-img-wrap');
     const zone = document.querySelector('.k-modal-product-zone');
     const configurator = document.getElementById('k-modal-configurator');
+    const buybox = document.getElementById('k-modal-buybox');
     const imageRect = image?.getBoundingClientRect();
-    const detailsRect = document.querySelector('.k-modal-details')?.getBoundingClientRect();
-    const zoneRect = zone?.getBoundingClientRect();
-    const confRect = configurator?.getBoundingClientRect();
+    const buyboxRect = buybox?.getBoundingClientRect();
+    const actionsRect = actions?.getBoundingClientRect();
+    const configuratorDisplay = configurator ? getComputedStyle(configurator).display : null;
     return {
       imagePosition: image ? getComputedStyle(image).position : null,
       actionsDirectChild: actions?.parentElement === modal,
       actionsInsideScroll: Boolean(actions && scroll && scroll.contains(actions)),
       configuratorInsideScroll: Boolean(configurator && scroll && scroll.contains(configurator)),
-      desktopGeometry: imageRect && detailsRect && zoneRect && confRect ? {
-        heroBottom: Math.max(imageRect.bottom, detailsRect.bottom),
-        confTop: confRect.top,
-        confWidth: confRect.width,
-        zoneWidth: zoneRect.width,
+      desktopGeometry: imageRect && buyboxRect && actionsRect ? {
+        imageTop: imageRect.top,
+        imageRight: imageRect.right,
+        buyboxTop: buyboxRect.top,
+        buyboxLeft: buyboxRect.left,
+        buyboxRight: buyboxRect.right,
+        buyboxWidth: buyboxRect.width,
+        configuratorDisplay,
+        actionsLeft: actionsRect.left,
+        actionsRight: actionsRect.right,
+        actionsWidth: actionsRect.width,
       } : null,
     };
   });
@@ -77,13 +84,19 @@ async function expectShellAndHero(page, viewport) {
   } else {
     expect(geometry.actionsDirectChild).toBe(false);
     expect(geometry.actionsInsideScroll).toBe(true);
-    expect(geometry.desktopGeometry.confTop).toBeGreaterThanOrEqual(geometry.desktopGeometry.heroBottom - 3);
-    // P4-fix (audit desktop 2026-07) : seuil resserré de 0.7 → 0.92. L'ancien
-    // seuil de 0.7 laissait passer le défaut réel (~83%, double inset entre
-    // le padding de .k-modal-product-zone et le margin de .k-modal-configurator).
-    // La cible est un configurateur qui occupe la même largeur utile que
-    // .k-modal-long-details, pas un ratio arbitraire.
-    expect(geometry.desktopGeometry.confWidth / geometry.desktopGeometry.zoneWidth).toBeGreaterThan(0.92);
+    const g = geometry.desktopGeometry;
+    expect(g).not.toBeNull();
+
+    // PDP v3.1 : ProductMedia | ProductBuyBox partagent la premiere ligne.
+    expect(Math.abs(g.buyboxTop - g.imageTop)).toBeLessThanOrEqual(3);
+    expect(g.buyboxLeft).toBeGreaterThanOrEqual(g.imageRight - 3);
+
+    // PDP v3.1 Lot 4C : le wrapper configurateur est transparent au layout.
+    // Sa géométrie propre est donc 0x0 ; on vérifie la vraie boîte des actions.
+    expect(g.configuratorDisplay).toBe('contents');
+    expect(g.actionsLeft).toBeGreaterThanOrEqual(g.buyboxLeft - 1);
+    expect(g.actionsRight).toBeLessThanOrEqual(g.buyboxRight + 1);
+    expect(g.actionsWidth).toBeLessThanOrEqual(g.buyboxWidth + 1);
   }
 }
 
@@ -293,6 +306,65 @@ test.describe('Catalogue enrichi V3 — scénarios spécifiques', () => {
     }
 
     await optionalShot(page, 'desktop-side-cart-three-items.png');
+  });
+
+  test('PDP §1/§8 — editorial (simple) : suggestions en rail colonne 2, immédiatement sous la BuyBox, sans vide', async ({ page }) => {
+    const entry = catalogue.cases.find((item) => item.key === 'editorial');
+    await stubFixtureCatalogue(page);
+    await openFixtureFromSearch(page, entry);
+    // Attendre les cartes réelles avant de mesurer (pas de capture prématurée).
+    await page.waitForSelector('#k-modal-suggestions .k-sug-card', { timeout: 8000 });
+
+    const m = await page.evaluate(() => {
+      const zone = document.querySelector('.k-modal-product-zone');
+      const suggestions = document.getElementById('k-modal-suggestions');
+      const buybox = document.getElementById('k-modal-buybox');
+      const cs = getComputedStyle(suggestions);
+      const sr = suggestions.getBoundingClientRect();
+      const br = buybox.getBoundingClientRect();
+      return {
+        railClass: zone.classList.contains('k-modal-product-zone--suggestions-in-rail'),
+        insideZone: zone.contains(suggestions),
+        gridColumnStart: cs.gridColumnStart,
+        // colonne 2 : le bord gauche des suggestions est aligné sur la BuyBox
+        alignedWithBuybox: Math.abs(sr.left - br.left) <= 2 && Math.abs(sr.right - br.right) <= 2,
+        // vide sous la BuyBox comblé : les suggestions démarrent juste sous elle
+        voidBelowBuybox: Math.round(sr.top - br.bottom),
+      };
+    });
+
+    expect(m.railClass).toBe(true);
+    expect(m.insideZone).toBe(true);
+    expect(m.gridColumnStart).toBe('2');
+    expect(m.alignedWithBuybox).toBe(true);
+    expect(m.voidBelowBuybox).toBeLessThanOrEqual(24);
+    expect(m.voidBelowBuybox).toBeGreaterThanOrEqual(-2);
+  });
+
+  test('PDP §2 — garment (variantes) : suggestions NON forcées en rail (pleine largeur)', async ({ page }) => {
+    const entry = catalogue.cases.find((item) => item.key === 'garment');
+    await stubFixtureCatalogue(page);
+    await openFixtureFromSearch(page, entry);
+    await page.waitForSelector('#k-modal-suggestions .k-sug-card', { timeout: 8000 });
+
+    const m = await page.evaluate(() => {
+      const zone = document.querySelector('.k-modal-product-zone');
+      const suggestions = document.getElementById('k-modal-suggestions');
+      const buybox = document.getElementById('k-modal-buybox');
+      const cs = getComputedStyle(suggestions);
+      const sr = suggestions.getBoundingClientRect();
+      const br = buybox.getBoundingClientRect();
+      return {
+        railClass: zone.classList.contains('k-modal-product-zone--suggestions-in-rail'),
+        gridColumnStart: cs.gridColumnStart,
+        // pleine largeur : les suggestions débordent nettement à gauche de la BuyBox
+        fullWidth: sr.left < br.left - 100,
+      };
+    });
+
+    expect(m.railClass).toBe(false);
+    expect(m.gridColumnStart).toBe('1');
+    expect(m.fullWidth).toBe(true);
   });
 
   test('P6 — elite Noir/42 : la combinaison réelle en stock faible affiche "Plus que 4"', async ({ page }) => {
