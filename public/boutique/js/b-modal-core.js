@@ -398,15 +398,30 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
    * Restaure le scroll Y du catalogue sauvegardé dans state._savedCatalogScrollY
    * Reset les subcats modal + suggestions
    */
-    function closeModal() {
+    function closeModal(options) {
+    const skipHistoryBack = Boolean(options && options.skipHistoryBack);
     hideModalFAB();
     // FIX: Pop history entry if we pushed one (don't pop if back button already did)
     // BUG-02 — si on est déjà dans le handler popstate (_closingFromPopstate), ne pas
     // rappeler history.back() : c'est le popstate lui-même qui a déjà consommé l'entrée.
     if (_modalHistoryPushed && !_closingFromPopstate) {
       _modalHistoryPushed = false;
-      _pendingHistoryBack = true; // BUG-03 : signale au handler popstate que ce back() est programmatique
-      history.back();
+      // BUG-04 — clic sur le panier depuis la modal : on ferme la fiche produit
+      // pour enchaîner sur l'ouverture du panier (setTimeout(openCart, 150)),
+      // ce n'est PAS un retour arrière voulu par l'utilisateur. Appeler
+      // history.back() ici déclenche une vraie navigation d'historique : sur
+      // certains navigateurs/mobiles ça restaure la page depuis le bfcache
+      // (ou force un reload), ce qui tue le setTimeout en cours et l'utilisateur
+      // atterrit sur le catalogue (« page d'accueil ») sans jamais voir le
+      // panier s'ouvrir. Dans ce cas précis on se contente de neutraliser
+      // l'entrée d'historique kModal via replaceState (même URL, pas de
+      // navigation), pour laisser le flux JS (openCart) se dérouler normalement.
+      if (skipHistoryBack) {
+        try { history.replaceState({}, ''); } catch (_) {}
+      } else {
+        _pendingHistoryBack = true; // BUG-03 : signale au handler popstate que ce back() est programmatique
+        history.back();
+      }
     } else {
       _modalHistoryPushed = false;
     }
@@ -606,7 +621,9 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     dom.modalBack.addEventListener('click', modalGoBack);
     dom.modalClose.addEventListener('click', closeModal);
     dom.modalCartBtn.addEventListener('click', () => {
-      closeModal();
+      // BUG-04 — pas de history.back() ici : on enchaîne sur openCart(), donc
+      // on neutralise juste l'entrée d'historique kModal (voir closeModal).
+      closeModal({ skipHistoryBack: true });
       setTimeout(openCart, 150);
     });
     dom.modalOverlay.addEventListener('click', (e) => {
