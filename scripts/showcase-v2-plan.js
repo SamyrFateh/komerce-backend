@@ -193,6 +193,8 @@ function buildV2Contract(product, slot) {
     description: product.description || product.name || slot.product_ref,
     stock_available: slot.rich ? sellableUnits.reduce((sum, unit) => sum + (unit.stock_available || 0), 0) : Number(product.stock || 10),
     source_locale: product.source_locale || 'en',
+    source_title: product.source_title || product.name || slot.product_ref,
+    source_description: product.source_description ?? null,
     media,
     option_axes: slot.rich ? optionAxes : null,
     sellable_units: slot.rich ? sellableUnits : null,
