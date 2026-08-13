@@ -173,6 +173,7 @@ function installDom() {
       <div id="k-modal-aed-price">legacy eur</div>
       <div id="k-modal-flash-bar">legacy promo</div>
       <div id="k-modal-stock-bar">legacy stock</div>
+      <div id="k-modal-long-description" hidden></div>
       <div id="k-modal-enriched-content" hidden></div>
     </div>`;
 
@@ -208,6 +209,49 @@ describe('desktop product detail renderer', () => {
 
   afterAll(() => {
     clearDesktopProductDetailState();
+  });
+
+  test('PDP v3.1 : short_description reste dans la BuyBox et description longue descend sous le hero', () => {
+    const product = detail({ content: { short_description: 'Chapeau court raffiné' } });
+    product.product.description = 'Description longue complète du produit, conservée sans troncature.';
+
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(dom.modalDesc.textContent).toBe('Chapeau court raffiné');
+    expect(dom.modalDesc.hidden).toBe(false);
+
+    const longDescription = document.getElementById('k-modal-long-description');
+    expect(longDescription.hidden).toBe(false);
+    expect(longDescription.textContent).toContain('Description');
+    expect(longDescription.textContent).toContain('Description longue complète du produit, conservée sans troncature.');
+    expect(longDescription.textContent).not.toContain('Chapeau court raffiné');
+  });
+
+  test("PDP v3.1 : aucune courte description n'est fabriquée depuis la description longue", () => {
+    const product = detail();
+    product.product.description = 'Texte long qui appartient uniquement aux détails sous le hero.';
+
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(dom.modalDesc.textContent).toBe('');
+    expect(dom.modalDesc.hidden).toBe(true);
+    expect(document.getElementById('k-modal-long-description').textContent)
+      .toContain('Texte long qui appartient uniquement aux détails sous le hero.');
+  });
+
+  test('PDP v3.1 : short_description seul ne crée pas de bloc enrichi fantôme', () => {
+    const product = detail({ content: { short_description: 'Chapeau seul' } });
+    product.product.description = '';
+
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const enriched = document.getElementById('k-modal-enriched-content');
+    const longDescription = document.getElementById('k-modal-long-description');
+
+    expect(dom.modalDesc.textContent).toBe('Chapeau seul');
+    expect(enriched.hidden).toBe(true);
+    expect(enriched.innerHTML).toBe('');
+    expect(longDescription.hidden).toBe(true);
   });
 
   test('LEGACY_VARIANTS (non-SKU) : CTA actif et stepper autorisé', () => {

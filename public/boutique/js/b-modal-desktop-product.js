@@ -109,8 +109,11 @@ function renderMedia(detail, selection, force = false) {
 // mobile l'efface, MDM-7) et la neutralisation des anciennes zones legacy
 // (aed/flash/stock-bar), qui n'existent pas côté mobile.
 function renderIdentity(detail) {
+  const shortDescription = buildProductContentViewModel(detail.content).shortDescription;
+
   if (dom.modalDesc) {
-    dom.modalDesc.textContent = detail.product.description || '';
+    dom.modalDesc.textContent = shortDescription || '';
+    dom.modalDesc.hidden = !shortDescription;
     dom.modalDesc.classList.remove('is-expanded');
   }
 
@@ -564,6 +567,32 @@ function appendEnrichedTextBlock(container, { heading, text, offerReadMore }) {
   container.appendChild(block);
 }
 
+/* PDP v3.1 — description longue sous le hero.
+   Aucun fallback vers short_description et aucune troncature fabriquée. */
+function renderLongDescription(detail) {
+  const container = document.getElementById('k-modal-long-description');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  const description =
+    typeof detail?.product?.description === 'string'
+      ? detail.product.description.trim()
+      : '';
+
+  if (!description) {
+    container.hidden = true;
+    return;
+  }
+
+  container.hidden = false;
+  appendEnrichedTextBlock(container, {
+    heading: 'Description',
+    text: description,
+    offerReadMore: shouldOfferReadMore(description),
+  });
+}
+
 function appendEnrichedBulletBlock(container, { heading, items, variant }) {
   if (!items.length) return;
   const block = document.createElement('div');
@@ -662,13 +691,6 @@ function renderEnrichedContent(detail) {
   const zone = container.closest('.k-modal-product-zone');
 
   const vm = buildProductContentViewModel(detail.content);
-  if (!vm.hasEnrichedContent) {
-    container.hidden = true;
-    if (zone) zone.classList.add('k-modal-product-zone--no-enriched');
-    return;
-  }
-  container.hidden = false;
-  if (zone) zone.classList.remove('k-modal-product-zone--no-enriched');
 
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.highlights, items: vm.highlights.map((h) => h.label), variant: 'highlights' });
   appendEnrichedSpecifications(container, vm.specificationGroups);
@@ -685,6 +707,14 @@ function renderEnrichedContent(detail) {
       appendEnrichedKeyValueBlock(container, { heading: section.title, entries: section.entries });
     }
   });
+
+  // short_description et brand ne suffisent pas à créer une section
+  // desktop sous le hero : seules les sections réellement rendues comptent.
+  const hasRenderedBlocks = container.childElementCount > 0;
+  container.hidden = !hasRenderedBlocks;
+  if (zone) {
+    zone.classList.toggle('k-modal-product-zone--no-enriched', !hasRenderedBlocks);
+  }
 }
 
 function renderSubtotal(detail, selection) {
@@ -775,6 +805,7 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
   renderTrust();
   renderShare(detail);
   renderDeliveryOptions(detail);
+  renderLongDescription(detail);
   renderEnrichedContent(detail);
   renderMedia(detail, selection, forceMedia);
   ensureQtyObserver();
