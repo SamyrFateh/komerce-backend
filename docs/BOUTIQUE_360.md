@@ -1,7 +1,7 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-13T11:38:16.471Z.
+> Régénéré le 2026-08-13T11:41:46.785Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
@@ -71,7 +71,7 @@
 | `cart-snapshot:render` | group-side-cart | b-cart | 🟢 sain |
 | `cart:update` | b-cart-core | b-cart, b-cart-pill, b-mini-cart, b-modal-suggestions | 🟢 sain |
 | `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
-| `checkout:open` | b-cart | boutique | 🟢 sain |
+| `checkout:open` | b-cart, b-modal-buybox-shared | boutique | 🟢 sain |
 | `checkout:order-failed` | b-checkout | group-side-cart | 🟢 sain |
 | `chip:center` | b-pager | b-catalog | 🟢 sain |
 | `favorites:view-refresh` | b-catalog | b-favs | 🟡 non déclaré |
@@ -86,7 +86,7 @@
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
 | `nav:goto-komerce-wallet` | b-checkout | b-nav | 🟢 sain |
 | `nav:goto-track` | b-checkout | b-nav | 🟢 sain |
-| `side-cart:render` | b-cart, b-cart-core, group-side-cart | b-cart, group-library-remove, group-side-cart | 🟢 sain |
+| `side-cart:render` | b-cart, b-cart-core, b-modal-core, group-side-cart | b-cart, group-library-remove, group-side-cart | 🟢 sain |
 | `view:changed` | b-nav | b-catalog-desktop-enhancers, b-home-premium-v1 | 🟡 non déclaré |
 
 ### Diagramme
@@ -98,6 +98,9 @@ graph LR
   b_cart_core["b-cart-core"] -->|side-cart:render| b_cart["b-cart"]
   b_cart_core["b-cart-core"] -->|side-cart:render| group_library_remove["group-library-remove"]
   b_cart_core["b-cart-core"] -->|side-cart:render| group_side_cart["group-side-cart"]
+  b_modal_core["b-modal-core"] -->|side-cart:render| b_cart["b-cart"]
+  b_modal_core["b-modal-core"] -->|side-cart:render| group_library_remove["group-library-remove"]
+  b_modal_core["b-modal-core"] -->|side-cart:render| group_side_cart["group-side-cart"]
   group_side_cart["group-side-cart"] -->|side-cart:render| b_cart["b-cart"]
   group_side_cart["group-side-cart"] -->|side-cart:render| group_library_remove["group-library-remove"]
   b_cart_core["b-cart-core"] -->|cart:update| b_cart["b-cart"]
@@ -115,6 +118,7 @@ graph LR
   group_side_cart["group-side-cart"] -->|modal:open| b_modal_core["b-modal-core"]
   group_side_cart["group-side-cart"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
   b_cart["b-cart"] -->|checkout:open| boutique["boutique"]
+  b_modal_buybox_shared["b-modal-buybox-shared"] -->|checkout:open| boutique["boutique"]
   group_side_cart["group-side-cart"] -->|cart-snapshot:render| b_cart["b-cart"]
   group_side_cart["group-side-cart"] -->|cart-snapshot:cleanup| b_cart["b-cart"]
   group_side_cart["group-side-cart"] -->|cart-body:render-personal| b_cart["b-cart"]

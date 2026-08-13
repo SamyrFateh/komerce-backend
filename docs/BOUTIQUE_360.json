@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-13T11:38:16.471Z",
+  "generatedAt": "2026-08-13T11:41:46.785Z",
   "summary": {
     "modules": 77,
     "withHeader": 77,
@@ -830,17 +830,24 @@
         "b-modal-mobile-product.js",
         "b-modal-desktop-product.js"
       ],
-      "emits": [],
+      "emits": [
+        "checkout:open"
+      ],
       "listens": [],
       "imports": [
         "b-utils",
-        "b-modal",
+        "b-bus",
         "b-cart",
         "b-store",
         "modal-cart-product-model"
       ],
       "bodyClasses": [],
-      "emitCalls": []
+      "emitCalls": [
+        {
+          "name": "checkout:open",
+          "hasArg": true
+        }
+      ]
     },
     {
       "file": "public/boutique/js/b-modal-cart.js",
@@ -897,7 +904,8 @@
       ],
       "emits": [
         "modal:opened",
-        "modal:closed"
+        "modal:closed",
+        "side-cart:render"
       ],
       "listens": [
         "modal:close",
@@ -931,6 +939,10 @@
         },
         {
           "name": "modal:closed",
+          "hasArg": false
+        },
+        {
+          "name": "side-cart:render",
           "hasArg": false
         }
       ]
@@ -983,6 +995,7 @@
         "b-modal-product.js",
         "b-modal-image-ux.js",
         "view-models/modal-selection-model.js",
+        "view-models/modal-cart-product-model.js",
         "view-models/product-content-model.js"
       ],
       "usedBy": [
@@ -1001,7 +1014,8 @@
         "delivery-mode-model",
         "b-cart-core",
         "b-modal-product-fields",
-        "product-content-model"
+        "product-content-model",
+        "modal-cart-product-model"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -1053,7 +1067,8 @@
         "b-utils.js",
         "b-modal-product.js",
         "b-modal-image-ux.js",
-        "view-models/modal-selection-model.js"
+        "view-models/modal-selection-model.js",
+        "view-models/modal-cart-product-model.js"
       ],
       "usedBy": [
         "b-modal-product-detail-bootstrap.js"
@@ -1071,7 +1086,8 @@
         "b-modal-product-fields",
         "b-modal-desktop-product",
         "product-content-model",
-        "b-scroll-owner"
+        "b-scroll-owner",
+        "modal-cart-product-model"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -1291,10 +1307,6 @@
       ],
       "bodyClasses": [],
       "emitCalls": [
-        {
-          "name": "modal:open",
-          "hasArg": true
-        },
         {
           "name": "modal:open",
           "hasArg": true
@@ -1743,6 +1755,7 @@
         "b-phone.js",
         "b-utils.js",
         "b-cart-core.js",
+        "b-identity.js",
         "group/group-api.js",
         "routes/otp.js",
         "routes/orders.js",
@@ -1761,7 +1774,8 @@
         "b-store",
         "b-phone",
         "group-api",
-        "group-list-labels"
+        "group-list-labels",
+        "b-identity"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -2472,7 +2486,9 @@
       ],
       "usedBy": [
         "b-modal-cart.js",
-        "b-modal-buybox-shared.js"
+        "b-modal-buybox-shared.js",
+        "b-modal-mobile-product.js",
+        "b-modal-desktop-product.js"
       ],
       "emits": [],
       "listens": [],
@@ -2575,6 +2591,7 @@
       "emitters": [
         "b-cart",
         "b-cart-core",
+        "b-modal-core",
         "group-side-cart"
       ],
       "listeners": [
@@ -2617,7 +2634,8 @@
     },
     "checkout:open": {
       "emitters": [
-        "b-cart"
+        "b-cart",
+        "b-modal-buybox-shared"
       ],
       "listeners": [
         "boutique"
@@ -2990,13 +3008,6 @@
       "raw": "/api/payments/paypal/capture/${encodeURIComponent(data.orderID)}",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "b-paypal",
-      "route": "/api/public/config",
-      "raw": "/api/public/config",
-      "dynamic": false,
-      "contractStatus": "UNKNOWN"
     },
     {
       "module": "b-share-cart",
