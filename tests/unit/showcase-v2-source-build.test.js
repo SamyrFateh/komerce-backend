@@ -43,11 +43,12 @@ describe('showcase-v2-source-build query resilience', () => {
     }
   });
 
-  test('les requêtes intitle complètent les requêtes métier sans doublon', () => {
+  test('les requêtes intitle sont prioritaires et les requêtes métier restent disponibles sans doublon', () => {
     const target = TAXONOMY_TARGETS[0];
+    const identityQueries = identityQueriesForTarget(target);
     const queries = queriesForTarget(target);
-    expect(queries.slice(0, target.queries.length)).toEqual(target.queries);
-    expect(queries.some((query) => query.startsWith('intitle:'))).toBe(true);
+    expect(queries.slice(0, identityQueries.length)).toEqual(identityQueries);
+    for (const query of target.queries) expect(queries).toContain(query);
     expect(new Set(queries.map((query) => query.toLowerCase())).size).toBe(queries.length);
   });
 
@@ -78,18 +79,18 @@ describe('showcase-v2-source-build query resilience', () => {
     expect(productIdentityFor(row, target)).toMatchObject({ ok: true, term: 'dress', term_source: 'title' });
   });
 
-  test('refuse une photo de personnes même si la description cite un vêtement', () => {
+  test('refuse une photo de personnes si le vêtement n’existe que dans la description', () => {
     const target = { category: 'Mode & Beauté', subcategory: 'Homme' };
     const row = {
       source_title: 'Three men outside a studio',
       name: 'Trois hommes devant un studio',
       source_description: 'Men wearing fashionable shirts and jackets for a group photo.',
     };
-    expect(productIdentityFor(row, target)).toMatchObject({ ok: false, reason: 'missing-product-term' });
+    expect(productIdentityFor(row, target)).toMatchObject({ ok: false, reason: 'product-term-description-only' });
     expect(isProductLike(row, target)).toBe(false);
   });
 
-  test('refuse une scène humaine même sans marqueur éditorial classique', () => {
+  test('refuse une scène humaine même si le titre contient un produit', () => {
     const target = { category: 'Mode & Beauté', subcategory: 'Femme' };
     const row = {
       source_title: 'Summer dress collection',
@@ -99,14 +100,44 @@ describe('showcase-v2-source-build query resilience', () => {
     expect(productIdentityFor(row, target)).toMatchObject({ ok: false, reason: 'human-media', term: 'dress' });
   });
 
-  test('accepte une identité produit portée par la description si aucun humain n’est décrit', () => {
+  test('refuse une identité produit portée uniquement par la description', () => {
     const target = { category: 'Mode & Beauté', subcategory: 'Femme' };
     const row = {
       source_title: 'Object 1842 17',
       name: 'Objet 1842 17',
       source_description: 'Red silk dress photographed flat on a neutral background.',
     };
-    expect(productIdentityFor(row, target)).toMatchObject({ ok: true, term: 'dress', term_source: 'description' });
+    expect(productIdentityFor(row, target)).toMatchObject({
+      ok: false,
+      reason: 'product-term-description-only',
+      term: 'dress',
+      term_source: 'description',
+    });
+  });
+
+  test('régression Mina : dress rehearsal ne peut jamais devenir une robe catalogue', () => {
+    const target = { category: 'Mode & Beauté', subcategory: 'Femme' };
+    const row = {
+      source_title: 'Mina Mazzini 1961',
+      name: 'Mina Mazzini 1961',
+      source_description: 'Italian singer Mina getting ready in the dressing room before the dress rehearsal of a TV broadcast.',
+    };
+    expect(productIdentityFor(row, target)).toMatchObject({
+      ok: false,
+      reason: 'product-term-description-only',
+      term: 'dress',
+      term_source: 'description',
+    });
+  });
+
+  test('refuse une scène d’usage humaine hors habillement', () => {
+    const target = { category: 'Tech', subcategory: 'Phones' };
+    const row = {
+      source_title: 'Using Mobile Phone',
+      name: 'Using Mobile Phone',
+      source_description: 'Man holding a mobile phone while calling outdoors.',
+    };
+    expect(productIdentityFor(row, target)).toMatchObject({ ok: false, reason: 'human-media', term_source: 'title' });
   });
 
   test('la description boutique est française et la source brute reste séparée', () => {
@@ -131,6 +162,7 @@ describe('showcase-v2-source-build query resilience', () => {
     expect(product.description).toBe(description);
     expect(product.source_description).toBe(sourceDescription);
     expect(product.showcase_v2.product_identity_term).toBe('headlight');
+    expect(product.showcase_v2.product_identity_source).toBe('title');
   });
 
   test('écarte avant miroir une exclusion absolue mais conserve une restriction transport', () => {
