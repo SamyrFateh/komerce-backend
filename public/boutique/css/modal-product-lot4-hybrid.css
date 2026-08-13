@@ -511,3 +511,136 @@
    cf. bloc ci-dessus). Décision explicite : les cartes s'annoncent
    elles-mêmes par leur visibilité partielle, pas par une ligne de texte
    cliquable séparée. */
+
+/* PDP v3.1 — LOT 4C : ordre interne canonique ProductBuyBox */
+@media (min-width: 900px) {
+
+  /* Une seule colonne transactionnelle : le padding appartient à la BuyBox,
+     plus aux wrappers historiques details/configurator. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox {
+    box-sizing: border-box;
+    padding: clamp(22px, 3vh, 42px) clamp(28px, 4.4vw, 72px) 18px;
+  }
+
+  /* Les wrappers restent sémantiques dans le DOM mais ne créent plus
+     de sous-layout desktop. Leurs enfants deviennent les items flex
+     réels de ProductBuyBox. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox > .k-modal-details,
+  #k-modal .k-modal-product-zone > .k-modal-buybox > .k-modal-details > .k-modal-info,
+  #k-modal .k-modal-product-zone > .k-modal-buybox > .k-modal-configurator,
+  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-meta {
+    display: contents;
+  }
+
+  /* ── Ordre canonique de la BuyBox ─────────────────────── */
+  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-name-row {
+    order: 10;
+    margin-top: 0;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-sku {
+    order: 20;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-cat {
+    order: 21;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-price-row {
+    order: 30;
+    margin-top: 12px;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-aed-price {
+    order: 31;
+  }
+
+  /* Le chapeau éditorial court appartient au hero transactionnel. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-desc {
+    order: 40;
+    margin-top: 8px;
+  }
+
+  /* Tous les axes restent simultanément visibles, quel que soit N. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-variants {
+    order: 50;
+    min-width: 0;
+    margin-top: 18px;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-variants:empty {
+    display: none;
+  }
+
+  /* Disponibilité après la résolution des axes. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-stock {
+    order: 60;
+    margin-top: 2px;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-stock-bar {
+    order: 61;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-delivery {
+    order: 70;
+    margin-top: 10px;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-actions {
+    order: 80;
+    align-self: stretch;
+    width: 100%;
+    margin-top: 16px;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-trust {
+    order: 90;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-share-row {
+    order: 100;
+  }
+
+  /* ── Axes génériques ──────────────────────────────────── */
+  #k-modal .k-modal-buybox .k-vg {
+    min-width: 0;
+    padding: 0;
+    margin: 0 0 14px;
+  }
+
+  #k-modal .k-modal-buybox .k-vg:last-of-type {
+    margin-bottom: 10px;
+  }
+
+  #k-modal .k-modal-buybox .k-vg-label {
+    margin-bottom: 8px;
+    line-height: 1.25;
+  }
+
+  /* Axes texte : largeur naturelle, jamais des colonnes 1fr étirées. */
+  #k-modal .k-modal-buybox .k-vg-sizes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  #k-modal .k-modal-buybox .k-vg-sizes .k-vp {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 44px;
+    max-width: 100%;
+    min-height: 44px;
+    padding: 8px 14px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* Axes image/couleur : comportement existant conservé, wrap explicite. */
+  #k-modal .k-modal-buybox .k-vg-skus {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}

@@ -53,22 +53,24 @@ async function expectShellAndHero(page, viewport) {
     const buybox = document.getElementById('k-modal-buybox');
     const imageRect = image?.getBoundingClientRect();
     const buyboxRect = buybox?.getBoundingClientRect();
-    const confRect = configurator?.getBoundingClientRect();
+    const actionsRect = actions?.getBoundingClientRect();
+    const configuratorDisplay = configurator ? getComputedStyle(configurator).display : null;
     return {
       imagePosition: image ? getComputedStyle(image).position : null,
       actionsDirectChild: actions?.parentElement === modal,
       actionsInsideScroll: Boolean(actions && scroll && scroll.contains(actions)),
       configuratorInsideScroll: Boolean(configurator && scroll && scroll.contains(configurator)),
-      desktopGeometry: imageRect && buyboxRect && confRect ? {
+      desktopGeometry: imageRect && buyboxRect && actionsRect ? {
         imageTop: imageRect.top,
         imageRight: imageRect.right,
         buyboxTop: buyboxRect.top,
         buyboxLeft: buyboxRect.left,
         buyboxRight: buyboxRect.right,
         buyboxWidth: buyboxRect.width,
-        confLeft: confRect.left,
-        confRight: confRect.right,
-        confWidth: confRect.width,
+        configuratorDisplay,
+        actionsLeft: actionsRect.left,
+        actionsRight: actionsRect.right,
+        actionsWidth: actionsRect.width,
       } : null,
     };
   });
@@ -89,10 +91,12 @@ async function expectShellAndHero(page, viewport) {
     expect(Math.abs(g.buyboxTop - g.imageTop)).toBeLessThanOrEqual(3);
     expect(g.buyboxLeft).toBeGreaterThanOrEqual(g.imageRight - 3);
 
-    // Le configurateur est maintenant contenu dans ProductBuyBox.
-    expect(g.confLeft).toBeGreaterThanOrEqual(g.buyboxLeft - 1);
-    expect(g.confRight).toBeLessThanOrEqual(g.buyboxRight + 1);
-    expect(g.confWidth).toBeLessThanOrEqual(g.buyboxWidth + 1);
+    // PDP v3.1 Lot 4C : le wrapper configurateur est transparent au layout.
+    // Sa géométrie propre est donc 0x0 ; on vérifie la vraie boîte des actions.
+    expect(g.configuratorDisplay).toBe('contents');
+    expect(g.actionsLeft).toBeGreaterThanOrEqual(g.buyboxLeft - 1);
+    expect(g.actionsRight).toBeLessThanOrEqual(g.buyboxRight + 1);
+    expect(g.actionsWidth).toBeLessThanOrEqual(g.buyboxWidth + 1);
   }
 }
 
