@@ -108,13 +108,23 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
 
   test('l\'image reste bornée indépendamment de la ligne de grille (modal-media.css, D6/T-018)', () => {
     const imgRule = media.match(/#k-modal \.k-modal-product-zone \.k-modal-img-wrap\s*\{([^}]*)\}/)?.[1] ?? '';
-    expect(imgRule).toMatch(/aspect-ratio\s*:\s*4\s*\/\s*3/);
-    expect(imgRule).toMatch(/min-height\s*:\s*360px/);
-    expect(imgRule).toMatch(/max-height\s*:\s*500px/);
+    expect(imgRule).not.toMatch(/aspect-ratio\s*:/);
+    expect(imgRule).toMatch(/min-height\s*:\s*0/);
+    expect(imgRule).toMatch(/max-height\s*:\s*none/);
+    expect(imgRule).toMatch(/max-width\s*:\s*min\(100%,\s*640px\)/);
     expect(imgRule).toMatch(/align-self\s*:\s*start/);
+
+    const carouselRule = media.match(
+      /#k-modal \.k-modal-product-zone \.k-modal-carousel\s*\{([^}]*)\}/
+    )?.[1] ?? '';
+
+    expect(carouselRule).toMatch(/aspect-ratio\s*:\s*1\s*\/\s*1/);
+    expect(carouselRule).toMatch(/max-width\s*:\s*580px/);
+    expect(carouselRule).toMatch(/height\s*:\s*auto/);
+    expect(carouselRule).toMatch(/align-self\s*:\s*start/);
   });
 
-  test('un média unique sans variantes utilise le carré disponible et retire le gutter miniatures', () => {
+  test('un média unique sans variantes utilise la largeur disponible et retire le gutter miniatures', () => {
     const simpleHero = media.match(
       /#k-modal:not\(\.k-modal--has-variants\)[\s\S]{0,120}\.k-modal-product-zone \.k-modal-img-wrap\[data-gallery-mode="single"\]\s*\{([^}]*)\}/
     )?.[1] ?? '';
@@ -122,8 +132,11 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
       /#k-modal:not\(\.k-modal--has-variants\)[\s\S]{0,120}\.k-modal-img-wrap\[data-gallery-mode="single"\] \.k-modal-slide\s*\{([^}]*)\}/
     )?.[1] ?? '';
 
-    expect(simpleHero).toMatch(/aspect-ratio\s*:\s*1\s*\/\s*1/);
-    expect(simpleSlide).toMatch(/padding\s*:\s*8px\s+12px/);
+    expect(simpleHero).not.toMatch(/aspect-ratio\s*:/);
+    expect(simpleHero).toMatch(/min-height\s*:\s*0/);
+    expect(simpleHero).toMatch(/max-height\s*:\s*none/);
+    expect(simpleHero).toMatch(/max-width\s*:\s*min\(100%,\s*580px\)/);
+    expect(simpleSlide).not.toMatch(/padding\s*:/);
     expect(simpleSlide).toMatch(/object-position\s*:\s*center\s+center/);
   });
 });

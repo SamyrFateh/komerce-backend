@@ -49,16 +49,14 @@
       /* REF-2026-07 : même correction qu'à 1024px — image bornée, détails 1fr. */
       /* ProductMedia (ex 64px + minmax(280,420)) → minmax(340,480) : conserve
          l'amplitude combinée précédente (344px→484px) sous une seule piste. */
-      grid-template-columns: minmax(340px, 480px) minmax(340px, 1fr);
-      gap: 22px;
-      padding: 22px;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 330px);
+      gap: 16px;
+      padding: 16px;
     }
 
-    /* Produit simple : la BuyBox courte rend une partie de la largeur
-       au ProductMedia, sans augmenter artificiellement la hauteur du hero. */
-    #k-modal:not(.k-modal--has-variants) .k-modal-product-zone {
-      grid-template-columns: minmax(420px, 560px) minmax(300px, 1fr);
-    }
+    /* Même allocation pour tous les produits :
+       l'absence de variantes libère de la hauteur dans la BuyBox,
+       pas une géométrie horizontale concurrente. */
   }
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
@@ -68,7 +66,7 @@
     background: var(--page-bg);
   }
 
-  #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }
+
 
   /* D7 — Panneau détails en aplat (spec §327) : le dégradé linéaire
      white → sand est retiré au profit d'un fond uni --page-bg. */
@@ -327,22 +325,21 @@
   /* ── Trust + partage — aération identique mobile et desktop ── */
   #k-modal .k-modal-trust {
     border-top: 0;
-    margin-top: 18px;
+    margin-top: 10px;
     padding: 0;
-    gap: 8px;
+    gap: 6px;
   }
 
   #k-modal .k-modal-trust-item {
-    min-height: 30px;
+    min-height: 24px;
   }
 
   #k-modal .k-modal-share-row {
     border-top: 0;
-    margin-top: 14px;
+    margin-top: 8px;
     padding-top: 0;
     display: flex;
     align-items: center;
-    gap: 8px;
     justify-content: flex-start;
   }
 
@@ -523,7 +520,7 @@
      plus aux wrappers historiques details/configurator. */
   #k-modal .k-modal-product-zone > .k-modal-buybox {
     box-sizing: border-box;
-    padding: clamp(22px, 3vh, 42px) clamp(28px, 4.4vw, 72px) 18px;
+    padding: clamp(16px, 2vh, 26px) clamp(14px, 1.8vw, 24px) 12px;
   }
 
   /* Les wrappers restent sémantiques dans le DOM mais ne créent plus
@@ -552,7 +549,7 @@
 
   #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-price-row {
     order: 30;
-    margin-top: 12px;
+    margin-top: 8px;
   }
 
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-aed-price {
@@ -562,14 +559,14 @@
   /* Le chapeau éditorial court appartient au hero transactionnel. */
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-desc {
     order: 40;
-    margin-top: 8px;
+    margin-top: 6px;
   }
 
   /* Tous les axes restent simultanément visibles, quel que soit N. */
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-variants {
     order: 50;
     min-width: 0;
-    margin-top: 18px;
+    margin-top: 12px;
   }
 
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-variants:empty {
@@ -588,14 +585,14 @@
 
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-delivery {
     order: 70;
-    margin-top: 10px;
+    margin-top: 8px;
   }
 
   #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-actions {
     order: 80;
     align-self: stretch;
     width: 100%;
-    margin-top: 16px;
+    margin-top: 10px;
   }
 
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-trust {
@@ -610,15 +607,15 @@
   #k-modal .k-modal-buybox .k-vg {
     min-width: 0;
     padding: 0;
-    margin: 0 0 14px;
+    margin: 0 0 10px;
   }
 
   #k-modal .k-modal-buybox .k-vg:last-of-type {
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
 
   #k-modal .k-modal-buybox .k-vg-label {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     line-height: 1.25;
   }
 
@@ -627,16 +624,20 @@
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
-    gap: 8px;
+    gap: 5px;
+    width: 100%;
   }
 
+  /* Un même axe utilise toute sa ligne.
+     Les valeurs se contractent ensemble jusqu'au plancher,
+     puis seulement elles passent à la ligne suivante. */
   #k-modal .k-modal-buybox .k-vg-sizes .k-vp {
-    flex: 0 0 auto;
+    flex: 1 1 0;
     width: auto;
-    min-width: 44px;
-    max-width: 100%;
-    min-height: 44px;
-    padding: 8px 14px;
+    min-width: 36px;
+    max-width: 120px;
+    min-height: 38px;
+    padding: 5px 6px;
     white-space: normal;
     overflow-wrap: anywhere;
   }
@@ -645,6 +646,32 @@
   #k-modal .k-modal-buybox .k-vg-skus {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 5px;
+    width: 100%;
+  }
+
+  /* Variante visuelle avec thumbnail :
+     même partage élastique que les valeurs texte. */
+  #k-modal .k-modal-buybox .k-vg-skus .k-sku:not(.k-sku--color) {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 40px;
+    max-width: 104px;
+  }
+
+  #k-modal .k-modal-buybox .k-vg-skus .k-sku:not(.k-sku--color) img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  /* Swatches couleur purs : plus compacts mais eux aussi élastiques. */
+  #k-modal .k-modal-buybox .k-vg-skus .k-sku--color {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 36px;
+    max-width: 72px;
+    height: auto;
+    aspect-ratio: 1 / 1;
   }
 }

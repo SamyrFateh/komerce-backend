@@ -2468,7 +2468,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      display:contents / display:none, non touchées ici). */
   #k-modal .k-modal-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(260px, 22vw, 320px);
+    grid-template-columns: minmax(0, 1fr) 260px;
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -2523,33 +2523,79 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* height + overflow : owned par le bloc FIX ci-dessous (même fichier).
      background : owned par modal-product-lot4-hybrid.css (Approche C). */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    /* MIGRATION v3.0 (retrait sticky, LOT 1) : grid-row repassé à 1 (n'occupe
-       plus toutes les rangées de la zone). Le collage était le seul motif du
-       spanning 1/-1 et du position:sticky ; les deux sont retirés ensemble.
-       align-self : NE PAS redéclarer ici, owner = modal-media.css. */
+    /* ProductMedia desktop = vraie composition interne :
+       rail miniatures | galerie.
+       Le carousel n'a plus à réserver artificiellement le rail via padding. */
     grid-column: 1; grid-row: 1;
-    border-radius: 0; margin: 0; max-height: none;
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    column-gap: 8px;
+    align-items: stretch;
+    border-radius: 0;
+    margin: 0;
+    max-height: none;
+  }
+
+  /* Média unique : aucune piste fantôme n'est réservée aux miniatures. */
+  #k-modal .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
+    grid-template-columns: minmax(0, 1fr);
   }
   /* Le curseur neutre est la base honnête : modal-media.css active zoom-in
      uniquement pour le média unique d'un produit simple, réellement ouvrable
      en grand. */
-  #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: default; }
+  #k-modal .k-modal-carousel {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    cursor: default;
+  }
+
+  #k-modal .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-carousel {
+    grid-column: 1;
+  }
   #k-modal .k-modal-carousel-track { height: 100%; }
   /* PR-D2 fix : padding-bottom 32px évite que le sujet soit coupé au bord bas ;
      object-position 50% 40% remonte légèrement le centre optique. */
-  #k-modal .k-modal-slide { height: 100%; padding: 16px 20px 32px 82px; object-fit: contain; object-position: 50% 50%; width: 100%; }
+  #k-modal .k-modal-slide {
+    height: 100%;
+    padding: 0;
+    object-fit: cover;
+    object-position: 50% 50%;
+    width: 100%;
+  }
   #k-modal .k-modal-dots { display: none; }
   #k-modal .k-modal-counter { display: none; }
   /* ── Rail miniatures plat (T-021, D9) : taille fixe 60×60, aucune ombre
      par défaut, bordure active 1.5px --text, pas de transform/ombre au
      hover. Sélection d'image (JS) hors périmètre — CSS uniquement. ── */
-  #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 60px; overflow-y: auto; scrollbar-width: none; }
+  #k-modal .k-modal-thumbs {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: static;
+    width: 52px;
+    min-width: 52px;
+    max-height: 100%;
+    margin: 8px 0;
+    z-index: 8;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  #k-modal .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-thumbs {
+    display: none;
+  }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
   /* [T-028] Objectif déjà satisfait par T-021/D9 : aucune règle .k-modal-thumb
      n'anime transform ni box-shadow au hover. Version T-021 conservée (plus
      stricte que le checkpoint T-028 d'origine, qui réintroduisait un
      box-shadow décoratif issu d'une base pré-T-021). */
-  #k-modal .k-modal-thumb { width: 60px; height: 60px; flex: 0 0 60px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
+  #k-modal .k-modal-thumb { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 10px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
   #k-modal .k-modal-thumb:hover { border-color: var(--text); }
   #k-modal .k-modal-thumb.is-active { border: 1.5px solid var(--text); }
   #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
@@ -2667,7 +2713,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-share-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
   .k-modal-share-btn--wa { background: var(--whatsapp); color: var(--white); border-color: var(--whatsapp); }
   .k-modal-share-btn--wa:hover { background: var(--green-positive); border-color: var(--green-positive); }
-  #k-modal .k-modal-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 0; }
+  #k-modal .k-modal-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px 0; }
   #k-modal .k-modal-share-btn { justify-content: center; min-height: 38px; padding: 8px 10px; }
   /* PR-M3 — B-M-10 : specs masquées si absent du produit (k-modal--has-specs posé par ModalViewModel) */
   .k-modal--has-specs .k-modal-specs { display: block; border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
@@ -3472,12 +3518,11 @@ html.k-mobile-premium-v1 .k-chip-label {
    que borner la taille du hero LUI-MÊME à l'intérieur de cet espace. */
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    aspect-ratio: 4 / 3;
-    min-height: 360px;
-    max-height: 500px;
-    /* largeur dérivée du ratio 4:3 à hauteur max 500px, bornée par
-       la colonne (jamais plus large que son grid-track) */
-    max-width: min(100%, calc(500px * 4 / 3));
+    min-height: 0;
+    max-height: none;
+    /* ProductMedia complet :
+       rail 52px + gap 8px + hero carré jusqu'à 580px. */
+    max-width: min(100%, 640px);
     width: 100%;
     height: auto;
     /* T-018-bis — DÉCISION A (audit desktop finition, 2026-07) :
@@ -3487,9 +3532,9 @@ html.k-mobile-premium-v1 .k-chip-label {
        l'alignement VERTICAL dans la ligne de grille. Retirer le sticky ne
        justifiait pas de centrer le média face à un récit potentiellement
        long (fixture Stress : 142px de vide artificiel constaté au-dessus
-       de l'image avant correction). Le ratio 4:3, les bornes 360–500px,
-       la largeur et le confinement (T-018) restent inchangés — seul
-       l'alignement change. Owner de cette décision : ce bloc de règle
+       de l'image avant correction). Depuis le 5H, le wrapper porte la
+       composition rail + gap + carousel ; le ratio carré et sa borne 580px
+       appartiennent au carousel, pas au wrapper. Owner de cette décision : ce bloc de règle
        (modal-media.css) et son oracle jumeau
        tests/unit/modal-desktop-scroll-owner.test.js, qui verrouille
        littéralement `align-self:start` et sert de preuve de non-régression.
@@ -3516,14 +3561,23 @@ html.k-mobile-premium-v1 .k-chip-label {
      utile du média sensiblement agrandie sans déplacer le configurateur. */
   #k-modal:not(.k-modal--has-variants)
   .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
+    min-height: 0;
+    max-height: none;
+    max-width: min(100%, 580px);
+  }
+
+  /* Hero PDP desktop : le carré appartient au carousel, pas au wrapper
+     qui peut également contenir le rail de miniatures. */
+  #k-modal .k-modal-product-zone .k-modal-carousel {
+    width: 100%;
+    max-width: 580px;
+    height: auto;
     aspect-ratio: 1 / 1;
-    max-height: 560px;
-    max-width: min(100%, 560px);
+    align-self: start;
   }
 
   #k-modal:not(.k-modal--has-variants)
   .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {
-    padding: 8px 12px;
     object-position: center center;
   }
 }
@@ -5100,16 +5154,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
       /* REF-2026-07 : même correction qu'à 1024px — image bornée, détails 1fr. */
       /* ProductMedia (ex 64px + minmax(280,420)) → minmax(340,480) : conserve
          l'amplitude combinée précédente (344px→484px) sous une seule piste. */
-      grid-template-columns: minmax(340px, 480px) minmax(340px, 1fr);
-      gap: 22px;
-      padding: 22px;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 330px);
+      gap: 16px;
+      padding: 16px;
     }
 
-    /* Produit simple : la BuyBox courte rend une partie de la largeur
-       au ProductMedia, sans augmenter artificiellement la hauteur du hero. */
-    #k-modal:not(.k-modal--has-variants) .k-modal-product-zone {
-      grid-template-columns: minmax(420px, 560px) minmax(300px, 1fr);
-    }
+    /* Même allocation pour tous les produits :
+       l'absence de variantes libère de la hauteur dans la BuyBox,
+       pas une géométrie horizontale concurrente. */
   }
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
@@ -5119,7 +5171,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     background: var(--page-bg);
   }
 
-  #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }
+
 
   /* D7 — Panneau détails en aplat (spec §327) : le dégradé linéaire
      white → sand est retiré au profit d'un fond uni --page-bg. */
@@ -5378,22 +5430,21 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* ── Trust + partage — aération identique mobile et desktop ── */
   #k-modal .k-modal-trust {
     border-top: 0;
-    margin-top: 18px;
+    margin-top: 10px;
     padding: 0;
-    gap: 8px;
+    gap: 6px;
   }
 
   #k-modal .k-modal-trust-item {
-    min-height: 30px;
+    min-height: 24px;
   }
 
   #k-modal .k-modal-share-row {
     border-top: 0;
-    margin-top: 14px;
+    margin-top: 8px;
     padding-top: 0;
     display: flex;
     align-items: center;
-    gap: 8px;
     justify-content: flex-start;
   }
 
@@ -5574,7 +5625,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      plus aux wrappers historiques details/configurator. */
   #k-modal .k-modal-product-zone > .k-modal-buybox {
     box-sizing: border-box;
-    padding: clamp(22px, 3vh, 42px) clamp(28px, 4.4vw, 72px) 18px;
+    padding: clamp(16px, 2vh, 26px) clamp(14px, 1.8vw, 24px) 12px;
   }
 
   /* Les wrappers restent sémantiques dans le DOM mais ne créent plus
@@ -5603,7 +5654,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-price-row {
     order: 30;
-    margin-top: 12px;
+    margin-top: 8px;
   }
 
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-aed-price {
@@ -5613,14 +5664,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* Le chapeau éditorial court appartient au hero transactionnel. */
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-desc {
     order: 40;
-    margin-top: 8px;
+    margin-top: 6px;
   }
 
   /* Tous les axes restent simultanément visibles, quel que soit N. */
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-variants {
     order: 50;
     min-width: 0;
-    margin-top: 18px;
+    margin-top: 12px;
   }
 
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-variants:empty {
@@ -5639,14 +5690,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-delivery {
     order: 70;
-    margin-top: 10px;
+    margin-top: 8px;
   }
 
   #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-actions {
     order: 80;
     align-self: stretch;
     width: 100%;
-    margin-top: 16px;
+    margin-top: 10px;
   }
 
   #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-trust {
@@ -5661,15 +5712,15 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-buybox .k-vg {
     min-width: 0;
     padding: 0;
-    margin: 0 0 14px;
+    margin: 0 0 10px;
   }
 
   #k-modal .k-modal-buybox .k-vg:last-of-type {
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
 
   #k-modal .k-modal-buybox .k-vg-label {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     line-height: 1.25;
   }
 
@@ -5678,16 +5729,20 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
-    gap: 8px;
+    gap: 5px;
+    width: 100%;
   }
 
+  /* Un même axe utilise toute sa ligne.
+     Les valeurs se contractent ensemble jusqu'au plancher,
+     puis seulement elles passent à la ligne suivante. */
   #k-modal .k-modal-buybox .k-vg-sizes .k-vp {
-    flex: 0 0 auto;
+    flex: 1 1 0;
     width: auto;
-    min-width: 44px;
-    max-width: 100%;
-    min-height: 44px;
-    padding: 8px 14px;
+    min-width: 36px;
+    max-width: 120px;
+    min-height: 38px;
+    padding: 5px 6px;
     white-space: normal;
     overflow-wrap: anywhere;
   }
@@ -5696,7 +5751,33 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-buybox .k-vg-skus {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 5px;
+    width: 100%;
+  }
+
+  /* Variante visuelle avec thumbnail :
+     même partage élastique que les valeurs texte. */
+  #k-modal .k-modal-buybox .k-vg-skus .k-sku:not(.k-sku--color) {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 40px;
+    max-width: 104px;
+  }
+
+  #k-modal .k-modal-buybox .k-vg-skus .k-sku:not(.k-sku--color) img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  /* Swatches couleur purs : plus compacts mais eux aussi élastiques. */
+  #k-modal .k-modal-buybox .k-vg-skus .k-sku--color {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 36px;
+    max-width: 72px;
+    height: auto;
+    aspect-ratio: 1 / 1;
   }
 }
 

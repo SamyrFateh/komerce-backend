@@ -108,12 +108,28 @@ function renderMedia(detail, selection, force = false) {
 // Ne restent ici que les zones réellement propres au desktop : desc (le
 // mobile l'efface, MDM-7) et la neutralisation des anciennes zones legacy
 // (aed/flash/stock-bar), qui n'existent pas côté mobile.
+function hasDesktopVariants(detail) {
+  return Array.isArray(detail?.option_axes) && detail.option_axes.length > 0;
+}
+
 function renderIdentity(detail) {
   const shortDescription = buildProductContentViewModel(detail.content).shortDescription;
+  const description =
+    typeof detail?.product?.description === 'string'
+      ? detail.product.description.trim()
+      : '';
+  const hasVariants = hasDesktopVariants(detail);
+
+  /* Avec variantes : chapeau court afin de préserver une BuyBox compacte.
+     Sans variantes : la description canonique complète utilise naturellement
+     l'espace libéré par l'absence d'axes. */
+  const heroDescription = hasVariants
+    ? shortDescription
+    : (description || shortDescription);
 
   if (dom.modalDesc) {
-    dom.modalDesc.textContent = shortDescription || '';
-    dom.modalDesc.hidden = !shortDescription;
+    dom.modalDesc.textContent = heroDescription || '';
+    dom.modalDesc.hidden = !heroDescription;
     dom.modalDesc.classList.remove('is-expanded');
   }
 
@@ -574,6 +590,13 @@ function renderLongDescription(detail) {
   if (!container) return;
 
   container.innerHTML = '';
+
+  /* La fiche non enrichie utilise déjà la description complète dans
+     ProductBuyBox : aucune duplication sous le hero. */
+  if (!hasDesktopVariants(detail)) {
+    container.hidden = true;
+    return;
+  }
 
   const description =
     typeof detail?.product?.description === 'string'

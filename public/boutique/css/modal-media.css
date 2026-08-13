@@ -304,12 +304,11 @@
    que borner la taille du hero LUI-MÊME à l'intérieur de cet espace. */
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    aspect-ratio: 4 / 3;
-    min-height: 360px;
-    max-height: 500px;
-    /* largeur dérivée du ratio 4:3 à hauteur max 500px, bornée par
-       la colonne (jamais plus large que son grid-track) */
-    max-width: min(100%, calc(500px * 4 / 3));
+    min-height: 0;
+    max-height: none;
+    /* ProductMedia complet :
+       rail 52px + gap 8px + hero carré jusqu'à 580px. */
+    max-width: min(100%, 640px);
     width: 100%;
     height: auto;
     /* T-018-bis — DÉCISION A (audit desktop finition, 2026-07) :
@@ -319,9 +318,9 @@
        l'alignement VERTICAL dans la ligne de grille. Retirer le sticky ne
        justifiait pas de centrer le média face à un récit potentiellement
        long (fixture Stress : 142px de vide artificiel constaté au-dessus
-       de l'image avant correction). Le ratio 4:3, les bornes 360–500px,
-       la largeur et le confinement (T-018) restent inchangés — seul
-       l'alignement change. Owner de cette décision : ce bloc de règle
+       de l'image avant correction). Depuis le 5H, le wrapper porte la
+       composition rail + gap + carousel ; le ratio carré et sa borne 580px
+       appartiennent au carousel, pas au wrapper. Owner de cette décision : ce bloc de règle
        (modal-media.css) et son oracle jumeau
        tests/unit/modal-desktop-scroll-owner.test.js, qui verrouille
        littéralement `align-self:start` et sert de preuve de non-régression.
@@ -348,14 +347,23 @@
      utile du média sensiblement agrandie sans déplacer le configurateur. */
   #k-modal:not(.k-modal--has-variants)
   .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
+    min-height: 0;
+    max-height: none;
+    max-width: min(100%, 580px);
+  }
+
+  /* Hero PDP desktop : le carré appartient au carousel, pas au wrapper
+     qui peut également contenir le rail de miniatures. */
+  #k-modal .k-modal-product-zone .k-modal-carousel {
+    width: 100%;
+    max-width: 580px;
+    height: auto;
     aspect-ratio: 1 / 1;
-    max-height: 560px;
-    max-width: min(100%, 560px);
+    align-self: start;
   }
 
   #k-modal:not(.k-modal--has-variants)
   .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {
-    padding: 8px 12px;
     object-position: center center;
   }
 }

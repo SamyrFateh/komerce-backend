@@ -212,7 +212,7 @@ describe('desktop product detail renderer', () => {
   });
 
   test('PDP v3.1 : short_description reste dans la BuyBox et description longue descend sous le hero', () => {
-    const product = detail({ content: { short_description: 'Chapeau court raffiné' } });
+    const product = detail({ content: { short_description: 'Chapeau court raffiné', highlights: [{ key: 'h1', label: 'Point enrichi' }] } });
     product.product.description = 'Description longue complète du produit, conservée sans troncature.';
 
     renderDesktopProductDetail(product, createModalSelection(product));
@@ -227,16 +227,31 @@ describe('desktop product detail renderer', () => {
     expect(longDescription.textContent).not.toContain('Chapeau court raffiné');
   });
 
-  test("PDP v3.1 : aucune courte description n'est fabriquée depuis la description longue", () => {
-    const product = detail();
-    product.product.description = 'Texte long qui appartient uniquement aux détails sous le hero.';
+  test('PDP v3.1 : produit sans variantes remonte sa description complète dans la BuyBox même s’il est enrichi', () => {
+    const product = detail({
+      inventory_model: 'SIMPLE',
+      option_axes: [],
+      sellable_units: [],
+      content: {
+        short_description: 'Chapeau éditorial court',
+        highlights: [{ key: 'h1', label: 'Point enrichi' }],
+      },
+    });
+    product.product.description = 'Description canonique complète du produit sans variantes.';
 
     renderDesktopProductDetail(product, createModalSelection(product));
 
-    expect(dom.modalDesc.textContent).toBe('');
-    expect(dom.modalDesc.hidden).toBe(true);
-    expect(document.getElementById('k-modal-long-description').textContent)
-      .toContain('Texte long qui appartient uniquement aux détails sous le hero.');
+    expect(dom.modalDesc.textContent)
+      .toBe('Description canonique complète du produit sans variantes.');
+    expect(dom.modalDesc.hidden).toBe(false);
+
+    const longDescription = document.getElementById('k-modal-long-description');
+    expect(longDescription.hidden).toBe(true);
+    expect(longDescription.textContent).toBe('');
+
+    const enriched = document.getElementById('k-modal-enriched-content');
+    expect(enriched.hidden).toBe(false);
+    expect(enriched.textContent).toContain('Point enrichi');
   });
 
   test('PDP v3.1 : short_description seul ne crée pas de bloc enrichi fantôme', () => {

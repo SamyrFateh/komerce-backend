@@ -545,7 +545,7 @@
      display:contents / display:none, non touchées ici). */
   #k-modal .k-modal-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(260px, 22vw, 320px);
+    grid-template-columns: minmax(0, 1fr) 260px;
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -600,33 +600,79 @@
   /* height + overflow : owned par le bloc FIX ci-dessous (même fichier).
      background : owned par modal-product-lot4-hybrid.css (Approche C). */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    /* MIGRATION v3.0 (retrait sticky, LOT 1) : grid-row repassé à 1 (n'occupe
-       plus toutes les rangées de la zone). Le collage était le seul motif du
-       spanning 1/-1 et du position:sticky ; les deux sont retirés ensemble.
-       align-self : NE PAS redéclarer ici, owner = modal-media.css. */
+    /* ProductMedia desktop = vraie composition interne :
+       rail miniatures | galerie.
+       Le carousel n'a plus à réserver artificiellement le rail via padding. */
     grid-column: 1; grid-row: 1;
-    border-radius: 0; margin: 0; max-height: none;
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    column-gap: 8px;
+    align-items: stretch;
+    border-radius: 0;
+    margin: 0;
+    max-height: none;
+  }
+
+  /* Média unique : aucune piste fantôme n'est réservée aux miniatures. */
+  #k-modal .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
+    grid-template-columns: minmax(0, 1fr);
   }
   /* Le curseur neutre est la base honnête : modal-media.css active zoom-in
      uniquement pour le média unique d'un produit simple, réellement ouvrable
      en grand. */
-  #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: default; }
+  #k-modal .k-modal-carousel {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    cursor: default;
+  }
+
+  #k-modal .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-carousel {
+    grid-column: 1;
+  }
   #k-modal .k-modal-carousel-track { height: 100%; }
   /* PR-D2 fix : padding-bottom 32px évite que le sujet soit coupé au bord bas ;
      object-position 50% 40% remonte légèrement le centre optique. */
-  #k-modal .k-modal-slide { height: 100%; padding: 16px 20px 32px 82px; object-fit: contain; object-position: 50% 50%; width: 100%; }
+  #k-modal .k-modal-slide {
+    height: 100%;
+    padding: 0;
+    object-fit: cover;
+    object-position: 50% 50%;
+    width: 100%;
+  }
   #k-modal .k-modal-dots { display: none; }
   #k-modal .k-modal-counter { display: none; }
   /* ── Rail miniatures plat (T-021, D9) : taille fixe 60×60, aucune ombre
      par défaut, bordure active 1.5px --text, pas de transform/ombre au
      hover. Sélection d'image (JS) hors périmètre — CSS uniquement. ── */
-  #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 60px; overflow-y: auto; scrollbar-width: none; }
+  #k-modal .k-modal-thumbs {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: static;
+    width: 52px;
+    min-width: 52px;
+    max-height: 100%;
+    margin: 8px 0;
+    z-index: 8;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  #k-modal .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-thumbs {
+    display: none;
+  }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
   /* [T-028] Objectif déjà satisfait par T-021/D9 : aucune règle .k-modal-thumb
      n'anime transform ni box-shadow au hover. Version T-021 conservée (plus
      stricte que le checkpoint T-028 d'origine, qui réintroduisait un
      box-shadow décoratif issu d'une base pré-T-021). */
-  #k-modal .k-modal-thumb { width: 60px; height: 60px; flex: 0 0 60px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
+  #k-modal .k-modal-thumb { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 10px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
   #k-modal .k-modal-thumb:hover { border-color: var(--text); }
   #k-modal .k-modal-thumb.is-active { border: 1.5px solid var(--text); }
   #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
@@ -744,7 +790,7 @@
   .k-modal-share-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
   .k-modal-share-btn--wa { background: var(--whatsapp); color: var(--white); border-color: var(--whatsapp); }
   .k-modal-share-btn--wa:hover { background: var(--green-positive); border-color: var(--green-positive); }
-  #k-modal .k-modal-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 0; }
+  #k-modal .k-modal-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px 0; }
   #k-modal .k-modal-share-btn { justify-content: center; min-height: 38px; padding: 8px 10px; }
   /* PR-M3 — B-M-10 : specs masquées si absent du produit (k-modal--has-specs posé par ModalViewModel) */
   .k-modal--has-specs .k-modal-specs { display: block; border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
