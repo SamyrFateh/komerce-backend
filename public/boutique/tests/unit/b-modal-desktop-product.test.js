@@ -227,7 +227,7 @@ describe('desktop product detail renderer', () => {
     expect(longDescription.textContent).not.toContain('Chapeau court raffiné');
   });
 
-  test('PDP v3.1 : produit sans variantes remonte sa description complète dans la BuyBox même s’il est enrichi', () => {
+  test('PDP v3.1 (doctrine §3 verrouillée) : produit sans variantes garde la short_description dans la BuyBox et descend product.description sous le hero', () => {
     const product = detail({
       inventory_model: 'SIMPLE',
       option_axes: [],
@@ -241,13 +241,16 @@ describe('desktop product detail renderer', () => {
 
     renderDesktopProductDetail(product, createModalSelection(product));
 
-    expect(dom.modalDesc.textContent)
-      .toBe('Description canonique complète du produit sans variantes.');
+    // BuyBox : short_description UNIQUEMENT (jamais la description longue,
+    // même pour combler un vide) — quel que soit le nombre d'axes.
+    expect(dom.modalDesc.textContent).toBe('Chapeau éditorial court');
     expect(dom.modalDesc.hidden).toBe(false);
 
+    // Sous le hero : product.description descend, avec OU sans variantes.
     const longDescription = document.getElementById('k-modal-long-description');
-    expect(longDescription.hidden).toBe(true);
-    expect(longDescription.textContent).toBe('');
+    expect(longDescription.hidden).toBe(false);
+    expect(longDescription.textContent).toContain('Description canonique complète du produit sans variantes.');
+    expect(longDescription.textContent).not.toContain('Chapeau éditorial court');
 
     const enriched = document.getElementById('k-modal-enriched-content');
     expect(enriched.hidden).toBe(false);
@@ -636,5 +639,111 @@ describe('b-modal-desktop-product — série produit meta hero (M6, spec §9.1, 
     const cat = document.getElementById('k-modal-cat');
     expect(cat.hidden).toBe(true);
     expect(cat.textContent.trim()).toBe('');
+  });
+});
+
+describe('b-modal-desktop-product — placement suggestions rail (PDP v3.1 §1/§8)', () => {
+  // DOM minimal reproduisant la vraie coque : .k-modal-product-zone porte la
+  // grille et reçoit (ou non) la classe --suggestions-in-rail. Les IDs stables
+  // sont ceux ciblés par les renderers (getElementById), donc le renderer
+  // fonctionne à l'identique quelle que soit la position DOM.
+  function installZoneDom() {
+    document.body.innerHTML = `
+      <div id="k-modal">
+        <div class="k-modal-scroll k-modal-main">
+          <div class="k-modal-product-zone">
+            <div class="k-modal-img-wrap"><div class="k-modal-carousel"><div class="k-modal-carousel-track"></div></div></div>
+            <div class="k-modal-buybox" id="k-modal-buybox">
+              <div class="k-modal-details"><div class="k-modal-info">
+                <h2 id="k-modal-name"></h2>
+                <span id="k-modal-cat"></span><span id="k-modal-price"></span>
+                <span id="k-modal-old-price"></span><span id="k-modal-sku"></span>
+                <span id="k-modal-stock"></span><span id="k-modal-promo-badge"></span>
+                <div id="k-modal-aed-price"></div><div id="k-modal-stock-bar"></div>
+                <div id="k-modal-delivery"></div>
+                <p id="k-modal-desc"></p>
+              </div></div>
+              <div class="k-modal-configurator">
+                <div id="k-modal-variants"></div>
+                <div class="k-modal-actions">
+                  <button id="k-qty-minus">−</button><span id="k-qty-val">1</span><button id="k-qty-plus">+</button>
+                  <button id="k-add-cart-btn">Ajouter</button><button id="k-buy-now-btn">Acheter</button>
+                </div>
+              </div>
+            </div>
+            <div class="k-modal-long-details" id="k-modal-long-details">
+              <div id="k-modal-long-description" hidden></div>
+              <div id="k-modal-payment"></div>
+            </div>
+            <div id="k-modal-enriched-content" hidden></div>
+            <div class="k-modal-suggestions" id="k-modal-suggestions"><h3>Vous aimerez aussi</h3><div class="k-sug-rail" id="k-sug-rail"></div></div>
+          </div>
+        </div>
+      </div>`;
+    dom.modal = document.getElementById('k-modal');
+    dom.modalVariants = document.getElementById('k-modal-variants');
+    dom.modalDesc = document.getElementById('k-modal-desc');
+    dom.modalName = document.getElementById('k-modal-name');
+    dom.modalCat = document.getElementById('k-modal-cat');
+    dom.modalPrice = document.getElementById('k-modal-price');
+    dom.modalOldPrice = document.getElementById('k-modal-old-price');
+    dom.modalSku = document.getElementById('k-modal-sku');
+    dom.modalStock = document.getElementById('k-modal-stock');
+    dom.modalPromoBadge = document.getElementById('k-modal-promo-badge');
+    dom.modalQtyVal = document.getElementById('k-qty-val');
+    dom.qtyMinus = document.getElementById('k-qty-minus');
+    dom.qtyPlus = document.getElementById('k-qty-plus');
+    dom.addCartBtn = document.getElementById('k-add-cart-btn');
+  }
+
+  beforeEach(() => {
+    clearDesktopProductDetailState();
+    jest.clearAllMocks();
+    installZoneDom();
+    Object.keys(state).forEach((key) => delete state[key]);
+    state.modalQty = 1;
+    isDesktop.mockReturnValue(true);
+  });
+
+  const RAIL = 'k-modal-product-zone--suggestions-in-rail';
+
+  test('produit SIMPLE (aucun axe) → .k-modal-product-zone--suggestions-in-rail posée', () => {
+    const product = detail({
+      inventory_model: 'SIMPLE',
+      option_axes: [],
+      sellable_units: [],
+      content: { short_description: 'Chapeau court' },
+    });
+    product.product.description = 'Description longue sous le hero.';
+
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const zone = document.querySelector('.k-modal-product-zone');
+    expect(zone.classList.contains(RAIL)).toBe(true);
+    // Aucun reparentage : les suggestions restent enfant de la zone, après l'enrichi.
+    const suggestions = document.getElementById('k-modal-suggestions');
+    expect(suggestions.parentElement).toBe(zone);
+  });
+
+  test('produit à VARIANTES → pas de classe rail (suggestions pleine largeur, §2)', () => {
+    const product = detail(); // default : 2 axes SKU
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const zone = document.querySelector('.k-modal-product-zone');
+    expect(zone.classList.contains(RAIL)).toBe(false);
+  });
+
+  test('bascule variantes → simple → variantes : classe rail idempotente et réversible', () => {
+    const zone = document.querySelector('.k-modal-product-zone');
+
+    renderDesktopProductDetail(detail(), createModalSelection(detail()));
+    expect(zone.classList.contains(RAIL)).toBe(false);
+
+    const simple = detail({ inventory_model: 'SIMPLE', option_axes: [], sellable_units: [], content: { short_description: 'x' } });
+    renderDesktopProductDetail(simple, createModalSelection(simple));
+    expect(zone.classList.contains(RAIL)).toBe(true);
+
+    renderDesktopProductDetail(detail(), createModalSelection(detail()));
+    expect(zone.classList.contains(RAIL)).toBe(false);
   });
 });

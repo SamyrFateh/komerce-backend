@@ -254,6 +254,19 @@ test.describe('Modale produit — géométrie réelle (volet 3.2)', () => {
       const enriched = document.getElementById('k-modal-enriched-content');
       const payment = document.getElementById('k-modal-payment');
       const configurator = document.querySelector('.k-modal-configurator');
+      // Le wrapper .k-modal-configurator est display:contents en desktop
+      // (transparent au layout) : sa propre boîte est 0×0. La compaction réelle
+      // se lit donc sur le CONTENU qu'il porte (axes de variantes + actions),
+      // via l'union des boîtes de ses enfants — mesure stable quel que soit le
+      // display du wrapper.
+      const contentHeight = (el) => {
+        if (!el) return null;
+        const kids = Array.from(el.children).filter((c) => c.getClientRects().length);
+        if (!kids.length) return 0;
+        const tops = kids.map((c) => c.getBoundingClientRect().top);
+        const bottoms = kids.map((c) => c.getBoundingClientRect().bottom);
+        return Math.max(...bottoms) - Math.min(...tops);
+      };
       return {
         hasOverflow: scroll ? scroll.scrollHeight > scroll.clientHeight + 4 : null,
         overflowPx: scroll ? scroll.scrollHeight - scroll.clientHeight : null,
@@ -266,16 +279,24 @@ test.describe('Modale produit — géométrie réelle (volet 3.2)', () => {
         noNestedScroll: getComputedStyle(configurator).overflowY === 'visible',
         enrichedReservesNoHeight: !enriched || enriched.hidden === true,
         paymentReservesNoHeight: !payment || payment.childElementCount === 0,
-        configuratorHeight: configurator ? configurator.getBoundingClientRect().height : null,
+        configuratorContentHeight: contentHeight(configurator),
       };
     });
     await openModalFor(page, buildEnrichedFixture());
     const enrichedInfo = await page.evaluate(() => {
       const scroll = document.querySelector('.k-modal-scroll');
       const configurator = document.querySelector('.k-modal-configurator');
+      const contentHeight = (el) => {
+        if (!el) return null;
+        const kids = Array.from(el.children).filter((c) => c.getClientRects().length);
+        if (!kids.length) return 0;
+        const tops = kids.map((c) => c.getBoundingClientRect().top);
+        const bottoms = kids.map((c) => c.getBoundingClientRect().bottom);
+        return Math.max(...bottoms) - Math.min(...tops);
+      };
       return {
         overflowPx: scroll ? scroll.scrollHeight - scroll.clientHeight : null,
-        configuratorHeight: configurator ? configurator.getBoundingClientRect().height : null,
+        configuratorContentHeight: contentHeight(configurator),
       };
     });
 
@@ -289,7 +310,9 @@ test.describe('Modale produit — géométrie réelle (volet 3.2)', () => {
     // Compaction réelle : un produit simple (sans axes/contenu enrichi) doit
     // rester plus court qu'un produit enrichi (20 combos + contenu long) au
     // même viewport — borne relative, pas une hauteur pixel arbitraire.
-    expect(info.configuratorHeight).toBeLessThan(enrichedInfo.configuratorHeight);
+    // Mesuré sur le contenu du configurateur (union des enfants), pas sur la
+    // boîte 0×0 du wrapper display:contents.
+    expect(info.configuratorContentHeight).toBeLessThan(enrichedInfo.configuratorContentHeight);
     expect(info.overflowPx).toBeLessThan(enrichedInfo.overflowPx);
   });
 

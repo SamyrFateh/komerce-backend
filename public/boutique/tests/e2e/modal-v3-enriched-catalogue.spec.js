@@ -308,6 +308,65 @@ test.describe('Catalogue enrichi V3 — scénarios spécifiques', () => {
     await optionalShot(page, 'desktop-side-cart-three-items.png');
   });
 
+  test('PDP §1/§8 — editorial (simple) : suggestions en rail colonne 2, immédiatement sous la BuyBox, sans vide', async ({ page }) => {
+    const entry = catalogue.cases.find((item) => item.key === 'editorial');
+    await stubFixtureCatalogue(page);
+    await openFixtureFromSearch(page, entry);
+    // Attendre les cartes réelles avant de mesurer (pas de capture prématurée).
+    await page.waitForSelector('#k-modal-suggestions .k-sug-card', { timeout: 8000 });
+
+    const m = await page.evaluate(() => {
+      const zone = document.querySelector('.k-modal-product-zone');
+      const suggestions = document.getElementById('k-modal-suggestions');
+      const buybox = document.getElementById('k-modal-buybox');
+      const cs = getComputedStyle(suggestions);
+      const sr = suggestions.getBoundingClientRect();
+      const br = buybox.getBoundingClientRect();
+      return {
+        railClass: zone.classList.contains('k-modal-product-zone--suggestions-in-rail'),
+        insideZone: zone.contains(suggestions),
+        gridColumnStart: cs.gridColumnStart,
+        // colonne 2 : le bord gauche des suggestions est aligné sur la BuyBox
+        alignedWithBuybox: Math.abs(sr.left - br.left) <= 2 && Math.abs(sr.right - br.right) <= 2,
+        // vide sous la BuyBox comblé : les suggestions démarrent juste sous elle
+        voidBelowBuybox: Math.round(sr.top - br.bottom),
+      };
+    });
+
+    expect(m.railClass).toBe(true);
+    expect(m.insideZone).toBe(true);
+    expect(m.gridColumnStart).toBe('2');
+    expect(m.alignedWithBuybox).toBe(true);
+    expect(m.voidBelowBuybox).toBeLessThanOrEqual(24);
+    expect(m.voidBelowBuybox).toBeGreaterThanOrEqual(-2);
+  });
+
+  test('PDP §2 — garment (variantes) : suggestions NON forcées en rail (pleine largeur)', async ({ page }) => {
+    const entry = catalogue.cases.find((item) => item.key === 'garment');
+    await stubFixtureCatalogue(page);
+    await openFixtureFromSearch(page, entry);
+    await page.waitForSelector('#k-modal-suggestions .k-sug-card', { timeout: 8000 });
+
+    const m = await page.evaluate(() => {
+      const zone = document.querySelector('.k-modal-product-zone');
+      const suggestions = document.getElementById('k-modal-suggestions');
+      const buybox = document.getElementById('k-modal-buybox');
+      const cs = getComputedStyle(suggestions);
+      const sr = suggestions.getBoundingClientRect();
+      const br = buybox.getBoundingClientRect();
+      return {
+        railClass: zone.classList.contains('k-modal-product-zone--suggestions-in-rail'),
+        gridColumnStart: cs.gridColumnStart,
+        // pleine largeur : les suggestions débordent nettement à gauche de la BuyBox
+        fullWidth: sr.left < br.left - 100,
+      };
+    });
+
+    expect(m.railClass).toBe(false);
+    expect(m.gridColumnStart).toBe('1');
+    expect(m.fullWidth).toBe(true);
+  });
+
   test('P6 — elite Noir/42 : la combinaison réelle en stock faible affiche "Plus que 4"', async ({ page }) => {
     const entry = catalogue.cases.find((item) => item.key === 'elite');
     await stubFixtureCatalogue(page);

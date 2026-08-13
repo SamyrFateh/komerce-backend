@@ -179,11 +179,21 @@ function applyModalDesktopSuggestionState() {
 
   if (sugSection) {
     sugSection.classList.toggle('k-modal-suggestions--desktop-list', desktop);
+
+    // PDP v3.1 — les suggestions restent un enfant de .k-modal-product-zone.
+    // Leur placement desktop (rail colonne 2 pour un produit simple, §1/§8, vs
+    // pleine largeur sous l'enrichi pour un produit à variantes, §2) est décidé
+    // par la GRILLE CSS via .k-modal-product-zone--suggestions-in-rail — jamais
+    // par un reparentage JS. On ne les extrait donc plus vers .k-modal-scroll.
+    //
+    // Réintégration défensive et idempotente : si un état antérieur (surface
+    // legacy, ancienne session) a déplacé la section hors de la zone, on la
+    // réinsère en fin de zone — ce qui préserve l'ordre canonique DOM
+    // (enriched avant suggestions) et laisse la grille faire le placement.
     if (desktop) {
-      const scroll = modalZone('.k-modal-scroll');
       const productZone = modalZone('.k-modal-product-zone');
-      if (scroll && productZone && sugSection.parentElement !== scroll) {
-        scroll.appendChild(sugSection);
+      if (productZone && sugSection.parentElement !== productZone) {
+        productZone.appendChild(sugSection);
       }
     }
   }

@@ -113,23 +113,18 @@ function hasDesktopVariants(detail) {
 }
 
 function renderIdentity(detail) {
+  /* Doctrine PDP v3.1 — §3 (verrouillée) : la BuyBox n'affiche QUE la
+     short_description, quel que soit le nombre d'axes (0 / 1 / N). La
+     description longue (product.description) vit exclusivement sous le hero
+     (renderLongDescription) — jamais remontée ici pour combler un vide laissé
+     par une BuyBox plus courte que le hero, jamais tronquée côté client. Le
+     vide éventuel de la colonne droite est comblé par les suggestions en rail
+     (§1/§8), pas par la description. */
   const shortDescription = buildProductContentViewModel(detail.content).shortDescription;
-  const description =
-    typeof detail?.product?.description === 'string'
-      ? detail.product.description.trim()
-      : '';
-  const hasVariants = hasDesktopVariants(detail);
-
-  /* Avec variantes : chapeau court afin de préserver une BuyBox compacte.
-     Sans variantes : la description canonique complète utilise naturellement
-     l'espace libéré par l'absence d'axes. */
-  const heroDescription = hasVariants
-    ? shortDescription
-    : (description || shortDescription);
 
   if (dom.modalDesc) {
-    dom.modalDesc.textContent = heroDescription || '';
-    dom.modalDesc.hidden = !heroDescription;
+    dom.modalDesc.textContent = shortDescription || '';
+    dom.modalDesc.hidden = !shortDescription;
     dom.modalDesc.classList.remove('is-expanded');
   }
 
@@ -591,13 +586,10 @@ function renderLongDescription(detail) {
 
   container.innerHTML = '';
 
-  /* La fiche non enrichie utilise déjà la description complète dans
-     ProductBuyBox : aucune duplication sous le hero. */
-  if (!hasDesktopVariants(detail)) {
-    container.hidden = true;
-    return;
-  }
-
+  /* Doctrine PDP v3.1 — §3 (verrouillée) : product.description descend sous le
+     hero dès qu'elle existe, AVEC OU SANS variantes. La BuyBox ne conserve que
+     la short_description (renderIdentity). Aucun fallback vers short_description
+     ici, aucune troncature fabriquée à partir de la description. */
   const description =
     typeof detail?.product?.description === 'string'
       ? detail.product.description.trim()
@@ -740,6 +732,33 @@ function renderEnrichedContent(detail) {
   }
 }
 
+/* PDP v3.1 — §1 / §8 : placement adaptatif des suggestions desktop.
+ *
+ * Produit SIMPLE (aucun axe) : le hero (jusqu'à ~580px) est plus haut que la
+ * BuyBox courte. Les suggestions remontent alors dans la colonne 2, empilées
+ * immédiatement sous la BuyBox, pour combler le vide sous « Partager » — au
+ * lieu d'atterrir en pleine largeur tout en bas.
+ *
+ * Produit à VARIANTES (§2) : la BuyBox porte déjà les axes et occupe la
+ * hauteur ; les suggestions ne sont PAS forcées dans le rail et restent en
+ * pleine largeur sous le contenu enrichi (layout 5H préservé).
+ *
+ * Le placement réel est porté par la grille CSS (.k-modal-product-zone--
+ * suggestions-in-rail, modal-shell.css). Ce toggle ne fait que déclarer
+ * l'intention : composition structurelle, idempotente et compatible resize,
+ * sans reparentage DOM ni position:absolute, et sans dépendre de l'ordre
+ * d'arrivée du fetch suggestions (la classe et les cartes convergent quel que
+ * soit celui qui peint en premier).
+ */
+function applyDesktopSuggestionRailState(detail) {
+  const zone = modalZone('.k-modal-product-zone');
+  if (!zone) return;
+  zone.classList.toggle(
+    'k-modal-product-zone--suggestions-in-rail',
+    !hasDesktopVariants(detail)
+  );
+}
+
 function renderSubtotal(detail, selection) {
   const actions = modalZone('.k-modal-actions');
   if (!actions) return;
@@ -830,6 +849,7 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
   renderDeliveryOptions(detail);
   renderLongDescription(detail);
   renderEnrichedContent(detail);
+  applyDesktopSuggestionRailState(detail);
   renderMedia(detail, selection, forceMedia);
   ensureQtyObserver();
 }

@@ -3210,6 +3210,89 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   PDP v3.1 — §1 / §8 : SUGGESTIONS EN RAIL (produit SIMPLE, sans axes)
+
+   Objectif : quand la BuyBox est plus courte que le hero, les suggestions
+   commencent immédiatement sous la BuyBox dans la colonne droite, au lieu de
+   laisser un vide sous « Partager » et d'atterrir en pleine largeur tout en
+   bas. Composition purement structurelle (grille) : aucun reparentage DOM,
+   aucun position:absolute, aucune duplication. L'ordre DOM reste inchangé
+   (buybox → long-details → enriched → suggestions), donc mobile
+   (display:contents) et l'oracle d'ordre canonique ne sont pas affectés.
+
+   Modèle de rangées (uniquement sous cette classe, donc jamais pour un
+   produit à variantes / layout 5H) :
+     row 1 : BuyBox        (colonne 2)   — le hero définit la hauteur à gauche
+     row 2 : Suggestions   (colonne 2)   — empilées SOUS la BuyBox, sans vide
+     row 3 : Description    (pleine largeur, sous le hero)
+     row 4 : Contenu enrichi (pleine largeur)
+   Le hero couvre les rows 1-2 pour que la colonne 1 reste occupée pendant que
+   la colonne 2 empile BuyBox + Suggestions. `align-items: start` (déjà posé
+   sur la zone) garantit que le hero garde sa hauteur intrinsèque sans
+   s'étirer sur les deux pistes.
+   Owner : ce fichier (row-placement), cohérent avec le bloc LOT 2 ci-dessus.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  #k-modal .k-modal-product-zone.k-modal-product-zone--suggestions-in-rail {
+    grid-template-rows: auto auto auto auto;
+    row-gap: 0;
+  }
+  #k-modal .k-modal-product-zone--suggestions-in-rail > .k-modal-img-wrap {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    align-self: start;
+  }
+  #k-modal .k-modal-product-zone--suggestions-in-rail > .k-modal-buybox {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-suggestions {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+  }
+  #k-modal .k-modal-product-zone--suggestions-in-rail > .k-modal-long-details {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-enriched-content {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+
+  /* Présentation compacte du rail : bandeau aligné sur le padding de la BuyBox,
+     un liseré haut fait office de séparateur (« ─── » du mock), et les cartes
+     défilent horizontalement (« [card] [card] → ») pour rester dans la hauteur
+     du hero plutôt que d'empiler une grille 2 colonnes qui déborderait. */
+  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-suggestions {
+    padding: 18px clamp(28px, 4.4vw, 72px) 24px;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+    background: var(--page-bg);
+  }
+  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-suggestions .k-sug-section + .k-sug-section {
+    margin-top: 20px;
+  }
+  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-suggestions .k-sug-grid {
+    display: flex;
+    grid-template-columns: none;
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x proximity;
+    padding-bottom: 6px;
+    /* défilement discret : la barre reste sobre, pas de scroll vertical
+       imbriqué (l'oracle de stress vérifie overflow-y). */
+    scrollbar-width: thin;
+  }
+  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-suggestions .k-sug-card {
+    flex: 0 0 auto;
+    width: 150px;
+    scroll-snap-align: start;
+  }
+}
+
 
 /* ── modal-media.css ─────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
