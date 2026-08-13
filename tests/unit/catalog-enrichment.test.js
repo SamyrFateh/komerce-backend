@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -8,16 +7,6 @@
  */
 /**
  * Tests unitaires — K-3 enrichissement FR (DOCTRINE_CATALOGUE §4, §5, §8)
- *
- * Verrouille les promesses doctrinales de l'étage ⑤ :
- *   §4 — glossaire injecté dans le prompt système ('=' = ne pas traduire) ;
- *        confiance sous le seuil → appliqué + needs_review (low_confidence).
- *   §5 — les overrides tracés gagnent TOUJOURS sur le généré ; un override
- *        hors whitelist est ignoré (jamais interpolé en SQL).
- *   §7 — les champs source ne sont jamais écrits par l'enrichissement.
- *   §8 — sortie hors schéma → invalid_output, RIEN d'appliqué sur les champs
- *        publiés, run tracé ; échec API → failed, fiche marquée needs_review,
- *        run tracé. enrichAndApply ne rejette jamais.
  */
 
 jest.mock('../../db');
@@ -39,7 +28,6 @@ const GOOD_OUTPUT = {
   review_notes: [],
 };
 
-/** Mock DB dispatché sur le texte SQL — résistant aux réordonnancements. */
 function installDbMock({ product, glossary = [], categories = ['tech', 'mode'], overrides = [] } = {}) {
   const updates = [];
   const runs = [];
@@ -73,8 +61,6 @@ beforeEach(() => {
   enrichment._callModel = jest.fn();
 });
 
-// ═══ Module prompt — contrat de sortie ══════════════════════════════════════
-
 describe('prompt catalog-enrichment', () => {
   test('le glossaire est injecté, "=" signifie ne pas traduire (§4)', () => {
     const sys = prompt.buildSystemPrompt({
@@ -107,8 +93,6 @@ describe('prompt catalog-enrichment', () => {
   });
 });
 
-// ═══ Service — happy path et seuil de confiance ═════════════════════════════
-
 describe('enrichAndApply — application (§4)', () => {
   test('sortie conforme, confiance haute → fiche ai_enriched, run "ok"', async () => {
     const { updates, runs } = installDbMock({ product: baseProduct() });
@@ -123,10 +107,8 @@ describe('enrichAndApply — application (§4)', () => {
     const upd = updates[0];
     expect(upd.sql).toContain(`content_source = 'ai_enriched'`);
     expect(upd.params).toContain('Batterie externe 20000 mAh');
-    expect(upd.params).toContain(false); // needs_review
-    // §7 — jamais d'écriture des champs source
+    expect(upd.params).toContain(false);
     expect(upd.sql).not.toMatch(/name_source|description_source|source_locale/);
-    // §8 — coût suivi
     expect(runs).toHaveLength(1);
     expect(runs[0].params).toEqual(expect.arrayContaining(['ok', 900, 210, prompt.PROMPT_VERSION]));
   });
@@ -141,7 +123,7 @@ describe('enrichAndApply — application (§4)', () => {
 
     expect(res.status).toBe('low_confidence');
     expect(res.needsReview).toBe(true);
-    expect(updates[0].params).toContain(true); // needs_review = TRUE
+    expect(updates[0].params).toContain(true);
     expect(runs[0].params).toContain('low_confidence');
   });
 
@@ -154,8 +136,6 @@ describe('enrichAndApply — application (§4)', () => {
     expect(res.status).toBe('ok');
   });
 });
-
-// ═══ Service — rejouabilité (§5) ════════════════════════════════════════════
 
 describe('enrichAndApply — overrides (§5)', () => {
   test('un override tracé gagne sur la valeur générée', async () => {
@@ -187,8 +167,6 @@ describe('enrichAndApply — overrides (§5)', () => {
   });
 });
 
-// ═══ Service — échecs tracés, jamais de rejet (§8) ══════════════════════════
-
 describe('enrichAndApply — échecs (§8)', () => {
   test('sortie hors schéma → invalid_output, champs publiés intacts, needs_review posé', async () => {
     const { updates, runs } = installDbMock({ product: baseProduct() });
@@ -199,7 +177,6 @@ describe('enrichAndApply — échecs (§8)', () => {
     const res = await enrichment.enrichAndApply(PRODUCT_ID);
 
     expect(res.status).toBe('invalid_output');
-    // un seul UPDATE : le marquage needs_review, pas d'application de fiche
     expect(updates).toHaveLength(1);
     expect(updates[0].sql).toContain('needs_review = TRUE');
     expect(updates[0].sql).not.toContain('ai_enriched');
@@ -208,7 +185,7 @@ describe('enrichAndApply — échecs (§8)', () => {
 
   test('échec API → failed, run tracé avec erreur, aucune exception ne fuit', async () => {
     const { updates, runs } = installDbMock({ product: baseProduct() });
-    enrichment._callModel.mockRejectedValue(Object.assign(new Error('Anthropic API 529'), { code: 'ENRICH_API_ERROR' }));
+    enrichment._callModel.mockRejectedValue(Object.assign(new Error('API 529'), { code: 'ENRICH_API_ERROR' }));
 
     const res = await enrichment.enrichAndApply(PRODUCT_ID);
 
@@ -223,5 +200,58 @@ describe('enrichAndApply — échecs (§8)', () => {
     const res = await enrichment.enrichAndApply(PRODUCT_ID);
     expect(res.status).toBe('failed');
     expect(res.error).toContain('introuvable');
+  });
+});
+
+describe('transport IA multi-provider', () => {
+  const savedProvider = process.env.CATALOG_ENRICH_PROVIDER;
+  const savedModel = process.env.CATALOG_ENRICH_MODEL;
+  const savedOpenAIKey = process.env.OPENAI_API_KEY;
+
+  afterEach(() => {
+    if (savedProvider === undefined) delete process.env.CATALOG_ENRICH_PROVIDER;
+    else process.env.CATALOG_ENRICH_PROVIDER = savedProvider;
+    if (savedModel === undefined) delete process.env.CATALOG_ENRICH_MODEL;
+    else process.env.CATALOG_ENRICH_MODEL = savedModel;
+    if (savedOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = savedOpenAIKey;
+    jest.restoreAllMocks();
+  });
+
+  test('provider OpenAI est sélectionnable explicitement', () => {
+    process.env.CATALOG_ENRICH_PROVIDER = 'openai';
+    expect(enrichment.resolveProvider()).toBe('openai');
+  });
+
+  test('Luna utilise Responses API + Structured Outputs et remonte les tokens', async () => {
+    process.env.OPENAI_API_KEY = 'test-openai-key';
+    process.env.CATALOG_ENRICH_MODEL = 'gpt-5.6-luna';
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        status: 'completed',
+        model: 'gpt-5.6-luna',
+        output: [{
+          type: 'message',
+          content: [{ type: 'output_text', text: JSON.stringify(GOOD_OUTPUT) }],
+        }],
+        usage: { input_tokens: 812, output_tokens: 146 },
+      }),
+    });
+
+    const result = await enrichment._callOpenAIModel('SYSTEME', '{"name_source":"Power Bank"}');
+
+    expect(result).toMatchObject({ model: 'gpt-5.6-luna', inputTokens: 812, outputTokens: 146 });
+    expect(JSON.parse(result.text)).toMatchObject({ name_fr: GOOD_OUTPUT.name_fr });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchSpy.mock.calls[0];
+    expect(url).toBe('https://api.openai.com/v1/responses');
+    expect(options.headers.authorization).toBe('Bearer test-openai-key');
+    const body = JSON.parse(options.body);
+    expect(body.model).toBe('gpt-5.6-luna');
+    expect(body.store).toBe(false);
+    expect(body.text.format).toMatchObject({ type: 'json_schema', strict: true });
+    expect(body.text.format.schema.required).toEqual(expect.arrayContaining(['name_fr', 'description_fr', 'confidence']));
   });
 });
