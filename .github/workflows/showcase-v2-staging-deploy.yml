@@ -52,6 +52,7 @@ jobs:
         run: |
           node --check scripts/showcase-v2-seed.js
           node --check scripts/showcase-v2-source-build.js
+          node --check services/catalog-enrichment.js
 
       - name: V2 plan, refinery, editorial, source resilience and Wikimedia policy tests
         run: |
@@ -131,6 +132,9 @@ jobs:
       CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      CATALOG_ENRICH_PROVIDER: openai
+      CATALOG_ENRICH_MODEL: gpt-5.6-luna
       NODE_ENV: test
 
     steps:
@@ -148,7 +152,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for var in CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET DATABASE_URL ANTHROPIC_API_KEY; do
+          for var in CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET DATABASE_URL ANTHROPIC_API_KEY OPENAI_API_KEY; do
             if [ -z "${!var:-}" ]; then
               echo "::error::$var manquant dans les secrets GitHub"
               exit 1
@@ -242,6 +246,9 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      CATALOG_ENRICH_PROVIDER: openai
+      CATALOG_ENRICH_MODEL: gpt-5.6-luna
       NODE_ENV: test
 
     steps:
@@ -259,7 +266,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for var in DATABASE_URL ANTHROPIC_API_KEY; do
+          for var in DATABASE_URL ANTHROPIC_API_KEY OPENAI_API_KEY; do
             if [ -z "${!var:-}" ]; then
               echo "::error::$var manquant dans les secrets GitHub"
               exit 1
