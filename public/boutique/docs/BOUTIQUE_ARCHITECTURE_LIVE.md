@@ -14,34 +14,34 @@
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1352 | 🔴 **ORPHELIN** |
-| `cart.css` | 2077 | 🔴 **ORPHELIN** |
+| `boutique-desktop.css` | 1353 | 🔴 **ORPHELIN** |
+| `cart.css` | 2157 | 🔴 **ORPHELIN** |
 | `categories.css` | 988 | 🔴 **ORPHELIN** |
-| `checkout-vertical-rail.css` | 990 | 🔴 **ORPHELIN** |
+| `checkout-vertical-rail.css` | 988 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
-| `hero.css` | 1028 | 🔴 **ORPHELIN** |
-| `identity.css` | 334 | 🔴 **ORPHELIN** |
+| `hero.css` | 1023 | 🔴 **ORPHELIN** |
+| `identity.css` | 346 | 🔴 **ORPHELIN** |
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
 | `komerce.css` | 252 | 🔴 **ORPHELIN** |
-| `layout.css` | 1199 | 🔴 **ORPHELIN** |
+| `layout.css` | 1151 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 26 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
-| `modal-media.css` | 340 | 🔴 **ORPHELIN** |
+| `modal-media.css` | 360 | 🔴 **ORPHELIN** |
 | `modal-mobile-canonical.css` | 680 | 🔴 **ORPHELIN** |
 | `modal-mobile-suggestion-actions.css` | 65 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 502 | 🔴 **ORPHELIN** |
-| `modal-product-polish.css` | 390 | 🔴 **ORPHELIN** |
+| `modal-product-polish.css` | 401 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1517 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 1247 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 1248 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
-| `products.css` | 892 | 🔴 **ORPHELIN** |
+| `products.css` | 926 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 29 | 🔴 **ORPHELIN** |
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
 | `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart-responsive.css` | 91 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 709 | 🔴 **ORPHELIN** |
-| `tokens.css` | 561 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 724 | 🔴 **ORPHELIN** |
+| `tokens.css` | 585 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
@@ -49,9 +49,12 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=175
- 2. /boutique/css/dist/components.css?v=477
- 3. /boutique/css/dist/desktop.css?v=99
+ 1. /boutique/css/dist/base.css?v=178
+ 2. /boutique/css/dist/components.css?v=489
+ 3. /boutique/css/dist/desktop.css?v=105
+ 4. /boutique/css/dist/base.css?v=175
+ 5. /boutique/css/dist/components.css?v=477
+ 6. /boutique/css/dist/desktop.css?v=99
 ```
 
 ## 3. Cartographie des sélecteurs critiques
@@ -67,10 +70,10 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 | `.k-subchip` ⚠️ | `boutique-desktop.css` (19/3)<br>`categories.css` (6/0) |
 | `.k-grid` ⚠️ | `cart.css` (2/0)<br>`layout.css` (0/1)<br>`products.css` (10/3) |
 | `.k-card` ⚠️ | `boutique-desktop.css` (0/2)<br>`categories.css` (9/0)<br>`products.css` (7/16) |
-| `.k-card-add` ⚠️ | `cart.css` (0/2)<br>`products.css` (7/3) |
+| `.k-card-add` ⚠️ | `cart.css` (0/2)<br>`products.css` (10/3) |
 | `.k-card-fav` ⚠️ | `cart.css` (0/1)<br>`products.css` (4/3) |
 | `.k-side-cart` ⚠️ | `boutique-desktop.css` (0/7)<br>`layout.css` (2/0) |
-| `#k-desktop-catalog-wrap` | `layout.css` (1/7) |
+| `#k-desktop-catalog-wrap` | `layout.css` (1/6) |
 | `.k-header` | `layout.css` (9/7) |
 | `.k-hero-media` | `hero.css` (4/5) |
 | `.k-modal` ⚠️ | `modal-product.css` (0/1)<br>`modal-shell.css` (6/3) |
