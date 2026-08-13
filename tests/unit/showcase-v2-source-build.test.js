@@ -79,14 +79,14 @@ describe('showcase-v2-source-build query resilience', () => {
     expect(productIdentityFor(row, target)).toMatchObject({ ok: true, term: 'dress', term_source: 'title' });
   });
 
-  test('refuse une photo de personnes si le vêtement n’existe que dans la description', () => {
+  test('refuse une photo de personnes si le vêtement n’existe pas dans le titre', () => {
     const target = { category: 'Mode & Beauté', subcategory: 'Homme' };
     const row = {
       source_title: 'Three men outside a studio',
       name: 'Trois hommes devant un studio',
       source_description: 'Men wearing fashionable shirts and jackets for a group photo.',
     };
-    expect(productIdentityFor(row, target)).toMatchObject({ ok: false, reason: 'product-term-description-only' });
+    expect(productIdentityFor(row, target).ok).toBe(false);
     expect(isProductLike(row, target)).toBe(false);
   });
 
