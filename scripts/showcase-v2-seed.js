@@ -5,15 +5,15 @@
  * @domain        catalog
  * @layer         script
  * @criticality   high
- * @inputs        canonical_cloudinary_manifest_v2, railway_staging
+ * @inputs        canonical_hosted_manifest_v2, railway_staging
  * @outputs       500 cumulative products, sourcing candidates, canonical media, axes, SKU, French enrichment, approvals
- * @depends       db.js, scripts/showcase-v2-plan.js, services/suppliers/connectors/manual-connector.js, services/suppliers/catalog-import-orchestrator.js, services/catalog-promotion.js, services/product-admin-service.js, services/catalog-enrichment.js, services/catalog-approval.js
+ * @depends       db.js, scripts/showcase-v2-plan.js, scripts/showcase-media-provider.js, services/suppliers/connectors/manual-connector.js, services/suppliers/catalog-import-orchestrator.js, services/catalog-promotion.js, services/product-admin-service.js, services/catalog-enrichment.js, services/catalog-approval.js
  * @used-by       showcase v2 staging deploy
  * @db-read       products, product_skus, product_variants, sourcing_candidates
  * @db-write      products, catalog_media, product_variants, product_skus, product_sku_media, product_content_profile, product_content_sections, product_attributes, sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, catalog_enrichment_runs
  * @db-txn        yes (ingestion orchestrator + preparation/approval transactions per product)
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
- * @version       2026-08-v3
+ * @version       2026-08-v4
  */
 'use strict';
 
@@ -21,7 +21,8 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../db');
 const { buildSlots, buildV2Contract, TAXONOMY_TARGETS } = require('./showcase-v2-plan');
-const { roundKmf, stableInt, normalizeImages, isCanonicalCloudinaryUpload } = require('./showcase-catalog');
+const { roundKmf, stableInt, normalizeImages } = require('./showcase-catalog');
+const { resolveMediaProvider, isCanonicalMediaUrl } = require('./showcase-media-provider');
 const manualConnector = require('../services/suppliers/connectors/manual-connector');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const { validateForPromotion, promoteCatalog } = require('../services/catalog-promotion');
@@ -47,6 +48,14 @@ function parseArgs(argv) {
   return out;
 }
 
+function resolveEnrichmentProvider() {
+  const provider = String(process.env.CATALOG_ENRICH_PROVIDER || 'anthropic').trim().toLowerCase();
+  if (!['anthropic', 'openai'].includes(provider)) {
+    throw new Error(`CATALOG_ENRICH_PROVIDER invalide: ${provider || '(vide)'}`);
+  }
+  return provider;
+}
+
 function assertStaging() {
   if (process.env.NODE_ENV === 'production' || process.env.KOMERCE_ENV === 'production') {
     throw new Error('REFUS: Showcase V2 interdit en production');
@@ -55,15 +64,20 @@ function assertStaging() {
     throw new Error('KOMERCE_ALLOW_SHOWCASE_SEED=1 requis');
   }
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL requis');
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error('ANTHROPIC_API_KEY requis : la V2 ne peut plus contourner l’enrichissement français');
+
+  const provider = resolveEnrichmentProvider();
+  const keyName = provider === 'openai' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY';
+  if (!process.env[keyName]) {
+    throw new Error(`${keyName} requis : la V2 ne peut pas contourner l’enrichissement français (${provider})`);
   }
+  resolveMediaProvider();
 }
 
 function validateManifest(products) {
   if (!Array.isArray(products) || products.length !== TARGET) {
     throw new Error(`Manifest V2 invalide: ${Array.isArray(products) ? products.length : 'non-array'}/${TARGET}`);
   }
+  const mediaProvider = resolveMediaProvider();
   const refs = new Set();
   const heroes = new Set();
   for (const product of products) {
@@ -72,8 +86,8 @@ function validateManifest(products) {
     refs.add(product.product_ref);
     if (!product.source_title) throw new Error(`Titre source brut absent: ${product.product_ref}`);
     const images = normalizeImages(product);
-    if (!images.length || images.some((url) => !isCanonicalCloudinaryUpload(url))) {
-      throw new Error(`Média non canonique Cloudinary: ${product.product_ref}`);
+    if (!images.length || images.some((url) => !isCanonicalMediaUrl(url, mediaProvider, 'showcase-v2'))) {
+      throw new Error(`Média non canonique ${mediaProvider}: ${product.product_ref}`);
     }
     if (heroes.has(product.image_url)) throw new Error(`Hero dupliqué: ${product.image_url}`);
     heroes.add(product.image_url);
@@ -497,4 +511,5 @@ module.exports = {
   validateManifest,
   buildImportContracts,
   candidatePrice,
+  resolveEnrichmentProvider,
 };
