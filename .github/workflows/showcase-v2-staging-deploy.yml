@@ -9,6 +9,8 @@ on:
       - 'scripts/showcase-v2-seed.js'
       - 'scripts/showcase-v2-reset.js'
       - 'scripts/showcase-media-mirror.js'
+      - 'scripts/showcase-media-provider.js'
+      - 'scripts/showcase-media-audit.js'
       - 'services/catalog-eligibility.js'
       - 'services/catalog-enrichment.js'
       - 'services/prompts/catalog-enrichment.prompt.js'
@@ -23,6 +25,7 @@ on:
       - 'tests/unit/showcase-v2-source-build.test.js'
       - 'tests/unit/showcase-v2-reset.test.js'
       - 'tests/unit/showcase-media-mirror.test.js'
+      - 'tests/unit/showcase-media-provider.test.js'
       - '.github/workflows/showcase-v2-staging-deploy.yml'
 
 permissions:
@@ -52,9 +55,12 @@ jobs:
         run: |
           node --check scripts/showcase-v2-seed.js
           node --check scripts/showcase-v2-source-build.js
+          node --check scripts/showcase-media-mirror.js
+          node --check scripts/showcase-media-provider.js
+          node --check scripts/showcase-media-audit.js
           node --check services/catalog-enrichment.js
 
-      - name: V2 plan, refinery, editorial, source resilience and Wikimedia policy tests
+      - name: V2 plan, refinery, editorial, source resilience and media-provider tests
         run: |
           npx jest \
             tests/unit/catalog-eligibility.test.js \
@@ -66,6 +72,7 @@ jobs:
             tests/unit/showcase-v2-source-build.test.js \
             tests/unit/showcase-v2-reset.test.js \
             tests/unit/showcase-media-mirror.test.js \
+            tests/unit/showcase-media-provider.test.js \
             --runInBand
 
       - name: Prove 500 normalized V2 contracts and source lineage without network
@@ -127,11 +134,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      SHOWCASE_MEDIA_PROVIDER: imagekit
+      IMAGEKIT_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       CATALOG_ENRICH_PROVIDER: openai
       CATALOG_ENRICH_MODEL: gpt-5.6-luna
@@ -148,11 +153,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Require staging and French-enrichment secrets before reset
+      - name: Require staging media and French-enrichment secrets before reset
         shell: bash
         run: |
           set -euo pipefail
-          for var in CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET DATABASE_URL ANTHROPIC_API_KEY OPENAI_API_KEY; do
+          for var in IMAGEKIT_PRIVATE_KEY DATABASE_URL OPENAI_API_KEY; do
             if [ -z "${!var:-}" ]; then
               echo "::error::$var manquant dans les secrets GitHub"
               exit 1
@@ -212,17 +217,20 @@ jobs:
           if (products.length !== 500 || proof.rich_products !== 350 || proof.rich_snapshots !== 350 || proof.subcategories.length !== 21 || proof.raw_source_titles !== 500) process.exit(1);
           NODE
 
-      - name: Mirror V2 media to Cloudinary staging
+      - name: Mirror V2 media to ImageKit staging
         run: |
           node scripts/showcase-media-mirror.js \
             --target 500 \
+            --media-provider imagekit \
             --source-manifest data/catalogue-test-raw/showcase-catalog-v2-source.json \
             --manifest data/catalogue-test-raw/showcase-catalog-v2.json
 
-      - name: Strict Cloudinary V2 audit
+      - name: Strict ImageKit V2 audit
         run: |
-          node scripts/showcase-catalog.js audit \
+          node scripts/showcase-media-audit.js \
             --target 500 \
+            --media-provider imagekit \
+            --namespace showcase-v2 \
             --manifest data/catalogue-test-raw/showcase-catalog-v2.json \
             --network \
             --strict \
@@ -244,8 +252,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
+      SHOWCASE_MEDIA_PROVIDER: imagekit
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       CATALOG_ENRICH_PROVIDER: openai
       CATALOG_ENRICH_MODEL: gpt-5.6-luna
@@ -266,7 +274,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for var in DATABASE_URL ANTHROPIC_API_KEY OPENAI_API_KEY; do
+          for var in DATABASE_URL OPENAI_API_KEY; do
             if [ -z "${!var:-}" ]; then
               echo "::error::$var manquant dans les secrets GitHub"
               exit 1
