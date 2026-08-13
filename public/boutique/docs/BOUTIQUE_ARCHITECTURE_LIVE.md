@@ -19,8 +19,8 @@
 | `categories.css` | 988 | 🔴 **ORPHELIN** |
 | `checkout-vertical-rail.css` | 990 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
-| `hero.css` | 1022 | 🔴 **ORPHELIN** |
-| `identity.css` | 332 | 🔴 **ORPHELIN** |
+| `hero.css` | 1028 | 🔴 **ORPHELIN** |
+| `identity.css` | 334 | 🔴 **ORPHELIN** |
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
 | `komerce.css` | 252 | 🔴 **ORPHELIN** |
 | `layout.css` | 1199 | 🔴 **ORPHELIN** |
@@ -49,8 +49,8 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=174
- 2. /boutique/css/dist/components.css?v=476
+ 1. /boutique/css/dist/base.css?v=175
+ 2. /boutique/css/dist/components.css?v=477
  3. /boutique/css/dist/desktop.css?v=99
 ```
 
