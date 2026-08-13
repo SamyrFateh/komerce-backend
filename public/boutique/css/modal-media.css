@@ -336,7 +336,7 @@
        ici : déjà owned ailleurs (background: modal-product-lot4-hybrid.css
        "D6 — Hero desktop en aplat" via --hero-bg ; border-radius:0 volontaire
        dans modal-shell.css, bloc sticky ≥900px — coins carrés assumés). */
-    border: 1px solid var(--border);
+    border: 0;
   }
 
   /* UX-REVUE KRF-033 — produit simple, média unique : la fiche n'a aucun
@@ -349,11 +349,13 @@
   #k-modal:not(.k-modal--has-variants)
   .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
     aspect-ratio: 1 / 1;
+    max-height: 560px;
+    max-width: min(100%, 560px);
   }
 
   #k-modal:not(.k-modal--has-variants)
   .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {
-    padding: 16px 20px;
+    padding: 8px 12px;
     object-position: center center;
   }
 }

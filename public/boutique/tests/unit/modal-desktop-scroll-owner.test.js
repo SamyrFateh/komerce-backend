@@ -123,7 +123,7 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
     )?.[1] ?? '';
 
     expect(simpleHero).toMatch(/aspect-ratio\s*:\s*1\s*\/\s*1/);
-    expect(simpleSlide).toMatch(/padding\s*:\s*16px\s+20px/);
+    expect(simpleSlide).toMatch(/padding\s*:\s*8px\s+12px/);
     expect(simpleSlide).toMatch(/object-position\s*:\s*center\s+center/);
   });
 });

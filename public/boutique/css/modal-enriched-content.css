@@ -112,16 +112,16 @@
   .k-modal-enriched-content {
     display: block;
     max-width: 920px;
-    margin: 8px auto 0;
-    padding: 24px 0 8px;
-    border-top: 1px solid var(--sand-dark);
+    margin: 0 auto;
+    padding: 12px 0 8px;
+    border-top: 0;
   }
 
   .k-modal-enriched-content[hidden] { display: none; }
 
   .k-modal-enriched-block {
-    padding: 16px 0;
-    border-bottom: 0.5px solid var(--border);
+    padding: 12px 0;
+    border-bottom: 0;
   }
 
   .k-modal-enriched-block:last-child { border-bottom: none; }

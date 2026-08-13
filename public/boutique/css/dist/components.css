@@ -2660,7 +2660,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      flex-wrap:wrap provoquait un saut de ligne systématique sur la colonne droite
      étroite (380px track - 56px padding = 324px < 361px pills). */
   #k-modal .k-modal-trust { gap: 6px; flex-wrap: nowrap; padding: 11px 0; }
-  #k-modal .k-modal-trust-item { padding: 4px 7px; border-radius: 999px; background: var(--sand); border: 1px solid var(--border-text-06); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #k-modal .k-modal-trust-item { padding: 0; border-radius: 0; background: transparent; border: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
   .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
   .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--ocean); }
@@ -2695,7 +2695,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     align-self: end;
     margin: 0; padding: 16px 0 4px;
     background: transparent;
-    border-top: 1px solid var(--border-text-10);
+    border-top: 0;
     display: flex;
     align-items: center; gap: 10px;
   }
@@ -2758,7 +2758,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     flex: 0 0 auto; overflow: visible; min-height: unset;
     display: block; width: 100%;
     /* D10 — border-top dashed (au lieu de solid), aligné page-bg. */
-    border-top: 1.5px dashed var(--border);
+    border-top: 0;
     margin-top: 0;
   }
   /* Visuels fallback (mode modal standard, non --desktop-list) — owned : modal-shell */
@@ -3504,7 +3504,7 @@ html.k-mobile-premium-v1 .k-chip-label {
        ici : déjà owned ailleurs (background: modal-product-lot4-hybrid.css
        "D6 — Hero desktop en aplat" via --hero-bg ; border-radius:0 volontaire
        dans modal-shell.css, bloc sticky ≥900px — coins carrés assumés). */
-    border: 1px solid var(--border);
+    border: 0;
   }
 
   /* UX-REVUE KRF-033 — produit simple, média unique : la fiche n'a aucun
@@ -3517,11 +3517,13 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal:not(.k-modal--has-variants)
   .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
     aspect-ratio: 1 / 1;
+    max-height: 560px;
+    max-width: min(100%, 560px);
   }
 
   #k-modal:not(.k-modal--has-variants)
   .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {
-    padding: 16px 20px;
+    padding: 8px 12px;
     object-position: center center;
   }
 }
@@ -5102,13 +5104,19 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
       gap: 22px;
       padding: 22px;
     }
+
+    /* Produit simple : la BuyBox courte rend une partie de la largeur
+       au ProductMedia, sans augmenter artificiellement la hauteur du hero. */
+    #k-modal:not(.k-modal--has-variants) .k-modal-product-zone {
+      grid-template-columns: minmax(420px, 560px) minmax(300px, 1fr);
+    }
   }
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
      fond uni --hero-bg, seul le décor radial sobre est conservé,
      le dégradé linéaire sand → sand-warm est retiré. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    background: var(--hero-bg);
+    background: var(--page-bg);
   }
 
   #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }
@@ -5376,8 +5384,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
 
   #k-modal .k-modal-trust-item {
-    background: color-mix(in srgb, var(--sand) 76%, var(--white));
-    border: 1px solid var(--border-text-06);
     min-height: 30px;
   }
 
@@ -6492,16 +6498,16 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   .k-modal-enriched-content {
     display: block;
     max-width: 920px;
-    margin: 8px auto 0;
-    padding: 24px 0 8px;
-    border-top: 1px solid var(--sand-dark);
+    margin: 0 auto;
+    padding: 12px 0 8px;
+    border-top: 0;
   }
 
   .k-modal-enriched-content[hidden] { display: none; }
 
   .k-modal-enriched-block {
-    padding: 16px 0;
-    border-bottom: 0.5px solid var(--border);
+    padding: 12px 0;
+    border-bottom: 0;
   }
 
   .k-modal-enriched-block:last-child { border-bottom: none; }

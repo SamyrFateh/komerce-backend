@@ -53,13 +53,19 @@
       gap: 22px;
       padding: 22px;
     }
+
+    /* Produit simple : la BuyBox courte rend une partie de la largeur
+       au ProductMedia, sans augmenter artificiellement la hauteur du hero. */
+    #k-modal:not(.k-modal--has-variants) .k-modal-product-zone {
+      grid-template-columns: minmax(420px, 560px) minmax(300px, 1fr);
+    }
   }
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
      fond uni --hero-bg, seul le décor radial sobre est conservé,
      le dégradé linéaire sand → sand-warm est retiré. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    background: var(--hero-bg);
+    background: var(--page-bg);
   }
 
   #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }
@@ -327,8 +333,6 @@
   }
 
   #k-modal .k-modal-trust-item {
-    background: color-mix(in srgb, var(--sand) 76%, var(--white));
-    border: 1px solid var(--border-text-06);
     min-height: 30px;
   }
 
