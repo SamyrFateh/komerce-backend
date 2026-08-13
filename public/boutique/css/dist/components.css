@@ -2500,13 +2500,10 @@ html.k-mobile-premium-v1 .k-chip-label {
      (Approche C hybride) — ne pas redéclarer ici, source de vérité unique. */
   #k-modal .k-modal-product-zone {
     display: grid;
-    /* MIGRATION v3.0 (LOT 2) : 5 rangées. Row 1 = hero (image | récit, inchangé
-       depuis avant la migration). Row 2 = .k-modal-configurator (variantes +
-       actions, transversal, pleine largeur — nouveau). Row 3 =
-       .k-modal-long-details (paiement, pleine largeur — nouveau). Row 4 =
-       #k-modal-enriched-content. Row 5 = #k-modal-suggestions (ex-rows 2/3
-       avant l'insertion des deux nouvelles rangées). */
-    grid-template-rows: 1fr auto auto auto auto;
+    /* PDP v3.1 : row 1 = ProductMedia | ProductBuyBox.
+       Les contenus longs occupent ensuite leur propre flux pleine largeur.
+       Aucun track n'est reserve a un configurateur transversal. */
+    grid-template-rows: auto auto auto auto;
     flex: 0 0 auto;
     width: 100%;
     /* RÉF-2026-07h : min-height (calc(min(880px,100vh-56px)-58px), ≈746px
@@ -2517,17 +2514,9 @@ html.k-mobile-premium-v1 .k-chip-label {
        simple, haute pour un produit à variantes nombreuses). */
   }
 
-  /* FIX (diagnostic overflow produit simple, LOT 3) : #k-modal-enriched-content
-     est display:none quand vm.hasEnrichedContent est faux, mais son track de
-     grille (row 4 ci-dessus) gardait ses deux gaps (22px, modal-product-lot4-
-     hybrid.css) même sans contenu — ~44px de trou artificiel mesuré. Cette
-     classe modificatrice, togglée par renderEnrichedContent() (b-modal-
-     desktop-product.js) en même temps que le hidden, retombe sur une grille
-     à 4 rangées (pas de track réservé pour l'enrichi). #k-modal-suggestions
-     doit alors reprendre la rangée 4 (au lieu de 5) — cf. row-placement plus
-     bas dans ce fichier. */
+  /* PDP v3.1 : sans contenu enrichi, aucun track vide n'est reserve. */
   #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched {
-    grid-template-rows: 1fr auto auto auto;
+    grid-template-rows: auto auto auto;
   }
 
   /* ── Image : col gauche sticky ───────────────────────────── */
@@ -3153,26 +3142,25 @@ html.k-mobile-premium-v1 .k-chip-label {
    de ces placements (grid-template-columns = modal-product-lot4-hybrid.css,
    grid-template-rows + row-placement = ce fichier). ══════════════════════ */
 @media (min-width: 900px) {
-  #k-modal .k-modal-buybox > .k-modal-configurator {
-    grid-column: 1 / -1;
-    grid-row: 2;
+  #k-modal .k-modal-product-zone > .k-modal-buybox {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
     grid-column: 1 / -1;
-    grid-row: 3;
+    grid-row: 2;
   }
   #k-modal .k-modal-product-zone > #k-modal-enriched-content {
     grid-column: 1 / -1;
-    grid-row: 4;
+    grid-row: 3;
   }
   #k-modal .k-modal-product-zone > #k-modal-suggestions {
     grid-column: 1 / -1;
-    grid-row: 5;
-  }
-  /* --no-enriched : pas de track réservé pour #k-modal-enriched-content
-     (masqué), suggestions remonte en rangée 4. */
-  #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched > #k-modal-suggestions {
     grid-row: 4;
+  }
+  #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched > #k-modal-suggestions {
+    grid-row: 3;
   }
 }
 
@@ -5076,8 +5064,18 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     background: var(--page-bg);
   }
 
+  /* PDP v3.1 — vraie region transactionnelle desktop.
+     Mobile conserve display:contents depuis modal-shell.css. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--page-bg);
+  }
+
   /* ── Composition 2 régions ≥1200px (MIGRATION v3.0, arbitrage LOT4 ProductMedia) ──
-     ProductMedia (rail vignettes + galerie) | ProductNarrative (récit produit).
+     ProductMedia (rail vignettes + galerie) | ProductBuyBox (identité + configuration + actions).
      grid-template-columns/gap/padding de .k-modal-product-zone : seul
      propriétaire ce fichier.
      RETRAIT DE LA 3e PISTE (ex "rail miniatures | média principal | détails",
@@ -5122,25 +5120,27 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     padding: 0 clamp(28px, 4.4vw, 72px);
   }
 
-  /* ── MIGRATION v3.0 (LOT 2) — Configurateur transversal + détails longs ──
-     Reprend le traitement "carte" de la référence canonique (§4, .config) :
-     bordure fine, coins arrondis 18px (cohérent avec .k-buybox-relay-card),
-     fond blanc pour trancher sur --page-bg de la zone produit. */
-  /* P4-fix (audit desktop 2026-07) : le margin horizontal clamp(28,4.4vw,72)
-     s'ajoutait à un second inset déjà posé par le padding:22px de
-     .k-modal-product-zone (≥1200px) — double inset, carte ~83% de la zone.
-     .k-modal-long-details n'a qu'un seul inset (son propre padding) ; la
-     carte configurateur doit occuper la même largeur utile. Le margin
-     horizontal est retiré ; l'inset visuel du contenu passe en padding
-     interne, cohérent avec le reste des lignes transversales. */
+  /* PDP v3.1 — le configurateur appartient a ProductBuyBox.
+     Plus de carte pleine largeur ni de geometrie transversale. */
   #k-modal .k-modal-buybox > .k-modal-configurator {
-    margin: 0 0 18px;
-    padding: 18px clamp(28px, 4.4vw, 72px);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    background: var(--white);
+    margin: 0;
+    padding: 0 clamp(28px, 4.4vw, 72px) 18px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+  }
+
+  #k-modal .k-modal-buybox > .k-modal-details {
+    height: auto;
+    align-self: stretch;
+  }
+
+  #k-modal .k-modal-buybox .k-modal-configurator > .k-modal-actions {
+    align-self: stretch;
+    width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
     padding: 0 clamp(28px, 4.4vw, 72px);

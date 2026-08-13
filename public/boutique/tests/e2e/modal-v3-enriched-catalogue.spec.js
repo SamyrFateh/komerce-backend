@@ -50,20 +50,25 @@ async function expectShellAndHero(page, viewport) {
     const image = document.querySelector('.k-modal-img-wrap');
     const zone = document.querySelector('.k-modal-product-zone');
     const configurator = document.getElementById('k-modal-configurator');
+    const buybox = document.getElementById('k-modal-buybox');
     const imageRect = image?.getBoundingClientRect();
-    const detailsRect = document.querySelector('.k-modal-details')?.getBoundingClientRect();
-    const zoneRect = zone?.getBoundingClientRect();
+    const buyboxRect = buybox?.getBoundingClientRect();
     const confRect = configurator?.getBoundingClientRect();
     return {
       imagePosition: image ? getComputedStyle(image).position : null,
       actionsDirectChild: actions?.parentElement === modal,
       actionsInsideScroll: Boolean(actions && scroll && scroll.contains(actions)),
       configuratorInsideScroll: Boolean(configurator && scroll && scroll.contains(configurator)),
-      desktopGeometry: imageRect && detailsRect && zoneRect && confRect ? {
-        heroBottom: Math.max(imageRect.bottom, detailsRect.bottom),
-        confTop: confRect.top,
+      desktopGeometry: imageRect && buyboxRect && confRect ? {
+        imageTop: imageRect.top,
+        imageRight: imageRect.right,
+        buyboxTop: buyboxRect.top,
+        buyboxLeft: buyboxRect.left,
+        buyboxRight: buyboxRect.right,
+        buyboxWidth: buyboxRect.width,
+        confLeft: confRect.left,
+        confRight: confRect.right,
         confWidth: confRect.width,
-        zoneWidth: zoneRect.width,
       } : null,
     };
   });
@@ -77,13 +82,17 @@ async function expectShellAndHero(page, viewport) {
   } else {
     expect(geometry.actionsDirectChild).toBe(false);
     expect(geometry.actionsInsideScroll).toBe(true);
-    expect(geometry.desktopGeometry.confTop).toBeGreaterThanOrEqual(geometry.desktopGeometry.heroBottom - 3);
-    // P4-fix (audit desktop 2026-07) : seuil resserré de 0.7 → 0.92. L'ancien
-    // seuil de 0.7 laissait passer le défaut réel (~83%, double inset entre
-    // le padding de .k-modal-product-zone et le margin de .k-modal-configurator).
-    // La cible est un configurateur qui occupe la même largeur utile que
-    // .k-modal-long-details, pas un ratio arbitraire.
-    expect(geometry.desktopGeometry.confWidth / geometry.desktopGeometry.zoneWidth).toBeGreaterThan(0.92);
+    const g = geometry.desktopGeometry;
+    expect(g).not.toBeNull();
+
+    // PDP v3.1 : ProductMedia | ProductBuyBox partagent la premiere ligne.
+    expect(Math.abs(g.buyboxTop - g.imageTop)).toBeLessThanOrEqual(3);
+    expect(g.buyboxLeft).toBeGreaterThanOrEqual(g.imageRight - 3);
+
+    // Le configurateur est maintenant contenu dans ProductBuyBox.
+    expect(g.confLeft).toBeGreaterThanOrEqual(g.buyboxLeft - 1);
+    expect(g.confRight).toBeLessThanOrEqual(g.buyboxRight + 1);
+    expect(g.confWidth).toBeLessThanOrEqual(g.buyboxWidth + 1);
   }
 }
 

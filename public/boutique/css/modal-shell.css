@@ -577,13 +577,10 @@
      (Approche C hybride) — ne pas redéclarer ici, source de vérité unique. */
   #k-modal .k-modal-product-zone {
     display: grid;
-    /* MIGRATION v3.0 (LOT 2) : 5 rangées. Row 1 = hero (image | récit, inchangé
-       depuis avant la migration). Row 2 = .k-modal-configurator (variantes +
-       actions, transversal, pleine largeur — nouveau). Row 3 =
-       .k-modal-long-details (paiement, pleine largeur — nouveau). Row 4 =
-       #k-modal-enriched-content. Row 5 = #k-modal-suggestions (ex-rows 2/3
-       avant l'insertion des deux nouvelles rangées). */
-    grid-template-rows: 1fr auto auto auto auto;
+    /* PDP v3.1 : row 1 = ProductMedia | ProductBuyBox.
+       Les contenus longs occupent ensuite leur propre flux pleine largeur.
+       Aucun track n'est reserve a un configurateur transversal. */
+    grid-template-rows: auto auto auto auto;
     flex: 0 0 auto;
     width: 100%;
     /* RÉF-2026-07h : min-height (calc(min(880px,100vh-56px)-58px), ≈746px
@@ -594,17 +591,9 @@
        simple, haute pour un produit à variantes nombreuses). */
   }
 
-  /* FIX (diagnostic overflow produit simple, LOT 3) : #k-modal-enriched-content
-     est display:none quand vm.hasEnrichedContent est faux, mais son track de
-     grille (row 4 ci-dessus) gardait ses deux gaps (22px, modal-product-lot4-
-     hybrid.css) même sans contenu — ~44px de trou artificiel mesuré. Cette
-     classe modificatrice, togglée par renderEnrichedContent() (b-modal-
-     desktop-product.js) en même temps que le hidden, retombe sur une grille
-     à 4 rangées (pas de track réservé pour l'enrichi). #k-modal-suggestions
-     doit alors reprendre la rangée 4 (au lieu de 5) — cf. row-placement plus
-     bas dans ce fichier. */
+  /* PDP v3.1 : sans contenu enrichi, aucun track vide n'est reserve. */
   #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched {
-    grid-template-rows: 1fr auto auto auto;
+    grid-template-rows: auto auto auto;
   }
 
   /* ── Image : col gauche sticky ───────────────────────────── */
@@ -1230,25 +1219,24 @@
    de ces placements (grid-template-columns = modal-product-lot4-hybrid.css,
    grid-template-rows + row-placement = ce fichier). ══════════════════════ */
 @media (min-width: 900px) {
-  #k-modal .k-modal-buybox > .k-modal-configurator {
-    grid-column: 1 / -1;
-    grid-row: 2;
+  #k-modal .k-modal-product-zone > .k-modal-buybox {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
     grid-column: 1 / -1;
-    grid-row: 3;
+    grid-row: 2;
   }
   #k-modal .k-modal-product-zone > #k-modal-enriched-content {
     grid-column: 1 / -1;
-    grid-row: 4;
+    grid-row: 3;
   }
   #k-modal .k-modal-product-zone > #k-modal-suggestions {
     grid-column: 1 / -1;
-    grid-row: 5;
-  }
-  /* --no-enriched : pas de track réservé pour #k-modal-enriched-content
-     (masqué), suggestions remonte en rangée 4. */
-  #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched > #k-modal-suggestions {
     grid-row: 4;
+  }
+  #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched > #k-modal-suggestions {
+    grid-row: 3;
   }
 }

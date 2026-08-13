@@ -15,8 +15,18 @@
     background: var(--page-bg);
   }
 
+  /* PDP v3.1 — vraie region transactionnelle desktop.
+     Mobile conserve display:contents depuis modal-shell.css. */
+  #k-modal .k-modal-product-zone > .k-modal-buybox {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--page-bg);
+  }
+
   /* ── Composition 2 régions ≥1200px (MIGRATION v3.0, arbitrage LOT4 ProductMedia) ──
-     ProductMedia (rail vignettes + galerie) | ProductNarrative (récit produit).
+     ProductMedia (rail vignettes + galerie) | ProductBuyBox (identité + configuration + actions).
      grid-template-columns/gap/padding de .k-modal-product-zone : seul
      propriétaire ce fichier.
      RETRAIT DE LA 3e PISTE (ex "rail miniatures | média principal | détails",
@@ -61,25 +71,27 @@
     padding: 0 clamp(28px, 4.4vw, 72px);
   }
 
-  /* ── MIGRATION v3.0 (LOT 2) — Configurateur transversal + détails longs ──
-     Reprend le traitement "carte" de la référence canonique (§4, .config) :
-     bordure fine, coins arrondis 18px (cohérent avec .k-buybox-relay-card),
-     fond blanc pour trancher sur --page-bg de la zone produit. */
-  /* P4-fix (audit desktop 2026-07) : le margin horizontal clamp(28,4.4vw,72)
-     s'ajoutait à un second inset déjà posé par le padding:22px de
-     .k-modal-product-zone (≥1200px) — double inset, carte ~83% de la zone.
-     .k-modal-long-details n'a qu'un seul inset (son propre padding) ; la
-     carte configurateur doit occuper la même largeur utile. Le margin
-     horizontal est retiré ; l'inset visuel du contenu passe en padding
-     interne, cohérent avec le reste des lignes transversales. */
+  /* PDP v3.1 — le configurateur appartient a ProductBuyBox.
+     Plus de carte pleine largeur ni de geometrie transversale. */
   #k-modal .k-modal-buybox > .k-modal-configurator {
-    margin: 0 0 18px;
-    padding: 18px clamp(28px, 4.4vw, 72px);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    background: var(--white);
+    margin: 0;
+    padding: 0 clamp(28px, 4.4vw, 72px) 18px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+  }
+
+  #k-modal .k-modal-buybox > .k-modal-details {
+    height: auto;
+    align-self: stretch;
+  }
+
+  #k-modal .k-modal-buybox .k-modal-configurator > .k-modal-actions {
+    align-self: stretch;
+    width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
     padding: 0 clamp(28px, 4.4vw, 72px);
