@@ -5,15 +5,15 @@
  * @domain        catalog
  * @layer         script
  * @criticality   low
- * @inputs        showcase source manifest, Wikimedia Commons, Cloudinary
- * @outputs       canonical Cloudinary showcase manifest
- * @depends       scripts/showcase-catalog.js, Node fetch/FormData/Blob/crypto/fs/path
+ * @inputs        showcase source manifest, Wikimedia Commons, media provider
+ * @outputs       canonical hosted showcase manifest
+ * @depends       scripts/showcase-catalog.js, scripts/showcase-media-provider.js, Node fetch/FormData/Blob/crypto/fs/path
  * @used-by       staging showcase deployment
  * @db-read       none
  * @db-write      none
  * @db-txn        no
  * @doctrine      DOCTRINE_CATALOGUE.md, staging-only realistic fixtures
- * @version       2026-08-v2
+ * @version       2026-08-v3
  */
 'use strict';
 
@@ -23,6 +23,7 @@ const {
   normalizeImages,
   cloudinarySignature,
 } = require('./showcase-catalog');
+const { resolveMediaProvider } = require('./showcase-media-provider');
 
 const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_TARGET = 500;
@@ -33,6 +34,7 @@ const WIKIMEDIA_USER_AGENT = 'KomerceShowcaseBot/2.1 (https://komerce.co)';
 const COMMONS_MIN_DELAY_MS = 1200;
 const COMMONS_MAX_ATTEMPTS = 4;
 const COMMONS_TIMEOUT_MS = 30000;
+const IMAGEKIT_UPLOAD_URL = 'https://upload.imagekit.io/api/v1/files/upload';
 
 let lastCommonsRequestAt = 0;
 
@@ -41,6 +43,7 @@ function parseArgs(argv) {
     target: DEFAULT_TARGET,
     sourceManifest: DEFAULT_SOURCE_MANIFEST,
     manifest: DEFAULT_MANIFEST,
+    mediaProvider: resolveMediaProvider(),
   };
   const args = [...argv];
   for (let i = 0; i < args.length; i += 1) {
@@ -49,6 +52,7 @@ function parseArgs(argv) {
     if (key === '--target') out.target = Number.parseInt(next(), 10);
     else if (key === '--source-manifest') out.sourceManifest = path.resolve(next());
     else if (key === '--manifest') out.manifest = path.resolve(next());
+    else if (key === '--media-provider') out.mediaProvider = resolveMediaProvider(next());
     else throw new Error(`Argument inconnu: ${args[i]}`);
   }
   if (!Number.isInteger(out.target) || out.target < 1 || out.target > 1000) {
@@ -66,9 +70,9 @@ function mediaFilename(value) {
   try {
     const pathname = decodeURIComponent(new URL(value).pathname);
     const name = path.basename(pathname).replace(/[^a-zA-Z0-9._-]+/g, '-');
-    return name || 'commons-image';
+    return name || 'source-image';
   } catch {
-    return 'commons-image';
+    return 'source-image';
   }
 }
 
@@ -161,6 +165,23 @@ function cloudinaryConfig() {
   return { cloudName, apiKey, apiSecret };
 }
 
+function imageKitConfig() {
+  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+  if (!privateKey) throw new Error('IMAGEKIT_PRIVATE_KEY requis');
+  return { privateKey };
+}
+
+function imageKitAuthHeader(privateKey) {
+  return `Basic ${Buffer.from(`${privateKey}:`, 'utf8').toString('base64')}`;
+}
+
+function imageKitFileName(publicId, sourceName = null) {
+  const candidate = sourceName ? mediaFilename(sourceName) : 'source-image';
+  const ext = path.extname(candidate).toLowerCase();
+  const safeExt = /^\.(?:jpe?g|png|webp|gif|avif|tiff?)$/.test(ext) ? ext : '.jpg';
+  return `${publicId}${safeExt}`;
+}
+
 async function uploadCloudinaryFile(file, { folder, publicId, filename = null }) {
   const { cloudName, apiKey, apiSecret } = cloudinaryConfig();
   const timestamp = Math.floor(Date.now() / 1000);
@@ -186,13 +207,44 @@ async function uploadCloudinaryFile(file, { folder, publicId, filename = null })
   return body.secure_url;
 }
 
-async function mirrorSourceImage(url, uploadOptions) {
-  if (!isWikimediaMediaUrl(url)) return uploadCloudinaryFile(url, uploadOptions);
-  const downloaded = await downloadWikimediaMedia(url);
-  return uploadCloudinaryFile(downloaded.blob, { ...uploadOptions, filename: downloaded.filename });
+async function uploadImageKitFile(file, { folder, publicId, filename = null }, options = {}) {
+  const { privateKey } = imageKitConfig();
+  const fetchImpl = options.fetchImpl || fetch;
+  const form = new FormData();
+  const sourceName = filename || (typeof file === 'string' ? file : null);
+  if (file instanceof Blob) form.set('file', file, filename || 'source-image');
+  else form.set('file', file);
+  form.set('fileName', imageKitFileName(publicId, sourceName));
+  form.set('folder', `/${String(folder || '').replace(/^\/+|\/+$/g, '')}`);
+  form.set('useUniqueFileName', 'false');
+  form.set('overwriteFile', 'true');
+
+  const response = await fetchImpl(IMAGEKIT_UPLOAD_URL, {
+    method: 'POST',
+    headers: { Authorization: imageKitAuthHeader(privateKey) },
+    body: form,
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || !body.url) {
+    throw new Error(`ImageKit upload failed (${response.status}): ${body.message || body.error?.message || 'unknown error'}`);
+  }
+  return body.url;
 }
 
-async function mirrorProduct(product) {
+async function uploadHostedFile(file, uploadOptions, mediaProvider) {
+  if (mediaProvider === 'imagekit') return uploadImageKitFile(file, uploadOptions);
+  return uploadCloudinaryFile(file, uploadOptions);
+}
+
+async function mirrorSourceImage(url, uploadOptions, mediaProvider) {
+  if (!isWikimediaMediaUrl(url)) {
+    return uploadHostedFile(url, { ...uploadOptions, filename: mediaFilename(url) }, mediaProvider);
+  }
+  const downloaded = await downloadWikimediaMedia(url);
+  return uploadHostedFile(downloaded.blob, { ...uploadOptions, filename: downloaded.filename }, mediaProvider);
+}
+
+async function mirrorProduct(product, mediaProvider) {
   const namespace = showcaseNamespace(product.product_ref);
   const folder = `komerce/staging/${namespace}/${product.product_ref.toLowerCase()}`;
   const sourceImages = normalizeImages(product).slice(0, 3);
@@ -201,7 +253,7 @@ async function mirrorProduct(product) {
     uploaded.push(await mirrorSourceImage(sourceImages[i], {
       folder,
       publicId: i === 0 ? 'hero' : `gallery-${String(i).padStart(2, '0')}`,
-    }));
+    }, mediaProvider));
   }
   return { ...product, image_url: uploaded[0], images: uploaded };
 }
@@ -214,13 +266,13 @@ async function main() {
 
   const uploaded = [];
   for (const product of source.slice(0, options.target)) {
-    uploaded.push(await mirrorProduct(product));
-    if (uploaded.length % 25 === 0) console.log(`[showcase] Cloudinary ${uploaded.length}/${options.target}`);
+    uploaded.push(await mirrorProduct(product, options.mediaProvider));
+    if (uploaded.length % 25 === 0) console.log(`[showcase] ${options.mediaProvider} ${uploaded.length}/${options.target}`);
   }
 
   fs.mkdirSync(path.dirname(options.manifest), { recursive: true });
   fs.writeFileSync(options.manifest, JSON.stringify(uploaded, null, 2) + '\n', 'utf8');
-  console.log(`[showcase] Cloudinary manifest: ${uploaded.length} -> ${options.manifest}`);
+  console.log(`[showcase] ${options.mediaProvider} manifest: ${uploaded.length} -> ${options.manifest}`);
 }
 
 if (require.main === module) {
@@ -237,4 +289,7 @@ module.exports = {
   showcaseNamespace,
   retryAfterMs,
   downloadWikimediaMedia,
+  imageKitAuthHeader,
+  imageKitFileName,
+  uploadImageKitFile,
 };
