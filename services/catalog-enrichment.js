@@ -20,28 +20,11 @@
 'use strict';
 
 /**
- * KOMERCE — Étage ⑤ Enrichissement FR (K-3, DOCTRINE_CATALOGUE.md §4, §5, §8)
- * ═══════════════════════════════════════════════════════════════════════
+ * KOMERCE — Étage ⑤ Enrichissement FR (K-3)
  *
- * "Traduire est un métier, pas un dictionnaire." Un appel par produit :
- * titre FR client, description FR adaptée, catégorie proposée, fragilité
- * proposée, score de confiance.
- *
- * Promesses tenues ici :
- *   §4 — glossaire (catalog_glossary) injecté dans CHAQUE appel ;
- *        sous CATALOG_ENRICH_CONFIDENCE_MIN → needs_review, pas de blocage.
- *   §5 — REJOUABILITÉ : après chaque application, les overrides tracés
- *        (catalog_field_overrides) sont réappliqués champ par champ.
- *        Re-raffiner n'écrase jamais une retouche humaine.
- *   §7 — la donnée source (name_source, ...) n'est JAMAIS écrite ici et
- *        n'est JAMAIS reconstruite depuis un champ client.
- *   §8 — échec ≠ silence : chaque run (ok, low_confidence, invalid_output,
- *        failed) laisse une ligne dans catalog_enrichment_runs, tokens
- *        compris. En échec, la fiche publiée n'est PAS modifiée — elle
- *        reste en donnée connecteur, marquée needs_review : l'humain voit.
- *
- * L'appel modèle suit le pattern maison fetch (cf. paypal-client.js) :
- * pas de SDK, timeout explicite, erreurs typées.
+ * La doctrine métier est indépendante du fournisseur IA. Le provider est
+ * choisi par CATALOG_ENRICH_PROVIDER=anthropic|openai. Même prompt, même
+ * contrat de sortie, même validation, même traçabilité et mêmes overrides.
  */
 
 const db = require('../db');
@@ -51,7 +34,9 @@ const prompt = require('./prompts/catalog-enrichment.prompt');
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
-const DEFAULT_MODEL = 'claude-haiku-4-5';
+const OPENAI_URL = 'https://api.openai.com/v1/responses';
+const DEFAULT_ANTHROPIC_MODEL = 'claude-haiku-4-5';
+const DEFAULT_OPENAI_MODEL = 'gpt-5.6-luna';
 const CALL_TIMEOUT_MS = 45_000;
 const MAX_OUTPUT_TOKENS = 1500;
 
@@ -84,15 +69,40 @@ async function loadOverrides(productId) {
   return rows;
 }
 
-async function callModel(systemPrompt, userMessage) {
+function resolveProvider() {
+  const provider = String(process.env.CATALOG_ENRICH_PROVIDER || 'anthropic').trim().toLowerCase();
+  if (!['anthropic', 'openai'].includes(provider)) {
+    const err = new Error(`CATALOG_ENRICH_PROVIDER invalide: ${provider}`);
+    err.code = 'ENRICH_PROVIDER_INVALID';
+    throw err;
+  }
+  return provider;
+}
+
+function outputSchema() {
+  return {
+    type: 'object',
+    properties: {
+      name_fr: { type: 'string' },
+      description_fr: { type: 'string' },
+      category: { type: ['string', 'null'] },
+      fragility: { type: ['string', 'null'] },
+      confidence: { type: 'number' },
+      review_notes: { type: 'array', items: { type: 'string' } },
+    },
+    required: ['name_fr', 'description_fr', 'category', 'fragility', 'confidence', 'review_notes'],
+    additionalProperties: false,
+  };
+}
+
+async function callAnthropicModel(systemPrompt, userMessage) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     const err = new Error('ANTHROPIC_API_KEY manquant — enrichissement indisponible');
     err.code = 'ENRICH_NO_KEY';
     throw err;
   }
-  const model = process.env.CATALOG_ENRICH_MODEL || DEFAULT_MODEL;
-
+  const model = process.env.CATALOG_ENRICH_MODEL || DEFAULT_ANTHROPIC_MODEL;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS);
   try {
@@ -131,6 +141,75 @@ async function callModel(systemPrompt, userMessage) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function callOpenAIModel(systemPrompt, userMessage) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    const err = new Error('OPENAI_API_KEY manquant — enrichissement indisponible');
+    err.code = 'ENRICH_NO_KEY';
+    throw err;
+  }
+  const model = process.env.CATALOG_ENRICH_MODEL || DEFAULT_OPENAI_MODEL;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS);
+  try {
+    const res = await fetch(OPENAI_URL, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        instructions: systemPrompt,
+        input: userMessage,
+        max_output_tokens: MAX_OUTPUT_TOKENS,
+        store: false,
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'catalog_enrichment',
+            strict: true,
+            schema: outputSchema(),
+          },
+        },
+      }),
+    });
+    const body = await res.text();
+    if (!res.ok) {
+      const err = new Error(`OpenAI API ${res.status}: ${body.slice(0, 300)}`);
+      err.code = 'ENRICH_API_ERROR';
+      throw err;
+    }
+    const data = JSON.parse(body);
+    const text = (data.output || [])
+      .filter((item) => item.type === 'message')
+      .flatMap((item) => item.content || [])
+      .filter((part) => part.type === 'output_text')
+      .map((part) => part.text)
+      .join('\n');
+    if (!text) {
+      const err = new Error(`OpenAI API: réponse sans output_text (status=${data.status || 'unknown'})`);
+      err.code = 'ENRICH_INVALID_OUTPUT';
+      throw err;
+    }
+    return {
+      text,
+      model: data.model || model,
+      inputTokens: data.usage?.input_tokens ?? null,
+      outputTokens: data.usage?.output_tokens ?? null,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function callModel(systemPrompt, userMessage) {
+  const provider = resolveProvider();
+  if (provider === 'openai') return callOpenAIModel(systemPrompt, userMessage);
+  return callAnthropicModel(systemPrompt, userMessage);
 }
 
 function parseModelJson(text) {
@@ -173,7 +252,6 @@ async function applyEnrichment(productId, enriched, { confidenceMin }) {
   }
 
   const needsReview = enriched.confidence < confidenceMin;
-
   const cols = [];
   const vals = [];
   let i = 1;
@@ -193,12 +271,6 @@ async function applyEnrichment(productId, enriched, { confidenceMin }) {
   return { needsReview, appliedOverrides };
 }
 
-/**
- * Enrichit une fiche depuis sa donnée source et applique le résultat.
- * NE JETTE JAMAIS pour un échec d'enrichissement : la fiche est marquée
- * needs_review et le run tracé — l'import qui nous appelle ne doit pas
- * échouer parce que le modèle a hoqueté (§8).
- */
 async function enrichAndApply(productId) {
   const started = Date.now();
   let model = null; let inputTokens = null; let outputTokens = null;
@@ -210,9 +282,6 @@ async function enrichAndApply(productId) {
     );
     if (!rows.length) return { status: 'failed', error: 'produit introuvable' };
     const p = rows[0];
-
-    // §7 — pas de source, pas de raffinage. Le champ client `name` ne peut
-    // jamais devenir rétroactivement une vérité fournisseur.
     const nameSource = p.name_source;
     if (!nameSource) return { status: 'failed', error: 'aucune donnée source' };
 
@@ -253,9 +322,8 @@ async function enrichAndApply(productId) {
       productId, status, confidence: verdict.value.confidence, model,
       inputTokens, outputTokens, durationMs: Date.now() - started,
     });
-    log.info({ productId, status, confidence: verdict.value.confidence }, 'fiche enrichie');
+    log.info({ productId, status, confidence: verdict.value.confidence, provider: resolveProvider() }, 'fiche enrichie');
     return { status, confidence: verdict.value.confidence, needsReview, appliedOverrides, review_notes: verdict.value.review_notes };
-
   } catch (err) {
     const status = err.code === 'ENRICH_INVALID_OUTPUT' ? 'invalid_output' : 'failed';
     await recordRun({
@@ -277,6 +345,10 @@ module.exports = {
   applyEnrichment,
   loadGlossary,
   loadAllowedCategories,
+  resolveProvider,
+  outputSchema,
   OVERRIDABLE_FIELDS,
   _callModel: callModel,
+  _callAnthropicModel: callAnthropicModel,
+  _callOpenAIModel: callOpenAIModel,
 };
