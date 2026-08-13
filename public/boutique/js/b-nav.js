@@ -183,6 +183,33 @@ export function switchView(tab) {
   if (promoSec)    promoSec.classList.toggle('u-hidden', tab !== 'shop');
   if (heroWrap)    heroWrap.classList.toggle('u-hidden', tab !== 'shop');
 
+  // FIX 2026-08-13 (KRF post-6B) : #k-bar-spacer est piloté par un
+  // IntersectionObserver posé une seule fois dans hero-bootstrap.js
+  // setupDesktop(). Si la barre catégories est "collée" (sticky) au
+  // moment où on quitte l'onglet Boutique, le spacer reste à
+  // display:block/height:98px alors que #k-hero-fixed-wrap (qui contient
+  // la vraie barre) vient d'être masqué juste au-dessus — d'où 98px
+  // d'espace mort résiduel sur Favoris/Suivi/Mon Komerce. On le force
+  // à display:none dès qu'on n'est plus sur 'shop'.
+  if (tab !== 'shop') {
+    const barSpacer = document.getElementById('k-bar-spacer');
+    if (barSpacer) barSpacer.style.display = 'none';
+
+    // FIX 2026-08-13 (KRF post-6B, suite) : #k-header-spacer porte un style
+    // inline posé par index.html (calc(header-h + safe-area), pensé mobile).
+    // En desktop, hero.css impose 72px !important mais UNIQUEMENT scopé à
+    // body.k-view-shop (cf. hero.css §Direction A/2) pour ne pas doubler la
+    // réserve du header sticky sur Favoris/Suivi/Mon Komerce. En quittant
+    // 'shop', on retombe donc sur le style inline non pertinent en desktop —
+    // on le neutralise ici en JS plutôt que via un second !important CSS
+    // (cf. check:important guard). Scopé desktop uniquement : le mobile
+    // garde son inline calc() géré séparément par setupMobile() ci-dessus.
+    if (window.innerWidth >= 900) {
+      const headerSpacer = document.getElementById('k-header-spacer');
+      if (headerSpacer) headerSpacer.style.height = '0';
+    }
+  }
+
   // Notifier les modules desktop (sidebar, merch cards, promo strip)
   bus.emit('view:changed', tab);
 

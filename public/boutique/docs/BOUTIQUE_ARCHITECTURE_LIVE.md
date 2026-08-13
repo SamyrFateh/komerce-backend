@@ -14,16 +14,16 @@
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1353 | 🔴 **ORPHELIN** |
-| `cart.css` | 2157 | 🔴 **ORPHELIN** |
+| `boutique-desktop.css` | 1352 | 🔴 **ORPHELIN** |
+| `cart.css` | 2077 | 🔴 **ORPHELIN** |
 | `categories.css` | 988 | 🔴 **ORPHELIN** |
-| `checkout-vertical-rail.css` | 988 | 🔴 **ORPHELIN** |
+| `checkout-vertical-rail.css` | 990 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
-| `hero.css` | 1017 | 🔴 **ORPHELIN** |
-| `identity.css` | 344 | 🔴 **ORPHELIN** |
+| `hero.css` | 1022 | 🔴 **ORPHELIN** |
+| `identity.css` | 332 | 🔴 **ORPHELIN** |
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
 | `komerce.css` | 252 | 🔴 **ORPHELIN** |
-| `layout.css` | 1151 | 🔴 **ORPHELIN** |
+| `layout.css` | 1199 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 26 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 340 | 🔴 **ORPHELIN** |
@@ -32,7 +32,7 @@
 | `modal-product-lot4-hybrid.css` | 502 | 🔴 **ORPHELIN** |
 | `modal-product-polish.css` | 390 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1517 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 1245 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 1247 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 892 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
@@ -40,8 +40,8 @@
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
 | `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart-responsive.css` | 91 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 724 | 🔴 **ORPHELIN** |
-| `tokens.css` | 585 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 709 | 🔴 **ORPHELIN** |
+| `tokens.css` | 561 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
@@ -49,9 +49,9 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=177
- 2. /boutique/css/dist/components.css?v=484
- 3. /boutique/css/dist/desktop.css?v=104
+ 1. /boutique/css/dist/base.css?v=174
+ 2. /boutique/css/dist/components.css?v=476
+ 3. /boutique/css/dist/desktop.css?v=99
 ```
 
 ## 3. Cartographie des sélecteurs critiques
@@ -70,7 +70,7 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 | `.k-card-add` ⚠️ | `cart.css` (0/2)<br>`products.css` (7/3) |
 | `.k-card-fav` ⚠️ | `cart.css` (0/1)<br>`products.css` (4/3) |
 | `.k-side-cart` ⚠️ | `boutique-desktop.css` (0/7)<br>`layout.css` (2/0) |
-| `#k-desktop-catalog-wrap` | `layout.css` (1/6) |
+| `#k-desktop-catalog-wrap` | `layout.css` (1/7) |
 | `.k-header` | `layout.css` (9/7) |
 | `.k-hero-media` | `hero.css` (4/5) |
 | `.k-modal` ⚠️ | `modal-product.css` (0/1)<br>`modal-shell.css` (6/3) |
@@ -104,11 +104,11 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js/b-pager.js` (×1) |
-| `--pager-h` | `js/b-pager.js` (×1)<br>`js/b-subcat.js` (×1) ⚠️ multi-owner |
-| `--pager-w` | `js/b-pager.js` (×1) |
-| `--bnav-h` | `js/b-pager.js` (×1) |
-| `--modal-scroll-y` | `js/b-modal-core.js` (×1) |
+| `--pager-top` | `js\b-pager.js` (×1) |
+| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1) ⚠️ multi-owner |
+| `--pager-w` | `js\b-pager.js` (×1) |
+| `--bnav-h` | `js\b-pager.js` (×1) |
+| `--modal-scroll-y` | `js\b-modal-core.js` (×1) |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 

@@ -10751,6 +10751,8 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-sheet {
   width: 100%;
   max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
   background: var(--white);
   border-radius: 22px 22px 0 0;
   padding: 16px 18px calc(24px + env(safe-area-inset-bottom));
