@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
- * @version       2026-08-v7
+ * @version       2026-08-v8
  */
 'use strict';
 
@@ -86,18 +86,19 @@ const EDITORIAL_MARKERS = Object.freeze([
   'portrait', 'headshot', 'fashion show', 'fashion week', 'runway', 'red carpet',
   'press conference', 'selfie', 'group photo', 'team photo', 'model wearing',
   'model in', 'models wearing', 'modelled by', 'modeled by', 'bride and groom',
-  'wedding ceremony',
+  'wedding ceremony', 'dress rehearsal', 'dressing room', 'award ceremony',
+  'product launch', 'television broadcast', 'tv broadcast', 'on stage',
+  'on the stage', 'performance',
 ]);
 
 const HUMAN_MEDIA_MARKERS = Object.freeze([
   'woman wearing', 'women wearing', 'man wearing', 'men wearing', 'girl wearing',
   'girls wearing', 'boy wearing', 'boys wearing', 'person wearing', 'people wearing',
   'woman in a', 'woman in the', 'man in a', 'man in the', 'girl in a', 'boy in a',
-]);
-
-const APPAREL_SEGMENTS = new Set([
-  'Mode & Beauté/Femme', 'Mode & Beauté/Homme', 'Mode & Beauté/Enfant',
-  'Créations personnelles/Cérémonie',
+  'woman holding', 'women holding', 'man holding', 'men holding', 'person holding',
+  'people holding', 'woman applying', 'women applying', 'man applying', 'men applying',
+  'person applying', 'people applying', 'using mobile phone', 'using a mobile phone',
+  'using phone', 'using a phone', 'actor in', 'actors in',
 ]);
 
 const V2_TITLE_REPLACEMENTS = [
@@ -247,7 +248,9 @@ function identityQueriesForTarget(target) {
 }
 
 function queriesForTarget(target) {
-  const all = [...(target.queries || []), ...(FALLBACK_QUERIES[segmentKey(target)] || []), ...identityQueriesForTarget(target)];
+  // La preuve la plus forte est un terme produit dans le titre Wikimedia.
+  // On privilégie donc les requêtes intitle avant les recherches de secours.
+  const all = [...identityQueriesForTarget(target), ...(target.queries || []), ...(FALLBACK_QUERIES[segmentKey(target)] || [])];
   const seen = new Set();
   return all.filter((query) => {
     const normalized = String(query || '').trim().toLowerCase();
@@ -264,19 +267,22 @@ function productIdentityFor(row, target) {
   const context = `${sourceTitle} ${description}`;
   const terms = PRODUCT_TERMS[key] || [];
   const titleTerm = terms.find((candidate) => catalogEligibility.keywordMatches(sourceTitle, candidate));
-  const descriptionTerm = titleTerm ? null : terms.find((candidate) => catalogEligibility.keywordMatches(description, candidate));
-  const term = titleTerm || descriptionTerm;
-  if (!term) return { ok: false, reason: 'missing-product-term', term: null, term_source: null, editorial: null };
-
-  const editorial = EDITORIAL_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));
-  if (editorial) return { ok: false, reason: 'editorial-media', term, term_source: titleTerm ? 'title' : 'description', editorial };
-
-  if (APPAREL_SEGMENTS.has(key)) {
-    const human = HUMAN_MEDIA_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));
-    if (human) return { ok: false, reason: 'human-media', term, term_source: titleTerm ? 'title' : 'description', editorial: human };
+  if (!titleTerm) {
+    const descriptionTerm = terms.find((candidate) => catalogEligibility.keywordMatches(description, candidate));
+    if (descriptionTerm) {
+      return { ok: false, reason: 'product-term-description-only', term: descriptionTerm, term_source: 'description', editorial: null };
+    }
+    return { ok: false, reason: 'missing-product-term', term: null, term_source: null, editorial: null };
   }
 
-  return { ok: true, reason: null, term, term_source: titleTerm ? 'title' : 'description', editorial: null };
+  const editorial = EDITORIAL_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));
+  if (editorial) return { ok: false, reason: 'editorial-media', term: titleTerm, term_source: 'title', editorial };
+
+  // Une scène humaine n'est pas une photo produit, quelle que soit la catégorie.
+  const human = HUMAN_MEDIA_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));
+  if (human) return { ok: false, reason: 'human-media', term: titleTerm, term_source: 'title', editorial: human };
+
+  return { ok: true, reason: null, term: titleTerm, term_source: 'title', editorial: null };
 }
 
 function isProductLike(row, target) { return productIdentityFor(row, target).ok; }
