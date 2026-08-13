@@ -39,7 +39,7 @@
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=178">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=489">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=490">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=105">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
@@ -389,6 +389,8 @@
           <div class="k-modal-dots" id="k-modal-dots"></div>
           <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
         </div>
+        <!-- PDP v3.1 — ProductBuyBox : identité + configuration + actions. -->
+        <div class="k-modal-buybox" id="k-modal-buybox">
         <div class="k-modal-details" id="k-modal-details">
           <div class="k-modal-info">
             <div class="k-modal-name-row">
@@ -440,6 +442,7 @@
             <button class="k-buy-now-btn" id="k-buy-now-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Acheter maintenant</button>
           </div>
         </div>
+        </div><!-- end .k-modal-buybox -->
         <!-- MIGRATION v3.0 (LOT 2) — Détails longs, pleine largeur, après le
              configurateur. Ne contient pour l'instant que le paiement ; conçu
              pour accueillir de futurs blocs de détails techniques. -->
@@ -651,12 +654,3 @@
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
 <!-- fixMobile removed v19 -->
 </html>
-
-
-
-
-
-
-
-
-

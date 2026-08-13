@@ -2093,6 +2093,13 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 /* Restaurer un effet glass quand le navigateur le supporte ET qu'on n'est
    pas en sticky (desktop column) — le rgba se réactive seulement là. */
+/* PDP v3.1 — wrapper sémantique neutre.
+   Mobile et état transitoire desktop : aucune boîte intermédiaire.
+   La composition desktop réelle est owned par modal-product-lot4-hybrid.css. */
+#k-modal .k-modal-buybox {
+  display: contents;
+}
+
 @media (min-width: 900px) {
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
     .k-modal-actions {
@@ -3146,7 +3153,7 @@ html.k-mobile-premium-v1 .k-chip-label {
    de ces placements (grid-template-columns = modal-product-lot4-hybrid.css,
    grid-template-rows + row-placement = ce fichier). ══════════════════════ */
 @media (min-width: 900px) {
-  #k-modal .k-modal-product-zone > .k-modal-configurator {
+  #k-modal .k-modal-buybox > .k-modal-configurator {
     grid-column: 1 / -1;
     grid-row: 2;
   }
@@ -5126,7 +5133,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      carte configurateur doit occuper la même largeur utile. Le margin
      horizontal est retiré ; l'inset visuel du contenu passe en padding
      interne, cohérent avec le reste des lignes transversales. */
-  #k-modal .k-modal-product-zone > .k-modal-configurator {
+  #k-modal .k-modal-buybox > .k-modal-configurator {
     margin: 0 0 18px;
     padding: 18px clamp(28px, 4.4vw, 72px);
     border: 1px solid var(--border);

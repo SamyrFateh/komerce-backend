@@ -170,6 +170,13 @@
 }
 /* Restaurer un effet glass quand le navigateur le supporte ET qu'on n'est
    pas en sticky (desktop column) — le rgba se réactive seulement là. */
+/* PDP v3.1 — wrapper sémantique neutre.
+   Mobile et état transitoire desktop : aucune boîte intermédiaire.
+   La composition desktop réelle est owned par modal-product-lot4-hybrid.css. */
+#k-modal .k-modal-buybox {
+  display: contents;
+}
+
 @media (min-width: 900px) {
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
     .k-modal-actions {
@@ -1223,7 +1230,7 @@
    de ces placements (grid-template-columns = modal-product-lot4-hybrid.css,
    grid-template-rows + row-placement = ce fichier). ══════════════════════ */
 @media (min-width: 900px) {
-  #k-modal .k-modal-product-zone > .k-modal-configurator {
+  #k-modal .k-modal-buybox > .k-modal-configurator {
     grid-column: 1 / -1;
     grid-row: 2;
   }
