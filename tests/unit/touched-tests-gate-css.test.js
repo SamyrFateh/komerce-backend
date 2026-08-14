@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -13,9 +12,15 @@ const cp = require('child_process');
 
 const gatePath = path.join(__dirname, '../../scripts/touched-tests-gate.js');
 
-function runGate(files) {
+function runGate(files, thresholds = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'komerce-touched-tests-css-'));
   try {
+    fs.mkdirSync(path.join(root, 'governance'), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, 'governance', 'coverage-thresholds.json'),
+      JSON.stringify(thresholds, null, 2),
+    );
+
     return cp.spawnSync(process.execPath, [
       gatePath,
       '--root', root,
@@ -50,13 +55,15 @@ describe('touched-tests gate — complétion CSS', () => {
     expect(result.stdout).toContain('aucun test touché');
   });
 
-  test('la dérogation de mesure reste limitée au CSS et ne contourne pas une source JS', () => {
+  test('la dérogation de mesure reste limitée au CSS quand un JS possède un cliquet explicite', () => {
     const result = runGate([
       'public/boutique/js/example-runtime.js',
       'public/boutique/tests/unit/example-runtime.test.js',
-    ]);
+    ], {
+      'public/boutique/js/example-runtime.js': { stmts: 80, branch: 70 },
+    });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain('couverture non mesurable isolément');
+    expect(result.stdout).toContain('couverture non mesurable isolément pour le cliquet configuré');
   });
 });
