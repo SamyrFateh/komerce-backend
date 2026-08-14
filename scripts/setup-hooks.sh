@@ -46,7 +46,7 @@ fi
 
 cat > "$PRE_COMMIT" << 'HOOK'
 #!/bin/bash
-# KOMERCE-HOOK v5 - tiers-1-4-targeted
+# KOMERCE-HOOK v6 - tiers-1-5-targeted
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -146,14 +146,19 @@ if [[ "$HAS_BOUTIQUE_CSS" -eq 1 || "$HAS_BOUTIQUE_JS" -eq 1 || "$HAS_BOUTIQUE_HT
   run_gate "Boutique architecture" node public/boutique/scripts/audit-boutique-arch.js
 fi
 
+# N5 - Tests unitaires cibles. Graphe Jest + fallback test homonyme, sans couverture.
+if echo "$STAGED" | grep -Eq '^(server\.js|(?:routes|services|middleware|utils|validators|core|bootstrap|db)/.+\.(js|cjs|mjs|ts)|tests/(?:unit|invariants|contract|notifications)/.+\.(test|spec)\.(js|cjs|mjs|ts)|tests/parcelOptimization\.test\.js|public/boutique/(?:js/.+\.(js|cjs|mjs|ts)|tests/unit/.+\.(test|spec)\.(js|cjs|mjs|ts)))$'; then
+  run_gate "Tests unitaires lies" node scripts/run-staged-related-tests.js
+fi
+
 TOTAL_END="$(now_ms)"
-echo "OK Pre-commit Komerce tiers 1-4 termine en $((TOTAL_END - TOTAL_START)) ms"
+echo "OK Pre-commit Komerce tiers 1-5 termine en $((TOTAL_END - TOTAL_START)) ms"
 HOOK
 
 chmod +x "$PRE_COMMIT"
 
-echo "OK Hooks Komerce - niveaux 1-4 installes."
-echo "   pre-commit : technique + registry + schema + Boutique source ciblee"
+echo "OK Hooks Komerce - niveaux 1-5 installes."
+echo "   pre-commit : technique + registry + schema + Boutique source + tests unitaires lies"
 echo "   pre-push   : toujours desactive"
-echo "   lourds     : Carte First complet / rebuild CSS-dist / check:fast / 360 / meta / graphes en pause"
+echo "   lourds     : Carte First complet / rebuild CSS-dist / coverage / integration / E2E / 360 / meta en pause"
 echo "   timings    : affiches gate par gate a chaque commit"
