@@ -49,7 +49,7 @@ describe('modal-product-polish — invariants topbar mobile', () => {
 
     expect(cart).toMatch(/width\s*:\s*42px/);
     expect(cart).toMatch(/height\s*:\s*42px/);
-    expect(cart).toMatch(/left\s*:\s*calc\(50%\s*\+\s*12px\)/);
+    expect(cart).toMatch(/left\s*:\s*calc\(50%\s*\+\s*18px\)/);
     expect(icon).toMatch(/width\s*:\s*31px/);
     expect(icon).toMatch(/height\s*:\s*31px/);
   });
