@@ -172,9 +172,9 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2025-10",
-        "service": "Generer un document officiel (preuve de retrait, facture douane, reçu wallet, reçu remboursement) a partir d'un evenement metier confirme.",
+        "service": "Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé, puis le servir uniquement à son propriétaire authentifié.",
         "businessKind": "business-transversal",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -302,7 +302,7 @@
         "since": "2025-09",
         "service": "Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -912,14 +912,14 @@
         "category": "ci",
         "declared": ".github/workflows/showcase-catalog-media-audit.yml",
         "resolvedPath": ".github/workflows/showcase-catalog-media-audit.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "catalog",
         "category": "ci",
         "declared": ".github/workflows/showcase-catalog-staging-deploy.yml",
         "resolvedPath": ".github/workflows/showcase-catalog-staging-deploy.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "catalog",
@@ -3016,9 +3016,37 @@
       },
       {
         "feature": "documents",
+        "category": "services",
+        "declared": "services/documents/pdf-renderer.js",
+        "resolvedPath": "services/documents/pdf-renderer.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "documents",
+        "category": "services",
+        "declared": "services/invoice-service.js",
+        "resolvedPath": "services/invoice-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "documents",
         "category": "routes",
         "declared": "routes/admin/documents.js",
         "resolvedPath": "routes/admin/documents.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "documents",
+        "category": "routes",
+        "declared": "routes/documents.js",
+        "resolvedPath": "routes/documents.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "documents",
+        "category": "routes",
+        "declared": "routes/invoices.js",
+        "resolvedPath": "routes/invoices.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -3054,6 +3082,13 @@
         "category": "migrations",
         "declared": "migrations/086_invoice_public_token.sql",
         "resolvedPath": "migrations/086_invoice_public_token.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
+        "category": "migrations",
+        "declared": "migrations/131_private_client_documents.sql",
+        "resolvedPath": "migrations/131_private_client_documents.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3159,6 +3194,34 @@
         "category": "tests",
         "declared": "tests/unit/refund-receipt.test.js",
         "resolvedPath": "tests/unit/refund-receipt.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
+        "category": "tests",
+        "declared": "tests/unit/invoice-service.test.js",
+        "resolvedPath": "tests/unit/invoice-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
+        "category": "tests",
+        "declared": "tests/unit/invoices-route.test.js",
+        "resolvedPath": "tests/unit/invoices-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
+        "category": "tests",
+        "declared": "tests/unit/documents-route.test.js",
+        "resolvedPath": "tests/unit/documents-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
+        "category": "tests",
+        "declared": "tests/unit/pdf-renderer.test.js",
+        "resolvedPath": "tests/unit/pdf-renderer.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5175,14 +5238,14 @@
         "category": "ci",
         "declared": ".github/workflows/apply-komerce-arch-headers.yml",
         "resolvedPath": ".github/workflows/apply-komerce-arch-headers.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/carte-first.yml",
         "resolvedPath": ".github/workflows/carte-first.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
@@ -5196,98 +5259,98 @@
         "category": "ci",
         "declared": ".github/workflows/contract-conformance.yml",
         "resolvedPath": ".github/workflows/contract-conformance.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/contract.yml",
         "resolvedPath": ".github/workflows/contract.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/docs-guard.yml",
         "resolvedPath": ".github/workflows/docs-guard.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/e2e-boutique.yml",
         "resolvedPath": ".github/workflows/e2e-boutique.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/e2e.yml",
         "resolvedPath": ".github/workflows/e2e.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/generate-komerce-arch-graph.yml",
         "resolvedPath": ".github/workflows/generate-komerce-arch-graph.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/governance.yml",
         "resolvedPath": ".github/workflows/governance.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/impact-check.yml",
         "resolvedPath": ".github/workflows/impact-check.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/lot7-finalize-governance-once.yml",
         "resolvedPath": ".github/workflows/lot7-finalize-governance-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/lot7-staging-business-qualification.yml",
         "resolvedPath": ".github/workflows/lot7-staging-business-qualification.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/lot8-pre-go-live-certification.yml",
         "resolvedPath": ".github/workflows/lot8-pre-go-live-certification.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/lot8-reconcile-current-main-once.yml",
         "resolvedPath": ".github/workflows/lot8-reconcile-current-main-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/pr-governance.yml",
         "resolvedPath": ".github/workflows/pr-governance.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
         "declared": ".github/workflows/schema-refresh.yml",
         "resolvedPath": ".github/workflows/schema-refresh.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
+        "status": "missing-on-disk"
       },
       {
         "feature": "infrastructure",
@@ -6776,22 +6839,8 @@
       {
         "feature": "orders",
         "category": "services",
-        "declared": "services/invoice-service.js",
-        "resolvedPath": "services/invoice-service.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "orders",
-        "category": "services",
         "declared": "services/order-cost-snapshot.js",
         "resolvedPath": "services/order-cost-snapshot.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "orders",
-        "category": "services",
-        "declared": "services/invoice-public-token.js",
-        "resolvedPath": "services/invoice-public-token.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -6902,13 +6951,6 @@
       {
         "feature": "orders",
         "category": "routes",
-        "declared": "routes/invoices.js",
-        "resolvedPath": "routes/invoices.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "orders",
-        "category": "routes",
         "declared": "routes/order-api-v2.js",
         "resolvedPath": "routes/order-api-v2.js",
         "status": "resolved-in-technical-graph"
@@ -6981,20 +7023,6 @@
         "category": "tests",
         "declared": "tests/unit/hub-mark-ordered.test.js",
         "resolvedPath": "tests/unit/hub-mark-ordered.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "orders",
-        "category": "tests",
-        "declared": "tests/unit/invoice-public-token.test.js",
-        "resolvedPath": "tests/unit/invoice-public-token.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "orders",
-        "category": "tests",
-        "declared": "tests/unit/invoices-route.test.js",
-        "resolvedPath": "tests/unit/invoices-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7128,13 +7156,6 @@
         "category": "tests",
         "declared": "tests/unit/orders-status-route.test.js",
         "resolvedPath": "tests/unit/orders-status-route.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "orders",
-        "category": "tests",
-        "declared": "tests/unit/invoice-service.test.js",
-        "resolvedPath": "tests/unit/invoice-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10150,6 +10171,54 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "documents",
+        "entry": "GET /api/auth/me/documents",
+        "method": "GET",
+        "path": "/api/auth/me/documents",
+        "routeFile": "routes/documents.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "documents",
+        "entry": "GET /api/auth/me/documents/:id/download",
+        "method": "GET",
+        "path": "/api/auth/me/documents/{id}/download",
+        "routeFile": "routes/documents.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "documents",
+        "entry": "GET /api/invoices",
+        "method": "GET",
+        "path": "/api/invoices",
+        "routeFile": "routes/invoices.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "documents",
+        "entry": "GET /api/invoices/:orderId",
+        "method": "GET",
+        "path": "/api/invoices/{id}",
+        "routeFile": "routes/invoices.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "documents",
+        "entry": "GET /api/invoices/:orderId/json",
+        "method": "GET",
+        "path": "/api/invoices/{id}/json",
+        "routeFile": "routes/invoices.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "documents",
+        "entry": "GET /api/invoices/:orderId/download",
+        "method": "GET",
+        "path": "/api/invoices/{id}/download",
+        "routeFile": "routes/invoices.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "economic-engine",
         "entry": "POST /api/pricing/recommend",
         "method": "POST",
@@ -11495,14 +11564,6 @@
       },
       {
         "feature": "orders",
-        "entry": "GET /api/invoices/public/:token",
-        "method": "GET",
-        "path": "/api/invoices/public/{id}",
-        "routeFile": "routes/invoices.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "orders",
         "entry": "GET /api/admin/orders",
         "method": "GET",
         "path": "/api/admin/orders",
@@ -11531,46 +11592,6 @@
         "method": "POST",
         "path": "/api/hub/orders/mark-ordered",
         "routeFile": "routes/hub-mark-ordered.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "orders",
-        "entry": "GET /api/invoices",
-        "method": "GET",
-        "path": "/api/invoices",
-        "routeFile": "routes/invoices.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "orders",
-        "entry": "GET /api/invoices/:orderId",
-        "method": "GET",
-        "path": "/api/invoices/{id}",
-        "routeFile": "routes/invoices.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "orders",
-        "entry": "POST /api/invoices/:orderId/deliver",
-        "method": "POST",
-        "path": "/api/invoices/{id}/deliver",
-        "routeFile": "routes/invoices.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "orders",
-        "entry": "GET /api/invoices/:orderId/download",
-        "method": "GET",
-        "path": "/api/invoices/{id}/download",
-        "routeFile": "routes/invoices.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "orders",
-        "entry": "GET /api/invoices/:orderId/json",
-        "method": "GET",
-        "path": "/api/invoices/{id}/json",
-        "routeFile": "routes/invoices.js",
         "status": "resolved-owned"
       },
       {
@@ -13026,31 +13047,31 @@
       {
         "from": "documents",
         "to": "orders",
-        "raw": "orders, customs, wallet, refunds (donnees source du document)",
+        "raw": "orders",
         "resolved": true
       },
       {
         "from": "documents",
         "to": "customs",
-        "raw": "orders, customs, wallet, refunds (donnees source du document)",
+        "raw": "customs",
         "resolved": true
       },
       {
         "from": "documents",
         "to": "wallet",
-        "raw": "orders, customs, wallet, refunds (donnees source du document)",
+        "raw": "wallet",
         "resolved": true
       },
       {
         "from": "documents",
         "to": "refunds",
-        "raw": "orders, customs, wallet, refunds (donnees source du document)",
+        "raw": "refunds",
         "resolved": true
       },
       {
         "from": "documents",
-        "to": "auth",
-        "raw": "auth",
+        "to": "auth-identity",
+        "raw": "auth-identity",
         "resolved": true
       },
       {
@@ -15255,6 +15276,23 @@
       },
       {
         "from": "admin-dashboard",
+        "to": "documents",
+        "channels": [
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/invoices",
+                "routeFile": "routes/invoices.js",
+                "consumerFileId": "dash:dashboards/admin/js/views/InvoicesView.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "admin-dashboard",
         "to": "economic-engine",
         "channels": [
           {
@@ -15480,11 +15518,6 @@
                 "endpoint": "/api/hub/orders/mark-ordered",
                 "routeFile": "routes/hub-mark-ordered.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/HubRelaisView.js"
-              },
-              {
-                "endpoint": "/api/invoices",
-                "routeFile": "routes/invoices.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/InvoicesView.js"
               }
             ]
           }
@@ -17221,11 +17254,19 @@
               {
                 "sourceFileId": "routes/admin/documents.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/documents.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/invoices.js",
+                "targetFile": "middleware/auth.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "documents",
@@ -17275,8 +17316,28 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/invoice-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/invoice-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/admin/documents.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/documents.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/invoices.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/invoices.js",
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "tests/unit/customs-invoice.test.js",
@@ -17985,6 +18046,26 @@
       },
       {
         "from": "infrastructure",
+        "to": "documents",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/invoices.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/documents.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "infrastructure",
         "to": "economic-engine",
         "channels": [
           {
@@ -18205,10 +18286,6 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/orders.js"
-              },
-              {
-                "sourceFileId": "bootstrap/api-routes.js",
-                "targetFile": "routes/invoices.js"
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
@@ -19327,10 +19404,6 @@
                 "targetFile": "middleware/auth.js"
               },
               {
-                "sourceFileId": "routes/invoices.js",
-                "targetFile": "middleware/auth.js"
-              },
-              {
                 "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "middleware/auth.js"
               }
@@ -19514,12 +19587,20 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "services/order-payment-confirmation.js",
+                "targetFile": "services/invoice-service.js"
+              },
+              {
                 "sourceFileId": "routes/orders/status.js",
                 "targetFile": "services/documents/pickup-proof.js"
               },
               {
                 "sourceFileId": "routes/orders/cancel.js",
                 "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "routes/order-api-v2.js",
+                "targetFile": "services/invoice-service.js"
               },
               {
                 "sourceFileId": "tests/unit/admin-order-refund.test.js",
@@ -19583,14 +19664,6 @@
               },
               {
                 "sourceFileId": "services/qr-collection-core.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/invoice-service.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/invoice-service.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -19736,14 +19809,6 @@
               {
                 "sourceFileId": "routes/hub-mark-ordered.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "routes/invoices.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "routes/invoices.js",
-                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "routes/order-api-v2.js",
@@ -19948,10 +20013,6 @@
             "evidence": [
               {
                 "sourceFileId": "services/verify-qr-collection.js",
-                "targetFile": "services/notification-service.js"
-              },
-              {
-                "sourceFileId": "services/invoice-service.js",
                 "targetFile": "services/notification-service.js"
               },
               {
@@ -20375,8 +20436,28 @@
                 "targetFile": "services/documents/refund-receipt.js"
               },
               {
+                "sourceFileId": "services/payment-paypal.js",
+                "targetFile": "services/invoice-service.js"
+              },
+              {
+                "sourceFileId": "services/payment-cash-confirm.js",
+                "targetFile": "services/invoice-service.js"
+              },
+              {
+                "sourceFileId": "services/payment-stripe.js",
+                "targetFile": "services/invoice-service.js"
+              },
+              {
+                "sourceFileId": "routes/cash.js",
+                "targetFile": "services/invoice-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/payment-paypal.test.js",
                 "targetFile": "services/documents/refund-receipt.js"
+              },
+              {
+                "sourceFileId": "tests/unit/payment-paypal.test.js",
+                "targetFile": "services/invoice-service.js"
               }
             ]
           }
@@ -20725,24 +20806,12 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
-                "sourceFileId": "services/payment-paypal.js",
-                "targetFile": "services/invoice-service.js"
-              },
-              {
                 "sourceFileId": "services/payment-cash-confirm.js",
                 "targetFile": "services/order-payment-confirmation.js"
               },
               {
-                "sourceFileId": "services/payment-cash-confirm.js",
-                "targetFile": "services/invoice-service.js"
-              },
-              {
                 "sourceFileId": "services/payment-stripe.js",
                 "targetFile": "services/order-payment-confirmation.js"
-              },
-              {
-                "sourceFileId": "services/payment-stripe.js",
-                "targetFile": "services/invoice-service.js"
               },
               {
                 "sourceFileId": "services/confirm-pickup-cash-payment.js",
@@ -20751,10 +20820,6 @@
               {
                 "sourceFileId": "services/cash-operations.js",
                 "targetFile": "services/order-payment-confirmation.js"
-              },
-              {
-                "sourceFileId": "routes/cash.js",
-                "targetFile": "services/invoice-service.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-paypal.js",
@@ -22682,7 +22747,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 766
+        "filesObserved": 768
       },
       "boutique": {
         "filesObserved": 132,
@@ -22716,10 +22781,10 @@
       "server.js"
     ],
     "familySummary": {
-      "PROJECTION": 9,
-      "COMPOSITION_ROOT_WIRING": 12,
+      "PROJECTION": 10,
+      "COMPOSITION_ROOT_WIRING": 13,
       "NON_RUNTIME_TEST": 8,
-      "TECHNICAL_PRIMITIVE": 29,
+      "TECHNICAL_PRIMITIVE": 30,
       "BUSINESS_TRANSVERSAL_SERVICE": 3,
       "CROSS_FEATURE_DIRECT_IMPORT": 4,
       "BUSINESS_FEATURE_INTERFACE": 5,
@@ -22779,6 +22844,21 @@
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "projection",
         "providerKind": "piloting-capability",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "projection-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "documents",
+        "family": "PROJECTION",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "projection",
+        "providerKind": "business-transversal",
         "channels": [
           "interface"
         ],
@@ -23065,6 +23145,21 @@
       },
       {
         "from": "documents",
+        "to": "auth",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "documents",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
@@ -23145,6 +23240,21 @@
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "technical-foundation",
         "providerKind": "piloting-capability",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "documents",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-transversal",
         "channels": [
           "static-code"
         ],
@@ -23804,7 +23914,7 @@
     "unclassified": [],
     "matrix": {
       "PROJECTION|RUNTIME_ONLY|projection|business-feature|interface": 7,
-      "PROJECTION|RUNTIME_ONLY|projection|business-transversal|interface": 1,
+      "PROJECTION|RUNTIME_ONLY|projection|business-transversal|interface": 2,
       "PROJECTION|RUNTIME_ONLY|projection|piloting-capability|interface": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|technical-primitive": 1,
@@ -23817,10 +23927,11 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-foundation|technical-primitive": 5,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-foundation|technical-primitive": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|technical-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|mixed": 2,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 3,
@@ -23995,18 +24106,17 @@
           "mode": "RW"
         },
         {
-          "feature": "orders",
+          "feature": "documents",
           "mode": "RW"
         }
       ],
       "readers": [
         "auth-identity",
-        "documents",
         "logistics",
         "platform-ops"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "documents",
+      "resolution": "multi-writer-resolved-by-classification-signal"
     },
     "loyalty_tiers": {
       "writers": [
@@ -24049,8 +24159,8 @@
         "recommendations",
         "shared-cart"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "orders",
+      "resolution": "multi-writer-resolved-by-classification-signal"
     },
     "orders": {
       "writers": [
@@ -24696,8 +24806,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "orders",
+      "resolution": "multi-writer-resolved-by-classification-signal"
     },
     "order_incidents": {
       "writers": [
@@ -24736,8 +24846,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "orders",
+      "resolution": "multi-writer-resolved-by-classification-signal"
     },
     "partners": {
       "writers": [
@@ -24767,8 +24877,8 @@
         "logistics",
         "notifications"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "orders",
+      "resolution": "multi-writer-resolved-by-classification-signal"
     },
     "scan_events": {
       "writers": [
@@ -24810,8 +24920,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": "platform-ops",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": null,
+      "resolution": "ambiguous-multi-writer"
     },
     "signals": {
       "writers": [
@@ -24838,8 +24948,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "orders",
+      "resolution": "multi-writer-resolved-by-classification-signal"
     },
     "suppliers_stats": {
       "writers": [],
@@ -24878,6 +24988,7 @@
         }
       ],
       "readers": [
+        "documents",
         "refunds"
       ],
       "lifecycleOwner": "wallet",
@@ -24907,19 +25018,6 @@
       ],
       "readers": [],
       "lifecycleOwner": "documents",
-      "resolution": "single-writer"
-    },
-    "wallet_credit_lots": {
-      "writers": [
-        {
-          "feature": "wallet",
-          "mode": "RW"
-        }
-      ],
-      "readers": [
-        "documents"
-      ],
-      "lifecycleOwner": "wallet",
       "resolution": "single-writer"
     },
     "charges": {
@@ -25252,8 +25350,8 @@
       "readers": [
         "logistics"
       ],
-      "lifecycleOwner": "purchasing",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": null,
+      "resolution": "ambiguous-multi-writer"
     },
     "shipments": {
       "writers": [
@@ -25301,8 +25399,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": null,
+      "resolution": "ambiguous-multi-writer"
     },
     "customs_history": {
       "writers": [
@@ -25454,6 +25552,17 @@
       "readers": [],
       "lifecycleOwner": "wallet",
       "resolution": "single-writer"
+    },
+    "wallet_credit_lots": {
+      "writers": [
+        {
+          "feature": "wallet",
+          "mode": "RW"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "wallet",
+      "resolution": "single-writer"
     }
   },
   "orphanTechnicalNodes": [],
@@ -25462,8 +25571,8 @@
       "backend": {
         "manifestsDiscovered": 25,
         "manifestsConnected": 25,
-        "technicalNodesTotal": 286,
-        "technicalNodesOwned": 286,
+        "technicalNodesTotal": 287,
+        "technicalNodesOwned": 287,
         "technicalOrphans": 0
       },
       "dash": {
@@ -25550,7 +25659,98 @@
     "note": "\"cross-repo\" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation=\"external-path-scope\" ci-dessus pour le scope concerné."
   },
   "drifts": {
-    "error": [],
+    "error": [
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "catalog / .github/workflows/showcase-catalog-media-audit.yml",
+        "msg": "catalog.files.ci déclare \".github/workflows/showcase-catalog-media-audit.yml\" -> \".github/workflows/showcase-catalog-media-audit.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "catalog / .github/workflows/showcase-catalog-staging-deploy.yml",
+        "msg": "catalog.files.ci déclare \".github/workflows/showcase-catalog-staging-deploy.yml\" -> \".github/workflows/showcase-catalog-staging-deploy.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/apply-komerce-arch-headers.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/apply-komerce-arch-headers.yml\" -> \".github/workflows/apply-komerce-arch-headers.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/carte-first.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/carte-first.yml\" -> \".github/workflows/carte-first.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/contract-conformance.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/contract-conformance.yml\" -> \".github/workflows/contract-conformance.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/contract.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/contract.yml\" -> \".github/workflows/contract.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/docs-guard.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/docs-guard.yml\" -> \".github/workflows/docs-guard.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/e2e-boutique.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/e2e-boutique.yml\" -> \".github/workflows/e2e-boutique.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/e2e.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/e2e.yml\" -> \".github/workflows/e2e.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/generate-komerce-arch-graph.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/generate-komerce-arch-graph.yml\" -> \".github/workflows/generate-komerce-arch-graph.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/governance.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/governance.yml\" -> \".github/workflows/governance.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/impact-check.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/impact-check.yml\" -> \".github/workflows/impact-check.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/lot7-finalize-governance-once.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/lot7-finalize-governance-once.yml\" -> \".github/workflows/lot7-finalize-governance-once.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/lot7-staging-business-qualification.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/lot7-staging-business-qualification.yml\" -> \".github/workflows/lot7-staging-business-qualification.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/lot8-pre-go-live-certification.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/lot8-pre-go-live-certification.yml\" -> \".github/workflows/lot8-pre-go-live-certification.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/lot8-reconcile-current-main-once.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/lot8-reconcile-current-main-once.yml\" -> \".github/workflows/lot8-reconcile-current-main-once.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/pr-governance.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/pr-governance.yml\" -> \".github/workflows/pr-governance.yml\", introuvable sur disque"
+      },
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "infrastructure / .github/workflows/schema-refresh.yml",
+        "msg": "infrastructure.files.ci déclare \".github/workflows/schema-refresh.yml\" -> \".github/workflows/schema-refresh.yml\", introuvable sur disque"
+      }
+    ],
     "warn": [
       {
         "type": "CONSUMES-REFERENCE-UNRESOLVED",
@@ -25669,6 +25869,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> documents",
+        "msg": "dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"documents\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> economic-engine",
         "msg": "dépendance cross-feature observée (canal: interface, 22 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"economic-engine\""
       },
@@ -25685,7 +25890,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> orders",
-        "msg": "dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"orders\""
+        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"orders\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25759,8 +25964,13 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "documents -> auth",
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"documents\" vers \"auth\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "documents -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"documents\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 21 preuve(s)) sans contract.consumes déclaré chez \"documents\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25786,6 +25996,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> decision-signals",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"decision-signals\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> documents",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"documents\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25860,12 +26075,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 61 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 57 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 9 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"notifications\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26015,7 +26230,7 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "cart_shares",
-        "msg": "table \"cart_shares\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par orders"
+        "msg": "table \"cart_shares\" a 2 écrivain(s) déclaré(s) (orders, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26035,7 +26250,7 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "invoices",
-        "msg": "table \"invoices\" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"invoices\" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26050,7 +26265,7 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_comments",
-        "msg": "table \"order_comments\" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"order_comments\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26060,12 +26275,12 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_items",
-        "msg": "table \"order_items\" a 3 écrivain(s) déclaré(s) (dashboard, logistics, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"order_items\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_status_history",
-        "msg": "table \"order_status_history\" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"order_status_history\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26120,12 +26335,12 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "purchase_orders",
-        "msg": "table \"purchase_orders\" : lifecycle owner = purchasing (classification.signals.ownsTables), mais aussi écrite par orders"
+        "msg": "table \"purchase_orders\" a 2 écrivain(s) déclaré(s) (orders, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "recipients",
-        "msg": "table \"recipients\" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"recipients\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26145,12 +26360,12 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "scans",
-        "msg": "table \"scans\" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics, orders"
+        "msg": "table \"scans\" a 4 écrivain(s) déclaré(s) (dashboard, logistics, orders, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "sms_log",
-        "msg": "table \"sms_log\" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"sms_log\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",

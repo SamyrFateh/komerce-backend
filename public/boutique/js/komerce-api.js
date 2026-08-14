@@ -213,6 +213,38 @@ window.K = (() => {
     });
   }
 
+  // Téléchargement binaire authentifié. Le cookie httpOnly reste l'unique
+  // preuve de session ; aucune URL signée ou publique n'est construite ici.
+  async function download(path, options = {}) {
+    const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : DEFAULT_TIMEOUT_MS;
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    try {
+      const res = await fetch(_state.api + path, {
+        method: 'GET',
+        credentials: 'include',
+        ...(controller ? { signal: controller.signal } : {}),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        const err = new Error(payload.error || `HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      const disposition = res.headers.get('content-disposition') || '';
+      const match = disposition.match(/filename="?([^";]+)"?/i);
+      return {
+        blob: await res.blob(),
+        filename: match ? match[1] : 'document.pdf',
+      };
+    } catch (err) {
+      if (err && err.name === 'AbortError') throw _timeoutError(path, timeoutMs);
+      throw err;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
   // ── AUTH ────────────────────────────────────────────────────
   const auth = {
     async login(email, password, apiUrl) {
@@ -416,6 +448,7 @@ window.K = (() => {
   // ── PUBLIC API ─────────────────────────────────────────────
   return {
     request,
+    download,
     auth,
     parcels,
     hub,
@@ -428,4 +461,3 @@ window.K = (() => {
     ui,
   };
 })();
-

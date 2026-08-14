@@ -16,8 +16,8 @@
  *                bloc wallet, profil (champs persistés uniquement), retrait
  *                & sécurité (code informatif + autorisation nominative de
  *                retrait exceptionnel — états NONE/ACTIVE).
- * @impact-areas  account, wallet, boutique-navigation
- * @version       2026-07-lot5
+ * @impact-areas  account, wallet, documents, boutique-navigation
+ * @version       2026-08-documents
  */
 'use strict';
 
@@ -45,6 +45,7 @@ jest.mock('../../js/b-utils.js', () => ({
   apiGet:    jest.fn(),
   apiPut:    jest.fn(),
   apiDelete: jest.fn(),
+  apiDownload: jest.fn(),
 }));
 jest.mock('../../js/b-identity.js', () => ({
   requireIdentity:   jest.fn(),
@@ -62,7 +63,7 @@ jest.mock('../../js/b-bus.js', () => {
   };
 });
 
-const { apiGet, apiPut, apiDelete }      = require('../../js/b-utils.js');
+const { apiGet, apiPut, apiDelete, apiDownload } = require('../../js/b-utils.js');
 const { requireIdentity, getCurrentIdentity } = require('../../js/b-identity.js');
 const { renderWalletView }               = require('../../js/b-wallet.js');
 const { openMonKomerce }                 = require('../../js/b-komerce.js');
@@ -72,6 +73,7 @@ function mockApiGetDefaults({ me, auth } = {}) {
   apiGet.mockImplementation((path) => {
     if (path === '/api/auth/me') return Promise.resolve(me || { full_name: 'Fatima', phone: '+2691234567', currency_pref: 'KMF' });
     if (path === '/api/auth/me/pickup-authorization') return Promise.resolve(auth || { status: 'NONE' });
+    if (path === '/api/auth/me/documents') return Promise.resolve({ documents: [] });
     return Promise.resolve(null);
   });
 }
@@ -178,10 +180,11 @@ describe('openMonKomerce — structure page unique', () => {
     expect(document.querySelector('[data-subtab]')).toBeNull();
   });
 
-  it('contient k-kmc-wallet-block, k-kmc-profile-block, k-kmc-security-block', async () => {
+  it('contient wallet, documents, profil et sécurité dans une page unique', async () => {
     await openMonKomerce();
     await flush();
     expect(document.getElementById('k-kmc-wallet-block')).not.toBeNull();
+    expect(document.getElementById('k-kmc-documents-block')).not.toBeNull();
     expect(document.getElementById('k-kmc-profile-block')).not.toBeNull();
     expect(document.getElementById('k-kmc-security-block')).not.toBeNull();
   });
@@ -192,6 +195,40 @@ describe('openMonKomerce — structure page unique', () => {
     await openMonKomerce();
     await flush();
     expect(document.querySelectorAll('#k-komerce-view').length).toBe(1);
+  });
+});
+
+describe('openMonKomerce — documents privés', () => {
+  beforeEach(() => { getCurrentIdentity.mockReturnValue({ id: 1 }); });
+
+  it('place Mes documents juste sous le wallet sans sous-onglet', async () => {
+    await openMonKomerce();
+    await flush();
+    const primary = document.querySelector('.k-kmc-col-primary');
+    expect(primary.children[0].id).toBe('k-kmc-wallet-block');
+    expect(primary.children[1].id).toBe('k-kmc-documents-block');
+    expect(document.querySelector('[data-subtab]')).toBeNull();
+  });
+
+  it('liste une facture et déclenche le téléchargement authentifié', async () => {
+    mockApiGetDefaults();
+    apiGet.mockImplementation((path) => {
+      if (path === '/api/auth/me') return Promise.resolve({ full_name: 'Ali', phone: '+269', currency_pref: 'KMF' });
+      if (path === '/api/auth/me/pickup-authorization') return Promise.resolve({ status: 'NONE' });
+      if (path === '/api/auth/me/documents') return Promise.resolve({ documents: [{
+        id: 'doc-1', document_type: 'invoice', reference: 'INV-1', amount_kmf: 12000,
+        issued_at: '2026-08-14', download_url: '/api/auth/me/documents/doc-1/download',
+      }] });
+      return Promise.resolve(null);
+    });
+    apiDownload.mockRejectedValueOnce(Object.assign(new Error('test stop'), { status: 500 }));
+    await openMonKomerce();
+    await flush();
+    const button = document.querySelector('.k-kmc-document-download');
+    expect(button.textContent).toBe('Télécharger');
+    button.click();
+    await flush();
+    expect(apiDownload).toHaveBeenCalledWith('/api/auth/me/documents/doc-1/download', { timeoutMs: 20000 });
   });
 });
 

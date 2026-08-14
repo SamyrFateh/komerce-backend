@@ -44,7 +44,6 @@ jest.mock('../../services/notifications/loyalty', () => ({
 
 jest.mock('../../services/notifications/misc', () => ({
   notifyText: jest.fn(),
-  notifyInvoiceReady: jest.fn(),
 }));
 
 describe('notification service barrel', () => {
@@ -54,7 +53,6 @@ describe('notification service barrel', () => {
     expect(Object.keys(service).sort()).toEqual([
       '_loadOrderFromParcel',
       'notifyCancellation',
-      'notifyInvoiceReady',
       'notifyLoyaltyEarned',
       'notifyOrderCreated',
       'notifyParcelCreated',

@@ -4,13 +4,13 @@
  * @domain        account
  * @layer         ui-page
  * @criticality   medium
- * @inputs        client_session, wallet_balance, profile
- * @outputs       komerce_view
- * @depends       b-utils.js, b-identity.js, b-wallet.js, b-bus.js
+ * @inputs        client_session, wallet_balance, private_documents, profile
+ * @outputs       komerce_view, authenticated_pdf_download
+ * @depends       b-utils.js, b-identity.js, b-wallet.js, b-bus.js, documents API
  * @used-by       b-nav.js, boutique.js
  * @doctrine      wallet_visible_client, navigation_sans_friction, otp_une_fois
- * @impact-areas  account, wallet, boutique-navigation
- * @version       2026-07-lot5
+ * @impact-areas  account, wallet, documents, boutique-navigation
+ * @version       2026-08-documents
  */
 'use strict';
 
@@ -22,6 +22,7 @@
  * secondaire. L'authentification intervient à l'entrée, une seule fois.
  *
  *   Mon wallet  (premier bloc, délègue à b-wallet.js)
+ *   Mes documents (factures, remboursements, wallet, retrait)
  *   Mon profil  (nom, email lecture seule, WhatsApp du compte, devise)
  *   Retrait & sécurité (code de retrait informatif + autorisation
  *     nominative de retrait exceptionnel — Lot 5, états NONE/ACTIVE)
@@ -30,7 +31,7 @@
  *   focus = 'wallet' → scroll jusqu'au bloc wallet après chargement.
  */
 
-import { sanitize, apiGet, apiPut, apiDelete } from './b-utils.js';
+import { apiGet, apiPut, apiDelete, apiDownload } from './b-utils.js';
 import { getCurrentIdentity, requireIdentity } from './b-identity.js';
 import { renderWalletView } from './b-wallet.js';
 import { bus } from './b-bus.js';
@@ -79,6 +80,7 @@ function ensureShell() {
     '<div class="k-kmc-page-grid">' +
       '<div class="k-kmc-col-primary">' +
         '<section id="k-kmc-wallet-block" class="k-kmc-block" aria-label="Mon wallet"></section>' +
+        '<section id="k-kmc-documents-block" class="k-kmc-block" aria-label="Mes documents"></section>' +
       '</div>' +
       '<div class="k-kmc-col-secondary">' +
         '<section id="k-kmc-profile-block" class="k-kmc-block" aria-label="Mon profil"></section>' +
@@ -125,9 +127,10 @@ function renderBlockError(block, err, onRetry) {
 
 function renderSessionExpired() {
   const walletBlock  = document.getElementById('k-kmc-wallet-block');
+  const documentsBlock = document.getElementById('k-kmc-documents-block');
   const profileBlock = document.getElementById('k-kmc-profile-block');
   const secBlock     = document.getElementById('k-kmc-security-block');
-  [walletBlock, profileBlock, secBlock].forEach(b => { if (b) b.replaceChildren(); });
+  [walletBlock, documentsBlock, profileBlock, secBlock].forEach(b => { if (b) b.replaceChildren(); });
   if (walletBlock) {
     walletBlock.innerHTML = /* LOT4B_STATIC_REAUTH */
       '<div class="k-kmc-empty">' +
@@ -152,6 +155,102 @@ function renderSessionExpired() {
 function renderWalletBlock(block) {
   block.innerHTML = /* LOT4B_STATIC_WALLET_CONTAINER */ '<div id="k-wallet-view" class="k-wallet-view show"></div>';
   renderWalletView();
+}
+
+// ── Bloc documents privés ────────────────────────────────────────────────────
+
+const DOCUMENT_LABELS = {
+  invoice: 'Facture',
+  refund_receipt: 'Remboursement',
+  wallet_receipt: 'Mouvement wallet',
+  pickup_proof: 'Preuve de retrait',
+  customs_invoice: 'Facture douane',
+};
+
+function renderDocumentsBlock(block, documents) {
+  block.replaceChildren();
+  const title = document.createElement('h3');
+  title.className = 'k-kmc-block-title';
+  title.textContent = 'Mes documents';
+  block.appendChild(title);
+
+  const hint = document.createElement('p');
+  hint.className = 'k-kmc-documents-hint';
+  hint.textContent = 'Vos justificatifs restent privés et se téléchargent depuis votre compte.';
+  block.appendChild(hint);
+
+  if (!documents.length) {
+    const empty = document.createElement('div');
+    empty.className = 'k-kmc-documents-empty';
+    empty.textContent = 'Aucun document disponible pour le moment.';
+    block.appendChild(empty);
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'k-kmc-documents-list';
+  documents.forEach((documentRow) => {
+    const row = document.createElement('article');
+    row.className = 'k-kmc-document-row';
+
+    const info = document.createElement('div');
+    info.className = 'k-kmc-document-info';
+    const name = document.createElement('strong');
+    name.textContent = DOCUMENT_LABELS[documentRow.document_type] || 'Document';
+    const reference = document.createElement('span');
+    reference.textContent = documentRow.reference || '—';
+    const meta = document.createElement('small');
+    const parts = [fmtDateFr(documentRow.issued_at)];
+    if (documentRow.amount_kmf != null) {
+      parts.push(`${Number(documentRow.amount_kmf).toLocaleString('fr-FR')} KMF`);
+    }
+    meta.textContent = parts.filter(Boolean).join(' · ');
+    info.append(name, reference, meta);
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'k-kmc-document-download';
+    button.textContent = 'Télécharger';
+    button.setAttribute('aria-label', `Télécharger ${name.textContent} ${reference.textContent}`);
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
+      button.disabled = true;
+      const original = button.textContent;
+      button.textContent = 'Préparation…';
+      try {
+        const file = await apiDownload(documentRow.download_url, { timeoutMs: 20000 });
+        const url = URL.createObjectURL(file.blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        button.textContent = err && err.status === 401 ? 'Session expirée' : 'Réessayer';
+        return;
+      } finally {
+        button.disabled = false;
+        if (button.textContent === 'Préparation…') button.textContent = original;
+      }
+    });
+
+    row.append(info, button);
+    list.appendChild(row);
+  });
+  block.appendChild(list);
+}
+
+async function loadDocumentsBlock(block) {
+  if (!block) return;
+  renderBlockLoading(block);
+  try {
+    const payload = await apiGet('/api/auth/me/documents');
+    renderDocumentsBlock(block, Array.isArray(payload?.documents) ? payload.documents : []);
+  } catch (err) {
+    renderBlockError(block, err, () => loadDocumentsBlock(block));
+  }
 }
 
 // ── Bloc profil (nom + devise + email lecture seule + WhatsApp du compte) ──────
@@ -405,10 +504,12 @@ function _renderAuthForm(container, prefill) {
 
 async function _loadAndRender(seq) {
   const walletBlock  = document.getElementById('k-kmc-wallet-block');
+  const documentsBlock = document.getElementById('k-kmc-documents-block');
   const profileBlock = document.getElementById('k-kmc-profile-block');
   const secBlock     = document.getElementById('k-kmc-security-block');
-  if (!walletBlock || !profileBlock || !secBlock) return;
+  if (!walletBlock || !documentsBlock || !profileBlock || !secBlock) return;
 
+  renderBlockLoading(documentsBlock);
   renderBlockLoading(profileBlock);
   renderBlockLoading(secBlock);
   // Wallet block mounts b-wallet.js immediately (it handles its own loading state)
@@ -431,6 +532,7 @@ async function _loadAndRender(seq) {
 
   renderProfileBlock(profileBlock, me);
   renderSecurityBlock(secBlock, me);
+  loadDocumentsBlock(documentsBlock);
 }
 
 // ── Point d'entrée canonique ───────────────────────────────────────────────────

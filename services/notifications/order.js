@@ -130,13 +130,8 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
       detail: result.ok ? { messageId: result.messageId } : { error: result.error },
     });
 
-    // ── Lien facture post-paiement ──────────────────────────────────────────
-    // O7.2 (Cycle A) : déplacé vers services/invoice-service.js (orders),
-    // déclenché directement par les callers de payment confirmation
-    // (payment-cash-confirm.js, payment-stripe.js, routes/cash.js,
-    // routes/order-api-v2.js), en parallèle de cet appel notifyPaymentConfirmed.
-    // `notifications` ne construit plus de lien facture — voir
-    // docs/O7_2_CYCLE_ANALYSIS.md, Cycle A.
+    // La notification confirme le paiement uniquement. Par doctrine, elle ne
+    // contient ni document ni lien de téléchargement ; le PDF reste dans Mon Komerce.
   } catch (err) {
     log.error({ err, order_id: orderId, order_ref: orderReference }, 'Payment confirmed notification failed');
     // D4 FIX — remonter dans alerts pour visibilité radar

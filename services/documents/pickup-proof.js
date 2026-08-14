@@ -129,6 +129,7 @@ async function issue(orderId, { dbClient, issuedBy } = {}) {
     orderId,
     reference,
     issuedBy:     issuedBy || null,
+    ownerUserId:  order.user_id,
     metadata,
     dbClient:     db,
   });

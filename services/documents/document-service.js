@@ -5,9 +5,9 @@
  * @layer         service
  * @criticality   medium
  * @inputs        subject (événement confirmé), document_type, metadata
- * @outputs       transaction_documents row (stable, idempotent)
- * @depends       db.js
- * @used-by       services/documents/refund-receipt.js, services/documents/contribution-receipt.js
+ * @outputs       transaction_documents row + immutable private PDF
+ * @depends       db.js, services/documents/pdf-renderer.js
+ * @used-by       services/documents/refund-receipt.js, services/documents/wallet-receipt.js, services/documents/pickup-proof.js
  * @db-read       transaction_documents
  * @db-write      transaction_documents
  * @db-txn        caller_transaction_optional
@@ -30,16 +30,16 @@
  *
  * Carte :
  *   refund_confirmed              -> refund_receipt      (refund-receipt.js)
- *   shared_contribution_confirmed -> contribution_receipt (Phase 3)
  *   wallet_movement_confirmed     -> wallet_receipt       (Phase 4)
  *   pickup_collected              -> pickup_proof         (Phase 4)
  *
- * Ce service gère la couche DB.
+ * Ce service gère la couche DB et matérialise le PDF privé.
  * Les services spécialisés (refund-receipt.js, etc.) gèrent la logique métier.
  */
 
 const pool = require('../../db');
 const log  = require('../../utils/logger').child({ module: 'document-service' });
+const { renderPdf } = require('./pdf-renderer');
 
 /**
  * Chercher un document existant par (document_type, subject_type, subject_id).
@@ -87,6 +87,7 @@ async function persistDocument({
   refundId      = null,
   reference,
   issuedBy      = null,
+  ownerUserId   = null,
   metadata      = null,
   dbClient,
 }) {
@@ -96,9 +97,9 @@ async function persistDocument({
     `INSERT INTO transaction_documents
        (document_type, subject_type, subject_id,
         order_id, refund_id,
-        reference, issued_by, metadata,
+        reference, issued_by, owner_user_id, metadata,
         status, issued_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'generated', NOW())
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', NOW())
      ON CONFLICT (document_type, subject_type, subject_id)
        DO NOTHING
      RETURNING *`,
@@ -110,6 +111,7 @@ async function persistDocument({
       refundId,
       reference,
       issuedBy,
+      ownerUserId,
       metadata ? JSON.stringify(metadata) : null,
     ]
   );
@@ -119,7 +121,7 @@ async function persistDocument({
       { document_type: documentType, reference, subject_id: subjectId },
       '[document-service] Document persisté'
     );
-    return rows[0];
+    return ensurePdf(rows[0], { dbClient: db });
   }
 
   // ON CONFLICT → document existait déjà, le retourner
@@ -128,30 +130,55 @@ async function persistDocument({
     { document_type: documentType, reference: existing?.reference, subject_id: subjectId },
     '[document-service] Document existant retourné (idempotence)'
   );
-  return existing;
+  return ensurePdf(existing, { dbClient: db });
 }
 
 /**
- * Marquer un document comme délivré.
+ * Matérialise le PDF une seule fois. Une fois `pdf_content` écrit, aucun appel
+ * ultérieur ne le remplace : l'empreinte et le snapshot restent immuables.
  *
- * @param {string} documentId
- * @param {string} via  - 'whatsapp' | 'print' | 'email'
- * @param {object} [dbClient]
+ * @param {object} document ligne transaction_documents
+ * @param {object} [opts]
+ * @returns {Promise<object>}
  */
-async function markDelivered(documentId, via, dbClient) {
+async function ensurePdf(document, { dbClient } = {}) {
+  if (!document) throw new Error('[document-service] document requis');
+  if (document.pdf_content && document.status === 'available') return document;
+
   const db = dbClient || pool;
-  await db.query(
-    `UPDATE transaction_documents
-        SET status     = 'delivered',
-            metadata   = jsonb_set(
-                           COALESCE(metadata, '{}'),
-                           '{delivered_via}',
-                           to_jsonb($2::text)
-                         ),
-            updated_at = NOW()
-      WHERE id = $1`,
-    [documentId, via]
-  );
+  try {
+    const rendered = await renderPdf({
+      documentType: document.document_type,
+      document,
+    });
+    const { rows } = await db.query(
+      `UPDATE transaction_documents
+          SET pdf_content      = $2,
+              pdf_sha256       = $3,
+              pdf_filename     = $4,
+              pdf_generated_at = NOW(),
+              template_version = $5,
+              status           = 'available',
+              updated_at       = NOW()
+        WHERE id = $1
+          AND pdf_content IS NULL
+        RETURNING *`,
+      [document.id, rendered.buffer, rendered.sha256, rendered.filename, rendered.templateVersion]
+    );
+    if (rows[0]) return rows[0];
+    return (await db.query(
+      'SELECT * FROM transaction_documents WHERE id = $1 LIMIT 1',
+      [document.id]
+    )).rows[0];
+  } catch (err) {
+    await db.query(
+      `UPDATE transaction_documents
+          SET status = 'error', updated_at = NOW()
+        WHERE id = $1 AND pdf_content IS NULL`,
+      [document.id]
+    ).catch(() => {});
+    throw err;
+  }
 }
 
-module.exports = { findExistingDocument, persistDocument, markDelivered };
+module.exports = { findExistingDocument, persistDocument, ensurePdf };

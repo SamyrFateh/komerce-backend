@@ -180,10 +180,8 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
       const notifSvc = require('./notification-service');
       notifSvc.notifyPaymentConfirmed(order.id, order.reference)
         .catch(e => log.error({ err: e }, '[CASH-NOTIF] notification failed'));
-      // O7.2 (Cycle A) : lien facture désormais construit et envoyé par orders
-      // lui-même (services/invoice-service.js), pas par notifications.
-      require('./invoice-service').sendInvoiceReadyNotification(order.id, order.reference)
-        .catch(e => log.error({ err: e }, '[CASH-INVOICE-NOTIF] notification failed'));
+      require('./invoice-service').issueInvoice(order.id)
+        .catch(e => log.error({ err: e }, '[CASH-INVOICE] private PDF generation failed'));
       triggerPurchasing(order.id)
         .then(() => log.info({ order_reference: order.reference }, '[PURCHASING] Cash trigger OK'))
         .catch(e => log.error({ err: e, order_reference: order.reference }, '[PURCHASING] Cash trigger error'));

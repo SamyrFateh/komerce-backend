@@ -56,7 +56,7 @@ describe('issue', () => {
       .mockResolvedValueOnce({ rows: [{
         id: 'order-1', status: 'collected', reference: 'ORD-1', collected_at: '2026-01-01T10:00:00Z',
         relais_name: 'Relais Moroni', relais_id: 'r1', recipient_name: 'Jean', recipient_phone: '0612',
-        user_name: 'Jean Client', payment_mode: 'cash_relais', total_kmf: 5000,
+        user_id: 'user-1', user_name: 'Jean Client', payment_mode: 'cash_relais', total_kmf: 5000,
       }] })
       .mockResolvedValueOnce({ rows: [{ seq: 42 }] }); // nextval pickup_proof_seq
     documentService.findExistingDocument.mockResolvedValue(null);
@@ -69,6 +69,7 @@ describe('issue', () => {
       subjectType: 'order',
       subjectId: 'order-1',
       orderId: 'order-1',
+      ownerUserId: 'user-1',
       reference: expect.stringMatching(/^RET-\d{4}-000042$/),
       issuedBy: 'agent-1',
       metadata: expect.objectContaining({

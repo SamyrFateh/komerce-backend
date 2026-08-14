@@ -9,7 +9,7 @@
  * @depends       services/documents/document-service.js, db.js
  * @used-by       services/wallet-service.js (post-commit),
  *                routes/wallet.js (admin credit/reverse-lot, post-commit)
- * @db-read       users, wallet_credit_lots, wallet_transactions
+ * @db-read       users, wallets, wallet_transactions
  * @db-write      transaction_documents
  * @db-txn        caller_transaction_optional
  * @doctrine      DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md
@@ -76,10 +76,12 @@ async function issue(walletTransactionId, { dbClient, issuedBy } = {}) {
   // ── Charger la transaction wallet ────────────────────────────────────────
   const { rows: [tx] } = await db.query(
     `SELECT wt.*,
+            w.user_id,
             u.full_name AS user_name,
             u.phone     AS user_phone
      FROM   wallet_transactions wt
-     LEFT JOIN users u ON u.id = wt.user_id
+     JOIN   wallets w ON w.id = wt.wallet_id
+     LEFT JOIN users u ON u.id = w.user_id
      WHERE  wt.id = $1`,
     [walletTransactionId]
   );
@@ -118,11 +120,11 @@ async function issue(walletTransactionId, { dbClient, issuedBy } = {}) {
     user_name:             tx.user_name   || null,
     user_phone:            tx.user_phone  || null,
     amount_kmf:            tx.amount_kmf,
-    direction:             tx.direction,
+    direction:             tx.type,
     reason:                tx.reason,
     note:                  tx.note        || null,
-    order_id:              tx.order_id    || null,
-    lot_id:                tx.lot_id      || null,
+    order_id:              tx.reference_id || null,
+    lot_id:                null,
     issued_at:             new Date().toISOString(),
   };
 
@@ -131,9 +133,10 @@ async function issue(walletTransactionId, { dbClient, issuedBy } = {}) {
     documentType: 'wallet_receipt',
     subjectType:  'wallet_tx',
     subjectId:    walletTransactionId,
-    orderId:      tx.order_id || null,
+    orderId:      null,
     reference,
     issuedBy:     issuedBy || null,
+    ownerUserId:  tx.user_id,
     metadata,
     dbClient:     db,
   });

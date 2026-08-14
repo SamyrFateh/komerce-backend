@@ -251,9 +251,8 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
     notif.notifyPaymentConfirmed(order.id, order.reference)
       .then(r => { if (r?.invoice) log.info(`🧾 Invoice ${r.invoice} sent for ${order.reference}`); })
       .catch(e => log.error({ err: e }, '[CONFIRM-NOTIF]'));
-    // O7.2 (Cycle A) : lien facture désormais construit/envoyé par orders lui-même.
-    require('../services/invoice-service').sendInvoiceReadyNotification(order.id, order.reference)
-      .catch(e => log.error({ err: e }, '[CONFIRM-INVOICE-NOTIF]'));
+    require('../services/invoice-service').issueInvoice(order.id)
+      .catch(e => log.error({ err: e }, '[CONFIRM-INVOICE] private PDF generation failed'));
 
     if (parcelResult.success) {
       notif.notifyParcelCreated(parcelResult.parcel.reference, order.id, order.reference)
@@ -264,7 +263,7 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
       success: true,
       message: parcelResult.success
         ? `✅ Paiement confirmé + 📦 Colis ${parcelResult.parcel.reference} créé automatiquement`
-        : `✅ Paiement confirmé pour ${order.reference} — Facture envoyée par WhatsApp`,
+        : `✅ Paiement confirmé pour ${order.reference} — facture disponible dans Mon Komerce`,
       order: {
         reference:      order.reference,
         old_status:     order.status,

@@ -48,7 +48,7 @@ BASE_URL=https://staging.komerce.co/boutique/
 
 | Fichier | ID | Flags requis | Description |
 |---------|----|----|-------------|
-| `invoice-public.spec.js` | F05 | — | Facture publique via token (contexte anonyme) |
+| `invoice-public.spec.js` | F05 | — | Facture privée dans Mon Komerce ; PDF avec session, refus sans session (nom de fichier legacy) |
 
 ### Admin
 

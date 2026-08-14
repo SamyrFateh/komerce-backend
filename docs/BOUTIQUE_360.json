@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-14T14:37:39.296Z",
+  "generatedAt": "2026-08-14T21:10:50.445Z",
   "summary": {
     "modules": 77,
     "withHeader": 77,
@@ -7,11 +7,11 @@
     "declaredActive": 37,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 46,
+    "endpoints": 47,
     "orphanEmit": 0,
     "orphanListen": 1,
     "undeclared": 4,
-    "notFoundEndpoints": 0,
+    "notFoundEndpoints": 1,
     "unprovenEndpoints": 33,
     "dynamicEndpoints": 15,
     "ownedEvents": 3,
@@ -749,7 +749,8 @@
         "b-utils.js",
         "b-identity.js",
         "b-wallet.js",
-        "b-bus.js"
+        "b-bus.js",
+        "documents API"
       ],
       "usedBy": [
         "b-nav.js",
@@ -2141,8 +2142,8 @@
         "cart-snapshot:cleanup",
         "cart-body:render-personal",
         "side-cart:render",
-        "cart-snapshot:render",
-        "modal:open"
+        "modal:open",
+        "cart-snapshot:render"
       ],
       "listens": [
         "side-cart:render",
@@ -2178,6 +2179,10 @@
         {
           "name": "side-cart:render",
           "hasArg": false
+        },
+        {
+          "name": "modal:open",
+          "hasArg": true
         },
         {
           "name": "cart-snapshot:render",
@@ -2942,6 +2947,13 @@
     },
     {
       "module": "b-komerce",
+      "route": "/api/auth/me/documents",
+      "raw": "/api/auth/me/documents",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "module": "b-komerce",
       "route": "/api/auth/me",
       "raw": "/api/auth/me",
       "dynamic": false,
@@ -3480,7 +3492,9 @@
       "surfaces",
       "view:switch"
     ],
-    "notFoundEndpoints": [],
+    "notFoundEndpoints": [
+      "/api/auth/me/documents"
+    ],
     "unprovenEndpoints": [
       "/api/auth/login",
       "/api/auth/logout",
@@ -3674,6 +3688,7 @@
     "/api/auth/login",
     "/api/auth/logout",
     "/api/auth/me",
+    "/api/auth/me/documents",
     "/api/auth/me/pickup-authorization",
     "/api/auth/otp/request",
     "/api/auth/otp/verify",

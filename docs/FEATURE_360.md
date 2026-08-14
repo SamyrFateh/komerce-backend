@@ -8,12 +8,12 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **6**
 - Attention : **23**
 - Blocked : **0**
-- Business dependencies : **111**
+- Business dependencies : **110**
 - Direct cross-feature imports : **4**
 - Runtime cycles : **0**
-- Ambiguous ownership signals : **68**
+- Ambiguous ownership signals : **63**
 - Ontology gaps : **0**
-- Debt items (total) : **124**
+- Debt items (total) : **138**
 - Gate health — healthy : **14** · blocked : **1**
 
 ## Gate findings — intégrité de projection
@@ -29,30 +29,30 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | Feature | Kind | Boundary | Governance | Owns | Consumes | Consumed by | Debt |
 |---|---|---|---|---|---|---|---|
 | admin-dashboard | projection | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | sourcing | _aucune_ | 0 |
-| auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | auth-identity, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, shared-cart, sourcing, unsold-resolution, wallet | 4 |
+| auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | auth-identity, business-rules, catalog, customs, dashboard, decision-signals, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, shared-cart, sourcing, unsold-resolution, wallet | 4 |
 | auth-identity | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | otp_codes, user_pickup_authorizations | auth, notifications, wallet | catalog, logistics, orders, platform-ops, shared-cart, wallet | 1 |
 | business-rules | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | business_rules, business_rules_history | auth, infrastructure | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops | 0 |
-| catalog | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, product_attributes, product_content_profile, product_content_sections, supplier_catalog_imports | auth, auth-identity, business-rules, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, platform-ops, recommendations, sourcing | 10 |
+| catalog | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, product_attributes, product_content_profile, product_content_sections, supplier_catalog_imports | auth, auth-identity, business-rules, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, platform-ops, recommendations, sourcing | 12 |
 | customs | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | customs_categories, customs_shipment_parcels, customs_shipments | auth, documents, economic-engine | dashboard, infrastructure, orders | 3 |
-| dashboard | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | order_incidents, partners | auth, business-rules, customs, decision-signals, documents, economic-engine, logistics, orders, purchasing | economic-engine, infrastructure | 15 |
+| dashboard | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | order_incidents, partners | auth, business-rules, customs, decision-signals, documents, economic-engine, logistics, orders, purchasing | economic-engine, infrastructure | 10 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | auth, business-rules, logistics | dashboard | 0 |
-| documents | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | transaction_documents | auth | customs, dashboard, orders, payments, refunds, wallet | 4 |
+| documents | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | invoices, transaction_documents | _aucune_ | customs, dashboard, orders, payments, refunds, wallet | 5 |
 | economic-engine | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_components, economic_variables, exchange_rates, finance_config, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_matrices_audit, pricing_strategies, pricing_strategy_history, risk_provisions | auth, catalog, dashboard, logistics, loyalty, orders | catalog, customs, dashboard, infrastructure, orders, platform-ops, sourcing | 6 |
 | incident-management | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | _aucune_ | 6 |
-| infrastructure | technical-foundation | 🟢 HEALTHY | 🟡 ATTENTION | schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, orders, recommendations, shared-cart, wallet | business-rules | 18 |
+| infrastructure | technical-foundation | 🟢 HEALTHY | 🟡 ATTENTION | schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, orders, recommendations, shared-cart, wallet | business-rules | 34 |
 | inventory | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | inventory_items | auth | infrastructure | 2 |
 | legacy-control-tower | deprecated | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | logistics | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | carriers, parcel_events, pickup_verify_attempts, shipments | auth, auth-identity, business-rules, catalog, loyalty, notifications, orders, payments, purchasing, refunds | catalog, dashboard, decision-signals, economic-engine, infrastructure, orders, payments, platform-ops, purchasing | 11 |
 | loyalty | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers, users | auth, notifications | economic-engine, logistics, orders, payments | 2 |
 | notifications | business-transversal | 🟢 HEALTHY | 🟡 ATTENTION | _aucune_ | auth | auth-identity, logistics, loyalty, orders, payments, purchasing, shared-cart | 4 |
-| orders | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | customs_history, disputes, order_item_cost_imputations | auth, auth-identity, business-rules, catalog, customs, documents, economic-engine, logistics, loyalty, notifications, payments, refunds, wallet | dashboard, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, refunds, shared-cart | 13 |
+| orders | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | customs_history, disputes, order_comments, order_item_cost_imputations, order_items, order_status_history, recipients, sms_log | auth, auth-identity, business-rules, catalog, customs, documents, economic-engine, logistics, loyalty, notifications, payments, refunds, wallet | dashboard, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, refunds, shared-cart | 10 |
 | payments | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | cash_collections, cash_deposits, paypal_events_processed, stripe_events_processed | auth, business-rules, documents, logistics, loyalty, notifications, orders, platform-ops, purchasing, refunds | logistics, orders, wallet | 3 |
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
-| platform-ops | technical-transversal | 🟢 HEALTHY | 🟡 ATTENTION | fabrics, garment_models, parcel_items, parcels, scans, store_credits | auth, auth-identity, business-rules, catalog, economic-engine, logistics, orders, purchasing | payments | 2 |
-| purchasing | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | product_suppliers, purchase_orders, suppliers | auth, logistics, notifications, orders | dashboard, logistics, payments, platform-ops | 3 |
+| platform-ops | technical-transversal | 🟢 HEALTHY | 🟡 ATTENTION | fabrics, garment_models, parcel_items, parcels, store_credits | auth, auth-identity, business-rules, catalog, economic-engine, logistics, orders, purchasing | payments | 3 |
+| purchasing | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | product_suppliers, suppliers | auth, logistics, notifications, orders | dashboard, logistics, payments, platform-ops | 4 |
 | recommendations | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog | infrastructure, shared-cart | 3 |
 | refunds | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | refunds | documents, orders, wallet | logistics, orders, payments | 1 |
-| shared-cart | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | basket_items, baskets, cart_shares, shared_cart_events, shared_cart_items, shared_cart_saved_access, shared_carts | auth, auth-identity, notifications, orders, recommendations | catalog, infrastructure | 3 |
+| shared-cart | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | basket_items, baskets, shared_cart_events, shared_cart_items, shared_cart_saved_access, shared_carts | auth, auth-identity, notifications, orders, recommendations | catalog, infrastructure | 4 |
 | sourcing | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | _aucune_ | auth, catalog, economic-engine | admin-dashboard | 7 |
 | unsold-resolution | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | unsold_items | auth | _aucune_ | 2 |
 | wallet | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets | auth, auth-identity, documents, payments | auth-identity, infrastructure, orders, refunds | 1 |
@@ -121,7 +121,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `requireAuth / requireVerifiedIdentity / softAuth` (middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js) — undeclared-in-graph
 
 **Consumes** : _aucune_
-**Consumed by** : auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumed by** : auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -316,7 +316,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Technical context** : 2 primitive dependencies, 0 test-only, 0 composition-root
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 9, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 2, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 9, ontology gaps: 0
 **Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 9
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :
@@ -328,7 +328,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-subcat.js — 2 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
 
-**Architectural debt** (10) :
+**Architectural debt** (12) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table alerts — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table catalog_media — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table price_history — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
@@ -339,6 +339,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidate_events — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidates — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/showcase-catalog-media-audit.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/showcase-catalog-staging-deploy.yml déclaré, statut résolution: missing-on-disk
 
 **Implementation** : 135 fichier(s) déclaré(s), boutique: 31 fichier(s)
   - boutique : 38
@@ -434,7 +436,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - auth-guard.js protège toutes les routes admin ; aucune route admin sans vérification de token
 
 **Owns** : `order_incidents`, `partners`
-**Writes (not owner)** : `basket_items` (writer-not-owner), `baskets` (writer-not-owner), `incidents` (ambiguous), `invoices` (ambiguous), `loyalty_rewards` (writer-not-owner), `order_comments` (ambiguous), `order_items` (ambiguous), `order_status_history` (ambiguous), `orders` (ambiguous), `parcel_items` (writer-not-owner), `parcels` (writer-not-owner), `products` (ambiguous), `recipients` (ambiguous), `relais` (ambiguous), `scan_events` (ambiguous), `scans` (writer-not-owner), `sms_log` (ambiguous), `users` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
+**Writes (not owner)** : `basket_items` (writer-not-owner), `baskets` (writer-not-owner), `incidents` (ambiguous), `invoices` (writer-not-owner), `loyalty_rewards` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (ambiguous), `parcel_items` (writer-not-owner), `parcels` (writer-not-owner), `products` (ambiguous), `recipients` (writer-not-owner), `relais` (ambiguous), `scan_events` (ambiguous), `scans` (ambiguous), `sms_log` (writer-not-owner), `users` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
 
 **Exposes** : 0 internal API(s), 65 HTTP interface(s)
 
@@ -446,21 +448,16 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Technical context** : 1 primitive dependencies, 0 test-only, 0 composition-root
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 4
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 11, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 6, ontology gaps: 0
 **Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
-**Architectural debt** (15) :
+**Architectural debt** (10) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table incidents — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table invoices — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table order_comments — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table order_items — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table order_status_history — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table orders — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table products — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table recipients — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table relais — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table scan_events — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sms_log — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table scans — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "inventory" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "payments" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "recommendations" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
@@ -523,11 +520,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Kind** : business-transversal  ·  **Status** : production
 
-**Service** : Generer un document officiel (preuve de retrait, facture douane, reçu wallet, reçu remboursement) a partir d'un evenement metier confirme.
+**Service** : Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé, puis le servir uniquement à son propriétaire authentifié.
 
 **Perimeter** :
 - _in_ :
-  - generation PDF/HTML de preuve de retrait, facture douane, reçu wallet, reçu remboursement
+  - generation PDF privée de facture, preuve de retrait, facture douane, reçu wallet et reçu remboursement
+  - liste et téléchargement client authentifiés dans Mon Komerce
 - _out_ :
   - decision qu'un document doit etre genere (reste a la feature source : orders, customs, wallet, refunds)
 
@@ -535,34 +533,38 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Invariants** :
 - un document genere est immuable une fois emis — toute correction passe par une nouvelle generation versionnee
+- aucun document ni lien documentaire n'est envoyé par WhatsApp
+- tout téléchargement client exige une session et filtre par owner_user_id
+- le PDF disponible possède une empreinte SHA-256 et ne peut pas être remplacé
 
-**Owns** : `transaction_documents`
+**Owns** : `invoices`, `transaction_documents`
 
-**Exposes** : 0 internal API(s), 3 HTTP interface(s)
+**Exposes** : 0 internal API(s), 9 HTTP interface(s)
 
-**Consumes** : auth (DECLARED_AND_OBSERVED)
+**Consumes** : _aucune_
 **Consumed by** : customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 
-**Projections** : _aucune_
+**Projections** : admin-dashboard
 
-**Technical context** : 1 primitive dependencies, 0 test-only, 0 composition-root
+**Technical context** : 2 primitive dependencies, 0 test-only, 0 composition-root
 
-**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 4
+**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 5
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
 **Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
 
-**Architectural debt** (4) :
+**Architectural debt** (5) :
+- `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth-identity" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "customs" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "orders" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "refunds" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 26 fichier(s) déclaré(s)
-  - migrations : 5
-  - routes : 1
-  - services : 5
-  - tests : 10
+**Implementation** : 35 fichier(s) déclaré(s)
+  - migrations : 6
+  - routes : 3
+  - services : 7
+  - tests : 14
   - utils : 5
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="documents"]_
@@ -727,15 +729,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 0 test-only, 10 composition-root
+**Technical context** : 0 primitive dependencies, 0 test-only, 11 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 11, declared-only deps: 3, ambiguous ownership: 4, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 16, unresolved internal APIs: 11, declared-only deps: 3, ambiguous ownership: 4, ontology gaps: 0
 **Gate health** : 🔴 BLOCKED — gates: gate:feature-classification-check, fail: 1, warn: 1
   - [gate:feature-classification-check] 🔴 KIND-INVALID — kind "technical-foundation" non autorisé
   - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
 
-**Architectural debt** (18) :
+**Architectural debt** (34) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table economic_snapshots — écrite par infrastructure (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table pickup_print_tokens — écrite par infrastructure (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table pickup_reveal_codes — écrite par infrastructure (W), aucun lifecycle owner résolu (multi-writer non classifié)
@@ -743,6 +745,22 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "notification — bootstrap/api-routes.js monte les routes notification" — ne correspond à aucun nom de feature connu
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "operations — bootstrap/api-routes.js monte les routes operations" — ne correspond à aucun nom de feature connu
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "payment — bootstrap/api-routes.js monte les routes payment" — ne correspond à aucun nom de feature connu
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/apply-komerce-arch-headers.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/carte-first.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/contract-conformance.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/contract.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/docs-guard.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/e2e-boutique.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/e2e.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/generate-komerce-arch-graph.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/governance.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/impact-check.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/lot7-finalize-governance-once.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/lot7-staging-business-qualification.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/lot8-pre-go-live-certification.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/lot8-reconcile-current-main-once.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/pr-governance.yml déclaré, statut résolution: missing-on-disk
+- `ORPHAN_IMPLEMENTATION` (high) — ci/.github/workflows/schema-refresh.yml déclaré, statut résolution: missing-on-disk
 - `UNRESOLVED_INTERNAL_API` (medium) — bootstrap/* — démarrage Express, routage, crons, migrations (null) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — middleware/error-handler.js — gestion centralisée des erreurs Express (null) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — middleware/rate-limit.js — rate limiting par IP/route (null) — statut: undeclared-in-graph
@@ -890,7 +908,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l'un ne bloque jamais l'autre
 
 **Owns** : `carriers`, `parcel_events`, `pickup_verify_attempts`, `shipments`
-**Writes (not owner)** : `alerts` (ambiguous), `incidents` (ambiguous), `order_items` (ambiguous), `orders` (ambiguous), `parcel_items` (writer-not-owner), `parcels` (writer-not-owner), `pickup_print_tokens` (ambiguous), `pickup_reveal_codes` (ambiguous), `relais` (ambiguous), `scan_events` (ambiguous), `scans` (writer-not-owner)
+**Writes (not owner)** : `alerts` (ambiguous), `incidents` (ambiguous), `order_items` (writer-not-owner), `orders` (ambiguous), `parcel_items` (writer-not-owner), `parcels` (writer-not-owner), `pickup_print_tokens` (ambiguous), `pickup_reveal_codes` (ambiguous), `relais` (ambiguous), `scan_events` (ambiguous), `scans` (ambiguous)
 
 **Exposes** : 1 internal API(s), 70 HTTP interface(s)
   - `transitionParcelStatus` (services/parcel-operations.js) — resolved
@@ -910,12 +928,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (11) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table alerts — écrite par logistics (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table incidents — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table order_items — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table orders — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table pickup_print_tokens — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table pickup_reveal_codes — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table relais — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table scan_events — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table scans — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "customs" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "economic-engine" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
@@ -1052,7 +1070,6 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - creation, annulation, machine de statut de la commande
   - snapshot de cout a la commande
   - rattachement aux colis et aux achats fournisseurs
-  - facturation et token public de facture
   - collecte QR au retrait
   - projection checkout boutique : finalisation d’une sélection en commande, sans ownership de l’encaissement
 - _out_ :
@@ -1060,6 +1077,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - logique panier partage (feature shared-cart, consommatrice d'orders)
   - remboursement (feature refunds, lecture seule sur orders)
   - tarification (feature economic-engine, orders ne fait que la consommer)
+  - matérialisation, conservation et téléchargement des factures (feature documents ; orders ne fournit que l’événement confirmé et les données source)
   - engagement fournisseur : création, confirmation et réception d'un bon de commande (feature purchasing, scindée d'orders au Lot O1.4, 2026-07-12) — orders ne fait que consommer purchasing (lecture) et libérer les bons de commande liés à l'annulation (cancel-order-purchase-orders.js, reste dans orders car appelé exclusivement par order-status-machine.js)
 
 **Authority** : backend-core — tout changement de la machine de statut ou du schema order_reference doit etre valide par le proprietaire de order-status-machine.js
@@ -1073,10 +1091,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - transition de statut uniquement via order-status-machine.js
 - annulation libere les achats fournisseurs lies dans la meme transaction
 
-**Owns** : `customs_history`, `disputes`, `order_item_cost_imputations`
-**Writes (not owner)** : `alerts` (ambiguous), `cart_shares` (writer-not-owner), `invoices` (ambiguous), `order_comments` (ambiguous), `order_items` (ambiguous), `order_status_history` (ambiguous), `orders` (ambiguous), `purchase_orders` (writer-not-owner), `recipients` (ambiguous), `scans` (writer-not-owner), `sms_log` (ambiguous)
+**Owns** : `customs_history`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_items`, `order_status_history`, `recipients`, `sms_log`
+**Writes (not owner)** : `alerts` (ambiguous), `cart_shares` (ambiguous), `orders` (ambiguous), `purchase_orders` (ambiguous), `scans` (ambiguous)
 
-**Exposes** : 3 internal API(s), 33 HTTP interface(s)
+**Exposes** : 3 internal API(s), 27 HTTP interface(s)
   - `checkoutCart` (public/boutique/js/b-checkout.js) — resolved
   - `makeInput` (public/boutique/js/b-checkout.js) — resolved
   - `transitionOrderStatus` (services/order-status-machine.js) — resolved
@@ -1089,7 +1107,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Technical context** : 2 primitive dependencies, 0 test-only, 0 composition-root
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 2
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 2, ambiguous ownership: 8, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 2, ambiguous ownership: 5, ontology gaps: 0
 **Gate health** : 🟡 ATTENTION — gates: check:body-classes, check:imports, gate:feature-classification-check, fail: 0, warn: 10
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ↳ Référencé en CSS : css/cart.css:2144, css/cart.css:2155 … — sélecteur legacy ou JS manquant
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ 0 erreur, 6 avertissement(s) — exit 0
@@ -1102,26 +1120,23 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-tracking.js — 1 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
 
-**Architectural debt** (13) :
+**Architectural debt** (10) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table alerts — écrite par orders (W), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table invoices — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table order_comments — écrite par orders (W), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table order_items — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table order_status_history — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table cart_shares — écrite par orders (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table orders — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table recipients — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)
-- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sms_log — écrite par orders (W), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table purchase_orders — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table scans — écrite par orders (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "notification" — ne correspond à aucun nom de feature connu
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "payment" — ne correspond à aucun nom de feature connu
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "dashboard" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "purchasing" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
-**Implementation** : 56 fichier(s) déclaré(s), boutique: 12 fichier(s)
+**Implementation** : 50 fichier(s) déclaré(s), boutique: 12 fichier(s)
   - boutique : 3
-  - routes : 13
-  - services : 10
-  - tests : 29
+  - routes : 12
+  - services : 8
+  - tests : 26
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="orders"]_
@@ -1241,8 +1256,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - le simulator écrit dans les tables d'autres features par design de simulation
 - les modules (fabrics, garment_models) sont les seules tables possédées par platform-ops
 
-**Owns** : `fabrics`, `garment_models`, `parcel_items`, `parcels`, `scans`, `store_credits`
-**Writes (not owner)** : `notification_log` (ambiguous), `orders` (ambiguous)
+**Owns** : `fabrics`, `garment_models`, `parcel_items`, `parcels`, `store_credits`
+**Writes (not owner)** : `notification_log` (ambiguous), `orders` (ambiguous), `scans` (ambiguous)
 
 **Exposes** : 0 internal API(s), 33 HTTP interface(s)
 
@@ -1254,7 +1269,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Technical context** : 1 primitive dependencies, 1 test-only, 2 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 2, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 3, ontology gaps: 0
 **Gate health** : 🟡 ATTENTION — gates: check:body-classes, check:imports, fail: 0, warn: 13
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ck-is-me                     0     0     0     ✔      ⚠ warning
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — k-order-body--recap          0     1     0     ·      ⚠ warning
@@ -1270,9 +1285,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-utils.js — 2 export(s) non consommé(s) :
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ✔ Aucun import fantôme ni cycle inconnu ni module manquant.
 
-**Architectural debt** (2) :
+**Architectural debt** (3) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table notification_log — écrite par platform-ops (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table orders — écrite par platform-ops (RW), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table scans — écrite par platform-ops (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
 **Implementation** : 39 fichier(s) déclaré(s), boutique: 21 fichier(s)
   - boutique : 6
@@ -1310,8 +1326,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)
 - une réception ne peut être appliquée qu'à un bon de commande existant et cohérent
 
-**Owns** : `product_suppliers`, `purchase_orders`, `suppliers`
-**Writes (not owner)** : `alerts` (ambiguous), `orders` (ambiguous)
+**Owns** : `product_suppliers`, `suppliers`
+**Writes (not owner)** : `alerts` (ambiguous), `orders` (ambiguous), `purchase_orders` (ambiguous)
 
 **Exposes** : 2 internal API(s), 10 HTTP interface(s)
   - `repairOrderedWithoutPurchaseOrders` (services/repair-ordered-without-purchase-orders.js) — resolved
@@ -1325,13 +1341,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Technical context** : 1 primitive dependencies, 0 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 1, ambiguous ownership: 2, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 1, ambiguous ownership: 3, ontology gaps: 0
 **Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
   - [gate:feature-classification-check] 🟠 SIDEEFFECT-NO-INVARIANT — externalSideEffect "outbound-message" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie
 
-**Architectural debt** (3) :
+**Architectural debt** (4) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table alerts — écrite par purchasing (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table orders — écrite par purchasing (RW), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table purchase_orders — écrite par purchasing (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)" — ne correspond à aucun nom de feature connu
 
 **Implementation** : 16 fichier(s) déclaré(s)
@@ -1461,7 +1478,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)
 - annulation de liste (cancel) n'effectue jamais de remboursement — aucune contribution n'y transite
 
-**Owns** : `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
+**Owns** : `basket_items`, `baskets`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
+**Writes (not owner)** : `cart_shares` (ambiguous)
 
 **Exposes** : 0 internal API(s), 16 HTTP interface(s)
 
@@ -1473,13 +1491,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Technical context** : 2 primitive dependencies, 0 test-only, 0 composition-root
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 2, ambiguous ownership: 0, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 2, ambiguous ownership: 1, ontology gaps: 0
 **Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 3
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-cart.js — 1 export(s) non consommé(s) :
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal.js — 7 export(s) non consommé(s) :
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-share-cart.js — 4 export(s) non consommé(s) :
 
-**Architectural debt** (3) :
+**Architectural debt** (4) :
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table cart_shares — écrite par shared-cart (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "notification (émission uniquement — WhatsApp création de liste)" — ne correspond à aucun nom de feature connu
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "products (lecture seule)" — ne correspond à aucun nom de feature connu
 - `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT

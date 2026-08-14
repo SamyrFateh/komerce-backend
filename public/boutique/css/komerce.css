@@ -5,15 +5,15 @@
  * @layer         ui-style
  * @owner         public/boutique/js/b-komerce.js
  * @purpose       Styles de Mon Komerce — page unique (Lot 4B)
- * @impact-areas  account, wallet, boutique-navigation
- * @version       2026-07-lot4b
+ * @impact-areas  account, wallet, documents, boutique-navigation
+ * @version       2026-08-documents
  */
 
 /* ═══════════════════════════════════════════════════════════════
    KOMERCE — komerce.css (Lot 4B)
    Page unique : aucun sous-onglet, aucune sous-navigation.
-   Layout mobile : une colonne (wallet → profil → sécurité).
-   Layout desktop (≥ 900 px) : deux colonnes (wallet | profil+sécurité).
+   Layout mobile : une colonne (wallet → documents → profil → sécurité).
+   Layout desktop (≥ 900 px) : deux colonnes (wallet+documents | profil+sécurité).
    Mobile-first, tokens.css requis.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -176,6 +176,60 @@
   align-self: flex-start;
   width: 100%;
 }
+
+/* ── Documents privés ───────────────────────────────────────────── */
+.k-kmc-documents-hint {
+  margin: -8px 0 14px;
+  color: var(--text-muted);
+  font-size: .76rem;
+  line-height: 1.45;
+}
+.k-kmc-documents-empty {
+  padding: 22px 4px;
+  color: var(--text-muted);
+  font-size: .8rem;
+  text-align: center;
+}
+.k-kmc-documents-list {
+  display: flex;
+  flex-direction: column;
+}
+.k-kmc-document-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 0;
+  border-top: 1px solid var(--sand-dark);
+}
+.k-kmc-document-row:first-child { border-top: 0; }
+.k-kmc-document-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.k-kmc-document-info strong { font-size: .84rem; color: var(--text); }
+.k-kmc-document-info span {
+  overflow: hidden;
+  color: var(--ocean-dark);
+  font-size: .76rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.k-kmc-document-info small { color: var(--text-muted); font-size: .7rem; }
+.k-kmc-document-download {
+  flex-shrink: 0;
+  padding: 8px 11px;
+  border: 1.5px solid var(--ocean);
+  border-radius: 9px;
+  background: var(--white);
+  color: var(--ocean-dark);
+  font: 700 .72rem var(--font);
+  cursor: pointer;
+}
+.k-kmc-document-download:disabled { cursor: wait; opacity: .65; }
 
 /* ── Retrait & sécurité ─────────────────────────────────────────── */
 .k-kmc-security {

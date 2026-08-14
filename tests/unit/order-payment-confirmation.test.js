@@ -26,6 +26,10 @@ jest.mock('../../utils/logger', () => ({
   forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 jest.mock('../../db', () => ({ query: jest.fn() }));
+const mockGetOrCreateInvoice = jest.fn().mockResolvedValue({ id: 'invoice-1' });
+jest.mock('../../services/invoice-service', () => ({
+  getOrCreateInvoice: (...args) => mockGetOrCreateInvoice(...args),
+}));
 
 const { transitionOrderStatus } = require('../../services/order-status-machine');
 const db = require('../../db');
@@ -51,6 +55,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   transitionOrderStatus.mockResolvedValue(ok());
   db.query.mockResolvedValue({ rows: [] });
+  mockGetOrCreateInvoice.mockResolvedValue({ id: 'invoice-1' });
 });
 
 describe('confirmPaymentCycle — gardes d\'entrée', () => {

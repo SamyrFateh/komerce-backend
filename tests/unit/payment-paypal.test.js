@@ -36,6 +36,18 @@ jest.mock('../../services/notification-service', () => ({
   notifyPaymentConfirmed: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../../services/invoice-service', () => ({
+  issueInvoice: jest.fn().mockResolvedValue({ id: 'invoice-1' }),
+}));
+
+jest.mock('../../services/loyalty-service', () => ({
+  handleOrderConfirmed: jest.fn().mockResolvedValue({ skipped: true }),
+}));
+
+jest.mock('../../services/purchasing-trigger-service', () => ({
+  triggerPurchasing: jest.fn().mockResolvedValue({ ok: true }),
+}));
+
 jest.mock('../../routes/purchasing', () => ({
   triggerPurchasing: jest.fn().mockResolvedValue({ ok: true }),
 }));
@@ -144,6 +156,27 @@ describe('capturePaypalOrder — amount mismatch', () => {
 
     expect(result.already_paid).toBe(true);
     expect(paypal.captureOrder).not.toHaveBeenCalled();
+  });
+
+  test('capture nominale : matérialise la facture privée après commit', async () => {
+    const order = { id: 'order-private-pdf', reference: 'KMC-PDF', total_eur: '10.00', payment_status: 'pending' };
+    const paypal = {
+      captureOrder: jest.fn().mockResolvedValue({ raw: true }),
+      extractCaptureInfo: jest.fn().mockReturnValue({
+        status: 'COMPLETED', amount_value: 10, paypal_capture_id: 'CAP-PDF',
+        payer_email: 'client@example.test', payer_id: 'payer-1', payer_name: 'Client', pay_in_4: false,
+      }),
+    };
+    confirmPaymentCycle.mockResolvedValue({ success: true, stockBlocked: false });
+    mockClientQuery.mockResolvedValue({ rows: [] });
+
+    await expect(capturePaypalOrder('PP-PDF', order, paypal, makeDb()))
+      .resolves.toMatchObject({ success: true, order_id: 'order-private-pdf' });
+    await flush();
+
+    const invoiceService = require('../../services/invoice-service');
+    expect(invoiceService.issueInvoice).toHaveBeenCalledWith('order-private-pdf');
+    expect(mockClientQuery).toHaveBeenCalledWith('COMMIT');
   });
 });
 

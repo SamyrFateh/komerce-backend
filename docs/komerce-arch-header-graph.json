@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 364,
-    "filesWithFullHeaders": 338,
+    "scannedCodeFiles": 365,
+    "filesWithFullHeaders": 339,
     "filesWithLiteHeaders": 26,
-    "filesWithAnyHeaders": 364,
+    "filesWithAnyHeaders": 365,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 773,
-    "edges": 4144,
+    "graphNodes": 772,
+    "edges": 4165,
     "dbTables": 108,
-    "doctrines": 171,
-    "impactAreas": 130,
-    "unresolvedCodeEdges": 418,
+    "doctrines": 170,
+    "impactAreas": 129,
+    "unresolvedCodeEdges": 421,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 61
   },
@@ -49,8 +49,8 @@
     "customs": 6,
     "dashboard": 26,
     "business-rules": 1,
-    "orders": 24,
-    "documents": 11,
+    "orders": 21,
+    "documents": 15,
     "auth-identity": 5,
     "operations": 11,
     "inventory": 2,
@@ -91,7 +91,7 @@
     "domain-logic": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 96,
+    "route": 97,
     "entrypoint": 1,
     "service": 139,
     "external-adapter": 2,
@@ -102,7 +102,7 @@
   "byCriticality": {
     "critical": 55,
     "medium": 106,
-    "high": 169,
+    "high": 170,
     "low": 34
   },
   "nodes": [
@@ -1859,16 +1859,19 @@
       "inputs": [
         "client_session",
         "wallet_balance",
+        "private_documents",
         "profile"
       ],
       "outputs": [
-        "komerce_view"
+        "komerce_view",
+        "authenticated_pdf_download"
       ],
       "depends": [
         "b-utils.js",
         "b-identity.js",
         "b-wallet.js",
-        "b-bus.js"
+        "b-bus.js",
+        "documents API"
       ],
       "usedBy": [
         "b-nav.js",
@@ -1886,9 +1889,10 @@
       "impactAreas": [
         "account",
         "wallet",
+        "documents",
         "boutique-navigation"
       ],
-      "version": "2026-07-lot5"
+      "version": "2026-08-documents"
     },
     {
       "id": "public/boutique/js/b-mini-cart.js",
@@ -6124,6 +6128,55 @@
       "version": "2026-06"
     },
     {
+      "id": "routes/documents.js",
+      "file": "routes/documents.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "authenticated-client-documents",
+      "domain": "documents",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "document id"
+      ],
+      "outputs": [
+        "private document list",
+        "PDF attachment"
+      ],
+      "depends": [
+        "db.js",
+        "middleware/auth.js",
+        "services/invoice-service.js",
+        "services/documents/document-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "public/boutique/js/b-komerce.js"
+      ],
+      "dbRead": [
+        "invoices",
+        "orders",
+        "transaction_documents"
+      ],
+      "dbWrite": [
+        "invoices",
+        "transaction_documents"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "account"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "routes/economic.js",
       "file": "routes/economic.js",
       "type": "file",
@@ -6460,7 +6513,7 @@
       "type": "file",
       "headerType": "full",
       "role": "invoices",
-      "domain": "orders",
+      "domain": "documents",
       "layer": "route",
       "criticality": "medium",
       "owner": null,
@@ -6494,14 +6547,14 @@
       ],
       "doctrine": [
         "facture_apres_paiement_confirme",
-        "lien_facture_whatsapp_token_public"
+        "telechargement_authentifie_uniquement"
       ],
       "impactAreas": [
         "orders",
         "checkout",
-        "whatsapp"
+        "account"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "routes/logistics.js",
@@ -10677,15 +10730,16 @@
         "metadata"
       ],
       "outputs": [
-        "transaction_documents row (stable",
-        "idempotent)"
+        "transaction_documents row + immutable private PDF"
       ],
       "depends": [
-        "db.js"
+        "db.js",
+        "services/documents/pdf-renderer.js"
       ],
       "usedBy": [
         "services/documents/refund-receipt.js",
-        "services/documents/contribution-receipt.js"
+        "services/documents/wallet-receipt.js",
+        "services/documents/pickup-proof.js"
       ],
       "dbRead": [
         "transaction_documents"
@@ -10707,6 +10761,47 @@
         "wallet"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/documents/pdf-renderer.js",
+      "file": "services/documents/pdf-renderer.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "private-document-pdf-renderer",
+      "domain": "documents",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "document_type",
+        "immutable_snapshot"
+      ],
+      "outputs": [
+        "pdf_buffer",
+        "sha256",
+        "filename"
+      ],
+      "depends": [
+        "pdfkit",
+        "crypto"
+      ],
+      "usedBy": [
+        "services/documents/document-service.js",
+        "services/invoice-service.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "account"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "services/documents/pickup-proof.js",
@@ -10825,7 +10920,7 @@
       ],
       "dbRead": [
         "users",
-        "wallet_credit_lots",
+        "wallets",
         "wallet_transactions"
       ],
       "dbWrite": [
@@ -11342,55 +11437,12 @@
       "version": "2026-06"
     },
     {
-      "id": "services/invoice-public-token.js",
-      "file": "services/invoice-public-token.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "invoice-public-token",
-      "domain": "orders",
-      "layer": "service",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "order_id",
-        "invoice_url",
-        "runtime_secret"
-      ],
-      "outputs": [
-        "signed_public_invoice_token",
-        "verified_order_id"
-      ],
-      "depends": [
-        "crypto"
-      ],
-      "usedBy": [
-        "routes/invoices.js",
-        "services/authkey-client.js"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [
-        "lien_facture_public_non_devinable",
-        "facture_apres_paiement_confirme"
-      ],
-      "impactAreas": [
-        "orders",
-        "invoices",
-        "whatsapp",
-        "customer-support"
-      ],
-      "version": "2026-06"
-    },
-    {
       "id": "services/invoice-service.js",
       "file": "services/invoice-service.js",
       "type": "file",
       "headerType": "full",
       "role": "invoice-service",
-      "domain": "orders",
+      "domain": "documents",
       "layer": "service",
       "criticality": "medium",
       "owner": null,
@@ -11400,14 +11452,17 @@
         "request_or_service_payload"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "immutable invoice snapshot",
+        "private PDF"
       ],
       "depends": [
-        "db"
+        "db",
+        "services/documents/pdf-renderer.js"
       ],
       "usedBy": [
-        "routes/invoices.js"
+        "routes/invoices.js",
+        "routes/documents.js",
+        "payment confirmation flows"
       ],
       "dbRead": [
         "invoices",
@@ -12031,6 +12086,7 @@
       ],
       "depends": [
         "services/order-status-machine.js",
+        "services/invoice-service.js",
         "db.js"
       ],
       "usedBy": [
@@ -12047,7 +12103,8 @@
         "products"
       ],
       "dbWrite": [
-        "alerts"
+        "alerts",
+        "invoices"
       ],
       "dbWriteVia": [
         {
@@ -17951,9 +18008,9 @@
       "doctrine": "facture_apres_paiement_confirme"
     },
     {
-      "id": "doctrine:lien_facture_whatsapp_token_public",
+      "id": "doctrine:telechargement_authentifie_uniquement",
       "type": "doctrine",
-      "doctrine": "lien_facture_whatsapp_token_public"
+      "doctrine": "telechargement_authentifie_uniquement"
     },
     {
       "id": "doctrine:order_creation_idempotent",
@@ -18149,11 +18206,6 @@
       "id": "doctrine:2026-07-02)",
       "type": "doctrine",
       "doctrine": "2026-07-02)"
-    },
-    {
-      "id": "doctrine:lien_facture_public_non_devinable",
-      "type": "doctrine",
-      "doctrine": "lien_facture_public_non_devinable"
     },
     {
       "id": "doctrine:notification_non_bloquante",
@@ -18606,6 +18658,11 @@
       "area": "wallet"
     },
     {
+      "id": "impact:documents",
+      "type": "impact-area",
+      "area": "documents"
+    },
+    {
       "id": "impact:boutique-navigation",
       "type": "impact-area",
       "area": "boutique-navigation"
@@ -18846,11 +18903,6 @@
       "area": "business-rules"
     },
     {
-      "id": "impact:documents",
-      "type": "impact-area",
-      "area": "documents"
-    },
-    {
       "id": "impact:notification",
       "type": "impact-area",
       "area": "notification"
@@ -18964,11 +19016,6 @@
       "id": "impact:finance-config",
       "type": "impact-area",
       "area": "finance-config"
-    },
-    {
-      "id": "impact:invoices",
-      "type": "impact-area",
-      "area": "invoices"
     },
     {
       "id": "impact:dashboards",
@@ -21708,6 +21755,12 @@
       "label": "b-bus.js"
     },
     {
+      "from": "public/boutique/js/b-komerce.js",
+      "to": "documents API",
+      "type": "depends",
+      "label": "documents API"
+    },
+    {
       "from": "public/boutique/js/b-nav.js",
       "to": "public/boutique/js/b-komerce.js",
       "type": "uses",
@@ -21748,6 +21801,12 @@
       "to": "impact:wallet",
       "type": "impact",
       "label": "wallet"
+    },
+    {
+      "from": "public/boutique/js/b-komerce.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
     },
     {
       "from": "public/boutique/js/b-komerce.js",
@@ -27547,6 +27606,90 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "routes/documents.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "services/invoice-service.js",
+      "type": "depends",
+      "label": "services/invoice-service.js"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "services/documents/document-service.js",
+      "type": "depends",
+      "label": "services/documents/document-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/documents.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "public/boutique/js/b-komerce.js",
+      "to": "routes/documents.js",
+      "type": "uses",
+      "label": "public/boutique/js/b-komerce.js"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "db:invoices",
+      "type": "db-read",
+      "label": "invoices"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "db:transaction_documents",
+      "type": "db-read",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "db:invoices",
+      "type": "db-write",
+      "label": "invoices"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "db:transaction_documents",
+      "type": "db-write",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "impact:account",
+      "type": "impact",
+      "label": "account"
+    },
+    {
       "from": "routes/economic.js",
       "to": "services/economic-engine-queries.js",
       "type": "depends",
@@ -28040,9 +28183,9 @@
     },
     {
       "from": "routes/invoices.js",
-      "to": "doctrine:lien_facture_whatsapp_token_public",
+      "to": "doctrine:telechargement_authentifie_uniquement",
       "type": "doctrine",
-      "label": "lien_facture_whatsapp_token_public"
+      "label": "telechargement_authentifie_uniquement"
     },
     {
       "from": "routes/invoices.js",
@@ -28058,9 +28201,9 @@
     },
     {
       "from": "routes/invoices.js",
-      "to": "impact:whatsapp",
+      "to": "impact:account",
       "type": "impact",
-      "label": "whatsapp"
+      "label": "account"
     },
     {
       "from": "routes/logistics.js",
@@ -34193,16 +34336,28 @@
       "label": "db.js"
     },
     {
+      "from": "services/documents/document-service.js",
+      "to": "services/documents/pdf-renderer.js",
+      "type": "depends",
+      "label": "services/documents/pdf-renderer.js"
+    },
+    {
       "from": "services/documents/refund-receipt.js",
       "to": "services/documents/document-service.js",
       "type": "uses",
       "label": "services/documents/refund-receipt.js"
     },
     {
-      "from": "services/documents/contribution-receipt.js",
+      "from": "services/documents/wallet-receipt.js",
       "to": "services/documents/document-service.js",
       "type": "uses",
-      "label": "services/documents/contribution-receipt.js"
+      "label": "services/documents/wallet-receipt.js"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "services/documents/document-service.js",
+      "type": "uses",
+      "label": "services/documents/pickup-proof.js"
     },
     {
       "from": "services/documents/document-service.js",
@@ -34245,6 +34400,48 @@
       "to": "impact:wallet",
       "type": "impact",
       "label": "wallet"
+    },
+    {
+      "from": "services/documents/pdf-renderer.js",
+      "to": "pdfkit",
+      "type": "depends",
+      "label": "pdfkit"
+    },
+    {
+      "from": "services/documents/pdf-renderer.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
+    },
+    {
+      "from": "services/documents/document-service.js",
+      "to": "services/documents/pdf-renderer.js",
+      "type": "uses",
+      "label": "services/documents/document-service.js"
+    },
+    {
+      "from": "services/invoice-service.js",
+      "to": "services/documents/pdf-renderer.js",
+      "type": "uses",
+      "label": "services/invoice-service.js"
+    },
+    {
+      "from": "services/documents/pdf-renderer.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "services/documents/pdf-renderer.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "services/documents/pdf-renderer.js",
+      "to": "impact:account",
+      "type": "impact",
+      "label": "account"
     },
     {
       "from": "services/documents/pickup-proof.js",
@@ -34398,9 +34595,9 @@
     },
     {
       "from": "services/documents/wallet-receipt.js",
-      "to": "db:wallet_credit_lots",
+      "to": "db:wallets",
       "type": "db-read",
-      "label": "wallet_credit_lots"
+      "label": "wallets"
     },
     {
       "from": "services/documents/wallet-receipt.js",
@@ -35273,70 +35470,34 @@
       "label": "inventory"
     },
     {
-      "from": "services/invoice-public-token.js",
-      "to": "crypto",
-      "type": "depends",
-      "label": "crypto"
-    },
-    {
-      "from": "routes/invoices.js",
-      "to": "services/invoice-public-token.js",
-      "type": "uses",
-      "label": "routes/invoices.js"
-    },
-    {
-      "from": "services/authkey-client.js",
-      "to": "services/invoice-public-token.js",
-      "type": "uses",
-      "label": "services/authkey-client.js"
-    },
-    {
-      "from": "services/invoice-public-token.js",
-      "to": "doctrine:lien_facture_public_non_devinable",
-      "type": "doctrine",
-      "label": "lien_facture_public_non_devinable"
-    },
-    {
-      "from": "services/invoice-public-token.js",
-      "to": "doctrine:facture_apres_paiement_confirme",
-      "type": "doctrine",
-      "label": "facture_apres_paiement_confirme"
-    },
-    {
-      "from": "services/invoice-public-token.js",
-      "to": "impact:orders",
-      "type": "impact",
-      "label": "orders"
-    },
-    {
-      "from": "services/invoice-public-token.js",
-      "to": "impact:invoices",
-      "type": "impact",
-      "label": "invoices"
-    },
-    {
-      "from": "services/invoice-public-token.js",
-      "to": "impact:whatsapp",
-      "type": "impact",
-      "label": "whatsapp"
-    },
-    {
-      "from": "services/invoice-public-token.js",
-      "to": "impact:customer-support",
-      "type": "impact",
-      "label": "customer-support"
-    },
-    {
       "from": "services/invoice-service.js",
       "to": "db",
       "type": "depends",
       "label": "db"
     },
     {
+      "from": "services/invoice-service.js",
+      "to": "services/documents/pdf-renderer.js",
+      "type": "depends",
+      "label": "services/documents/pdf-renderer.js"
+    },
+    {
       "from": "routes/invoices.js",
       "to": "services/invoice-service.js",
       "type": "uses",
       "label": "routes/invoices.js"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "services/invoice-service.js",
+      "type": "uses",
+      "label": "routes/documents.js"
+    },
+    {
+      "from": "payment confirmation flows",
+      "to": "services/invoice-service.js",
+      "type": "uses",
+      "label": "payment confirmation flows"
     },
     {
       "from": "services/invoice-service.js",
@@ -36324,6 +36485,12 @@
     },
     {
       "from": "services/order-payment-confirmation.js",
+      "to": "services/invoice-service.js",
+      "type": "depends",
+      "label": "services/invoice-service.js"
+    },
+    {
+      "from": "services/order-payment-confirmation.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -36387,6 +36554,12 @@
       "to": "db:alerts",
       "type": "db-write",
       "label": "alerts"
+    },
+    {
+      "from": "services/order-payment-confirmation.js",
+      "to": "db:invoices",
+      "type": "db-write",
+      "label": "invoices"
     },
     {
       "from": "services/order-payment-confirmation.js",
@@ -43995,6 +44168,7 @@
         "routes/dashboard-ops.js",
         "routes/dashboard-shared.js",
         "routes/dashboard.js",
+        "routes/documents.js",
         "routes/economic.js",
         "routes/finance.js",
         "routes/health.js",
@@ -44563,6 +44737,7 @@
         "routes/dashboard-ops.js",
         "routes/dashboard-shared.js",
         "routes/dashboard.js",
+        "routes/documents.js",
         "routes/economic.js",
         "routes/finance.js",
         "routes/health.js",
@@ -45819,7 +45994,8 @@
         "public/boutique/js/b-utils.js",
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-wallet.js",
-        "public/boutique/js/b-bus.js"
+        "public/boutique/js/b-bus.js",
+        "documents API"
       ],
       "directUsedBy": [
         "public/boutique/js/b-nav.js",
@@ -45837,6 +46013,7 @@
       "impactAreas": [
         "account",
         "wallet",
+        "documents",
         "boutique-navigation"
       ],
       "mustCheck": [
@@ -45845,6 +46022,7 @@
         "doctrine:wallet_visible_client",
         "impact:account",
         "impact:boutique-navigation",
+        "impact:documents",
         "impact:wallet",
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-identity.js",
@@ -45852,7 +46030,8 @@
         "public/boutique/js/b-utils.js",
         "public/boutique/js/b-wallet.js",
         "public/boutique/js/boutique.js",
-        "public/boutique/js/group/group-side-cart.js"
+        "public/boutique/js/group/group-side-cart.js",
+        "routes/documents.js"
       ]
     },
     "public/boutique/js/b-mini-cart.js": {
@@ -50004,6 +50183,55 @@
         "middleware/auth.js"
       ]
     },
+    "routes/documents.js": {
+      "role": "authenticated-client-documents",
+      "domain": "documents",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "middleware/auth.js",
+        "services/invoice-service.js",
+        "services/documents/document-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "public/boutique/js/b-komerce.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "invoices",
+        "orders",
+        "transaction_documents"
+      ],
+      "dbWrite": [
+        "invoices",
+        "transaction_documents"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "account"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:invoices",
+        "db:orders",
+        "db:transaction_documents",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:account",
+        "impact:documents",
+        "middleware/auth.js",
+        "public/boutique/js/b-komerce.js",
+        "services/documents/document-service.js",
+        "services/invoice-service.js"
+      ]
+    },
     "routes/economic.js": {
       "role": "economic-router",
       "domain": "economic-engine",
@@ -50311,7 +50539,7 @@
     },
     "routes/invoices.js": {
       "role": "invoices",
-      "domain": "orders",
+      "domain": "documents",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
@@ -50335,24 +50563,23 @@
       "dbWriteVia": [],
       "doctrines": [
         "facture_apres_paiement_confirme",
-        "lien_facture_whatsapp_token_public"
+        "telechargement_authentifie_uniquement"
       ],
       "impactAreas": [
         "orders",
         "checkout",
-        "whatsapp"
+        "account"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
         "db:invoices",
         "db:orders",
         "doctrine:facture_apres_paiement_confirme",
-        "doctrine:lien_facture_whatsapp_token_public",
+        "doctrine:telechargement_authentifie_uniquement",
+        "impact:account",
         "impact:checkout",
         "impact:orders",
-        "impact:whatsapp",
         "middleware/auth.js",
-        "services/invoice-public-token.js",
         "services/invoice-service.js",
         "utils/logger.js"
       ]
@@ -52818,7 +53045,6 @@
         "impact:notifications",
         "impact:otp",
         "impact:whatsapp",
-        "services/invoice-public-token.js",
         "services/notifications/internals.js",
         "services/notifications/loyalty.js",
         "services/notifications/misc.js",
@@ -54384,11 +54610,13 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db.js"
+        "db.js",
+        "services/documents/pdf-renderer.js"
       ],
       "directUsedBy": [
         "services/documents/refund-receipt.js",
-        "services/documents/contribution-receipt.js"
+        "services/documents/wallet-receipt.js",
+        "services/documents/pickup-proof.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -54414,11 +54642,47 @@
         "impact:refunds",
         "impact:shared-cart",
         "impact:wallet",
+        "routes/documents.js",
         "services/documents/customs-invoice.js",
+        "services/documents/pdf-renderer.js",
         "services/documents/pickup-proof.js",
         "services/documents/refund-receipt.js",
         "services/documents/wallet-receipt.js",
         "utils/logger.js"
+      ]
+    },
+    "services/documents/pdf-renderer.js": {
+      "role": "private-document-pdf-renderer",
+      "domain": "documents",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "pdfkit",
+        "crypto"
+      ],
+      "directUsedBy": [
+        "services/documents/document-service.js",
+        "services/invoice-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "account"
+      ],
+      "mustCheck": [
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:account",
+        "impact:documents",
+        "services/documents/document-service.js",
+        "services/invoice-service.js"
       ]
     },
     "services/documents/pickup-proof.js": {
@@ -54530,7 +54794,7 @@
       "ownedFiles": [],
       "dbRead": [
         "users",
-        "wallet_credit_lots",
+        "wallets",
         "wallet_transactions"
       ],
       "dbWrite": [
@@ -54546,8 +54810,8 @@
       "mustCheck": [
         "db:transaction_documents",
         "db:users",
-        "db:wallet_credit_lots",
         "db:wallet_transactions",
+        "db:wallets",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:wallet",
         "services/documents/document-service.js",
@@ -55059,57 +55323,21 @@
         "routes/orders.js"
       ]
     },
-    "services/invoice-public-token.js": {
-      "role": "invoice-public-token",
-      "domain": "orders",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "crypto"
-      ],
-      "directUsedBy": [
-        "routes/invoices.js",
-        "services/authkey-client.js"
-      ],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [
-        "lien_facture_public_non_devinable",
-        "facture_apres_paiement_confirme"
-      ],
-      "impactAreas": [
-        "orders",
-        "invoices",
-        "whatsapp",
-        "customer-support"
-      ],
-      "mustCheck": [
-        "doctrine:facture_apres_paiement_confirme",
-        "doctrine:lien_facture_public_non_devinable",
-        "impact:customer-support",
-        "impact:invoices",
-        "impact:orders",
-        "impact:whatsapp",
-        "routes/invoices.js",
-        "services/authkey-client.js"
-      ]
-    },
     "services/invoice-service.js": {
       "role": "invoice-service",
-      "domain": "orders",
+      "domain": "documents",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db"
+        "db",
+        "services/documents/pdf-renderer.js"
       ],
       "directUsedBy": [
-        "routes/invoices.js"
+        "routes/invoices.js",
+        "routes/documents.js",
+        "payment confirmation flows"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -55143,7 +55371,10 @@
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:orders",
-        "routes/invoices.js"
+        "routes/documents.js",
+        "routes/invoices.js",
+        "services/documents/pdf-renderer.js",
+        "services/order-payment-confirmation.js"
       ]
     },
     "services/loyalty-service.js": {
@@ -55723,6 +55954,7 @@
       "purpose": null,
       "directDependsOn": [
         "services/order-status-machine.js",
+        "services/invoice-service.js",
         "db.js"
       ],
       "directUsedBy": [
@@ -55740,7 +55972,8 @@
         "products"
       ],
       "dbWrite": [
-        "alerts"
+        "alerts",
+        "invoices"
       ],
       "dbWriteVia": [
         {
@@ -55770,6 +56003,7 @@
       ],
       "mustCheck": [
         "db:alerts",
+        "db:invoices",
         "db:order_items",
         "db:product_skus",
         "db:product_variants",
@@ -55788,6 +56022,7 @@
         "impact:wallet",
         "services/cash-operations.js",
         "services/confirm-pickup-cash-payment.js",
+        "services/invoice-service.js",
         "services/order-status-machine.js",
         "services/payment-cash-confirm.js",
         "services/payment-paypal.js",
@@ -60748,6 +60983,29 @@
       ]
     },
     {
+      "table": "transaction_documents",
+      "writerCount": 6,
+      "writers": [
+        "routes/documents.js",
+        "services/documents/customs-invoice.js",
+        "services/documents/document-service.js",
+        "services/documents/pickup-proof.js",
+        "services/documents/refund-receipt.js",
+        "services/documents/wallet-receipt.js"
+      ]
+    },
+    {
+      "table": "invoices",
+      "writerCount": 5,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/documents.js",
+        "routes/invoices.js",
+        "services/invoice-service.js",
+        "services/order-payment-confirmation.js"
+      ]
+    },
+    {
       "table": "purchase_orders",
       "writerCount": 5,
       "writers": [
@@ -60767,17 +61025,6 @@
         "services/shared-cart-internals.js",
         "services/shared-cart-lifecycle.js",
         "services/shared-cart-queries.js"
-      ]
-    },
-    {
-      "table": "transaction_documents",
-      "writerCount": 5,
-      "writers": [
-        "services/documents/customs-invoice.js",
-        "services/documents/document-service.js",
-        "services/documents/pickup-proof.js",
-        "services/documents/refund-receipt.js",
-        "services/documents/wallet-receipt.js"
       ]
     },
     {
@@ -60858,15 +61105,6 @@
         "routes/admin/users.js",
         "routes/wallet.js",
         "services/wallet-service.js"
-      ]
-    },
-    {
-      "table": "invoices",
-      "writerCount": 3,
-      "writers": [
-        "routes/admin/system.js",
-        "routes/invoices.js",
-        "services/invoice-service.js"
       ]
     },
     {
@@ -61271,6 +61509,12 @@
       "to": "middleware/upload-hub.js",
       "type": "uses",
       "label": "routes/hub.js (POST /photo)"
+    },
+    {
+      "from": "public/boutique/js/b-komerce.js",
+      "to": "documents API",
+      "type": "depends",
+      "label": "documents API"
     },
     {
       "from": "cart-surfaces",
@@ -61949,6 +62193,12 @@
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "admin-dashboards",
@@ -62899,10 +63149,16 @@
       "label": "db.js"
     },
     {
-      "from": "services/documents/contribution-receipt.js",
-      "to": "services/documents/document-service.js",
-      "type": "uses",
-      "label": "services/documents/contribution-receipt.js"
+      "from": "services/documents/pdf-renderer.js",
+      "to": "pdfkit",
+      "type": "depends",
+      "label": "pdfkit"
+    },
+    {
+      "from": "services/documents/pdf-renderer.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
     },
     {
       "from": "services/documents/pickup-proof.js",
@@ -63037,16 +63293,16 @@
       "label": "db"
     },
     {
-      "from": "services/invoice-public-token.js",
-      "to": "crypto",
-      "type": "depends",
-      "label": "crypto"
-    },
-    {
       "from": "services/invoice-service.js",
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "payment confirmation flows",
+      "to": "services/invoice-service.js",
+      "type": "uses",
+      "label": "payment confirmation flows"
     },
     {
       "from": "services/loyalty-service.js",

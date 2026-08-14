@@ -138,9 +138,8 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
           const orderRef = o?.reference;
           notifSvc.notifyPaymentConfirmed(orderId, orderRef)
             .catch(e => log.error({ err: e }, '[CASH-COLLECT-NOTIF] notification failed'));
-          // O7.2 (Cycle A) : lien facture désormais construit/envoyé par orders.
-          require('../services/invoice-service').sendInvoiceReadyNotification(orderId, orderRef)
-            .catch(e => log.error({ err: e }, '[CASH-COLLECT-INVOICE-NOTIF] notification failed'));
+          require('../services/invoice-service').issueInvoice(orderId)
+            .catch(e => log.error({ err: e }, '[CASH-COLLECT-INVOICE] private PDF generation failed'));
           triggerPurchasing(orderId)
             .then(() => log.info({ order_id: orderId }, '[PURCHASING] Cash collect trigger OK'))
             .catch(e => log.error({ err: e, order_id: orderId }, '[PURCHASING] Cash collect trigger error'));

@@ -16,7 +16,7 @@ listé) · ⚪ hors périmètre E2E boutique (couvert ailleurs ou pas de surface
 | F02 | Commande payée 100% wallet : `use_wallet=true`, solde couvre le total → `payment_status='paid'` immédiat | idem F01 + toggle wallet en checkout | `GET /api/orders/:ref` → `payment_status: paid` | 🔴 le compte de test doit avoir un solde wallet ≥ total panier en staging |
 | F03 | Annulation avec remboursement : commande F02 (`paid`) → `POST /:id/cancel` → wallet crédité | bouton annulation (si exposé en boutique) ou API directe | `verifyWalletBalance` avant/après | 🔴 dépend de F02 pour avoir une commande `paid` |
 | F04 | Retrait QR : commande jusqu'au statut `collected` via `GET /api/orders/retrait/:token` | page "Mes commandes" → QR affiché | statut final `collected` | 🔴 nécessite un acteur relais/hub pour scanner le QR (pas d'UI client pour ça) |
-| F05 | Facture publique accessible sans auth après commande | lien facture dans confirmation/historique | `GET /api/invoices/public/:token` (200, PDF/JSON) | 🟡 |
+| F05 | Facture privée téléchargeable dans Mon Komerce | bloc « Mes documents » sous le wallet | `GET /api/auth/me/documents` puis téléchargement PDF authentifié ; même URL refusée sans session | ✅ fait |
 | F06 | Historique commande reflète bien chaque transition | page suivi commande | `GET /api/orders/:id/history` | 🟡 |
 | F07 | Stock décrémenté après commande | `GET /api/products/:id` avant/après F01 | delta stock == qty commandée | 🟡 — `products.stock` est exposé publiquement (`in_stock` filter), pas besoin d'auth admin |
 | F08 | Commande carte Stripe → webhook confirme `payment_status=paid` | checkout, chip "Carte" | webhook serveur-à-serveur, pas de requête navigateur directe | 🔴 hors portée d'un test Playwright pur navigateur — nécessite Stripe test mode + déclenchement webhook côté service (à faire côté backend, pas boutique) |
@@ -48,7 +48,7 @@ listé) · ⚪ hors périmètre E2E boutique (couvert ailleurs ou pas de surface
 
 | ID | Scénario | Départ frontend | Vérif backend | Statut |
 |---|---|---|---|---|
-| F40 | Reçu de remboursement généré après annulation payée | = sous-produit de F03 | `refund-receipt` — endpoint public à identifier | 🔴 dépend de F03 |
+| F40 | Reçu de remboursement généré après annulation payée | = sous-produit de F03 | visible via `GET /api/auth/me/documents`, jamais public | 🔴 dépend de F03 |
 
 ## Hors périmètre E2E boutique
 
@@ -60,7 +60,7 @@ listé) · ⚪ hors périmètre E2E boutique (couvert ailleurs ou pas de surface
 
 1. **F21** (panier groupe complet) — aucun prérequis
 2. **F07** (stock décrémenté) — aucun prérequis, rapide
-3. **F05 / F06 / F31** (facture publique / historique / tracking public) — lecture seule, aucun prérequis
+3. **F05 / F06 / F31** (facture privée / historique / tracking public) — lecture seule, aucun prérequis
 4. **F02** — dès que le solde wallet test est confirmé disponible en staging
 5. **F03 / F11 / F40** — enchaînés après F02
 6. **F30** — dès qu'un compte de test admin/agent est décidé et provisionné

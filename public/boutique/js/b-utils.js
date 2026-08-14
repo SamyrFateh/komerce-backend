@@ -303,6 +303,12 @@ export function apiGet(path, options) {
   const retries = Number.isFinite(opts.retries) ? opts.retries : 2;
   return window.K.request(path, 'GET', null, retries, opts);
 }
+
+/** Télécharge un fichier privé via la session httpOnly courante. */
+export function apiDownload(path, options) {
+  _assertApi();
+  return window.K.download(path, options || {});
+}
 export function apiPost(path, body, options) {
   _assertApi();
   const opts = options || {};

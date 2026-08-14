@@ -305,9 +305,8 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
         const notifSvc = require('./notification-service');
         notifSvc.notifyPaymentConfirmed(smsContext.order_id, smsContext.order_reference)
           .catch(e => log.error({ err: e }, '[STRIPE-NOTIF] notification failed'));
-        // O7.2 (Cycle A) : lien facture désormais construit/envoyé par orders.
-        require('./invoice-service').sendInvoiceReadyNotification(smsContext.order_id, smsContext.order_reference)
-          .catch(e => log.error({ err: e }, '[STRIPE-INVOICE-NOTIF] notification failed'));
+        require('./invoice-service').issueInvoice(smsContext.order_id)
+          .catch(e => log.error({ err: e }, '[STRIPE-INVOICE] private PDF generation failed'));
       } catch (e) { log.error({ err: e }, '[STRIPE-NOTIF] require error'); }
     }
   }

@@ -1471,9 +1471,6 @@ const KNOWN_RESPONSES = {
   },
 
   // invoices.js
-  '/api/invoices/public/{token}': {
-    get: { fields: ['invoice'], source: 'route-read' }
-  },
   '/api/invoices': {
     get: { fields: ['ok','invoices','count'], source: 'route-read' }
   },
@@ -1486,10 +1483,6 @@ const KNOWN_RESPONSES = {
   '/api/invoices/{orderId}/download': {
     get: { fields: ['url'], source: 'route-read' }
   },
-  '/api/invoices/{orderId}/deliver': {
-    post: { fields: ['ok','message'], source: 'route-read' }
-  },
-
   // pricing-strategy.js
   '/api/pricing/strategy/competitors': {
     get:    { fields: ['competitors'], source: 'route-read' },

@@ -92,6 +92,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const hubDashRouter    = require('../routes/hub-dashboard');
   const transitDashRouter = require('../routes/transit-dashboard');
   const invoicesRouter   = require('../routes/invoices');
+  const documentsRouter  = require('../routes/documents');
   const opsApiRouter = require('../routes/ops-api');
   const trackingRouter   = require('../routes/tracking');
   const clientAuthRouter = require('../routes/client-auth');
@@ -158,6 +159,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/cash', cashRouter);
   app.use('/api/auth', clientAuthRouter);
   app.use('/api/client', clientAuthRouter);
+  app.use('/api/auth/me/documents', documentsRouter);
   app.use('/api/invoices',   invoicesRouter);
   app.use('/api/pricing/strategy', pricingStrategyRouter);
   app.use('/api/pricing',    pricingRouter);

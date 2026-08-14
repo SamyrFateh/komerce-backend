@@ -42,6 +42,10 @@ jest.mock('../../utils/logger', () => ({
 }));
 // db.query utilisé pour l'alerte INSERT — on le mock silencieusement
 jest.mock('../../db', () => ({ query: jest.fn().mockResolvedValue({ rows: [] }) }));
+const mockGetOrCreateInvoice = jest.fn().mockResolvedValue({ id: 'invoice-1' });
+jest.mock('../../services/invoice-service', () => ({
+  getOrCreateInvoice: (...args) => mockGetOrCreateInvoice(...args),
+}));
 
 const { transitionOrderStatus } = require('../../services/order-status-machine');
 const { confirmPaymentCycle }   = require('../../services/order-payment-confirmation');
@@ -70,6 +74,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Par défaut : toutes les transitions réussissent
   transitionOrderStatus.mockResolvedValue(okTransition());
+  mockGetOrCreateInvoice.mockResolvedValue({ id: 'invoice-1' });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -165,6 +165,38 @@ describe('komerce-api (window.K)', () => {
     });
   });
 
+  describe('download — document privé', () => {
+    it('récupère le PDF avec la session et extrait son nom', async () => {
+      const blob = new Blob(['%PDF-test'], { type: 'application/pdf' });
+      global.fetch = jest.fn(() => Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: { get: jest.fn(() => 'attachment; filename="facture-FAC-001.pdf"') },
+        blob: jest.fn().mockResolvedValue(blob),
+      }));
+
+      await expect(K.download('/api/auth/me/documents/doc-1/download')).resolves.toEqual({
+        blob,
+        filename: 'facture-FAC-001.pdf',
+      });
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost/api/auth/me/documents/doc-1/download',
+        expect.objectContaining({ method: 'GET', credentials: 'include' })
+      );
+    });
+
+    it('propage une erreur authentifiée sans exposer de lien alternatif', async () => {
+      global.fetch = jest.fn(() => Promise.resolve({
+        ok: false,
+        status: 404,
+        json: jest.fn().mockResolvedValue({ error: 'Document introuvable' }),
+      }));
+
+      await expect(K.download('/api/auth/me/documents/foreign/download'))
+        .rejects.toMatchObject({ message: 'Document introuvable', status: 404 });
+    });
+  });
+
   describe('auth', () => {
     it('login : appelle /api/health puis /api/auth/login, stocke user + flag localStorage', async () => {
       mockFetchSequence([

@@ -6,7 +6,7 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 13,
+    "unknown_responses": 15,
     "total_routes": 423,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
@@ -1535,6 +1535,14 @@
                   },
                   "tracking_phone": {
                     "type": "string"
+                  },
+                  "pickup_code_recipient": {
+                    "type": "string",
+                    "enum": [
+                      "buyer",
+                      "organizer"
+                    ],
+                    "default": "buyer"
                   },
                   "confection_type": {
                     "type": "string",
@@ -12874,13 +12882,35 @@
         }
       }
     },
-    "/api/invoices/public/{token}": {
+    "/api/auth/me/documents": {
       "get": {
-        "summary": "GET /api/invoices/public/{token}",
-        "x-route-file": "routes/invoices.js",
+        "summary": "GET /api/auth/me/documents",
+        "x-route-file": "routes/documents.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/auth/me/documents/{id}/download": {
+      "get": {
+        "summary": "GET /api/auth/me/documents/{id}/download",
+        "x-route-file": "routes/documents.js",
         "parameters": [
           {
-            "name": "token",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -12894,15 +12924,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "invoice": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
                 }
               }
             }
@@ -13057,49 +13080,6 @@
                   "type": "object",
                   "properties": {
                     "url": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/invoices/{orderId}/deliver": {
-      "post": {
-        "summary": "POST /api/invoices/{orderId}/deliver",
-        "x-route-file": "routes/invoices.js",
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "ok": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "message": {
                       "type": "string",
                       "x-observed": true
                     }

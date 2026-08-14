@@ -30,13 +30,14 @@ module.exports = {
   canonicalFeature: 'auth-identity',
   sliceKind: 'frontend-slice',
 
-  service: "Espace personnel protégé Mon Komerce : page unique réunissant wallet, profil, information de retrait sécurisé et autorisation nominative de retrait exceptionnel.",
+  service: "Espace personnel protégé Mon Komerce : page unique réunissant wallet, documents privés téléchargeables, profil et sécurité de retrait.",
 
   perimeter: {
     in: [
       "point d'entrée protégé de Mon Komerce avec restauration de la vue après authentification",
       "page unique sans vue d'ensemble ni sous-navigation interne",
       "bloc wallet utilisant la vérité canonique de la feature wallet",
+      "bloc Mes documents sous le wallet : factures, remboursements, wallet et retraits téléchargés sous session",
       "bloc profil limité aux champs réellement lisibles ou modifiables",
       "WhatsApp du compte affiché en lecture seule sans statut de vérification inventé",
       "devise d'affichage persistée avec le profil",
@@ -48,6 +49,7 @@ module.exports = {
       "authentification, OTP et session (feature auth-identity)",
       "personne de secours et OTP tiers (lots ultérieurs)",
       "suivi et historique de commandes (feature orders-client)",
+      "envoi de documents ou de liens documentaires par WhatsApp",
     ],
   },
 
@@ -70,12 +72,14 @@ module.exports = {
     internalApi: [
       'b-komerce.js / openMonKomerce({ focus })',
       'b-komerce.js / bloc Retrait & sécurité — GET/PUT/DELETE /api/auth/me/pickup-authorization (Lot 5)',
+      'b-komerce.js / bloc Mes documents — GET /api/auth/me/documents + téléchargement PDF authentifié',
     ],
     consumes: [
       'auth — b-komerce.js utilise b-identity.js pour la session et le gate OTP',
       'wallet — b-komerce.js monte la vue wallet canonique',
       'boutique — navigation et bus de la boutique',
       'auth-identity — autorisation nominative de retrait exceptionnel (user_pickup_authorizations, Lot 5)',
+      'documents — liste et téléchargement des PDF privés appartenant au compte',
     ],
   },
 
@@ -89,6 +93,7 @@ module.exports = {
     "le bloc autorisation de retrait exceptionnel n'affiche jamais un statut ACTIVE sans que l'utilisateur ait lui-même enregistré un nom",
     "le code de retrait est annoncé lorsque la commande est prête au relais",
     "Suivi reste un espace autonome consacré aux achats",
+    "les documents sont affichés sous le wallet sans sous-onglet et ne sont jamais liés depuis WhatsApp",
     "avant une identification Mon Komerce, la navigation revient sur un fond Boutique neutre ; une erreur Suivi ou Mes Partages ne reste jamais exposée sous la modale",
   ],
 

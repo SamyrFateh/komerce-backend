@@ -1,13 +1,13 @@
 /**
  * @komerce-arch
  * @role          invoice-service
- * @domain        orders
+ * @domain        documents
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
- * @depends       db
- * @used-by       routes/invoices.js
+ * @outputs       immutable invoice snapshot, private PDF
+ * @depends       db, services/documents/pdf-renderer.js
+ * @used-by       routes/invoices.js, routes/documents.js, payment confirmation flows
  * @db-read       invoices, order_items, orders, parcels, products, recipients, relais
  * @db-write      invoices
  * @db-txn        resolve_before_behavior_change
@@ -32,6 +32,7 @@
 
 const pool = require('../db');
 const log = require('../utils/logger').child({ module: 'invoice-service' });
+const { renderPdf } = require('./documents/pdf-renderer');
 
 class InvoiceService {
 
@@ -39,10 +40,15 @@ class InvoiceService {
    * Get or create invoice for an order
    * Returns existing invoice if already generated
    */
-  async getOrCreateInvoice(orderId) {
+  async getOrCreateInvoice(orderId, { dbClient } = {}) {
+    const db = dbClient || pool;
     // Check if invoice already exists
-    const existing = await pool.query(
-      'SELECT * FROM invoices WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1',
+    const existing = await db.query(
+      `SELECT i.*, o.reference AS order_reference
+         FROM invoices i
+         JOIN orders o ON o.id = i.order_id
+        WHERE i.order_id = $1
+        ORDER BY i.created_at DESC LIMIT 1`,
       [orderId]
     );
     if (existing.rows.length > 0) {
@@ -50,11 +56,11 @@ class InvoiceService {
     }
 
     // Load order + items + relay + recipient
-    const orderRes = await pool.query(`
+    const orderRes = await db.query(`
       SELECT 
         o.id, o.reference, o.total_kmf, o.cost_transport_kmf, 
         o.payment_mode, o.payment_status,
-        o.relais_id, o.recipient_id,
+        o.relais_id, o.recipient_id, o.user_id,
         r.full_name AS client_name, r.phone AS client_phone,
         rel.name AS relay_name
       FROM orders o
@@ -75,7 +81,7 @@ class InvoiceService {
     }
 
     // Load items with product names
-    const itemsRes = await pool.query(`
+    const itemsRes = await db.query(`
       SELECT 
         oi.quantity, oi.price_kmf,
         p.name AS product_name
@@ -93,14 +99,14 @@ class InvoiceService {
     }));
 
     // Get parcel reference if exists
-    const parcelRes = await pool.query(
+    const parcelRes = await db.query(
       'SELECT id, reference FROM parcels WHERE order_id = $1 LIMIT 1',
       [orderId]
     );
     const parcel = parcelRes.rows[0] || null;
 
     // Generate invoice number
-    const seqRes = await pool.query("SELECT nextval('invoice_seq') AS seq");
+    const seqRes = await db.query("SELECT nextval('invoice_seq') AS seq");
     const seq = seqRes.rows[0].seq;
     const year = new Date().getFullYear();
     const invoiceNumber = `KOM-INV-${year}-${String(seq).padStart(6, '0')}`;
@@ -110,13 +116,14 @@ class InvoiceService {
     const total = order.total_kmf;
 
     // Insert invoice (immutable snapshot)
-    const insertRes = await pool.query(`
+    const insertRes = await db.query(`
       INSERT INTO invoices (
         invoice_number, order_id, parcel_id,
         client_name, client_phone, relay_name,
         items_snapshot, subtotal_kmf, shipping_kmf, total_kmf,
-        payment_mode, payment_status
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        payment_mode, payment_status, owner_user_id
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+      ON CONFLICT (order_id) DO UPDATE SET order_id = EXCLUDED.order_id
       RETURNING *
     `, [
       invoiceNumber,
@@ -130,7 +137,8 @@ class InvoiceService {
       0,  // shipping_kmf = 0 (livraison incluse dans le prix)
       total,
       order.payment_mode,
-      order.payment_status
+      order.payment_status,
+      order.user_id,
     ]);
 
     const invoice = insertRes.rows[0];
@@ -139,64 +147,32 @@ class InvoiceService {
     return invoice;
   }
 
-  /**
-   * Envoie le lien de facture public par WhatsApp (fire-and-forget, non-bloquant).
-   *
-   * O7.2 (Cycle A) : ce service était auparavant déclenché depuis
-   * services/notifications/order.js, qui devait importer invoice-service.js
-   * ET invoice-public-token.js (deux fichiers `orders`) pour construire le
-   * lien — créant la dépendance cross-feature notifications -> orders et
-   * fermant le cycle notifications <-> orders. `orders` possède la
-   * représentation publique de la facture ; `notifications` ne doit que
-   * transporter un message déjà prêt. Voir docs/O7_2_CYCLE_ANALYSIS.md.
-   *
-   * Appelé en post-commit (payment_status déjà 'paid') par les flux de
-   * confirmation de paiement. Ne lève jamais — toute erreur est loggée et
-   * non-fatale pour l'appelant (même contrat que l'ancien code).
-   */
-  async sendInvoiceReadyNotification(orderId, orderReference) {
-    try {
-      const invoice = await this.getOrCreateInvoice(orderId);
-      const phone = invoice.client_phone;
+  async ensurePdf(invoice, { dbClient } = {}) {
+    if (!invoice) throw new Error('[invoice-service] facture requise');
+    if (invoice.pdf_content) return invoice;
+    const db = dbClient || pool;
+    const rendered = await renderPdf({ documentType: 'invoice', document: invoice });
+    const { rows } = await db.query(
+      `UPDATE invoices
+          SET pdf_content = $2,
+              pdf_sha256 = $3,
+              pdf_filename = $4,
+              pdf_generated_at = NOW(),
+              template_version = $5
+        WHERE id = $1 AND pdf_content IS NULL
+        RETURNING *`,
+      [invoice.id, rendered.buffer, rendered.sha256, rendered.filename, rendered.templateVersion]
+    );
+    if (rows[0]) return { ...invoice, ...rows[0] };
+    return (await db.query('SELECT * FROM invoices WHERE id = $1 LIMIT 1', [invoice.id])).rows[0];
+  }
 
-      if (!phone) {
-        log.warn({ order_id: orderId, order_ref: orderReference }, '[invoice-service] invoice ready notification skipped: no phone');
-        return { ok: false, reason: 'no_phone' };
-      }
-
-      const { createInvoicePublicToken } = require('./invoice-public-token');
-      const token = createInvoicePublicToken(orderId);
-      const appUrl = process.env.APP_URL || process.env.PUBLIC_URL || 'https://app.komerce.km';
-      const publicUrl = `${appUrl}/api/invoices/public/${token}`;
-
-      const msg = invoice.payment_mode === 'cash_relais'
-        ? `Komerce : votre paiement est enregistre. Recapitulatif : ${publicUrl}`
-        : `Komerce : votre facture est disponible : ${publicUrl}`;
-
-      // POST-O8 (INVOICE_AUTHKEY_WID) : route via notifyInvoiceReady au lieu de
-      // notifyText. `orders` construit toujours l'URL publique signée (ci-dessus) ;
-      // `notifications` choisit le transport (template WID si AUTHKEY_WID_INVOICE_READY
-      // est configuré, sinon repli texte libre identique au comportement précédent).
-      // Voir docs/POST_O8_BUSINESS_SEMANTIC_AUDIT.md §INVOICE_AUTHKEY_WID.
-      const { notifyInvoiceReady } = require('./notification-service');
-      const result = await notifyInvoiceReady(
-        phone,
-        { publicUrl, message: msg, invoiceNumber: invoice.invoice_number },
-        orderId,
-      );
-
-      if (result && result.ok) {
-        log.info({ order_ref: orderReference, invoice_number: invoice.invoice_number }, '[invoice-service] Invoice link sent');
-      } else {
-        const reason = (result && (result.reason || result.error)) || 'unknown';
-        log.warn({ order_ref: orderReference, invoice_number: invoice.invoice_number, reason }, '[invoice-service] Invoice link NOT sent');
-      }
-      return result;
-    } catch (err) {
-      // Génération de facture impossible (ex. payment_status pas encore 'paid' — race).
-      log.warn({ err, order_id: orderId, order_ref: orderReference }, '[invoice-service] Invoice ready notification skipped (non-fatal)');
-      return { ok: false, error: err.message };
-    }
+  /** Génère et conserve la facture PDF. Aucun message ni lien public n'est émis. */
+  async issueInvoice(orderId, { dbClient } = {}) {
+    const invoice = await this.getOrCreateInvoice(orderId, { dbClient });
+    const ready = await this.ensurePdf(invoice, { dbClient });
+    log.info({ order_id: orderId, invoice_number: ready.invoice_number }, '[invoice-service] Private PDF available');
+    return ready;
   }
 
   /**
@@ -226,16 +202,6 @@ class InvoiceService {
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
     return res.rows;
-  }
-
-  /**
-   * Mark invoice as delivered
-   */
-  async markDelivered(invoiceId, via) {
-    await pool.query(
-      'UPDATE invoices SET delivered_via = $1, delivered_at = NOW() WHERE id = $2',
-      [via, invoiceId]
-    );
   }
 
   /**

@@ -25,3 +25,10 @@ Les anciens states, tâches, worklogs, prompts, preuves brutes, handoffs, lanes 
 - Modifier une source canonique existante au lieu de créer un document parallèle.
 - Ne pas committer de ZIP, patch, coverage, log brut ou prompt temporaire.
 - Une preuve reproductible se résume à la commande, au verdict et au commit.
+
+## Chantier actif — documents clients privés
+
+- Feature propriétaire : `documents` ; consommateurs : `orders`, `account`, `dashboard`.
+- Factures et documents transactionnels sont matérialisés en PDF immuable, avec propriétaire et empreinte SHA-256.
+- Consultation et téléchargement uniquement sous `/api/auth/me/documents` ; aucune URL publique et aucun envoi WhatsApp.
+- La migration `131_private_client_documents.sql` porte le schéma et le backfill de propriété.

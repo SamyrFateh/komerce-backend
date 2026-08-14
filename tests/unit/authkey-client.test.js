@@ -224,13 +224,10 @@ describe('authkey-client — envFirst / WID', () => {
     expect(WID.ordercreated).toBe('mid-id');
   });
 
-  it('WID.invoiceready reste null/undefined quand aucune variable n\'est fournie (pas de défaut)', () => {
+  it('n’expose aucun template WhatsApp de facture', () => {
     process.env.NODE_ENV = 'production';
-    delete process.env.AUTHKEY_WID_INVOICE_READY;
-    delete process.env.AUTHKEY_INVOICE_READY_WID;
-    delete process.env.WID_INVOICE_READY;
     const { WID } = require('../../services/authkey-client');
-    expect(WID.invoiceready).toBeNull();
+    expect(WID).not.toHaveProperty('invoiceready');
   });
 });
 
@@ -267,6 +264,19 @@ describe('authkey-client — toBodyValues (via callAuthKey)', () => {
       wid: '999',
       mobile: '+33612345678',
       variables: { name: 'Ali', order_ref: undefined, amount: null, relay_point: '' },
+    });
+    const [, opts] = global.fetch.mock.calls[0];
+    const sentBody = JSON.parse(opts.body);
+    expect(sentBody.bodyValues).toEqual({ name: 'Ali' });
+  });
+
+  it('ignore explicitement les champs de facture et de lien documentaire', async () => {
+    mockFetchOnce({ Status: 'success', MessageID: '1' });
+    const { callAuthKey } = require('../../services/authkey-client');
+    await callAuthKey({
+      wid: '999',
+      mobile: '+33612345678',
+      variables: { name: 'Ali', invoice_number: 'FAC-001', invoice_url: 'https://example.test/facture' },
     });
     const [, opts] = global.fetch.mock.calls[0];
     const sentBody = JSON.parse(opts.body);

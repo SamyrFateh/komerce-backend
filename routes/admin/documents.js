@@ -31,10 +31,10 @@ const guard = [authenticate, requireRole(['admin'])];
 //
 // Query params :
 //   document_type  refund_receipt | wallet_receipt | pickup_proof |
-//                  customs_invoice | contribution_receipt
+//                  customs_invoice
 //   order_id       UUID commande
 //   subject_id     UUID sujet (refund_id, wallet_tx_id, etc.)
-//   status         generated | delivered | error
+//   status         pending | available | error
 //   from           ISO date (issued_at >=)
 //   to             ISO date (issued_at <=)
 //   limit          défaut 50, max 200
@@ -112,8 +112,8 @@ router.get('/documents/summary', ...guard, async (req, res, next) => {
       SELECT
         document_type,
         COUNT(*)                              AS total,
-        COUNT(*) FILTER (WHERE status = 'generated') AS generated,
-        COUNT(*) FILTER (WHERE status = 'delivered') AS delivered,
+        COUNT(*) FILTER (WHERE status = 'pending')   AS pending,
+        COUNT(*) FILTER (WHERE status = 'available') AS available,
         COUNT(*) FILTER (WHERE status = 'error')     AS error,
         MAX(issued_at)                        AS last_issued_at,
         MIN(issued_at)                        AS first_issued_at

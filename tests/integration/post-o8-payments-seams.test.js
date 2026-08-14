@@ -62,7 +62,7 @@ if (!hasIntegrationEnv) {
     return {
       loyalty: jest.spyOn(loyaltyService, 'handleOrderConfirmed').mockResolvedValue({ skipped: true }),
       notif: jest.spyOn(notifService, 'notifyPaymentConfirmed').mockResolvedValue({ ok: true }),
-      invoice: jest.spyOn(invoiceService, 'sendInvoiceReadyNotification').mockResolvedValue({ ok: true }),
+      invoice: jest.spyOn(invoiceService, 'issueInvoice').mockResolvedValue({ pdf_content: Buffer.from('%PDF') }),
       purchasing: jest.spyOn(purchasingTrigger, 'triggerPurchasing').mockResolvedValue({ ok: true }),
     };
   }

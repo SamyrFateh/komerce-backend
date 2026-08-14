@@ -284,8 +284,8 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
         const notifSvc = require('./notification-service');
         notifSvc.notifyPaymentConfirmed(order.id, order.reference)
           .catch(e => log.error({ err: e }, '[PAYPAL] notif payment-confirmed failed'));
-        require('./invoice-service').sendInvoiceReadyNotification(order.id, order.reference)
-          .catch(e => log.error({ err: e }, '[PAYPAL] invoice-ready notif failed'));
+        require('./invoice-service').issueInvoice(order.id)
+          .catch(e => log.error({ err: e }, '[PAYPAL] private invoice PDF generation failed'));
       } catch (e) { log.error({ err: e }, '[PAYPAL] notif require error'); }
 
       try {
@@ -501,8 +501,8 @@ async function _handleCaptureCompleted(event, db, paypal) {
         const notifSvc = require('./notification-service');
         notifSvc.notifyPaymentConfirmed(order.id, order.reference)
           .catch(e => log.error({ err: e }, '[PAYPAL-WEBHOOK] notif failed'));
-        require('./invoice-service').sendInvoiceReadyNotification(order.id, order.reference)
-          .catch(e => log.error({ err: e }, '[PAYPAL-WEBHOOK] invoice-ready notif failed'));
+        require('./invoice-service').issueInvoice(order.id)
+          .catch(e => log.error({ err: e }, '[PAYPAL-WEBHOOK] private invoice PDF generation failed'));
       } catch (e) { log.error({ err: e }, '[PAYPAL-WEBHOOK] notif require error'); }
       try {
         const { triggerPurchasing } = require('./purchasing-trigger-service');

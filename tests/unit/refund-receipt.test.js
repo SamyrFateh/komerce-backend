@@ -43,7 +43,7 @@ describe('refund-receipt', () => {
 
   it('emet un recu de remboursement confirme avec reference stable', async () => {
     const refund = {
-      id: 'refund-001', order_id: 'order-001', status: 'completed',
+      id: 'refund-001', order_id: 'order-001', user_id: 'user-001', status: 'completed',
       order_reference: 'CMD-001', invoice_number: 'FAC-001', invoice_id: 'inv-001',
       amount_kmf: 5000, amount_eur: 10.16, refund_method: 'stripe', refund_type: 'partial',
       stripe_refund_id: 're_001', reason: 'annulation', completed_at: '2026-06-01T00:00:00Z',
@@ -63,6 +63,7 @@ describe('refund-receipt', () => {
       subjectId: 'refund-001',
       orderId: 'order-001',
       refundId: 'refund-001',
+      ownerUserId: 'user-001',
       reference: 'REM-2026-000042',
       issuedBy: 'admin-001',
       metadata: expect.objectContaining({ order_reference: 'CMD-001', amount_kmf: 5000, refund_method: 'stripe' }),

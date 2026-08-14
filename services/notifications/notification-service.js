@@ -27,7 +27,7 @@
  *   services/notifications/parcel.js     notifyParcelScan, notifyParcelCreated, _loadOrderFromParcel
  *   services/notifications/otp-auth.js   sendOtpMessage, sendMagicLink
  *   services/notifications/loyalty.js    notifyLoyaltyEarned
- *   services/notifications/misc.js       notifyText, notifyInvoiceReady
+ *   services/notifications/misc.js       notifyText
  *
  * Zéro changement d'interface — tous les appelants continuent de
  * require('./notification-service') ou require('../services/notification-service').
@@ -40,7 +40,7 @@ const { notifyOrderCreated, notifyPaymentConfirmed, notifyStatusChange, notifyCa
 const { _loadOrderFromParcel, notifyParcelScan, notifyParcelCreated } = require('./parcel');
 const { sendOtpMessage, sendMagicLink } = require('./otp-auth');
 const { notifyLoyaltyEarned } = require('./loyalty');
-const { notifyText, notifyInvoiceReady } = require('./misc');
+const { notifyText } = require('./misc');
 
 module.exports = {
   // Flux commande
@@ -59,9 +59,6 @@ module.exports = {
 
   // ZG-1 — texte libre
   notifyText,
-
-  // POST-O8 (INVOICE_AUTHKEY_WID) — transport dédié facture (WID template si configuré)
-  notifyInvoiceReady,
 
   // Fidélité
   notifyLoyaltyEarned,

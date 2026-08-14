@@ -1,6 +1,6 @@
 # LEDGER — état de clôture Komerce
 
-Mis à jour : 2026-07-28
+Mis à jour : 2026-08-14
 
 ## Source de vérité opérationnelle
 
@@ -85,3 +85,12 @@ Clos pour le périmètre indiscutable :
 - Audit npm : advisory réel dédupliqué ; exception dev-only `brace-expansion` expirant le 2026-08-15.
 - Les anciens nombres « 13 tests/suites cassés » ne décrivent plus l’état courant.
 - Les workflows de diagnostic, prompts, patches, archives de travail et marqueurs temporaires ont été retirés.
+
+## Documents clients privés — 2026-08-14
+
+- Le manifeste `documents` possède désormais le cycle complet des factures et documents transactionnels.
+- Les PDF sont générés côté serveur, stockés avec `owner_user_id`, nom, version et SHA-256, puis servis avec contrôle d'identité et réponse `404` en cas d'IDOR.
+- `Mon Komerce` affiche les documents sous le portefeuille et les télécharge avec la session authentifiée.
+- Les routes publiques de facture et la notification WhatsApp de facture ont été retirées ; WhatsApp ne transporte ni document ni lien de document.
+- Le paiement confirmé crée l'instantané de facture dans la transaction, y compris wallet et liste partagée ; les reprises restent idempotentes.
+- Tests ciblés documents, paiements et boutique : verts. Suite unitaire globale : 349 suites vertes sur 352 exécutées ; trois échecs de baseline hors périmètre (ordre du modal mobile, date locale pickup, générateur sécurité sans environnement complet).

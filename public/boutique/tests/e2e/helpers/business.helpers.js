@@ -39,29 +39,35 @@ async function getProductStock(page, productId) {
   }, { pid: productId, base: API_BASE });
 }
 
-// ─── F05 — Facture publique ──────────────────────────────────────────────────
+// ─── F05 — Documents privés ─────────────────────────────────────────────────
 
 /**
- * Récupère une facture publique via GET /api/invoices/public/:token (sans auth).
- * Retourne { status: number, contentType: string, hasContent: boolean }.
+ * Liste les documents du compte courant. Le cookie de session est la seule
+ * preuve d'accès : aucun jeton public n'est accepté.
  */
-async function fetchPublicInvoice(page, token) {
+async function getPrivateDocuments(page) {
+  return page.evaluate(async (base) => {
+    try {
+      const resp = await fetch(new URL('/api/auth/me/documents', base).href, { credentials: 'include' });
+      const body = await resp.json().catch(() => ({}));
+      return { status: resp.status, documents: body.documents || [] };
+    } catch (e) { return { status: 0, documents: [], error: e.message }; }
+  }, API_BASE);
+}
+
+/** Télécharge un document avec la session du contexte Playwright courant. */
+async function downloadPrivateDocument(page, downloadUrl) {
   return page.evaluate(async (args) => {
     try {
-      const resp = await fetch(
-        new URL(`/api/invoices/public/${args.token}`, args.base).href
-      );
-      const ct = resp.headers.get('content-type') || '';
-      const body = await resp.text();
+      const resp = await fetch(new URL(args.path, args.base).href, { credentials: 'include' });
+      const body = await resp.arrayBuffer();
       return {
         status: resp.status,
-        contentType: ct,
-        hasContent: body.length > 0,
-        isHtml: ct.includes('text/html'),
-        isJson: ct.includes('application/json'),
+        contentType: resp.headers.get('content-type') || '',
+        bytes: body.byteLength,
       };
-    } catch (e) { return { status: 0, contentType: '', hasContent: false, error: e.message }; }
-  }, { token, base: API_BASE });
+    } catch (e) { return { status: 0, contentType: '', bytes: 0, error: e.message }; }
+  }, { path: downloadUrl, base: API_BASE });
 }
 
 // ─── F06 — Historique commande ───────────────────────────────────────────────
@@ -185,7 +191,8 @@ async function getPublicEstimations(page, token) {
 
 module.exports = {
   getProductStock,
-  fetchPublicInvoice,
+  getPrivateDocuments,
+  downloadPrivateDocument,
   getOrderHistory,
   getOrderByRef,
   fetchPublicTracking,

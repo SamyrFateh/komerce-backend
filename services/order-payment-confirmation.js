@@ -6,10 +6,10 @@
  * @criticality   critical
  * @inputs        orderId, actor, source, dbClient
  * @outputs       confirmed_order, ordered_transition, stock_decrement, stockBlocked
- * @depends       services/order-status-machine.js, db.js
+ * @depends       services/order-status-machine.js, services/invoice-service.js, db.js
  * @used-by       services/payment-stripe.js, services/payment-cash-confirm.js, services/shared-cart-engine.js, paypal-flows, wallet-full-order-flows
  * @db-read       order_items, product_skus, product_variants, products
- * @db-write      alerts
+ * @db-write      alerts, invoices
  * @db-write-via:product-admin-service products, product_variants, product_skus
  * @db-txn        caller_transaction_required, stock_for_update, confirmPaymentCycle_unique
  * @doctrine      transaction_existante_obligatoire, confirmPaymentCycle_unique, stock_for_update, cash_rollback_vs_stripe_alert, inventory_model_dispatch_no_fallback
@@ -69,6 +69,7 @@ const { adjustStock }           = require('./product-admin-service');
 const log = require('../utils/logger').child({ module: 'order-payment-confirmation' });
 const db  = require('../db');
 const { createAlert } = require('../utils/alerts');
+const invoiceService = require('./invoice-service');
 
 async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   if (!dbClient) {
@@ -98,7 +99,9 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   });
 
   if (confirmResult.noop) {
-    // Transition déjà effectuée (idempotence) → pas d'erreur mais rien à faire
+    // Une reprise peut arriver après la confirmation mais avant la création du
+    // snapshot documentaire. L'idempotence de invoices(order_id) ferme ce trou.
+    await invoiceService.getOrCreateInvoice(orderId, { dbClient });
     return { success: true, noop: true, stockBlocked: false, insufficientItems: [] };
   }
   if (!confirmResult.success) {
@@ -259,6 +262,11 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
       });
     }
   }
+
+  // Le snapshot officiel est créé dans la même transaction que la confirmation.
+  // Si le cash est finalement refusé pour stock insuffisant, le rollback le
+  // retire aussi. Si Stripe a déjà encaissé, il reste disponible malgré l'alerte.
+  await invoiceService.getOrCreateInvoice(orderId, { dbClient });
 
   if (insufficientItems.length > 0) {
     // Retourner le flag — l'appelant décide :

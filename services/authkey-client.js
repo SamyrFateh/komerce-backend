@@ -18,12 +18,8 @@
  *                fournisseur tiers d'API WhatsApp (authkey.io), collision de
  *                nom avec "auth". Aucune logique d'authentification. Voir
  *                docs/O7_1_OWNERSHIP_ANALYSIS.md, CAS A.
- * @o7_2          Cycle A (2026-07) — la construction du lien de facture
- *                publique a été déplacée vers services/invoice-service.js
- *                (orders), qui envoie désormais un message déjà prêt via
- *                notifyText. Ce fichier ne dépend plus d'invoice-public-token.js
- *                — cycle runtime notifications<->orders cassé côté notifications.
- *                Voir docs/O7_2_CYCLE_ANALYSIS.md.
+ * @o7_2          Cycle A clos : aucune capacité facture n'est exposée à
+ *                WhatsApp ; les PDF privés restent dans Mon Komerce.
  */
 
 'use strict';
@@ -118,15 +114,7 @@ const WID = {
     'AUTHKEY_ABANDONED_CART_WID',
     'WID_ABANDONED_CART'
   ) || '32187',
-  invoiceready: envFirst(
-    'AUTHKEY_WID_INVOICE_READY',
-    'AUTHKEY_INVOICE_READY_WID',
-    'WID_INVOICE_READY'
-  ),
 };
-
-// O7.2 (Cycle A) : USE_INVOICE_READY_TEMPLATE retiré — ne pilotait plus que
-// la détection d'URL de facture supprimée ci-dessous (zéro appelant réel).
 
 // ─── Détection automatique de l'indicatif pays ──────────────────────────
 // Komerce sert les Comores (269) ET la diaspora (France 33, etc.)
@@ -208,8 +196,6 @@ function toBodyValues(variables = {}) {
     'amount',
     'relay_point',
     'item_count',
-    'invoice_number',
-    'invoice_url',
     'code',
     'otp',
     'link',
@@ -234,15 +220,8 @@ function toBodyValues(variables = {}) {
   return bodyValues;
 }
 
-// O7.2 (Cycle A) : extractFirstUrl / looksLikeInvoiceMessage / toPublicInvoiceUrl
-// retirés — cette détection/signature d'URL de facture n'avait plus aucun
-// appelant réel depuis que services/notifications/order.js construit et
-// envoie désormais un lien de facture déjà public (services/invoice-service.js,
-// orders). Les conserver aurait maintenu l'import de invoice-public-token.js
-// (dépendance cross-feature notifications -> orders) pour du code mort, et
-// une éventuelle réactivation future enverrait une URL non signée en clair
-// (contraire à la doctrine lien_facture_public_non_devinable). Voir
-// docs/O7_2_CYCLE_ANALYSIS.md, Cycle A.
+// Aucun champ invoice_number / invoice_url n'est accepté : le canal WhatsApp
+// ne transporte ni document ni lien documentaire.
 
 async function callAuthKeyText({ mobile, message }) {
   if (!API_KEY) {
@@ -472,11 +451,6 @@ async function notifyAbandonedCart({ mobile, name, itemCount }) {
     variables: { name, item_count: String(itemCount) },
   });
 }
-
-// O7.2 (Cycle A) : notifyInvoiceReady retiré — zéro appelant réel dans le
-// repo (services/notifications/order.js construit désormais le message
-// facture lui-même via services/invoice-service.js/notifyText). Le conserver
-// aurait maintenu l'import de invoice-public-token.js pour du code mort.
 
 module.exports = {
   callAuthKey,

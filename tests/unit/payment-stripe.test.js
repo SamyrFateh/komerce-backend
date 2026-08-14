@@ -46,9 +46,9 @@ jest.mock('../../services/notification-service', () => ({
 }));
 
 // O7.2 (Cycle A) : voir docs/O7_2_CYCLE_ANALYSIS.md.
-const mockSendInvoiceReadyNotification = jest.fn().mockResolvedValue({ ok: true });
+const mockIssueInvoice = jest.fn().mockResolvedValue({ pdf_content: Buffer.from('%PDF') });
 jest.mock('../../services/invoice-service', () => ({
-  sendInvoiceReadyNotification: (...args) => mockSendInvoiceReadyNotification(...args),
+  issueInvoice: (...args) => mockIssueInvoice(...args),
 }));
 
 const { makeClient } = require('../integration/test-harness/mock-db');

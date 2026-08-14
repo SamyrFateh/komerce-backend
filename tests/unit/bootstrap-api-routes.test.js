@@ -35,7 +35,7 @@ const ROUTE_MODULE_NAMES = [
   'admin/catalog-approval',
   'auth', 'auto-distribute-api', 'baskets', 'boutique-suggestions', 'carriers',
   'cash', 'categories', 'client-auth', 'client-tracking', 'dashboard', 'economic',
-  'finance', 'health', 'hub', 'hub-dashboard', 'hub-mark-ordered', 'inventory-api',
+  'documents', 'finance', 'health', 'hub', 'hub-dashboard', 'hub-mark-ordered', 'inventory-api',
   'invoices', 'logistics', 'loyalty', 'meta-whatsapp', 'modules', 'notification-api',
   'ops-api', 'order-api-v2', 'orders', 'otp', 'parcel-api-v2', 'parcel-label',
   'parcels', 'payments', 'payments-paypal', 'pickup-secret', 'pricing',
@@ -132,6 +132,7 @@ describe('bootstrap/api-routes', () => {
       expect(app.use).toHaveBeenCalledWith('/api/admin/dashboard', mockMarkers['admin-dashboard']);
       expect(app.use).toHaveBeenCalledWith('/api/admin/costing', mockMarkers['admin-costing']);
       expect(app.use).toHaveBeenCalledWith('/api/dashboard', mockMarkers['dashboard']);
+      expect(app.use).toHaveBeenCalledWith('/api/auth/me/documents', mockMarkers['documents']);
     });
 
     test('parcel-api-v2 est monté AVANT le générique /api/v2 (ordre critique)', () => {

@@ -138,6 +138,7 @@ async function issue(refundId, { dbClient, issuedBy } = {}) {
     refundId:     refundId,
     reference,
     issuedBy:     issuedBy || null,
+    ownerUserId:  refund.user_id,
     metadata,
     dbClient:     db,
   });

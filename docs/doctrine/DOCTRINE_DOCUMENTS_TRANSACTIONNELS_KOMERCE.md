@@ -1,6 +1,6 @@
 # Doctrine des documents transactionnels Komerce
 
-> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+> **Version** : 2026-08 — accès client authentifié, aucun transport documentaire WhatsApp.
 
 ## Statut du document
 
@@ -28,7 +28,7 @@ Donc :
 commande créée        -> notification, pas facture
 paiement confirmé     -> facture
 remboursement confirmé -> avoir / reçu de remboursement
-contribution payée    -> reçu de contribution
+commande issue d'une liste partagée payée -> facture de cette commande
 wallet crédité/débité -> reçu wallet / relevé wallet
 retrait confirmé      -> preuve de retrait
 sourcing déclenché    -> bon de commande fournisseur interne
@@ -49,7 +49,7 @@ Komerce mélange plusieurs réalités métier :
 - paiement Stripe / PayPal ;
 - wallet ;
 - panier partagé ;
-- contribution individuelle ;
+- liste partagée avec commandes indépendantes ;
 - annulation ;
 - remboursement ;
 - retrait relais ;
@@ -62,7 +62,7 @@ La couche documentaire sert à :
 - protéger la confiance client ;
 - éviter les preuves émises trop tôt ;
 - garder une cohérence comptable ;
-- rendre les notifications WhatsApp plus claires ;
+- rendre les documents directement disponibles dans le compte client ;
 - donner aux admins une trace stable ;
 - éviter les doublons causés par les webhooks rejoués ;
 - séparer document client, document interne et document fournisseur.
@@ -75,7 +75,8 @@ Chaque document transactionnel doit être :
 - idempotent ;
 - lié à une référence métier stable ;
 - généré depuis des données figées ;
-- accessible via un lien sécurisé ou un espace authentifié ;
+- accessible uniquement dans un espace authentifié, avec contrôle du propriétaire ;
+- matérialisé en PDF privé avec empreinte d'intégrité ;
 - traçable dans l'historique de la commande, du panier, du wallet ou du remboursement.
 
 Un document ne doit jamais être généré :
@@ -146,34 +147,15 @@ Générer seulement après succès réel :
 - refund PayPal accepté ;
 - crédit wallet confirmé ;
 - remboursement cash marqué comme exécuté par un admin ;
-- contribution panier partagé remboursée.
+- commande issue d'une liste partagée remboursée.
 
-### 3. Reçu de contribution panier partagé
+### 3. Liste partagée
 
-Document participant.
+La liste partagée actuelle n'est pas un système de contributions financières.
+Chaque acheteur paie sa propre commande et reçoit la facture de cette commande.
 
-Déclencheur :
-
-```text
-shared_cart_contribution_paid
-```
-
-Il prouve qu'une personne a contribué à un panier partagé.
-
-Ce document ne remplace pas forcément la facture finale de commande.
-
-Il doit contenir :
-
-- référence du panier partagé ;
-- référence de contribution ;
-- prénom ou identité déclarée ;
-- téléphone si disponible ;
-- montant payé ;
-- mode de paiement ;
-- date de contribution ;
-- statut du panier au moment du paiement.
-
-Si le panier est ensuite annulé, la contribution payée peut donner lieu à un reçu de remboursement séparé.
+Aucun « reçu de contribution » ne doit être réintroduit sans un nouveau domaine
+métier de contribution payé et confirmé.
 
 ### 4. Reçu wallet / relevé wallet
 
@@ -202,7 +184,7 @@ Chaque mouvement important doit pouvoir être expliqué par une référence :
 - remboursement ;
 - geste commercial ;
 - annulation ;
-- contribution.
+- commande issue d'une liste partagée.
 
 ### 5. Preuve de retrait relais
 
@@ -276,7 +258,6 @@ Ou une structure équivalente :
 services/documents/
   invoice.js
   refund-receipt.js
-  contribution-receipt.js
   wallet-receipt.js
   pickup-receipt.js
   purchase-order.js
@@ -287,7 +268,7 @@ Le principe doit rester :
 ```text
 service métier confirme l'événement
 -> service documentaire génère ou retourne le document existant
--> notification utilise le lien documentaire
+-> compte authentifié liste et télécharge le document
 ```
 
 ## Table ou stockage recommandé
@@ -309,13 +290,18 @@ subject_type
 subject_id
 order_id
 shared_cart_id
-contribution_id
 wallet_transaction_id
 refund_id
 reference
 status
 file_url
 file_storage_key
+owner_user_id
+pdf_content
+pdf_sha256
+pdf_filename
+pdf_generated_at
+template_version
 issued_at
 issued_by
 metadata
@@ -334,7 +320,6 @@ ou une contrainte plus spécifique selon le type :
 ```text
 UNIQUE(document_type, order_id)
 UNIQUE(document_type, refund_id)
-UNIQUE(document_type, contribution_id)
 UNIQUE(document_type, wallet_transaction_id)
 ```
 
@@ -366,7 +351,7 @@ Cette règle est obligatoire pour :
 - double clic admin ;
 - retry réseau ;
 - tâche cron relancée ;
-- notification WhatsApp rejouée.
+- consultation client répétée.
 
 ## Séparation des responsabilités
 
@@ -374,23 +359,23 @@ Le service métier décide si l'événement est confirmé.
 
 Le service documentaire génère la preuve.
 
-Le service notification envoie le lien.
+La route authentifiée vérifie le propriétaire puis transmet le PDF.
 
 Donc :
 
 ```text
 payment-service       -> confirme paiement
 invoice-service       -> émet facture
-notification-service  -> envoie facture
+documents route       -> contrôle propriétaire et télécharge
 ```
 
 ```text
-refund-service        -> confirme remboursement
+refund-service          -> confirme remboursement
 refund-document-service -> émet avoir / reçu
-notification-service  -> envoie reçu
+documents route         -> contrôle propriétaire et télécharge
 ```
 
-La notification ne doit pas générer elle-même le document.
+La notification ne doit ni générer, ni joindre, ni lier le document.
 
 Le générateur PDF ne doit pas décider si un événement est valide.
 
@@ -455,23 +440,22 @@ Le document doit contenir :
 - solde restant payé si remboursement partiel ;
 - référence du panier partagé ou contribution si applicable.
 
-## Doctrine panier partagé
+## Doctrine liste partagée
 
-Le panier partagé introduit deux niveaux :
+La liste partagée introduit plusieurs commandes indépendantes :
 
 ```text
-participant paie une contribution -> reçu de contribution
-panier donne lieu à commande payée -> facture de commande
-panier annulé avec contributions payées -> reçus de remboursement par participant
+acheteur réserve des articles -> pas de document
+acheteur paie sa commande -> facture de sa commande
+commande remboursée -> reçu de remboursement de son payeur
 ```
 
 Ne pas confondre :
 
-- estimation de contribution ;
-- engagement moral ;
-- paiement réel ;
-- facture finale ;
-- remboursement contribution.
+- réservation d'article ;
+- commande créée ;
+- paiement confirmé ;
+- remboursement confirmé.
 
 Seul le paiement réel produit un document.
 
@@ -493,7 +477,7 @@ Mais une facture ne doit pas être générée pour un simple mouvement wallet sa
 
 ## Doctrine WhatsApp
 
-WhatsApp transporte les preuves.
+WhatsApp ne transporte aucun document et aucun lien documentaire.
 
 WhatsApp ne crée pas les preuves.
 
@@ -504,30 +488,12 @@ Avant événement confirmé :
 - code relais ;
 - lien de suivi.
 
-Après événement confirmé :
-
-- lien facture ;
-- lien reçu de remboursement ;
-- lien reçu de contribution ;
-- lien preuve de retrait.
-
-Les messages doivent rester simples.
-
-Exemples :
+Après événement confirmé, un message peut uniquement indiquer que le document
+est disponible dans « Mon Komerce », sans URL de téléchargement ni pièce jointe.
 
 ```text
 Paiement confirmé pour la commande {reference}.
-Facture : {invoice_link}
-```
-
-```text
-Remboursement confirmé pour la commande {reference}.
-Reçu : {refund_receipt_link}
-```
-
-```text
-Contribution confirmée pour le panier {cart_reference}.
-Reçu : {contribution_receipt_link}
+Votre facture est disponible dans Mon Komerce.
 ```
 
 ## Ordre de mise en oeuvre recommandé
@@ -548,15 +514,14 @@ Reçu : {contribution_receipt_link}
 
 ### Phase 3 — Panier partagé
 
-- émettre reçu de contribution après contribution payée ;
-- émettre reçu de remboursement par contribution remboursée ;
-- rattacher la facture finale à la commande créée.
+- rattacher chaque facture à la commande réellement payée par son acheteur ;
+- ne créer aucun reçu de contribution dans le modèle de liste partagée actuel.
 
 ### Phase 4 — Wallet et relais
 
 - reçus wallet ;
 - preuve de retrait ;
-- accès client dans suivi commande.
+- accès client dans Mon Komerce, sous le wallet.
 
 ### Phase 5 — Sourcing
 
@@ -573,7 +538,8 @@ Ne jamais :
 - utiliser une facture comme code relais ;
 - utiliser un reçu de contribution comme facture finale ;
 - générer deux documents pour le même événement ;
-- laisser une notification WhatsApp inventer son propre document ;
+- envoyer un document, une pièce jointe ou un lien documentaire par WhatsApp ;
+- exposer une route documentaire publique ou un jeton de téléchargement partageable ;
 - recalculer des montants au moment du PDF si des montants figés existent ;
 - exposer des données client dans un document fournisseur inutilement ;
 - confondre document client et document interne.
@@ -594,11 +560,9 @@ La carte cible :
 ```text
 payment_confirmed              -> facture
 refund_confirmed               -> avoir / reçu de remboursement
-shared_contribution_confirmed  -> reçu de contribution
 wallet_movement_confirmed      -> reçu wallet
 pickup_collected               -> preuve de retrait
 purchase_order_created         -> bon fournisseur interne
 ```
 
 Cette couche documentaire devient une colonne vertébrale de confiance pour Komerce.
-

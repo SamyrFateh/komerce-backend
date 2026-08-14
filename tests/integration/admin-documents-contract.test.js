@@ -44,7 +44,7 @@ if (!hasIntegrationEnv) {
   const bearer = (token) => ['Authorization', `Bearer ${token}`];
   const suffix = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  async function insertDocument({ document_type, subject_type, reference, status = 'generated', metadata = {} }) {
+  async function insertDocument({ document_type, subject_type, reference, status = 'available', metadata = {} }) {
     const { rows: [doc] } = await db.query(
       `INSERT INTO transaction_documents
          (document_type, subject_type, subject_id, reference, status, issued_by, metadata)
@@ -71,14 +71,14 @@ if (!hasIntegrationEnv) {
       document_type: 'wallet_receipt',
       subject_type: 'wallet_transaction',
       reference: `IT-DOC-WALLET-${suffix()}`,
-      status: 'generated',
+      status: 'available',
       metadata: { amount_kmf: 12000, lines: [{ label: 'hidden in summary' }], source: 'D06' },
     });
     refundDoc = await insertDocument({
       document_type: 'refund_receipt',
       subject_type: 'refund',
       reference: `IT-DOC-REFUND-${suffix()}`,
-      status: 'delivered',
+      status: 'available',
       metadata: { amount_kmf: 8000, lines: [{ label: 'hidden in summary' }], source: 'D06' },
     });
   }, 30000);
@@ -132,7 +132,7 @@ if (!hasIntegrationEnv) {
 
     test('200 admin — filtre status + limit plafonné à 200', async () => {
       const res = await request(app)
-        .get(`${BASE}/documents?status=delivered&limit=999`)
+        .get(`${BASE}/documents?status=available&limit=999`)
         .set(...bearer(adminUser.token));
 
       expect(res.status).toBe(200);

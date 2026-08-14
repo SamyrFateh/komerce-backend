@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          invoices
- * @domain        orders
+ * @domain        documents
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
@@ -11,9 +11,9 @@
  * @db-read       invoices, orders
  * @db-write      invoices
  * @db-txn        resolve_before_behavior_change
- * @doctrine      facture_apres_paiement_confirme, lien_facture_whatsapp_token_public
- * @impact-areas  orders, checkout, whatsapp
- * @version       2026-06
+ * @doctrine      facture_apres_paiement_confirme, telechargement_authentifie_uniquement
+ * @impact-areas  orders, checkout, account
+ * @version       2026-08
  */
 
 
@@ -21,11 +21,9 @@
 /**
  * Invoice Routes — Komerce
  * 
- * GET  /api/invoices/public/:token     → Public paid invoice HTML for WhatsApp
  * GET  /api/invoices/:orderId          → Generate/get invoice HTML (authenticated)
  * GET  /api/invoices/:orderId/json     → Get invoice data as JSON
- * GET  /api/invoices/:orderId/download → Download as standalone HTML file
- * POST /api/invoices/:orderId/deliver  → Mark invoice as delivered (body: {via: 'print'|'email'|'whatsapp'})
+ * GET  /api/invoices/:orderId/download → Download private PDF
  * GET  /api/invoices                   → List all invoices (admin)
  */
 
@@ -33,8 +31,7 @@ const express = require('express');
 const router = express.Router();
 const invoiceService = require('../services/invoice-service');
 const db = require('../db');
-const { authenticate } = require('../middleware/auth');
-const { verifyInvoicePublicToken } = require('../services/invoice-public-token');
+const { authenticate, requireRole } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'invoices' });
 
 // ── Middleware: authenticate (extracts JWT → req.user) + check ──
@@ -91,30 +88,8 @@ function renderInvoice(res, invoice, mode = 'a5') {
   res.send(html);
 }
 
-// ── GET /api/invoices/public/:token — Public WhatsApp invoice link ──
-router.get('/public/:token', async (req, res, next) => {
-  try {
-    const orderId = verifyInvoicePublicToken(req.params.token);
-    if (!orderId) {
-      return res.status(404).json({ error: 'Facture introuvable ou non disponible' });
-    }
-
-    const invoice = await invoiceService.getOrCreateInvoice(orderId);
-    return renderInvoice(res, invoice, req.query.mode || 'a5');
-  } catch (err) {
-    log.error({ err }, '[INVOICE] Public generate error:');
-    if (err.message.includes('introuvable')) {
-      return res.status(404).json({ error: err.message });
-    }
-    if (err.message.includes('non payée')) {
-      return res.status(400).json({ error: err.message });
-    }
-    next(err);
-  }
-});
-
 // ── GET /api/invoices — List all invoices (admin) ──
-router.get('/', ...guard, async (req, res, next) => {
+router.get('/', ...guard, requireRole(['admin']), async (req, res, next) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
     const offset = parseInt(req.query.offset) || 0;
@@ -153,34 +128,15 @@ router.get('/:orderId/json', ...guard, requireInvoiceOrderAccess, async (req, re
   }
 });
 
-// ── GET /api/invoices/:orderId/download — Download standalone HTML ──
+// ── GET /api/invoices/:orderId/download — Download private PDF ──
 router.get('/:orderId/download', ...guard, requireInvoiceOrderAccess, async (req, res, next) => {
   try {
-    const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
-    const mode = req.query.mode || 'a5';
-    const html = invoiceService.generateHTML(invoice, { mode });
-    
-    const filename = `${invoice.invoice_number}.html`;
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(html);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ── POST /api/invoices/:orderId/deliver — Mark as delivered ──
-router.post('/:orderId/deliver', ...guard, requireInvoiceOrderAccess, async (req, res, next) => {
-  try {
-    const { via } = req.body; // 'print', 'email', 'whatsapp'
-    if (!via || !['print', 'email', 'whatsapp'].includes(via)) {
-      return res.status(400).json({ error: 'via requis: print, email, ou whatsapp' });
-    }
-    
-    const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
-    await invoiceService.markDelivered(invoice.id, via);
-    
-    res.json({ ok: true, message: `Facture ${invoice.invoice_number} marquée comme délivrée via ${via}` });
+    const invoice = await invoiceService.issueInvoice(req.params.orderId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${invoice.pdf_filename}"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(invoice.pdf_content);
   } catch (err) {
     next(err);
   }

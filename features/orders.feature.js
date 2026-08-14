@@ -30,7 +30,6 @@ module.exports = {
       'creation, annulation, machine de statut de la commande',
       'snapshot de cout a la commande',
       'rattachement aux colis et aux achats fournisseurs',
-      'facturation et token public de facture',
       'collecte QR au retrait',
       'projection checkout boutique : finalisation d’une sélection en commande, sans ownership de l’encaissement',
     ],
@@ -39,6 +38,7 @@ module.exports = {
       'logique panier partage (feature shared-cart, consommatrice d\'orders)',
       'remboursement (feature refunds, lecture seule sur orders)',
       'tarification (feature economic-engine, orders ne fait que la consommer)',
+      'matérialisation, conservation et téléchargement des factures (feature documents ; orders ne fournit que l’événement confirmé et les données source)',
       'engagement fournisseur : création, confirmation et réception d\'un bon de commande ' +
         '(feature purchasing, scindée d\'orders au Lot O1.4, 2026-07-12) — orders ne fait que ' +
         'consommer purchasing (lecture) et libérer les bons de commande liés à l\'annulation ' +
@@ -61,9 +61,7 @@ module.exports = {
       'services/order-service.js',
       'services/verify-qr-collection.js',
       'services/qr-collection-core.js',
-      'services/invoice-service.js',
       'services/order-cost-snapshot.js',
-      'services/invoice-public-token.js',
       'services/order-status-machine.js',
       'services/admin-order-refund.js',
       'services/cancel-order-purchase-orders.js',
@@ -81,7 +79,6 @@ module.exports = {
       'routes/orders/list.js',
       'routes/orders/cancel.js',
       'routes/hub-mark-ordered.js',
-      'routes/invoices.js',
       'routes/order-api-v2.js',
     ],
     boutique: [
@@ -105,8 +102,6 @@ module.exports = {
       'tests/unit/cancel-order-purchase-orders.test.js',
       'tests/unit/delete-order-cascade.test.js',
       'tests/unit/hub-mark-ordered.test.js',
-      'tests/unit/invoice-public-token.test.js',
-      'tests/unit/invoices-route.test.js',
       'tests/unit/order-api-v2.test.js',
       'tests/unit/order-cost-snapshot.test.js',
       'tests/unit/order-payment-confirmation.test.js',
@@ -130,7 +125,6 @@ module.exports = {
       'tests/unit/orders-detail.test.js',
       'tests/unit/orders-list.test.js',
       'tests/unit/orders-status-route.test.js',
-      'tests/unit/invoice-service.test.js',
     ],
   },
 
@@ -157,7 +151,6 @@ module.exports = {
       'cart_shares: W',
       'customs_history: W',
       'disputes: W',
-      'invoices: RW',
       'order_comments: W',
       'order_item_cost_imputations: RW',
       'order_items: RW',
@@ -181,25 +174,19 @@ module.exports = {
     status: 'CONFIRMED_MIXED',
     authedRoutesDetected: 31,
     totalRoutes: 33,
-    note: "31/33 routes protégées. 2 routes publiques par design : GET /api/invoices/public/:token (token de facture partageable, lecture seule) ; GET /api/orders/retrait/:token (capability token QR de retrait, validé côté service par verify-qr-collection.js). (Recompté après scission de la feature purchasing, Lot O1.4, 2026-07-12 : 10 routes /api/purchasing/** retirées, toutes authentifiées.)",
+    note: "La facture a été transférée à documents et n'expose plus de route publique. La seule capability publique restante dans orders est GET /api/orders/retrait/:token, validée par verify-qr-collection.js.",
   },
   contract: {
     exposes: [
       'GET/POST /api/orders',
       'GET /api/orders/:ref',
       'POST /api/orders/:id/cancel',
-      'GET /api/invoices/public/:token',
       // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
       // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
       'GET /api/admin/orders',
       'DELETE /api/admin/orders/:id',
       'POST /api/admin/orders/:id/refund',
       'POST /api/hub/orders/mark-ordered',
-      'GET /api/invoices',
-      'GET /api/invoices/:orderId',
-      'POST /api/invoices/:orderId/deliver',
-      'GET /api/invoices/:orderId/download',
-      'GET /api/invoices/:orderId/json',
       'POST /api/orders/:id/cancel-backorder',
       'PATCH /api/orders/:id/cost',
       'GET /api/orders/:id/history',
@@ -257,25 +244,6 @@ module.exports = {
     ],
   },
 
-  // ── Dette assumée / documentée ────────────────────────────────────────────
-  // (audit 2026-07-06, §2b — corrigé après vérification empirique du code réel :
-  // le contrat déclaré n'était pas simplement désynchronisé du nom de route,
-  // il pointait vers un chemin qui n'a jamais existé sous cette forme exacte.)
-  debt: {
-    knownGaps: [
-      { gap: 'ancien contrat déclaré "GET /api/invoices/:token" (sans /public) : ' +
-             'aucune route ne sert ce chemin exact. Le vrai mécanisme public par ' +
-             'jeton existe bien, mais sous /api/invoices/public/:token (routes/invoices.js). ' +
-             'Un second mécanisme, GET /api/client/invoices (session authentifiée, ' +
-             'routes/client-auth.js), coexiste mais appartient à une autre feature — ' +
-             'orders ne le possède pas et ne doit pas le déclarer dans son propre contrat.',
-        risk: 'si un client externe (app mobile, intégration WhatsApp) construit encore ' +
-              'l\'URL sans /public, il reçoit un 404 — à vérifier avant de considérer ' +
-              'ce point clos.',
-      },
-    ],
-  },
-
   // ── Autorite ─────────────────────────────────────────────────────────────
   authority: 'backend-core — tout changement de la machine de statut ou du schema order_reference doit etre valide par le proprietaire de order-status-machine.js',
 
@@ -292,5 +260,26 @@ module.exports = {
     'transition de statut uniquement via order-status-machine.js',
     'annulation libere les achats fournisseurs lies dans la meme transaction',
   ],
+
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    axis:     'business',
+    kind:     'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables:          true,
+      ownsLifecycle:       true,
+      activeService:       true,
+      multiConsumer:       true,
+      ownsMigrations:      false,
+      externalSideEffect:  'none',
+      surface:             'api+service',
+    },
+    rationale: [
+      'possède le cycle de vie et la machine de statut de la commande, ainsi que ses invariants de transition',
+      'expose la commande à plusieurs consommateurs métier sans posséder leurs cycles de paiement, document ou logistique',
+      'la facture est un effet documentaire consommant la commande confirmée et appartient à documents',
+    ],
+  },
 
 };
