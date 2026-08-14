@@ -259,7 +259,7 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     await expect(rows).toHaveCount(2);
   });
 
-  test('F22-2 — un participant qui ouvre la fiche produit d\'une ligne ajoute au panier PERSONNEL (jamais à la liste, dont il n\'est pas créateur), puis retrouve la liste à la fermeture', async ({ page, browser }) => {
+  test('F22-2 — un participant qui ajoute depuis une liste alimente le panier PERSONNEL et bascule vers Mon panier, sans muter la liste', async ({ page, browser }) => {
     // Participant : la fiche produit alimente uniquement son panier personnel ;
     // la liste publiée reste structurellement immuable.
     const { token } = await createSharedList(page, 1);
@@ -308,7 +308,26 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
       await addToCartFromModal(participantPage);
       await closeModal(participantPage);
 
-      const panelAfter = participantPage.locator('#k-side-cart .k-cart-snapshot-item, #k-cart-body .k-cart-snapshot-item').first();
+      // Doctrine liste figée / panier vivant :
+      // l'ajout personnel devient immédiatement la surface active.
+      const tabsAfterAdd = participantPage.locator('#k-cart-surface-switch');
+      await expect(tabsAfterAdd).toHaveAttribute('data-active', 'personal');
+      await expect(tabsAfterAdd.locator('.k-tab-personal'))
+        .toHaveClass(/k-cart-tab--active/);
+
+      // L'article personnel est immédiatement visible.
+      await expect(
+        participantPage.locator('#k-side-cart .k-sc-item, #k-cart-body .k-cart-item').first()
+      ).toBeVisible({ timeout: 10_000 });
+
+      // La liste reste montée mais n'est jamais mutée. On peut y revenir
+      // explicitement par son onglet et retrouver son snapshot intact.
+      await tabsAfterAdd.locator('.k-tab-shared-list').click();
+
+      const panelAfter = participantPage
+        .locator('#k-side-cart .k-cart-snapshot-item, #k-cart-body .k-cart-snapshot-item')
+        .first();
+
       await expect(panelAfter).toBeVisible({ timeout: 10_000 });
 
       const cartBadgeAfter = parseInt(
@@ -350,7 +369,14 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     await addToCartFromModal(page);
     await closeModal(page);
 
-    // Le snapshot partagé est strictement inchangé.
+    const tabsAfterAdd = page.locator('#k-cart-surface-switch');
+    await expect(tabsAfterAdd).toHaveAttribute('data-active', 'personal');
+    await expect(tabsAfterAdd.locator('.k-tab-personal'))
+      .toHaveClass(/k-cart-tab--active/);
+
+    // Revenir explicitement à la liste permet de constater que le snapshot
+    // publié est strictement inchangé.
+    await tabsAfterAdd.locator('.k-tab-shared-list').click();
     await expect(rows).toHaveCount(1);
     expect(
       postSpy.calls().length,
@@ -443,7 +469,9 @@ test.describe('FLOW — Liste partagée, doctrine finale (F22)', () => {
     const { token } = await createSharedList(page, 1);
 
     await selectSharedRowsAndOpenRecap(page, [0]);
-    await expect(page.locator('.ck-shared-list-context-banner')).toContainText('Achat pour Ma liste');
+    await expect(page.locator('.ck-recap-origin-title').first()).toHaveText('Ma liste');
+    await expect(page.locator('.ck-recap-origin-badge').first()).toHaveText('Liste figée');
+    await expect(page.locator('.ck-shared-list-context-banner')).toHaveCount(0);
     const confirmBtn = await continueRecapToCheckout(page);
     const orderCall = page.waitForResponse(
       (r) => r.url().includes('/api/orders') && r.request().method() === 'POST',

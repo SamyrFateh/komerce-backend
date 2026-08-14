@@ -50,7 +50,10 @@
 }
 
 .k-cart-snapshot-item.is-cart-item-claimed {
-  opacity: .55;
+  opacity: 1;
+  background: var(--sand);
+  border-color: var(--stone-border);
+  box-shadow: inset 3px 0 0 var(--stone-border);
 }
 
 /* Mandat cohérence post-LOT 13, §3.a — case à cocher de sélection locale
@@ -138,7 +141,9 @@
 }
 
 .k-cart-snapshot-item-status-badge.is-claimed {
-  background: var(--sand-dark, var(--sand));
+  background: var(--sand-warm);
+  color: var(--text);
+  border: 1px solid var(--stone-border);
 }
 
 /* Fallback image snapshot (V2-C, conservé) — .k-cart-item-img (cart.css)
@@ -230,10 +235,12 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
+  gap: 4px;
   min-height: 60px;
-  padding: 8px 10px 0;
-  border-bottom: 0;
-  background: rgba(255,255,255,.92);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--sand);
 }
 
 .k-cart-tab {
@@ -260,11 +267,13 @@
 
 .k-cart-tab:hover { color: var(--text); }
 
-/* Onglet actif — focus neutre : lumière/profondeur, jamais couleur métier. */
+/* L'onglet actif doit identifier sans ambiguïté l'espace courant.
+ * Panier personnel = surface neutre claire.
+ * Liste partagée = contexte légèrement sable, sans couleur métier agressive. */
 .k-cart-tab--active {
   color: var(--text);
-  background: rgba(255,255,255,.98);
-  border-radius: 12px;
+  background: var(--white);
+  border-radius: 11px;
   box-shadow: 0 4px 14px rgba(42,33,23,.08);
   transform: translateY(-1px);
   font-weight: 760;
@@ -272,7 +281,8 @@
 
 .k-cart-tabs[data-active="personal"] .k-tab-personal.k-cart-tab--active {
   color: var(--text);
-  background: rgba(255,255,255,.98);
+  background: var(--white);
+  border: 1px solid var(--stone-border);
   box-shadow: 0 4px 14px rgba(42,33,23,.08);
 }
 
@@ -328,8 +338,9 @@
  * Aucun enfant ne dessine l'indicateur : le groupe possède l'unique trait. */
 .k-cart-tab-group--active {
   position: relative;
-  border-radius: 12px;
-  background: rgba(255,255,255,.98);
+  border: 1px solid var(--stone-border);
+  border-radius: 11px;
+  background: var(--sand-warm);
   box-shadow: 0 4px 14px rgba(42,33,23,.08);
   transform: translateY(-1px);
   overflow: hidden;
@@ -340,7 +351,7 @@
 .k-cart-tab-group--active .k-cart-tab-exit {
   background: transparent;
   box-shadow: none;
-  border-bottom: 0;
+  border: 0;
   transform: none;
 }
 
@@ -374,7 +385,6 @@
 }
 
 .k-cart-drawer[data-mode="shared-list"] .k-cart-header,
-.k-cart-drawer[data-mode="shared-list"] .k-cart-tabs,
 .k-cart-drawer[data-mode="shared-list"] .k-cart-footer {
   background: var(--white);
 }

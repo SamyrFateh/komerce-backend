@@ -307,7 +307,9 @@ describe('b-checkout', () => {
       state.checkoutDisplayContext = {
         origin: 'SHARED_LIST',
         sharedCartId: 'sc-1',
-        title: 'Achat pour Ma liste',
+        isCreator: false,
+        creatorFirstName: 'Awa',
+        title: 'Achat pour la liste de Awa',
       };
 
       const line1 = {
@@ -334,6 +336,20 @@ describe('b-checkout', () => {
       state.cart = [{ product: { id: 'personal' }, qty: 9 }];
 
       renderCheckout();
+
+      expect(
+        dom.orderBody.querySelector('.ck-recap-origin-title').textContent
+      ).toBe('Liste de Awa');
+      expect(
+        dom.orderBody.querySelector('.ck-recap-origin-badge').textContent
+      ).toBe('Liste figée');
+      expect(
+        dom.orderBody.querySelector('.ck-recap-toggle').classList
+          .contains('ck-recap-toggle--shared')
+      ).toBe(true);
+      expect(
+        dom.orderBody.querySelector('.ck-shared-list-context-banner')
+      ).toBeNull();
 
       const rows = dom.orderBody.querySelectorAll('.ck-recap-item');
       const checks = dom.orderBody.querySelectorAll('.ck-recap-item-select');
@@ -384,6 +400,17 @@ describe('b-checkout', () => {
       };
 
       renderCheckout();
+
+      expect(
+        dom.orderBody.querySelector('.ck-recap-origin-title').textContent
+      ).toBe('Panier personnel');
+      expect(
+        dom.orderBody.querySelector('.ck-recap-origin-badge')
+      ).toBeNull();
+      expect(
+        dom.orderBody.querySelector('.ck-recap-toggle').classList
+          .contains('ck-recap-toggle--personal')
+      ).toBe(true);
 
       const row = dom.orderBody.querySelector('.ck-recap-item');
       const checkbox = row.querySelector('.ck-recap-item-select');

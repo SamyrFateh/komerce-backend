@@ -891,22 +891,69 @@ function _recapSelectionSummary(items) {
     + ' sur ' + totalQty;
 }
 
-function _buildRecapItemsBlock(items) {
+function _checkoutOriginPresentation(
+  source = 'personal-cart',
+  displayContext = null
+) {
+  const fromSharedList = source === 'shared-list';
+
+  if (!fromSharedList) {
+    return {
+      fromSharedList: false,
+      title: 'Panier personnel',
+      badge: null,
+    };
+  }
+
+  if (displayContext?.isCreator) {
+    return {
+      fromSharedList: true,
+      title: 'Ma liste',
+      badge: 'Liste figée',
+    };
+  }
+
+  const firstName = String(displayContext?.creatorFirstName || '')
+    .trim()
+    .split(/\s+/)[0];
+
+  return {
+    fromSharedList: true,
+    title: firstName ? `Liste de ${firstName}` : 'Liste partagée',
+    badge: 'Liste figée',
+  };
+}
+
+function _buildRecapItemsBlock(
+  items,
+  source = 'personal-cart',
+  displayContext = null
+) {
   if (!Array.isArray(items) || !items.length) return null;
+
+  const origin = _checkoutOriginPresentation(source, displayContext);
 
   const wrap = document.createElement('section');
   wrap.className = 'ck-recap-step';
 
   const toggle = document.createElement('button');
   toggle.type = 'button';
-  toggle.className = 'ck-recap-toggle';
+  toggle.className = origin.fromSharedList
+    ? 'ck-recap-toggle ck-recap-toggle--shared'
+    : 'ck-recap-toggle ck-recap-toggle--personal';
   toggle.setAttribute('aria-expanded', 'false');
   toggle.setAttribute('aria-controls', 'ck-recap-content');
   toggle.innerHTML =
     '<span class="ck-recap-toggle-text">'
       + '<span class="ck-recap-toggle-label">Votre commande</span>'
-      + '<span class="ck-recap-toggle-sub">'
-        + _recapSelectionSummary(items)
+      + '<span class="ck-recap-origin-line">'
+        + '<span class="ck-recap-origin-title">' + sanitize(origin.title) + '</span>'
+        + (origin.badge
+          ? '<span class="ck-recap-origin-badge">' + sanitize(origin.badge) + '</span>'
+          : '')
+        + '<span class="ck-recap-toggle-sub">'
+          + _recapSelectionSummary(items)
+        + '</span>'
       + '</span>'
     + '</span>'
     + '<span class="ck-recap-toggle-chevron" aria-hidden="true">\u203A</span>';
@@ -1063,9 +1110,25 @@ export function renderCheckout() {
     const checkoutPrimary = document.createElement('section');
     checkoutPrimary.className = 'ck-checkout-primary';
 
+    const checkoutOrigin = _checkoutOriginPresentation(
+      od.checkoutSelection.source,
+      state.checkoutDisplayContext
+    );
+
     const checkoutPrimaryHeading = document.createElement('h2');
     checkoutPrimaryHeading.className = 'ck-checkout-desktop-heading';
-    checkoutPrimaryHeading.textContent = 'Votre commande';
+    checkoutPrimaryHeading.innerHTML =
+      '<span class="ck-checkout-desktop-heading-label">Votre commande</span>'
+      + '<span class="ck-recap-origin-line">'
+      +   '<span class="ck-recap-origin-title">'
+      +     sanitize(checkoutOrigin.title)
+      +   '</span>'
+      +   (checkoutOrigin.badge
+        ? '<span class="ck-recap-origin-badge">'
+          + sanitize(checkoutOrigin.badge)
+          + '</span>'
+        : '')
+      + '</span>';
     checkoutPrimary.appendChild(checkoutPrimaryHeading);
 
     const checkoutAside = document.createElement('div');
@@ -1101,20 +1164,14 @@ export function renderCheckout() {
       return;
     }
 
-    // LOT 13 §F (doctrine checkout_logic_agnostic_of_shared_list) — bandeau
-    // purement décoratif, jamais lu pour une décision (prix/lignes/OTP/
-    // lifecycle restent ceux du checkout personnel standard). Alimenté
-    // uniquement par group-checkout-adapter.js::checkoutSharedListSelection
-    // via state.checkoutDisplayContext, effacé avec le checkout (jamais
-    // persistant, jamais visible sur un checkout panier personnel).
-    if (state.checkoutDisplayContext?.title) {
-      const ctxBanner = document.createElement('div');
-      ctxBanner.className = 'ck-shared-list-context-banner';
-      ctxBanner.textContent = state.checkoutDisplayContext.title;
-      checkoutPrimary.appendChild(ctxBanner);
-    }
-
-    const orderSummary = _buildRecapItemsBlock(od.checkoutSelection.items);
+    // L'origine transactionnelle est affichée par le récapitulatif lui-même
+    // sur mobile et par son heading sur desktop. Même langage pour les deux
+    // sources : panier personnel ou liste partagée figée.
+    const orderSummary = _buildRecapItemsBlock(
+      od.checkoutSelection.items,
+      od.checkoutSelection.source,
+      state.checkoutDisplayContext
+    );
 
     if (orderSummary) {
       orderSummary.id = 'ck-order-summary';

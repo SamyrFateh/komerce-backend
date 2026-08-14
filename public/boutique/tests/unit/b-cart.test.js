@@ -163,6 +163,53 @@ describe('b-cart', () => {
       expect(saveCart).toHaveBeenCalled();
     });
 
+    it('depuis une liste affichée, ajoute au panier personnel, bascule la surface et ne touche jamais au snapshot', () => {
+      const publishedItems = [{
+        id: 'shared-item-1',
+        product_id: 'shared-product-1',
+        name: 'Article publié',
+        unit_price_kmf: 7000,
+        quantity: 1,
+        claimed: false,
+      }];
+
+      activateSharedListContext({
+        cart: {
+          id: 'shared-cart-focus',
+          token: 'shared-token-focus',
+          status: 'open',
+          creator_first_name: 'Awa',
+        },
+        items: publishedItems,
+        is_creator: false,
+      }, 'shared-token-focus');
+
+      try {
+        state.modalReturnSurface = 'shared-list';
+
+        addToCart(makeProduct({
+          id: 99,
+          name: 'Ajout personnel',
+          price_kmf: 9000,
+        }));
+
+        expect(state.cartSurface).toBe('personal');
+        expect(state.modalReturnSurface).toBeNull();
+        expect(state.cart).toHaveLength(1);
+        expect(state.cart[0]).toMatchObject({
+          id: 99,
+          name: 'Ajout personnel',
+          qty: 1,
+        });
+
+        expect(state.sharedListContext.token).toBe('shared-token-focus');
+        expect(state.sharedListContext.items).toEqual(publishedItems);
+        expect(state.sharedListContext.items).toHaveLength(1);
+      } finally {
+        clearSharedListContext();
+      }
+    });
+
     it('respecte la qty explicite passée en argument', () => {
       addToCart(makeProduct(), 3);
       expect(state.cart[0].qty).toBe(3);

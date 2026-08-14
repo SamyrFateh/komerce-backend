@@ -243,6 +243,11 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   qty = qty || 1;
   options = options || {};
 
+  // Doctrine liste figée / panier vivant :
+  // mémoriser la surface AVANT toute mutation. Une liste partagée ne reçoit
+  // jamais cet ajout ; elle sert uniquement de contexte de navigation.
+  const addedFromSharedListSurface = isSharedListSurfaceActive();
+
   // Lot 2 — capturer le variant_combo au moment de l'ajout (snapshot)
   let combo = null;
   let comboLabel = '';
@@ -300,6 +305,21 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   // Fly animation
   if (sourceBtn) {
     flyToCart(sourceBtn, product);
+  }
+
+  // Une liste publiée est une référence figée. Si l'utilisateur ajoute un
+  // produit pendant qu'elle est affichée, l'ajout appartient au panier
+  // personnel et l'UI bascule immédiatement vers cet espace vivant.
+  //
+  // Une fiche ouverte depuis la liste pose modalReturnSurface='shared-list'.
+  // Après un ajout personnel, cette restauration devient obsolète : la
+  // fermeture de la fiche ne doit surtout pas ramener artificiellement
+  // l'utilisateur sur la liste.
+  if (addedFromSharedListSurface) {
+    if (state.modalReturnSurface === 'shared-list') {
+      state.modalReturnSurface = null;
+    }
+    setCartSurface('personal');
   }
 
   saveCart();

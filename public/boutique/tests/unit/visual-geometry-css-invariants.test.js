@@ -80,36 +80,37 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       expect(tab).toMatch(/justify-content\s*:\s*center/);
     });
 
-    it('LOT1-h : panier et liste utilisent le même focus neutre en profondeur, sans trait métier', () => {
+    it('LOT1-h : rail distinct, panier neutre, liste contextualisée et lignes claimed lisibles', () => {
+      const tabs = css.match(/\.k-cart-tabs\s*\{([^}]+)\}/s)?.[1] ?? '';
       const personal = css.match(
         /\.k-cart-tabs\[data-active="personal"\]\s+\.k-tab-personal\.k-cart-tab--active\s*\{([^}]+)\}/s
       )?.[1] ?? '';
-
       const sharedGroup = css.match(
         /\.k-cart-tab-group--active\s*\{([^}]+)\}/s
       )?.[1] ?? '';
-
-      expect(personal).toMatch(/background\s*:\s*rgba\(255,255,255,\.98\)/);
-      expect(sharedGroup).toMatch(/background\s*:\s*rgba\(255,255,255,\.98\)/);
-
-      expect(personal).toMatch(/0 4px 14px rgba\(42,33,23,\.08\)/);
-      expect(sharedGroup).toMatch(/0 4px 14px rgba\(42,33,23,\.08\)/);
-
-      const genericActive = css.match(
-        /\.k-cart-tab--active\s*\{([^}]+)\}/s
+      const claimed = css.match(
+        /\.k-cart-snapshot-item\.is-cart-item-claimed\s*\{([^}]+)\}/s
       )?.[1] ?? '';
 
-      expect(genericActive).toMatch(/transform\s*:\s*translateY\(-1px\)/);
-      expect(sharedGroup).toMatch(/transform\s*:\s*translateY\(-1px\)/);
+      expect(tabs).toMatch(/background\s*:\s*var\(--sand\)/);
+      expect(tabs).toMatch(/border\s*:\s*1px\s+solid\s+var\(--border\)/);
 
-      expect(css).not.toMatch(/\.k-cart-tab-group--active::after\s*\{/);
+      expect(personal).toMatch(/background\s*:\s*var\(--white\)/);
+      expect(personal).toMatch(/border\s*:\s*1px\s+solid\s+var\(--stone-border\)/);
+
+      expect(sharedGroup).toMatch(/background\s*:\s*var\(--sand-warm\)/);
+      expect(sharedGroup).toMatch(/border\s*:\s*1px\s+solid\s+var\(--stone-border\)/);
+
+      expect(claimed).toMatch(/opacity\s*:\s*1\b/);
+      expect(claimed).toMatch(/background\s*:\s*var\(--sand\)/);
 
       const children = css.match(
         /\.k-cart-tab-group--active\s+\.k-tab-shared-list\.k-cart-tab--active,\s*\.k-cart-tab-group--active\s+\.k-cart-tab-exit\s*\{([^}]+)\}/s
       )?.[1] ?? '';
 
+      expect(children).toMatch(/background\s*:\s*transparent/);
       expect(children).toMatch(/box-shadow\s*:\s*none/);
-      expect(children).toMatch(/border-bottom\s*:\s*0/);
+      expect(children).toMatch(/border\s*:\s*0/);
       expect(children).toMatch(/transform\s*:\s*none/);
     });
     it('LOT1-j : les tabs sont le titre unique du side cart desktop', () => {
@@ -126,9 +127,11 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       );
     });
 
-    it('LOT1-k : aucun séparateur sous les tabs', () => {
+    it('LOT1-k : le sélecteur est un rail matérialisé, pas deux onglets blancs flottants', () => {
       const tabs = css.match(/\.k-cart-tabs\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(tabs).toMatch(/border-bottom\s*:\s*0/);
+      expect(tabs).toMatch(/border\s*:\s*1px\s+solid\s+var\(--border\)/);
+      expect(tabs).toMatch(/border-radius\s*:\s*14px/);
+      expect(tabs).toMatch(/background\s*:\s*var\(--sand\)/);
     });
 
     it('LOT1-l : le drawer mobile possède un header-navigation unique', () => {
