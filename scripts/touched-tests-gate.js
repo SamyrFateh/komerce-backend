@@ -10,8 +10,10 @@
  *   C) une section ## Tests dans le body de la PR.
  *
  * En mode --strict, la preuve A active la règle de complétion au contact :
- * la couverture statements + branches de la source doit atteindre le seuil
- * défini dans governance/coverage-thresholds.json (100/100 par défaut).
+ * la couverture statements + branches de la source doit maintenir le cliquet
+ * explicitement défini dans governance/coverage-thresholds.json. Aucun seuil
+ * implicite (et notamment aucun 100/100 par défaut) n'est inventé pour un
+ * fichier qui n'a pas encore de baseline mesurée.
  * Pour une source CSS, un test correspondant reste obligatoire mais la couverture
  * statements/branches Jest n'est pas applicable ; les gates CSS dédiés portent
  * la preuve de compilation, de cascade et de fraîcheur du bundle.
@@ -127,10 +129,15 @@ function prBodyHasTestSection() {
   return /^##\s+(tests?|vérification|verification)/im.test(body);
 }
 
-const DEFAULT_THRESHOLD = { stmts: 100, branch: 100 };
-
 function thresholdFor(file, thresholds) {
-  return { ...DEFAULT_THRESHOLD, ...(thresholds[file] || {}) };
+  const configured = thresholds[file];
+  if (!configured || typeof configured !== 'object') return null;
+
+  const stmts = Number(configured.stmts);
+  const branch = Number(configured.branch);
+  if (!Number.isFinite(stmts) || !Number.isFinite(branch)) return null;
+
+  return { stmts, branch };
 }
 
 function stemOf(file) {
@@ -292,7 +299,7 @@ function main() {
 
   console.log(`${C.dim}Fichiers touchés total : ${all.length}  ·  applicatifs : ${appFiles.length}${C.r}`);
   if (hasPrTests) console.log(`${C.dim}Section ## Tests détectée dans le body PR (preuve C active)${C.r}`);
-  if (checkCompletion) console.log(`${C.dim}Règle de complétion au contact : ACTIVE (--strict)${C.r}`);
+  if (checkCompletion) console.log(`${C.dim}Règle de complétion au contact : ACTIVE (--strict, cliquets explicites uniquement)${C.r}`);
   console.log();
 
   if (appFiles.length === 0) {
@@ -321,11 +328,16 @@ function main() {
         continue;
       }
 
-      const coverage = measureCoverage(file, testFiles);
       const threshold = thresholdFor(file, thresholds);
+      if (threshold === null) {
+        console.log(`  ${ICON.PASS} ${C.dim}${file}${C.r}  ${C.grn}test touché — aucun cliquet de couverture explicite${C.r}`);
+        continue;
+      }
+
+      const coverage = measureCoverage(file, testFiles);
 
       if (coverage === null) {
-        console.log(`  ${ICON.WARN} ${C.dim}${file}${C.r}  ${C.ylw}test touché — couverture non mesurable isolément${C.r}`);
+        console.log(`  ${ICON.WARN} ${C.dim}${file}${C.r}  ${C.ylw}test touché — couverture non mesurable isolément pour le cliquet configuré${C.r}`);
         warns++;
         continue;
       }
@@ -335,7 +347,7 @@ function main() {
         continue;
       }
 
-      console.log(`  ${ICON.FAIL} ${file}  ${C.red}couverture incomplète : ${coverage.stmts}% stmts / ${coverage.branch}% branch (cible ${threshold.stmts}%/${threshold.branch}%)${C.r}`);
+      console.log(`  ${ICON.FAIL} ${file}  ${C.red}couverture sous le cliquet : ${coverage.stmts}% stmts / ${coverage.branch}% branch (minimum ${threshold.stmts}%/${threshold.branch}%)${C.r}`);
       incomplete.push({ file, coverage, threshold });
       fails++;
       continue;
@@ -381,9 +393,9 @@ function main() {
   }
 
   for (const { file, coverage, threshold } of incomplete) {
-    console.log(`  ${C.red}${file}${C.r}  ${C.dim}(couverture ${coverage.stmts}%/${coverage.branch}%, cible ${threshold.stmts}%/${threshold.branch}%)${C.r}`);
-    console.log('    → Finaliser les branches manquantes avant merge');
-    console.log('    → OU documenter un seuil réaliste dans governance/coverage-thresholds.json\n');
+    console.log(`  ${C.red}${file}${C.r}  ${C.dim}(couverture ${coverage.stmts}%/${coverage.branch}%, cliquet ${threshold.stmts}%/${threshold.branch}%)${C.r}`);
+    console.log('    → Maintenir ou améliorer le cliquet existant');
+    console.log('    → Si le cliquet est factuellement incorrect, le recalibrer avec justification mesurée\n');
   }
 
   if (REPORT) {
