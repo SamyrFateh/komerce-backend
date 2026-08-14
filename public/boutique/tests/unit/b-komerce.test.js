@@ -29,7 +29,7 @@
  * Couverture :
  *   openMonKomerce() : authentification à l'entrée, annulation OTP,
  *     session valide, montage du shell unique, chargement des blocs.
- *   Bloc wallet : délègue à b-wallet.js.
+ *   Bloc wallet : solde compact sans historique de mouvements.
  *   Bloc profil : champs réels (full_name, currency_pref), WhatsApp en
  *     lecture seule sans label "vérifié", email en lecture seule,
  *     bouton désactivé sans modification, sauvegarde via PUT unique.
@@ -51,7 +51,6 @@ jest.mock('../../js/b-identity.js', () => ({
   requireIdentity:   jest.fn(),
   getCurrentIdentity: jest.fn(),
 }));
-jest.mock('../../js/b-wallet.js', () => ({ renderWalletView: jest.fn() }));
 jest.mock('../../js/b-bus.js', () => {
   const listeners = {};
   return {
@@ -65,7 +64,6 @@ jest.mock('../../js/b-bus.js', () => {
 
 const { apiGet, apiPut, apiDelete, apiDownload } = require('../../js/b-utils.js');
 const { requireIdentity, getCurrentIdentity } = require('../../js/b-identity.js');
-const { renderWalletView }               = require('../../js/b-wallet.js');
 const { openMonKomerce }                 = require('../../js/b-komerce.js');
 const { flush, submitForm }               = require('./helpers/boutiqueTestKit');
 
@@ -74,6 +72,7 @@ function mockApiGetDefaults({ me, auth } = {}) {
     if (path === '/api/auth/me') return Promise.resolve(me || { full_name: 'Fatima', phone: '+2691234567', currency_pref: 'KMF' });
     if (path === '/api/auth/me/pickup-authorization') return Promise.resolve(auth || { status: 'NONE' });
     if (path === '/api/auth/me/documents') return Promise.resolve({ documents: [] });
+    if (path === '/api/wallet') return Promise.resolve({ balance_kmf: 0, expires_at: null });
     return Promise.resolve(null);
   });
 }
@@ -201,12 +200,12 @@ describe('openMonKomerce — structure page unique', () => {
 describe('openMonKomerce — documents privés', () => {
   beforeEach(() => { getCurrentIdentity.mockReturnValue({ id: 1 }); });
 
-  it('place Mes documents juste sous le wallet sans sous-onglet', async () => {
+  it('donne la priorité à Mes documents puis affiche le wallet compact', async () => {
     await openMonKomerce();
     await flush();
     const primary = document.querySelector('.k-kmc-col-primary');
-    expect(primary.children[0].id).toBe('k-kmc-wallet-block');
-    expect(primary.children[1].id).toBe('k-kmc-documents-block');
+    expect(primary.children[0].id).toBe('k-kmc-documents-block');
+    expect(primary.children[1].id).toBe('k-kmc-wallet-block');
     expect(document.querySelector('[data-subtab]')).toBeNull();
   });
 
@@ -215,6 +214,7 @@ describe('openMonKomerce — documents privés', () => {
     apiGet.mockImplementation((path) => {
       if (path === '/api/auth/me') return Promise.resolve({ full_name: 'Ali', phone: '+269', currency_pref: 'KMF' });
       if (path === '/api/auth/me/pickup-authorization') return Promise.resolve({ status: 'NONE' });
+      if (path === '/api/wallet') return Promise.resolve({ balance_kmf: 0 });
       if (path === '/api/auth/me/documents') return Promise.resolve({ documents: [{
         id: 'doc-1', document_type: 'invoice', reference: 'INV-1', amount_kmf: 12000,
         issued_at: '2026-08-14', download_url: '/api/auth/me/documents/doc-1/download',
@@ -230,6 +230,26 @@ describe('openMonKomerce — documents privés', () => {
     await flush();
     expect(apiDownload).toHaveBeenCalledWith('/api/auth/me/documents/doc-1/download', { timeoutMs: 20000 });
   });
+
+  it('ignore les mouvements non essentiels et ne propose aucun bouton sans PDF disponible', async () => {
+    apiGet.mockImplementation((path) => {
+      if (path === '/api/auth/me') return Promise.resolve({ full_name: 'Ali', phone: '+269', currency_pref: 'KMF' });
+      if (path === '/api/auth/me/pickup-authorization') return Promise.resolve({ status: 'NONE' });
+      if (path === '/api/wallet') return Promise.resolve({ balance_kmf: 0 });
+      if (path === '/api/auth/me/documents') return Promise.resolve({ documents: [
+        { document_type: 'wallet_receipt', reference: 'WLT-1', download_url: '/hidden' },
+        { document_type: 'invoice', reference: 'INV-PENDING', download_url: null },
+      ] });
+      return Promise.resolve(null);
+    });
+    await openMonKomerce();
+    await flush();
+    const block = document.getElementById('k-kmc-documents-block');
+    expect(block.textContent).not.toContain('WLT-1');
+    expect(block.textContent).toContain('INV-PENDING');
+    expect(block.textContent).toContain('En préparation');
+    expect(block.querySelector('.k-kmc-document-download')).toBeNull();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -237,12 +257,22 @@ describe('openMonKomerce — documents privés', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('openMonKomerce — bloc wallet', () => {
-  it('délègue à renderWalletView()', async () => {
+  it('affiche uniquement le solde et son échéance, sans charger les mouvements', async () => {
     getCurrentIdentity.mockReturnValue({ id: 1 });
+    mockApiGetDefaults();
+    apiGet.mockImplementation((path) => {
+      if (path === '/api/auth/me') return Promise.resolve({ full_name: 'Ali', phone: '+269', currency_pref: 'KMF' });
+      if (path === '/api/auth/me/pickup-authorization') return Promise.resolve({ status: 'NONE' });
+      if (path === '/api/auth/me/documents') return Promise.resolve({ documents: [] });
+      if (path === '/api/wallet') return Promise.resolve({ balance_kmf: 4500, expires_at: '2026-12-01' });
+      return Promise.resolve(null);
+    });
     await openMonKomerce();
     await flush();
-    expect(renderWalletView).toHaveBeenCalled();
-    expect(document.getElementById('k-wallet-view')).not.toBeNull();
+    const block = document.getElementById('k-kmc-wallet-block');
+    expect(block.textContent).toContain('4\u202f500 KMF');
+    expect(block.textContent).toContain('1 décembre 2026');
+    expect(apiGet).not.toHaveBeenCalledWith('/api/wallet/transactions?limit=50');
   });
 });
 

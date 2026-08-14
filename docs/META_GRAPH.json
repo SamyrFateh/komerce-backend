@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-14T21:10:50.352Z",
+  "generatedAt": "2026-08-14T22:29:27.488Z",
   "sources": {
     "backend": {
-      "nodes": 772
+      "nodes": 773
     },
     "boutique": {
       "modules": 77,
-      "endpoints": 46
+      "endpoints": 47
     },
     "dashboards": {
       "modules": 40,
@@ -17,7 +17,7 @@
     }
   },
   "summary": {
-    "endpointsConsumed": 87,
+    "endpointsConsumed": 88,
     "sharedEndpoints": 2,
     "phantomSeams": 0,
     "sharedTables": 16
@@ -53,6 +53,8 @@
     "/api/wallet": {
       "boutique": [
         "b-checkout",
+        "b-komerce",
+        "b-tracking",
         "b-wallet"
       ],
       "dashboards": [],
@@ -188,6 +190,25 @@
       "tables": [
         "otp_codes",
         "users"
+      ]
+    },
+    "/api/auth/me/documents": {
+      "boutique": [
+        "b-komerce",
+        "b-tracking"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/documents.js",
+      "services": [
+        "services/invoice-service.js",
+        "services/documents/document-service.js"
+      ],
+      "tables": [
+        "invoices",
+        "orders",
+        "transaction_documents"
       ]
     },
     "/api/auth/me/pickup-authorization": {
@@ -1587,6 +1608,7 @@
         "routes/admin/partners.js",
         "routes/cash.js",
         "routes/client-tracking.js",
+        "routes/documents.js",
         "routes/hub-mark-ordered.js",
         "routes/hub.js",
         "routes/invoices.js",
@@ -1603,6 +1625,7 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-komerce",
         "b-paypal",
         "b-tracking",
         "b-wallet",
@@ -1660,6 +1683,8 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-komerce",
+        "b-tracking",
         "b-wallet"
       ],
       "dashboards": []
@@ -1670,6 +1695,8 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-komerce",
+        "b-tracking",
         "b-wallet"
       ],
       "dashboards": []
@@ -1680,6 +1707,8 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-komerce",
+        "b-tracking",
         "b-wallet"
       ],
       "dashboards": []
@@ -1690,6 +1719,8 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-komerce",
+        "b-tracking",
         "b-wallet"
       ],
       "dashboards": []
@@ -1903,14 +1934,26 @@
     "invoices": {
       "routes": [
         "routes/client-tracking.js",
+        "routes/documents.js",
         "routes/invoices.js"
       ],
       "boutique": [
+        "b-komerce",
         "b-tracking"
       ],
       "dashboards": [
         "InvoicesView"
       ]
+    },
+    "transaction_documents": {
+      "routes": [
+        "routes/documents.js"
+      ],
+      "boutique": [
+        "b-komerce",
+        "b-tracking"
+      ],
+      "dashboards": []
     },
     "parcels": {
       "routes": [

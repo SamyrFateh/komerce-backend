@@ -31,8 +31,29 @@ test('liste uniquement les documents du compte et fournit une URL protégée', a
   const res = await request(app()).get('/api/auth/me/documents');
   expect(res.status).toBe(200);
   expect(mockQuery.mock.calls[0][1][0]).toBe('user-1');
+  expect(mockQuery.mock.calls[0][0]).toContain("td.document_type = 'refund_receipt'");
   expect(res.body.documents[0]).toMatchObject({ amount_kmf: 12500, download_url: `/api/auth/me/documents/${ID}/download` });
   expect(res.headers['cache-control']).toBe('private, no-store');
+});
+
+test('filtre les documents par référence de commande authentifiée', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [] });
+  const res = await request(app()).get('/api/auth/me/documents?order_reference=K1AAAA');
+  expect(res.status).toBe(200);
+  expect(mockQuery.mock.calls[0][1]).toEqual(['user-1', 'K1AAAA', 50, 0]);
+  expect(mockQuery.mock.calls[0][0]).toContain('o.reference = $2');
+});
+
+test('refuse une référence de commande invalide sans interroger la base', async () => {
+  const res = await request(app()).get('/api/auth/me/documents?order_reference=../../secret');
+  expect(res.status).toBe(400);
+  expect(mockQuery).not.toHaveBeenCalled();
+});
+
+test('ne fournit aucun lien tant que le PDF n\'est pas disponible', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [{ id: ID, document_type: 'invoice', status: 'pending' }] });
+  const res = await request(app()).get('/api/auth/me/documents');
+  expect(res.body.documents[0].download_url).toBeNull();
 });
 
 test('télécharge une facture appartenant au compte', async () => {
@@ -49,6 +70,7 @@ test('télécharge un reçu transactionnel appartenant au compte', async () => {
   mockEnsureDocumentPdf.mockResolvedValueOnce({ pdf_filename: 'remboursement.pdf', pdf_content: Buffer.from('%PDF-private') });
   expect((await request(app()).get(`/api/auth/me/documents/${ID}/download`)).status).toBe(200);
   expect(mockEnsureDocumentPdf).toHaveBeenCalledTimes(1);
+  expect(mockQuery.mock.calls[1][0]).toContain("td.document_type = 'refund_receipt'");
 });
 
 test('répond 404 sans révéler un document appartenant à un autre compte', async () => {

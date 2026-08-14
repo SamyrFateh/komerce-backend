@@ -4,12 +4,12 @@
  * @domain        tracking
  * @layer         ui-page
  * @criticality   high
- * @inputs        order_reference, phone, otp_code, client_session, library_context
- * @outputs       tracking_view, order_history, timeline, otp_state, lists_tab
- * @depends       b-store.js, b-phone.js, b-utils.js, b-cart-core.js, b-identity.js, group/group-api.js, routes/otp.js, routes/orders.js, routes/shared-cart.js
+ * @inputs        order_reference, phone, otp_code, client_session, library_context, private_documents, wallet_balance
+ * @outputs       tracking_view, order_history, timeline, essential_order_documents, otp_state, lists_tab
+ * @depends       b-store.js, b-phone.js, b-utils.js, b-cart-core.js, b-identity.js, group/group-api.js, routes/otp.js, routes/orders.js, routes/documents.js, routes/wallet.js, routes/shared-cart.js
  * @used-by       b-nav.js, boutique.js, group/group-library-remove.js
  * @doctrine      otp_une_fois, suivi_client_simple, reference_commande_lisible, sauvegarde_explicite_jamais_implicite
- * @impact-areas  tracking, auth, orders, participant-flow, customer-support, shared-cart, mon-komerce
+ * @impact-areas  tracking, auth, orders, documents, wallet, participant-flow, customer-support, shared-cart, mon-komerce
  * @version       2026-08
  */
 'use strict';
@@ -26,7 +26,7 @@
  * (mandat §2/§3 du refactor shared-cart).
  */
 
-import { sanitize, optimizeImgUrl, fmt, apiGet, apiPost } from './b-utils.js';
+import { sanitize, optimizeImgUrl, fmt, apiGet, apiPost, apiDownload } from './b-utils.js';
 import { showToast }                                       from './b-cart-core.js';
 import { state }                                            from './b-store.js';
 import {
@@ -115,7 +115,90 @@ export function renderOrdersHistory(orders, container) {
     </div>`).join('');
 }
 
-export function renderOrderDetail(order, container) {
+function essentialDocumentLabel(documentRow, order) {
+  if (documentRow.document_type === 'invoice') return 'Facture';
+  if (documentRow.document_type !== 'refund_receipt') return null;
+  const refunded = Number(documentRow.amount_kmf || 0);
+  const total = Number(order.total_amount ?? order.total_kmf ?? 0);
+  return refunded > 0 && total > 0 && refunded >= total
+    ? 'Remboursement total'
+    : 'Remboursement partiel';
+}
+
+async function downloadOrderDocument(button, documentRow) {
+  if (button.disabled || !documentRow.download_url) return;
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = 'Préparation…';
+  try {
+    const file = await apiDownload(documentRow.download_url, { timeoutMs: 20000 });
+    const url = URL.createObjectURL(file.blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    button.textContent = err?.status === 401 ? 'Session expirée' : 'Réessayer';
+    return;
+  } finally {
+    button.disabled = false;
+    if (button.textContent === 'Préparation…') button.textContent = original;
+  }
+}
+
+function appendEssentialOrderResources(container, order, resources) {
+  if (!resources) return;
+  const documents = (Array.isArray(resources.documents) ? resources.documents : [])
+    .filter((row) => essentialDocumentLabel(row, order) && row.download_url);
+  const walletBalance = Number(resources.wallet?.balance_kmf ?? 0);
+  if (!documents.length && walletBalance <= 0) return;
+
+  const section = document.createElement('section');
+  section.className = 'k-order-essentials';
+  const title = document.createElement('h3');
+  title.textContent = 'Documents et solde';
+  section.appendChild(title);
+
+  documents.forEach((documentRow) => {
+    const row = document.createElement('div');
+    row.className = 'k-order-essential-row';
+    const info = document.createElement('div');
+    const label = document.createElement('strong');
+    label.textContent = essentialDocumentLabel(documentRow, order);
+    const meta = document.createElement('span');
+    const parts = [documentRow.reference];
+    if (documentRow.amount_kmf != null) parts.push(fmt(Number(documentRow.amount_kmf), 'KMF'));
+    meta.textContent = parts.filter(Boolean).join(' · ');
+    info.append(label, meta);
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'k-order-document-download';
+    button.textContent = 'Télécharger';
+    button.setAttribute('aria-label', `Télécharger ${label.textContent}`);
+    button.addEventListener('click', () => downloadOrderDocument(button, documentRow));
+    row.append(info, button);
+    section.appendChild(row);
+  });
+
+  if (walletBalance > 0) {
+    const row = document.createElement('div');
+    row.className = 'k-order-essential-row k-order-wallet-balance';
+    const label = document.createElement('strong');
+    label.textContent = 'Solde wallet';
+    const amount = document.createElement('span');
+    amount.textContent = fmt(walletBalance, 'KMF');
+    row.append(label, amount);
+    section.appendChild(row);
+  }
+
+  container.querySelector('.k-order-card')?.appendChild(section);
+}
+
+export function renderOrderDetail(order, container, { privateResources = null } = {}) {
   container.innerHTML = `
     <div class="k-order-card">
       <div class="k-order-card-head">
@@ -125,6 +208,7 @@ export function renderOrderDetail(order, container) {
       <div class="k-order-card-total">${fmt(order.total_amount || 0, 'KMF')}</div>
       <div class="k-track-steps">${buildTimeline(order.status || 'pending')}</div>
     </div>`;
+  appendEssentialOrderResources(container, order, privateResources);
 }
 
 export function renderMyOrdersList(el, orders) {
@@ -175,7 +259,12 @@ export function renderMyOrdersList(el, orders) {
       if (!ref) return;
       card.classList.add('k-myorder-loading');
       try {
-        const data = await apiGet('/api/orders/' + encodeURIComponent(ref));
+        const encodedRef = encodeURIComponent(ref);
+        const [data, documentPayload, wallet] = await Promise.all([
+          apiGet('/api/orders/' + encodedRef),
+          apiGet('/api/auth/me/documents?order_reference=' + encodedRef).catch(() => null),
+          apiGet('/api/wallet').catch(() => null),
+        ]);
         el.innerHTML = '';
         const backBtn = document.createElement('button');
         backBtn.className = 'k-track-btn k-track-btn--ghost';
@@ -184,7 +273,12 @@ export function renderMyOrdersList(el, orders) {
         el.appendChild(backBtn);
         const box = document.createElement('div');
         el.appendChild(box);
-        renderOrderDetail(data.order || data, box);
+        renderOrderDetail(data.order || data, box, {
+          privateResources: {
+            documents: Array.isArray(documentPayload?.documents) ? documentPayload.documents : [],
+            wallet,
+          },
+        });
       } catch (e) {
         showToast('Impossible de charger cette commande.', 'error');
         card.classList.remove('k-myorder-loading');

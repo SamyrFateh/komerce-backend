@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        client_session, wallet_balance, private_documents, profile
  * @outputs       komerce_view, authenticated_pdf_download
- * @depends       b-utils.js, b-identity.js, b-wallet.js, b-bus.js, documents API
+ * @depends       b-utils.js, b-identity.js, b-bus.js, documents API, wallet API
  * @used-by       b-nav.js, boutique.js
  * @doctrine      wallet_visible_client, navigation_sans_friction, otp_une_fois
  * @impact-areas  account, wallet, documents, boutique-navigation
@@ -21,8 +21,8 @@
  * Doctrine : Mon Komerce est une seule page, sans sous-onglet, sans menu
  * secondaire. L'authentification intervient à l'entrée, une seule fois.
  *
- *   Mon wallet  (premier bloc, délègue à b-wallet.js)
- *   Mes documents (factures, remboursements, wallet, retrait)
+ *   Mes documents essentiels (factures et remboursements)
+ *   Mon wallet (solde compact, sans historique de mouvements)
  *   Mon profil  (nom, email lecture seule, WhatsApp du compte, devise)
  *   Retrait & sécurité (code de retrait informatif + autorisation
  *     nominative de retrait exceptionnel — Lot 5, états NONE/ACTIVE)
@@ -33,7 +33,6 @@
 
 import { apiGet, apiPut, apiDelete, apiDownload } from './b-utils.js';
 import { getCurrentIdentity, requireIdentity } from './b-identity.js';
-import { renderWalletView } from './b-wallet.js';
 import { bus } from './b-bus.js';
 
 // ── État interne ───────────────────────────────────────────────────────────────
@@ -56,7 +55,8 @@ function maskPhone(phone) {
 function fmtDateFr(iso) {
   if (!iso) return null;
   try {
-    const d = new Date(iso);
+    const raw = String(iso);
+    const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T12:00:00` : raw);
     return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   } catch (_) { return null; }
 }
@@ -79,8 +79,8 @@ function ensureShell() {
     '</header>' +
     '<div class="k-kmc-page-grid">' +
       '<div class="k-kmc-col-primary">' +
-        '<section id="k-kmc-wallet-block" class="k-kmc-block" aria-label="Mon wallet"></section>' +
         '<section id="k-kmc-documents-block" class="k-kmc-block" aria-label="Mes documents"></section>' +
+        '<section id="k-kmc-wallet-block" class="k-kmc-block k-kmc-block--compact" aria-label="Mon wallet"></section>' +
       '</div>' +
       '<div class="k-kmc-col-secondary">' +
         '<section id="k-kmc-profile-block" class="k-kmc-block" aria-label="Mon profil"></section>' +
@@ -150,11 +150,38 @@ function renderSessionExpired() {
   }
 }
 
-// ── Bloc wallet ────────────────────────────────────────────────────────────────
+// ── Bloc wallet compact ───────────────────────────────────────────────────────
 
-function renderWalletBlock(block) {
-  block.innerHTML = /* LOT4B_STATIC_WALLET_CONTAINER */ '<div id="k-wallet-view" class="k-wallet-view show"></div>';
-  renderWalletView();
+function renderWalletBlock(block, wallet) {
+  const balance = Number(wallet?.balance_kmf ?? 0);
+  const expiry = fmtDateFr(wallet?.expires_at);
+  block.replaceChildren();
+
+  const title = document.createElement('h3');
+  title.className = 'k-kmc-block-title';
+  title.textContent = 'Mon wallet';
+  block.appendChild(title);
+
+  const summary = document.createElement('div');
+  summary.className = 'k-kmc-wallet-summary';
+  const amount = document.createElement('strong');
+  amount.textContent = `${balance.toLocaleString('fr-FR')} KMF`;
+  const detail = document.createElement('span');
+  detail.textContent = balance > 0
+    ? (expiry ? `Utilisable jusqu’au ${expiry}` : 'Solde disponible')
+    : 'Aucun solde disponible';
+  summary.append(amount, detail);
+  block.appendChild(summary);
+}
+
+async function loadWalletBlock(block) {
+  if (!block) return;
+  renderBlockLoading(block);
+  try {
+    renderWalletBlock(block, await apiGet('/api/wallet'));
+  } catch (err) {
+    renderBlockError(block, err, () => loadWalletBlock(block));
+  }
 }
 
 // ── Bloc documents privés ────────────────────────────────────────────────────
@@ -162,12 +189,10 @@ function renderWalletBlock(block) {
 const DOCUMENT_LABELS = {
   invoice: 'Facture',
   refund_receipt: 'Remboursement',
-  wallet_receipt: 'Mouvement wallet',
-  pickup_proof: 'Preuve de retrait',
-  customs_invoice: 'Facture douane',
 };
 
 function renderDocumentsBlock(block, documents) {
+  const essentialDocuments = documents.filter((row) => DOCUMENT_LABELS[row?.document_type]);
   block.replaceChildren();
   const title = document.createElement('h3');
   title.className = 'k-kmc-block-title';
@@ -179,7 +204,7 @@ function renderDocumentsBlock(block, documents) {
   hint.textContent = 'Vos justificatifs restent privés et se téléchargent depuis votre compte.';
   block.appendChild(hint);
 
-  if (!documents.length) {
+  if (!essentialDocuments.length) {
     const empty = document.createElement('div');
     empty.className = 'k-kmc-documents-empty';
     empty.textContent = 'Aucun document disponible pour le moment.';
@@ -189,7 +214,7 @@ function renderDocumentsBlock(block, documents) {
 
   const list = document.createElement('div');
   list.className = 'k-kmc-documents-list';
-  documents.forEach((documentRow) => {
+  essentialDocuments.forEach((documentRow) => {
     const row = document.createElement('article');
     row.className = 'k-kmc-document-row';
 
@@ -207,36 +232,43 @@ function renderDocumentsBlock(block, documents) {
     meta.textContent = parts.filter(Boolean).join(' · ');
     info.append(name, reference, meta);
 
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'k-kmc-document-download';
-    button.textContent = 'Télécharger';
-    button.setAttribute('aria-label', `Télécharger ${name.textContent} ${reference.textContent}`);
-    button.addEventListener('click', async () => {
-      if (button.disabled) return;
-      button.disabled = true;
-      const original = button.textContent;
-      button.textContent = 'Préparation…';
-      try {
-        const file = await apiDownload(documentRow.download_url, { timeoutMs: 20000 });
-        const url = URL.createObjectURL(file.blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = file.filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
-      } catch (err) {
-        button.textContent = err && err.status === 401 ? 'Session expirée' : 'Réessayer';
-        return;
-      } finally {
-        button.disabled = false;
-        if (button.textContent === 'Préparation…') button.textContent = original;
-      }
-    });
-
-    row.append(info, button);
+    row.appendChild(info);
+    if (documentRow.download_url) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'k-kmc-document-download';
+      button.textContent = 'Télécharger';
+      button.setAttribute('aria-label', `Télécharger ${name.textContent} ${reference.textContent}`);
+      button.addEventListener('click', async () => {
+        if (button.disabled) return;
+        button.disabled = true;
+        const original = button.textContent;
+        button.textContent = 'Préparation…';
+        try {
+          const file = await apiDownload(documentRow.download_url, { timeoutMs: 20000 });
+          const url = URL.createObjectURL(file.blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = file.filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          button.textContent = err && err.status === 401 ? 'Session expirée' : 'Réessayer';
+          return;
+        } finally {
+          button.disabled = false;
+          if (button.textContent === 'Préparation…') button.textContent = original;
+        }
+      });
+      row.appendChild(button);
+    } else {
+      const pending = document.createElement('span');
+      pending.className = 'k-kmc-document-pending';
+      pending.textContent = 'En préparation';
+      row.appendChild(pending);
+    }
     list.appendChild(row);
   });
   block.appendChild(list);
@@ -510,10 +542,9 @@ async function _loadAndRender(seq) {
   if (!walletBlock || !documentsBlock || !profileBlock || !secBlock) return;
 
   renderBlockLoading(documentsBlock);
+  renderBlockLoading(walletBlock);
   renderBlockLoading(profileBlock);
   renderBlockLoading(secBlock);
-  // Wallet block mounts b-wallet.js immediately (it handles its own loading state)
-  renderWalletBlock(walletBlock);
 
   let me = null, meErr = null;
   me = await apiGet('/api/auth/me').catch(e => { meErr = e; return null; });
@@ -533,6 +564,7 @@ async function _loadAndRender(seq) {
   renderProfileBlock(profileBlock, me);
   renderSecurityBlock(secBlock, me);
   loadDocumentsBlock(documentsBlock);
+  loadWalletBlock(walletBlock);
 }
 
 // ── Point d'entrée canonique ───────────────────────────────────────────────────

@@ -90,7 +90,16 @@ Clos pour le périmètre indiscutable :
 
 - Le manifeste `documents` possède désormais le cycle complet des factures et documents transactionnels.
 - Les PDF sont générés côté serveur, stockés avec `owner_user_id`, nom, version et SHA-256, puis servis avec contrôle d'identité et réponse `404` en cas d'IDOR.
-- `Mon Komerce` affiche les documents sous le portefeuille et les télécharge avec la session authentifiée.
+- `Mon Komerce` donne la priorité aux factures et remboursements ; le wallet y est réduit au solde et à l'échéance, sans historique.
+- L'onglet Commandes rattache à chaque commande authentifiée ses seules factures et remboursements disponibles, avec téléchargement privé, puis le solde wallet s'il est positif.
+- La recherche publique par référence n'expose jamais ces ressources privées et l'API client ne fournit un lien que pour un PDF déjà disponible.
 - Les routes publiques de facture et la notification WhatsApp de facture ont été retirées ; WhatsApp ne transporte ni document ni lien de document.
 - Le paiement confirmé crée l'instantané de facture dans la transaction, y compris wallet et liste partagée ; les reprises restent idempotentes.
 - Tests ciblés documents, paiements et boutique : verts. Suite unitaire globale : 349 suites vertes sur 352 exécutées ; trois échecs de baseline hors périmètre (ordre du modal mobile, date locale pickup, générateur sécurité sans environnement complet).
+
+## Décision UX notifications métier — 2026-08-14
+
+- Une notification essentielle est un petit bandeau actionnable qui reste visible jusqu'à acquittement, pas un fil bavard.
+- Après acquittement, la vérité reste dans l'onglet métier concerné, notamment Commandes.
+- Le statut « colis prêt au relais » peut recevoir un signal visuel fort et temporaire ; le clignotement est réservé à cette urgence actionnable pour éviter le spam perceptif.
+- Ce chantier est séquencé après la projection documentaire et ne réintroduit aucun envoi WhatsApp métier.

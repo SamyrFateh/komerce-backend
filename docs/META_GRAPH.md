@@ -1,19 +1,19 @@
 # Méta-graphe des coutures — les 3 territoires
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-14T21:10:50.352Z.
+> Régénéré le 2026-08-14T22:29:27.488Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
 ## Sources cousues
 
-- Backend : **772** nœuds · Contrat : **423** endpoints
-- Boutique : **77** modules, 46 endpoints
+- Backend : **773** nœuds · Contrat : **423** endpoints
+- Boutique : **77** modules, 47 endpoints
 - Dashboards : **40** modules, 111 arêtes d'appel
 
 ## Synthèse des coutures
 
-- Endpoints consommés par au moins un front : **87**
+- Endpoints consommés par au moins un front : **88**
 - 🔗 Endpoints **partagés** (boutique + dashboards) : **2** — rayon de casse amplifié
 - 🔴 Coutures **fantômes** (front → hors contrat) : **0**
 - ⚠️ Tables touchées par **les deux** fronts : **16**
@@ -30,10 +30,10 @@
 | Table | Routes | Modules boutique | Vues dashboards |
 |---|---|---|---|
 | `cart_shares` | 2 | 4 | 2 |
-| `invoices` | 2 | 1 | 1 |
+| `invoices` | 3 | 2 | 1 |
 | `order_items` | 6 | 3 | 4 |
 | `order_status_history` | 1 | 3 | 2 |
-| `orders` | 19 | 5 | 12 |
+| `orders` | 20 | 6 | 12 |
 | `parcel_items` | 4 | 1 | 3 |
 | `parcels` | 10 | 2 | 9 |
 | `product_skus` | 3 | 3 | 5 |

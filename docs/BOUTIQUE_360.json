@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-14T21:10:50.445Z",
+  "generatedAt": "2026-08-14T22:27:16.342Z",
   "summary": {
     "modules": 77,
     "withHeader": 77,
@@ -11,8 +11,8 @@
     "orphanEmit": 0,
     "orphanListen": 1,
     "undeclared": 4,
-    "notFoundEndpoints": 1,
-    "unprovenEndpoints": 33,
+    "notFoundEndpoints": 0,
+    "unprovenEndpoints": 34,
     "dynamicEndpoints": 15,
     "ownedEvents": 3,
     "ownershipRed": 0,
@@ -748,9 +748,9 @@
       "depends": [
         "b-utils.js",
         "b-identity.js",
-        "b-wallet.js",
         "b-bus.js",
-        "documents API"
+        "documents API",
+        "wallet API"
       ],
       "usedBy": [
         "b-nav.js",
@@ -763,7 +763,6 @@
       "imports": [
         "b-utils",
         "b-identity",
-        "b-wallet",
         "b-bus"
       ],
       "bodyClasses": [],
@@ -1766,6 +1765,8 @@
         "group/group-api.js",
         "routes/otp.js",
         "routes/orders.js",
+        "routes/documents.js",
+        "routes/wallet.js",
         "routes/shared-cart.js"
       ],
       "usedBy": [
@@ -2947,10 +2948,17 @@
     },
     {
       "module": "b-komerce",
+      "route": "/api/wallet",
+      "raw": "/api/wallet",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
       "route": "/api/auth/me/documents",
       "raw": "/api/auth/me/documents",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "module": "b-komerce",
@@ -3049,6 +3057,20 @@
       "raw": "/api/orders/",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-tracking",
+      "route": "/api/auth/me/documents",
+      "raw": "/api/auth/me/documents?order_reference=",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-tracking",
+      "route": "/api/wallet",
+      "raw": "/api/wallet",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
     },
     {
       "module": "b-tracking",
@@ -3492,13 +3514,12 @@
       "surfaces",
       "view:switch"
     ],
-    "notFoundEndpoints": [
-      "/api/auth/me/documents"
-    ],
+    "notFoundEndpoints": [],
     "unprovenEndpoints": [
       "/api/auth/login",
       "/api/auth/logout",
       "/api/auth/me",
+      "/api/auth/me/documents",
       "/api/auth/me/pickup-authorization",
       "/api/auth/otp/request",
       "/api/auth/otp/verify",

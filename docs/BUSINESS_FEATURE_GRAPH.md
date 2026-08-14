@@ -133,7 +133,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 4
 - interfaces exposed: 23
 - internal APIs: 3
-- dependencies (consumes): 3 — auth, notifications, wallet
+- dependencies (consumes): 4 — auth, notifications, wallet, documents
 - consumers: 6 — documents, logistics, loyalty, orders, shared-cart, wallet
 
 ### business-rules _(business-transversal)_
@@ -220,7 +220,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### documents _(business-transversal)_
 
-> Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé, puis le servir uniquement à son propriétaire authentifié.
+> Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé ; exposer au client authentifié uniquement ses factures et remboursements essentiels.
 
 - services: 7
 - routes: 3
@@ -232,7 +232,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 9
 - internal APIs: 0
 - dependencies (consumes): 5 — orders, customs, wallet, refunds, auth-identity
-- consumers: 6 — customs, dashboard, orders, payments, refunds, wallet
+- consumers: 7 — auth-identity, customs, dashboard, orders, payments, refunds, wallet
 
 ### economic-engine _(business-feature)_
 
@@ -1163,7 +1163,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | auth | orders (`orders`) | ✔ |
 | auth-identity | auth (`auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)`) | ✔ |
 | auth-identity | notifications (`notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)`) | ✔ |
-| auth-identity | wallet (`wallet (projection boutique account : b-komerce.js consomme b-wallet.js pour afficher le wallet client)`) | ✔ |
+| auth-identity | wallet (`wallet (projection boutique account : b-komerce.js lit uniquement le solde canonique via GET /api/wallet)`) | ✔ |
+| auth-identity | documents (`documents (projection boutique account : b-komerce.js liste et télécharge les factures et remboursements privés)`) | ✔ |
 | business-rules | auth (`auth (garde de route admin)`) | ✔ |
 | business-rules | infrastructure (`infrastructure (journalisation, acces base)`) | ✔ |
 | catalog | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)`) | ✔ |
@@ -1496,11 +1497,12 @@ Meta Graph monté : oui.
 | auth | infrastructure | static-code | 13 | **OBSERVED_UNDECLARED** |
 | auth | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | auth-identity | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| auth-identity | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
 | auth-identity | infrastructure | static-code | 16 | **OBSERVED_UNDECLARED** |
 | auth-identity | logistics | static-code | 2 | **OBSERVED_UNDECLARED** |
 | auth-identity | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | auth-identity | platform-ops | static-code | 7 | **OBSERVED_UNDECLARED** |
-| auth-identity | wallet | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| auth-identity | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
 | business-rules | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | business-rules | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1588,7 +1590,7 @@ Meta Graph monté : oui.
 | orders | business-rules | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | orders | catalog | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | orders | customs | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| orders | documents | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 57 | **OBSERVED_UNDECLARED** |
 | orders | logistics | static-code, interface | 16 | **DECLARED_AND_OBSERVED** |
@@ -1598,7 +1600,7 @@ Meta Graph monté : oui.
 | orders | platform-ops | static-code | 36 | **OBSERVED_UNDECLARED** |
 | orders | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 7 | **OBSERVED_UNDECLARED** |
-| orders | wallet | static-code, interface | 8 | **DECLARED_AND_OBSERVED** |
+| orders | wallet | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | payments | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | payments | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | payments | documents | static-code | 7 | **DECLARED_AND_OBSERVED** |

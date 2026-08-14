@@ -22,12 +22,13 @@ module.exports = {
   canonicalFeature: 'orders',
   sliceKind: 'frontend-slice',
 
-  service: 'Maintenir le panier personnel local puis afficher le suivi des commandes créées.',
+  service: 'Maintenir le panier personnel local puis afficher le suivi des commandes créées avec leurs documents essentiels disponibles.',
   perimeter: {
     in: [
       'état et persistance du panier personnel',
       'quantités, mini-panier et badge panier',
       'projection client de l historique et de la timeline commande',
+      'projection contextualisée des factures, remboursements et du solde wallet positif dans une commande appartenant à la session',
     ],
     out: [
       'vérité produit et stock (catalog)',
@@ -71,6 +72,8 @@ module.exports = {
       'platform-ops — bus, store, client API et utilitaires',
       'auth-identity — identité et téléphone pour retrouver les commandes',
       'logistics — statuts de transit affichés en lecture',
+      'documents — factures et reçus de remboursement privés filtrés par référence de commande',
+      'wallet — lecture du solde courant sans historique de mouvements',
     ],
   },
   authority: 'boutique — ce slice possède l intention d achat locale et sa projection de suivi, jamais la vérité stock ni la machine de statut.',
@@ -82,6 +85,8 @@ module.exports = {
     'une répétition UI ne crée pas une seconde commande par elle-même',
     'le suivi ne modifie jamais le statut de commande',
     'la timeline reflète les statuts canoniques reçus du backend',
+    'la recherche publique par référence ne charge ni document privé ni solde wallet',
+    'une commande authentifiée n\'affiche que les factures et remboursements téléchargeables, plus le solde wallet strictement positif',
     'la recherche d historique client partage le défaut téléphonique +269 avec l identité, sans demander les champs de profil inutiles à une simple consultation',
     'le suivi et l historique utilisent sur desktop une composition dédiée sans étirer le formulaire de recherche',
   ],

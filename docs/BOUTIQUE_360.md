@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-08-14T21:10:50.445Z.
+> Régénéré le 2026-08-14T22:27:16.342Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
 - Modules JS : **77** (77 headés) · Événements bus : **23** · Bundles CSS : **3**
-- Endpoints appelés : **47** — 🔴 1 hors contrat · ⚪ 33 non prouvés · 🔵 15 dynamiques
+- Endpoints appelés : **47** — 🔴 0 hors contrat · ⚪ 34 non prouvés · 🔵 15 dynamiques
 - Santé bus : 0 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 4 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -17,7 +17,7 @@
 | `/api/auth/login` | komerce-api | ⚪ non prouvé |
 | `/api/auth/logout` | komerce-api | ⚪ non prouvé |
 | `/api/auth/me` | b-greeting, b-komerce, komerce-api | ⚪ non prouvé |
-| `/api/auth/me/documents` | b-komerce | 🔴 hors contrat |
+| `/api/auth/me/documents` | b-komerce, b-tracking | ⚪ non prouvé |
 | `/api/auth/me/pickup-authorization` | b-komerce | ⚪ non prouvé |
 | `/api/auth/otp/request` | b-identity, b-tracking | ⚪ non prouvé |
 | `/api/auth/otp/verify` | b-identity, b-tracking | ⚪ non prouvé |
@@ -59,10 +59,8 @@
 | `/api/shared-carts/saved/{id}` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/close` | group-api | 🔵 dynamique |
 | `/api/shares` | b-cart, b-favs | 🔵 dynamique |
-| `/api/wallet` | b-checkout, b-wallet | ⚪ non prouvé |
+| `/api/wallet` | b-checkout, b-komerce, b-tracking, b-wallet | ⚪ non prouvé |
 | `/api/wallet/transactions` | b-wallet | ⚪ non prouvé |
-
-> 🔴 **Hors contrat** (même classe que `.orders`/`getCosting`) : `/api/auth/me/documents`
 
 ## 2. Topologie du bus
 

@@ -20,12 +20,12 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 772,
-    "edges": 4165,
+    "graphNodes": 773,
+    "edges": 4171,
     "dbTables": 108,
     "doctrines": 170,
-    "impactAreas": 129,
-    "unresolvedCodeEdges": 421,
+    "impactAreas": 130,
+    "unresolvedCodeEdges": 422,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 61
   },
@@ -1869,9 +1869,9 @@
       "depends": [
         "b-utils.js",
         "b-identity.js",
-        "b-wallet.js",
         "b-bus.js",
-        "documents API"
+        "documents API",
+        "wallet API"
       ],
       "usedBy": [
         "b-nav.js",
@@ -3016,12 +3016,15 @@
         "phone",
         "otp_code",
         "client_session",
-        "library_context"
+        "library_context",
+        "private_documents",
+        "wallet_balance"
       ],
       "outputs": [
         "tracking_view",
         "order_history",
         "timeline",
+        "essential_order_documents",
         "otp_state",
         "lists_tab"
       ],
@@ -3034,6 +3037,8 @@
         "group/group-api.js",
         "routes/otp.js",
         "routes/orders.js",
+        "routes/documents.js",
+        "routes/wallet.js",
         "routes/shared-cart.js"
       ],
       "usedBy": [
@@ -3055,6 +3060,8 @@
         "tracking",
         "auth",
         "orders",
+        "documents",
+        "wallet",
         "participant-flow",
         "customer-support",
         "shared-cart",
@@ -6140,6 +6147,7 @@
       "purpose": null,
       "inputs": [
         "authenticated user",
+        "optional order reference",
         "document id"
       ],
       "outputs": [
@@ -6154,7 +6162,8 @@
       ],
       "usedBy": [
         "bootstrap/api-routes.js",
-        "public/boutique/js/b-komerce.js"
+        "public/boutique/js/b-komerce.js",
+        "public/boutique/js/b-tracking.js"
       ],
       "dbRead": [
         "invoices",
@@ -6172,7 +6181,8 @@
       ],
       "impactAreas": [
         "documents",
-        "account"
+        "account",
+        "order-tracking"
       ],
       "version": "2026-08"
     },
@@ -18928,6 +18938,11 @@
       "area": "operations"
     },
     {
+      "id": "impact:order-tracking",
+      "type": "impact-area",
+      "area": "order-tracking"
+    },
+    {
       "id": "impact:margin",
       "type": "impact-area",
       "area": "margin"
@@ -21744,12 +21759,6 @@
     },
     {
       "from": "public/boutique/js/b-komerce.js",
-      "to": "public/boutique/js/b-wallet.js",
-      "type": "depends",
-      "label": "b-wallet.js"
-    },
-    {
-      "from": "public/boutique/js/b-komerce.js",
       "to": "public/boutique/js/b-bus.js",
       "type": "depends",
       "label": "b-bus.js"
@@ -21759,6 +21768,12 @@
       "to": "documents API",
       "type": "depends",
       "label": "documents API"
+    },
+    {
+      "from": "public/boutique/js/b-komerce.js",
+      "to": "wallet API",
+      "type": "depends",
+      "label": "wallet API"
     },
     {
       "from": "public/boutique/js/b-nav.js",
@@ -23460,6 +23475,18 @@
     },
     {
       "from": "public/boutique/js/b-tracking.js",
+      "to": "routes/documents.js",
+      "type": "depends",
+      "label": "routes/documents.js"
+    },
+    {
+      "from": "public/boutique/js/b-tracking.js",
+      "to": "routes/wallet.js",
+      "type": "depends",
+      "label": "routes/wallet.js"
+    },
+    {
+      "from": "public/boutique/js/b-tracking.js",
       "to": "routes/shared-cart.js",
       "type": "depends",
       "label": "routes/shared-cart.js"
@@ -23523,6 +23550,18 @@
       "to": "impact:orders",
       "type": "impact",
       "label": "orders"
+    },
+    {
+      "from": "public/boutique/js/b-tracking.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "public/boutique/js/b-tracking.js",
+      "to": "impact:wallet",
+      "type": "impact",
+      "label": "wallet"
     },
     {
       "from": "public/boutique/js/b-tracking.js",
@@ -27642,6 +27681,12 @@
       "label": "public/boutique/js/b-komerce.js"
     },
     {
+      "from": "public/boutique/js/b-tracking.js",
+      "to": "routes/documents.js",
+      "type": "uses",
+      "label": "public/boutique/js/b-tracking.js"
+    },
+    {
       "from": "routes/documents.js",
       "to": "db:invoices",
       "type": "db-read",
@@ -27688,6 +27733,12 @@
       "to": "impact:account",
       "type": "impact",
       "label": "account"
+    },
+    {
+      "from": "routes/documents.js",
+      "to": "impact:order-tracking",
+      "type": "impact",
+      "label": "order-tracking"
     },
     {
       "from": "routes/economic.js",
@@ -45993,9 +46044,9 @@
       "directDependsOn": [
         "public/boutique/js/b-utils.js",
         "public/boutique/js/b-identity.js",
-        "public/boutique/js/b-wallet.js",
         "public/boutique/js/b-bus.js",
-        "documents API"
+        "documents API",
+        "wallet API"
       ],
       "directUsedBy": [
         "public/boutique/js/b-nav.js",
@@ -46028,7 +46079,6 @@
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-utils.js",
-        "public/boutique/js/b-wallet.js",
         "public/boutique/js/boutique.js",
         "public/boutique/js/group/group-side-cart.js",
         "routes/documents.js"
@@ -47219,6 +47269,8 @@
         "public/boutique/js/group/group-api.js",
         "routes/otp.js",
         "routes/orders.js",
+        "routes/documents.js",
+        "routes/wallet.js",
         "routes/shared-cart.js"
       ],
       "directUsedBy": [
@@ -47240,6 +47292,8 @@
         "tracking",
         "auth",
         "orders",
+        "documents",
+        "wallet",
         "participant-flow",
         "customer-support",
         "shared-cart",
@@ -47252,11 +47306,13 @@
         "doctrine:suivi_client_simple",
         "impact:auth",
         "impact:customer-support",
+        "impact:documents",
         "impact:mon-komerce",
         "impact:orders",
         "impact:participant-flow",
         "impact:shared-cart",
         "impact:tracking",
+        "impact:wallet",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-nav.js",
@@ -47268,9 +47324,11 @@
         "public/boutique/js/group/group-library-remove.js",
         "public/boutique/js/group/group-list-labels.js",
         "public/boutique/js/group/group-side-cart.js",
+        "routes/documents.js",
         "routes/orders.js",
         "routes/otp.js",
-        "routes/shared-cart.js"
+        "routes/shared-cart.js",
+        "routes/wallet.js"
       ]
     },
     "public/boutique/js/b-utils.js": {
@@ -47369,7 +47427,6 @@
         "impact:boutique-navigation",
         "impact:wallet",
         "public/boutique/js/b-identity.js",
-        "public/boutique/js/b-komerce.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-utils.js",
         "public/boutique/js/boutique.js"
@@ -50198,7 +50255,8 @@
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js",
-        "public/boutique/js/b-komerce.js"
+        "public/boutique/js/b-komerce.js",
+        "public/boutique/js/b-tracking.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -50216,7 +50274,8 @@
       ],
       "impactAreas": [
         "documents",
-        "account"
+        "account",
+        "order-tracking"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
@@ -50226,8 +50285,10 @@
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:account",
         "impact:documents",
+        "impact:order-tracking",
         "middleware/auth.js",
         "public/boutique/js/b-komerce.js",
+        "public/boutique/js/b-tracking.js",
         "services/documents/document-service.js",
         "services/invoice-service.js"
       ]
@@ -52817,6 +52878,7 @@
         "impact:wallet",
         "middleware/auth.js",
         "public/boutique/js/b-checkout.js",
+        "public/boutique/js/b-tracking.js",
         "services/wallet-service.js",
         "utils/logger.js"
       ]
@@ -61515,6 +61577,12 @@
       "to": "documents API",
       "type": "depends",
       "label": "documents API"
+    },
+    {
+      "from": "public/boutique/js/b-komerce.js",
+      "to": "wallet API",
+      "type": "depends",
+      "label": "wallet API"
     },
     {
       "from": "cart-surfaces",

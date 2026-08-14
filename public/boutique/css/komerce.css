@@ -230,6 +230,30 @@
   cursor: pointer;
 }
 .k-kmc-document-download:disabled { cursor: wait; opacity: .65; }
+.k-kmc-document-pending {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: .7rem;
+  font-weight: 700;
+}
+
+/* ── Wallet compact : solde utile, jamais l'historique des mouvements ── */
+.k-kmc-block--compact { padding-block: 16px; }
+.k-kmc-wallet-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.k-kmc-wallet-summary strong {
+  color: var(--ocean-dark);
+  font-size: 1.08rem;
+}
+.k-kmc-wallet-summary span {
+  color: var(--text-muted);
+  font-size: .72rem;
+  text-align: right;
+}
 
 /* ── Retrait & sécurité ─────────────────────────────────────────── */
 .k-kmc-security {

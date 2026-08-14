@@ -30,14 +30,14 @@ module.exports = {
   canonicalFeature: 'auth-identity',
   sliceKind: 'frontend-slice',
 
-  service: "Espace personnel protégé Mon Komerce : page unique réunissant wallet, documents privés téléchargeables, profil et sécurité de retrait.",
+  service: "Espace personnel protégé Mon Komerce : page unique donnant la priorité aux documents essentiels, puis au solde wallet compact, au profil et à la sécurité de retrait.",
 
   perimeter: {
     in: [
       "point d'entrée protégé de Mon Komerce avec restauration de la vue après authentification",
       "page unique sans vue d'ensemble ni sous-navigation interne",
-      "bloc wallet utilisant la vérité canonique de la feature wallet",
-      "bloc Mes documents sous le wallet : factures, remboursements, wallet et retraits téléchargés sous session",
+      "bloc Mes documents prioritaire : factures et remboursements téléchargés sous session lorsque leur PDF est disponible",
+      "bloc wallet compact utilisant la vérité canonique du solde et de son échéance, sans historique de mouvements",
       "bloc profil limité aux champs réellement lisibles ou modifiables",
       "WhatsApp du compte affiché en lecture seule sans statut de vérification inventé",
       "devise d'affichage persistée avec le profil",
@@ -76,7 +76,7 @@ module.exports = {
     ],
     consumes: [
       'auth — b-komerce.js utilise b-identity.js pour la session et le gate OTP',
-      'wallet — b-komerce.js monte la vue wallet canonique',
+      'wallet — b-komerce.js lit le solde canonique via GET /api/wallet sans charger les transactions',
       'boutique — navigation et bus de la boutique',
       'auth-identity — autorisation nominative de retrait exceptionnel (user_pickup_authorizations, Lot 5)',
       'documents — liste et téléchargement des PDF privés appartenant au compte',
@@ -93,7 +93,8 @@ module.exports = {
     "le bloc autorisation de retrait exceptionnel n'affiche jamais un statut ACTIVE sans que l'utilisateur ait lui-même enregistré un nom",
     "le code de retrait est annoncé lorsque la commande est prête au relais",
     "Suivi reste un espace autonome consacré aux achats",
-    "les documents sont affichés sous le wallet sans sous-onglet et ne sont jamais liés depuis WhatsApp",
+    "les documents essentiels précèdent le wallet compact sans sous-onglet et ne sont jamais liés depuis WhatsApp",
+    "Mon Komerce n'affiche aucun mouvement wallet, reçu de retrait, document douane ou document technique dans Mes documents",
     "avant une identification Mon Komerce, la navigation revient sur un fond Boutique neutre ; une erreur Suivi ou Mes Partages ne reste jamais exposée sous la modale",
   ],
 

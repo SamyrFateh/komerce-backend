@@ -11,17 +11,16 @@
 
 'use strict';
 
-/* Komerce SW v336 — network-first + purge du bundle de partage historique
+/* Komerce SW v337 — projection documentaire essentielle dans Commandes
  *
- * Le formulaire « Créer une liste » a été retiré du runtime par la PR #671,
- * mais des clients pouvaient encore conserver l'ancien JS/CSS dans le cache
- * v334-v335. La rotation vers un nom entièrement nouveau force la purge et
- * garantit que le partage direct courant est rechargé.
+ * La rotation force le rechargement des modules Commandes / Mon Komerce et
+ * de leurs styles afin que les documents privés et le wallet compact soient
+ * visibles immédiatement sur les sessions déjà ouvertes.
  *
  * La garde anti-empoisonnement demeure : une réponse HTML reçue à la place
  * d'un script ou d'une feuille CSS n'est jamais mise en cache.
  */
-const CACHE = 'komerce-v336';
+const CACHE = 'komerce-v337';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -34,7 +33,7 @@ self.addEventListener('activate', (event) => {
       await Promise.all(
         keys.map((key) => {
           if (key === CACHE || !key.startsWith('komerce-')) return undefined;
-          console.log('[SW v336] Purge ancien cache :', key);
+          console.log('[SW v337] Purge ancien cache :', key);
           return caches.delete(key);
         })
       );
@@ -47,7 +46,7 @@ self.addEventListener('activate', (event) => {
       });
 
       clients.forEach((client) => {
-        client.postMessage({ type: 'sw-updated', version: 'v336' });
+        client.postMessage({ type: 'sw-updated', version: 'v337' });
       });
     })()
   );

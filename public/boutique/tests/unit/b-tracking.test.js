@@ -42,6 +42,7 @@ jest.mock('../../js/b-utils.js', () => ({
   fmt: jest.fn((n) => n + ' KMF'),
   apiGet: jest.fn(),
   apiPost: jest.fn(),
+  apiDownload: jest.fn(),
 }));
 jest.mock('../../js/b-cart-core.js', () => ({
   showToast: jest.fn(),
@@ -74,7 +75,7 @@ jest.mock('../../js/b-identity.js', () => ({
   restoreIdentity: jest.fn(),
 }));
 
-const { apiGet, apiPost } = require('../../js/b-utils.js');
+const { apiGet, apiPost, apiDownload } = require('../../js/b-utils.js');
 const { showToast } = require('../../js/b-cart-core.js');
 const { flush } = require('./helpers/boutiqueTestKit');
 const { getSharedCartLibrary } = require('../../js/group/group-api.js');
@@ -221,6 +222,49 @@ describe('renderOrderDetail', () => {
     renderOrderDetail({ id: 'internal-id-1', total_amount: 0, status: 'pending' }, container);
     expect(container.querySelector('.k-order-ref').textContent).toBe('internal-id-1');
   });
+
+  it('ne charge aucune ressource privée dans le contexte public par référence', () => {
+    const container = document.createElement('div');
+    renderOrderDetail({ reference: 'KPUBLIC', total_amount: 5000, status: 'pending' }, container);
+    expect(container.querySelector('.k-order-essentials')).toBeNull();
+    expect(apiGet).not.toHaveBeenCalled();
+  });
+
+  it('affiche seulement facture, remboursement et solde wallet positif', () => {
+    const container = document.createElement('div');
+    renderOrderDetail(
+      { reference: 'K9ZZZZ', total_amount: 5000, status: 'available' },
+      container,
+      { privateResources: {
+        documents: [
+          { document_type: 'invoice', reference: 'INV-1', download_url: '/invoice' },
+          { document_type: 'refund_receipt', reference: 'REF-1', amount_kmf: 1000, download_url: '/refund' },
+          { document_type: 'wallet_receipt', reference: 'WLT-1', download_url: '/wallet' },
+          { document_type: 'invoice', reference: 'INV-PENDING', download_url: null },
+        ],
+        wallet: { balance_kmf: 700 },
+      } },
+    );
+    expect(container.textContent).toContain('Facture');
+    expect(container.textContent).toContain('Remboursement partiel');
+    expect(container.textContent).toContain('Solde wallet');
+    expect(container.textContent).not.toContain('WLT-1');
+    expect(container.textContent).not.toContain('INV-PENDING');
+    expect(container.querySelectorAll('.k-order-document-download')).toHaveLength(2);
+  });
+
+  it('télécharge un PDF disponible avec la session authentifiée', async () => {
+    const container = document.createElement('div');
+    apiDownload.mockRejectedValueOnce(new Error('stop after request'));
+    renderOrderDetail(
+      { reference: 'K9ZZZZ', total_amount: 5000 },
+      container,
+      { privateResources: { documents: [{ document_type: 'invoice', download_url: '/api/auth/me/documents/doc-1/download' }] } },
+    );
+    container.querySelector('.k-order-document-download').click();
+    await flush();
+    expect(apiDownload).toHaveBeenCalledWith('/api/auth/me/documents/doc-1/download', { timeoutMs: 20000 });
+  });
 });
 
 describe('renderMyOrdersList', () => {
@@ -269,6 +313,8 @@ describe('renderMyOrdersList', () => {
     await flush();
 
     expect(apiGet).toHaveBeenCalledWith('/api/orders/K1AAAA');
+    expect(apiGet).toHaveBeenCalledWith('/api/auth/me/documents?order_reference=K1AAAA');
+    expect(apiGet).toHaveBeenCalledWith('/api/wallet');
     expect(el.querySelector('.k-order-ref')).not.toBeNull();
   });
 

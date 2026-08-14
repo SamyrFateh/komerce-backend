@@ -268,7 +268,9 @@ Le principe doit rester :
 ```text
 service métier confirme l'événement
 -> service documentaire génère ou retourne le document existant
--> compte authentifié liste et télécharge le document
+-> administration conserve la vue documentaire complète
+-> client authentifié voit uniquement facture et remboursement dans Mon Komerce
+   et dans la commande concernée
 ```
 
 ## Table ou stockage recommandé
@@ -481,20 +483,12 @@ WhatsApp ne transporte aucun document et aucun lien documentaire.
 
 WhatsApp ne crée pas les preuves.
 
-Avant événement confirmé :
+La disponibilité d'une facture ou d'un remboursement est annoncée dans
+l'application elle-même. Aucun message WhatsApp documentaire n'est envoyé,
+même sans pièce jointe. WhatsApp ne reste pas un canal de consultation métier.
 
-- message informatif ;
-- demande de paiement ;
-- code relais ;
-- lien de suivi.
-
-Après événement confirmé, un message peut uniquement indiquer que le document
-est disponible dans « Mon Komerce », sans URL de téléchargement ni pièce jointe.
-
-```text
-Paiement confirmé pour la commande {reference}.
-Votre facture est disponible dans Mon Komerce.
-```
+La notification applicative renvoie vers la commande concernée ou vers « Mon
+Komerce » ; le téléchargement reste soumis à la session authentifiée.
 
 ## Ordre de mise en oeuvre recommandé
 
@@ -521,7 +515,8 @@ Votre facture est disponible dans Mon Komerce.
 
 - reçus wallet ;
 - preuve de retrait ;
-- accès client dans Mon Komerce, sous le wallet.
+- conservation interne/admin des reçus wallet et preuves de retrait ;
+- projection client essentielle limitée à facture, remboursement et solde wallet.
 
 ### Phase 5 — Sourcing
 

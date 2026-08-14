@@ -172,7 +172,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2025-10",
-        "service": "Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé, puis le servir uniquement à son propriétaire authentifié.",
+        "service": "Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé ; exposer au client authentifié uniquement ses factures et remboursements essentiels.",
         "businessKind": "business-transversal",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -12897,7 +12897,13 @@
       {
         "from": "auth-identity",
         "to": "wallet",
-        "raw": "wallet (projection boutique account : b-komerce.js consomme b-wallet.js pour afficher le wallet client)",
+        "raw": "wallet (projection boutique account : b-komerce.js lit uniquement le solde canonique via GET /api/wallet)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "documents",
+        "raw": "documents (projection boutique account : b-komerce.js liste et télécharge les factures et remboursements privés)",
         "resolved": true
       },
       {
@@ -15719,6 +15725,23 @@
       },
       {
         "from": "auth-identity",
+        "to": "documents",
+        "channels": [
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/auth/me/documents",
+                "routeFile": "routes/documents.js",
+                "consumerFileId": "public/boutique/js/b-komerce.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "auth-identity",
         "to": "infrastructure",
         "channels": [
           {
@@ -15878,15 +15901,12 @@
         "to": "wallet",
         "channels": [
           {
-            "channel": "static-code",
+            "channel": "interface",
             "evidence": [
               {
-                "sourceFileId": "public/boutique/js/b-komerce.js",
-                "targetFile": "public/boutique/js/b-wallet.js"
-              },
-              {
-                "sourceFileId": "public/boutique/tests/unit/b-komerce.test.js",
-                "targetFile": "public/boutique/js/b-wallet.js"
+                "endpoint": "/api/wallet",
+                "routeFile": "routes/wallet.js",
+                "consumerFileId": "public/boutique/js/b-komerce.js"
               }
             ]
           }
@@ -19615,6 +19635,16 @@
                 "targetFile": "services/documents/pickup-proof.js"
               }
             ]
+          },
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/auth/me/documents",
+                "routeFile": "routes/documents.js",
+                "consumerFileId": "public/boutique/js/b-tracking.js"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -20366,6 +20396,11 @@
                 "endpoint": "/api/wallet",
                 "routeFile": "routes/wallet.js",
                 "consumerFileId": "public/boutique/js/b-checkout.js"
+              },
+              {
+                "endpoint": "/api/wallet",
+                "routeFile": "routes/wallet.js",
+                "consumerFileId": "public/boutique/js/b-tracking.js"
               }
             ]
           }

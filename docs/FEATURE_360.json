@@ -45,7 +45,7 @@
     "healthy": 6,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 110,
+    "businessDependencies": 111,
     "directCrossFeatureImports": 4,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
@@ -1130,6 +1130,13 @@
           ]
         },
         {
+          "provider": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -1140,7 +1147,7 @@
           "provider": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "interface"
           ]
         }
       ],
@@ -5184,11 +5191,11 @@
         "kind": "business-transversal",
         "status": "production"
       },
-      "service": "Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé, puis le servir uniquement à son propriétaire authentifié.",
+      "service": "Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé ; exposer au client authentifié uniquement ses factures et remboursements essentiels.",
       "perimeter": {
         "in": [
           "generation PDF privée de facture, preuve de retrait, facture douane, reçu wallet et reçu remboursement",
-          "liste et téléchargement client authentifiés dans Mon Komerce"
+          "liste et téléchargement client authentifiés des factures et remboursements dans Mon Komerce et la commande concernée"
         ],
         "out": [
           "decision qu'un document doit etre genere (reste a la feature source : orders, customs, wallet, refunds)"
@@ -5199,6 +5206,8 @@
         "un document genere est immuable une fois emis — toute correction passe par une nouvelle generation versionnee",
         "aucun document ni lien documentaire n'est envoyé par WhatsApp",
         "tout téléchargement client exige une session et filtre par owner_user_id",
+        "la projection client ne liste que les factures et reçus de remboursement ; les autres documents restent internes ou administratifs",
+        "une URL de téléchargement client n'est exposée que lorsque le PDF existe et est disponible",
         "le PDF disponible possède une empreinte SHA-256 et ne peut pas être remplacé"
       ],
       "implementation": {
@@ -5580,6 +5589,13 @@
       "businessDependencies": [],
       "consumedBy": [
         {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "customs",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5597,7 +5613,8 @@
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -12458,7 +12475,8 @@
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -16963,7 +16981,7 @@
           "consumer": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "interface"
           ]
         },
         {

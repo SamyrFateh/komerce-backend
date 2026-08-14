@@ -177,7 +177,8 @@ module.exports = {
       // des consommations métier→support et métier→métier ordinaires.
       'auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)',
       'notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)',
-      'wallet (projection boutique account : b-komerce.js consomme b-wallet.js pour afficher le wallet client)',
+      'wallet (projection boutique account : b-komerce.js lit uniquement le solde canonique via GET /api/wallet)',
+      'documents (projection boutique account : b-komerce.js liste et télécharge les factures et remboursements privés)',
     ],
   },
 

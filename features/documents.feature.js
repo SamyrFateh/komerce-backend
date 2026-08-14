@@ -42,13 +42,13 @@ module.exports = {
   },
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé, puis le servir uniquement à son propriétaire authentifié.',
+  service: 'Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé ; exposer au client authentifié uniquement ses factures et remboursements essentiels.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
       'generation PDF privée de facture, preuve de retrait, facture douane, reçu wallet et reçu remboursement',
-      'liste et téléchargement client authentifiés dans Mon Komerce',
+      'liste et téléchargement client authentifiés des factures et remboursements dans Mon Komerce et la commande concernée',
     ],
     out: [
       'decision qu\'un document doit etre genere (reste a la feature source : orders, customs, wallet, refunds)',
@@ -192,6 +192,8 @@ module.exports = {
     'un document genere est immuable une fois emis — toute correction passe par une nouvelle generation versionnee',
     'aucun document ni lien documentaire n\'est envoyé par WhatsApp',
     'tout téléchargement client exige une session et filtre par owner_user_id',
+    'la projection client ne liste que les factures et reçus de remboursement ; les autres documents restent internes ou administratifs',
+    'une URL de téléchargement client n\'est exposée que lorsque le PDF existe et est disponible',
     'le PDF disponible possède une empreinte SHA-256 et ne peut pas être remplacé',
   ],
 

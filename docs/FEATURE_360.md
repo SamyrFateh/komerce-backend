@@ -8,7 +8,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **6**
 - Attention : **23**
 - Blocked : **0**
-- Business dependencies : **110**
+- Business dependencies : **111**
 - Direct cross-feature imports : **4**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **63**
@@ -30,13 +30,13 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 |---|---|---|---|---|---|---|---|
 | admin-dashboard | projection | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | sourcing | _aucune_ | 0 |
 | auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | auth-identity, business-rules, catalog, customs, dashboard, decision-signals, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, shared-cart, sourcing, unsold-resolution, wallet | 4 |
-| auth-identity | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | otp_codes, user_pickup_authorizations | auth, notifications, wallet | catalog, logistics, orders, platform-ops, shared-cart, wallet | 1 |
+| auth-identity | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | otp_codes, user_pickup_authorizations | auth, documents, notifications, wallet | catalog, logistics, orders, platform-ops, shared-cart, wallet | 1 |
 | business-rules | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | business_rules, business_rules_history | auth, infrastructure | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops | 0 |
 | catalog | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, product_attributes, product_content_profile, product_content_sections, supplier_catalog_imports | auth, auth-identity, business-rules, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, platform-ops, recommendations, sourcing | 12 |
 | customs | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | customs_categories, customs_shipment_parcels, customs_shipments | auth, documents, economic-engine | dashboard, infrastructure, orders | 3 |
 | dashboard | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | order_incidents, partners | auth, business-rules, customs, decision-signals, documents, economic-engine, logistics, orders, purchasing | economic-engine, infrastructure | 10 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | auth, business-rules, logistics | dashboard | 0 |
-| documents | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | invoices, transaction_documents | _aucune_ | customs, dashboard, orders, payments, refunds, wallet | 5 |
+| documents | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | invoices, transaction_documents | _aucune_ | auth-identity, customs, dashboard, orders, payments, refunds, wallet | 5 |
 | economic-engine | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_components, economic_variables, exchange_rates, finance_config, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_matrices_audit, pricing_strategies, pricing_strategy_history, risk_provisions | auth, catalog, dashboard, logistics, loyalty, orders | catalog, customs, dashboard, infrastructure, orders, platform-ops, sourcing | 6 |
 | incident-management | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | _aucune_ | 6 |
 | infrastructure | technical-foundation | 🟢 HEALTHY | 🟡 ATTENTION | schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, orders, recommendations, shared-cart, wallet | business-rules | 34 |
@@ -173,7 +173,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `hasActiveAuthorization` (services/pickup-authorization-service.js) — resolved
   - `makeIntlPhoneInput` (public/boutique/js/b-phone.js) — resolved
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 **Consumed by** : catalog (BUSINESS_FEATURE_INTERFACE), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (BUSINESS_FEATURE_INTERFACE), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
@@ -520,12 +520,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Kind** : business-transversal  ·  **Status** : production
 
-**Service** : Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé, puis le servir uniquement à son propriétaire authentifié.
+**Service** : Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé ; exposer au client authentifié uniquement ses factures et remboursements essentiels.
 
 **Perimeter** :
 - _in_ :
   - generation PDF privée de facture, preuve de retrait, facture douane, reçu wallet et reçu remboursement
-  - liste et téléchargement client authentifiés dans Mon Komerce
+  - liste et téléchargement client authentifiés des factures et remboursements dans Mon Komerce et la commande concernée
 - _out_ :
   - decision qu'un document doit etre genere (reste a la feature source : orders, customs, wallet, refunds)
 
@@ -535,6 +535,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - un document genere est immuable une fois emis — toute correction passe par une nouvelle generation versionnee
 - aucun document ni lien documentaire n'est envoyé par WhatsApp
 - tout téléchargement client exige une session et filtre par owner_user_id
+- la projection client ne liste que les factures et reçus de remboursement ; les autres documents restent internes ou administratifs
+- une URL de téléchargement client n'est exposée que lorsque le PDF existe et est disponible
 - le PDF disponible possède une empreinte SHA-256 et ne peut pas être remplacé
 
 **Owns** : `invoices`, `transaction_documents`
@@ -542,7 +544,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 0 internal API(s), 9 HTTP interface(s)
 
 **Consumes** : _aucune_
-**Consumed by** : customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumed by** : auth-identity (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 
 **Projections** : admin-dashboard
 

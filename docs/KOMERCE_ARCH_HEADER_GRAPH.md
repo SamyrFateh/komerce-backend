@@ -13,12 +13,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 772
-- Edges: 4165
+- Graph nodes: 773
+- Edges: 4171
 - DB tables: 108
 - Doctrines: 170
-- Impact areas: 129
-- Unresolved code edges: 421
+- Impact areas: 130
+- Unresolved code edges: 422
 - Tables multi-écrivains directs (>=2): 61
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -622,6 +622,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: public/boutique/index.html -> public/boutique/js/komerce-api.js (public/boutique/index.html)
 - uses: public/boutique/js/b-group-view.js -> routes/shared-cart.js (public/boutique/js/b-group-view.js)
 - depends: public/boutique/js/b-komerce.js -> documents API (documents API)
+- depends: public/boutique/js/b-komerce.js -> wallet API (wallet API)
 - depends: public/boutique/js/b-scroll-owner.js -> DOM (DOM)
 - depends: public/boutique/js/b-service-worker-refresh.js -> browser-cache-api (browser-cache-api)
 - depends: public/boutique/js/b-service-worker-refresh.js -> browser-service-worker-api (browser-service-worker-api)
@@ -696,7 +697,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/boutique-suggestions.js -> product-store (product-store)
 - depends: routes/boutique-suggestions.js -> services/boutique-suggestion-service.js (services/boutique-suggestion-service.js)
 - depends: routes/carriers.js -> db.js (db.js)
-- depends: routes/carriers.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 
