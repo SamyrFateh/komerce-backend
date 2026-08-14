@@ -1,4 +1,5 @@
 name: Validate hook tier 5 cross-platform once
+# rerun after Node-based Jest launcher fix
 
 on:
   push:
