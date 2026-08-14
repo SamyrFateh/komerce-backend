@@ -9813,7 +9813,7 @@ body.cart-open  #k-section-index { display:none; }
   #k-modal .k-modal-cart-btn {
     width: 42px;
     height: 42px;
-    left: calc(50% + 12px);
+    left: calc(50% + 18px);
   }
 
   #k-modal .k-modal-cart-icon {
