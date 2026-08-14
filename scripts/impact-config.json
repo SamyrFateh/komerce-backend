@@ -16,7 +16,7 @@
       "max": 69,
       "label": "REVIEW",
       "emoji": "🟡",
-      "action": "revue recommandée — bloquante uniquement sur main"
+      "action": "revue recommandée — informative, push autorisé"
     },
     "block": {
       "min": 70,

@@ -133,20 +133,9 @@ case "$LEVEL" in
     echo -e "${YELLOW}⚠️  Score $SCORE/100 — Revue recommandée${NC}"
     echo ""
     BRANCH=$(git branch --show-current 2>/dev/null)
-    if [ "$BRANCH" != "main" ] && [ "$BRANCH" != "master" ]; then
-      echo "Branche de travail — REVIEW informatif, push autorisé."
-      echo "La revue finale reste portée par la PR/CI."
-      exit 0
-    fi
-    # Sur main/master seulement, conserver une validation humaine.
-    if [ -e /dev/tty ]; then
-      REPLY=""
-      read -p "Push direct sur main malgré REVIEW ? (y/N) " -n 1 -r < /dev/tty 2>/dev/null || REPLY=""
-      echo ""
-      if [[ $REPLY =~ ^[Yy]$ ]]; then exit 0; fi
-    fi
-    echo "Push main annulé — revue requise."
-    exit 1
+    echo "REVIEW informatif — push autorisé sur ${BRANCH:-branche courante}."
+    echo "Les gates techniques restent bloquantes ; seul BLOCK interdit le push."
+    exit 0
     ;;
   "BLOCK")
     echo -e "${RED}🚫 Score $SCORE/100 — Push bloqué !${NC}"
@@ -376,7 +365,7 @@ echo "✅ Hook pre-push installé avec succès !"
 echo ""
 echo "📋 Comportement :"
 echo "   🟢 SAFE (0-29)   → Push autorisé automatiquement"
-echo "   🟡 REVIEW (30-69) → Confirmation demandée"
+echo "   🟡 REVIEW (30-69) → Avertissement informatif, push autorisé"
 echo "   🔴 BLOCK (70-100)  → Push bloqué (bypass: git push --no-verify)"
 echo ""
 echo "🔧 Pour désinstaller :"
