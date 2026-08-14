@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-13T23:11:25.191Z",
+  "generatedAt": "2026-08-14T09:43:09.237Z",
   "summary": {
     "modules": 77,
     "withHeader": 77,
@@ -1294,7 +1294,9 @@
         "modal:suggestions-rendered"
       ],
       "listens": [
-        "cart:update"
+        "cart:update",
+        "modal:detail-ready",
+        "modal:composition-synced"
       ],
       "imports": [
         "b-bus",
@@ -2737,7 +2739,8 @@
         "b-modal-product-detail-bootstrap"
       ],
       "listeners": [
-        "b-modal-cart"
+        "b-modal-cart",
+        "b-modal-suggestions"
       ]
     },
     "modal:opened": {
@@ -2768,7 +2771,8 @@
       ],
       "listeners": [
         "b-modal-core",
-        "b-modal-desktop-enhancers"
+        "b-modal-desktop-enhancers",
+        "b-modal-suggestions"
       ]
     },
     "carousel:changed": {
@@ -3436,7 +3440,8 @@
       ],
       "modal:composition-synced": [
         "b-modal-desktop-enhancers",
-        "b-modal-core"
+        "b-modal-core",
+        "b-modal-suggestions"
       ]
     }
   },
@@ -3586,11 +3591,13 @@
       "producerUnauthorized": [],
       "declaredConsumers": [
         "b-modal-desktop-enhancers",
-        "b-modal-core"
+        "b-modal-core",
+        "b-modal-suggestions"
       ],
       "actualConsumers": [
         "b-modal-core",
-        "b-modal-desktop-enhancers"
+        "b-modal-desktop-enhancers",
+        "b-modal-suggestions"
       ],
       "consumerUndeclared": [],
       "payload": "none",

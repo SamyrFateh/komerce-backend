@@ -2100,6 +2100,12 @@ html.k-mobile-premium-v1 .k-chip-label {
   display: contents;
 }
 
+/* PDP v3.1 — wrapper structurel uniquement.
+   Mobile reste strictement dans le flux canonique. */
+#k-modal .k-modal-right-rail {
+  display: contents;
+}
+
 @media (min-width: 900px) {
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
     .k-modal-actions {
@@ -2426,10 +2432,33 @@ html.k-mobile-premium-v1 .k-chip-label {
 @media (min-width: 900px) {
 
   /* ── Overlay ─────────────────────────────────────────────── */
-  .k-modal-overlay.open { align-items: center; justify-content: center; padding: 28px; background: var(--overlay-dark-md); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  /* PDP fullscreen desktop : l'overlay devient le viewport produit lui-même.
+     Plus de marge décorative ni de blur derrière une surface désormais opaque. */
+  .k-modal-overlay.open {
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0;
+    background: var(--white);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 
   /* ── Shell ───────────────────────────────────────────────── */
-  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; animation: none; } /* [T-029] ombre retirée : règle morte par cascade, voir #k-modal.k-modal plus bas (var(--shadow-modal-neutral-10), ombre modale canonique) */
+  /* PDP fullscreen desktop.
+     On conserve le comportement modal (retour catalogue, état de recherche,
+     fermeture), mais sa surface devient une vraie page produit. */
+  #k-modal.k-modal {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    overflow: hidden;
+    animation: none;
+    flex-shrink: 0;
+  }
 
   /* ── Topbar ──────────────────────────────────────────────── */
   #k-modal .k-modal-topbar { display: flex; /* restauré : masqué sur mobile uniquement */ position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); flex-shrink: 0; } /* [T-029] halo retiré */
@@ -2739,11 +2768,11 @@ html.k-mobile-premium-v1 .k-chip-label {
     grid-column: 2; grid-row: 1;
     position: static;
     align-self: end;
-    margin: 0; padding: 16px 0 4px;
+    margin: 0; padding: 12px 0 4px;
     background: transparent;
     border-top: 0;
     display: flex;
-    align-items: center; gap: 10px;
+    align-items: center; gap: 8px;
   }
   /* PR-D3 — CTA redesign desktop : Acheter vert solid, Ajouter outlined, sous-total coral */
   #k-modal .k-modal-product-zone .k-modal-actions .k-qty {
@@ -2765,7 +2794,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     width: 132px;
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
-    flex: 1 1 0; height: 44px; border-radius: 999px;
+    flex: 0 0 auto; height: 44px; border-radius: 999px;
     background: var(--white); color: var(--action-commerce-text); border: 1.5px solid var(--action-commerce-border);
     /* P0 fix (DIFF-pdp-desktop-simple-vs-enrichi) : overflow:hidden hérité de la
        règle de base fait retomber le min-width automatique du flex-item à 0 au
@@ -2782,7 +2811,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
     flex: 1 1 0; height: 44px; border-radius: 999px;
     background: var(--action-commerce); color: var(--action-commerce-text);
-    font-size: 15px; font-weight: 500;
+    font-size: 14px; font-weight: 500;
     transition: background .18s, transform .1s;
     /* P0 fix — voir .k-add-cart-btn ci-dessus, même cause. */
     overflow: visible; text-overflow: clip; min-width: max-content;
@@ -2838,7 +2867,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: unset; grid-row: unset; padding: 8px 10px 4px; font-size: 13px; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom { grid-column: unset; grid-row: unset; padding: 0 10px 10px; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: static; margin-bottom: 16px; padding: 0 0 10px; border-bottom: 1px solid var(--sand-dark); background: none; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: static; background: none; padding: 0 0 16px; margin-bottom: 0; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: static; background: none; padding: 0 0 10px; margin-bottom: 0; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section { margin-top: 32px; }
 
   /* ── Livraison + Paiement : layout full-width sous suggestions supprimé (LOT1).
@@ -3132,7 +3161,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   #k-modal .k-sku {
     width: 52px;
-    height: 52px;
     flex: 0 0 52px;
     padding: 3px;
     border-radius: 8px;
@@ -3188,108 +3216,67 @@ html.k-mobile-premium-v1 .k-chip-label {
    de ces placements (grid-template-columns = modal-product-lot4-hybrid.css,
    grid-template-rows + row-placement = ce fichier). ══════════════════════ */
 @media (min-width: 900px) {
-  #k-modal .k-modal-product-zone > .k-modal-buybox {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail {
     grid-column: 2;
     grid-row: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-self: start;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox {
+    min-width: 0;
+    width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
     grid-column: 1 / -1;
-    grid-row: 2;
   }
   #k-modal .k-modal-product-zone > #k-modal-enriched-content {
     grid-column: 1 / -1;
-    grid-row: 3;
   }
   #k-modal .k-modal-product-zone > #k-modal-suggestions {
     grid-column: 1 / -1;
-    grid-row: 4;
   }
-  #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched > #k-modal-suggestions {
-    grid-row: 3;
-  }
+  /* Le placement vertical des suggestions est désormais owned
+     exclusivement par le bloc LOT 6D plus bas. */
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   PDP v3.1 — §1 / §8 : SUGGESTIONS EN RAIL (produit SIMPLE, sans axes)
+   LOT 6D — SUGGESTIONS TRANSVERSALES DESKTOP
 
-   Objectif : quand la BuyBox est plus courte que le hero, les suggestions
-   commencent immédiatement sous la BuyBox dans la colonne droite, au lieu de
-   laisser un vide sous « Partager » et d'atterrir en pleine largeur tout en
-   bas. Composition purement structurelle (grille) : aucun reparentage DOM,
-   aucun position:absolute, aucune duplication. L'ordre DOM reste inchangé
-   (buybox → long-details → enriched → suggestions), donc mobile
-   (display:contents) et l'oracle d'ordre canonique ne sont pas affectés.
+   row 1 : ProductMedia | ProductBuyBox
+   row 2 : Suggestions pleine largeur
+   row 3 : Description longue
+   row 4 : Contenu enrichi
 
-   Modèle de rangées (uniquement sous cette classe, donc jamais pour un
-   produit à variantes / layout 5H) :
-     row 1 : BuyBox        (colonne 2)   — le hero définit la hauteur à gauche
-     row 2 : Suggestions   (colonne 2)   — empilées SOUS la BuyBox, sans vide
-     row 3 : Description    (pleine largeur, sous le hero)
-     row 4 : Contenu enrichi (pleine largeur)
-   Le hero couvre les rows 1-2 pour que la colonne 1 reste occupée pendant que
-   la colonne 2 empile BuyBox + Suggestions. `align-items: start` (déjà posé
-   sur la zone) garantit que le hero garde sa hauteur intrinsèque sans
-   s'étirer sur les deux pistes.
-   Owner : ce fichier (row-placement), cohérent avec le bloc LOT 2 ci-dessus.
+   Le RightRail ne possède plus les suggestions.
+   Leur présentation interne reste celle du renderer desktop historique.
    ══════════════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-  #k-modal .k-modal-product-zone.k-modal-product-zone--suggestions-in-rail {
-    grid-template-rows: auto auto auto auto;
-    row-gap: 0;
-  }
-  #k-modal .k-modal-product-zone--suggestions-in-rail > .k-modal-img-wrap {
-    grid-column: 1;
-    grid-row: 1 / 3;
-    align-self: start;
-  }
-  #k-modal .k-modal-product-zone--suggestions-in-rail > .k-modal-buybox {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-suggestions {
-    grid-column: 2;
+  #k-modal .k-modal-product-zone > #k-modal-suggestions {
+    grid-column: 1 / -1;
     grid-row: 2;
     align-self: start;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin-top: 0;
   }
-  #k-modal .k-modal-product-zone--suggestions-in-rail > .k-modal-long-details {
+
+  #k-modal .k-modal-product-zone.k-modal-product-zone--no-enriched
+  > #k-modal-suggestions {
+    grid-row: 2;
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-long-details {
     grid-column: 1 / -1;
     grid-row: 3;
   }
-  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-enriched-content {
+
+  #k-modal .k-modal-product-zone > #k-modal-enriched-content {
     grid-column: 1 / -1;
     grid-row: 4;
-  }
-
-  /* Présentation compacte du rail : bandeau aligné sur le padding de la BuyBox,
-     un liseré haut fait office de séparateur (« ─── » du mock), et les cartes
-     défilent horizontalement (« [card] [card] → ») pour rester dans la hauteur
-     du hero plutôt que d'empiler une grille 2 colonnes qui déborderait. */
-  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-suggestions {
-    padding: 18px clamp(28px, 4.4vw, 72px) 24px;
-    border-top: 1px solid var(--border);
-    margin-top: 6px;
-    background: var(--page-bg);
-  }
-  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-suggestions .k-sug-section + .k-sug-section {
-    margin-top: 20px;
-  }
-  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-suggestions .k-sug-grid {
-    display: flex;
-    grid-template-columns: none;
-    gap: 12px;
-    overflow-x: auto;
-    overflow-y: visible;
-    scroll-snap-type: x proximity;
-    padding-bottom: 6px;
-    /* défilement discret : la barre reste sobre, pas de scroll vertical
-       imbriqué (l'oracle de stress vérifie overflow-y). */
-    scrollbar-width: thin;
-  }
-  #k-modal .k-modal-product-zone--suggestions-in-rail > #k-modal-suggestions .k-sug-card {
-    flex: 0 0 auto;
-    width: 150px;
-    scroll-snap-align: start;
   }
 }
 
@@ -5205,7 +5192,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   /* PDP v3.1 — vraie region transactionnelle desktop.
      Mobile conserve display:contents depuis modal-shell.css. */
-  #k-modal .k-modal-product-zone > .k-modal-buybox {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox {
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -5237,7 +5224,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
       /* REF-2026-07 : même correction qu'à 1024px — image bornée, détails 1fr. */
       /* ProductMedia (ex 64px + minmax(280,420)) → minmax(340,480) : conserve
          l'amplitude combinée précédente (344px→484px) sous une seule piste. */
-      grid-template-columns: minmax(0, 1fr) minmax(320px, 330px);
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 380px);
       gap: 16px;
       padding: 16px;
     }
@@ -5572,7 +5559,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
     border-bottom: 0;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
   }
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title-text {
@@ -5706,7 +5693,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   /* Une seule colonne transactionnelle : le padding appartient à la BuyBox,
      plus aux wrappers historiques details/configurator. */
-  #k-modal .k-modal-product-zone > .k-modal-buybox {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox {
     box-sizing: border-box;
     padding: clamp(16px, 2vh, 26px) clamp(14px, 1.8vw, 24px) 12px;
   }
@@ -5714,80 +5701,80 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* Les wrappers restent sémantiques dans le DOM mais ne créent plus
      de sous-layout desktop. Leurs enfants deviennent les items flex
      réels de ProductBuyBox. */
-  #k-modal .k-modal-product-zone > .k-modal-buybox > .k-modal-details,
-  #k-modal .k-modal-product-zone > .k-modal-buybox > .k-modal-details > .k-modal-info,
-  #k-modal .k-modal-product-zone > .k-modal-buybox > .k-modal-configurator,
-  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-meta {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox > .k-modal-details,
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox > .k-modal-details > .k-modal-info,
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox > .k-modal-configurator,
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox .k-modal-meta {
     display: contents;
   }
 
   /* ── Ordre canonique de la BuyBox ─────────────────────── */
-  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-name-row {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox .k-modal-name-row {
     order: 10;
     margin-top: 0;
   }
 
-  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-sku {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox .k-modal-sku {
     order: 20;
   }
 
-  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-cat {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox #k-modal-cat {
     order: 21;
   }
 
-  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-price-row {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox .k-modal-price-row {
     order: 30;
     margin-top: 8px;
   }
 
-  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-aed-price {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox #k-modal-aed-price {
     order: 31;
   }
 
   /* Le chapeau éditorial court appartient au hero transactionnel. */
-  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-desc {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox #k-modal-desc {
     order: 40;
     margin-top: 6px;
   }
 
   /* Tous les axes restent simultanément visibles, quel que soit N. */
-  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-variants {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox #k-modal-variants {
     order: 50;
     min-width: 0;
     margin-top: 12px;
   }
 
-  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-variants:empty {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox #k-modal-variants:empty {
     display: none;
   }
 
   /* Disponibilité après la résolution des axes. */
-  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-stock {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox #k-modal-stock {
     order: 60;
     margin-top: 2px;
   }
 
-  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-stock-bar {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox #k-modal-stock-bar {
     order: 61;
   }
 
-  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-delivery {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox #k-modal-delivery {
     order: 70;
     margin-top: 8px;
   }
 
-  #k-modal .k-modal-product-zone > .k-modal-buybox .k-modal-actions {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox .k-modal-actions {
     order: 80;
     align-self: stretch;
     width: 100%;
     margin-top: 10px;
   }
 
-  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-trust {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox #k-modal-trust {
     order: 90;
   }
 
-  #k-modal .k-modal-product-zone > .k-modal-buybox #k-modal-share-row {
+  #k-modal .k-modal-product-zone > .k-modal-right-rail > .k-modal-buybox #k-modal-share-row {
     order: 100;
   }
 
@@ -5795,7 +5782,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-buybox .k-vg {
     min-width: 0;
     padding: 0;
-    margin: 0 0 10px;
+    margin: 0 0 12px;
   }
 
   #k-modal .k-modal-buybox .k-vg:last-of-type {
@@ -5833,6 +5820,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* Axes image/couleur : comportement existant conservé, wrap explicite. */
   #k-modal .k-modal-buybox .k-vg-skus {
     display: flex;
+    align-items: flex-start;
     flex-wrap: wrap;
     gap: 5px;
     width: 100%;
@@ -5844,7 +5832,8 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     flex: 1 1 0;
     width: auto;
     min-width: 40px;
-    max-width: 104px;
+    max-width: 88px;
+    aspect-ratio: 1 / 1;
   }
 
   #k-modal .k-modal-buybox .k-vg-skus .k-sku:not(.k-sku--color) img {

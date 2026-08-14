@@ -175,31 +175,72 @@ bus.on('cart:update', () => _syncSuggestionControls());
 function applyModalDesktopSuggestionState() {
   const sugSection = document.getElementById('k-modal-suggestions');
   const sugRail = document.getElementById('k-sug-rail');
+  const productZone = modalZone('.k-modal-product-zone');
+  const rightRail = document.getElementById('k-modal-right-rail');
+  const longDetails = document.getElementById('k-modal-long-details');
+  const enriched = document.getElementById('k-modal-enriched-content');
   const desktop = isDesktop();
 
-  if (sugSection) {
-    sugSection.classList.toggle('k-modal-suggestions--desktop-list', desktop);
+  if (sugSection && productZone) {
+    sugSection.classList.toggle(
+      'k-modal-suggestions--desktop-list',
+      desktop
+    );
 
-    // PDP v3.1 — les suggestions restent un enfant de .k-modal-product-zone.
-    // Leur placement desktop (rail colonne 2 pour un produit simple, §1/§8, vs
-    // pleine largeur sous l'enrichi pour un produit à variantes, §2) est décidé
-    // par la GRILLE CSS via .k-modal-product-zone--suggestions-in-rail — jamais
-    // par un reparentage JS. On ne les extrait donc plus vers .k-modal-scroll.
-    //
-    // Réintégration défensive et idempotente : si un état antérieur (surface
-    // legacy, ancienne session) a déplacé la section hors de la zone, on la
-    // réinsère en fin de zone — ce qui préserve l'ordre canonique DOM
-    // (enriched avant suggestions) et laisse la grille faire le placement.
     if (desktop) {
-      const productZone = modalZone('.k-modal-product-zone');
-      if (productZone && sugSection.parentElement !== productZone) {
+      /* Lot 6D — section transversale immédiatement sous le hero :
+         Media | BuyBox
+         Suggestions pleine largeur
+         Description longue
+         Enrichi */
+      if (longDetails && longDetails.parentElement === productZone) {
+        if (
+          sugSection.parentElement !== productZone ||
+          sugSection.nextElementSibling !== longDetails
+        ) {
+          productZone.insertBefore(sugSection, longDetails);
+        }
+      } else if (
+        rightRail &&
+        rightRail.parentElement === productZone
+      ) {
+        if (
+          sugSection.parentElement !== productZone ||
+          rightRail.nextElementSibling !== sugSection
+        ) {
+          rightRail.insertAdjacentElement('afterend', sugSection);
+        }
+      } else if (sugSection.parentElement !== productZone) {
+        productZone.appendChild(sugSection);
+      }
+    } else {
+      /* Mobile : retour à l'ordre vertical historique.
+         On ne transpose pas la composition desktop. */
+      if (
+        enriched &&
+        enriched.parentElement === productZone
+      ) {
+        if (
+          sugSection.parentElement !== productZone ||
+          enriched.nextElementSibling !== sugSection
+        ) {
+          enriched.insertAdjacentElement('afterend', sugSection);
+        }
+      } else if (sugSection.parentElement !== productZone) {
         productZone.appendChild(sugSection);
       }
     }
   }
 
-  if (sugRail) sugRail.classList.toggle('k-sug-rail--desktop-list', desktop);
+  if (sugRail) {
+    sugRail.classList.toggle('k-sug-rail--desktop-list', desktop);
+  }
 }
+
+/* Le rendu produit et le rendu recommandations sont asynchrones :
+   la section converge vers son emplacement canonique après chaque paint. */
+bus.on('modal:detail-ready', applyModalDesktopSuggestionState);
+bus.on('modal:composition-synced', applyModalDesktopSuggestionState);
 
 function _renderSuggestionCard(product) {
   return renderProductCard(product, { variant: 'suggestion', actionVariant: 'modal' });

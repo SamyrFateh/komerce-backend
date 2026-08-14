@@ -207,6 +207,70 @@ test.describe('Catalogue enrichi V3 — scénarios spécifiques', () => {
     expect(measurements.nestedScrollable).toBe(false);
   });
 
+  test('P4 — garment : les variantes image possèdent leur hauteur visuelle sans chevaucher l’axe suivant', async ({ page }) => {
+    const entry = catalogue.cases.find((item) => item.key === 'garment');
+    await stubFixtureCatalogue(page);
+    await openFixtureFromSearch(page, entry);
+
+    const geometry = await page.evaluate(() => {
+      const groups = [...document.querySelectorAll('#k-modal-variants .k-vg')];
+      const visualGroup = groups.find((group) =>
+        group.querySelector('.k-vg-skus .k-sku:not(.k-sku--color) img')
+      );
+      const nextGroup = visualGroup?.nextElementSibling;
+
+      if (!visualGroup || !nextGroup) {
+        return { validStructure: false, cards: [], visualGap: null };
+      }
+
+      const cards = [
+        ...visualGroup.querySelectorAll('.k-vg-skus .k-sku:not(.k-sku--color)')
+      ];
+
+      const measurements = cards.map((card) => {
+        const image = card.querySelector('img');
+        const cardRect = card.getBoundingClientRect();
+        const imageRect = image.getBoundingClientRect();
+
+        return {
+          cardWidth: cardRect.width,
+          cardHeight: cardRect.height,
+          imageOverflowBottom: imageRect.bottom - cardRect.bottom,
+          imageOverflowLeft: cardRect.left - imageRect.left,
+          imageOverflowRight: imageRect.right - cardRect.right,
+        };
+      });
+
+      const visualBottom = Math.max(
+        ...cards.map((card) =>
+          card.querySelector('img').getBoundingClientRect().bottom
+        )
+      );
+
+      const nextLabel = nextGroup.querySelector('.k-vg-label');
+      const nextLabelTop = nextLabel?.getBoundingClientRect().top ?? visualBottom;
+
+      return {
+        validStructure: true,
+        cards: measurements,
+        visualGap: nextLabelTop - visualBottom,
+      };
+    });
+
+    expect(geometry.validStructure).toBe(true);
+    expect(geometry.cards.length).toBeGreaterThan(0);
+
+    for (const card of geometry.cards) {
+      // Une variante visuelle est une vraie boîte carrée :
+      // l'image ne peut pas peindre hors de sa carte et chevaucher l'axe suivant.
+      expect(Math.abs(card.cardWidth - card.cardHeight)).toBeLessThanOrEqual(1);
+      expect(card.imageOverflowBottom).toBeLessThanOrEqual(1);
+      expect(card.imageOverflowLeft).toBeLessThanOrEqual(1);
+      expect(card.imageOverflowRight).toBeLessThanOrEqual(1);
+    }
+
+    expect(geometry.visualGap).toBeGreaterThanOrEqual(10);
+  });
   test('P2 — stress : aucun texte d’option ne déborde de sa boîte, quelle que soit la longueur du libellé', async ({ page }) => {
     const entry = catalogue.cases.find((item) => item.key === 'stress');
     await stubFixtureCatalogue(page);
@@ -308,37 +372,71 @@ test.describe('Catalogue enrichi V3 — scénarios spécifiques', () => {
     await optionalShot(page, 'desktop-side-cart-three-items.png');
   });
 
-  test('PDP §1/§8 — editorial (simple) : suggestions en rail colonne 2, immédiatement sous la BuyBox, sans vide', async ({ page }) => {
+  test('PDP §1/§8 — editorial (simple) : suggestions pleine largeur immédiatement sous le hero', async ({ page }) => {
     const entry = catalogue.cases.find((item) => item.key === 'editorial');
     await stubFixtureCatalogue(page);
     await openFixtureFromSearch(page, entry);
-    // Attendre les cartes réelles avant de mesurer (pas de capture prématurée).
-    await page.waitForSelector('#k-modal-suggestions .k-sug-card', { timeout: 8000 });
+
+    await page.waitForSelector(
+      '#k-modal-suggestions .k-sug-card',
+      { timeout: 8000 }
+    );
 
     const m = await page.evaluate(() => {
       const zone = document.querySelector('.k-modal-product-zone');
+      const media = document.querySelector('.k-modal-img-wrap');
+      const rightRail = document.getElementById('k-modal-right-rail');
       const suggestions = document.getElementById('k-modal-suggestions');
-      const buybox = document.getElementById('k-modal-buybox');
-      const cs = getComputedStyle(suggestions);
+      const longDetails = document.getElementById('k-modal-long-details');
+
+      const mr = media.getBoundingClientRect();
+      const rr = rightRail.getBoundingClientRect();
+      const zr = zone.getBoundingClientRect();
       const sr = suggestions.getBoundingClientRect();
-      const br = buybox.getBoundingClientRect();
+      const zoneStyle = getComputedStyle(zone);
+
+      const zoneContentLeft =
+        zr.left + (parseFloat(zoneStyle.paddingLeft) || 0);
+
+      const zoneContentRight =
+        zr.right - (parseFloat(zoneStyle.paddingRight) || 0);
+
+      const heroBottom = Math.max(mr.bottom, rr.bottom);
+
       return {
-        railClass: zone.classList.contains('k-modal-product-zone--suggestions-in-rail'),
-        insideZone: zone.contains(suggestions),
-        gridColumnStart: cs.gridColumnStart,
-        // colonne 2 : le bord gauche des suggestions est aligné sur la BuyBox
-        alignedWithBuybox: Math.abs(sr.left - br.left) <= 2 && Math.abs(sr.right - br.right) <= 2,
-        // vide sous la BuyBox comblé : les suggestions démarrent juste sous elle
-        voidBelowBuybox: Math.round(sr.top - br.bottom),
+        railClass:
+          zone.classList.contains(
+            'k-modal-product-zone--suggestions-in-rail'
+          ),
+
+        parentIsZone:
+          suggestions.parentElement === zone,
+
+        /* Les suggestions couvrent les deux pistes de ProductZone.
+           Le média peut être centré à l'intérieur de sa propre piste :
+           ses bords ne constituent donc pas les limites de la grille. */
+        spansBothColumns:
+          Math.abs(sr.left - zoneContentLeft) <= 2 &&
+          Math.abs(sr.right - zoneContentRight) <= 2,
+
+        gapAfterHero:
+          Math.round(sr.top - heroBottom),
+
+        beforeLongDetails:
+          suggestions.nextElementSibling === longDetails,
+
+        cardCount:
+          suggestions.querySelectorAll('.k-sug-card').length,
       };
     });
 
-    expect(m.railClass).toBe(true);
-    expect(m.insideZone).toBe(true);
-    expect(m.gridColumnStart).toBe('2');
-    expect(m.alignedWithBuybox).toBe(true);
-    expect(m.voidBelowBuybox).toBeLessThanOrEqual(24);
-    expect(m.voidBelowBuybox).toBeGreaterThanOrEqual(-2);
+    expect(m.railClass).toBe(false);
+    expect(m.parentIsZone).toBe(true);
+    expect(m.spansBothColumns).toBe(true);
+    expect(m.gapAfterHero).toBeGreaterThanOrEqual(-2);
+    expect(m.gapAfterHero).toBeLessThanOrEqual(32);
+    expect(m.beforeLongDetails).toBe(true);
+    expect(m.cardCount).toBeGreaterThan(0);
   });
 
   test('PDP §2 — garment (variantes) : suggestions NON forcées en rail (pleine largeur)', async ({ page }) => {
