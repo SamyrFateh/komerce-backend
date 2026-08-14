@@ -87,6 +87,7 @@ describe('b-modal-product', () => {
       expect(dom.modalCarouselTrack.querySelectorAll('.k-modal-slide')).toHaveLength(1);
       expect(dom.modalDots.querySelectorAll('.k-modal-dot')).toHaveLength(0);
       expect(dom.modal.querySelector('.k-modal-thumbs')).toBeNull();
+      expect(dom.modal.querySelectorAll('.k-modal-carousel-handle')).toHaveLength(0);
       expect(state.carouselCount).toBe(1);
     });
 
@@ -96,6 +97,10 @@ describe('b-modal-product', () => {
       expect(dots).toHaveLength(3);
       expect(dots[0].classList.contains('is-active')).toBe(true);
       expect(dom.modal.querySelectorAll('.k-modal-thumb')).toHaveLength(3);
+      const handles = dom.modal.querySelectorAll('.k-modal-carousel-handle');
+      expect(handles).toHaveLength(2);
+      expect(dom.modal.querySelector('.k-modal-carousel-handle--prev').disabled).toBe(true);
+      expect(dom.modal.querySelector('.k-modal-carousel-handle--next').disabled).toBe(false);
       expect(state.carouselCount).toBe(3);
     });
 
@@ -185,6 +190,35 @@ describe('b-modal-product', () => {
       expect(dots[0].classList.contains('is-active')).toBe(false);
       const thumbs = dom.modal.querySelectorAll('.k-modal-thumb');
       expect(thumbs[2].classList.contains('is-active')).toBe(true);
+    });
+
+    it('les poignées reflètent les bornes du carousel', () => {
+      const prev = dom.modal.querySelector('.k-modal-carousel-handle--prev');
+      const next = dom.modal.querySelector('.k-modal-carousel-handle--next');
+
+      expect(prev.disabled).toBe(true);
+      expect(next.disabled).toBe(false);
+
+      goToSlide(2);
+
+      expect(prev.disabled).toBe(false);
+      expect(next.disabled).toBe(true);
+
+      goToSlide(0);
+
+      expect(prev.disabled).toBe(true);
+      expect(next.disabled).toBe(false);
+    });
+
+    it('les poignées précédent/suivant pilotent le carousel canonique', () => {
+      const prev = dom.modal.querySelector('.k-modal-carousel-handle--prev');
+      const next = dom.modal.querySelector('.k-modal-carousel-handle--next');
+
+      next.click();
+      expect(state.carouselIndex).toBe(1);
+
+      prev.click();
+      expect(state.carouselIndex).toBe(0);
     });
 
     it('émet bus "carousel:changed" avec l\'index', () => {

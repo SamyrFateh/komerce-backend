@@ -111,7 +111,7 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
     expect(imgRule).not.toMatch(/aspect-ratio\s*:/);
     expect(imgRule).toMatch(/min-height\s*:\s*0/);
     expect(imgRule).toMatch(/max-height\s*:\s*none/);
-    expect(imgRule).toMatch(/max-width\s*:\s*min\(100%,\s*640px\)/);
+    expect(imgRule).toMatch(/max-width\s*:\s*min\(100%,\s*700px\)/);
     expect(imgRule).toMatch(/align-self\s*:\s*start/);
 
     const carouselRule = media.match(
@@ -119,7 +119,7 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
     )?.[1] ?? '';
 
     expect(carouselRule).toMatch(/aspect-ratio\s*:\s*1\s*\/\s*1/);
-    expect(carouselRule).toMatch(/max-width\s*:\s*580px/);
+    expect(carouselRule).toMatch(/max-width\s*:\s*640px/);
     expect(carouselRule).toMatch(/height\s*:\s*auto/);
     expect(carouselRule).toMatch(/align-self\s*:\s*start/);
   });
@@ -135,7 +135,7 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
     expect(simpleHero).not.toMatch(/aspect-ratio\s*:/);
     expect(simpleHero).toMatch(/min-height\s*:\s*0/);
     expect(simpleHero).toMatch(/max-height\s*:\s*none/);
-    expect(simpleHero).toMatch(/max-width\s*:\s*min\(100%,\s*580px\)/);
+    expect(simpleHero).toMatch(/max-width\s*:\s*min\(100%,\s*640px\)/);
     expect(simpleSlide).not.toMatch(/padding\s*:/);
     expect(simpleSlide).toMatch(/object-position\s*:\s*center\s+center/);
   });

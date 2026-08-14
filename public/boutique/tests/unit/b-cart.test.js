@@ -723,16 +723,15 @@ describe('b-cart', () => {
       const checkbox2 = dom.cartBody.querySelector('[data-item-id="i2"] .k-cart-item-select');
       expect(checkbox1).not.toBeNull();
       expect(checkbox1.getAttribute('role')).toBe('checkbox');
-      expect(checkbox1.getAttribute('aria-checked')).toBe('false');
+      expect(checkbox1.getAttribute('aria-checked')).toBe('true');
       expect(checkbox2).toBeNull();
     });
 
-    it('aucune case cochée → pas de barre "Commander" ; cocher une ligne la fait apparaître avec N et le sous-total de la sélection (§3.b)', () => {
+    it('ligne disponible précochée → Payer apparaît immédiatement avec N et le sous-total de la sélection (§3.b)', () => {
       activateList(); // i1 disponible (6500), i2 réclamé (exclu)
       expect(findButtonByText('Acheter le reste')).toBeNull();
       expect(dom.cartBody.textContent).not.toMatch(/Commander \(/);
 
-      dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').click();
 
       const commandBtn = findButtonByText('Payer ·');
       expect(commandBtn).not.toBeNull();
@@ -749,7 +748,6 @@ describe('b-cart', () => {
       activateList({ items: [
         { id: 'i1', product_id: 'p1', name: 'Casque audio', image: null, quantity: 2, unit_price_kmf: 8000, claimed: false },
       ] });
-      dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').click();
 
       const commandBtn = findButtonByText('Payer ·');
       expect(commandBtn).not.toBeNull();
@@ -763,6 +761,10 @@ describe('b-cart', () => {
         { id: 'i2', product_id: 'p2', name: 'Huile', image: null, quantity: 1, unit_price_kmf: 3000, claimed: true },
         { id: 'i3', product_id: 'p3', name: 'Sucre', image: null, quantity: 1, unit_price_kmf: 1000, claimed: false },
       ] });
+      const clearAllBtn = findButtonByText('Tout désélectionner');
+      expect(clearAllBtn).not.toBeNull();
+      clearAllBtn.click();
+
       const selectAllBtn = findButtonByText('Tout sélectionner');
       expect(selectAllBtn).not.toBeNull();
 
@@ -784,21 +786,21 @@ describe('b-cart', () => {
         { id: 'i3', product_id: 'p3', name: 'Sucre', image: null, quantity: 1, unit_price_kmf: 1000, claimed: false },
       ] });
 
-      let toggleBtn = findButtonByText('Tout sélectionner');
+      let toggleBtn = findButtonByText('Tout désélectionner');
       expect(toggleBtn).not.toBeNull();
       toggleBtn.click();
 
-      toggleBtn = findButtonByText('Tout désélectionner');
+      toggleBtn = findButtonByText('Tout sélectionner');
       expect(toggleBtn).not.toBeNull();
-      expect(findButtonByText('Tout sélectionner')).toBeNull();
-      expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').getAttribute('aria-checked')).toBe('true');
-
-      toggleBtn.click();
-
-      expect(findButtonByText('Tout sélectionner')).not.toBeNull();
       expect(findButtonByText('Tout désélectionner')).toBeNull();
       expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').getAttribute('aria-checked')).toBe('false');
-      expect(dom.cartBody.querySelector('[data-item-id="i3"] .k-cart-item-select').getAttribute('aria-checked')).toBe('false');
+
+      toggleBtn.click();
+
+      expect(findButtonByText('Tout désélectionner')).not.toBeNull();
+      expect(findButtonByText('Tout sélectionner')).toBeNull();
+      expect(dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').getAttribute('aria-checked')).toBe('true');
+      expect(dom.cartBody.querySelector('[data-item-id="i3"] .k-cart-item-select').getAttribute('aria-checked')).toBe('true');
     });
 
     it('cocher manuellement chaque ligne disponible une à une fait aussi basculer le lien en "Tout désélectionner"', () => {
@@ -806,6 +808,8 @@ describe('b-cart', () => {
         { id: 'i1', product_id: 'p1', name: 'Riz', image: null, quantity: 1, unit_price_kmf: 6500, claimed: false },
         { id: 'i3', product_id: 'p3', name: 'Sucre', image: null, quantity: 1, unit_price_kmf: 1000, claimed: false },
       ] });
+
+      findButtonByText('Tout désélectionner').click();
 
       dom.cartBody.querySelector('[data-item-id="i1"] .k-cart-item-select').click();
       expect(findButtonByText('Tout désélectionner')).toBeNull();

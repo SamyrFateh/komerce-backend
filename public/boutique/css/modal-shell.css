@@ -574,7 +574,7 @@
      display:contents / display:none, non touchées ici). */
   #k-modal .k-modal-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 260px;
+    grid-template-columns: minmax(0, 1fr) 296px;
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -668,7 +668,7 @@
   #k-modal .k-modal-slide {
     height: 100%;
     padding: 0;
-    object-fit: cover;
+    object-fit: contain;
     object-position: 50% 50%;
     width: 100%;
   }
@@ -782,7 +782,7 @@
   #k-modal .k-modal-name-row { margin-top: 14px; }
   /* D2 — Titre desktop : 18px/500/1.2 — source unique (spec §9.1)
      Purge font-display, clamp trop grand et weight>500. */
-  #k-modal .k-modal-info h2 { font-family: inherit; font-size: 18px; line-height: 1.2; font-weight: 500; letter-spacing: 0; color: var(--text); max-width: none; }
+  #k-modal .k-modal-info h2 { font-family: inherit; font-size: 20px; line-height: 1.18; font-weight: 600; letter-spacing: -.01em; color: var(--text); max-width: none; }
 
   #k-modal .k-modal-desc { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--text-muted); overflow: visible; }
 
@@ -794,7 +794,7 @@
      Promo active (.k-modal--has-promo) reste autorisée en coral via D-P3
      (règle séparée plus bas). Purge coral hors promo. */
   #k-modal .k-modal-price-row { margin-top: 12px; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-  #k-modal .k-modal-price { font-size: 28px; font-weight: 500; color: var(--text); line-height: 1.15; letter-spacing: -.015em; display: inline-flex; align-items: baseline; gap: 4px; }
+  #k-modal .k-modal-price { font-size: 32px; font-weight: 600; color: var(--text); line-height: 1.1; letter-spacing: -.02em; display: inline-flex; align-items: baseline; gap: 4px; }
   #k-modal .k-modal-price-val { font-size: inherit; font-weight: inherit; color: inherit; }
   #k-modal .k-modal-price-unit { font-size: 13px; font-weight: 500; color: var(--text-muted); letter-spacing: 0; text-transform: none; }
   #k-modal.k-modal--has-promo .k-modal-price { color: var(--coral); }
@@ -812,7 +812,7 @@
      flex-wrap:wrap provoquait un saut de ligne systématique sur la colonne droite
      étroite (380px track - 56px padding = 324px < 361px pills). */
   #k-modal .k-modal-trust { gap: 6px; flex-wrap: nowrap; padding: 11px 0; }
-  #k-modal .k-modal-trust-item { padding: 0; border-radius: 0; background: transparent; border: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #k-modal .k-modal-trust-item { padding: 0; border-radius: 0; background: transparent; border: 0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
   .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
   .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--ocean); }
@@ -871,13 +871,14 @@
     width: 132px;
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
-    flex: 0 0 auto; height: 44px; border-radius: 999px;
+    flex: 0 0 112px; width: 112px; height: 48px; border-radius: 999px;
     background: var(--white); color: var(--action-commerce-text); border: 1.5px solid var(--action-commerce-border);
+    font-size: 14px; font-weight: 700;
     /* P0 fix (DIFF-pdp-desktop-simple-vs-enrichi) : overflow:hidden hérité de la
        règle de base fait retomber le min-width automatique du flex-item à 0 au
        lieu de la largeur du texte → troncature ("Ajouter au pa…"). On neutralise
        ici, desktop uniquement. */
-    overflow: visible; text-overflow: clip; min-width: max-content;
+    overflow: visible; text-overflow: clip; min-width: 112px;
   }
   #k-modal .k-modal-product-zone .k-modal-actions.k-modal-actions--filled .k-add-cart-btn {
     display: none;
@@ -886,9 +887,9 @@
     border-color: var(--action-commerce-border); background: var(--action-commerce-hover);
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
-    flex: 1 1 0; height: 44px; border-radius: 999px;
+    flex: 1 1 0; height: 48px; border-radius: 999px;
     background: var(--action-commerce); color: var(--action-commerce-text);
-    font-size: 14px; font-weight: 500;
+    font-size: 14px; font-weight: 700;
     transition: background .18s, transform .1s;
     /* P0 fix — voir .k-add-cart-btn ci-dessus, même cause. */
     overflow: visible; text-overflow: clip; min-width: max-content;

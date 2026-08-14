@@ -803,23 +803,39 @@ function _renderPriceVariationRecap(body) {
  * @returns {HTMLElement|null} null si le panier est vide (ne devrait pas
  *   arriver ici, mais défensif — jamais de section vide dans le DOM).
  */
-function _buildRecapItemsBlock(items, selectionTotal = null) {
+function _removeSharedCheckoutLine(index) {
+  const current = _currentCheckoutSelection();
+  if (current.source !== 'shared-list') return;
+
+  const remaining = current.items.filter((_, i) => i !== index);
+  const next = buildCheckoutSelection(
+    remaining,
+    state.checkoutDisplayContext
+  );
+
+  state.orderData.checkoutSelection = next;
+
+  // La liste publiée et la sélection du side-cart restent intactes :
+  // seule la sélection transactionnelle du checkout est reconstruite.
+  renderCheckout();
+  refreshCheckoutComputedUI();
+  updateWalletDisplay();
+}
+
+function _buildRecapItemsBlock(items) {
   if (!Array.isArray(items) || !items.length) return null;
 
-  const wrap = document.createElement('div');
-  wrap.className = 'ck-recap-step';
-
-  const total = selectionTotal == null
-    ? buildCheckoutSelection(items).total
-    : selectionTotal;
-
   const itemCount = items.reduce(
-    (sum, it) => sum + (Number(it.qty || 1) || 1),
+    (sum, it) => sum + Number(it.qty || 1),
     0
   );
 
-  // Mobile : résumé compact replié par défaut.
-  // Desktop : le toggle est masqué par CSS et le contenu reste visible.
+  const current = _currentCheckoutSelection();
+  const removable = current.source === 'shared-list';
+
+  const wrap = document.createElement('section');
+  wrap.className = 'ck-recap-step';
+
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'ck-recap-toggle';
@@ -830,10 +846,9 @@ function _buildRecapItemsBlock(items, selectionTotal = null) {
       + '<span class="ck-recap-toggle-label">Votre commande</span>'
       + '<span class="ck-recap-toggle-sub">'
         + itemCount + ' article' + (itemCount > 1 ? 's' : '')
-        + ' ? ' + fmt(total, 'KMF')
       + '</span>'
     + '</span>'
-    + '<span class="ck-recap-toggle-chevron" aria-hidden="true">?</span>';
+    + '<span class="ck-recap-toggle-chevron" aria-hidden="true">\u203A</span>';
 
   const content = document.createElement('div');
   content.id = 'ck-recap-content';
@@ -842,35 +857,54 @@ function _buildRecapItemsBlock(items, selectionTotal = null) {
   const list = document.createElement('div');
   list.className = 'ck-recap-items';
 
-  items.forEach((it) => {
-    const product   = it.product || {};
-    const imgSrc    = product.image_url ? optimizeImgUrl(product.image_url, 96) : '';
+  items.forEach((it, index) => {
+    const product = it.product || {};
+    const imgSrc = product.image_url
+      ? optimizeImgUrl(product.image_url, 96)
+      : '';
     const unitPrice = it.price ?? product.price_kmf ?? product.price ?? 0;
-    const qty       = Number(it.qty || 1);
+    const qty = Number(it.qty || 1);
 
     const row = document.createElement('div');
-    row.className = 'ck-recap-item';
+    row.className = removable
+      ? 'ck-recap-item is-removable'
+      : 'ck-recap-item';
+
     row.innerHTML =
       (imgSrc
         ? '<img class="ck-recap-item-img" src="' + imgSrc + '" alt="" loading="lazy">'
-        : '<span class="ck-recap-item-img ck-recap-item-img--empty" aria-hidden="true">??</span>')
+        : '<span class="ck-recap-item-img ck-recap-item-img--empty" aria-hidden="true"></span>')
       + '<span class="ck-recap-item-info">'
       +   '<span class="ck-recap-item-name">' + sanitize(product.name || '') + '</span>'
-      +   '<span class="ck-recap-item-qty">Qté ' + qty + '</span>'
+      +   '<span class="ck-recap-item-qty">'
+      +     qty + ' \u00D7 ' + fmt(unitPrice, 'KMF')
+      +   '</span>'
       + '</span>'
-      + '<span class="ck-recap-item-price">' + fmt(unitPrice * qty, 'KMF') + '</span>'
-      + '<span class="ck-recap-check" aria-hidden="true">✓</span>'
-      + '<span class="sr-only">Inclus dans cette commande</span>';
+      + '<span class="ck-recap-item-price">'
+      +   fmt(unitPrice * qty, 'KMF')
+      + '</span>';
+
+    if (removable) {
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'ck-recap-item-remove';
+      removeBtn.setAttribute(
+        'aria-label',
+        'Retirer ' + (product.name || 'cet article') + ' de ce paiement'
+      );
+      removeBtn.innerHTML =
+        '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
+        + '<path d="M3 4.5h10M6 4.5V3h4v1.5M5 6l.6 7h4.8L11 6" />'
+        + '</svg>';
+      removeBtn.addEventListener('click', () => {
+        _removeSharedCheckoutLine(index);
+      });
+      row.appendChild(removeBtn);
+    }
 
     list.appendChild(row);
   });
 
-  const totalRow = document.createElement('div');
-  totalRow.className = 'ck-recap-total';
-  totalRow.innerHTML =
-    '<span>Total</span><span>' + fmt(total, 'KMF') + '</span>';
-
-  list.appendChild(totalRow);
   content.appendChild(list);
 
   toggle.addEventListener('click', () => {
@@ -968,6 +1002,16 @@ export function renderCheckout() {
       });
     }
 
+    if (od.checkoutSelection.source === 'shared-list' && !od.checkoutSelection.items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'ck-checkout-empty';
+      empty.innerHTML =
+        '<strong>Aucun article sélectionné pour ce paiement.</strong>'
+        + '<span>Retournez à la liste pour choisir ce que vous souhaitez payer.</span>';
+      checkoutPrimary.appendChild(empty);
+      return;
+    }
+
     // LOT 13 §F (doctrine checkout_logic_agnostic_of_shared_list) — bandeau
     // purement décoratif, jamais lu pour une décision (prix/lignes/OTP/
     // lifecycle restent ceux du checkout personnel standard). Alimenté
@@ -981,10 +1025,7 @@ export function renderCheckout() {
       checkoutPrimary.appendChild(ctxBanner);
     }
 
-    const orderSummary = _buildRecapItemsBlock(
-      od.checkoutSelection.items,
-      od.checkoutSelection.total
-    );
+    const orderSummary = _buildRecapItemsBlock(od.checkoutSelection.items);
 
     if (orderSummary) {
       orderSummary.id = 'ck-order-summary';

@@ -14,7 +14,7 @@
  * - + jaune commerce comme sur l’accueil ;
  * - état ajouté vert ;
  * - stepper dans la même emprise, sans saut de layout ;
- * - panier centré dans le header ;
+ * - panier centré sur mobile ; regroupé avec la fermeture sur desktop ;
  * - badges promotion contenus dans leur média ;
  * - suggestions plus proches du contenu qui les précède.
  */
@@ -29,18 +29,8 @@
   margin-left: auto;
 }
 
-#k-modal .k-modal-cart-btn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 2;
-  margin: 0;
-  transform: translate(-50%, -50%);
-}
-
-#k-modal .k-modal-cart-btn:active {
-  transform: translate(-50%, -50%) scale(.94);
-}
+/* Le panier reste dans le flux normal sur desktop : il rejoint le cluster droit.
+   Son centrage absolu est désormais strictement mobile. */
 
 /* ── Badges promotion : restent dans la zone média ──────────── */
 
@@ -261,9 +251,18 @@
   }
 
   #k-modal .k-modal-cart-btn {
+    position: absolute;
+    top: 50%;
+    left: calc(50% + 18px);
+    z-index: 2;
+    margin: 0;
     width: 42px;
     height: 42px;
-    left: calc(50% + 18px);
+    transform: translate(-50%, -50%);
+  }
+
+  #k-modal .k-modal-cart-btn:active {
+    transform: translate(-50%, -50%) scale(.94);
   }
 
   #k-modal .k-modal-cart-icon {

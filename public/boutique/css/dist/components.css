@@ -2497,7 +2497,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      display:contents / display:none, non touchées ici). */
   #k-modal .k-modal-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 260px;
+    grid-template-columns: minmax(0, 1fr) 296px;
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -2591,7 +2591,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-slide {
     height: 100%;
     padding: 0;
-    object-fit: cover;
+    object-fit: contain;
     object-position: 50% 50%;
     width: 100%;
   }
@@ -2705,7 +2705,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-name-row { margin-top: 14px; }
   /* D2 — Titre desktop : 18px/500/1.2 — source unique (spec §9.1)
      Purge font-display, clamp trop grand et weight>500. */
-  #k-modal .k-modal-info h2 { font-family: inherit; font-size: 18px; line-height: 1.2; font-weight: 500; letter-spacing: 0; color: var(--text); max-width: none; }
+  #k-modal .k-modal-info h2 { font-family: inherit; font-size: 20px; line-height: 1.18; font-weight: 600; letter-spacing: -.01em; color: var(--text); max-width: none; }
 
   #k-modal .k-modal-desc { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--text-muted); overflow: visible; }
 
@@ -2717,7 +2717,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      Promo active (.k-modal--has-promo) reste autorisée en coral via D-P3
      (règle séparée plus bas). Purge coral hors promo. */
   #k-modal .k-modal-price-row { margin-top: 12px; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-  #k-modal .k-modal-price { font-size: 28px; font-weight: 500; color: var(--text); line-height: 1.15; letter-spacing: -.015em; display: inline-flex; align-items: baseline; gap: 4px; }
+  #k-modal .k-modal-price { font-size: 32px; font-weight: 600; color: var(--text); line-height: 1.1; letter-spacing: -.02em; display: inline-flex; align-items: baseline; gap: 4px; }
   #k-modal .k-modal-price-val { font-size: inherit; font-weight: inherit; color: inherit; }
   #k-modal .k-modal-price-unit { font-size: 13px; font-weight: 500; color: var(--text-muted); letter-spacing: 0; text-transform: none; }
   #k-modal.k-modal--has-promo .k-modal-price { color: var(--coral); }
@@ -2735,7 +2735,7 @@ html.k-mobile-premium-v1 .k-chip-label {
      flex-wrap:wrap provoquait un saut de ligne systématique sur la colonne droite
      étroite (380px track - 56px padding = 324px < 361px pills). */
   #k-modal .k-modal-trust { gap: 6px; flex-wrap: nowrap; padding: 11px 0; }
-  #k-modal .k-modal-trust-item { padding: 0; border-radius: 0; background: transparent; border: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #k-modal .k-modal-trust-item { padding: 0; border-radius: 0; background: transparent; border: 0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
   .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
   .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--ocean); }
@@ -2794,13 +2794,14 @@ html.k-mobile-premium-v1 .k-chip-label {
     width: 132px;
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
-    flex: 0 0 auto; height: 44px; border-radius: 999px;
+    flex: 0 0 112px; width: 112px; height: 48px; border-radius: 999px;
     background: var(--white); color: var(--action-commerce-text); border: 1.5px solid var(--action-commerce-border);
+    font-size: 14px; font-weight: 700;
     /* P0 fix (DIFF-pdp-desktop-simple-vs-enrichi) : overflow:hidden hérité de la
        règle de base fait retomber le min-width automatique du flex-item à 0 au
        lieu de la largeur du texte → troncature ("Ajouter au pa…"). On neutralise
        ici, desktop uniquement. */
-    overflow: visible; text-overflow: clip; min-width: max-content;
+    overflow: visible; text-overflow: clip; min-width: 112px;
   }
   #k-modal .k-modal-product-zone .k-modal-actions.k-modal-actions--filled .k-add-cart-btn {
     display: none;
@@ -2809,9 +2810,9 @@ html.k-mobile-premium-v1 .k-chip-label {
     border-color: var(--action-commerce-border); background: var(--action-commerce-hover);
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
-    flex: 1 1 0; height: 44px; border-radius: 999px;
+    flex: 1 1 0; height: 48px; border-radius: 999px;
     background: var(--action-commerce); color: var(--action-commerce-text);
-    font-size: 14px; font-weight: 500;
+    font-size: 14px; font-weight: 700;
     transition: background .18s, transform .1s;
     /* P0 fix — voir .k-add-cart-btn ci-dessus, même cause. */
     overflow: visible; text-overflow: clip; min-width: max-content;
@@ -3333,6 +3334,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--overlay-white-50); transition: all .2s; }
 .k-modal-dot.is-active { background: var(--white); transform: scale(1.3); }
 .k-modal-thumbs { display: none; } /* visible desktop uniquement */
+.k-modal-carousel-handle { display: none; }
 
 /* ── COMPTEUR "3/12" mobile (Temu-style) ─────────────────────
    S'affiche en bas à droite de l'image quand le produit a > 5 images.
@@ -3474,6 +3476,49 @@ html.k-mobile-premium-v1 .k-chip-label {
   -webkit-user-drag: none;
 }
 
+@media (min-width: 900px) {
+  #k-modal .k-modal-carousel-handle {
+    position: absolute;
+    top: 50%;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0 0 2px;
+    transform: translateY(-50%);
+    border: 1px solid var(--border-text-10);
+    border-radius: 50%;
+    background: var(--surface-white-92);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 25px;
+    font-weight: 400;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, opacity .15s;
+  }
+
+  #k-modal .k-modal-carousel-handle--prev {
+    left: calc(52px + 8px + 12px);
+  }
+
+  #k-modal .k-modal-carousel-handle--next {
+    right: 12px;
+  }
+
+  #k-modal .k-modal-carousel-handle:hover:not(:disabled) {
+    background: var(--white);
+    border-color: var(--text);
+  }
+
+  #k-modal .k-modal-carousel-handle:disabled {
+    opacity: .28;
+    cursor: default;
+  }
+}
+
 /* ── Desktop : le curseur annonce uniquement un zoom réellement actif. */
 @media (min-width: 900px) {
   #k-modal:not(.k-modal--has-variants)
@@ -3591,8 +3636,8 @@ html.k-mobile-premium-v1 .k-chip-label {
     min-height: 0;
     max-height: none;
     /* ProductMedia complet :
-       rail 52px + gap 8px + hero carré jusqu'à 580px. */
-    max-width: min(100%, 640px);
+       rail 52px + gap 8px + hero carré jusqu'à 640px. */
+    max-width: min(100%, 700px);
     width: 100%;
     height: auto;
     /* T-018-bis — DÉCISION A (audit desktop finition, 2026-07) :
@@ -3603,7 +3648,7 @@ html.k-mobile-premium-v1 .k-chip-label {
        justifiait pas de centrer le média face à un récit potentiellement
        long (fixture Stress : 142px de vide artificiel constaté au-dessus
        de l'image avant correction). Depuis le 5H, le wrapper porte la
-       composition rail + gap + carousel ; le ratio carré et sa borne 580px
+       composition rail + gap + carousel ; le ratio carré et sa borne 640px
        appartiennent au carousel, pas au wrapper. Owner de cette décision : ce bloc de règle
        (modal-media.css) et son oracle jumeau
        tests/unit/modal-desktop-scroll-owner.test.js, qui verrouille
@@ -3624,7 +3669,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   /* UX-REVUE KRF-033 — produit simple, média unique : la fiche n'a aucun
      axe de variantes à préserver dans le premier écran. Le hero utilise donc
-     la hauteur déjà créée par le récit voisin (carré, borné à 500px) au lieu
+     la hauteur déjà créée par le récit voisin (carré, borné à 640px) au lieu
      de rester figé en 4:3 avec une zone morte sous lui. Le gutter de 92px,
      réservé au rail de miniatures, disparaît puisqu'il n'existe aucune
      miniature dans ce mode. Résultat sur le témoin Arnaud Rousseau : zone
@@ -3633,14 +3678,14 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
     min-height: 0;
     max-height: none;
-    max-width: min(100%, 580px);
+    max-width: min(100%, 640px);
   }
 
   /* Hero PDP desktop : le carré appartient au carousel, pas au wrapper
      qui peut également contenir le rail de miniatures. */
   #k-modal .k-modal-product-zone .k-modal-carousel {
     width: 100%;
-    max-width: 580px;
+    max-width: 640px;
     height: auto;
     aspect-ratio: 1 / 1;
     align-self: start;
@@ -5219,7 +5264,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
       /* REF-2026-07 : même correction qu'à 1024px — image bornée, détails 1fr. */
       /* ProductMedia (ex 64px + minmax(280,420)) → minmax(340,480) : conserve
          l'amplitude combinée précédente (344px→484px) sous une seule piste. */
-      grid-template-columns: minmax(0, 1fr) minmax(360px, 380px);
+      grid-template-columns: minmax(0, 1fr) minmax(390px, 420px);
       gap: 16px;
       padding: 16px;
     }
@@ -5242,14 +5287,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      white → sand est retiré au profit d'un fond uni --page-bg. */
   #k-modal .k-modal-product-zone .k-modal-details {
     background: var(--page-bg);
-    padding: 0 clamp(28px, 4.4vw, 72px);
+    padding: 0 clamp(24px, 2vw, 36px);
   }
 
   /* PDP v3.1 — le configurateur appartient a ProductBuyBox.
      Plus de carte pleine largeur ni de geometrie transversale. */
   #k-modal .k-modal-buybox > .k-modal-configurator {
     margin: 0;
-    padding: 0 clamp(28px, 4.4vw, 72px) 18px;
+    padding: 0 clamp(24px, 2vw, 36px) 18px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -5268,7 +5313,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
-    padding: 0 clamp(28px, 4.4vw, 72px);
+    padding: 0 clamp(24px, 2vw, 36px);
   }
 
   #k-modal .k-modal-product-zone .k-modal-info {
@@ -5295,11 +5340,13 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-flash-bar { display: none; }
 
   #k-modal .k-modal-desc {
-    font-style: italic;
+    font-style: normal;
     font-size: 13px;
-    line-height: 1.55;
+    font-weight: 400;
+    line-height: 1.45;
     color: var(--text-muted);
     margin-top: 8px;
+    margin-bottom: 8px;
     max-width: 680px;
   }
 
@@ -9565,7 +9612,7 @@ body.cart-open  #k-section-index { display:none; }
  * - + jaune commerce comme sur l’accueil ;
  * - état ajouté vert ;
  * - stepper dans la même emprise, sans saut de layout ;
- * - panier centré dans le header ;
+ * - panier centré sur mobile ; regroupé avec la fermeture sur desktop ;
  * - badges promotion contenus dans leur média ;
  * - suggestions plus proches du contenu qui les précède.
  */
@@ -9580,18 +9627,8 @@ body.cart-open  #k-section-index { display:none; }
   margin-left: auto;
 }
 
-#k-modal .k-modal-cart-btn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 2;
-  margin: 0;
-  transform: translate(-50%, -50%);
-}
-
-#k-modal .k-modal-cart-btn:active {
-  transform: translate(-50%, -50%) scale(.94);
-}
+/* Le panier reste dans le flux normal sur desktop : il rejoint le cluster droit.
+   Son centrage absolu est désormais strictement mobile. */
 
 /* ── Badges promotion : restent dans la zone média ──────────── */
 
@@ -9812,9 +9849,18 @@ body.cart-open  #k-section-index { display:none; }
   }
 
   #k-modal .k-modal-cart-btn {
+    position: absolute;
+    top: 50%;
+    left: calc(50% + 18px);
+    z-index: 2;
+    margin: 0;
     width: 42px;
     height: 42px;
-    left: calc(50% + 18px);
+    transform: translate(-50%, -50%);
+  }
+
+  #k-modal .k-modal-cart-btn:active {
+    transform: translate(-50%, -50%) scale(.94);
   }
 
   #k-modal .k-modal-cart-icon {
@@ -10040,8 +10086,8 @@ body.cart-open  #k-section-index { display:none; }
    dédiée nécessaire côté claimed : le bouton n'est simplement pas rendu). */
 .k-cart-item-select {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
   border: 1px solid var(--stepper-border);
   background: var(--white);
@@ -10065,11 +10111,11 @@ body.cart-open  #k-section-index { display:none; }
 
 .k-cart-item-select.is-checked::after {
   content: '';
-  width: 6px;
-  height: 11px;
+  width: 5px;
+  height: 9px;
   border: solid var(--stone-text);
   border-width: 0 2px 2px 0;
-  transform: rotate(45deg) translate(-1px, -1px);
+  transform: translateY(-1px) rotate(45deg);
 }
 
 .k-cart-snapshot-item-open {
@@ -10102,6 +10148,8 @@ body.cart-open  #k-section-index { display:none; }
   display: flex;
   align-items: center;
   gap: 6px;
+  justify-content: center;
+  align-self: center;
 }
 
 .k-cart-snapshot-item-status-badge {
@@ -10701,6 +10749,78 @@ body.is-shared-list-context #k-cart-recap-word {
 /* Mode liste : passe la bordure TOP en vert (bordure top-only depuis cart.css) */
 /* La coque mobile est volontairement identique dans les deux modes. */
 
+
+/* Consultés récemment — navigation vers la fiche uniquement. */
+.k-shared-recent {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--item-card-border);
+}
+
+.k-shared-recent-title {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.k-shared-recent-track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.k-shared-recent-card {
+  flex: 0 0 82px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+
+.k-shared-recent-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 82px;
+  height: 82px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--sand);
+  font-size: 22px;
+}
+
+.k-shared-recent-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.k-shared-recent-name {
+  display: -webkit-box;
+  margin-top: 5px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.k-shared-recent-price {
+  display: block;
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
 
 /* ── shared-list-side-cart-responsive.css ────────────────── */
 /**
@@ -12386,7 +12506,8 @@ body.k-id-scroll-lock { overflow: hidden; }
 
 .ck-recap-toggle-chevron {
   flex: 0 0 auto;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
+  line-height: 1;
   color: var(--text-muted);
   transition: transform .15s;
 }
@@ -12405,112 +12526,141 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 .ck-recap-items {
-  margin-top: 0;
+  margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 0;
   background: transparent;
 }
 
-.ck-recap-item {
-  display: flex;
+.ck-recap-step .ck-recap-item {
+  display: grid;
+  grid-template-columns: 20px minmax(0,1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 11px 0 13px;
+  gap: 8px;
+  padding: 10px 0;
   border-bottom: 1px solid rgba(31,48,36,.08);
 }
 
-.ck-recap-item:last-of-type {
-  border-bottom: none;
+.ck-recap-step .ck-recap-item.is-removable {
+  grid-template-columns: 20px minmax(0,1fr) auto 30px;
+}
+
+.ck-recap-step .ck-recap-item:last-child {
+  border-bottom: 0;
 }
 
 .ck-recap-item-img,
 .ck-recap-item-img--empty {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
+
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  position: relative;
+  left: -2px;
   object-fit: cover;
-  background: var(--white);
+  background: var(--checkout-control-soft);
   border: 1px solid var(--border);
 }
 
 .ck-recap-item-img--empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
+  display: none;
+}
+.ck-recap-step .ck-recap-item:has(.ck-recap-item-img--empty) {
+  grid-template-columns: 0 minmax(0,1fr) auto;
+}
+
+.ck-recap-step .ck-recap-item.is-removable:has(.ck-recap-item-img--empty) {
+  grid-template-columns: 0 minmax(0,1fr) auto 30px;
 }
 
 .ck-recap-item-info {
   min-width: 0;
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .ck-recap-item-name {
+  overflow: hidden;
+  color: var(--text);
   font-size: .82rem;
   font-weight: 650;
-  color: var(--text);
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ck-recap-item-qty {
-  font-size: .72rem;
   color: var(--text-muted);
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .ck-recap-item-price {
-  flex-shrink: 0;
+  color: var(--text);
   font-size: .82rem;
   font-weight: 700;
-  color: var(--text);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-/* Marqueur "inclus dans cette commande" â€” jamais une checkbox : non
- * focusable, non cliquable, aria-hidden (texte accessible sÃ©parÃ© en
- * .sr-only sur la mÃªme ligne). SÃ©mantique volontairement distincte de la
- * case Ã  cocher de la liste (group-side-cart.js) : ici on ne sÃ©lectionne
- * plus, on relit ce qui a dÃ©jÃ  Ã©tÃ© choisi. */
-.ck-recap-check {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
+.ck-recap-item-remove {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
   background: transparent;
-  border: 1px solid var(--border);
   color: var(--text-muted);
-  font-size: .64rem;
-  font-weight: 850;
-  line-height: 1;
+  cursor: pointer;
 }
 
-/* ScopÃ© sous .ck-recap-step (wrapper posÃ© par b-checkout.js) : cart.css
- * possÃ¨de dÃ©jÃ  un .ck-recap-total pour le mini-rÃ©cap existant (autre
- * composant, autre contexte). Ã‰viter le sÃ©lecteur global Ã©vite une
- * collision de cascade entre les deux tout en gardant le mÃªme nom de
- * classe cÃ´tÃ© JS (Â§3.c). */
-.ck-recap-step .ck-recap-total {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0;
-  padding-top: 13px;
-  border-top: 0;
-  font-size: .92rem;
-  font-weight: 800;
+.ck-recap-item-remove svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ck-recap-item-remove:hover {
+  background: var(--checkout-control-soft);
   color: var(--text);
 }
 
-/* Gate rÃ©capitulatif â€” CTA rattachÃ© visuellement au contenu. */
+.ck-recap-item-remove:focus-visible {
+  outline: 2px solid var(--terracotta);
+  outline-offset: 2px;
+}
+
+.ck-checkout-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--white);
+}
+
+.ck-checkout-empty strong {
+  font-size: .9rem;
+  line-height: 1.3;
+}
+
+.ck-checkout-empty span {
+  color: var(--text-muted);
+  font-size: .76rem;
+  line-height: 1.4;
+}
+
+/* Le récap ne possède pas de total :
+ * le checkout reste l'unique propriétaire du calcul transactionnel.
+ */
 #btn-confirm-recap {
   flex-shrink: 0;
   width: calc(100% - 32px);

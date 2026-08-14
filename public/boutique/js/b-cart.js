@@ -1250,6 +1250,88 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
    * @param {Array<object>} items - lignes shared_cart_items brutes
    * @param {object} actions - callbacks fournis par le contrôleur (onRemove, onQuantityStep, onOpenProduct, onShare, onClose, onToggleSelect, onSelectAll, onCommand, onSave)
    */
+function snapshotRecentlyViewedProducts() {
+  const history = Array.isArray(state.viewedHistory) ? state.viewedHistory : [];
+  const products = Array.isArray(state.products) ? state.products : [];
+  const seen = new Set();
+  const result = [];
+
+  [...history].reverse().forEach((id) => {
+    if (result.length >= 6) return;
+    const key = String(id);
+    if (seen.has(key)) return;
+
+    const product = products.find((p) => String(p.id) === key);
+    if (!product) return;
+
+    seen.add(key);
+    result.push(product);
+  });
+
+  return result;
+}
+
+function renderSnapshotRecentlyViewed(root, actions) {
+  if (!root || typeof actions?.onOpenRecent !== 'function') return;
+
+  root.querySelector('.k-shared-recent')?.remove();
+
+  const products = snapshotRecentlyViewedProducts();
+  if (!products.length) return;
+
+  const section = document.createElement('section');
+  section.className = 'k-shared-recent';
+  section.setAttribute('aria-label', 'Consultés récemment');
+
+  const title = document.createElement('div');
+  title.className = 'k-shared-recent-title';
+  title.textContent = 'Consultés récemment';
+
+  const track = document.createElement('div');
+  track.className = 'k-shared-recent-track';
+
+  products.forEach((product) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'k-shared-recent-card';
+    card.dataset.productId = String(product.id);
+    card.setAttribute('aria-label', 'Voir ' + (product.name || 'ce produit'));
+
+    const media = document.createElement('span');
+    media.className = 'k-shared-recent-media';
+
+    const imageUrl = product.image_url || product.image || '';
+    if (imageUrl) {
+      const img = document.createElement('img');
+      img.src = optimizeImgUrl(imageUrl, 160);
+      img.alt = '';
+      img.loading = 'lazy';
+      img.addEventListener('error', () => {
+        img.remove();
+        media.textContent = productEmoji(product);
+      });
+      media.appendChild(img);
+    } else {
+      media.textContent = productEmoji(product);
+    }
+
+    const name = document.createElement('span');
+    name.className = 'k-shared-recent-name';
+    name.textContent = product.name || 'Produit';
+
+    const price = document.createElement('span');
+    price.className = 'k-shared-recent-price';
+    price.textContent = fmt(Number(product.price_kmf ?? product.price ?? 0) || 0, 'KMF');
+
+    card.append(media, name, price);
+    card.addEventListener('click', () => actions.onOpenRecent(product.id));
+    track.appendChild(card);
+  });
+
+  section.append(title, track);
+  root.appendChild(section);
+}
+
 export function renderCartSnapshot(context, items, actions) {
     document.body.classList.add('is-shared-list-context');
     // Le snapshot liste contourne renderSideCart() (qui synchronise cette
@@ -1264,6 +1346,7 @@ export function renderCartSnapshot(context, items, actions) {
       if (itemsEl) {
         itemsEl.innerHTML = rowsHtml;
         wireSnapshotItems(itemsEl, actions);
+        renderSnapshotRecentlyViewed(itemsEl, actions);
       }
       applySnapshotSideCartChrome(context, items, actions);
     }
@@ -1272,6 +1355,7 @@ export function renderCartSnapshot(context, items, actions) {
     if (dom.cartBody) {
       dom.cartBody.innerHTML = rowsHtml;
       wireSnapshotItems(dom.cartBody, actions);
+      renderSnapshotRecentlyViewed(dom.cartBody, actions);
     }
     applySnapshotDrawerFooter(context, items, actions);
 

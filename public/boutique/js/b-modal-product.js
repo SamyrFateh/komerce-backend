@@ -51,6 +51,50 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
 
   /* ════ CAROUSEL IMAGES ════ */
 
+  function _syncDesktopCarouselControls() {
+    if (!dom.modal) return;
+
+    const prev = dom.modal.querySelector('.k-modal-carousel-handle--prev');
+    const next = dom.modal.querySelector('.k-modal-carousel-handle--next');
+
+    if (prev) prev.disabled = state.carouselIndex <= 0;
+    if (next) next.disabled = state.carouselIndex >= state.carouselCount - 1;
+
+    const activeThumb = dom.modal.querySelector('.k-modal-thumb.is-active');
+    if (activeThumb && typeof activeThumb.scrollIntoView === 'function') {
+      activeThumb.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+        behavior: 'smooth',
+      });
+    }
+  }
+
+  function _mountDesktopCarouselControls(imgWrap, count) {
+    if (!imgWrap) return;
+
+    imgWrap.querySelectorAll('.k-modal-carousel-handle').forEach((el) => el.remove());
+    if (count <= 1) return;
+
+    const makeButton = (direction, label, delta, glyph) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'k-modal-carousel-handle k-modal-carousel-handle--' + direction;
+      button.setAttribute('aria-label', label);
+      button.textContent = glyph;
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
+        goToSlide(state.carouselIndex + delta);
+      });
+      return button;
+    };
+
+    imgWrap.append(
+      makeButton('prev', 'Image précédente', -1, '‹'),
+      makeButton('next', 'Image suivante', 1, '›')
+    );
+  }
+
   /**
    * MDM-9 §1/§2 — Calcule le bounding box réel du sujet (pixels non-blancs)
    * dans l'image via un canvas same-origin, puis pose --k-modal-subject-scale
@@ -258,6 +302,8 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
 
     state.carouselIndex = 0;
     state.carouselCount = images.length;
+    _mountDesktopCarouselControls(imgWrap, images.length);
+    _syncDesktopCarouselControls();
     track.style.transition = 'none';
     track.style.transform = 'translateX(0)';
   }
@@ -283,6 +329,7 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
     allThumbs.forEach(function(t, i) {
       t.classList.toggle('is-active', i === index);
     });
+    _syncDesktopCarouselControls();
     // Sync compteur mobile "3/12"
     let counter = dom.modal.querySelector('.k-modal-counter');
     if (counter) counter.textContent = (index + 1) + '/' + state.carouselCount;

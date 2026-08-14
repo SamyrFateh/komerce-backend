@@ -18,20 +18,26 @@ const CSS_PATH = path.join(ROOT, 'css/modal-product-polish.css');
 const css = fs.readFileSync(CSS_PATH, 'utf8');
 
 describe('modal-product-polish — invariants topbar mobile', () => {
-  test('le panier garde un centre géométrique unique', () => {
-    const cart = css.match(
+  test('le centrage du panier reste strictement mobile', () => {
+    const beforeMobile = css.split('/* ── Mobile')[0];
+
+    expect(beforeMobile).not.toMatch(
+      /#k-modal \.k-modal-cart-btn\s*\{/
+    );
+
+    const mobile = css.match(
+      /@media \(max-width: 899px\) \{([\s\S]*?)\n\}\n\n\/\* ── Desktop/
+    )?.[1] ?? '';
+
+    const cart = mobile.match(
       /#k-modal \.k-modal-cart-btn\s*\{([^}]+)\}/s
     )?.[1] ?? '';
 
     expect(cart).toMatch(/position\s*:\s*absolute/);
     expect(cart).toMatch(/top\s*:\s*50%/);
-    expect(cart).toMatch(/left\s*:\s*50%/);
+    expect(cart).toMatch(/left\s*:\s*calc\(50%\s*\+\s*18px\)/);
     expect(cart).toMatch(
       /transform\s*:\s*translate\(-50%,\s*-50%\)/
-    );
-
-    expect(css).not.toMatch(
-      /#k-modal\.is-scrolled \.k-modal-cart-btn(?::active)?\s*\{/
     );
   });
 

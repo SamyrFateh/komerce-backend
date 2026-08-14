@@ -61,8 +61,8 @@
    dédiée nécessaire côté claimed : le bouton n'est simplement pas rendu). */
 .k-cart-item-select {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
   border: 1px solid var(--stepper-border);
   background: var(--white);
@@ -86,11 +86,11 @@
 
 .k-cart-item-select.is-checked::after {
   content: '';
-  width: 6px;
-  height: 11px;
+  width: 5px;
+  height: 9px;
   border: solid var(--stone-text);
   border-width: 0 2px 2px 0;
-  transform: rotate(45deg) translate(-1px, -1px);
+  transform: translateY(-1px) rotate(45deg);
 }
 
 .k-cart-snapshot-item-open {
@@ -123,6 +123,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  justify-content: center;
+  align-self: center;
 }
 
 .k-cart-snapshot-item-status-badge {
@@ -721,3 +723,76 @@ body.is-shared-list-context #k-cart-recap-word {
  * la règle précédente ne ciblait que border-left. */
 /* Mode liste : passe la bordure TOP en vert (bordure top-only depuis cart.css) */
 /* La coque mobile est volontairement identique dans les deux modes. */
+
+
+/* Consultés récemment — navigation vers la fiche uniquement. */
+.k-shared-recent {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--item-card-border);
+}
+
+.k-shared-recent-title {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.k-shared-recent-track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.k-shared-recent-card {
+  flex: 0 0 82px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+
+.k-shared-recent-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 82px;
+  height: 82px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--sand);
+  font-size: 22px;
+}
+
+.k-shared-recent-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.k-shared-recent-name {
+  display: -webkit-box;
+  margin-top: 5px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.k-shared-recent-price {
+  display: block;
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+}

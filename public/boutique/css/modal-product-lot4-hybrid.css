@@ -49,7 +49,7 @@
       /* REF-2026-07 : même correction qu'à 1024px — image bornée, détails 1fr. */
       /* ProductMedia (ex 64px + minmax(280,420)) → minmax(340,480) : conserve
          l'amplitude combinée précédente (344px→484px) sous une seule piste. */
-      grid-template-columns: minmax(0, 1fr) minmax(360px, 380px);
+      grid-template-columns: minmax(0, 1fr) minmax(390px, 420px);
       gap: 16px;
       padding: 16px;
     }
@@ -72,14 +72,14 @@
      white → sand est retiré au profit d'un fond uni --page-bg. */
   #k-modal .k-modal-product-zone .k-modal-details {
     background: var(--page-bg);
-    padding: 0 clamp(28px, 4.4vw, 72px);
+    padding: 0 clamp(24px, 2vw, 36px);
   }
 
   /* PDP v3.1 — le configurateur appartient a ProductBuyBox.
      Plus de carte pleine largeur ni de geometrie transversale. */
   #k-modal .k-modal-buybox > .k-modal-configurator {
     margin: 0;
-    padding: 0 clamp(28px, 4.4vw, 72px) 18px;
+    padding: 0 clamp(24px, 2vw, 36px) 18px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -98,7 +98,7 @@
     width: 100%;
   }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
-    padding: 0 clamp(28px, 4.4vw, 72px);
+    padding: 0 clamp(24px, 2vw, 36px);
   }
 
   #k-modal .k-modal-product-zone .k-modal-info {
@@ -125,11 +125,13 @@
   #k-modal .k-modal-flash-bar { display: none; }
 
   #k-modal .k-modal-desc {
-    font-style: italic;
+    font-style: normal;
     font-size: 13px;
-    line-height: 1.55;
+    font-weight: 400;
+    line-height: 1.45;
     color: var(--text-muted);
     margin-top: 8px;
+    margin-bottom: 8px;
     max-width: 680px;
   }
 

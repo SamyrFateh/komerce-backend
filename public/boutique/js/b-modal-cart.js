@@ -46,7 +46,13 @@ function itemSkuId(item) {
 }
 
 function paintInCartButton(button, qty) {
-  button.replaceChildren(document.createTextNode(`🧺 Dans le panier (${qty})`));
+  const desktop = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(min-width: 900px)').matches;
+
+  button.replaceChildren(document.createTextNode(
+    desktop ? '✓ Ajouté' : `🧺 Dans le panier (${qty})`
+  ));
 }
 
 function paintAddButton(button) {

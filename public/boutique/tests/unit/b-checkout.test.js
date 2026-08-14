@@ -301,6 +301,106 @@ describe('b-checkout', () => {
     });
   });
 
+  describe('récap checkout shared-list — ligne atomique', () => {
+    it('shared-list : × retire uniquement une ligne du checkout et recalcule le total', () => {
+      state.checkoutDisplayContext = {
+        origin: 'SHARED_LIST',
+        sharedCartId: 'sc-1',
+        title: 'Achat pour Ma liste',
+      };
+
+      const line1 = {
+        product: { id: 'p1', name: 'T-shirt', price_kmf: 5000 },
+        qty: 5,
+        shared_cart_item_id: 'i1',
+      };
+      const line2 = {
+        product: { id: 'p2', name: 'Chaussures', price_kmf: 18000 },
+        qty: 1,
+        shared_cart_item_id: 'i2',
+      };
+
+      state.orderData = {
+        payment_mode: 'cash_relais',
+        checkoutSelection: {
+          source: 'shared-list',
+          sourceId: 'sc-1',
+          items: [line1, line2],
+          total: 43000,
+        },
+      };
+
+      state.cart = [{ product: { id: 'personal' }, qty: 9 }];
+
+      renderCheckout();
+
+      const remove = dom.orderBody.querySelector('.ck-recap-item-remove');
+      expect(remove).not.toBeNull();
+      expect(dom.orderBody.querySelector('.ck-recap-item-qty').textContent).toContain('5');
+      expect(dom.orderBody.querySelector('.ck-recap-item-qty').textContent).toBe('5 × 5000 KMF');
+      expect(dom.orderBody.querySelector('.ck-recap-item').classList.contains('is-removable')).toBe(true);
+      expect(dom.orderBody.querySelector('.ck-recap-stepper')).toBeNull();
+
+      remove.click();
+
+      expect(state.orderData.checkoutSelection.items).toHaveLength(1);
+      expect(state.orderData.checkoutSelection.items[0].shared_cart_item_id).toBe('i2');
+      expect(state.orderData.checkoutSelection.total).toBe(18000);
+      expect(state.cart).toHaveLength(1);
+      expect(state.cart[0].product.id).toBe('personal');
+    });
+
+    it('panier personnel : aucun bouton × transactionnel dans le récap', () => {
+      state.orderData = {
+        payment_mode: 'cash_relais',
+        checkoutSelection: {
+          source: 'personal-cart',
+          sourceId: null,
+          items: [{
+            product: { id: 'p1', name: 'Produit perso', price_kmf: 5000 },
+            qty: 1,
+          }],
+          total: 5000,
+        },
+      };
+
+      renderCheckout();
+
+      expect(dom.orderBody.querySelector('.ck-recap-item-remove')).toBeNull();
+      expect(dom.orderBody.querySelector('.ck-recap-check')).toBeNull();
+    });
+
+    it('retirer la dernière ligne rend le checkout non payable', () => {
+      state.checkoutDisplayContext = {
+        origin: 'SHARED_LIST',
+        sharedCartId: 'sc-1',
+        title: 'Achat pour Ma liste',
+      };
+
+      state.orderData = {
+        payment_mode: 'cash_relais',
+        checkoutSelection: {
+          source: 'shared-list',
+          sourceId: 'sc-1',
+          items: [{
+            product: { id: 'p1', name: 'T-shirt', price_kmf: 5000 },
+            qty: 5,
+            shared_cart_item_id: 'i1',
+          }],
+          total: 25000,
+        },
+      };
+
+      renderCheckout();
+      dom.orderBody.querySelector('.ck-recap-item-remove').click();
+
+      expect(state.orderData.checkoutSelection.items).toHaveLength(0);
+      expect(state.orderData.checkoutSelection.total).toBe(0);
+      expect(dom.orderBody.textContent).toContain('Aucun article sélectionné pour ce paiement.');
+      expect(dom.orderBody.querySelector('#btn-confirm-order')).toBeNull();
+    });
+  });
+
   describe('updateWalletDisplay', () => {
     it("aucun élément #wallet-deduction dans le DOM → ne fait rien, ne throw pas", () => {
       expect(() => updateWalletDisplay()).not.toThrow();
@@ -936,6 +1036,20 @@ describe('b-checkout', () => {
         title: 'Achat pour la liste de Samsam',
       };
 
+      state.orderData = {
+        payment_mode: 'cash_relais',
+        checkoutSelection: {
+          source: 'shared-list',
+          sourceId: 'cart-1',
+          items: [{
+            product: { id: 'p-test', name: 'Produit liste', price_kmf: 5000 },
+            qty: 1,
+            shared_cart_item_id: 'sci-received',
+          }],
+          total: 5000,
+        },
+      };
+
       renderCheckout();
       await flush();
 
@@ -955,6 +1069,20 @@ describe('b-checkout', () => {
         isCreator: true,
         creatorFirstName: 'Amina',
         title: 'Achat pour Ma liste',
+      };
+
+      state.orderData = {
+        payment_mode: 'cash_relais',
+        checkoutSelection: {
+          source: 'shared-list',
+          sourceId: 'cart-1',
+          items: [{
+            product: { id: 'p-test', name: 'Produit liste', price_kmf: 5000 },
+            qty: 1,
+            shared_cart_item_id: 'sci-creator',
+          }],
+          total: 5000,
+        },
       };
 
       renderCheckout();

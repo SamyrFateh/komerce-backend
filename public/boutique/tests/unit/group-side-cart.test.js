@@ -330,6 +330,14 @@ describe('group-side-cart — adaptation du payload (contrat contextuel)', () =>
 });
 
 describe('group-side-cart — calcul des capacités (disponible = non réclamé)', () => {
+  it('pré-sélectionne toutes les lignes disponibles à l’ouverture d’une nouvelle liste', () => {
+    activateSharedListContext(payload(), 'tok-1');
+    const [context] = renderCartSnapshot.mock.calls.at(-1);
+
+    expect([...context.selectedIds]).toEqual(['i1']);
+    expect(context.allAvailableSelected).toBe(true);
+  });
+
   it('availableCount/availableTotal totalisent les lignes non réclamées uniquement', () => {
     activateSharedListContext(payload(), 'tok-1');
     const [context] = renderCartSnapshot.mock.calls.at(-1);
@@ -388,6 +396,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     expect(items).toBe(state.sharedListContext.items);
     expect(actions).toEqual(expect.objectContaining({
       onOpenProduct: expect.any(Function),
+      onOpenRecent: expect.any(Function),
       onShare: expect.any(Function),
       onClose: expect.any(Function),
       onToggleSelect: expect.any(Function),
@@ -486,7 +495,6 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     // Mandat cohérence post-LOT 13, §3 — plus d'achat direct sur une
     // ligne : sélection locale (onToggleSelect) puis unique déclencheur
     // de checkout (onCommand), quel que soit N.
-    actions.onToggleSelect('i1');
     actions.onCommand();
 
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
@@ -520,7 +528,6 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     expect(context.title).toBe('Ma liste');
     expect(context.headerTitle).toBe('Ma liste');
 
-    actions.onToggleSelect('i1');
     actions.onCommand();
 
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
@@ -551,6 +558,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     // lance le checkout.
     actions.onSelectAll();
     expect(checkoutSharedListSelection).not.toHaveBeenCalled();
+    actions.onSelectAll();
     actions.onCommand();
 
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
@@ -572,7 +580,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     );
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onSelectAll();
+
     actions.onCommand();
 
     // La ligne indisponible n'entre pas dans CE checkout...
@@ -607,7 +615,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     );
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onSelectAll();
+
     actions.onCommand();
 
     // Aucun produit ne résout : la sélection transactionnelle est vide, donc aucun
@@ -641,7 +649,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     // filtrées des claimed, cf. describe dédié plus haut) : i2 n'est
     // jamais sélectionnable, donc jamais vue comme "indisponible/exclue"
     // par onCommand() — ce n'est pas un cas d'échec.
-    actions.onSelectAll();
+
     actions.onCommand();
 
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
@@ -933,7 +941,7 @@ describe('group-side-cart — sélection locale (mandat cohérence post-LOT 13, 
     );
     const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onToggleSelect('i1');
+    actions.onToggleSelect('i2');
     actions.onCommand();
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
     expect(checkoutSharedListSelection.mock.calls[0][0]).toHaveLength(1);
@@ -963,8 +971,7 @@ describe('group-side-cart — sélection locale (mandat cohérence post-LOT 13, 
     );
     let [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
-    actions.onToggleSelect('i1');
-    actions.onToggleSelect('i2');
+
     actions.onCommand();
     expect(checkoutSharedListSelection).toHaveBeenCalledTimes(1);
     expect(checkoutSharedListSelection.mock.calls[0][0]).toHaveLength(2);

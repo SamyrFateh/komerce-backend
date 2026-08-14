@@ -179,7 +179,7 @@ describe('topbar mobile canonique — oracle REF-2026-07e', () => {
     expect(shell).toMatch(/\.k-modal-actions\s*\{[^}]*env\(safe-area-inset-bottom/);
   });
 
-  test("le panier reste au centre et le titre respecte sa zone de clearance", () => {
+  test("le panier garde son ancrage optique mobile et le titre respecte sa zone de clearance", () => {
     const polish = fs.readFileSync(
       path.join(ROOT, 'css/modal-product-polish.css'),
       'utf8'
@@ -191,7 +191,7 @@ describe('topbar mobile canonique — oracle REF-2026-07e', () => {
 
     expect(cartRule).toMatch(/position\s*:\s*absolute/);
     expect(cartRule).toMatch(/top\s*:\s*50%/);
-    expect(cartRule).toMatch(/left\s*:\s*50%/);
+    expect(cartRule).toMatch(/left\s*:\s*calc\(50%\s*\+\s*18px\)/);
     expect(cartRule).toMatch(
       /transform\s*:\s*translate\(-50%,\s*-50%\)/
     );

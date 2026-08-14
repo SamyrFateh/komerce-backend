@@ -49,6 +49,7 @@
 .k-modal-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--overlay-white-50); transition: all .2s; }
 .k-modal-dot.is-active { background: var(--white); transform: scale(1.3); }
 .k-modal-thumbs { display: none; } /* visible desktop uniquement */
+.k-modal-carousel-handle { display: none; }
 
 /* ── COMPTEUR "3/12" mobile (Temu-style) ─────────────────────
    S'affiche en bas à droite de l'image quand le produit a > 5 images.
@@ -190,6 +191,49 @@
   -webkit-user-drag: none;
 }
 
+@media (min-width: 900px) {
+  #k-modal .k-modal-carousel-handle {
+    position: absolute;
+    top: 50%;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0 0 2px;
+    transform: translateY(-50%);
+    border: 1px solid var(--border-text-10);
+    border-radius: 50%;
+    background: var(--surface-white-92);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 25px;
+    font-weight: 400;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, opacity .15s;
+  }
+
+  #k-modal .k-modal-carousel-handle--prev {
+    left: calc(52px + 8px + 12px);
+  }
+
+  #k-modal .k-modal-carousel-handle--next {
+    right: 12px;
+  }
+
+  #k-modal .k-modal-carousel-handle:hover:not(:disabled) {
+    background: var(--white);
+    border-color: var(--text);
+  }
+
+  #k-modal .k-modal-carousel-handle:disabled {
+    opacity: .28;
+    cursor: default;
+  }
+}
+
 /* ── Desktop : le curseur annonce uniquement un zoom réellement actif. */
 @media (min-width: 900px) {
   #k-modal:not(.k-modal--has-variants)
@@ -307,8 +351,8 @@
     min-height: 0;
     max-height: none;
     /* ProductMedia complet :
-       rail 52px + gap 8px + hero carré jusqu'à 580px. */
-    max-width: min(100%, 640px);
+       rail 52px + gap 8px + hero carré jusqu'à 640px. */
+    max-width: min(100%, 700px);
     width: 100%;
     height: auto;
     /* T-018-bis — DÉCISION A (audit desktop finition, 2026-07) :
@@ -319,7 +363,7 @@
        justifiait pas de centrer le média face à un récit potentiellement
        long (fixture Stress : 142px de vide artificiel constaté au-dessus
        de l'image avant correction). Depuis le 5H, le wrapper porte la
-       composition rail + gap + carousel ; le ratio carré et sa borne 580px
+       composition rail + gap + carousel ; le ratio carré et sa borne 640px
        appartiennent au carousel, pas au wrapper. Owner de cette décision : ce bloc de règle
        (modal-media.css) et son oracle jumeau
        tests/unit/modal-desktop-scroll-owner.test.js, qui verrouille
@@ -340,7 +384,7 @@
 
   /* UX-REVUE KRF-033 — produit simple, média unique : la fiche n'a aucun
      axe de variantes à préserver dans le premier écran. Le hero utilise donc
-     la hauteur déjà créée par le récit voisin (carré, borné à 500px) au lieu
+     la hauteur déjà créée par le récit voisin (carré, borné à 640px) au lieu
      de rester figé en 4:3 avec une zone morte sous lui. Le gutter de 92px,
      réservé au rail de miniatures, disparaît puisqu'il n'existe aucune
      miniature dans ce mode. Résultat sur le témoin Arnaud Rousseau : zone
@@ -349,14 +393,14 @@
   .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
     min-height: 0;
     max-height: none;
-    max-width: min(100%, 580px);
+    max-width: min(100%, 640px);
   }
 
   /* Hero PDP desktop : le carré appartient au carousel, pas au wrapper
      qui peut également contenir le rail de miniatures. */
   #k-modal .k-modal-product-zone .k-modal-carousel {
     width: 100%;
-    max-width: 580px;
+    max-width: 640px;
     height: auto;
     aspect-ratio: 1 / 1;
     align-self: start;

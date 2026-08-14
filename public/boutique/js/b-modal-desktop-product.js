@@ -210,7 +210,9 @@ function renderActions(detail, selection) {
     control.disabled = isSku || !enabled;
   });
 
-  wireBuyNowButton(document.getElementById('k-buy-now-btn'));
+  const buyNowBtn = document.getElementById('k-buy-now-btn');
+  if (buyNowBtn) buyNowBtn.textContent = '⚡ Acheter';
+  wireBuyNowButton(buyNowBtn);
 
   // T-023/D11 : layout AVAILABLE_EMPTY (Ajouter + Acheter côte à côte) vs
   // AVAILABLE_FILLED (stepper + Acheter) — porté par modal-shell.css via

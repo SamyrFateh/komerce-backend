@@ -276,6 +276,12 @@ function resetSelection() {
   selectedItemIds = new Set();
 }
 
+function selectAvailableByDefault() {
+  selectedItemIds = new Set(
+    availableItems().map((it) => String(it.id))
+  );
+}
+
 /**
  * Retire de la sélection toute ligne devenue claimed entre-temps (autre
  * participant ayant acheté la même ligne pendant le polling temps réel) —
@@ -461,7 +467,7 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
   // jamais survivre à un changement de liste (nouveau token). Sur un
   // simple refresh de fraîcheur (même token), on la purge seulement
   // contre les lignes devenues claimed entre-temps (autre participant).
-  if (previousToken !== nextToken) resetSelection();
+  if (previousToken !== nextToken) selectAvailableByDefault();
   else pruneSelectionAgainstItems();
   // É2 — synchronise state.shareToken depuis sharedListContext, qui est
   // désormais la seule source de vérité décisionnelle. b-group-banner.js
@@ -791,9 +797,30 @@ function buildSnapshotRenderContext() {
  * onToggleSelect/onSelectAll pilotent uniquement la sélection locale,
  * onCommand est l'unique déclencheur de checkout, quel que soit N.
  */
+/**
+ * Consultés récemment — navigation uniquement.
+ * Ouvre la fiche canonique et garde la liste comme surface de retour.
+ * Aucun ajout ni aucune mutation de sharedListContext ici.
+ */
+function handleOpenRecentProduct(productId) {
+  const product = (state.products || []).find(
+    (p) => String(p.id) === String(productId)
+  );
+
+  if (!product) {
+    showToast('Ce produit n’est plus disponible.', 'info');
+    return;
+  }
+
+  closeSharedListDrawer();
+  state.modalReturnSurface = 'shared-list';
+  bus.emit('modal:open', { id: String(product.id) });
+}
+
 function buildSnapshotRenderActions() {
   return {
     onOpenProduct: handleOpenItemProduct,
+    onOpenRecent: handleOpenRecentProduct,
     onShare: handleShareClick,
     onClose: handleCloseClick,
     onToggleSelect: handleToggleSelect,

@@ -149,12 +149,12 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       );
     });
 
-    it('LOT1-i : la sélection liste garde la même hauteur optique que le stepper panier', () => {
+    it('LOT1-i : la sélection liste reste compacte et centrée dans sa ligne', () => {
       const box = css.match(/\.k-cart-item-select\s*\{([^}]+)\}/s)?.[1] ?? '';
       const checked = css.match(/\.k-cart-item-select\.is-checked\s*\{([^}]+)\}/s)?.[1] ?? '';
 
-      expect(box).toMatch(/width\s*:\s*28px/);
-      expect(box).toMatch(/height\s*:\s*28px/);
+      expect(box).toMatch(/width\s*:\s*22px/);
+      expect(box).toMatch(/height\s*:\s*22px/);
       expect(box).toMatch(/border\s*:\s*1px\s+solid\s+var\(--stepper-border\)/);
       expect(checked).toMatch(/background\s*:\s*var\(--stone\)/);
       expect(checked).toMatch(/border-color\s*:\s*var\(--stone-border\)/);
@@ -165,34 +165,28 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
     });
   });
 
-  // ── LOT 2 — Récapitulatif checkout ───────────────────────────────────────
-  describe('LOT 2 — checkout-vertical-rail.css : ✓ centré', () => {
+  // ── LOT 2 — Récapitulatif checkout ───────────────────────────────────
+  describe('LOT 2 — checkout : récap = liste, checkout = calcul', () => {
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('LOT2-a : .ck-recap-check possède line-height:1 (✓ centré sans décalage typo)', () => {
-      const block = css.match(/\.ck-recap-check\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/line-height\s*:\s*1\b/);
+    it('LOT2-a : aucun marqueur de sélection ni total propre au récap', () => {
+      expect(css).not.toMatch(/\.ck-recap-check\s*\{/);
+      expect(css).not.toMatch(/\.ck-recap-step\s+\.ck-recap-total\s*\{/);
     });
 
-    it('LOT2-b : .ck-recap-check conserve display:flex + align-items:center + justify-content:center', () => {
-      const block = css.match(/\.ck-recap-check\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/display\s*:\s*flex/);
-      expect(block).toMatch(/align-items\s*:\s*center/);
-      expect(block).toMatch(/justify-content\s*:\s*center/);
+    it('LOT2-b : retrait contextuel léger', () => {
+      const block = css.match(/\.ck-recap-item-remove\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(block).toMatch(/width\s*:\s*30px/);
+      expect(block).toMatch(/height\s*:\s*30px/);
+      expect(block).toMatch(/border\s*:\s*0/);
+      expect(block).toMatch(/background\s*:\s*transparent/);
     });
 
-    it('LOT2-c : le chrome reste neutre et le gate de confirmation porte l accent commerce', () => {
-      const header = css.match(/\.k-order-header\s*\{([^}]+)\}/s)?.[1] ?? '';
-      const check = css.match(/\.ck-recap-check\s*\{([^}]+)\}/s)?.[1] ?? '';
-      const cta = css.match(/#btn-confirm-recap\s*\{([^}]+)\}/s)?.[1] ?? '';
-
-      expect(header).toMatch(/background\s*:\s*var\(--checkout-cream\)/);
-      expect(header).toMatch(/color\s*:\s*var\(--text\)/);
-      expect(check).toMatch(/background\s*:\s*transparent/);
-      expect(check).toMatch(/border\s*:\s*1px\s+solid\s+var\(--border\)/);
-      expect(cta).toMatch(/background\s*:\s*var\(--action-commerce\)/);
-      expect(cta).toMatch(/color\s*:\s*var\(--action-commerce-text\)/);
+    it('LOT2-c : lignes plates séparées', () => {
+      const block = css.match(/\.ck-recap-step\s+\.ck-recap-item\s*\{([^}]+)\}/s)?.[1] ?? '';
+      expect(block).toMatch(/display\s*:\s*grid/);
+      expect(block).toMatch(/border-bottom\s*:/);
     });
   });
 
@@ -337,7 +331,7 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       const shell = readCss('modal-shell.css');
       const desktop = readCss('boutique-desktop.css');
 
-      expect(shell).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+260px/);
+      expect(shell).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+296px/);
       expect(desktop).toMatch(/\.k-sc-empty\s*\{[^}]*min-height:\s*220px[^}]*justify-content:\s*center/s);
       expect(desktop).toMatch(/\.k-side-cart--in-modal \.k-sc-item-name\s*\{[^}]*-webkit-line-clamp:\s*2/s);
     });
@@ -908,14 +902,14 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
       checkout = readCss('checkout-vertical-rail.css');
     });
 
-    it('MOB-H1 : panier et asset gardent un centre géométrique unique', () => {
+    it('MOB-H1 : le bouton panier garde son offset validé et son icône reste centrée', () => {
       const cart = polish.match(
         /#k-modal \.k-modal-cart-btn\s*\{([^}]+)\}/s
       )?.[1] ?? '';
 
       expect(cart).toMatch(/position\s*:\s*absolute/);
       expect(cart).toMatch(/top\s*:\s*50%/);
-      expect(cart).toMatch(/left\s*:\s*50%/);
+      expect(cart).toMatch(/left\s*:\s*calc\(50%\s*\+\s*18px\)/);
       expect(cart).toMatch(
         /transform\s*:\s*translate\(-50%,\s*-50%\)/
       );

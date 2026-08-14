@@ -271,6 +271,63 @@ describe('Drawer mobile — mandat §8', () => {
     expect(dom.cartDrawer.getAttribute('data-mode')).toBe('shared-list');
   });
 
+  test('12b. Consultés récemment = navigation uniquement', () => {
+    const { renderCartSnapshot } = require('../../js/b-cart.js');
+    const oldProducts = state.products;
+    const oldHistory = state.viewedHistory;
+
+    try {
+      state.products = [
+        makeProduct({ id: 'r1', name: 'Produit récent 1', price_kmf: 2000 }),
+        makeProduct({ id: 'r2', name: 'Produit récent 2', price_kmf: 3000 }),
+      ];
+      state.viewedHistory = ['r1', 'r2'];
+
+      const onOpenRecent = jest.fn();
+      const context = {
+        source: 'shared-snapshot', readOnly: false, title: 'Ma liste',
+        subtitle: null, status: 'open', organizerName: 'Ali',
+        isOrganizer: true, headerTitle: 'Ma liste',
+        availableCount: 1, availableTotal: 4500,
+        selectedIds: new Set(['10']), showSaveAction: false, saved: false,
+        allAvailableSelected: true,
+      };
+
+      const items = [
+        { id: '10', name: 'Article liste', unit_price_kmf: 4500, quantity: 1, claimed: false, image: '' },
+      ];
+
+      renderCartSnapshot(context, items, {
+        onOpenProduct: jest.fn(),
+        onOpenRecent,
+        onToggleSelect: jest.fn(),
+        onSelectAll: jest.fn(),
+        onCommand: jest.fn(),
+        onShare: jest.fn(),
+        onClose: jest.fn(),
+        onSave: jest.fn(),
+      });
+
+      const rail = dom.cartBody.querySelector('.k-shared-recent');
+      expect(rail).not.toBeNull();
+      expect(rail.textContent).toContain('Consultés récemment');
+
+      const cards = rail.querySelectorAll('.k-shared-recent-card');
+      expect(cards).toHaveLength(2);
+      expect(cards[0].dataset.productId).toBe('r2');
+
+      expect(rail.querySelector('input')).toBeNull();
+      expect(rail.querySelector('.k-qty-ctrl')).toBeNull();
+      expect(rail.textContent).not.toMatch(/ajouter/i);
+
+      cards[0].click();
+      expect(onOpenRecent).toHaveBeenCalledWith('r2');
+    } finally {
+      state.products = oldProducts;
+      state.viewedHistory = oldHistory;
+    }
+  });
+
   // ── §8.13 — absence de "Ouverte", "Fermée", "Admin" dans le drawer ──────
   test('13. "Ouverte", "Fermée", "Admin" absents du drawer en mode liste', () => {
     const { renderCartSnapshot } = require('../../js/b-cart.js');

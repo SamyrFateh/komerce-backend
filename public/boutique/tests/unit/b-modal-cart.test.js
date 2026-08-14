@@ -220,6 +220,31 @@ describe('b-modal-cart', () => {
       expect(dom.qtyPlus.disabled).toBe(true);
     });
 
+    test('desktop : un SKU déjà présent utilise le libellé compact Ajouté', () => {
+      const originalMatchMedia = window.matchMedia;
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        writable: true,
+        value: jest.fn(() => ({ matches: true })),
+      });
+
+      try {
+        setSkuSelection();
+        state.cart = [
+          { product: { id: 42, sku_id: 'sku-red' }, variant_combo: { color: 'Rouge', size: 'L' }, qty: 2 },
+        ];
+
+        _syncModalQtyUI();
+
+        expect(dom.addCartBtn.textContent).toBe('✓ Ajouté');
+      } finally {
+        Object.defineProperty(window, 'matchMedia', {
+          configurable: true,
+          writable: true,
+          value: originalMatchMedia,
+        });
+      }
+    });
     test('SKU autre variante seulement : conserve Ajouter visible', () => {
       setSkuSelection();
       state.cart = [
