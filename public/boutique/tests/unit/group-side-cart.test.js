@@ -1286,3 +1286,79 @@ describe('group-side-cart — × de sortie d\'affichage (mandat §2)', () => {
     expect(state.cart).toEqual(personalCart);
   });
 });
+
+
+describe('group-side-cart — anti-race stale refresh', () => {
+  it("ignore une réponse de polling de l'ancienne liste après clôture puis création d'une nouvelle", async () => {
+    const oldPayload = payload({
+      cart: {
+        id: 'sc-old',
+        token: 'tok-old',
+        status: 'open',
+        creator_first_name: 'Admin',
+        title: 'Ancienne liste',
+      },
+      items: [
+        {
+          id: 'old-1',
+          product_id: 'p1',
+          name: 'Riz',
+          unit_price_kmf: 1000,
+          quantity: 1,
+          claimed: true,
+          buyer_first_name: 'Admin',
+        },
+      ],
+      is_creator: true,
+      contributors: [{ first_name: 'Admin', items_count: 7 }],
+    });
+
+    activateSharedListContext(oldPayload, 'tok-old');
+
+    let resolveOldRequest;
+    getSharedCartPublic.mockImplementationOnce(() => new Promise((resolve) => {
+      resolveOldRequest = resolve;
+    }));
+
+    // Le polling de l'ancienne liste part mais sa réponse n'est pas encore là.
+    const staleRefresh = refreshSharedListContext();
+
+    // Pendant le réseau : l'utilisateur clôture A puis crée B.
+    clearSharedListContext();
+
+    activateSharedListContext(payload({
+      cart: {
+        id: 'sc-new',
+        token: 'tok-new',
+        status: 'open',
+        creator_first_name: 'Admin',
+        title: 'Nouvelle liste',
+      },
+      items: [
+        {
+          id: 'new-1',
+          product_id: 'p2',
+          name: 'Huile',
+          unit_price_kmf: 3000,
+          quantity: 1,
+          claimed: false,
+        },
+      ],
+      is_creator: true,
+      contributors: [],
+    }), 'tok-new');
+
+    // La vieille réponse 7/10 arrive APRES l'activation de B.
+    resolveOldRequest(oldPayload);
+
+    await expect(staleRefresh).resolves.toBeNull();
+
+    // B doit rester souveraine : A ne ressuscite jamais.
+    expect(state.sharedListContext.token).toBe('tok-new');
+    expect(state.sharedListContext.sharedCartId).toBe('sc-new');
+    expect(state.sharedListContext.items).toHaveLength(1);
+    expect(state.sharedListContext.items[0].id).toBe('new-1');
+    expect(state.sharedListContext.items[0].claimed).toBe(false);
+    expect(state.sharedListContext.contributors).toEqual([]);
+  });
+});

@@ -503,15 +503,28 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
  * activation explicite.
  */
 export async function refreshSharedListContext() {
-  if (!isActiveContext()) return null;
-  const data = await getSharedCartPublic(state.sharedListContext.token);
+  // Capturer l'identité exacte de la liste AVANT la frontière async.
+  // Une réponse réseau appartenant à une ancienne liste ne doit jamais
+  // pouvoir ressusciter ce snapshot après clôture/changement de liste.
+  const requestedToken = state.sharedListContext.token;
+  if (!requestedToken) return null;
+
+  const data = await getSharedCartPublic(requestedToken);
+
+  // Anti-race lifecycle : pendant le await, la liste a pu être clôturée,
+  // quittée ou remplacée par une nouvelle. Dans ce cas cette réponse est
+  // devenue obsolète et doit être ignorée intégralement.
+  if (state.sharedListContext.token !== requestedToken) {
+    return null;
+  }
+
   if (!data) {
-    // Lien devenu invalide entre-temps : on efface le contexte plutôt que
-    // de laisser un état incohérent affiché.
+    // Effacer uniquement si le contexte actif est encore celui demandé.
     clearSharedListContext();
     return null;
   }
-  activateSharedListContext(data, state.sharedListContext.token, { silent: true });
+
+  activateSharedListContext(data, requestedToken, { silent: true });
   return data;
 }
 
