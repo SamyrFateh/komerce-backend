@@ -809,27 +809,22 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       ? (buyerFirstName ? `Déjà acheté par ${buyerFirstName}` : 'Déjà acheté')
       : null;
     const statusHtml = statusText
-      ? ` · <span class="k-cart-snapshot-item-status">${statusText}</span>`
+      ? `<div class="k-cart-snapshot-item-status k-cart-item-context-note">${statusText}</div>`
       : '';
     const priceText = fmt(item.unit_price_kmf, 'KMF');
     const quantity = Number(item.quantity) || 1;
     const quantityText = quantity > 1 ? ` · ×${quantity}` : '';
 
-    // Mandat cohérence post-LOT 13, §2/§3.a — chaque ligne affiche
-    // exactement UN slot d'action à droite : soit le badge "Déjà acheté
-    // [par X]" (claimed, jamais de case à cocher dessus), soit une case
-    // à cocher de sélection (disponible, liste ouverte, non pré-cochée).
-    // Le bouton "Acheter" individuel disparaît — la case alimente
-    // exclusivement la sélection locale/éphémère consommée par la barre
-    // "Commander (N)" (group-side-cart.js), jamais un achat immédiat au
-    // clic et jamais une mutation du snapshot lui-même.
+    // Mandat cohérence post-LOT 13, §2/§3.a — la colonne d'action à droite
+    // appartient uniquement aux lignes disponibles et porte leur case de
+    // sélection. Une ligne claimed reste pleinement lisible : son état
+    // "Déjà acheté [par X]" vit une seule fois sous le prix, jamais dans
+    // une seconde pastille latérale qui réduirait la largeur du produit.
     const isSelected = !claimed && context.selectedIds?.has?.(String(item.id));
     const checkboxHtml = !context.readOnly
       ? `<button type="button" class="k-cart-item-select${isSelected ? ' is-checked' : ''}" data-item-id="${sanitize(String(item.id))}" role="checkbox" aria-checked="${isSelected ? 'true' : 'false'}" aria-label="Sélectionner ${sanitize(item.name || 'cet article')}"></button>`
       : '';
-    const control = claimed
-      ? `<span class="k-cart-snapshot-item-status-badge is-claimed">${buyerFirstName ? `Déjà acheté par ${buyerFirstName}` : 'Déjà acheté'}</span>`
-      : checkboxHtml;
+    const control = claimed ? '' : checkboxHtml;
 
     const openLabel = `Voir la fiche produit — ${item.name || 'cet article'}`;
     // GAP-07 §11 — la variante s'affiche sous le nom, jamais fusionnée
@@ -846,7 +841,8 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
           `<div class="k-cart-item-info">` +
             `<div class="k-cart-item-name">${sanitize(item.name || '')}</div>` +
             variantHtml +
-            `<div class="k-cart-snapshot-item-meta k-cart-item-context-note"><span class="k-cart-item-price">${priceText}</span>${quantityText}${statusHtml}</div>` +
+            `<div class="k-cart-snapshot-item-meta k-cart-item-context-note"><span class="k-cart-item-price">${priceText}</span>${quantityText}</div>` +
+            statusHtml +
           `</div>` +
         `</button>` +
         `<div class="k-cart-snapshot-item-controls">${control}</div>` +

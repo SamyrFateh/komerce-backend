@@ -757,11 +757,40 @@ describe('b-cart', () => {
       expect(row.querySelector('.k-cart-item-img').classList.contains('is-img-error')).toBe(false);
     });
 
-    it('ligne réclamée : grisée (is-cart-item-claimed) et libellée "Déjà acheté"', () => {
-      activateList();
+    it('ligne réclamée : reste lisible et affiche le statut d’achat une seule fois', () => {
+      activateList({
+        isCreator: true,
+        items: [
+          {
+            id: 'i2',
+            product_id: 'p2',
+            name: 'Produit au nom volontairement long',
+            image: null,
+            quantity: 1,
+            unit_price_kmf: 3000,
+            claimed: true,
+            buyer_first_name: 'Admin',
+          },
+        ],
+      });
+
       const claimedRow = dom.cartBody.querySelector('[data-item-id="i2"]');
+
       expect(claimedRow.classList.contains('is-cart-item-claimed')).toBe(true);
-      expect(claimedRow.textContent).toContain('Déjà acheté');
+
+      const status = claimedRow.querySelector('.k-cart-snapshot-item-status');
+      expect(status).not.toBeNull();
+      expect(status.textContent).toBe('Déjà acheté par Admin');
+
+      expect(
+        claimedRow.querySelector('.k-cart-snapshot-item-status-badge.is-claimed')
+      ).toBeNull();
+
+      expect(
+        claimedRow.textContent.match(/Déjà acheté par Admin/g)
+      ).toHaveLength(1);
+
+      expect(claimedRow.querySelector('.k-cart-item-select')).toBeNull();
     });
 
     it('chaque ligne disponible affiche sa propre case à cocher de sélection ; jamais sur une ligne réclamée (§2/§3.a)', () => {
