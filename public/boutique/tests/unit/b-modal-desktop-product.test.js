@@ -642,9 +642,9 @@ describe('b-modal-desktop-product — série produit meta hero (M6, spec §9.1, 
   });
 });
 
-describe('b-modal-desktop-product — placement suggestions rail (PDP v3.1 §1/§8)', () => {
+describe('b-modal-desktop-product — suggestions pleine largeur (PDP v3.1 §1/§8)', () => {
   // DOM minimal reproduisant la vraie coque : .k-modal-product-zone porte la
-  // grille et reçoit (ou non) la classe --suggestions-in-rail. Les IDs stables
+  // grille. La classe historique --suggestions-in-rail doit rester absente. Les IDs stables
   // sont ceux ciblés par les renderers (getElementById), donc le renderer
   // fonctionne à l'identique quelle que soit la position DOM.
   function installZoneDom() {
@@ -707,7 +707,7 @@ describe('b-modal-desktop-product — placement suggestions rail (PDP v3.1 §1/�
 
   const RAIL = 'k-modal-product-zone--suggestions-in-rail';
 
-  test('produit SIMPLE (aucun axe) → .k-modal-product-zone--suggestions-in-rail posée', () => {
+  test('produit SIMPLE (aucun axe) → suggestions pleine largeur, aucune classe rail', () => {
     const product = detail({
       inventory_model: 'SIMPLE',
       option_axes: [],
@@ -719,8 +719,8 @@ describe('b-modal-desktop-product — placement suggestions rail (PDP v3.1 §1/�
     renderDesktopProductDetail(product, createModalSelection(product));
 
     const zone = document.querySelector('.k-modal-product-zone');
-    expect(zone.classList.contains(RAIL)).toBe(true);
-    // Aucun reparentage : les suggestions restent enfant de la zone, après l'enrichi.
+    expect(zone.classList.contains(RAIL)).toBe(false);
+    // Le renderer desktop ne force aucun rail : les suggestions restent enfant de ProductZone.
     const suggestions = document.getElementById('k-modal-suggestions');
     expect(suggestions.parentElement).toBe(zone);
   });
@@ -733,7 +733,7 @@ describe('b-modal-desktop-product — placement suggestions rail (PDP v3.1 §1/�
     expect(zone.classList.contains(RAIL)).toBe(false);
   });
 
-  test('bascule variantes → simple → variantes : classe rail idempotente et réversible', () => {
+  test('bascule variantes → simple → variantes : absence de rail idempotente', () => {
     const zone = document.querySelector('.k-modal-product-zone');
 
     renderDesktopProductDetail(detail(), createModalSelection(detail()));
@@ -741,7 +741,7 @@ describe('b-modal-desktop-product — placement suggestions rail (PDP v3.1 §1/�
 
     const simple = detail({ inventory_model: 'SIMPLE', option_axes: [], sellable_units: [], content: { short_description: 'x' } });
     renderDesktopProductDetail(simple, createModalSelection(simple));
-    expect(zone.classList.contains(RAIL)).toBe(true);
+    expect(zone.classList.contains(RAIL)).toBe(false);
 
     renderDesktopProductDetail(detail(), createModalSelection(detail()));
     expect(zone.classList.contains(RAIL)).toBe(false);

@@ -74,14 +74,18 @@ async function expectCanonicalOrder(page) {
     const details = document.getElementById('k-modal-long-details');
     const enriched = document.getElementById('k-modal-enriched-content');
     const suggestions = document.getElementById('k-modal-suggestions');
+    const desktop = window.innerWidth >= 900;
 
     const isBefore = (first, second) => Boolean(
       first &&
       second &&
-      (first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING)
+      (first.compareDocumentPosition(second) &
+        Node.DOCUMENT_POSITION_FOLLOWING)
     );
 
     return {
+      desktop,
+
       exists: {
         scroll: Boolean(scroll),
         zone: Boolean(zone),
@@ -100,9 +104,19 @@ async function expectCanonicalOrder(page) {
       },
 
       sequence: {
-        confBeforeDetails: isBefore(conf, details),
-        detailsBeforeEnriched: isBefore(details, enriched),
-        enrichedBeforeSuggestions: isBefore(enriched, suggestions),
+        confBeforeSuggestions: isBefore(conf, suggestions),
+
+        desktopSuggestionsBeforeDetails:
+          !desktop || isBefore(suggestions, details),
+
+        desktopDetailsBeforeEnriched:
+          !desktop || isBefore(details, enriched),
+
+        mobileDetailsBeforeEnriched:
+          desktop || isBefore(details, enriched),
+
+        mobileEnrichedBeforeSuggestions:
+          desktop || isBefore(enriched, suggestions),
       },
     };
   });
@@ -125,9 +139,11 @@ async function expectCanonicalOrder(page) {
   });
 
   expect(order.sequence).toEqual({
-    confBeforeDetails: true,
-    detailsBeforeEnriched: true,
-    enrichedBeforeSuggestions: true,
+    confBeforeSuggestions: true,
+    desktopSuggestionsBeforeDetails: true,
+    desktopDetailsBeforeEnriched: true,
+    mobileDetailsBeforeEnriched: true,
+    mobileEnrichedBeforeSuggestions: true,
   });
 }
 

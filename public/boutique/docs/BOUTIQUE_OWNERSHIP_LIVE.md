@@ -13,7 +13,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
-| **Modal produit** `.k-modal*` | modal-shell.css (29), modal-product.css (4), interactions.css (2), boutique-desktop.css (1), modal-mobile-canonical.css (1) | 5 | 🔴 |
+| **Modal produit** `.k-modal*` | modal-shell.css (28), modal-product.css (4), interactions.css (2), boutique-desktop.css (1), modal-mobile-canonical.css (1) | 5 | 🔴 |
 | **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (11), layout.css (7), shared-list-side-cart.css (4) | 3 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (23), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
@@ -56,10 +56,10 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `hero-bootstrap.js` | 0 | 9 | 0/0 | Grille produits, Hero, Section catalogue |
 | `b-nav.js` | 5 | 3 | 4/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
+| `b-modal-suggestions.js` | 6 | 0 | 3/2 | Modal produit |
 | `b-favs.js` | 5 | 0 | 1/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
 | `b-paypal.js` | 5 | 0 | 0/0 | — |
 | `b-home-premium-v1.js` | 4 | 0 | 2/0 | Hero, Chips catégories |
-| `b-modal-suggestions.js` | 4 | 0 | 1/2 | Modal produit |
 | `b-scroll-owner.js` | 0 | 4 | 0/0 | Modal produit, Side-cart desktop, Panier, Grille produits |
 | `komerce-api.js` | 4 | 0 | 0/0 | — |
 | `b-catalog-desktop-enhancers.js` | 0 | 3 | 1/0 | Header, Chips catégories |

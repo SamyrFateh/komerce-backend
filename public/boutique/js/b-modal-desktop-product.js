@@ -732,31 +732,12 @@ function renderEnrichedContent(detail) {
   }
 }
 
-/* PDP v3.1 — §1 / §8 : placement adaptatif des suggestions desktop.
- *
- * Produit SIMPLE (aucun axe) : le hero (jusqu'à ~580px) est plus haut que la
- * BuyBox courte. Les suggestions remontent alors dans la colonne 2, empilées
- * immédiatement sous la BuyBox, pour combler le vide sous « Partager » — au
- * lieu d'atterrir en pleine largeur tout en bas.
- *
- * Produit à VARIANTES (§2) : la BuyBox porte déjà les axes et occupe la
- * hauteur ; les suggestions ne sont PAS forcées dans le rail et restent en
- * pleine largeur sous le contenu enrichi (layout 5H préservé).
- *
- * Le placement réel est porté par la grille CSS (.k-modal-product-zone--
- * suggestions-in-rail, modal-shell.css). Ce toggle ne fait que déclarer
- * l'intention : composition structurelle, idempotente et compatible resize,
- * sans reparentage DOM ni position:absolute, et sans dépendre de l'ordre
- * d'arrivée du fetch suggestions (la classe et les cartes convergent quel que
- * soit celui qui peint en premier).
- */
-function applyDesktopSuggestionRailState(detail) {
+/* Lot 6D — les suggestions sont une section transversale sous le hero.
+   La présence d'axes n'influence plus leur emplacement. */
+function applyDesktopSuggestionRailState() {
   const zone = modalZone('.k-modal-product-zone');
   if (!zone) return;
-  zone.classList.toggle(
-    'k-modal-product-zone--suggestions-in-rail',
-    !hasDesktopVariants(detail)
-  );
+  zone.classList.remove('k-modal-product-zone--suggestions-in-rail');
 }
 
 function renderSubtotal(detail, selection) {

@@ -39,7 +39,7 @@
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=178">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=502">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=511">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=105">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
@@ -389,6 +389,9 @@
           <div class="k-modal-dots" id="k-modal-dots"></div>
           <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
         </div>
+        <!-- PDP v3.1 — colonne droite desktop réelle.
+             Mobile : display:contents, donc aucun wrapper visuel supplémentaire. -->
+        <div class="k-modal-right-rail" id="k-modal-right-rail">
         <!-- PDP v3.1 — ProductBuyBox : identité + configuration + actions. -->
         <div class="k-modal-buybox" id="k-modal-buybox">
         <div class="k-modal-details" id="k-modal-details">
@@ -443,6 +446,7 @@
           </div>
         </div>
         </div><!-- end .k-modal-buybox -->
+        </div><!-- end .k-modal-right-rail -->
         <!-- PDP v3.1 — détails produit immédiatement sous Media | BuyBox.
              La description longue vit ici ; le chapeau court reste dans la BuyBox. -->
         <div class="k-modal-long-details" id="k-modal-long-details">
