@@ -1,67 +1,73 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
  * @test-requires none
  */
+
 /**
- * tests/unit/modal-mobile-share.test.js
+ * Oracle — partage produit mobile.
  *
- * Oracle — partage mobile (doc canonique §3 : Partage = Oui / Oui).
+ * Décision PDP densité 2026-08 :
  *
- * docs/reference/reference-modale-4-etats.html (v2.1), section
- * "Décision actée — Partage mobile", documentait un écart connu :
- * "Code prod actuel : partage absent sur mobile (renderShare() gardé par
- * isDesktop()) → reste à corriger".
+ * - la capacité de partage reste montée dans le DOM commun ;
+ * - renderShare() reste partagée avec le desktop ;
+ * - le renderer mobile continue donc de la câbler ;
+ * - MAIS la rangée WA / Lien n'appartient plus au coeur transactionnel mobile ;
+ * - sous 900 px, elle reste masquée afin de ne pas repousser les variantes.
  *
- * Deux causes cumulées :
- *   1. JS : renderShare() (b-modal-desktop-product.js) n'était appelée que
- *      depuis renderDesktopProductDetail() — jamais depuis le renderer
- *      mobile.
- *   2. CSS : .k-modal-share-row { display:none } (base, modal-shell.css)
- *      n'était overridé qu'à ≥900px — aucune règle #k-modal (spécificité
- *      plus forte) ne le rendait visible sous 900px, contrairement à
- *      .k-modal-trust qui a ce mécanisme depuis longtemps (modal-product.css).
- *
- * Ce test verrouille les deux correctifs.
+ * Invariant :
+ * "monté" ne signifie pas "visible dans la zone d'achat mobile".
  */
 
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT       = path.resolve(__dirname, '../..');
-const DESKTOP_JS = fs.readFileSync(path.join(ROOT, 'js/b-modal-desktop-product.js'), 'utf8');
-const MOBILE_JS  = fs.readFileSync(path.join(ROOT, 'js/b-modal-mobile-product.js'), 'utf8');
-const PRODUCT_CSS = fs.readFileSync(path.join(ROOT, 'css/modal-product.css'), 'utf8');
+const ROOT        = path.resolve(__dirname, '../..');
+const DESKTOP_JS  = fs.readFileSync(
+  path.join(ROOT, 'js/b-modal-desktop-product.js'),
+  'utf8'
+);
+const MOBILE_JS   = fs.readFileSync(
+  path.join(ROOT, 'js/b-modal-mobile-product.js'),
+  'utf8'
+);
+const PRODUCT_CSS = fs.readFileSync(
+  path.join(ROOT, 'css/modal-product.css'),
+  'utf8'
+);
 
-describe('partage mobile — oracle doc canonique §3', () => {
+describe('partage mobile — monté mais hors coeur transactionnel', () => {
 
-  test('renderShare est exportée depuis b-modal-desktop-product.js', () => {
-    expect(DESKTOP_JS).toMatch(/export\s+function\s+renderShare\s*\(/);
+  test('renderShare reste exportée depuis le renderer partagé desktop', () => {
+    expect(DESKTOP_JS).toMatch(
+      /export\s+function\s+renderShare\s*\(/
+    );
   });
 
-  test('b-modal-mobile-product.js importe renderShare', () => {
-    expect(MOBILE_JS).toMatch(/import\s*\{[^}]*renderShare[^}]*\}\s*from\s*['"]\.\/b-modal-desktop-product\.js['"]/);
+  test('le renderer mobile continue d’importer renderShare', () => {
+    expect(MOBILE_JS).toMatch(
+      /import\s*\{[^}]*renderShare[^}]*\}\s*from\s*['"]\.\/b-modal-desktop-product\.js['"]/
+    );
   });
 
-  test('b-modal-mobile-product.js appelle renderShare() dans son flux de rendu', () => {
+  test('le renderer mobile continue de monter le partage dans son flux', () => {
     expect(MOBILE_JS).toMatch(/renderShare\s*\(/);
   });
 
-  test('.k-modal-share-row a un override #k-modal visible sous 900px (mobile)', () => {
-    // Même mécanisme de spécificité que .k-modal-trust : la règle #k-modal
-    // (dans un bloc @media max-width:899px) doit exister pour battre la
-    // base .k-modal-share-row{display:none} hors #k-modal.
-    const mobileSection = PRODUCT_CSS.slice(PRODUCT_CSS.indexOf('@media (max-width: 899px)'));
-    const rule = mobileSection.match(/#k-modal\s+\.k-modal-share-row\s*\{([^}]*)\}/s)?.[1] ?? '';
-    expect(rule).toMatch(/display\s*:\s*flex/);
+  test('la rangée de partage est masquée sous 900px', () => {
+    const mobileSection = PRODUCT_CSS.slice(
+      PRODUCT_CSS.indexOf('@media (max-width: 899px)')
+    );
+
+    const rule =
+      mobileSection.match(
+        /#k-modal\s+\.k-modal-share-row\s*\{([^}]*)\}/s
+      )?.[1] ?? '';
+
+    expect(rule).toMatch(/display\s*:\s*none/);
+    expect(rule).not.toMatch(/display\s*:\s*flex/);
   });
 
-  test('le partage mobile est positionné en ligne séparée sous la réassurance (border-top)', () => {
-    const mobileSection = PRODUCT_CSS.slice(PRODUCT_CSS.indexOf('@media (max-width: 899px)'));
-    const rule = mobileSection.match(/#k-modal\s+\.k-modal-share-row\s*\{([^}]*)\}/s)?.[1] ?? '';
-    expect(rule).toMatch(/border-top/);
-  });
 });
