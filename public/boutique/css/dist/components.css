@@ -9813,6 +9813,7 @@ body.cart-open  #k-section-index { display:none; }
   #k-modal .k-modal-cart-btn {
     width: 42px;
     height: 42px;
+    left: calc(50% + 12px);
   }
 
   #k-modal .k-modal-cart-icon {
@@ -9827,7 +9828,7 @@ body.cart-open  #k-section-index { display:none; }
     transform: translate(-50%, -50%);
   }
 
-  /* Le panier garde le centre optique pendant tout le scroll.
+  /* Le panier garde un ancrage optique légèrement décalé à droite pendant tout le scroll.
      L'identité produit reste strictement dans la moitié gauche et
      ne peut jamais passer sous le panier. */
   #k-modal.is-scrolled .k-modal-topbar-product {
