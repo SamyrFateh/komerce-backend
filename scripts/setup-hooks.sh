@@ -147,7 +147,7 @@ if [[ "$HAS_BOUTIQUE_CSS" -eq 1 || "$HAS_BOUTIQUE_JS" -eq 1 || "$HAS_BOUTIQUE_HT
 fi
 
 # N5 - Tests unitaires cibles. Graphe Jest + fallback test homonyme, sans couverture.
-if echo "$STAGED" | grep -Eq '^(server\.js|(?:routes|services|middleware|utils|validators|core|bootstrap|db)/.+\.(js|cjs|mjs|ts)|tests/(?:unit|invariants|contract|notifications)/.+\.(test|spec)\.(js|cjs|mjs|ts)|tests/parcelOptimization\.test\.js|public/boutique/(?:js/.+\.(js|cjs|mjs|ts)|tests/unit/.+\.(test|spec)\.(js|cjs|mjs|ts)))$'; then
+if echo "$STAGED" | grep -Eq '^(server\.js|(routes|services|middleware|utils|validators|core|bootstrap|db)/.+\.(js|cjs|mjs|ts)|tests/(unit|invariants|contract|notifications)/.+\.(test|spec)\.(js|cjs|mjs|ts)|tests/parcelOptimization\.test\.js|public/boutique/(js/.+\.(js|cjs|mjs|ts)|tests/unit/.+\.(test|spec)\.(js|cjs|mjs|ts)))$'; then
   run_gate "Tests unitaires lies" node scripts/run-staged-related-tests.js
 fi
 
