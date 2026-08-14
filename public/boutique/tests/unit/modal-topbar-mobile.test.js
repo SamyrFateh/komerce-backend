@@ -143,6 +143,7 @@ describe('topbar mobile canonique — oracle REF-2026-07e', () => {
     const badgeRule = shell.match(/\.k-modal-cart-badge\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(badgeRule).toMatch(/var\(--commerce-yellow\)/);
     expect(badgeRule).toMatch(/color\s*:\s*var\(--text\)/);
+    expect(badgeRule).toMatch(/font-weight\s*:\s*800/);
     expect(badgeRule).not.toMatch(/var\(--cta-green\)|var\(--coral\)/);
   });
 
