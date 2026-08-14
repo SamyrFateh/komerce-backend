@@ -1,4 +1,4 @@
-name: Benchmark hook tier 5 related tests once
+name: Validate hook tier 5 once
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  benchmark:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -21,25 +21,44 @@ jobs:
         run: |
           npm ci --ignore-scripts
           npm ci --ignore-scripts --prefix public/boutique
-      - name: Benchmark Jest related tests
+      - name: Unit-proof resolver semantics
+        run: npx jest tests/unit/run-staged-related-tests.test.js --runInBand
+      - name: Install current Komerce hook
+        run: bash scripts/setup-hooks.sh
+      - name: Validate full hook on representative staged commits
         shell: bash
         run: |
           set -uo pipefail
-          bench() {
+
+          simulate() {
             local label="$1"
-            shift
+            local file="$2"
+            local marker="$3"
             local start end rc
+
+            git reset --hard HEAD >/dev/null
+            printf '\n%s\n' "$marker" >> "$file"
+            git add "$file"
+
+            echo "===== resolver $label ====="
+            node scripts/run-staged-related-tests.js
+
             start=$(node -e 'process.stdout.write(String(Date.now()))')
             set +e
-            "$@" >/tmp/tier5.out 2>&1
+            .git/hooks/pre-commit >/tmp/tier5-hook.out 2>&1
             rc=$?
             set -e
             end=$(node -e 'process.stdout.write(String(Date.now()))')
-            echo "TIER5_RESULT label=$label rc=$rc total_ms=$((end-start))"
-            tail -30 /tmp/tier5.out
+
+            echo "===== hook $label ====="
+            cat /tmp/tier5-hook.out
+            echo "TIER5_HOOK_RESULT label=$label rc=$rc total_ms=$((end-start))"
+            test "$rc" -eq 0
             echo
           }
 
-          bench backend-related ./node_modules/.bin/jest --config jest.unit.config.js --findRelatedTests services/suppliers/normalized-product.js --runInBand --passWithNoTests
-          cd public/boutique
-          bench boutique-related ./node_modules/.bin/jest --findRelatedTests js/b-cart.js --runInBand --passWithNoTests
+          simulate backend-source services/suppliers/normalized-product.js '// tier5 hook validation'
+          simulate boutique-source public/boutique/js/b-cart.js '// tier5 hook validation'
+          simulate root-test tests/unit/run-staged-related-tests.test.js '// tier5 hook validation'
+
+          git reset --hard HEAD >/dev/null
