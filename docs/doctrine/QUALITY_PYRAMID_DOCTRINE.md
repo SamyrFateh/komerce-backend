@@ -141,40 +141,37 @@ signalés comme trou critique), ni complets. Ces fichiers ont un test qui existe
 qui a été retouché au fil des évolutions, sans jamais être amené à complétion : la
 présence d'un test masque l'incomplétude.
 
-Le gate `touched-tests-gate.js` vérifiait jusqu'ici uniquement la **présence** d'un
-signal test (Preuve A/B/C — voir en-tête du script). Il ne vérifiait pas que ce
-signal était *suffisant*. La règle de complétion au contact ferme ce trou :
+Le gate `touched-tests-gate.js` vérifie d'abord la **présence** d'un signal test
+(Preuve A/B/C — voir en-tête du script). La règle de complétion au contact ajoute un
+cliquet de non-régression uniquement lorsqu'une baseline de couverture réelle est
+explicitement enregistrée :
 
 > Quand un fichier applicatif **et** son fichier de test correspondant sont tous
-> les deux touchés dans la même diff (Preuve A), la couverture stmts + branch du
-> fichier source doit atteindre le seuil cible — **100 % / 100 % par défaut** —
-> une fois les tests touchés exécutés en combinaison avec la suite existante qui
-> cible ce fichier. En dessous du seuil, le gate échoue en `--strict`.
+> les deux touchés dans la même diff (Preuve A), et que le fichier possède une
+> entrée explicite dans `governance/coverage-thresholds.json`, la couverture stmts
+> + branch doit maintenir ou dépasser ce cliquet mesuré. **Aucun 100 % / 100 %
+> implicite n'est appliqué aux fichiers sans baseline explicite.**
 
-Ce que ça change concrètement : on ne peut plus ajouter une assertion à un test
-existant, corriger un bug dans le fichier source associé, et merger en laissant le
-reste du fichier aussi peu couvert qu'avant. Toucher un fichier partiellement
-couvert oblige à le finaliser — pas à l'échelle du dépôt entier d'un coup, mais
-fichier par fichier, au moment où on le touche de toute façon.
+Ce que ça change concrètement : la couverture devient un **ratchet**, pas un objectif
+absolu imposé au commit. Une zone déjà mesurée ne peut pas régresser silencieusement ;
+un fichier sans baseline ne se voit pas inventer un seuil arbitraire. Lorsqu'une
+mesure fiable est établie, elle peut être ajoutée comme cliquet, puis relevée à mesure
+que les tests progressent.
 
 Ce que la règle ne fait PAS :
 - Elle ne force pas une remédiation rétroactive de tous les fichiers en couverture
-  partielle non touchés par la PR en cours (voir la liste dans l'audit —
-  ces fichiers restent une dette connue tant qu'on n'y touche pas).
+  partielle non touchés par la PR en cours.
+- Elle ne transforme pas l'absence de baseline en obligation de 100 %.
 - Elle ne s'applique pas si le fichier source est touché **sans** que son test le
   soit (dans ce cas, c'est la Preuve B/C — exemption ou justification PR — qui
   s'applique, comme avant).
-- Elle n'exige pas 100 % dans l'absolu si ce n'est pas réaliste : un override par
-  fichier est possible via `governance/coverage-thresholds.json`, mais il doit être
-  justifié en commentaire dans la PR qui l'introduit (branche de défense
-  inatteignable, dépendance externe non mockable proprement) et revu à chaque
-  modification ultérieure du fichier — même discipline que
-  `governance/test-exemptions.json`.
+- Elle n'autorise pas à baisser silencieusement un cliquet existant : toute baisse
+  doit être justifiée par une mesure et une raison technique explicite.
 
-Coût accepté : ce check spawn un process Jest isolé par fichier concerné pour
-mesurer sa couverture réelle (indépendamment du reste de la suite). C'est pour
-cette raison qu'il n'est actif qu'en `--strict` (CI, pas en local par défaut) et
-reste désactivable ponctuellement avec `--no-completion-check` pour debug.
+Coût accepté : lorsqu'un cliquet explicite doit être vérifié, ce check peut spawn un
+process Jest isolé pour mesurer la couverture réelle du fichier concerné. C'est pour
+cette raison que cette mesure reste une certification ciblée et non une taxe globale
+sur chaque commit.
 
 ---
 
