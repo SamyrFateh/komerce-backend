@@ -78,6 +78,21 @@ describe('modal-product-polish — invariants topbar mobile', () => {
     expect(product).toMatch(/margin-left\s*:\s*0/);
   });
 
+  test('les actions des suggestions mobiles sont ancrées à droite', () => {
+    const mobile = css.match(
+      /@media \(max-width: 899px\) \{([\s\S]*?)\n\}\n\n\/\* ── Desktop/
+    )?.[1] ?? '';
+
+    const actions = mobile.match(
+      /#k-modal \.k-sug-card-actions\s*\{([^}]+)\}/s
+    )?.[1] ?? '';
+    const filled = mobile.match(
+      /#k-modal \.k-sug-card-actions\.is-filled\s*\{([^}]+)\}/s
+    )?.[1] ?? '';
+
+    expect(actions).toMatch(/align-self\s*:\s*flex-end/);
+    expect(filled).toMatch(/align-self\s*:\s*flex-end/);
+  });
   test('reason_label est masqué uniquement dans le scope mobile', () => {
     const mobile = css.match(
       /@media \(max-width: 899px\) \{([\s\S]*?)\n\}\n\n\/\* ── Desktop/

@@ -23,7 +23,7 @@ describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
 
   test('keeps the vertical price then actions layout', () => {
     expect(css).toMatch(
-      /#k-modal\s+\.k-sug-card-bottom\s*\{[^}]*flex-direction:\s*column[^}]*align-items:\s*flex-start/s
+      /#k-modal\s+\.k-sug-card-bottom\s*\{[^}]*flex-direction:\s*column[^}]*align-items:\s*stretch/s
     );
 
     expect(css).toMatch(
@@ -31,7 +31,7 @@ describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
     );
 
     expect(css).toMatch(
-      /#k-modal\s+\.k-sug-card-actions\s*\{[^}]*justify-content:\s*flex-start/s
+      /#k-modal\s+\.k-sug-card-actions\s*\{[^}]*justify-content:\s*flex-end/s
     );
   });
 

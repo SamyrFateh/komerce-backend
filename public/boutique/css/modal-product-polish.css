@@ -316,7 +316,7 @@
     height: var(--k-sug-action-height);
     max-height: var(--k-sug-action-height);
     aspect-ratio: auto;
-    align-self: flex-start;
+    align-self: flex-end;
     box-sizing: border-box;
   }
 
@@ -325,7 +325,7 @@
     height: var(--k-sug-action-height);
     max-height: var(--k-sug-action-height);
     aspect-ratio: auto;
-    align-self: flex-start;
+    align-self: flex-end;
   }
 
   #k-modal .k-sug-card-actions.is-filled .k-sug-step {

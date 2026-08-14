@@ -139,10 +139,11 @@ describe('topbar mobile canonique — oracle REF-2026-07e', () => {
     expect(html).toMatch(/id="k-modal-cart-badge"/);
   });
 
-  test('le badge panier utilise la couleur panier (verte), jamais la couleur promotion', () => {
+  test('le badge panier reprend le jaune transactionnel de la boutique', () => {
     const badgeRule = shell.match(/\.k-modal-cart-badge\s*\{([^}]*)\}/)?.[1] ?? '';
-    expect(badgeRule).toMatch(/var\(--cta-green\)/);
-    expect(badgeRule).not.toMatch(/var\(--coral\)/);
+    expect(badgeRule).toMatch(/var\(--commerce-yellow\)/);
+    expect(badgeRule).toMatch(/color\s*:\s*var\(--text\)/);
+    expect(badgeRule).not.toMatch(/var\(--cta-green\)|var\(--coral\)/);
   });
 
   test('#k-modal-nav existe comme groupe cohérent (capsule unique) sur mobile', () => {
