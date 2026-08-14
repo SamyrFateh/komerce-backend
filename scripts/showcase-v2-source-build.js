@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
- * @version       2026-08-v8
+ * @version       2026-08-v9
  */
 'use strict';
 
@@ -95,10 +95,19 @@ const HUMAN_MEDIA_MARKERS = Object.freeze([
   'woman wearing', 'women wearing', 'man wearing', 'men wearing', 'girl wearing',
   'girls wearing', 'boy wearing', 'boys wearing', 'person wearing', 'people wearing',
   'woman in a', 'woman in the', 'man in a', 'man in the', 'girl in a', 'boy in a',
+  'woman in', 'women in', 'man in', 'men in', 'girl in', 'girls in', 'boy in', 'boys in',
+  'child in', 'children in', 'person in', 'people in',
   'woman holding', 'women holding', 'man holding', 'men holding', 'person holding',
   'people holding', 'woman applying', 'women applying', 'man applying', 'men applying',
   'person applying', 'people applying', 'using mobile phone', 'using a mobile phone',
   'using phone', 'using a phone', 'actor in', 'actors in',
+]);
+
+const CULTURAL_MEDIA_MARKERS = Object.freeze([
+  'metropolitan museum of art', 'museum collection', 'museum object', 'museum exhibit',
+  'museum accession', 'art museum', 'art gallery', 'gallery collection', 'work of art',
+  'artwork', 'oil on canvas', 'tempera on', 'watercolor', 'watercolour', 'lithograph',
+  'etching', 'engraving', 'painting', 'drawing', 'museum',
 ]);
 
 const V2_TITLE_REPLACEMENTS = [
@@ -244,7 +253,7 @@ async function searchCommons(query) {
 function segmentKey(target) { return `${target.category}/${target.subcategory}`; }
 
 function identityQueriesForTarget(target) {
-  return (PRODUCT_TERMS[segmentKey(target)] || []).slice(0, 8).map((term) => `intitle:${term.includes(' ') ? `"${term}"` : term}`);
+  return (PRODUCT_TERMS[segmentKey(target)] || []).slice(0, 8).map((term) => `intitle:${term.includes(' ') ? `\"${term}\"` : term}`);
 }
 
 function queriesForTarget(target) {
@@ -264,7 +273,8 @@ function productIdentityFor(row, target) {
   const key = segmentKey(target);
   const sourceTitle = String(row?.source_title || row?.name || '');
   const description = String(row?.source_description || '');
-  const context = `${sourceTitle} ${description}`;
+  const attribution = String(row?.source_attribution?.artist || '');
+  const context = `${sourceTitle} ${description} ${attribution}`;
   const terms = PRODUCT_TERMS[key] || [];
   const titleTerm = terms.find((candidate) => catalogEligibility.keywordMatches(sourceTitle, candidate));
   if (!titleTerm) {
@@ -277,6 +287,9 @@ function productIdentityFor(row, target) {
 
   const editorial = EDITORIAL_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));
   if (editorial) return { ok: false, reason: 'editorial-media', term: titleTerm, term_source: 'title', editorial };
+
+  const cultural = CULTURAL_MEDIA_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));
+  if (cultural) return { ok: false, reason: 'cultural-media', term: titleTerm, term_source: 'title', editorial: cultural };
 
   // Une scène humaine n'est pas une photo produit, quelle que soit la catégorie.
   const human = HUMAN_MEDIA_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));
@@ -431,6 +444,7 @@ module.exports = {
   PRODUCT_TERMS,
   EDITORIAL_MARKERS,
   HUMAN_MEDIA_MARKERS,
+  CULTURAL_MEDIA_MARKERS,
   parseArgs,
   retryDelayMs,
   isRetryableHttpStatus,
