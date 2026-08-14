@@ -137,14 +137,21 @@ if ($hasBoutiqueCss -or $hasBoutiqueJs -or $hasBoutiqueHtml) {
     Invoke-Gate -Label 'Boutique architecture' -Command 'node' -Arguments @('public/boutique/scripts/audit-boutique-arch.js')
 }
 
+# N5 - Tests unitaires cibles. Graphe Jest + fallback test homonyme, sans couverture.
+$hasRootUnitScope = $stagedText -match '(?m)^(server\.js|(?:routes|services|middleware|utils|validators|core|bootstrap|db)/.+\.(?:js|cjs|mjs|ts)|tests/(?:unit|invariants|contract|notifications)/.+\.(?:test|spec)\.(?:js|cjs|mjs|ts)|tests/parcelOptimization\.test\.js)$'
+$hasBoutiqueUnitScope = $stagedText -match '(?m)^public/boutique/(?:js/.+\.(?:js|cjs|mjs|ts)|tests/unit/.+\.(?:test|spec)\.(?:js|cjs|mjs|ts))$'
+if ($hasRootUnitScope -or $hasBoutiqueUnitScope) {
+    Invoke-Gate -Label 'Tests unitaires lies' -Command 'node' -Arguments @('scripts/run-staged-related-tests.js')
+}
+
 $total.Stop()
-Write-Host ("OK Pre-commit Komerce tiers 1-4 termine en {0} ms" -f $total.ElapsedMilliseconds)
+Write-Host ("OK Pre-commit Komerce tiers 1-5 termine en {0} ms" -f $total.ElapsedMilliseconds)
 exit 0
 '@
 
 $shim = @'
 #!/bin/sh
-# KOMERCE-HOOK v5 - PowerShell launcher
+# KOMERCE-HOOK v6 - PowerShell launcher
 ROOT_WIN="$(git rev-parse --show-toplevel)"
 exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$ROOT_WIN/.git/hooks/pre-commit.komerce.ps1"
 '@
@@ -153,8 +160,8 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($preCommitPs1, $preCommitPowerShell, $utf8NoBom)
 [System.IO.File]::WriteAllText($preCommit, $shim, $utf8NoBom)
 
-Write-Host 'OK Hooks Komerce - niveaux 1-4 installes depuis PowerShell.'
-Write-Host '   pre-commit : technique + registry + schema + Boutique source ciblee'
+Write-Host 'OK Hooks Komerce - niveaux 1-5 installes depuis PowerShell.'
+Write-Host '   pre-commit : technique + registry + schema + Boutique source + tests unitaires lies'
 Write-Host '   pre-push   : toujours desactive'
-Write-Host '   lourds     : Carte First complet / rebuild CSS-dist / check:fast / 360 / meta / graphes en pause'
+Write-Host '   lourds     : Carte First complet / rebuild CSS-dist / coverage / integration / E2E / 360 / meta en pause'
 Write-Host '   timings    : affiches gate par gate a chaque commit'
