@@ -36,10 +36,8 @@ pause_managed_hook() {
   fi
 }
 
-# Le pre-push historique (impact/coffre-fort) reste volontairement en pause.
 pause_managed_hook "$PRE_PUSH"
 
-# Ne jamais ecraser un hook pre-commit personnel.
 if [[ -f "$PRE_COMMIT" ]] && ! is_managed_hook "$PRE_COMMIT"; then
   echo "Hook pre-commit personnel detecte - installation Komerce ignoree."
   echo "Fichier conserve: ${PRE_COMMIT#$ROOT/}"
@@ -48,10 +46,7 @@ fi
 
 cat > "$PRE_COMMIT" << 'HOOK'
 #!/bin/bash
-# KOMERCE-HOOK v3 - tiers-1-2-targeted
-# Objectif: controles techniques rapides et registre cible uniquement.
-# Pas de generation d'artefacts, pas de Carte First complet, pas de DB drift,
-# pas de CSS rebuild/check:fast, pas de graphes 360, pas de pre-push impact.
+# KOMERCE-HOOK v4 - tiers-1-3-targeted
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -90,35 +85,40 @@ if [[ -z "$STAGED" ]]; then
   exit 0
 fi
 
-# N1-A - Qualite JS statique.
 if echo "$STAGED" | grep -Eq '\.(js|cjs|mjs)$'; then
   run_gate "Qualite JS" node scripts/code-quality-gate.js --strict
 fi
 
-# N1-B - Invariants backend.
 if echo "$STAGED" | grep -Eq '^(server\.js|routes/|services/|middleware/|utils/|scripts/|config/).+\.(js|cjs|mjs)$|^server\.js$'; then
   run_gate "Invariants backend" node scripts/audit-backend-arch.js
 fi
 
-# N1-C - XSS prouvable sur les seules lignes front staged.
 if echo "$STAGED" | grep -Eq '^public/.+\.(js|cjs|mjs)$'; then
   run_gate "Sanitization front staged" node scripts/arch-doctrine-sanitize-check.js
 fi
 
-# N2-A - Registre de features, uniquement si son perimetre peut avoir change.
-# Le wrapper tolere uniquement les workflows volontairement archives pendant le nettoyage.
 if echo "$STAGED" | grep -Eq '^(features|capabilities|services|routes|migrations|middleware|utils|validators|core|bootstrap|db)/|^\.github/.+\.(yml|yaml|md)$'; then
   run_gate "Feature Registry" node scripts/feature-registry-targeted-check.js
 fi
 
+# N3-A - Fraicheur du dump sur migrations ou dump live.
+if echo "$STAGED" | grep -Eq '^migrations/.+\.sql$|^docs/db/railway-live-schema\.sql$'; then
+  run_gate "Schema freshness" node scripts/check-schema-freshness.js
+fi
+
+# N3-B - Anti-resurrection uniquement quand le dump live vient d'etre rafraichi.
+if echo "$STAGED" | grep -Eq '^docs/db/railway-live-schema\.sql$'; then
+  run_gate "Schema anti-resurrection" node scripts/check-schema-resurrection.js
+fi
+
 TOTAL_END="$(now_ms)"
-echo "OK Pre-commit Komerce tiers 1-2 termine en $((TOTAL_END - TOTAL_START)) ms"
+echo "OK Pre-commit Komerce tiers 1-3 termine en $((TOTAL_END - TOTAL_START)) ms"
 HOOK
 
 chmod +x "$PRE_COMMIT"
 
-echo "OK Hooks Komerce - niveaux 1-2 installes."
-echo "   pre-commit : qualite JS + invariants backend + XSS staged + Feature Registry cible"
+echo "OK Hooks Komerce - niveaux 1-3 installes."
+echo "   pre-commit : qualite JS + invariants + XSS + Feature Registry + schema cible"
 echo "   pre-push   : toujours desactive"
-echo "   lourds     : Carte First complet / DB / CSS / 360 / meta toujours en pause"
+echo "   lourds     : Carte First complet / CSS / 360 / meta / graphes toujours en pause"
 echo "   timings    : affiches gate par gate a chaque commit"
