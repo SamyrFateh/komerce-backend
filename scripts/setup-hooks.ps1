@@ -58,8 +58,17 @@ function Invoke-Gate {
     )
 
     $timer = [System.Diagnostics.Stopwatch]::StartNew()
-    $output = & $Command @Arguments 2>&1
-    $rc = $LASTEXITCODE
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        # Windows PowerShell 5.1 transforme parfois le stderr d'un programme natif
+        # (Jest ecrit notamment ses lignes PASS sur stderr) en NativeCommandError.
+        # On laisse donc le programme terminer et on decide uniquement via LASTEXITCODE.
+        $ErrorActionPreference = 'Continue'
+        $output = & $Command @Arguments 2>&1
+        $rc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
     $timer.Stop()
 
     if ($rc -ne 0) {
