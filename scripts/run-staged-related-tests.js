@@ -76,28 +76,32 @@ function trackedFiles() {
   return result.stdout.split(/\r?\n/).map(normalize).filter(Boolean);
 }
 
-function jestBinary(cwd) {
-  const executable = process.platform === 'win32' ? 'jest.cmd' : 'jest';
-  return path.join(cwd, 'node_modules', '.bin', executable);
+function jestInvocation(cwd) {
+  const script = path.join(cwd, 'node_modules', 'jest', 'bin', 'jest.js');
+  if (!fs.existsSync(script)) {
+    throw new Error(`Jest absent pour ${cwd}. Installe les dependances du workspace avant de committer.`);
+  }
+  return { command: process.execPath, prefixArgs: [script] };
+}
+
+function spawnJest(workspace, jestArgs, options = {}) {
+  const invocation = jestInvocation(workspace.cwd);
+  return cp.spawnSync(invocation.command, [...invocation.prefixArgs, ...jestArgs], {
+    cwd: workspace.cwd,
+    env: { ...process.env, NODE_ENV: 'test' },
+    ...options,
+  });
 }
 
 function relatedTests(workspace, sourceFiles) {
   if (sourceFiles.length === 0) return [];
-  const binary = jestBinary(workspace.cwd);
-  if (!fs.existsSync(binary)) {
-    throw new Error(`Jest absent pour ${workspace.name}. Installe les dependances du workspace avant de committer.`);
-  }
 
   const localSources = sourceFiles.map(file => workspace.prefix ? file.slice(workspace.prefix.length) : file);
   const jestArgs = [];
   if (workspace.config) jestArgs.push('--config', workspace.config);
   jestArgs.push('--listTests', '--findRelatedTests', ...localSources, '--passWithNoTests');
 
-  const result = cp.spawnSync(binary, jestArgs, {
-    cwd: workspace.cwd,
-    encoding: 'utf8',
-    env: { ...process.env, NODE_ENV: 'test' },
-  });
+  const result = spawnJest(workspace, jestArgs, { encoding: 'utf8' });
   if (result.status !== 0) {
     throw new Error(`Resolution Jest impossible pour ${workspace.name}:\n${result.stderr || result.stdout || ''}`);
   }
@@ -121,10 +125,7 @@ function runWorkspace(workspace, files, tracked) {
   const directTests = directStagedTests(workspace, files);
   if (sources.length === 0 && directTests.length === 0) return { ran: false, tests: 0 };
 
-  const binary = jestBinary(workspace.cwd);
-  if (!fs.existsSync(binary)) {
-    throw new Error(`Jest absent pour ${workspace.name}. Installe les dependances du workspace avant de committer.`);
-  }
+  jestInvocation(workspace.cwd);
 
   const tests = Array.from(new Set([
     ...relatedTests(workspace, sources),
@@ -142,11 +143,7 @@ function runWorkspace(workspace, files, tracked) {
   jestArgs.push('--runTestsByPath', ...tests, '--runInBand');
 
   console.log(`Tests cibles ${workspace.name}: ${tests.length} suite(s) pour ${sources.length} source(s) staged.`);
-  const result = cp.spawnSync(binary, jestArgs, {
-    cwd: workspace.cwd,
-    stdio: 'inherit',
-    env: { ...process.env, NODE_ENV: 'test' },
-  });
+  const result = spawnJest(workspace, jestArgs, { stdio: 'inherit' });
   if (result.status !== 0) return { ran: true, tests: tests.length, failed: true, status: result.status || 1 };
   return { ran: true, tests: tests.length, failed: false };
 }
