@@ -46,7 +46,7 @@ fi
 
 cat > "$PRE_COMMIT" << 'HOOK'
 #!/bin/bash
-# KOMERCE-HOOK v4 - tiers-1-3-targeted
+# KOMERCE-HOOK v5 - tiers-1-4-targeted
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -85,6 +85,7 @@ if [[ -z "$STAGED" ]]; then
   exit 0
 fi
 
+# N1 - Controles techniques generiques rapides.
 if echo "$STAGED" | grep -Eq '\.(js|cjs|mjs)$'; then
   run_gate "Qualite JS" node scripts/code-quality-gate.js --strict
 fi
@@ -97,28 +98,62 @@ if echo "$STAGED" | grep -Eq '^public/.+\.(js|cjs|mjs)$'; then
   run_gate "Sanitization front staged" node scripts/arch-doctrine-sanitize-check.js
 fi
 
+# N2 - Registre cible avec ratchet des workflows volontairement archives.
 if echo "$STAGED" | grep -Eq '^(features|capabilities|services|routes|migrations|middleware|utils|validators|core|bootstrap|db)/|^\.github/.+\.(yml|yaml|md)$'; then
   run_gate "Feature Registry" node scripts/feature-registry-targeted-check.js
 fi
 
-# N3-A - Fraicheur du dump sur migrations ou dump live.
+# N3 - Schema cible.
 if echo "$STAGED" | grep -Eq '^migrations/.+\.sql$|^docs/db/railway-live-schema\.sql$'; then
   run_gate "Schema freshness" node scripts/check-schema-freshness.js
 fi
 
-# N3-B - Anti-resurrection uniquement quand le dump live vient d'etre rafraichi.
 if echo "$STAGED" | grep -Eq '^docs/db/railway-live-schema\.sql$'; then
   run_gate "Schema anti-resurrection" node scripts/check-schema-resurrection.js
 fi
 
+# N4 - Boutique source-level uniquement. Aucun rebuild css/dist ici.
+HAS_BOUTIQUE_CSS=0
+HAS_BOUTIQUE_JS=0
+HAS_BOUTIQUE_HTML=0
+
+echo "$STAGED" | grep -Eq '^public/boutique/css/.+\.css$' && HAS_BOUTIQUE_CSS=1 || true
+echo "$STAGED" | grep -Eq '^public/boutique/js/.+\.(js|cjs|mjs)$' && HAS_BOUTIQUE_JS=1 || true
+echo "$STAGED" | grep -Eq '^public/boutique/index\.html$' && HAS_BOUTIQUE_HTML=1 || true
+
+if [[ "$HAS_BOUTIQUE_CSS" -eq 1 ]]; then
+  run_gate "Boutique CSS important" node public/boutique/scripts/check-important.js --strict
+  run_gate "Boutique breakpoints" node public/boutique/scripts/check-breakpoints.js --strict
+  run_gate "Boutique CSS vars" node public/boutique/scripts/check-css-vars.js --strict
+  run_gate "Boutique z-index" node public/boutique/scripts/check-zindex-contract.js --strict
+  run_gate "Boutique sticky" node public/boutique/scripts/check-sticky-integrity.js --strict
+fi
+
+if [[ "$HAS_BOUTIQUE_JS" -eq 1 ]]; then
+  run_gate "Boutique imports JS" node public/boutique/scripts/check-js-imports.js
+  run_gate "Boutique no CSS injection" node public/boutique/scripts/check-no-css-injection.js
+fi
+
+if [[ "$HAS_BOUTIQUE_HTML" -eq 1 ]]; then
+  run_gate "Boutique HTML balance" node public/boutique/scripts/check-html-balance.js
+fi
+
+if [[ "$HAS_BOUTIQUE_JS" -eq 1 || "$HAS_BOUTIQUE_HTML" -eq 1 ]]; then
+  run_gate "Boutique body classes" node public/boutique/scripts/check-body-classes.js
+fi
+
+if [[ "$HAS_BOUTIQUE_CSS" -eq 1 || "$HAS_BOUTIQUE_JS" -eq 1 || "$HAS_BOUTIQUE_HTML" -eq 1 ]]; then
+  run_gate "Boutique architecture" node public/boutique/scripts/audit-boutique-arch.js
+fi
+
 TOTAL_END="$(now_ms)"
-echo "OK Pre-commit Komerce tiers 1-3 termine en $((TOTAL_END - TOTAL_START)) ms"
+echo "OK Pre-commit Komerce tiers 1-4 termine en $((TOTAL_END - TOTAL_START)) ms"
 HOOK
 
 chmod +x "$PRE_COMMIT"
 
-echo "OK Hooks Komerce - niveaux 1-3 installes."
-echo "   pre-commit : qualite JS + invariants + XSS + Feature Registry + schema cible"
+echo "OK Hooks Komerce - niveaux 1-4 installes."
+echo "   pre-commit : technique + registry + schema + Boutique source ciblee"
 echo "   pre-push   : toujours desactive"
-echo "   lourds     : Carte First complet / CSS / 360 / meta / graphes toujours en pause"
+echo "   lourds     : Carte First complet / rebuild CSS-dist / check:fast / 360 / meta / graphes en pause"
 echo "   timings    : affiches gate par gate a chaque commit"
