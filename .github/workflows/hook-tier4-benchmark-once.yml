@@ -1,4 +1,4 @@
-name: Benchmark hook tier 4 Boutique once
+name: Validate hook tier 4 Boutique once
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  benchmark:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -18,36 +18,39 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Benchmark source-level Boutique candidates
+      - name: Install current Komerce hook
+        run: bash scripts/setup-hooks.sh
+
+      - name: Simulate full pre-commit by Boutique file type
         shell: bash
         run: |
           set -uo pipefail
-          cd public/boutique
 
-          diagnose() {
+          simulate() {
             local label="$1"
-            shift
+            local file="$2"
+            local marker="$3"
             local start end rc
+
+            git reset --hard HEAD >/dev/null
+            printf '\n%s\n' "$marker" >> "$file"
+            git add "$file"
+
             start=$(node -e 'process.stdout.write(String(Date.now()))')
             set +e
-            "$@" >/tmp/tier4.out 2>&1
+            .git/hooks/pre-commit >/tmp/tier4-hook.out 2>&1
             rc=$?
             set -e
             end=$(node -e 'process.stdout.write(String(Date.now()))')
-            echo "TIER4_RESULT label=$label rc=$rc total_ms=$((end-start))"
-            if [ "$rc" -ne 0 ]; then
-              tail -80 /tmp/tier4.out
-            fi
+
+            echo "===== $label ====="
+            cat /tmp/tier4-hook.out
+            echo "TIER4_HOOK_RESULT label=$label rc=$rc total_ms=$((end-start))"
+            echo
           }
 
-          diagnose important node scripts/check-important.js --strict
-          diagnose breakpoints node scripts/check-breakpoints.js --strict
-          diagnose architecture node scripts/audit-boutique-arch.js
-          diagnose js-imports node scripts/check-js-imports.js
-          diagnose no-css-injection node scripts/check-no-css-injection.js
-          diagnose html-balance node scripts/check-html-balance.js
-          diagnose body-classes node scripts/check-body-classes.js
-          diagnose css-vars node scripts/check-css-vars.js --strict
-          diagnose zindex node scripts/check-zindex-contract.js --strict
-          diagnose sticky node scripts/check-sticky-integrity.js --strict
-          diagnose dom-contract node scripts/check-dom-contract.js
+          simulate css-source public/boutique/css/modal-shell.css '/* tier4 hook benchmark */'
+          simulate js-source public/boutique/js/b-cart.js '// tier4 hook benchmark'
+          simulate html-source public/boutique/index.html '<!-- tier4 hook benchmark -->'
+
+          git reset --hard HEAD >/dev/null
