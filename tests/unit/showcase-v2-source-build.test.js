@@ -100,6 +100,38 @@ describe('showcase-v2-source-build query resilience', () => {
     expect(productIdentityFor(row, target)).toMatchObject({ ok: false, reason: 'human-media', term: 'dress' });
   });
 
+  test('régression run 49 : Boy in Fancy Dress reste une personne, jamais une robe catalogue', () => {
+    const target = { category: 'Mode & Beauté', subcategory: 'Femme' };
+    const row = {
+      source_title: 'Boy in Fancy Dress, 1931 — Paul Klee, MET',
+      name: 'Boy in Fancy Dress, 1931 — Paul Klee, MET',
+      source_description: '',
+      source_attribution: { artist: 'Paul Klee' },
+    };
+    expect(productIdentityFor(row, target)).toMatchObject({
+      ok: false,
+      reason: 'human-media',
+      term: 'dress',
+      term_source: 'title',
+    });
+  });
+
+  test('refuse une œuvre de musée même si son titre contient un terme produit', () => {
+    const target = { category: 'Mode & Beauté', subcategory: 'Femme' };
+    const row = {
+      source_title: 'Red dress study',
+      name: 'Étude robe rouge',
+      source_description: 'Drawing in the Metropolitan Museum of Art collection.',
+      source_attribution: { artist: 'Museum collection' },
+    };
+    expect(productIdentityFor(row, target)).toMatchObject({
+      ok: false,
+      reason: 'cultural-media',
+      term: 'dress',
+      term_source: 'title',
+    });
+  });
+
   test('refuse une identité produit portée uniquement par la description', () => {
     const target = { category: 'Mode & Beauté', subcategory: 'Femme' };
     const row = {
