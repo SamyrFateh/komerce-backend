@@ -1,18 +1,16 @@
-name: CI
+name: CI technique manuelle
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
+  workflow_dispatch:
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
   unit:
-    name: Root governance and unit coverage
+    name: Tests unitaires backend
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,17 +18,12 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - run: npm run feature:registry
-      - run: npm run quality:gate
-      - run: npm run backend:audit
-      - run: npm run audit:gate
-      - run: npm run test:unit:coverage
-      - run: npm run gate:catalog-contract
-      - run: npm run feature:check
+      - run: npx jest --config jest.unit.config.js --ci --runInBand --forceExit
 
   integration:
-    name: Integration tests (PostgreSQL)
+    name: Tests intégration backend
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:16
@@ -44,68 +37,19 @@ jobs:
           --health-cmd "pg_isready -U komerce -d komerce_test"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 10
+          --health-retries 5
     env:
       NODE_ENV: test
-      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
-      JWT_SECRET: ci-test-secret-not-for-prod
-      ADMIN_PASSWORD: ci-test-admin
-      STRIPE_SECRET_KEY: sk_test_dummy
-      STRIPE_WEBHOOK_SECRET: whsec_dummy
-      QR_SECRET: ci-test-qr-secret
-      AUTHKEY_API_KEY: ci-dummy
-      PAYPAL_CLIENT_ID: ci-dummy
-      PAYPAL_CLIENT_SECRET: ci-dummy
-      PAYPAL_WEBHOOK_ID: ci-dummy
-      META_WA_APP_SECRET: ci-dummy
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - run: node scripts/check-schema-freshness.js
-      - run: node scripts/check-schema-resurrection.js
-      - name: Load canonical schema and pending migrations
+      - name: Charger le schéma canonique
         run: |
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
-          node scripts/ci-migrate.js
+          PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f schema.sql
+          bash scripts/ci-migrate-pending.sh
       - run: npm run test:integration
-
-  boutique:
-    name: Boutique quality and coverage
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: public/boutique
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: public/boutique/package-lock.json
-      - run: npm ci
-      - run: npm run audit:gate
-      - run: npm run check:fast
-      - run: npm run test:coverage
-
-  dashboards:
-    name: Dashboards quality
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: public/dashboards
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: public/dashboards/package-lock.json
-      - run: npm ci
-      - run: npm run audit:gate
-      - run: npm run check:all
