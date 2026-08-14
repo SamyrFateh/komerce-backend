@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-14T10:29:56.058Z",
+  "generatedAt": "2026-08-14T13:56:52.485Z",
   "summary": {
     "modules": 77,
     "withHeader": 77,
@@ -939,6 +939,10 @@
         },
         {
           "name": "modal:closed",
+          "hasArg": false
+        },
+        {
+          "name": "side-cart:render",
           "hasArg": false
         },
         {

@@ -313,7 +313,7 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     expect(state.modalMediaSignature).toBe('');
   });
 
-  test('la puce de disponibilité et l’aria suivent la progression de sélection SKU sans intelligence locale', () => {
+  test('l’aria suit la progression SKU sans réintroduire de puce de guidance locale', () => {
     const detail = richDetail();
     const empty = richSelection({
       selected_options: {},
@@ -323,8 +323,9 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     });
 
     renderMobileProductDetail(detail, empty);
-    let chip = dom.modalVariants.querySelector('.k-mdm-chip');
-    expect(chip.textContent).toBe('Choisissez vos options');
+    let guidanceChip = dom.modalVariants.querySelector('.k-mdm-chip:not(.k-mdm-chip--delivery)');
+    expect(guidanceChip).toBeNull();
+    expect(dom.modalVariants.querySelector('.k-mdm-chip--delivery').textContent).toContain('Relais');
     expect(document.getElementById('k-add-cart-btn').disabled).toBe(true);
     expect(document.getElementById('k-add-cart-btn').getAttribute('aria-describedby')).toBe('k-modal-selection-message');
 
@@ -335,8 +336,8 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
       selection_message: '',
     });
     renderMobileProductDetail(detail, partial);
-    chip = dom.modalVariants.querySelector('.k-mdm-chip');
-    expect(chip.textContent).toBe('Choisissez la suite');
+    guidanceChip = dom.modalVariants.querySelector('.k-mdm-chip:not(.k-mdm-chip--delivery)');
+    expect(guidanceChip).toBeNull();
     expect(dom.modalVariants.querySelector('#k-modal-selection-message').hidden).toBe(true);
 
     const resolved = richSelection();

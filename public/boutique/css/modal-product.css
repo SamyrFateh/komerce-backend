@@ -269,9 +269,9 @@
     flex-wrap: nowrap;
     justify-content: space-between;
     gap: 6px;
-    padding: 10px 0 2px;
+    padding: 5px 0 1px;
     border-top: 1px solid var(--sand-dark);
-    margin-top: 4px;
+    margin-top: 2px;
   }
   #k-modal .k-modal-trust-item {
     display: flex;
@@ -299,29 +299,24 @@
     flex-shrink: 0;
   }
 
-  /* ── PARTAGE MOBILE (RÉF-2026-07 doc canonique §3 : Partage = Oui/Oui) ──
-     Absent jusqu'ici côté mobile : renderShare() (b-modal-desktop-product.js)
-     n'était appelée que depuis renderDesktopProductDetail(), jamais depuis
-     b-modal-mobile-product.js — corrigé (JS). Il manquait aussi ce CSS :
-     .k-modal-share-row { display:none } de la base (modal-shell.css L297)
-     n'était overridé qu'à ≥900px. Même mécanisme que .k-modal-trust
-     ci-dessus : spécificité #k-modal l'emporte sur la base hors-#k-modal.
-     Layout : ligne séparée juste sous la réassurance (border-top), même
-     schéma qu'en desktop. */
+  /* ── PARTAGE MOBILE ─────────────────────────────────────────
+     La capacité reste montée par renderShare() afin de conserver
+     un owner commun desktop/mobile et la fonctionnalité disponible.
+
+     Décision densité PDP 2026-08 :
+     WA / Lien ne font plus partie du coeur transactionnel mobile.
+     La rangée reste donc masquée sous 900px.
+     Desktop : comportement inchangé. */
+  /*
+   * Mobile : partage retiré du coeur transactionnel.
+   * La fonctionnalité reste montée dans le DOM commun ;
+   * le desktop reste inchangé.
+   */
   #k-modal .k-modal-share-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 0 0;
-    border-top: 1px solid var(--sand-dark);
-    margin-top: 8px;
+    display: none;
   }
   #k-modal .k-modal-share-row::before {
-    content: 'Partager :';
-    font-size: 11px;
-    color: var(--text-muted);
-    font-weight: 500;
-    flex-shrink: 0;
+    content: none;
   }
   #k-modal .k-modal-share-btn {
     display: inline-flex;

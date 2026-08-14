@@ -266,11 +266,23 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
       button.appendChild(image);
       button.appendChild(name);
     } else if (photo) {
-      // F5 — Swatch couleur pur (pas de thumbnail) : cercle CSS coloré
+      // Swatch couleur pur : le choix reste lisible sans dépendre
+      // uniquement de la teinte. Le rond porte la couleur, le bouton
+      // conserve le nom visible et l'aria-label complet.
       button.className = `k-sku k-sku--color${active ? ' k-sku--active' : ''}${
         unavailable ? ' k-vp--out' : ''
       }`;
-      button.style.background = _colorNameToHex(option.value);
+
+      const swatch = document.createElement('span');
+      swatch.className = 'k-sku-color-dot';
+      swatch.style.background = _colorNameToHex(option.value);
+      swatch.setAttribute('aria-hidden', 'true');
+
+      const name = document.createElement('span');
+      name.className = 'k-sku-name';
+      name.textContent = option.value;
+
+      button.append(swatch, name);
       button.title = option.value;
     } else {
       button.className = `k-vp${active ? ' k-vp--active' : ''}${
@@ -302,8 +314,17 @@ function renderSelectionMessage(root, selection) {
   message.className = 'k-mdm-selection-msg';
   message.setAttribute('role', 'status');
   message.setAttribute('aria-live', 'polite');
-  message.textContent = selection.selection_message || '';
-  message.hidden = !selection.selection_message;
+
+  // Les labels de chaque axe portent déjà le guidage "Choisir".
+  // Ne répéter ici que les messages réellement utiles :
+  // rupture, incompatibilité, combinaison non proposée, etc.
+  const rawMessage = String(selection.selection_message || '').trim();
+  const isGenericGuidance =
+    rawMessage === 'Choisissez vos options' ||
+    rawMessage === 'Choisissez la suite';
+
+  message.textContent = isGenericGuidance ? '' : rawMessage;
+  message.hidden = !message.textContent;
   root.appendChild(message);
 }
 
@@ -347,25 +368,14 @@ function renderInfoStrip(detail, selection, root) {
   strip.className = 'k-mdm-info-strip';
   strip.dataset.infoStrip = '1';
 
-  // Availability chip — only when selection is supported AND incomplete.
-  // P2 stock-en-double (2026-07) : quand selected_sku_id résout, le produit
-  // est par définition disponible (resolveSelectedSku ne renvoie que des
-  // unités stock_status===AVAILABLE) — l'info est déjà portée par le pill
-  // stock près du prix (renderStockPill). La répéter ici sous "✓ Disponible"
-  // est un pur doublon. Les vraies exceptions (rupture, incompatibilité)
-  // restent surfacées ailleurs via selection.selection_message (message
-  // dédié sous les groupes de variantes), jamais via ce chip. Le chip ne
-  // reste donc utile que pour guider une sélection encore incomplète.
-  if (selection.selection_supported && !selection.selected_sku_id) {
-    const availChip = document.createElement('span');
-    const hasSelections =
-      Object.keys(selection.selected_options).length > 0;
-    availChip.className = 'k-mdm-chip';
-    availChip.textContent = hasSelections
-      ? 'Choisissez la suite'
-      : 'Choisissez vos options';
-    strip.appendChild(availChip);
-  }
+  // Aucun guidage générique ici : chaque axe porte déjà "Choisir".
+  // Les seuls messages de sélection utiles (rupture, incompatibilité...)
+  // sont rendus séparément par renderSelectionMessage().
+
+  const heading = document.createElement('div');
+  heading.className = 'k-mdm-delivery-heading';
+  heading.textContent = 'Livraison';
+  strip.appendChild(heading);
 
   // Delivery chips — exclusively from detail.delivery_options[]
   // Never hardcoded. Zero chips if array is empty. Les options indisponibles
@@ -400,7 +410,10 @@ function renderInfoStrip(detail, selection, root) {
     const iconWrap = document.createElement('span');
     iconWrap.className = 'k-mdm-chip-icon';
     iconWrap.appendChild(_deliveryIconSvg(isAir));
-    chip.append(iconWrap, document.createTextNode(` ${option.label}`));
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'k-mdm-chip-label';
+    labelSpan.textContent = option.label;
+    chip.append(iconWrap, labelSpan);
 
     // P1 livraison mobile (2026-07) : chaque mode de livraison a sa propre
     // zone verticale (chip pleine largeur, meta sur sa propre ligne) au lieu
@@ -437,7 +450,10 @@ function renderInfoStrip(detail, selection, root) {
     const fallbackIcon = document.createElement('span');
     fallbackIcon.className = 'k-mdm-chip-icon';
     fallbackIcon.appendChild(_deliveryIconSvg(false));
-    fallback.append(fallbackIcon, document.createTextNode(' Livraison communiquée à la commande'));
+    const fallbackLabel = document.createElement('span');
+    fallbackLabel.className = 'k-mdm-chip-label';
+    fallbackLabel.textContent = 'Livraison communiquée à la commande';
+    fallback.append(fallbackIcon, fallbackLabel);
     strip.appendChild(fallback);
   }
 
@@ -485,7 +501,7 @@ function renderActions(detail, selection) {
  * n'est posé que si offerReadMore est vrai (contenu réellement masqué par
  * le clamp visuel) — jamais un bouton systématique (règle UX mobile).
  */
-function appendTextSection(root, { heading, text, offerReadMore }) {
+function appendTextSection(root, { heading, lead = '', text, offerReadMore }) {
   const section = document.createElement('section');
   section.className = 'k-mdm-desc-section k-mdm-content-section';
 
@@ -493,6 +509,14 @@ function appendTextSection(root, { heading, text, offerReadMore }) {
   headingEl.className = 'k-mdm-section-heading';
   headingEl.textContent = heading;
   section.appendChild(headingEl);
+
+  if (lead) {
+    const leadEl = document.createElement('div');
+    leadEl.className = 'k-mdm-desc-lead';
+    leadEl.textContent = lead;
+    leadEl.title = lead;
+    section.appendChild(leadEl);
+  }
 
   const textEl = document.createElement('div');
   textEl.className = offerReadMore ? 'k-mdm-desc-text' : 'k-mdm-desc-text k-mdm-desc-text--expanded';
@@ -630,11 +654,15 @@ function renderBelowFold(detail, root, vm) {
   const description = detail.product.description || '';
   if (description) {
     const lead =
-      vm.shortDescription && vm.shortDescription !== description ? `${vm.shortDescription}\n\n` : '';
+      vm.shortDescription && vm.shortDescription !== description
+        ? vm.shortDescription
+        : '';
+
     appendTextSection(root, {
       heading: 'Description',
-      text: `${lead}${description}`,
-      offerReadMore: shouldOfferReadMore(`${lead}${description}`),
+      lead,
+      text: description,
+      offerReadMore: shouldOfferReadMore(description),
     });
   }
 
@@ -733,12 +761,9 @@ export function renderMobileProductDetail(
     state.modalDeliverySelection
   );
 
-  // MDM-5: Info strip (availability chip + delivery chips) — juste sous le
-  // prix, AVANT couleur/taille (réf. docs/reference/reference-modale-
-  // architecture.html : prix → pill livraison → couleur → taille → suggestions).
-  renderInfoStrip(detail, selection, root);
-
-  // MDM-4: Option axes
+  // MDM-4: Option axes — le produit se configure avant toute information
+  // logistique. Sur mobile, Couleur/Taille/etc. restent donc immédiatement
+  // après l'identité commerciale.
   if (selection.selection_supported) {
     detail.option_axes.forEach((axis) => {
       root.appendChild(renderAxis(detail, selection, axis, rerender));
@@ -747,6 +772,12 @@ export function renderMobileProductDetail(
 
   // Selection message (e.g. "L indisponible — rupture")
   renderSelectionMessage(root, selection);
+
+  // MDM-5: Livraison APRÈS les variantes.
+  // Un produit simple n'ayant aucun axe, la livraison remonte naturellement
+  // juste après l'identité ; un produit configurable présente d'abord tous
+  // ses choix produit puis seulement ses choix logistiques.
+  renderInfoStrip(detail, selection, root);
 
   // MDM-7: Description below fold
   renderBelowFold(detail, root, contentVm);

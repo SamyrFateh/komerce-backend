@@ -3925,9 +3925,9 @@ html.k-mobile-premium-v1 .k-chip-label {
     flex-wrap: nowrap;
     justify-content: space-between;
     gap: 6px;
-    padding: 10px 0 2px;
+    padding: 5px 0 1px;
     border-top: 1px solid var(--sand-dark);
-    margin-top: 4px;
+    margin-top: 2px;
   }
   #k-modal .k-modal-trust-item {
     display: flex;
@@ -3955,29 +3955,24 @@ html.k-mobile-premium-v1 .k-chip-label {
     flex-shrink: 0;
   }
 
-  /* ── PARTAGE MOBILE (RÉF-2026-07 doc canonique §3 : Partage = Oui/Oui) ──
-     Absent jusqu'ici côté mobile : renderShare() (b-modal-desktop-product.js)
-     n'était appelée que depuis renderDesktopProductDetail(), jamais depuis
-     b-modal-mobile-product.js — corrigé (JS). Il manquait aussi ce CSS :
-     .k-modal-share-row { display:none } de la base (modal-shell.css L297)
-     n'était overridé qu'à ≥900px. Même mécanisme que .k-modal-trust
-     ci-dessus : spécificité #k-modal l'emporte sur la base hors-#k-modal.
-     Layout : ligne séparée juste sous la réassurance (border-top), même
-     schéma qu'en desktop. */
+  /* ── PARTAGE MOBILE ─────────────────────────────────────────
+     La capacité reste montée par renderShare() afin de conserver
+     un owner commun desktop/mobile et la fonctionnalité disponible.
+
+     Décision densité PDP 2026-08 :
+     WA / Lien ne font plus partie du coeur transactionnel mobile.
+     La rangée reste donc masquée sous 900px.
+     Desktop : comportement inchangé. */
+  /*
+   * Mobile : partage retiré du coeur transactionnel.
+   * La fonctionnalité reste montée dans le DOM commun ;
+   * le desktop reste inchangé.
+   */
   #k-modal .k-modal-share-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 0 0;
-    border-top: 1px solid var(--sand-dark);
-    margin-top: 8px;
+    display: none;
   }
   #k-modal .k-modal-share-row::before {
-    content: 'Partager :';
-    font-size: 11px;
-    color: var(--text-muted);
-    font-weight: 500;
-    flex-shrink: 0;
+    content: none;
   }
   #k-modal .k-modal-share-btn {
     display: inline-flex;
@@ -5884,8 +5879,23 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* ── MDM-3 : Identity compact overrides ────────────────────── */
 
   /* Name: single-line clamp on mobile */
+  /* Mobile dense : le favori ne doit pas imposer sa hauteur à la ligne titre.
+     La référence peut ainsi rester collée immédiatement sous le titre. */
+  #k-modal .k-modal-info {
+    position: relative;
+  }
+
   #k-modal .k-modal-name-row {
-    gap: 8px;
+    display: block;
+    padding-right: 42px;
+    gap: 0;
+  }
+
+  #k-modal .k-modal-fav-btn {
+    position: absolute;
+    top: 5px;
+    right: 14px;
+    margin: 0;
   }
 
   #k-modal .k-modal-info h2 {
@@ -5905,12 +5915,13 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     display: block;
     font-size: 11px;
     font-weight: 400;
+    line-height: 1.2;
     color: var(--text-muted);
-    margin-top: 1px;
+    margin-top: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%;
+    max-width: calc(100% - 42px);
   }
 
   /* Price row: tight, no overflow issues */
@@ -5918,7 +5929,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     overflow: visible;
     flex-wrap: nowrap;
     gap: 8px;
-    margin-top: 6px;
+    margin-top: 2px;
     align-items: baseline;
     justify-content: space-between;
   }
@@ -5994,7 +6005,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* ── MDM-3 : Info section (padding tightened) ──────────────── */
 
   #k-modal .k-modal-info {
-    padding: 8px 14px 6px; /* Opt : 10/8 → 8/6px */
+    padding: 5px 14px 2px;
   }
 
   /* ── MDM-2 : Media height ──────────────────────────────────── */
@@ -6003,7 +6014,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      36vh single) rendait la hauteur du hero dépendante du mode galerie
      plutôt que d'un ratio stable — Golden Elite (multi-image) produisait un
      cadre visiblement plus haut qu'une fixture SVG single-image, à contenu
-     équivalent. Remplacé par un ratio 16:10 compact, identique
+     équivalent. Remplacé par un ratio 16:9 compact, identique
      quel que soit gallery-mode ou has-variants : la hauteur ne dépend plus
      que de la largeur du wrapper, donc cohérente entre produits.
 
@@ -6018,7 +6029,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"],
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
     width: 100%;
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 16 / 9;
     height: auto;
     min-height: 150px;
     max-height: 48vh;
@@ -6035,14 +6046,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
      k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
-     ratio 16:10 (plus compact que l'ancien 48vh), le hero libère déjà plus
+     ratio 16:9 (plus compact que l'ancien 48vh), le hero libère déjà plus
      d'espace vertical pour les chips Taille qu'avant — pas de surcharge
      supplémentaire nécessaire ici. Règle conservée à titre explicite pour
      ne pas dépendre implicitement du fallback ci-dessus si le contrat
      évolue. */
   #k-modal.k-modal--has-variants .k-modal-img-wrap,
   #k-modal.k-modal--has-variants .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 16 / 9;
     height: auto;
     min-height: 150px;
     max-height: 48vh;
@@ -6059,14 +6070,17 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* ── MDM-4 : Variant groups (tighter spacing) ──────────────── */
 
   #k-modal .k-vg {
-    /* Opt final : margin-top 4→2px */
-    margin-top: 2px;
+    margin: 0 0 6px;
+  }
+
+  #k-modal .k-vg:last-of-type {
+    margin-bottom: 5px;
   }
 
   #k-modal .k-vg-label {
     font-size: 12px;
-    /* Opt final : margin-bottom 3→2px */
-    margin-bottom: 2px;
+    line-height: 1.2;
+    margin-bottom: 4px;
   }
 
   /* ── M2 : Sélecteur Couleur mobile — conforme spec §5.4 ──────
@@ -6090,19 +6104,62 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-sku {
     flex: 0 0 auto;
-    width: 44px;
-    height: auto; /* P2 swatches : hauteur pilotée par le contenu (image + libellé) */
-    padding: 3px 2px 4px;
-    gap: 2px;
+    padding: 2px 2px 2px;
+    gap: 1px;
     border-radius: 6px;
     border: 0.5px solid var(--border);
     background: var(--hero-bg);
   }
 
-  #k-modal .k-sku img {
+  /* Variante photo mobile dense : image toujours lisible,
+     enveloppe réduite au strict nécessaire. */
+  #k-modal .k-sku:not(.k-sku--color) {
+    width: 58px;
+    height: auto;
+  }
+
+  #k-modal .k-sku:not(.k-sku--color) img {
     width: 100%;
     aspect-ratio: 1 / 1;
     height: auto;
+  }
+
+  /* Swatch sans thumbnail : possède sa propre géométrie.
+     Ne dépend jamais d'un contenu enfant pour obtenir sa hauteur. */
+  #k-modal .k-sku--color {
+    flex: 0 0 auto;
+    width: 52px;
+    height: auto;
+    aspect-ratio: auto;
+    padding: 2px 3px 4px;
+    gap: 5px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+  }
+
+  #k-modal .k-sku-color-dot {
+    display: block;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+  }
+
+  #k-modal .k-sku--color.k-sku--active {
+    border: 0;
+    box-shadow: none;
+  }
+
+  #k-modal .k-sku--color.k-sku--active .k-sku-color-dot {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+
+  #k-modal .k-sku--color.k-vp--out {
+    opacity: .35;
+    filter: grayscale(1);
   }
 
   /* P2 swatches (2026-07) : libellé couleur affiché sous la vignette,
@@ -6113,8 +6170,8 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-sku-name {
     display: block;
     font-size: 9px;
-    line-height: 1.15;
-    max-width: 40px;
+    line-height: 1.1;
+    max-width: 52px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -6154,7 +6211,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;
-    gap: 6px;
+    gap: 8px;
     scrollbar-width: none;
   }
 
@@ -6164,8 +6221,11 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-vp {
     flex: 0 0 auto;
-    height: 36px; /* Opt : 40→36px */
-    padding: 6px 12px; /* Opt : 8→6px */
+    min-height: 36px;
+    height: auto;
+    min-width: 56px;
+    max-width: 160px;
+    padding: 7px 12px;
     border-radius: 6px;
     border: 0.5px solid var(--border);
     background: var(--white);
@@ -6257,8 +6317,17 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     align-items: stretch;
     overflow: visible;
     gap: 6px;
-    margin-top: 8px; /* Opt : 10→8px */
-    padding: 0;
+    margin-top: 4px;
+    padding: 8px 0 0;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .k-mdm-delivery-heading {
+    font-size: 12px;
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 1px;
   }
 
   .k-mdm-chip {
@@ -6288,22 +6357,36 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      nowrap par une carte lisible (acceptation : scrollWidth <= clientWidth,
      aucun ellipsis sur le nom, prix + délai visibles). */
   .k-mdm-chip--delivery {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    align-items: center;
     width: 100%;
     max-width: 100%;
-    white-space: normal;
-    word-break: break-word;
+    min-height: 46px;
     padding: 7px 10px;
-    gap: 2px;
+    column-gap: 7px;
+    row-gap: 2px;
     color: var(--text);
-    background: var(--sand);
+    background: var(--white);
+    border-radius: 8px;
+    white-space: normal;
   }
 
   .k-mdm-chip--delivery .k-mdm-chip-icon {
-    float: left;
-    margin-right: 4px;
+    grid-column: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+  }
+
+  .k-mdm-chip-label {
+    grid-column: 2;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.25;
+    font-weight: 500;
+    overflow-wrap: break-word;
   }
 
   /* §1.4 : chip devenu un vrai bouton radio quand plusieurs modes sont
@@ -6336,21 +6419,19 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
 
   .k-mdm-chip--delivery-selected::after {
-    content: '✓ Sélectionné';
-    display: block;
-    width: 100%;
-    margin-top: 2px;
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--ocean-dark);
+    content: none;
   }
 
   .k-mdm-chip-meta {
+    grid-column: 3;
     display: block;
-    width: 100%;
+    width: auto;
+    max-width: 138px;
     font-weight: 400;
     color: var(--text-muted);
     font-size: 10px;
+    line-height: 1.2;
+    text-align: right;
     white-space: normal;
   }
 
@@ -6386,6 +6467,18 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     font-weight: 500;
     color: var(--text);
     margin: 0 0 6px;
+  }
+
+  /* Short description mobile : micro-promesse sous le transactionnel. */
+  .k-mdm-desc-lead {
+    margin: 0 0 4px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .k-mdm-desc-text {
@@ -9720,6 +9813,7 @@ body.cart-open  #k-section-index { display:none; }
   #k-modal .k-modal-cart-btn {
     width: 42px;
     height: 42px;
+    left: calc(50% + 12px);
   }
 
   #k-modal .k-modal-cart-icon {
@@ -9734,7 +9828,7 @@ body.cart-open  #k-section-index { display:none; }
     transform: translate(-50%, -50%);
   }
 
-  /* Le panier garde le centre optique pendant tout le scroll.
+  /* Le panier garde un ancrage optique légèrement décalé à droite pendant tout le scroll.
      L'identité produit reste strictement dans la moitié gauche et
      ne peut jamais passer sous le panier. */
   #k-modal.is-scrolled .k-modal-topbar-product {

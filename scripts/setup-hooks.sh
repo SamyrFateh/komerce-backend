@@ -132,19 +132,21 @@ case "$LEVEL" in
   "REVIEW")
     echo -e "${YELLOW}⚠️  Score $SCORE/100 — Revue recommandée${NC}"
     echo ""
-    # Sous 'git push', stdin = donnees du push : lire la reponse depuis le terminal reel.
-    if [ -e /dev/tty ]; then
-      REPLY=""
-      read -p "Continuer le push quand même ? (y/N) " -n 1 -r < /dev/tty 2>/dev/null || REPLY=""
-      echo ""
-      if [[ $REPLY =~ ^[Yy]$ ]]; then exit 0; fi
-      echo "Push annulé (revue demandée). Bypass d'urgence : git push --no-verify"
-      exit 1
-    else
-      # Contexte non interactif (client GUI, CI) : REVIEW informe mais ne bloque pas.
-      echo "Contexte non interactif — REVIEW non bloquant (la revue se fait en PR/CI)."
+    BRANCH=$(git branch --show-current 2>/dev/null)
+    if [ "$BRANCH" != "main" ] && [ "$BRANCH" != "master" ]; then
+      echo "Branche de travail — REVIEW informatif, push autorisé."
+      echo "La revue finale reste portée par la PR/CI."
       exit 0
     fi
+    # Sur main/master seulement, conserver une validation humaine.
+    if [ -e /dev/tty ]; then
+      REPLY=""
+      read -p "Push direct sur main malgré REVIEW ? (y/N) " -n 1 -r < /dev/tty 2>/dev/null || REPLY=""
+      echo ""
+      if [[ $REPLY =~ ^[Yy]$ ]]; then exit 0; fi
+    fi
+    echo "Push main annulé — revue requise."
+    exit 1
     ;;
   "BLOCK")
     echo -e "${RED}🚫 Score $SCORE/100 — Push bloqué !${NC}"

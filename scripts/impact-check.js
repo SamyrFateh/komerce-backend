@@ -574,7 +574,32 @@ function calculateScore(impact, changedFiles) {
   const totalLines = changedFiles.reduce((sum, f) => sum + f.additions + f.deletions, 0);
   score += totalLines * w.linesChanged;
 
-  return Math.min(Math.round(score), CONFIG.scoring.maxScore);
+  // Le churn (nombre de fichiers / lignes) reste informatif mais ne doit
+  // jamais, à lui seul, déclencher une revue manuelle. REVIEW doit être
+  // causé par un signal matériel : backend/infra, table, service externe,
+  // route, cascade ou alerte sécurité.
+  const structuralCategories = new Set([
+    'core', 'db', 'route', 'service', 'middleware', 'utils', 'ci', 'scripts',
+  ]);
+  const hasStructuralFile = changedFiles.some(({ file }) =>
+    structuralCategories.has(categorizeFile(file).category)
+  );
+  const hasMaterialSignal =
+    hasStructuralFile ||
+    impact.criticalFiles.length > 0 ||
+    impact.tables.size > 0 ||
+    impact.services.size > 0 ||
+    impact.routes.size > 0 ||
+    impact.cascadeChains.length > 0 ||
+    impact.securityIssues.length > 0;
+
+  const rounded = Math.min(Math.round(score), CONFIG.scoring.maxScore);
+
+  if (!hasMaterialSignal) {
+    return Math.min(rounded, CONFIG.thresholds.safe.max);
+  }
+
+  return rounded;
 }
 
 function getLevel(score) {

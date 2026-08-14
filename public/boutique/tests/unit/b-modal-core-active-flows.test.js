@@ -245,13 +245,45 @@ test('setupModal déplace les actions, câble favoris, panier et overlay', () =>
   document.getElementById('k-modal-fav-btn').click();
   expect(mockToggleFav).toHaveBeenCalledWith(1, document.getElementById('k-modal-fav-btn'));
 
+  // Mobile : ferme la modale puis ouvre le drawer panier.
+  mockIsDesktop.mockReturnValue(false);
+  dom.modalOverlay.classList.add('open');
   dom.modalCartBtn.click();
+  expect(dom.modalOverlay.classList.contains('open')).toBe(false);
   jest.advanceTimersByTime(150);
   expect(mockOpenCart).toHaveBeenCalledTimes(1);
 
   dom.modalOverlay.classList.add('open');
   dom.modalOverlay.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   expect(dom.modalOverlay.classList.contains('open')).toBe(false);
+});
+
+test('panier modal desktop reste dans le PDP et cible le side-cart intégré', () => {
+  mockIsDesktop.mockReturnValue(true);
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
+
+  openModal(1);
+
+  const sideCart = document.getElementById('k-side-cart');
+  sideCart.scrollIntoView = jest.fn();
+
+  expect(sideCart.parentElement).toBe(document.getElementById('k-modal-cart-slot'));
+  expect(sideCart.classList.contains('k-side-cart--in-modal')).toBe(true);
+  expect(dom.modalOverlay.classList.contains('open')).toBe(true);
+
+  dom.modalCartBtn.click();
+
+  expect(dom.modalOverlay.classList.contains('open')).toBe(true);
+  expect(mockOpenCart).not.toHaveBeenCalled();
+  expect(sideCart.classList.contains('k-side-cart--in-modal')).toBe(true);
+  expect(sideCart.scrollIntoView).toHaveBeenCalledWith({
+    behavior: 'smooth',
+    block: 'nearest',
+    inline: 'nearest',
+  });
+
+  closeModal();
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
 });
 
 test('openModal charge les suggestions sans fetch legacy /api/products/:id puis restaure le pager mobile', async () => {
