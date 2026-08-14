@@ -621,8 +621,26 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     dom.modalBack.addEventListener('click', modalGoBack);
     dom.modalClose.addEventListener('click', closeModal);
     dom.modalCartBtn.addEventListener('click', () => {
-      // BUG-04 — pas de history.back() ici : on enchaîne sur openCart(), donc
-      // on neutralise juste l'entrée d'historique kModal (voir closeModal).
+      // PDP desktop : le side-cart est déjà monté dans la modale.
+      // Le fermer puis appeler openCart() ferait restaurer le panier dans
+      // le catalogue avant de scroller la page en haut — effet « accueil ».
+      // Desktop reste donc dans le PDP et cible directement son panier.
+      if (isDesktop()) {
+        const sideCart = document.getElementById('k-side-cart');
+        if (sideCart?.classList.contains('k-side-cart--in-modal')) {
+          bus.emit('side-cart:render');
+          sideCart.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'nearest',
+          });
+          return;
+        }
+      }
+
+      // Mobile : comportement canonique inchangé.
+      // On neutralise l'entrée d'historique modal sans navigation puis
+      // on ouvre le drawer panier.
       closeModal({ skipHistoryBack: true });
       setTimeout(openCart, 150);
     });
