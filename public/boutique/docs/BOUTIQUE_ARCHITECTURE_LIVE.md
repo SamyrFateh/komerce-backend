@@ -50,7 +50,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=178
- 2. /boutique/css/dist/components.css?v=524
+ 2. /boutique/css/dist/components.css?v=525
  3. /boutique/css/dist/desktop.css?v=105
 ```
 
