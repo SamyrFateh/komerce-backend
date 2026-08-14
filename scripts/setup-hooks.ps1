@@ -98,9 +98,9 @@ if ($stagedText -match '(?m)^public/.+\.(?:js|cjs|mjs)$') {
 }
 
 # N2-A - Registre de features, uniquement si son perimetre peut avoir change.
-# Lecture seule : aucune generation d'artefact ni modification du working tree.
+# Le wrapper tolere uniquement les workflows volontairement archives pendant le nettoyage.
 if ($stagedText -match '(?m)^(features|capabilities|services|routes|migrations|middleware|utils|validators|core|bootstrap|db)/|^\.github/.+\.(?:yml|yaml|md)$') {
-    Invoke-Gate -Label 'Feature Registry' -Command 'node' -Arguments @('scripts/feature-registry-check.js', '--strict')
+    Invoke-Gate -Label 'Feature Registry' -Command 'node' -Arguments @('scripts/feature-registry-targeted-check.js')
 }
 
 $total.Stop()
