@@ -106,9 +106,9 @@ if echo "$STAGED" | grep -Eq '^public/.+\.(js|cjs|mjs)$'; then
 fi
 
 # N2-A - Registre de features, uniquement si son perimetre peut avoir change.
-# Lecture seule : aucune generation d'artefact ni modification du working tree.
+# Le wrapper tolere uniquement les workflows volontairement archives pendant le nettoyage.
 if echo "$STAGED" | grep -Eq '^(features|capabilities|services|routes|migrations|middleware|utils|validators|core|bootstrap|db)/|^\.github/.+\.(yml|yaml|md)$'; then
-  run_gate "Feature Registry" node scripts/feature-registry-check.js --strict
+  run_gate "Feature Registry" node scripts/feature-registry-targeted-check.js
 fi
 
 TOTAL_END="$(now_ms)"
