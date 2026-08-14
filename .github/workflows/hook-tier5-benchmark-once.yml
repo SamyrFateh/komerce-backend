@@ -1,5 +1,5 @@
 name: Validate hook tier 5 cross-platform once
-# rerun after Node-based Jest launcher fix
+# final rerun after Windows PowerShell native-stderr fix
 
 on:
   push:
