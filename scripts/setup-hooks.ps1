@@ -97,14 +97,20 @@ if ($stagedText -match '(?m)^public/.+\.(?:js|cjs|mjs)$') {
     Invoke-Gate -Label 'Sanitization front staged' -Command 'node' -Arguments @('scripts/arch-doctrine-sanitize-check.js')
 }
 
+# N2-A - Registre de features, uniquement si son perimetre peut avoir change.
+# Lecture seule : aucune generation d'artefact ni modification du working tree.
+if ($stagedText -match '(?m)^(features|capabilities|services|routes|migrations|middleware|utils|validators|core|bootstrap|db)/|^\.github/.+\.(?:yml|yaml|md)$') {
+    Invoke-Gate -Label 'Feature Registry' -Command 'node' -Arguments @('scripts/feature-registry-check.js', '--strict')
+}
+
 $total.Stop()
-Write-Host ("OK Pre-commit Komerce tier 1 termine en {0} ms" -f $total.ElapsedMilliseconds)
+Write-Host ("OK Pre-commit Komerce tiers 1-2 termine en {0} ms" -f $total.ElapsedMilliseconds)
 exit 0
 '@
 
 $shim = @'
 #!/bin/sh
-# KOMERCE-HOOK v2 - PowerShell launcher
+# KOMERCE-HOOK v3 - PowerShell launcher
 ROOT_WIN="$(git rev-parse --show-toplevel)"
 exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$ROOT_WIN/.git/hooks/pre-commit.komerce.ps1"
 '@
@@ -113,8 +119,8 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($preCommitPs1, $preCommitPowerShell, $utf8NoBom)
 [System.IO.File]::WriteAllText($preCommit, $shim, $utf8NoBom)
 
-Write-Host 'OK Hooks Komerce - niveau 1 installe depuis PowerShell.'
-Write-Host '   pre-commit : qualite JS + invariants backend + XSS staged'
+Write-Host 'OK Hooks Komerce - niveaux 1-2 installes depuis PowerShell.'
+Write-Host '   pre-commit : qualite JS + invariants backend + XSS staged + Feature Registry cible'
 Write-Host '   pre-push   : toujours desactive'
-Write-Host '   lourds     : Carte First / DB / CSS / 360 / meta toujours en pause'
-Write-Host '   timings    : affiches a chaque commit'
+Write-Host '   lourds     : Carte First complet / DB / CSS / 360 / meta toujours en pause'
+Write-Host '   timings    : affiches gate par gate a chaque commit'
