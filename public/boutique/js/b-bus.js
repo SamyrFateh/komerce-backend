@@ -80,7 +80,7 @@
  * ajouté ici, pas seulement câblé) :
  *   modal:opened     : b-modal-product-detail-bootstrap.js, boutique.js, b-pdp-curation-suggestions.js, b-pager.js, b-modal-desktop-enhancers.js
  *   modal:closed     : b-modal-product-detail-bootstrap.js, b-pager.js, group-side-cart.js
- *   modal:composition-synced : b-modal-desktop-enhancers.js, b-modal-core.js, b-modal-suggestions.js
+ *   modal:composition-synced : b-modal-desktop-enhancers.js, b-modal-core.js, b-modal-suggestions.js, b-modal-suggestions.js
  *
  * Événements retirés du JSDoc (déclarés mais jamais émis ni consommés) :
  *   cart:add, cart:open, cart:close, search:query, pager:navigate

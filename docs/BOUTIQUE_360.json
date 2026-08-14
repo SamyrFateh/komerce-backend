@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-14T09:43:09.237Z",
+  "generatedAt": "2026-08-14T10:27:58.289Z",
   "summary": {
     "modules": 77,
     "withHeader": 77,
@@ -3441,6 +3441,7 @@
       "modal:composition-synced": [
         "b-modal-desktop-enhancers",
         "b-modal-core",
+        "b-modal-suggestions",
         "b-modal-suggestions"
       ]
     }
