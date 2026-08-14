@@ -503,86 +503,183 @@ for (const vp of VIEWPORTS) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GROUPE 5 — Récapitulatif
+// GROUPE 5 — Checkout selectable : image + checkbox
 // ─────────────────────────────────────────────────────────────────────────────
 
+async function openSelectableCheckout(page, vp) {
+  await stubMinimalApi(page, [
+    buildMinimalProduct({
+      id: 'checkout-shirt',
+      name: 'T-shirt collection premium',
+      price_kmf: 5000,
+      image_url: '/boutique/categories/mode.jpg',
+      images: ['/boutique/categories/mode.jpg'],
+    }),
+    buildMinimalProduct({
+      id: 'checkout-shoes',
+      name: 'Chaussures sport premium',
+      price_kmf: 18000,
+      image_url: '/boutique/categories/tech.jpg',
+      images: ['/boutique/categories/tech.jpg'],
+    }),
+  ]);
+
+  await loadBoutique(page);
+
+  await page.evaluate(async () => {
+    window._kstate.checkoutDisplayContext = {
+      origin: 'SHARED_LIST',
+      sharedCartId: 'sc-checkout-visual',
+      title: 'Achat pour la liste de Sam',
+      isCreator: false,
+      creatorFirstName: 'Sam',
+    };
+
+    const { checkoutCart } = await import('/boutique/js/b-checkout.js');
+
+    checkoutCart({
+      source: 'shared-list',
+      sourceId: 'sc-checkout-visual',
+      items: [
+        {
+          product: {
+            id: 'checkout-shirt',
+            name: 'T-shirt collection premium',
+            price_kmf: 5000,
+            image_url: '/boutique/categories/mode.jpg',
+          },
+          qty: 5,
+          shared_cart_item_id: 'sci-shirt',
+        },
+        {
+          product: {
+            id: 'checkout-shoes',
+            name: 'Chaussures sport premium',
+            price_kmf: 18000,
+            image_url: '/boutique/categories/tech.jpg',
+          },
+          qty: 1,
+          shared_cart_item_id: 'sci-shoes',
+        },
+      ],
+      total: 43000,
+    });
+  });
+
+  await page.waitForSelector('#k-order-modal.open, .k-order-overlay.open', {
+    state: 'attached',
+    timeout: 8000,
+  });
+
+  const recap = page.locator('#ck-order-summary');
+  await expect(recap).toBeAttached();
+
+  if (vp.width < 900) {
+    const foldedDir = process.env.CHECKOUT_VISUAL_DIR;
+    if (foldedDir && vp.name === 'mobile-390') {
+      await page.locator('.k-order-modal').screenshot({
+        path: foldedDir + '/mobile-390-folded.png',
+      });
+    }
+
+    const toggle = recap.locator('.ck-recap-toggle');
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+    await expect(recap).toHaveClass(/is-expanded/);
+  }
+
+  await expect(recap.locator('.ck-recap-content')).toBeVisible();
+  return recap;
+}
+
+async function checkoutAmount(page) {
+  const text = await page.locator('#ck-final-total-amount').textContent();
+  return Number(String(text || '').replace(/\D/g, ''));
+}
+
+async function captureSelectableCheckout(page, vp, stage) {
+  const dir = process.env.CHECKOUT_VISUAL_DIR;
+  if (!dir) return;
+  if (vp.name !== 'mobile-390' && vp.name !== 'desktop-1280') return;
+
+  await page.locator('.k-order-modal').screenshot({
+    path: dir + '/' + vp.name + '-' + stage + '.png',
+  });
+}
+
 for (const vp of VIEWPORTS) {
-  test.describe(`[${vp.name}] G5 — Récapitulatif checkout`, () => {
+  test.describe('[' + vp.name + '] G5 — Checkout selectable image + checkbox', () => {
     test.use({ viewport: { width: vp.width, height: vp.height } });
 
-    test.beforeEach(async ({ page }) => {
-      await stubMinimalApi(page);
-      await loadBoutique(page);
-    });
+    test('G5 — ligne visible, inclusion réversible, total recalculé', async ({ page }) => {
+      const recap = await openSelectableCheckout(page, vp);
 
-    test('G5-a — ✓ est centré dans son cercle .ck-recap-check (±3 px)', async ({ page }) => {
-      await page.evaluate(() => {
-        const div = document.createElement('div');
-        div.id = 'geom-recap-probe';
-        div.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#fff;padding:20px;border:1px solid #ccc;z-index:9999;';
-        div.innerHTML = `<div class="ck-recap-item">
-          <span class="ck-recap-check" aria-hidden="true">&#10003;</span>
-          <div class="ck-recap-item-info"><div class="ck-recap-item-name">Huile essentielle</div></div>
-          <span class="ck-recap-item-price">12 500 KMF</span>
-        </div>`;
-        document.body.appendChild(div);
-      });
-      await page.waitForTimeout(200);
+      const rows = recap.locator('.ck-recap-item');
+      const checks = recap.locator('.ck-recap-item-select');
+      const images = recap.locator('img.ck-recap-item-img');
 
-      const centering = await page.evaluate(() => {
-        const circle = document.querySelector('#geom-recap-probe .ck-recap-check');
-        if (!circle) return null;
-        const cR = circle.getBoundingClientRect();
-        const range = document.createRange();
-        const textNode = circle.firstChild;
-        if (!textNode || textNode.nodeType !== 3)
-          return { circleH: cR.height, circleW: cR.width, measurable: false };
-        range.selectNodeContents(textNode);
-        const rects = Array.from(range.getClientRects());
-        if (!rects.length) return { circleH: cR.height, circleW: cR.width, measurable: false };
-        const gR = rects[0];
-        return {
-          deltaY:   Math.abs((cR.top  + cR.height / 2) - (gR.top  + gR.height / 2)),
-          deltaX:   Math.abs((cR.left + cR.width  / 2) - (gR.left + gR.width  / 2)),
-          circleH:  cR.height, circleW: cR.width, measurable: true,
-        };
-      });
+      await expect(rows).toHaveCount(2);
+      await expect(checks).toHaveCount(2);
+      await expect(images).toHaveCount(2);
+      await expect(recap.locator('.ck-recap-item-remove')).toHaveCount(0);
 
-      await page.evaluate(() => document.getElementById('geom-recap-probe')?.remove());
+      await expect(checks.nth(0)).toBeChecked();
+      await expect(checks.nth(1)).toBeChecked();
 
-      if (!centering) { test.fail(true, '.ck-recap-check introuvable'); return; }
-      if (!centering.measurable) {
-        expect(centering.circleH, 'Cercle trop petit').toBeGreaterThanOrEqual(18);
-        expect(centering.circleW, 'Cercle trop petit').toBeGreaterThanOrEqual(18);
-        return;
+      for (let i = 0; i < 2; i += 1) {
+        await expect.poll(async () => images.nth(i).evaluate(img => ({
+          complete: img.complete,
+          naturalWidth: img.naturalWidth,
+          width: img.getBoundingClientRect().width,
+          height: img.getBoundingClientRect().height,
+        }))).toMatchObject({
+          complete: true,
+          width: vp.width < 900 ? 44 : 52,
+          height: vp.width < 900 ? 44 : 52,
+        });
+
+        const naturalWidth = await images.nth(i).evaluate(img => img.naturalWidth);
+        expect(naturalWidth, 'image produit non chargée').toBeGreaterThan(0);
       }
-      expect(centering.deltaY,
-        `✓ décalé de ${centering.deltaY.toFixed(1)}px verticalement`
-      ).toBeLessThanOrEqual(3);
-      expect(centering.deltaX,
-        `✓ décalé de ${centering.deltaX.toFixed(1)}px horizontalement`
-      ).toBeLessThanOrEqual(3);
-    });
 
-    test('G5-b — .ck-recap-gate-heading visible dans le viewport', async ({ page }) => {
-      await page.evaluate(() => {
-        const div = document.createElement('div');
-        div.id = 'geom-heading-probe';
-        div.style.cssText = 'position:fixed;top:100px;left:50%;transform:translateX(-50%);z-index:9998;background:#fff;padding:10px;';
-        div.innerHTML = '<h2 class="ck-recap-gate-heading">Récapitulatif de votre commande</h2>';
-        document.body.appendChild(div);
+      expect(await checkoutAmount(page)).toBe(43000);
+      await captureSelectableCheckout(page, vp, 'initial');
+
+      await checks.nth(0).uncheck();
+
+      await expect(rows).toHaveCount(2);
+      await expect(checks.nth(0)).not.toBeChecked();
+      await expect(checks.nth(1)).toBeChecked();
+      await expect(rows.nth(0)).toHaveClass(/is-excluded/);
+      await expect(rows.nth(0).locator('.ck-recap-item-qty')).toHaveText('5 × 5 000 KMF');
+      await expect(rows.nth(1).locator('.ck-recap-item-qty')).toHaveText('1 × 18 000 KMF');
+
+      await expect.poll(() => checkoutAmount(page)).toBe(18000);
+
+      const selectionAfterUncheck = await page.evaluate(() => ({
+        count: window._kstate.orderData.checkoutSelection.items.length,
+        firstQty: window._kstate.orderData.checkoutSelection.items[0].qty,
+        firstIncluded: window._kstate.orderData.checkoutSelection.items[0].checkout_included,
+        total: window._kstate.orderData.checkoutSelection.total,
+      }));
+
+      expect(selectionAfterUncheck).toEqual({
+        count: 2,
+        firstQty: 5,
+        firstIncluded: false,
+        total: 18000,
       });
-      await page.waitForTimeout(100);
 
-      const visible = await page.evaluate((vpH) => {
-        const h = document.querySelector('#geom-heading-probe .ck-recap-gate-heading');
-        if (!h) return null;
-        const r = h.getBoundingClientRect();
-        return r.height > 0 && r.top >= 0 && r.bottom <= vpH && r.width > 0;
-      }, vp.height);
+      await captureSelectableCheckout(page, vp, 'unchecked');
 
-      await page.evaluate(() => document.getElementById('geom-heading-probe')?.remove());
-      expect(visible, '.ck-recap-gate-heading hors-viewport ou invisible').toBe(true);
+      await checks.nth(0).check();
+
+      await expect(rows).toHaveCount(2);
+      await expect(checks.nth(0)).toBeChecked();
+      await expect(rows.nth(0)).not.toHaveClass(/is-excluded/);
+      await expect.poll(() => checkoutAmount(page)).toBe(43000);
+
+      await captureSelectableCheckout(page, vp, 'rechecked');
     });
   });
 }

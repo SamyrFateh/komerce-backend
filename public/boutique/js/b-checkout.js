@@ -24,7 +24,7 @@
 import { bus }           from './b-bus.js';
 import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost, optimizeImgUrl } from './b-utils.js';
-import { showToast }   from './b-cart-core.js';
+import { showToast, saveCart } from './b-cart-core.js';
 import { renderPayPalButton, isPayPalEnabled, ensurePayPalSDK } from './b-paypal.js'; // Migration 079
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
@@ -216,27 +216,60 @@ function _currentCheckoutSelection() {
   return buildCheckoutSelection();
 }
 
+function _checkoutItemIncluded(item) {
+  return item?.checkout_included !== false;
+}
+
+function _checkoutSelectionTotal(items = []) {
+  return items.reduce((sum, item) => {
+    if (!_checkoutItemIncluded(item)) return sum;
+
+    const product = item?.product || {};
+    const price = Number(
+      item?.price ??
+      product.price_kmf ??
+      product.price ??
+      0
+    ) || 0;
+    const qty = Number(item?.qty ?? item?.quantity ?? 1) || 1;
+
+    return sum + (price * qty);
+  }, 0);
+}
+
 function _checkoutItems() {
-  return _currentCheckoutSelection().items;
+  return _currentCheckoutSelection().items.filter(_checkoutItemIncluded);
 }
 
 function _checkoutTotal() {
-  const selection = _currentCheckoutSelection();
-  const total = Number(selection.total);
-
-  if (Number.isFinite(total)) return total;
-
-  return buildCheckoutSelection(selection.items).total;
+  return _checkoutSelectionTotal(_currentCheckoutSelection().items);
 }
 
 /**
- * Seul un checkout issu du panier personnel a le droit
- * de vider ce panier après engagement réussi.
+ * Après succès :
+ * - liste partagée : ne touche jamais la liste publiée ;
+ * - panier personnel : retire uniquement les lignes réellement cochées.
  */
 function _clearCommittedCheckoutSource() {
-  if (_currentCheckoutSelection().source === 'personal-cart') {
+  const selection = _currentCheckoutSelection();
+  if (selection.source !== 'personal-cart') return;
+
+  const remaining = selection.items
+    .filter(item => !_checkoutItemIncluded(item))
+    .map(item => {
+      const clean = { ...item };
+      delete clean.checkout_included;
+      return clean;
+    });
+
+  if (!remaining.length) {
     clearCart();
+    return;
   }
+
+  state.cart = remaining;
+  saveCart();
+  renderCart();
 }
 
 async function ensureStripe() {
@@ -712,13 +745,17 @@ function refreshCheckoutComputedUI() {
   // sont pas chargés (ready) et qu'aucun relais n'est sélectionné.
   const relayStatus = od.relayStatus || 'idle';
   const relayOk = relayStatus === 'ready' && !!od.selectedRelaisId;
-  if (!relayOk && btn_busy(confirmBtn) === false) {
+  const hasCheckoutItems = _checkoutItems().length > 0;
+
+  if (!hasCheckoutItems && btn_busy(confirmBtn) === false) {
+    subText = 'Sélectionnez au moins un article';
+  } else if (!relayOk && btn_busy(confirmBtn) === false) {
     if (relayStatus === 'loading' || relayStatus === 'idle') subText = 'Chargement du relais…';
     else if (relayStatus === 'error') subText = 'Impossible de charger les relais';
     else if (relayStatus === 'empty') subText = 'Aucun relais disponible';
     else subText = 'Choisissez un point relais';
   }
-  confirmBtn.disabled = !relayOk || btn_busy(confirmBtn);
+  confirmBtn.disabled = !hasCheckoutItems || !relayOk || btn_busy(confirmBtn);
   confirmBtn.classList.toggle('is-disabled', confirmBtn.disabled);
   setCheckoutConfirmButton(confirmBtn, mainText, subText);
 }
@@ -803,35 +840,59 @@ function _renderPriceVariationRecap(body) {
  * @returns {HTMLElement|null} null si le panier est vide (ne devrait pas
  *   arriver ici, mais défensif — jamais de section vide dans le DOM).
  */
-function _removeSharedCheckoutLine(index) {
+function _setCheckoutLineIncluded(index, included) {
   const current = _currentCheckoutSelection();
-  if (current.source !== 'shared-list') return;
+  if (!Array.isArray(current.items) || !current.items[index]) return;
 
-  const remaining = current.items.filter((_, i) => i !== index);
-  const next = buildCheckoutSelection(
-    remaining,
-    state.checkoutDisplayContext
-  );
+  const nextItems = current.items.map((item, i) => (
+    i === index
+      ? { ...item, checkout_included: !!included }
+      : item
+  ));
 
-  state.orderData.checkoutSelection = next;
+  state.orderData.checkoutSelection = {
+    ...current,
+    items: nextItems,
+    total: _checkoutSelectionTotal(nextItems),
+  };
 
-  // La liste publiée et la sélection du side-cart restent intactes :
-  // seule la sélection transactionnelle du checkout est reconstruite.
-  renderCheckout();
+  // Toute modification de sélection invalide une tentative de
+  // paiement construite pour l'ancienne sélection.
+  state.checkoutAttemptKey = null;
+  state.pendingStripeOrderRef = null;
+  state.pendingPaypalOrderRef = null;
+
   refreshCheckoutComputedUI();
   updateWalletDisplay();
 }
 
-function _buildRecapItemsBlock(items) {
-  if (!Array.isArray(items) || !items.length) return null;
-
-  const itemCount = items.reduce(
-    (sum, it) => sum + Number(it.qty || 1),
+function _recapSelectionSummary(items) {
+  const totalQty = items.reduce(
+    (sum, item) => sum + (Number(item.qty || 1) || 1),
     0
   );
 
-  const current = _currentCheckoutSelection();
-  const removable = current.source === 'shared-list';
+  const selectedQty = items.reduce(
+    (sum, item) => _checkoutItemIncluded(item)
+      ? sum + (Number(item.qty || 1) || 1)
+      : sum,
+    0
+  );
+
+  if (selectedQty === totalQty) {
+    return totalQty + ' article' + (totalQty > 1 ? 's' : '');
+  }
+
+  if (selectedQty === 0) return 'Aucun article sélectionné';
+
+  return selectedQty
+    + ' article' + (selectedQty > 1 ? 's' : '')
+    + ' sélectionné' + (selectedQty > 1 ? 's' : '')
+    + ' sur ' + totalQty;
+}
+
+function _buildRecapItemsBlock(items) {
+  if (!Array.isArray(items) || !items.length) return null;
 
   const wrap = document.createElement('section');
   wrap.className = 'ck-recap-step';
@@ -845,10 +906,12 @@ function _buildRecapItemsBlock(items) {
     '<span class="ck-recap-toggle-text">'
       + '<span class="ck-recap-toggle-label">Votre commande</span>'
       + '<span class="ck-recap-toggle-sub">'
-        + itemCount + ' article' + (itemCount > 1 ? 's' : '')
+        + _recapSelectionSummary(items)
       + '</span>'
     + '</span>'
     + '<span class="ck-recap-toggle-chevron" aria-hidden="true">\u203A</span>';
+
+  const toggleSub = toggle.querySelector('.ck-recap-toggle-sub');
 
   const content = document.createElement('div');
   content.id = 'ck-recap-content';
@@ -860,47 +923,73 @@ function _buildRecapItemsBlock(items) {
   items.forEach((it, index) => {
     const product = it.product || {};
     const imgSrc = product.image_url
-      ? optimizeImgUrl(product.image_url, 96)
+      ? optimizeImgUrl(product.image_url, 128)
       : '';
     const unitPrice = it.price ?? product.price_kmf ?? product.price ?? 0;
     const qty = Number(it.qty || 1);
+    const included = _checkoutItemIncluded(it);
 
     const row = document.createElement('div');
-    row.className = removable
-      ? 'ck-recap-item is-removable'
-      : 'ck-recap-item';
+    row.className = included
+      ? 'ck-recap-item'
+      : 'ck-recap-item is-excluded';
 
-    row.innerHTML =
-      (imgSrc
-        ? '<img class="ck-recap-item-img" src="' + imgSrc + '" alt="" loading="lazy">'
-        : '<span class="ck-recap-item-img ck-recap-item-img--empty" aria-hidden="true"></span>')
-      + '<span class="ck-recap-item-info">'
-      +   '<span class="ck-recap-item-name">' + sanitize(product.name || '') + '</span>'
-      +   '<span class="ck-recap-item-qty">'
-      +     qty + ' \u00D7 ' + fmt(unitPrice, 'KMF')
-      +   '</span>'
-      + '</span>'
-      + '<span class="ck-recap-item-price">'
-      +   fmt(unitPrice * qty, 'KMF')
+    const picker = document.createElement('label');
+    picker.className = 'ck-recap-item-select-wrap';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'ck-recap-item-select';
+    checkbox.checked = included;
+    checkbox.setAttribute(
+      'aria-label',
+      'Inclure ' + (product.name || 'cet article') + ' dans cette commande'
+    );
+
+    picker.appendChild(checkbox);
+    row.appendChild(picker);
+
+    if (imgSrc) {
+      const image = document.createElement('img');
+      image.className = 'ck-recap-item-img';
+      image.src = imgSrc;
+      image.alt = '';
+      image.loading = 'lazy';
+      image.addEventListener('error', () => {
+        image.classList.add('ck-recap-item-img--empty');
+      }, { once: true });
+      row.appendChild(image);
+    } else {
+      const emptyImage = document.createElement('span');
+      emptyImage.className = 'ck-recap-item-img ck-recap-item-img--empty';
+      emptyImage.setAttribute('aria-hidden', 'true');
+      row.appendChild(emptyImage);
+    }
+
+    const info = document.createElement('span');
+    info.className = 'ck-recap-item-info';
+    info.innerHTML =
+      '<span class="ck-recap-item-name">' + sanitize(product.name || '') + '</span>'
+      + '<span class="ck-recap-item-qty">'
+      + qty + ' \u00D7 ' + fmt(unitPrice, 'KMF')
       + '</span>';
 
-    if (removable) {
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.className = 'ck-recap-item-remove';
-      removeBtn.setAttribute(
-        'aria-label',
-        'Retirer ' + (product.name || 'cet article') + ' de ce paiement'
-      );
-      removeBtn.innerHTML =
-        '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
-        + '<path d="M3 4.5h10M6 4.5V3h4v1.5M5 6l.6 7h4.8L11 6" />'
-        + '</svg>';
-      removeBtn.addEventListener('click', () => {
-        _removeSharedCheckoutLine(index);
-      });
-      row.appendChild(removeBtn);
-    }
+    const price = document.createElement('span');
+    price.className = 'ck-recap-item-price';
+    price.textContent = fmt(unitPrice * qty, 'KMF');
+
+    row.append(info, price);
+
+    checkbox.addEventListener('change', () => {
+      _setCheckoutLineIncluded(index, checkbox.checked);
+      row.classList.toggle('is-excluded', !checkbox.checked);
+
+      if (toggleSub) {
+        toggleSub.textContent = _recapSelectionSummary(
+          _currentCheckoutSelection().items
+        );
+      }
+    });
 
     list.appendChild(row);
   });
@@ -1559,6 +1648,10 @@ export async function submitOrder(btn) {
     return;
   }
 
+  if (!_checkoutItems().length) {
+    showToast('Sélectionnez au moins un article à commander.', 'error');
+    return;
+  }
   // ── OTP — identifie l'acheteur, seule identité de retrait ─────────────────
   // Lot 3 : plus de « qui récupère ? ». Le code de retrait est envoyé au
   // WhatsApp vérifié de l'acheteur ; nom/téléphone viennent uniquement de
@@ -1750,6 +1843,11 @@ async function _validateCheckoutForm() {
   // 2. Relais sélectionné
   if (!od.selectedRelaisId) {
     showToast('Sélectionnez un relais', 'error');
+    return false;
+  }
+
+  if (!_checkoutItems().length) {
+    showToast('Sélectionnez au moins un article à commander.', 'error');
     return false;
   }
 

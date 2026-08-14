@@ -123,6 +123,7 @@ jest.mock('../../js/b-utils.js', () => ({
 
 jest.mock('../../js/b-cart-core.js', () => ({
   showToast: jest.fn(),
+  saveCart: jest.fn(),
 }));
 
 const { bus } = require('../../js/b-bus.js');
@@ -301,8 +302,8 @@ describe('b-checkout', () => {
     });
   });
 
-  describe('récap checkout shared-list — ligne atomique', () => {
-    it('shared-list : × retire uniquement une ligne du checkout et recalcule le total', () => {
+  describe('récap checkout — sélection transactionnelle type SHEIN', () => {
+    it('shared-list : décocher garde la ligne visible et retire toute la ligne atomique du paiement', () => {
       state.checkoutDisplayContext = {
         origin: 'SHARED_LIST',
         sharedCartId: 'sc-1',
@@ -334,23 +335,41 @@ describe('b-checkout', () => {
 
       renderCheckout();
 
-      const remove = dom.orderBody.querySelector('.ck-recap-item-remove');
-      expect(remove).not.toBeNull();
-      expect(dom.orderBody.querySelector('.ck-recap-item-qty').textContent).toContain('5');
-      expect(dom.orderBody.querySelector('.ck-recap-item-qty').textContent).toBe('5 × 5000 KMF');
-      expect(dom.orderBody.querySelector('.ck-recap-item').classList.contains('is-removable')).toBe(true);
+      const rows = dom.orderBody.querySelectorAll('.ck-recap-item');
+      const checks = dom.orderBody.querySelectorAll('.ck-recap-item-select');
+
+      expect(rows).toHaveLength(2);
+      expect(checks).toHaveLength(2);
+      expect(checks[0].checked).toBe(true);
+      expect(checks[1].checked).toBe(true);
+      expect(dom.orderBody.querySelector('.ck-recap-item-remove')).toBeNull();
       expect(dom.orderBody.querySelector('.ck-recap-stepper')).toBeNull();
+      expect(rows[0].querySelector('.ck-recap-item-qty').textContent).toBe('5 × 5000 KMF');
 
-      remove.click();
+      checks[0].checked = false;
+      checks[0].dispatchEvent(new Event('change', { bubbles: true }));
 
-      expect(state.orderData.checkoutSelection.items).toHaveLength(1);
-      expect(state.orderData.checkoutSelection.items[0].shared_cart_item_id).toBe('i2');
+      expect(state.orderData.checkoutSelection.items).toHaveLength(2);
+      expect(state.orderData.checkoutSelection.items[0].shared_cart_item_id).toBe('i1');
+      expect(state.orderData.checkoutSelection.items[0].qty).toBe(5);
+      expect(state.orderData.checkoutSelection.items[0].checkout_included).toBe(false);
+      expect(state.orderData.checkoutSelection.items[1].shared_cart_item_id).toBe('i2');
       expect(state.orderData.checkoutSelection.total).toBe(18000);
+      expect(rows[0].classList.contains('is-excluded')).toBe(true);
+      expect(rows).toHaveLength(2);
       expect(state.cart).toHaveLength(1);
       expect(state.cart[0].product.id).toBe('personal');
+
+      checks[0].checked = true;
+      checks[0].dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(state.orderData.checkoutSelection.items).toHaveLength(2);
+      expect(state.orderData.checkoutSelection.items[0].checkout_included).toBe(true);
+      expect(state.orderData.checkoutSelection.total).toBe(43000);
+      expect(rows[0].classList.contains('is-excluded')).toBe(false);
     });
 
-    it('panier personnel : aucun bouton × transactionnel dans le récap', () => {
+    it('panier personnel : la même checkbox pilote l’inclusion sans supprimer la ligne', () => {
       state.orderData = {
         payment_mode: 'cash_relais',
         checkoutSelection: {
@@ -366,11 +385,23 @@ describe('b-checkout', () => {
 
       renderCheckout();
 
+      const row = dom.orderBody.querySelector('.ck-recap-item');
+      const checkbox = row.querySelector('.ck-recap-item-select');
+
+      expect(checkbox).not.toBeNull();
+      expect(checkbox.checked).toBe(true);
       expect(dom.orderBody.querySelector('.ck-recap-item-remove')).toBeNull();
-      expect(dom.orderBody.querySelector('.ck-recap-check')).toBeNull();
+
+      checkbox.checked = false;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(state.orderData.checkoutSelection.items).toHaveLength(1);
+      expect(state.orderData.checkoutSelection.items[0].checkout_included).toBe(false);
+      expect(state.orderData.checkoutSelection.total).toBe(0);
+      expect(row.classList.contains('is-excluded')).toBe(true);
     });
 
-    it('retirer la dernière ligne rend le checkout non payable', () => {
+    it('décocher la dernière ligne conserve le récap mais rend le checkout non payable', () => {
       state.checkoutDisplayContext = {
         origin: 'SHARED_LIST',
         sharedCartId: 'sc-1',
@@ -392,12 +423,51 @@ describe('b-checkout', () => {
       };
 
       renderCheckout();
-      dom.orderBody.querySelector('.ck-recap-item-remove').click();
 
-      expect(state.orderData.checkoutSelection.items).toHaveLength(0);
+      const checkbox = dom.orderBody.querySelector('.ck-recap-item-select');
+      const confirm = dom.orderBody.querySelector('#btn-confirm-order');
+
+      checkbox.checked = false;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(state.orderData.checkoutSelection.items).toHaveLength(1);
+      expect(state.orderData.checkoutSelection.items[0].qty).toBe(5);
+      expect(state.orderData.checkoutSelection.items[0].checkout_included).toBe(false);
       expect(state.orderData.checkoutSelection.total).toBe(0);
-      expect(dom.orderBody.textContent).toContain('Aucun article sélectionné pour ce paiement.');
-      expect(dom.orderBody.querySelector('#btn-confirm-order')).toBeNull();
+      expect(dom.orderBody.querySelectorAll('.ck-recap-item')).toHaveLength(1);
+      expect(checkbox.checked).toBe(false);
+      expect(confirm).not.toBeNull();
+      expect(confirm.disabled).toBe(true);
+    });
+
+    it('submitOrder refuse une sélection transactionnelle vide', async () => {
+      state.orderData = {
+        payment_mode: 'cash_relais',
+        relayStatus: 'ready',
+        selectedRelaisId: 'relay-1',
+        checkoutSelection: {
+          source: 'shared-list',
+          sourceId: 'sc-1',
+          items: [{
+            product: { id: 'p1', name: 'T-shirt', price_kmf: 5000 },
+            qty: 5,
+            shared_cart_item_id: 'i1',
+            checkout_included: false,
+          }],
+          total: 0,
+        },
+      };
+
+      const btn = document.createElement('button');
+
+      await submitOrder(btn);
+
+      expect(showToast).toHaveBeenCalledWith(
+        'Sélectionnez au moins un article à commander.',
+        'error'
+      );
+      expect(requireIdentity).not.toHaveBeenCalled();
+      expect(apiPost).not.toHaveBeenCalled();
     });
   });
 
@@ -551,6 +621,10 @@ describe('b-checkout', () => {
 
     it('garde anti double-clic : busy=1 posé après résolution OTP → aucun apiPost déclenché', async () => {
       state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
+      state.cart = [{
+        product: { id: 'busy-guard', name: 'Produit test', price_kmf: 1000 },
+        qty: 1,
+      }];
       requireIdentity.mockResolvedValue({ phone: '+269123456', full_name: 'Amina' });
       const btn = document.createElement('button');
       btn.dataset.busy = '1';
@@ -1477,6 +1551,10 @@ describe('b-checkout', () => {
     it('validateBeforeClick : identité + relais ok → true, aucun toast (Lot 3 : plus de validation bénéficiaire)', async () => {
       getCurrentIdentity.mockReturnValue({ full_name: 'Amina', phone: '+269123456' });
       state.orderData.selectedRelaisId = 1;
+      state.cart = [{
+        product: { id: 'paypal-valid', name: 'Produit PayPal', price_kmf: 1000 },
+        qty: 1,
+      }];
       const { validateBeforeClick } = await activatePaypalAndGetCallbacks();
 
       const ok = await validateBeforeClick();

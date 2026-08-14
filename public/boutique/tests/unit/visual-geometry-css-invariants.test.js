@@ -170,17 +170,23 @@ describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => 
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('LOT2-a : aucun marqueur de sélection ni total propre au récap', () => {
-      expect(css).not.toMatch(/\.ck-recap-check\s*\{/);
+    it('LOT2-a : le récap possède une vraie sélection mais aucun total propre', () => {
+      expect(css).toMatch(/\.ck-recap-item-select\s*\{/);
       expect(css).not.toMatch(/\.ck-recap-step\s+\.ck-recap-total\s*\{/);
+      expect(css).not.toMatch(/\.ck-recap-item-remove\s*\{/);
     });
 
-    it('LOT2-b : retrait contextuel léger', () => {
-      const block = css.match(/\.ck-recap-item-remove\s*\{([^}]+)\}/s)?.[1] ?? '';
-      expect(block).toMatch(/width\s*:\s*30px/);
-      expect(block).toMatch(/height\s*:\s*30px/);
-      expect(block).toMatch(/border\s*:\s*0/);
-      expect(block).toMatch(/background\s*:\s*transparent/);
+    it('LOT2-b : checkbox 18px distincte de la vignette produit 52px', () => {
+      const row = css.match(/\.ck-recap-step\s+\.ck-recap-item\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const checkbox = css.match(/\.ck-recap-item-select\s*\{([^}]+)\}/s)?.[1] ?? '';
+      const image = css.match(/\.ck-recap-item-img,\s*\.ck-recap-item-img--empty\s*\{([^}]+)\}/s)?.[1] ?? '';
+
+      expect(row).toMatch(/grid-template-columns\s*:\s*18px\s+52px\s+minmax\(0,1fr\)\s+auto/);
+      expect(checkbox).toMatch(/width\s*:\s*18px/);
+      expect(checkbox).toMatch(/height\s*:\s*18px/);
+      expect(image).toMatch(/width\s*:\s*52px/);
+      expect(image).toMatch(/height\s*:\s*52px/);
+      expect(image).toMatch(/object-fit\s*:\s*cover/);
     });
 
     it('LOT2-c : lignes plates séparées', () => {
