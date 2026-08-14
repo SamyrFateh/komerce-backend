@@ -1,4 +1,4 @@
-name: Validate hook tier 5 once
+name: Validate hook tier 5 cross-platform once
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  linux:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -17,48 +17,85 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install root and Boutique deps
+      - name: Install deps
         run: |
           npm ci --ignore-scripts
           npm ci --ignore-scripts --prefix public/boutique
       - name: Unit-proof resolver semantics
         run: npx jest tests/unit/run-staged-related-tests.test.js --runInBand
-      - name: Install current Komerce hook
+      - name: Install Bash hook
         run: bash scripts/setup-hooks.sh
-      - name: Validate full hook on representative staged commits
+      - name: Validate Linux staged commits
         shell: bash
         run: |
           set -uo pipefail
-
           simulate() {
-            local label="$1"
-            local file="$2"
-            local marker="$3"
-            local start end rc
-
+            local label="$1" file="$2" marker="$3" start end rc
             git reset --hard HEAD >/dev/null
             printf '\n%s\n' "$marker" >> "$file"
             git add "$file"
-
-            echo "===== resolver $label ====="
-            node scripts/run-staged-related-tests.js
-
             start=$(node -e 'process.stdout.write(String(Date.now()))')
             set +e
             .git/hooks/pre-commit >/tmp/tier5-hook.out 2>&1
             rc=$?
             set -e
             end=$(node -e 'process.stdout.write(String(Date.now()))')
-
-            echo "===== hook $label ====="
+            echo "===== linux $label ====="
             cat /tmp/tier5-hook.out
-            echo "TIER5_HOOK_RESULT label=$label rc=$rc total_ms=$((end-start))"
+            echo "TIER5_LINUX_RESULT label=$label rc=$rc total_ms=$((end-start))"
             test "$rc" -eq 0
-            echo
+            grep -q 'OK Tests unitaires lies' /tmp/tier5-hook.out
+            ! grep -q 'grep: warning' /tmp/tier5-hook.out
           }
-
-          simulate backend-source services/suppliers/normalized-product.js '// tier5 hook validation'
-          simulate boutique-source public/boutique/js/b-cart.js '// tier5 hook validation'
-          simulate root-test tests/unit/run-staged-related-tests.test.js '// tier5 hook validation'
-
+          simulate backend-source services/suppliers/normalized-product.js '// tier5 cross-platform validation'
+          simulate boutique-source public/boutique/js/b-cart.js '// tier5 cross-platform validation'
+          simulate root-test tests/unit/run-staged-related-tests.test.js '// tier5 cross-platform validation'
           git reset --hard HEAD >/dev/null
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        shell: powershell
+        run: |
+          npm ci --ignore-scripts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm ci --ignore-scripts --prefix public/boutique
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Unit-proof resolver semantics
+        shell: powershell
+        run: |
+          npx jest tests/unit/run-staged-related-tests.test.js --runInBand
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install Windows PowerShell hook
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-hooks.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Validate Windows PowerShell staged commits
+        shell: powershell
+        run: |
+          function Simulate([string]$Label, [string]$File, [string]$Marker) {
+            git reset --hard HEAD | Out-Null
+            Add-Content -Path $File -Value "`n$Marker"
+            git add $File
+            $timer = [System.Diagnostics.Stopwatch]::StartNew()
+            $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.git\hooks\pre-commit.komerce.ps1 2>&1
+            $rc = $LASTEXITCODE
+            $timer.Stop()
+            Write-Host "===== windows $Label ====="
+            $text = ($output | Out-String)
+            Write-Host $text
+            Write-Host ("TIER5_WINDOWS_RESULT label={0} rc={1} total_ms={2}" -f $Label, $rc, $timer.ElapsedMilliseconds)
+            if ($rc -ne 0) { throw "hook failed for $Label" }
+            if (-not $text.Contains('OK Tests unitaires lies')) { throw "Tier 5 did not run for $Label" }
+          }
+          Simulate 'backend-source' 'services/suppliers/normalized-product.js' '// tier5 cross-platform validation'
+          Simulate 'boutique-source' 'public/boutique/js/b-cart.js' '// tier5 cross-platform validation'
+          Simulate 'root-test' 'tests/unit/run-staged-related-tests.test.js' '// tier5 cross-platform validation'
+          git reset --hard HEAD | Out-Null
