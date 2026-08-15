@@ -267,10 +267,10 @@
   #k-modal .k-modal-trust {
     display: flex;
     flex-wrap: nowrap;
-    justify-content: space-between;
-    gap: 6px;
-    padding: 5px 0 1px;
-    border-top: 1px solid var(--sand-dark);
+    justify-content: flex-start;
+    gap: clamp(14px, 6vw, 24px);
+    padding: 5px 0;
+    border-top: 0.5px solid var(--sand-dark);
     margin-top: 2px;
   }
   #k-modal .k-modal-trust-item {
@@ -278,7 +278,7 @@
     align-items: center;
     gap: 4px;
     font-size: 10px;
-    line-height: 1.3;
+    line-height: 1.2;
     font-weight: 500;
     color: var(--text-muted-dark);
     background: none;
@@ -290,8 +290,8 @@
     min-width: 0;
   }
   #k-modal .k-modal-trust-item svg {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     color: var(--ocean);
     stroke: currentColor;
     fill: none;

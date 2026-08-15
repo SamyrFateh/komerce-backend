@@ -17,7 +17,7 @@
 
 import { bus } from './b-bus.js';
 import { state, dom, getRequestedTransportRail } from './b-store.js';
-import { addToCart, quickAdd, quickRemove } from './b-cart.js';
+import { addToCart, quickAdd, quickRemove, setQty } from './b-cart.js';
 import {
   buildModalCartProduct,
   isModalPurchaseReady,
@@ -114,17 +114,18 @@ function _syncModalQtyUI() {
 
   const item = currentModalCartItem();
   const inventoryModel = state.modalProductDetail?.inventory_model;
-  const isSku = inventoryModel === 'SKU';
   const purchaseReady = isModalPurchaseReady(
     state.modalProduct,
     state.modalProductDetail,
     state.modalSelection
   );
-  const canUseProductStepper = purchaseReady && !isSku;
+  const canUseExactLineStepper = purchaseReady && Boolean(item);
 
-  // Pour un SKU, le stepper est interdit : l'intention d'un clic CTA reste donc
-  // toujours une unité. Avant résolution du contrat, le chemin reste fail-closed.
-  state.modalQty = isSku ? 1 : (item ? item.qty : 1);
+  // Le stepper n'apparait qu'après ajout et cible toujours la ligne exacte
+  // résolue par currentModalCartItem(). Pour un SKU, cette résolution repose
+  // sur sku_id puis variant_combo : aucune autre couleur/taille ne peut être
+  // mutée par un contrôle affiché dans la modal courante.
+  state.modalQty = item ? item.qty : 1;
   if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
 
   const actions = dom.addCartBtn?.closest('.k-modal-actions') || null;
@@ -132,12 +133,12 @@ function _syncModalQtyUI() {
     actions.dataset.inventoryModel = inventoryModel || 'UNKNOWN';
     actions.classList.toggle(
       'k-modal-actions--filled',
-      Boolean(item) && canUseProductStepper
+      canUseExactLineStepper
     );
   }
 
   [dom.qtyMinus, dom.qtyPlus].forEach((control) => {
-    if (control) control.disabled = !canUseProductStepper;
+    if (control) control.disabled = !canUseExactLineStepper;
   });
 
   if (!dom.addCartBtn) return;
@@ -181,14 +182,18 @@ function setupModalCart() {
   dom.qtyMinus.addEventListener('click', () => {
     if (!state.modalProduct) return;
     const pid = String(state.modalProduct.id);
-    quickRemove(pid, dom.qtyMinus);
+    const item = currentModalCartItem();
+    if (item) setQty(pid, item.qty - 1, item);
+    else quickRemove(pid, dom.qtyMinus);
     _syncModalQtyUI();
   });
 
   dom.qtyPlus.addEventListener('click', () => {
     if (!state.modalProduct) return;
     const pid = String(state.modalProduct.id);
-    quickAdd(pid, dom.qtyPlus);
+    const item = currentModalCartItem();
+    if (item) setQty(pid, item.qty + 1, item);
+    else quickAdd(pid, dom.qtyPlus);
     _syncModalQtyUI();
   });
 

@@ -69,6 +69,7 @@ module.exports = {
       '../tests/unit/b-modal-product-mdm9.test.js',
       '../tests/unit/b-modal-image-ux.test.js',
       '../tests/unit/b-modal-nav.test.js',
+      '../tests/unit/modal-cart-stepper-cycle.test.js',
     ],
   },
 
@@ -85,7 +86,7 @@ module.exports = {
     ],
     consumes: [
       'boutique — b-bus.js, b-store.js, b-scroll-owner.js',
-      'shared-cart — b-cart.js (addToCart/quickAdd/quickRemove, via b-modal-cart.js)',
+      'shared-cart — b-cart.js (addToCart/quickAdd/quickRemove/setQty, via b-modal-cart.js)',
     ],
   },
 
@@ -95,6 +96,7 @@ module.exports = {
     'tout fichier js/* portant @domain shared-cart-modal doit être listé dans files.js de ce manifeste',
     'tout test unitaire couvrant un fichier files.js de ce manifeste doit être listé dans files.tests',
     'le bouton favori de la fiche produit garde aria-pressed et son libellé Ajouter ou Retirer synchronisés avec l état réel',
+    'le stepper de la fiche produit mute une ligne panier exacte ; pour un SKU, b-modal-cart.js résout sku_id puis variant_combo avant tout setQty',
     'sur desktop le bouton panier centre ouvre le recapitulatif canonique du checkout sans cibler le side-cart ; sur mobile il ouvre le drawer de relecture',
   ],
 

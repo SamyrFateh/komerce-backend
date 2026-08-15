@@ -10,11 +10,12 @@ jest.mock('../../js/b-cart.js', () => ({
   addToCart: jest.fn(),
   quickAdd: jest.fn(),
   quickRemove: jest.fn(),
+  setQty: jest.fn(),
 }));
 
 const { bus } = require('../../js/b-bus.js');
 const { state, dom } = require('../../js/b-store.js');
-const { addToCart, quickAdd, quickRemove } = require('../../js/b-cart.js');
+const { addToCart, quickAdd, quickRemove, setQty } = require('../../js/b-cart.js');
 const {
   _syncModalQtyUI,
   setupModalCart,
@@ -44,7 +45,12 @@ function resetDom() {
 
 function setSkuSelection(skuId = 'sku-red', options = { color: 'Rouge', size: 'L' }) {
   state.modalProduct = { id: 42 };
-  state.modalProductDetail = { inventory_model: 'SKU' };
+  state.modalProductDetail = {
+    inventory_model: 'SKU',
+    sellable_units: skuId
+      ? [{ sku_id: skuId, stock_status: 'AVAILABLE' }]
+      : [],
+  };
   state.modalSelection = {
     selected_sku_id: skuId,
     selected_options: options,
@@ -187,8 +193,8 @@ describe('b-modal-cart', () => {
       expect(dom.addCartBtn.querySelector('img').src).toContain('/images/panier_tresse.png');
       expect(actions.dataset.inventoryModel).toBe('LEGACY_VARIANTS');
       expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
-      expect(dom.qtyMinus.disabled).toBe(false);
-      expect(dom.qtyPlus.disabled).toBe(false);
+      expect(dom.qtyMinus.disabled).toBe(true);
+      expect(dom.qtyPlus.disabled).toBe(true);
     });
 
     test('legacy présent : reflète qty et active le stepper filled', () => {
@@ -202,7 +208,7 @@ describe('b-modal-cart', () => {
       expect(actions.classList.contains('k-modal-actions--filled')).toBe(true);
     });
 
-    test('SKU exact : intention à 1, quantité informative et stepper interdit', () => {
+    test('SKU exact : quantité de ligne et stepper exact activés', () => {
       setSkuSelection();
       state.cart = [
         { product: { id: 42, sku_id: 'sku-blue' }, variant_combo: { color: 'Bleu', size: 'L' }, qty: 5 },
@@ -211,13 +217,13 @@ describe('b-modal-cart', () => {
 
       _syncModalQtyUI();
 
-      expect(state.modalQty).toBe(1);
-      expect(dom.modalQtyVal.textContent).toBe('1');
+      expect(state.modalQty).toBe(2);
+      expect(dom.modalQtyVal.textContent).toBe('2');
       expect(dom.addCartBtn.textContent).toContain('Dans le panier (2)');
       expect(actions.dataset.inventoryModel).toBe('SKU');
-      expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
-      expect(dom.qtyMinus.disabled).toBe(true);
-      expect(dom.qtyPlus.disabled).toBe(true);
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(true);
+      expect(dom.qtyMinus.disabled).toBe(false);
+      expect(dom.qtyPlus.disabled).toBe(false);
     });
 
     test('desktop : un SKU déjà présent utilise le libellé compact Ajouté', () => {
@@ -265,7 +271,7 @@ describe('b-modal-cart', () => {
       dom.addCartBtn = null;
       dom.qtyMinus = null;
       expect(() => _syncModalQtyUI()).not.toThrow();
-      expect(dom.qtyPlus.disabled).toBe(false);
+      expect(dom.qtyPlus.disabled).toBe(true);
     });
 
     test('bouton Ajouter détaché : actions absent mais projection du bouton conservée', () => {
@@ -311,6 +317,33 @@ describe('b-modal-cart', () => {
       expect(dom.modalQtyVal.textContent).toBe('1');
     });
 
+    test('stepper SKU mute uniquement la ligne exacte sélectionnée', () => {
+      setupModalCart();
+      setSkuSelection('sku-red', { color: 'Rouge', size: 'L' });
+      const selectedLine = {
+        product: { id: 42, sku_id: 'sku-red' },
+        variant_combo: { color: 'Rouge', size: 'L' },
+        qty: 2,
+      };
+      state.cart = [
+        selectedLine,
+        {
+          product: { id: 42, sku_id: 'sku-blue' },
+          variant_combo: { color: 'Bleu', size: 'L' },
+          qty: 7,
+        },
+      ];
+      _syncModalQtyUI();
+
+      dom.qtyPlus.click();
+      expect(setQty).toHaveBeenCalledWith('42', 3, selectedLine);
+      expect(quickAdd).not.toHaveBeenCalled();
+
+      dom.qtyMinus.click();
+      expect(setQty).toHaveBeenCalledWith('42', 1, selectedLine);
+      expect(quickRemove).not.toHaveBeenCalled();
+    });
+
     test('stepper sans produit ne mute rien', () => {
       setupModalCart();
       dom.qtyPlus.click();
@@ -342,7 +375,7 @@ describe('b-modal-cart', () => {
       await Promise.resolve();
 
       expect(dom.addCartBtn.textContent).toContain('Dans le panier (2)');
-      expect(state.modalQty).toBe(1);
+      expect(state.modalQty).toBe(2);
     });
 
     test('ignore clic non-option, option hors modal et cible sans closest', async () => {

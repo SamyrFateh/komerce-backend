@@ -4003,10 +4003,10 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-trust {
     display: flex;
     flex-wrap: nowrap;
-    justify-content: space-between;
-    gap: 6px;
-    padding: 5px 0 1px;
-    border-top: 1px solid var(--sand-dark);
+    justify-content: flex-start;
+    gap: clamp(14px, 6vw, 24px);
+    padding: 5px 0;
+    border-top: 0.5px solid var(--sand-dark);
     margin-top: 2px;
   }
   #k-modal .k-modal-trust-item {
@@ -4014,7 +4014,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     align-items: center;
     gap: 4px;
     font-size: 10px;
-    line-height: 1.3;
+    line-height: 1.2;
     font-weight: 500;
     color: var(--text-muted-dark);
     background: none;
@@ -4026,8 +4026,8 @@ html.k-mobile-premium-v1 .k-chip-label {
     min-width: 0;
   }
   #k-modal .k-modal-trust-item svg {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     color: var(--ocean);
     stroke: currentColor;
     fill: none;
@@ -6087,7 +6087,24 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* ── MDM-3 : Info section (padding tightened) ──────────────── */
 
   #k-modal .k-modal-info {
-    padding: 5px 14px 2px;
+    padding: 5px 14px 0;
+  }
+
+  /* Réassurance = une information, pas un bandeau. Le stock est déjà porté
+     par la pill accolée au prix : on conserve uniquement paiement + retrait,
+     sur une ligne respirante de 34px maximum dans le flux transactionnel. */
+  #k-modal .k-modal-trust {
+    min-height: 34px;
+    border-bottom: 0.5px solid var(--sand-dark);
+    overflow: hidden;
+  }
+
+  #k-modal .k-modal-trust-item {
+    flex: 0 1 auto;
+  }
+
+  #k-modal .k-modal-trust-item:nth-child(3) {
+    display: none;
   }
 
   /* ── MDM-2 : Media height ──────────────────────────────────── */
@@ -6152,7 +6169,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* ── MDM-4 : Variant groups (tighter spacing) ──────────────── */
 
   #k-modal .k-vg {
-    margin: 0 0 6px;
+    margin: 0 0 5px;
   }
 
   #k-modal .k-vg:last-of-type {
@@ -6160,9 +6177,9 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
 
   #k-modal .k-vg-label {
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.2;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
 
   /* ── M2 : Sélecteur Couleur mobile — conforme spec §5.4 ──────
@@ -6196,7 +6213,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* Variante photo mobile dense : image toujours lisible,
      enveloppe réduite au strict nécessaire. */
   #k-modal .k-sku:not(.k-sku--color) {
-    width: 58px;
+    width: 48px;
     height: auto;
   }
 
@@ -6210,11 +6227,11 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      Ne dépend jamais d'un contenu enfant pour obtenir sa hauteur. */
   #k-modal .k-sku--color {
     flex: 0 0 auto;
-    width: 52px;
+    width: 42px;
     height: auto;
     aspect-ratio: auto;
-    padding: 2px 3px 4px;
-    gap: 5px;
+    padding: 2px 2px 3px;
+    gap: 3px;
     border: 0;
     border-radius: 7px;
     background: transparent;
@@ -6222,9 +6239,9 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-sku-color-dot {
     display: block;
-    width: 42px;
-    height: 42px;
-    flex: 0 0 42px;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
     border-radius: 50%;
     border: 1px solid var(--border);
   }
@@ -6253,7 +6270,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     display: block;
     font-size: 9px;
     line-height: 1.1;
-    max-width: 52px;
+    max-width: 42px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -6303,12 +6320,12 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-vp {
     flex: 0 0 auto;
-    min-height: 36px;
+    min-height: 34px;
     height: auto;
-    min-width: 56px;
+    min-width: 48px;
     max-width: 160px;
-    padding: 7px 12px;
-    border-radius: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
     border: 0.5px solid var(--border);
     background: var(--white);
     color: var(--text-muted);
@@ -6398,14 +6415,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     flex-direction: column;
     align-items: stretch;
     overflow: visible;
-    gap: 6px;
-    margin-top: 4px;
-    padding: 8px 0 0;
+    gap: 4px;
+    margin-top: 2px;
+    padding: 6px 0 0;
     border-top: 0.5px solid var(--border);
   }
 
   .k-mdm-delivery-heading {
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.2;
     font-weight: 600;
     color: var(--text);
@@ -6444,8 +6461,8 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     align-items: center;
     width: 100%;
     max-width: 100%;
-    min-height: 46px;
-    padding: 7px 10px;
+    min-height: 40px;
+    padding: 6px 8px;
     column-gap: 7px;
     row-gap: 2px;
     color: var(--text);
@@ -6675,6 +6692,42 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      brief "cibles tactiles d'au moins 44 px" pour SIMPLE et SKU. */
   #k-modal .k-qty-btn {
     width: 44px;
+  }
+
+  /* Barre achat : cible tactile 44px conservée, chrome ramené au strict
+     minimum. Le stepper et le CTA partagent enfin la même hauteur et le
+     même rayon, sans comprimer le contenu scrollable. */
+  #k-modal .k-modal-actions {
+    grid-template-columns: minmax(118px, .9fr) minmax(0, 1.45fr);
+    gap: 8px;
+    padding: 7px 10px calc(7px + env(safe-area-inset-bottom, 12px));
+  }
+
+  #k-modal .k-qty,
+  #k-modal .k-add-cart-btn,
+  #k-modal .k-modal-actions .k-buy-now-btn {
+    height: 44px;
+    border-radius: 14px;
+  }
+
+  #k-modal .k-qty {
+    border-width: 1.5px;
+  }
+
+  #k-modal .k-qty-val {
+    min-width: 28px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  #k-modal .k-add-cart-btn {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  #k-modal .k-modal-actions .k-buy-now-btn {
+    padding: 0 12px;
+    font-size: 14px;
   }
 
   #k-modal {
@@ -6943,25 +6996,19 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
  *
  * Le renderer desktop legacy peut encore poser temporairement
  * .k-modal-actions--filled depuis la présence du product.id dans le panier.
- * Pour un inventaire SKU, le stepper product-id-first n'est jamais une voie de
- * mutation valide : le bouton Ajouter doit rester la projection visible.
- * data-inventory-model est posé par b-modal-cart.js, owner de l'état panier.
+ * Pour un inventaire SKU, le stepper n'est visible qu'une fois la ligne exacte
+ * résolue par b-modal-cart.js (sku_id puis variant_combo). La classe filled ne
+ * représente donc plus une présence product-id-first ambiguë.
  *
- * :not([hidden]) (mandat §3.2, correctif capture production) — ce garde
- * force `.k-add-cart-btn` visible pour tout produit SKU, mais un CTA
- * modale explicitement masqué (`button.hidden = true`, mode édition de
- * liste — b-modal-desktop-product.js::renderActions) doit rester masqué
- * MÊME pour un produit SKU. Sans cette clause, la garde (specificité
- * 1,0,3,0) battait `.k-add-cart-btn[hidden]` (0,0,2,0, css/modal-
- * shell.css) et "Ajouter au panier" restait visible à côté de "Ajouter à
- * cette liste" pour tout produit SKU — trouvé en test navigateur réel.
+ * :not([hidden]) protège toujours le mode édition de liste : un CTA masqué
+ * explicitement ne doit jamais être réaffiché par la projection panier.
  */
-#k-modal .k-modal-actions[data-inventory-model="SKU"] .k-qty {
-  display: none;
+#k-modal .k-modal-actions[data-inventory-model="SKU"].k-modal-actions--filled .k-qty {
+  display: flex;
 }
 
-#k-modal .k-modal-actions[data-inventory-model="SKU"] .k-add-cart-btn:not([hidden]) {
-  display: flex;
+#k-modal .k-modal-actions[data-inventory-model="SKU"].k-modal-actions--filled .k-add-cart-btn:not([hidden]) {
+  display: none;
 }
 
 

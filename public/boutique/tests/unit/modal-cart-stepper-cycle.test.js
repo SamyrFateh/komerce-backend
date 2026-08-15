@@ -85,6 +85,8 @@ describe('Cycle bouton panier ↔ stepper — bout en bout (règle F, oracle §6
     state.favs = [];
     state.products = [];
     state.modalProduct = null;
+    state.modalProductDetail = null;
+    state.modalSelection = null;
     state.modalQty = 0;
     setupModalCart();
   });
@@ -139,5 +141,44 @@ describe('Cycle bouton panier ↔ stepper — bout en bout (règle F, oracle §6
     expect(state.cart).toHaveLength(1);
     expect(state.cart[0].product.id).toBe(99);
     expect(dom.addCartBtn.classList.contains('in-cart')).toBe(true);
+  });
+
+  test('SKU multi-variantes → le stepper ne mute que la ligne sélectionnée', () => {
+    const product = { id: 111, name: 'Robe', price_kmf: 251000, image_url: '' };
+    const redLine = {
+      product: { ...product, sku_id: 'sku-red' },
+      sku_id: 'sku-red',
+      variant_combo: { couleur: 'Rouge', taille: 'M' },
+      qty: 2,
+    };
+    const blueLine = {
+      product: { ...product, sku_id: 'sku-blue' },
+      sku_id: 'sku-blue',
+      variant_combo: { couleur: 'Bleu', taille: 'M' },
+      qty: 7,
+    };
+    state.modalProduct = product;
+    state.modalProductDetail = {
+      inventory_model: 'SKU',
+      sellable_units: [{ sku_id: 'sku-red', stock_status: 'AVAILABLE' }],
+    };
+    state.modalSelection = {
+      selected_sku_id: 'sku-red',
+      selected_options: { couleur: 'Rouge', taille: 'M' },
+    };
+    state.cart = [blueLine, redLine];
+
+    _syncModalQtyUI();
+    expect(dom.modalQtyVal.textContent).toBe('2');
+
+    dom.qtyPlus.dispatchEvent(new window.Event('click'));
+    expect(redLine.qty).toBe(3);
+    expect(blueLine.qty).toBe(7);
+    expect(dom.modalQtyVal.textContent).toBe('3');
+
+    dom.qtyMinus.dispatchEvent(new window.Event('click'));
+    expect(redLine.qty).toBe(2);
+    expect(blueLine.qty).toBe(7);
+    expect(dom.modalQtyVal.textContent).toBe('2');
   });
 });
