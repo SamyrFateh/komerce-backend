@@ -12404,6 +12404,61 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 
+/* ── notifications.css ───────────────────────────────────── */
+/* Notification client essentielle : un seul bandeau, une seule action métier. */
+.k-client-notification {
+  position:relative;
+  z-index:20;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:min(1120px,calc(100% - 24px));
+  margin:10px auto 0;
+  padding:9px 12px;
+  border:1px solid var(--status-available-text);
+  border-radius:12px;
+  background:var(--status-available-bg);
+  color:var(--text);
+  box-shadow:var(--shadow-sage-10);
+}
+.k-client-notification__icon { flex:0 0 auto; font-size:20px; }
+.k-client-notification__copy { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.k-client-notification__copy strong { font-size:13px; }
+.k-client-notification__copy span { color:var(--text-muted); font-size:12px; }
+.k-client-notification__actions { display:flex; align-items:center; gap:7px; }
+.k-client-notification__view,
+.k-client-notification__ack {
+  min-height:34px;
+  padding:6px 10px;
+  border-radius:9px;
+  font:inherit;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+.k-client-notification__view { border:1px solid var(--cta-green); background:var(--cta-green); color:var(--white); }
+.k-client-notification__ack { border:1px solid var(--stone-border); background:var(--stone); color:var(--stone-text); }
+.k-client-notification__ack:disabled { opacity:.55; cursor:wait; }
+
+.k-myorder-card[data-action-required="true"] {
+  border-color:var(--status-available-text);
+  animation:k-order-action-pulse 1.4s ease-in-out infinite;
+}
+@keyframes k-order-action-pulse {
+  0%,100% { box-shadow:0 0 0 0 var(--border-sage-35); }
+  50% { box-shadow:0 0 0 5px var(--border-sage-14); }
+}
+
+@media (max-width:700px) {
+  .k-client-notification { align-items:flex-start; flex-wrap:wrap; }
+  .k-client-notification__copy { min-width:calc(100% - 36px); }
+  .k-client-notification__actions { width:100%; justify-content:flex-end; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .k-myorder-card[data-action-required="true"] { animation:none; border-width:2px; }
+}
+
+
 /* ── checkout-vertical-rail.css ──────────────────────────── */
 ﻿/**
  * @komerce-arch-lite

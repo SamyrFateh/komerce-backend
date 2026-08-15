@@ -79,6 +79,12 @@ Chaque document transactionnel doit être :
 - matérialisé en PDF privé avec empreinte d'intégrité ;
 - traçable dans l'historique de la commande, du panier, du wallet ou du remboursement.
 
+La facture de commande a une exigence supplémentaire : son PDF est dérivé du
+HTML canonique versionné, lequel embarque le vrai logo Komerce en data URI. Le
+renderer ne maintient pas un second snapshot métier divergent. Une facture déjà
+émise reste immuable ; un changement de template ne s'applique qu'aux nouvelles
+émissions avec une nouvelle `template_version`.
+
 Un document ne doit jamais être généré :
 
 - à la simple création d'une commande ;

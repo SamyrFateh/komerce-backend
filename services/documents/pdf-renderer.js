@@ -59,6 +59,23 @@ function metadataOf(document) {
   return document.metadata;
 }
 
+function invoiceFromHtml(html) {
+  if (!html) return null;
+  const match = String(html).match(/<meta\s+name="komerce-invoice-payload"\s+content="([A-Za-z0-9+/=]+)"\s*>/i);
+  if (!match) throw new Error('[pdf-renderer] payload facture absent du HTML canonique');
+  try {
+    return JSON.parse(Buffer.from(match[1], 'base64').toString('utf8'));
+  } catch (_) {
+    throw new Error('[pdf-renderer] payload facture HTML invalide');
+  }
+}
+
+function logoFromHtml(html) {
+  if (!html) return null;
+  const match = String(html).match(/<img[^>]+class="brand-logo"[^>]+src="data:image\/png;base64,([A-Za-z0-9+/=]+)"/i);
+  return match ? Buffer.from(match[1], 'base64') : null;
+}
+
 function renderLines(pdf, documentType, document) {
   const meta = metadataOf(document);
   const rows = [];
@@ -103,8 +120,10 @@ function renderLines(pdf, documentType, document) {
   });
 }
 
-async function renderPdf({ documentType, document }) {
-  const reference = document.invoice_number || document.reference;
+async function renderPdf({ documentType, document, html = null }) {
+  const invoiceSnapshot = documentType === 'invoice' && html ? invoiceFromHtml(html) : null;
+  const source = invoiceSnapshot || document;
+  const reference = source.invoice_number || source.reference;
   const pdf = new PDFDocument({ size: 'A4', margin: 56, info: {
     Title: `${TYPE_LABELS[documentType] || 'Document'} ${reference}`,
     Author: 'Komerce',
@@ -116,15 +135,24 @@ async function renderPdf({ documentType, document }) {
     pdf.once('error', reject);
   });
 
-  pdf.font('Helvetica-Bold').fontSize(22).fillColor('#176B52').text('KOMERCE');
+  const logo = documentType === 'invoice' ? logoFromHtml(html) : null;
+  if (documentType === 'invoice' && html && !logo) {
+    throw new Error('[pdf-renderer] logo Komerce absent du HTML canonique');
+  }
+  if (logo) {
+    pdf.image(logo, 56, pdf.y, { width: 140 });
+    pdf.y += 50;
+  } else {
+    pdf.font('Helvetica-Bold').fontSize(22).fillColor('#176B52').text('KOMERCE');
+  }
   pdf.moveDown(0.3).fontSize(17).fillColor('#1E2A25')
     .text(TYPE_LABELS[documentType] || 'Document transactionnel');
   pdf.moveDown(0.2).font('Helvetica').fontSize(10).fillColor('#66736D')
     .text(`Référence : ${reference || '—'}`)
-    .text(`Émis le : ${formatDate(document.created_at || document.issued_at)}`);
+    .text(`Émis le : ${formatDate(source.created_at || source.issued_at)}`);
   pdf.moveDown().strokeColor('#D9E2DE').moveTo(56, pdf.y).lineTo(539, pdf.y).stroke();
   pdf.fillColor('#1E2A25');
-  renderLines(pdf, documentType, document);
+  renderLines(pdf, documentType, source);
   pdf.moveDown(2).fontSize(8).fillColor('#66736D')
     .text('Document généré automatiquement à partir d’un événement confirmé. Téléchargement réservé au compte propriétaire.');
   pdf.end();
@@ -135,8 +163,8 @@ async function renderPdf({ documentType, document }) {
     buffer,
     sha256: crypto.createHash('sha256').update(buffer).digest('hex'),
     filename: `${safeFilename(reference)}.pdf`,
-    templateVersion: '2026-08-v1',
+    templateVersion: documentType === 'invoice' && html ? '2026-08-html-logo-v2' : '2026-08-v1',
   };
 }
 
-module.exports = { renderPdf, safeFilename };
+module.exports = { renderPdf, safeFilename, invoiceFromHtml, logoFromHtml };

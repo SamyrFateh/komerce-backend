@@ -304,6 +304,15 @@ describe('renderMyOrdersList', () => {
     expect(el.textContent).toContain('2 commandes trouvées');
   });
 
+  it('marque uniquement la commande disponible comme action requise', () => {
+    const el = document.createElement('div');
+    const orders = makeOrders();
+    orders[1].status = 'available';
+    renderMyOrdersList(el, orders);
+    expect(el.querySelector('[data-ref="K1AAAA"]').dataset.actionRequired).toBe('false');
+    expect(el.querySelector('[data-ref="K2BBBB"]').dataset.actionRequired).toBe('true');
+  });
+
   it('clic sur une carte charge le détail via apiGet et l\'affiche', async () => {
     const el = document.createElement('div');
     renderMyOrdersList(el, makeOrders());

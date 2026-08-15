@@ -226,6 +226,7 @@ export function renderMyOrdersList(el, orders) {
     const productName  = o.product_name || 'Commande';
     const productImg   = o.product_image_url || null;
     const itemsCount   = parseInt(o.items_count, 10) || 1;
+    const actionRequired = o.status === 'available';
     const imgHtml      = productImg
       ? '<img src="' + sanitize(optimizeImgUrl(productImg, 100)) + '" alt="" loading="lazy" decoding="async">'
       : '<div class="k-myorder-emoji">📦</div>';
@@ -233,7 +234,7 @@ export function renderMyOrdersList(el, orders) {
       ? productName + ' + ' + (itemsCount - 1) + ' autre' + (itemsCount > 2 ? 's' : '')
       : productName;
 
-    return '<button class="k-myorder-card" data-ref="' + sanitize(o.reference || '') + '">' +
+    return '<button class="k-myorder-card" data-ref="' + sanitize(o.reference || '') + '" data-action-required="' + String(actionRequired) + '">' +
       '<div class="k-myorder-img">' + imgHtml + '</div>' +
       '<div class="k-myorder-body">' +
         '<div class="k-myorder-ref">' + sanitize(o.reference || '—') + '</div>' +
@@ -737,6 +738,7 @@ export function renderTrackViewSearchMode(el) {
     btn.disabled = true; btn.textContent = '⏳ Vérification…';
     try {
       const verifyResult = await apiPost('/api/auth/otp/verify', { phone: otpState.phone, code });
+      window.dispatchEvent(new CustomEvent('komerce:identity-authenticated'));
       showToast('✅ Vérifié — chargement de vos commandes…', 'success');
       try {
         const trackingData = await apiGet('/api/client/tracking');

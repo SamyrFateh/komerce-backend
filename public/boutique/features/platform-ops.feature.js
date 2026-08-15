@@ -80,6 +80,7 @@ module.exports = {
       'catalog — navigation vers la découverte produit',
       'orders — accès au panier et au suivi',
       'wallet — accès à la surface wallet',
+      'notifications-client — initialisation du bandeau essentiel',
     ],
   },
   authority: 'boutique — le shell compose les surfaces mais ne possède aucune vérité métier.',

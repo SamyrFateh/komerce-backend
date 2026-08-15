@@ -195,6 +195,7 @@ module.exports = {
     'la projection client ne liste que les factures et reçus de remboursement ; les autres documents restent internes ou administratifs',
     'une URL de téléchargement client n\'est exposée que lorsque le PDF existe et est disponible',
     'le PDF disponible possède une empreinte SHA-256 et ne peut pas être remplacé',
+    'le PDF de facture est dérivé du HTML canonique qui embarque le vrai logo Komerce et porte une template_version dédiée',
   ],
 
 };

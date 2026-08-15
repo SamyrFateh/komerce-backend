@@ -32,7 +32,7 @@ const BUNDLES = [
             'cart', 'interactions', 'modal-mobile-suggestion-actions', 'modal-product-polish', 'hero-cart-proxy',
             'shared-list-side-cart', 'shared-list-side-cart-responsive', 'shared-list-library-remove',
             'shared-list-lists-tab',
-            'share-cart', 'identity', 'paypal', 'wallet', 'komerce', 'checkout-vertical-rail'],
+            'share-cart', 'identity', 'paypal', 'wallet', 'komerce', 'notifications', 'checkout-vertical-rail'],
   },
   {
     out: 'desktop.css',

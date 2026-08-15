@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        order_id, current_status, target_status, actor, reason
  * @outputs       validated_transition, order_history, side_effects
- * @depends       db.js, services/notification-service.js
+ * @depends       db.js, services/client-notification-service.js
  * @used-by       order-payment-confirmation.js, routes/orders.js, cancellation-flows, admin-flows
- * @db-read       order_items, orders, products
+ * @db-read       order_items, orders, products, relais
  * @db-write      order_items, order_status_history, orders
  * @db-write-via:product-admin-service products, product_variants
  * @db-txn        single_status_transition_gate, append_history_before_side_effects
@@ -51,6 +51,7 @@ const db = require('../db');
 const log = require('../utils/logger').child({ module: 'order-status-machine' });
 const { adjustStock } = require('./product-admin-service');
 const { sourceStatusesFor, sqlGuard } = require('./payment-status-validator');
+const clientNotifications = require('./client-notification-service');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -176,9 +177,13 @@ async function transitionOrderStatus({
   const q = dbClient || db;
 
   // ── 1. Load current order ────────────────────────────────────────────────
-  const forUpdate = dbClient ? ' FOR UPDATE' : '';
+  const forUpdate = dbClient ? ' FOR UPDATE OF o' : '';
   const { rows: [order] } = await q.query(
-    `SELECT id, status, payment_mode, relais_id, pickup_secret_hash FROM orders WHERE id = $1${forUpdate}`,
+    `SELECT o.id, o.status, o.payment_mode, o.relais_id, o.pickup_secret_hash,
+            o.user_id, o.reference, r.name AS relais_name
+       FROM orders o
+       LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.id = $1${forUpdate}`,
     [orderId]
   );
   if (!order) {
@@ -430,6 +435,31 @@ async function transitionOrderStatus({
   } catch (histErr) {
     log.error({ err: histErr, order_id: orderId, status: newStatus }, 'Order status history insert failed');
     throw histErr;
+  }
+
+  // Projection client essentielle uniquement. L'émission est idempotente et
+  // best-effort pour ne jamais bloquer un retrait ou une transition terrain.
+  // GET /api/auth/me/notifications réconcilie les émissions manquées depuis
+  // la vérité orders.status='available'.
+  try {
+    // Un client SQL fourni appartient à une transaction appelante : une
+    // erreur SQL même catchée la placerait en état aborted. Dans ce cas on ne
+    // projette rien ici ; la lecture client réconcilie après le commit depuis
+    // orders.status. Sans transaction externe, le statut est déjà durable et
+    // la projection best-effort peut être tentée immédiatement.
+    if (!dbClient && newStatus === 'available') {
+      await clientNotifications.emitPickupReady({
+        dbClient: q,
+        userId: order.user_id,
+        orderId: order.id,
+        orderReference: order.reference,
+        relaisName: order.relais_name,
+      });
+    } else if (!dbClient && ['collected', 'cancelled', 'refunded'].includes(newStatus)) {
+      await clientNotifications.resolvePickupForOrder(order.id, { dbClient: q });
+    }
+  } catch (notificationErr) {
+    log.error({ err: notificationErr, order_id: orderId, status: newStatus }, 'Client notification projection failed; reconciliation will retry');
   }
 
   log.info({ order_id: orderId, previous_status: previousStatus, new_status: newStatus, source }, 'Order status transition applied');

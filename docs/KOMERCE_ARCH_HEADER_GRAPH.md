@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 365
-- Files with full headers: 339
+- Scanned code files: 368
+- Files with full headers: 342
 - Files with lite headers: 26
-- Files with any headers: 365
+- Files with any headers: 368
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 773
-- Edges: 4171
-- DB tables: 108
-- Doctrines: 170
-- Impact areas: 130
-- Unresolved code edges: 422
-- Tables multi-écrivains directs (>=2): 61
+- Graph nodes: 779
+- Edges: 4204
+- DB tables: 109
+- Doctrines: 171
+- Impact areas: 131
+- Unresolved code edges: 423
+- Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
 
 ## Domains
@@ -42,7 +42,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - inventory: 2
 - logistics: 35
 - loyalty: 2
-- notification: 16
+- notification: 19
 - operations: 11
 - orders: 21
 - payment: 17
@@ -74,14 +74,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 11
 - presenter: 1
-- route: 97
+- route: 98
 - route-manifest: 1
 - schema: 1
-- service: 139
+- service: 140
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
-- ui-component: 35
+- ui-component: 36
 - ui-controller: 1
 - ui-enhancer: 3
 - ui-infrastructure: 1
@@ -171,6 +171,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-modal-product.js — product-modal-content-renderer (shared-cart-modal, high, full)
 - public/boutique/js/b-modal-suggestions.js — product-modal-suggestions (recommendations, high, full)
 - public/boutique/js/b-nav.js — boutique-nav (boutique, high, full)
+- public/boutique/js/b-notifications.js — client-notification-banner (notification, high, full)
 - public/boutique/js/b-pager.js — mobile-category-pager (catalog, high, full)
 - public/boutique/js/b-phone.js — phone-normalization-ui (auth, high, full)
 - public/boutique/js/b-scroll-owner.js — boutique-scroll-owner (boutique, high, full)
@@ -211,6 +212,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/boutique-suggestions.js — boutique-suggestions-http-facade (recommendations, high, full)
 - routes/catalog-product-detail.js — catalog-product-detail-http (catalog, high, full)
 - routes/client-auth.js — auth-client-auth (auth-identity, high, full)
+- routes/client-notifications.js — authenticated-client-notifications (notification, high, full)
 - routes/client-tracking.js — logistics-client-tracking (logistics, high, full)
 - routes/dashboard-clients.js — dashboard-dashboard-clients (dashboard, high, full)
 - routes/dashboard-finance.js — economic-engine-dashboard-finance (economic-engine, high, full)
@@ -252,6 +254,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-promotion/sku-media.js — catalog-promotion-sku-media-linking (catalog, high, full)
 - services/catalog-promotion/sku.js — catalog-promotion-sku-reconciliation (catalog, high, full)
 - services/catalog-public-view.js — catalog-public-view (catalog, high, full)
+- services/client-notification-service.js — client-notification-service (notification, high, full)
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
 - services/customs-classification.js — customs-classification (customs, high, full)
@@ -399,6 +402,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/catalog-promotion.js -> catalog_media
 - WRITE bootstrap/startup-migrations.js -> charges
 - WRITE services/economic-engine-queries.js -> charges
+- WRITE routes/client-notifications.js -> client_notifications
+- WRITE services/client-notification-service.js -> client_notifications
 - WRITE services/pricing-strategy-service.js -> competitor_prices
 - WRITE routes/pricing.js -> cost_benchmarks
 - WRITE routes/admin-cost-components.js -> cost_component_events
@@ -471,8 +476,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-customs-shipments.js -> orders
 - WRITE routes/admin/delete-order-cascade.js -> orders
 - WRITE routes/admin/system.js -> orders
-- WRITE routes/orders/cancel.js -> orders
-- WRITE routes/orders/create.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -550,6 +553,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - catalog_field_overrides: 2 écrivains directs — services/catalog-overrides.js, services/product-admin-service.js
 - catalog_media: 2 écrivains directs — routes/sourcing-scanner.js, services/catalog-promotion.js
 - charges: 2 écrivains directs — bootstrap/startup-migrations.js, services/economic-engine-queries.js
+- client_notifications: 2 écrivains directs — routes/client-notifications.js, services/client-notification-service.js
 - customs_shipment_parcels: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
 - customs_shipments: 2 écrivains directs — routes/admin-customs-shipments.js, services/customs-shipment-service.js
 - economic_snapshots: 2 écrivains directs — bootstrap/crons.js, services/economic-engine-queries.js
@@ -569,7 +573,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - shared_cart_items: 2 écrivains directs — services/shared-cart-creation.js, services/shared-cart-engine.js
 - signals: 2 écrivains directs — routes/signals.js, services/signal-service.js
 - sourcing_candidate_events: 2 écrivains directs — routes/sourcing-scanner.js, services/suppliers/catalog-import-orchestrator.js
-- supplier_catalog_imports: 2 écrivains directs — services/suppliers/catalog-import-json.js, services/suppliers/catalog-import-orchestrator.js
 
 ## DB Write / Write-Via Overlap Warnings
 

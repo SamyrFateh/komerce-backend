@@ -13,26 +13,26 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 365,
-    "filesWithFullHeaders": 339,
+    "scannedCodeFiles": 368,
+    "filesWithFullHeaders": 342,
     "filesWithLiteHeaders": 26,
-    "filesWithAnyHeaders": 365,
+    "filesWithAnyHeaders": 368,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 773,
-    "edges": 4171,
-    "dbTables": 108,
-    "doctrines": 170,
-    "impactAreas": 130,
-    "unresolvedCodeEdges": 422,
+    "graphNodes": 779,
+    "edges": 4204,
+    "dbTables": 109,
+    "doctrines": 171,
+    "impactAreas": 131,
+    "unresolvedCodeEdges": 423,
     "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 61
+    "multiWriterTables": 62
   },
   "byDomain": {
     "infrastructure": 20,
     "bootstrap": 2,
-    "notification": 16,
+    "notification": 19,
     "auth": 8,
     "logistics": 35,
     "boutique": 19,
@@ -71,7 +71,7 @@
     "manual-test": 1,
     "middleware": 11,
     "ui-bootstrap": 4,
-    "ui-component": 35,
+    "ui-component": 36,
     "ui-enhancer": 3,
     "ui-renderer": 8,
     "ui-page": 5,
@@ -91,9 +91,9 @@
     "domain-logic": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 97,
+    "route": 98,
     "entrypoint": 1,
-    "service": 139,
+    "service": 140,
     "external-adapter": 2,
     "machine": 1,
     "data-service": 1,
@@ -102,7 +102,7 @@
   "byCriticality": {
     "critical": 55,
     "medium": 106,
-    "high": 170,
+    "high": 173,
     "low": 34
   },
   "nodes": [
@@ -1128,6 +1128,7 @@
         "public/boutique/js/b-modal-social-proof.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
+        "public/boutique/js/b-notifications.js",
         "public/boutique/js/b-pager.js",
         "public/boutique/js/b-pdp-curation-suggestions.js",
         "public/boutique/js/b-product-open-contract.js",
@@ -2559,6 +2560,45 @@
         "infinite-scroll"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/b-notifications.js",
+      "file": "public/boutique/js/b-notifications.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "client-notification-banner",
+      "domain": "notification",
+      "layer": "ui-component",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated notification feed"
+      ],
+      "outputs": [
+        "compact actionable banner",
+        "explicit acknowledgement"
+      ],
+      "depends": [
+        "b-bus.js",
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "main.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "notifications",
+        "orders",
+        "boutique-shell"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "public/boutique/js/b-pager.js",
@@ -5784,6 +5824,53 @@
         "auth"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "routes/client-notifications.js",
+      "file": "routes/client-notifications.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "authenticated-client-notifications",
+      "domain": "notification",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "notification id"
+      ],
+      "outputs": [
+        "essential open notifications",
+        "acknowledgement"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/client-notification-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "public/boutique/js/b-notifications.js"
+      ],
+      "dbRead": [
+        "client_notifications",
+        "orders",
+        "relais"
+      ],
+      "dbWrite": [
+        "client_notifications"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "notifications",
+        "boutique",
+        "orders"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "routes/client-tracking.js",
@@ -9808,6 +9895,54 @@
       "version": "2026-07"
     },
     {
+      "id": "services/client-notification-service.js",
+      "file": "services/client-notification-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "client-notification-service",
+      "domain": "notification",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "confirmed business event",
+        "authenticated user"
+      ],
+      "outputs": [
+        "idempotent in-app notification lifecycle"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "services/order-status-machine.js",
+        "routes/client-notifications.js"
+      ],
+      "dbRead": [
+        "client_notifications",
+        "orders",
+        "relais"
+      ],
+      "dbWrite": [
+        "client_notifications"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "best_effort_after_unwrapped_transition",
+        "read_reconciliation"
+      ],
+      "doctrine": [
+        "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "notifications",
+        "orders",
+        "boutique"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "services/confirm-pickup-cash-payment.js",
       "file": "services/confirm-pickup-cash-payment.js",
       "type": "file",
@@ -11467,7 +11602,8 @@
       ],
       "depends": [
         "db",
-        "services/documents/pdf-renderer.js"
+        "services/documents/pdf-renderer.js",
+        "utils/documents/logo-base64.js"
       ],
       "usedBy": [
         "routes/invoices.js",
@@ -12226,7 +12362,7 @@
       ],
       "depends": [
         "db.js",
-        "services/notification-service.js"
+        "services/client-notification-service.js"
       ],
       "usedBy": [
         "order-payment-confirmation.js",
@@ -12237,7 +12373,8 @@
       "dbRead": [
         "order_items",
         "orders",
-        "products"
+        "products",
+        "relais"
       ],
       "dbWrite": [
         "order_items",
@@ -17323,6 +17460,11 @@
       "table": "product_variants"
     },
     {
+      "id": "db:client_notifications",
+      "type": "db-table",
+      "table": "client_notifications"
+    },
+    {
       "id": "db:order_comments",
       "type": "db-table",
       "table": "order_comments"
@@ -17771,6 +17913,11 @@
       "id": "doctrine:mobile_desktop_coherence",
       "type": "doctrine",
       "doctrine": "mobile_desktop_coherence"
+    },
+    {
+      "id": "doctrine:DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md",
+      "type": "doctrine",
+      "doctrine": "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
     },
     {
       "id": "doctrine:phone_normalization",
@@ -18766,6 +18913,11 @@
       "id": "impact:infinite-scroll",
       "type": "impact-area",
       "area": "infinite-scroll"
+    },
+    {
+      "id": "impact:boutique-shell",
+      "type": "impact-area",
+      "area": "boutique-shell"
     },
     {
       "id": "impact:mobile-navigation",
@@ -20646,6 +20798,12 @@
       "to": "public/boutique/js/b-bus.js",
       "type": "uses",
       "label": "public/boutique/js/b-nav.js"
+    },
+    {
+      "from": "public/boutique/js/b-notifications.js",
+      "to": "public/boutique/js/b-bus.js",
+      "type": "uses",
+      "label": "public/boutique/js/b-notifications.js"
     },
     {
       "from": "public/boutique/js/b-pager.js",
@@ -22818,6 +22976,48 @@
       "to": "impact:infinite-scroll",
       "type": "impact",
       "label": "infinite-scroll"
+    },
+    {
+      "from": "public/boutique/js/b-notifications.js",
+      "to": "public/boutique/js/b-bus.js",
+      "type": "depends",
+      "label": "b-bus.js"
+    },
+    {
+      "from": "public/boutique/js/b-notifications.js",
+      "to": "public/boutique/js/b-utils.js",
+      "type": "depends",
+      "label": "b-utils.js"
+    },
+    {
+      "from": "public/boutique/js/main.js",
+      "to": "public/boutique/js/b-notifications.js",
+      "type": "uses",
+      "label": "main.js"
+    },
+    {
+      "from": "public/boutique/js/b-notifications.js",
+      "to": "doctrine:DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+    },
+    {
+      "from": "public/boutique/js/b-notifications.js",
+      "to": "impact:notifications",
+      "type": "impact",
+      "label": "notifications"
+    },
+    {
+      "from": "public/boutique/js/b-notifications.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "public/boutique/js/b-notifications.js",
+      "to": "impact:boutique-shell",
+      "type": "impact",
+      "label": "boutique-shell"
     },
     {
       "from": "public/boutique/js/b-pager.js",
@@ -27241,6 +27441,78 @@
       "to": "impact:auth",
       "type": "impact",
       "label": "auth"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "services/client-notification-service.js",
+      "type": "depends",
+      "label": "services/client-notification-service.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/client-notifications.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "public/boutique/js/b-notifications.js",
+      "to": "routes/client-notifications.js",
+      "type": "uses",
+      "label": "public/boutique/js/b-notifications.js"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "db:client_notifications",
+      "type": "db-read",
+      "label": "client_notifications"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "db:client_notifications",
+      "type": "db-write",
+      "label": "client_notifications"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "doctrine:DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "impact:notifications",
+      "type": "impact",
+      "label": "notifications"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
     },
     {
       "from": "routes/client-tracking.js",
@@ -32971,6 +33243,72 @@
       "label": "modal"
     },
     {
+      "from": "services/client-notification-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "services/client-notification-service.js",
+      "type": "uses",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "routes/client-notifications.js",
+      "to": "services/client-notification-service.js",
+      "type": "uses",
+      "label": "routes/client-notifications.js"
+    },
+    {
+      "from": "services/client-notification-service.js",
+      "to": "db:client_notifications",
+      "type": "db-read",
+      "label": "client_notifications"
+    },
+    {
+      "from": "services/client-notification-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/client-notification-service.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/client-notification-service.js",
+      "to": "db:client_notifications",
+      "type": "db-write",
+      "label": "client_notifications"
+    },
+    {
+      "from": "services/client-notification-service.js",
+      "to": "doctrine:DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+    },
+    {
+      "from": "services/client-notification-service.js",
+      "to": "impact:notifications",
+      "type": "impact",
+      "label": "notifications"
+    },
+    {
+      "from": "services/client-notification-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/client-notification-service.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
       "from": "services/confirm-pickup-cash-payment.js",
       "to": "db",
       "type": "depends",
@@ -35533,6 +35871,12 @@
       "label": "services/documents/pdf-renderer.js"
     },
     {
+      "from": "services/invoice-service.js",
+      "to": "utils/documents/logo-base64.js",
+      "type": "depends",
+      "label": "utils/documents/logo-base64.js"
+    },
+    {
       "from": "routes/invoices.js",
       "to": "services/invoice-service.js",
       "type": "uses",
@@ -36797,9 +37141,9 @@
     },
     {
       "from": "services/order-status-machine.js",
-      "to": "services/notification-service.js",
+      "to": "services/client-notification-service.js",
       "type": "depends",
-      "label": "services/notification-service.js"
+      "label": "services/client-notification-service.js"
     },
     {
       "from": "services/order-payment-confirmation.js",
@@ -36842,6 +37186,12 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
     },
     {
       "from": "services/order-status-machine.js",
@@ -44211,6 +44561,7 @@
         "routes/catalog-product-detail.js",
         "routes/categories.js",
         "routes/client-auth.js",
+        "routes/client-notifications.js",
         "routes/client-tracking.js",
         "routes/config.js",
         "routes/dashboard-clients.js",
@@ -44780,6 +45131,7 @@
         "routes/cash.js",
         "routes/categories.js",
         "routes/client-auth.js",
+        "routes/client-notifications.js",
         "routes/client-tracking.js",
         "routes/config.js",
         "routes/dashboard-clients.js",
@@ -45233,6 +45585,7 @@
         "public/boutique/js/b-modal-social-proof.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
+        "public/boutique/js/b-notifications.js",
         "public/boutique/js/b-pager.js",
         "public/boutique/js/b-pdp-curation-suggestions.js",
         "public/boutique/js/b-product-open-contract.js",
@@ -45273,6 +45626,7 @@
         "public/boutique/js/b-modal-social-proof.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
+        "public/boutique/js/b-notifications.js",
         "public/boutique/js/b-pager.js",
         "public/boutique/js/b-pdp-curation-suggestions.js",
         "public/boutique/js/b-product-open-contract.js",
@@ -46785,6 +47139,43 @@
         "public/boutique/js/group/group-side-cart.js"
       ]
     },
+    "public/boutique/js/b-notifications.js": {
+      "role": "client-notification-banner",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/b-bus.js",
+        "public/boutique/js/b-utils.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/main.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "notifications",
+        "orders",
+        "boutique-shell"
+      ],
+      "mustCheck": [
+        "doctrine:DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md",
+        "impact:boutique-shell",
+        "impact:notifications",
+        "impact:orders",
+        "public/boutique/js/b-bus.js",
+        "public/boutique/js/b-utils.js",
+        "public/boutique/js/main.js",
+        "routes/client-notifications.js"
+      ]
+    },
     "public/boutique/js/b-pager.js": {
       "role": "mobile-category-pager",
       "domain": "catalog",
@@ -47385,6 +47776,7 @@
         "public/boutique/js/b-modal-product.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
+        "public/boutique/js/b-notifications.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-tracking.js",
         "public/boutique/js/b-wallet.js",
@@ -47982,6 +48374,7 @@
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
+        "public/boutique/js/b-notifications.js",
         "public/boutique/js/boutique.js"
       ]
     },
@@ -49922,6 +50315,53 @@
         "impact:auth",
         "middleware/auth.js",
         "utils/logger.js"
+      ]
+    },
+    "routes/client-notifications.js": {
+      "role": "authenticated-client-notifications",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/client-notification-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "public/boutique/js/b-notifications.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "client_notifications",
+        "orders",
+        "relais"
+      ],
+      "dbWrite": [
+        "client_notifications"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "notifications",
+        "boutique",
+        "orders"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:client_notifications",
+        "db:orders",
+        "db:relais",
+        "doctrine:DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md",
+        "impact:boutique",
+        "impact:notifications",
+        "impact:orders",
+        "middleware/auth.js",
+        "public/boutique/js/b-notifications.js",
+        "services/client-notification-service.js"
       ]
     },
     "routes/client-tracking.js": {
@@ -53782,6 +54222,50 @@
         "routes/products.js"
       ]
     },
+    "services/client-notification-service.js": {
+      "role": "client-notification-service",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/order-status-machine.js",
+        "routes/client-notifications.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "client_notifications",
+        "orders",
+        "relais"
+      ],
+      "dbWrite": [
+        "client_notifications"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "notifications",
+        "orders",
+        "boutique"
+      ],
+      "mustCheck": [
+        "db:client_notifications",
+        "db:orders",
+        "db:relais",
+        "doctrine:DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md",
+        "impact:boutique",
+        "impact:notifications",
+        "impact:orders",
+        "routes/client-notifications.js",
+        "services/order-status-machine.js"
+      ]
+    },
     "services/confirm-pickup-cash-payment.js": {
       "role": "payment-confirm-pickup-cash-payment",
       "domain": "payment",
@@ -55394,7 +55878,8 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "services/documents/pdf-renderer.js"
+        "services/documents/pdf-renderer.js",
+        "utils/documents/logo-base64.js"
       ],
       "directUsedBy": [
         "routes/invoices.js",
@@ -55436,7 +55921,8 @@
         "routes/documents.js",
         "routes/invoices.js",
         "services/documents/pdf-renderer.js",
-        "services/order-payment-confirmation.js"
+        "services/order-payment-confirmation.js",
+        "utils/documents/logo-base64.js"
       ]
     },
     "services/loyalty-service.js": {
@@ -56152,7 +56638,7 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "services/notification-service.js"
+        "services/client-notification-service.js"
       ],
       "directUsedBy": [
         "services/order-payment-confirmation.js",
@@ -56164,7 +56650,8 @@
       "dbRead": [
         "order_items",
         "orders",
-        "products"
+        "products",
+        "relais"
       ],
       "dbWrite": [
         "order_items",
@@ -56200,6 +56687,7 @@
         "db:orders",
         "db:product_variants",
         "db:products",
+        "db:relais",
         "doctrine:annulation_tracee",
         "doctrine:payment_to_stock_single_entry",
         "doctrine:status_transition_source_unique",
@@ -56214,6 +56702,7 @@
         "services/admin-order-refund.js",
         "services/cancel-order-purchase-orders.js",
         "services/cash-reminder-service.js",
+        "services/client-notification-service.js",
         "services/customs-shipment-service.js",
         "services/notification-service.js",
         "services/notifications/notification-service.js",
@@ -59788,7 +60277,8 @@
       ],
       "mustCheck": [
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
-        "impact:documents"
+        "impact:documents",
+        "services/invoice-service.js"
       ]
     },
     "utils/documents/pickup-proof-html.js": {
@@ -61304,6 +61794,14 @@
       "writers": [
         "bootstrap/startup-migrations.js",
         "services/economic-engine-queries.js"
+      ]
+    },
+    {
+      "table": "client_notifications",
+      "writerCount": 2,
+      "writers": [
+        "routes/client-notifications.js",
+        "services/client-notification-service.js"
       ]
     },
     {
@@ -63011,6 +63509,12 @@
       "to": "services/catalog-promotion/sku.js",
       "type": "uses",
       "label": "services/catalog-promotion.js (Lot 6)"
+    },
+    {
+      "from": "services/client-notification-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/confirm-pickup-cash-payment.js",

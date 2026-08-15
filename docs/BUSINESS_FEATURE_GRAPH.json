@@ -284,7 +284,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2025-09",
-        "service": "Emettre une alerte ou un message sortant (WhatsApp, notification interne) declenche par une autre feature.",
+        "service": "Projeter une information essentielle dans l application avec acquittement propriétaire ; conserver les canaux sortants historiques séparés et best-effort.",
         "businessKind": "business-transversal",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -585,6 +585,15 @@
         "file": "boutique:features/modal-product.feature.js",
         "repo": "boutique",
         "canonicalFeature": "catalog",
+        "sliceKind": "frontend-slice",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:notifications-client",
+        "name": "notifications-client",
+        "file": "boutique:features/notifications-client.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "notifications",
         "sliceKind": "frontend-slice",
         "governed": true
       },
@@ -6670,6 +6679,20 @@
       },
       {
         "feature": "notifications",
+        "category": "tests",
+        "declared": "tests/unit/client-notification-service.test.js",
+        "resolvedPath": "tests/unit/client-notification-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "notifications",
+        "category": "tests",
+        "declared": "tests/unit/client-notifications-route.test.js",
+        "resolvedPath": "tests/unit/client-notifications-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "notifications",
         "category": "migrations",
         "declared": "migrations/022b_sms_queue.sql",
         "resolvedPath": "migrations/022b_sms_queue.sql",
@@ -6701,6 +6724,13 @@
         "category": "migrations",
         "declared": "migrations/089_notification_log_ref_widening.sql",
         "resolvedPath": "migrations/089_notification_log_ref_widening.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "notifications",
+        "category": "migrations",
+        "declared": "migrations/132_client_notifications.sql",
+        "resolvedPath": "migrations/132_client_notifications.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6789,6 +6819,13 @@
       },
       {
         "feature": "notifications",
+        "category": "services",
+        "declared": "services/client-notification-service.js",
+        "resolvedPath": "services/client-notification-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "notifications",
         "category": "routes",
         "declared": "routes/notification-api.js",
         "resolvedPath": "routes/notification-api.js",
@@ -6806,6 +6843,13 @@
         "category": "routes",
         "declared": "routes/alerts.js",
         "resolvedPath": "routes/alerts.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "notifications",
+        "category": "routes",
+        "declared": "routes/client-notifications.js",
+        "resolvedPath": "routes/client-notifications.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -7114,6 +7158,13 @@
         "category": "tests",
         "declared": "tests/unit/order-status-machine.test.js",
         "resolvedPath": "tests/unit/order-status-machine.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-status-client-notifications.test.js",
+        "resolvedPath": "tests/unit/order-status-client-notifications.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -11532,6 +11583,22 @@
       },
       {
         "feature": "notifications",
+        "entry": "GET /api/auth/me/notifications",
+        "method": "GET",
+        "path": "/api/auth/me/notifications",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "notifications",
+        "entry": "POST /api/auth/me/notifications/:id/ack",
+        "method": "POST",
+        "path": "/api/auth/me/notifications/{id}/ack",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "notifications",
         "entry": "GET /webhook/meta-whatsapp",
         "method": "GET",
         "path": "/webhook/meta-whatsapp",
@@ -12815,6 +12882,12 @@
         "status": "resolved"
       },
       {
+        "feature": "notifications",
+        "fn": "emitPickupReady / resolvePickupForOrder",
+        "file": "services/client-notification-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "orders",
         "fn": "transitionOrderStatus",
         "file": "services/order-status-machine.js",
@@ -13448,6 +13521,12 @@
       },
       {
         "from": "orders",
+        "to": "notifications",
+        "raw": "notifications (projection idempotente du retrait disponible)",
+        "resolved": true
+      },
+      {
+        "from": "orders",
         "to": "payment",
         "raw": "payment",
         "resolved": false
@@ -13753,6 +13832,11 @@
       {
         "canonicalFeature": "catalog",
         "boutiqueManifest": "modal-product",
+        "sliceKind": "frontend-slice"
+      },
+      {
+        "canonicalFeature": "notifications",
+        "boutiqueManifest": "notifications-client",
         "sliceKind": "frontend-slice"
       },
       {
@@ -14461,6 +14545,30 @@
         "category": "tests",
         "declared": "../tests/unit/modal-product-price-normalization.test.js",
         "resolvedPath": "public/boutique/tests/unit/modal-product-price-normalization.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "notifications-client",
+        "category": "boutique",
+        "declared": "../js/b-notifications.js",
+        "resolvedPath": "public/boutique/js/b-notifications.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "notifications-client",
+        "category": "css",
+        "declared": "../css/notifications.css",
+        "resolvedPath": "public/boutique/css/notifications.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "notifications-client",
+        "category": "tests",
+        "declared": "../tests/unit/b-notifications.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-notifications.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -18289,6 +18397,10 @@
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/client-notifications.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/meta-whatsapp.js"
               }
             ]
@@ -19306,6 +19418,10 @@
               {
                 "sourceFileId": "routes/alerts.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/client-notifications.js",
+                "targetFile": "middleware/auth.js"
               }
             ]
           }
@@ -19360,12 +19476,36 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/client-notification-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/notification-api.js",
                 "targetFile": "db.js"
               },
               {
                 "sourceFileId": "routes/meta-whatsapp.js",
                 "targetFile": "utils/logger.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "notifications",
+        "to": "platform-ops",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/b-notifications.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-notifications.js",
+                "targetFile": "public/boutique/js/b-utils.js"
               }
             ]
           }
@@ -20046,6 +20186,10 @@
                 "targetFile": "services/notification-service.js"
               },
               {
+                "sourceFileId": "services/order-status-machine.js",
+                "targetFile": "services/client-notification-service.js"
+              },
+              {
                 "sourceFileId": "routes/orders/status.js",
                 "targetFile": "services/notification-service.js"
               },
@@ -20076,7 +20220,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "orders",
@@ -21374,6 +21518,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "platform-ops",
+        "to": "notifications",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/b-notifications.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "platform-ops",
@@ -22782,10 +22942,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 768
+        "filesObserved": 773
       },
       "boutique": {
-        "filesObserved": 132,
+        "filesObserved": 134,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -22817,10 +22977,10 @@
     ],
     "familySummary": {
       "PROJECTION": 10,
-      "COMPOSITION_ROOT_WIRING": 13,
+      "COMPOSITION_ROOT_WIRING": 14,
       "NON_RUNTIME_TEST": 8,
-      "TECHNICAL_PRIMITIVE": 30,
-      "BUSINESS_TRANSVERSAL_SERVICE": 3,
+      "TECHNICAL_PRIMITIVE": 31,
+      "BUSINESS_TRANSVERSAL_SERVICE": 2,
       "CROSS_FEATURE_DIRECT_IMPORT": 4,
       "BUSINESS_FEATURE_INTERFACE": 5,
       "PILOTING_CAPABILITY": 0,
@@ -23509,6 +23669,21 @@
         "exceptionReasons": []
       },
       {
+        "from": "notifications",
+        "to": "platform-ops",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
         "from": "orders",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
@@ -23521,21 +23696,6 @@
         ],
         "couplingObserved": "mixed",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "orders",
-        "to": "notifications",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -23636,6 +23796,21 @@
         ],
         "couplingObserved": "mixed",
         "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "platform-ops",
+        "to": "notifications",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -23968,12 +24143,14 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|technical-transversal|business-file-import": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|mixed": 2,
-      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 3,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|mixed": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
+      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 2,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
@@ -25407,6 +25584,17 @@
       "lifecycleOwner": null,
       "resolution": "no-declared-writer"
     },
+    "client_notifications": {
+      "writers": [
+        {
+          "feature": "notifications",
+          "mode": "RW"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "notifications",
+      "resolution": "single-writer"
+    },
     "notification_log": {
       "writers": [
         {
@@ -25606,8 +25794,8 @@
       "backend": {
         "manifestsDiscovered": 25,
         "manifestsConnected": 25,
-        "technicalNodesTotal": 287,
-        "technicalNodesOwned": 287,
+        "technicalNodesTotal": 289,
+        "technicalNodesOwned": 289,
         "technicalOrphans": 0
       },
       "dash": {
@@ -25619,10 +25807,10 @@
         "note": "pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)"
       },
       "boutique": {
-        "manifestsDiscovered": 13,
-        "manifestsConnected": 13,
-        "technicalNodesTotal": 78,
-        "technicalNodesOwned": 78,
+        "manifestsDiscovered": 14,
+        "manifestsConnected": 14,
+        "technicalNodesTotal": 79,
+        "technicalNodesOwned": 79,
         "technicalOrphans": 0
       }
     },
@@ -25630,6 +25818,7 @@
       "crossRepoFeatures": [
         "auth-identity",
         "catalog",
+        "notifications",
         "orders",
         "payments",
         "platform-ops",
@@ -25652,7 +25841,6 @@
         "legacy-control-tower",
         "logistics",
         "loyalty",
-        "notifications",
         "platform",
         "purchasing",
         "refunds",
@@ -25883,6 +26071,16 @@
         "msg": "\"GET /webhook/authkey-whatsapp\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
       },
       {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "notifications / GET /api/auth/me/notifications",
+        "msg": "\"GET /api/auth/me/notifications\" déclaré par notifications mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "notifications / POST /api/auth/me/notifications/{id}/ack",
+        "msg": "\"POST /api/auth/me/notifications/{id}/ack\" déclaré par notifications mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> catalog",
         "msg": "dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"catalog\""
@@ -26045,7 +26243,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"notifications\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26105,17 +26303,17 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "notifications -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "notifications -> platform-ops",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: interface+static-code, 57 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "orders -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26146,6 +26344,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: interface+static-code, 27 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> notifications",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

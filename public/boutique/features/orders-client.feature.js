@@ -29,6 +29,7 @@ module.exports = {
       'quantités, mini-panier et badge panier',
       'projection client de l historique et de la timeline commande',
       'projection contextualisée des factures, remboursements et du solde wallet positif dans une commande appartenant à la session',
+      'signal visuel actionnable tant qu une commande est disponible au relais',
     ],
     out: [
       'vérité produit et stock (catalog)',
@@ -74,6 +75,7 @@ module.exports = {
       'logistics — statuts de transit affichés en lecture',
       'documents — factures et reçus de remboursement privés filtrés par référence de commande',
       'wallet — lecture du solde courant sans historique de mouvements',
+      'notifications-client — navigation depuis le bandeau et urgence retrait',
     ],
   },
   authority: 'boutique — ce slice possède l intention d achat locale et sa projection de suivi, jamais la vérité stock ni la machine de statut.',
@@ -89,5 +91,6 @@ module.exports = {
     'une commande authentifiée n\'affiche que les factures et remboursements téléchargeables, plus le solde wallet strictement positif',
     'la recherche d historique client partage le défaut téléphonique +269 avec l identité, sans demander les champs de profil inutiles à une simple consultation',
     'le suivi et l historique utilisent sur desktop une composition dédiée sans étirer le formulaire de recherche',
+    'une commande disponible au relais est mise en évidence jusqu au retrait indépendamment de l acquittement du bandeau',
   ],
 };

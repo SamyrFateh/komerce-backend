@@ -101,6 +101,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const parcelLabelRouter = require('../routes/parcel-label');
   const orderApiV2Router = require('../routes/order-api-v2');
   const notificationApiRouter = require('../routes/notification-api');
+  const clientNotificationsRouter = require('../routes/client-notifications');
   const otpRouter = require('../routes/otp');
   const clientTrackingRouter = require('../routes/client-tracking');
   const simulatorRouter = require('../routes/simulator');
@@ -160,6 +161,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/auth', clientAuthRouter);
   app.use('/api/client', clientAuthRouter);
   app.use('/api/auth/me/documents', documentsRouter);
+  app.use('/api/auth/me/notifications', clientNotificationsRouter);
   app.use('/api/invoices',   invoicesRouter);
   app.use('/api/pricing/strategy', pricingStrategyRouter);
   app.use('/api/pricing',    pricingRouter);

@@ -58,7 +58,9 @@ test('issueInvoice produit un PDF privé sans notification ni URL publique', asy
   const ready = { ...snapshot, pdf_content: Buffer.from('%PDF-private'), pdf_sha256: 'sha256' };
   mockQuery.mockResolvedValueOnce({ rows: [snapshot] }).mockResolvedValueOnce({ rows: [ready] });
   await expect(invoiceService.issueInvoice('order-1')).resolves.toEqual(expect.objectContaining({ pdf_sha256: 'sha256' }));
-  expect(mockRenderPdf).toHaveBeenCalledWith({ documentType: 'invoice', document: snapshot });
+  expect(mockRenderPdf).toHaveBeenCalledWith(expect.objectContaining({
+    documentType: 'invoice', document: snapshot, html: expect.stringContaining('class="brand-logo"'),
+  }));
   expect(JSON.stringify(mockQuery.mock.calls)).not.toContain('public_token');
 });
 
@@ -77,4 +79,7 @@ test('le rendu HTML historique échappe les noms de produit', () => {
   });
   expect(html).not.toContain('<script>');
   expect(html).toContain('&lt;script&gt;');
+  expect(html).toContain('class="brand-logo"');
+  expect(html).toContain('data:image/png;base64,');
+  expect(html).toContain('name="komerce-invoice-payload"');
 });

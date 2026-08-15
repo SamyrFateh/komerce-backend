@@ -479,6 +479,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
         // désormais en arrière-plan, sans bloquer la fermeture.
         closeOverlay(ov);
         resolve(user || data.user || { phone: phoneValue });
+        window.dispatchEvent(new CustomEvent('komerce:identity-authenticated'));
         if (window.K?.auth?.restore) {
           Promise.resolve().then(() => window.K.auth.restore()).catch(() => {});
         }

@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       immutable invoice snapshot, private PDF
- * @depends       db, services/documents/pdf-renderer.js
+ * @depends       db, services/documents/pdf-renderer.js, utils/documents/logo-base64.js
  * @used-by       routes/invoices.js, routes/documents.js, payment confirmation flows
  * @db-read       invoices, order_items, orders, parcels, products, recipients, relais
  * @db-write      invoices
@@ -33,6 +33,7 @@
 const pool = require('../db');
 const log = require('../utils/logger').child({ module: 'invoice-service' });
 const { renderPdf } = require('./documents/pdf-renderer');
+const { LOGO_KOMERCE_DATA_URI } = require('../utils/documents/logo-base64');
 
 class InvoiceService {
 
@@ -151,7 +152,11 @@ class InvoiceService {
     if (!invoice) throw new Error('[invoice-service] facture requise');
     if (invoice.pdf_content) return invoice;
     const db = dbClient || pool;
-    const rendered = await renderPdf({ documentType: 'invoice', document: invoice });
+    // Le HTML est la source canonique du contenu et de l'identité visuelle de
+    // la facture. Le renderer PDF en extrait le snapshot encodé par le template
+    // et le logo embarqué.
+    const html = this.generateHTML(invoice);
+    const rendered = await renderPdf({ documentType: 'invoice', document: invoice, html });
     const { rows } = await db.query(
       `UPDATE invoices
           SET pdf_content = $2,
@@ -221,7 +226,9 @@ class InvoiceService {
 
     const payIcon = invoice.payment_mode === 'cash_relais' ? '&#x1F4B5;' : '&#x1F4B3;';
     const payLabel = invoice.payment_mode === 'cash_relais' ? 'Paiement Cash' : 'Paiement en ligne';
-    const statusLabel = invoice.payment_status === 'paid' ? 'PAYÉ' : invoice.payment_status.toUpperCase();
+    const statusLabel = invoice.payment_status === 'paid'
+      ? 'PAYÉ'
+      : String(invoice.payment_status || 'INCONNU').toUpperCase();
     const statusClass = invoice.payment_status === 'paid' ? 'badge badge-paid' : 'badge';
 
     const date = new Date(invoice.created_at).toLocaleDateString('fr-FR', {
@@ -229,6 +236,22 @@ class InvoiceService {
     });
 
     const fmt = (n) => Number(n).toLocaleString('fr-FR');
+
+    // Snapshot machine-readable contenu DANS le HTML canonique. Le PDFKit
+    // renderer le consomme sans navigateur/Chromium et reste ainsi déployable
+    // sur Railway avec les dépendances actuelles.
+    const pdfPayload = Buffer.from(JSON.stringify({
+      invoice_number: invoice.invoice_number,
+      order_reference: orderRef,
+      parcel_reference: parcelRef,
+      client_name: invoice.client_name || '',
+      relay_name: invoice.relay_name || '',
+      payment_mode: invoice.payment_mode || '',
+      payment_status: invoice.payment_status || '',
+      total_kmf: Number(invoice.total_kmf || 0),
+      created_at: invoice.created_at || null,
+      items,
+    }), 'utf8').toString('base64');
 
     const itemRows = items.map(i => `
       <tr>
@@ -244,6 +267,7 @@ class InvoiceService {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="komerce-invoice-payload" content="${pdfPayload}">
 <title>Facture ${invoice.invoice_number}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -251,8 +275,8 @@ body{font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.4;
 .invoice{width:148mm;max-width:100%;margin:0 auto;padding:8mm}
 .invoice.thermal{width:72mm;padding:3mm;font-size:10px}
 .header{text-align:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px}
-.brand{font-size:22px;font-weight:bold;letter-spacing:3px;text-transform:uppercase}
-.thermal .brand{font-size:16px;letter-spacing:2px}
+.brand-logo{display:block;width:140px;max-width:72%;height:auto;margin:0 auto}
+.thermal .brand-logo{width:104px}
 .tagline{font-size:9px;letter-spacing:1px;margin-top:2px}
 .meta{display:flex;justify-content:space-between;border-bottom:1px dashed #000;padding-bottom:6px;margin-bottom:8px}
 .thermal .meta{flex-direction:column;gap:2px}
@@ -288,7 +312,7 @@ body{font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.4;
 <body>
 <div class="invoice${thermalClass}">
   <div class="header">
-    <div class="brand">KOMERCE</div>
+    <img class="brand-logo" src="${LOGO_KOMERCE_DATA_URI}" alt="Komerce">
     <div class="tagline">Votre marketplace des Comores</div>
   </div>
   <div class="meta">

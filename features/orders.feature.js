@@ -115,6 +115,7 @@ module.exports = {
       'tests/unit/cash-operations.test.js',
       'tests/unit/confirm-payment-cycle.test.js',
       'tests/unit/order-status-machine.test.js',
+      'tests/unit/order-status-client-notifications.test.js',
       // Rapatriés depuis features/notification.feature.js (doublon singulier
       // supprimé, audit 2026-07-06 §2d) — mal rangés là-bas : ils testent en
       // réalité routes/orders.js et ses sous-routers (déjà possédés ci-dessus
@@ -239,6 +240,7 @@ module.exports = {
       'dashboard',
       'documents',
       'notification',
+      'notifications (projection idempotente du retrait disponible)',
       'payment',
       'refunds',
     ],

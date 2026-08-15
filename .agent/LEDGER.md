@@ -102,4 +102,9 @@ Clos pour le périmètre indiscutable :
 - Une notification essentielle est un petit bandeau actionnable qui reste visible jusqu'à acquittement, pas un fil bavard.
 - Après acquittement, la vérité reste dans l'onglet métier concerné, notamment Commandes.
 - Le statut « colis prêt au relais » peut recevoir un signal visuel fort et temporaire ; le clignotement est réservé à cette urgence actionnable pour éviter le spam perceptif.
-- Ce chantier est séquencé après la projection documentaire et ne réintroduit aucun envoi WhatsApp métier.
+- Le premier cycle est implémenté pour `orders.status = available` : émission idempotente, bandeau compact, action vers Commandes, acquittement propriétaire et résolution au retrait/annulation/remboursement.
+- Une lecture authentifiée réconcilie toute émission manquée depuis la vérité commande ; aucune panne de notification ne bloque une transition terrain.
+- La commande disponible reste mise en évidence jusqu'au retrait, indépendamment de l'acquittement ; `prefers-reduced-motion` supprime l'animation.
+- Le chargement sans session reste silencieux et ne déclenche jamais l'OTP.
+- Aucun envoi WhatsApp métier n'est réintroduit.
+- Les nouvelles factures utilisent le HTML canonique avec le vrai logo Komerce et la version `2026-08-html-logo-v2` ; les PDF déjà émis restent immuables.

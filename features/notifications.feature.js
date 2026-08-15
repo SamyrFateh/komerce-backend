@@ -22,7 +22,7 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Emettre une alerte ou un message sortant (WhatsApp, notification interne) declenche par une autre feature.',
+  service: 'Projeter une information essentielle dans l application avec acquittement propriétaire ; conserver les canaux sortants historiques séparés et best-effort.',
 
   // ── Perimetre ───────────────────────────────────────────────────────────
   perimeter: {
@@ -30,10 +30,12 @@ module.exports = {
       'envoi WhatsApp via Meta',
       'moteur d\'alertes internes',
       'routes d\'emission de notification',
+      'cycle in-app client open -> acknowledged | resolved',
+      'réconciliation des colis disponibles sans notification',
     ],
     out: [
-      'decision de declencher une notification (reste a la feature emettrice : orders, payments, etc.)',
       'tests/unit/notification-service.test.js',
+      'décision métier de notifier (reste à la feature émettrice)',
     ],
   },
 
@@ -62,6 +64,8 @@ module.exports = {
       'tests/unit/notification-whatsapp-meta.test.js',
       'tests/unit/order-notification.test.js',
       'tests/unit/parcel-notification.test.js',
+      'tests/unit/client-notification-service.test.js',
+      'tests/unit/client-notifications-route.test.js',
     ],
     migrations: [
       'migrations/022b_sms_queue.sql',
@@ -69,6 +73,7 @@ module.exports = {
       'migrations/024_notification_log.sql',
       'migrations/058_notification_log_recipient_nullable.sql',
       'migrations/089_notification_log_ref_widening.sql',
+      'migrations/132_client_notifications.sql',
     ],
     utils: [
       'utils/email.js',
@@ -89,11 +94,13 @@ module.exports = {
       'services/notifications/loyalty.js',       // notifyLoyaltyEarned
       'services/notifications/misc.js',          // notifyText
       'services/alert-engine.js',
+      'services/client-notification-service.js',
     ],
     routes: [
       'routes/notification-api.js',
       'routes/meta-whatsapp.js',
       'routes/alerts.js',
+      'routes/client-notifications.js',
     ],
   },
 
@@ -102,6 +109,7 @@ module.exports = {
     'docs/D1_CARTOGRAPHIE_PROVIDER_NOTIFICATIONS.md',
     'docs/audit/PROMPT_SONNET_NOTIFICATIONS_PROVIDER_KOMERCE.md',
     'docs/chantier/F1B_NOTIFICATION_LOGGER_CODEMOD.md',
+    'docs/doctrine/DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md',
   ],
 
   // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
@@ -115,6 +123,7 @@ module.exports = {
   db: {
     tables: [
       'alerts: W',
+      'client_notifications: RW',
       'incidents: RW',
       'notification_log: RW',
       'orders: R',
@@ -128,14 +137,16 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_WEBHOOK_SIGNED',
-    authedRoutesDetected: 2,
-    totalRoutes: 4,
-    note: "2/4 routes internes protégées. 2 routes webhook WhatsApp (GET + POST /webhook/meta-whatsapp) : protégées par signature HMAC-SHA256 (META_WA_APP_SECRET) + verify token — pas de middleware Express authenticate, d'où UNKNOWN dans le scanner statique. Protection applicative confirmée dans routes/meta-whatsapp.js.",
+    authedRoutesDetected: 4,
+    totalRoutes: 6,
+    note: "4/6 routes internes protégées, dont les deux routes client avec filtrage user_id. 2 routes webhook WhatsApp (GET + POST /webhook/meta-whatsapp) sont protégées par signature HMAC-SHA256 et verify token.",
   },
   contract: {
     exposes: [
       'GET /api/v2/notifications',
       'GET /api/v2/notifications/stats',
+      'GET /api/auth/me/notifications',
+      'POST /api/auth/me/notifications/:id/ack',
       // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
       // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
       'GET /webhook/meta-whatsapp',
@@ -148,6 +159,7 @@ module.exports = {
       { fn: 'sendOtpMessage / sendMagicLink', file: 'services/notifications/otp-auth.js' },
       { fn: 'notifyLoyaltyEarned', file: 'services/notifications/loyalty.js' },
       { fn: 'notifyText',    file: 'services/notifications/misc.js' },
+      { fn: 'emitPickupReady / resolvePickupForOrder', file: 'services/client-notification-service.js' },
     ],
     consumes: [
       "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)",
@@ -181,6 +193,10 @@ module.exports = {
   invariants: [
     'notifications est un puits d\'evenements — elle ne decide jamais elle-meme qu\'un evenement metier a eu lieu',
     'livraison outbound best-effort — l\'echec d\'envoi WhatsApp ne doit jamais bloquer la transaction emettrice (fire-and-forget)',
+    'une notification client est idempotente et accessible uniquement à son propriétaire authentifié',
+    'acquitter une notification ne modifie jamais l état métier de la commande',
+    'seuls les événements essentiels et actionnables entrent dans le flux client',
+    'la lecture réconcilie une émission manquée depuis la vérité métier sans créer de doublon',
   ],
 
   // ── Classification ────────────────────────────────────────────────────────
@@ -189,18 +205,18 @@ module.exports = {
     decision: 'feature-transverse',
     signals: {
       ownsTables:          true,  // notification_log, sms_log
-      ownsLifecycle:       false, // pas de machine de statut propre — reçoit un événement, émet, log
+      ownsLifecycle:       true,  // notification client open -> acknowledged | resolved
       activeService:       true,  // émet activement vers Meta WhatsApp / canaux externes
       multiConsumer:       true,  // consommée par orders, payments, shared-cart, refunds, auth-identity
-      ownsMigrations:      false,
+      ownsMigrations:      true,
       externalSideEffect:  'outbound-message', // WhatsApp Meta API, SMS
-      surface:             'service',
+      surface:             'api+service',
     },
     rationale: [
       'consommée symétriquement par toutes les features émettrices — pas rattachable à une seule',
       'effet externe critique : appel WhatsApp Meta API — canal outbound',
       'ne décide jamais elle-même l\'événement métier (invariant documenté)',
-      'pas de machine de statut propre — transverse par nature',
+      'possède le petit cycle in-app open -> acknowledged | resolved sans posséder l événement métier source',
     ],
   },
 

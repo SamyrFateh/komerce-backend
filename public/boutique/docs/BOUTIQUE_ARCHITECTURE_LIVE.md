@@ -10,29 +10,30 @@
 
 ## 1. Inventaire CSS
 
-29 fichier(s) sur disque, 29 orphelin(s).
+30 fichier(s) sur disque, 30 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
 | `boutique-desktop.css` | 1353 | 🔴 **ORPHELIN** |
-| `cart.css` | 2157 | 🔴 **ORPHELIN** |
+| `cart.css` | 2202 | 🔴 **ORPHELIN** |
 | `categories.css` | 988 | 🔴 **ORPHELIN** |
-| `checkout-vertical-rail.css` | 988 | 🔴 **ORPHELIN** |
+| `checkout-vertical-rail.css` | 1014 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 1023 | 🔴 **ORPHELIN** |
 | `identity.css` | 346 | 🔴 **ORPHELIN** |
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
-| `komerce.css` | 252 | 🔴 **ORPHELIN** |
+| `komerce.css` | 330 | 🔴 **ORPHELIN** |
 | `layout.css` | 1151 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 26 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
-| `modal-media.css` | 370 | 🔴 **ORPHELIN** |
+| `modal-media.css` | 414 | 🔴 **ORPHELIN** |
 | `modal-mobile-canonical.css` | 779 | 🔴 **ORPHELIN** |
 | `modal-mobile-suggestion-actions.css` | 65 | 🔴 **ORPHELIN** |
-| `modal-product-lot4-hybrid.css` | 680 | 🔴 **ORPHELIN** |
-| `modal-product-polish.css` | 402 | 🔴 **ORPHELIN** |
+| `modal-product-lot4-hybrid.css` | 682 | 🔴 **ORPHELIN** |
+| `modal-product-polish.css` | 401 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1512 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 1359 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 1360 | 🔴 **ORPHELIN** |
+| `notifications.css` | 53 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 926 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
@@ -40,7 +41,7 @@
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
 | `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart-responsive.css` | 91 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 724 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 798 | 🔴 **ORPHELIN** |
 | `tokens.css` | 585 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
@@ -50,7 +51,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=178
- 2. /boutique/css/dist/components.css?v=525
+ 2. /boutique/css/dist/components.css?v=551
  3. /boutique/css/dist/desktop.css?v=105
 ```
 
@@ -104,17 +105,17 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js\b-pager.js` (×1) |
-| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1) ⚠️ multi-owner |
-| `--pager-w` | `js\b-pager.js` (×1) |
-| `--bnav-h` | `js\b-pager.js` (×1) |
-| `--modal-scroll-y` | `js\b-modal-core.js` (×1) |
+| `--pager-top` | `js/b-pager.js` (×1) |
+| `--pager-h` | `js/b-pager.js` (×1)<br>`js/b-subcat.js` (×1) ⚠️ multi-owner |
+| `--pager-w` | `js/b-pager.js` (×1) |
+| `--bnav-h` | `js/b-pager.js` (×1) |
+| `--modal-scroll-y` | `js/b-modal-core.js` (×1) |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 29 (cible : 0)
+- **CSS orphelins** : 30 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
 - **Hex hardcodés** : 15 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)
