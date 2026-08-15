@@ -57,7 +57,6 @@ module.exports = {
       '../js/b-modal-social-proof.js',
       '../js/b-modal-image-ux.js',
       '../js/b-modal-product.js',
-      '../js/b-modal-cart-access.js',
     ],
     tests: [
       '../tests/unit/b-modal-core.test.js',
@@ -70,7 +69,6 @@ module.exports = {
       '../tests/unit/b-modal-product-mdm9.test.js',
       '../tests/unit/b-modal-image-ux.test.js',
       '../tests/unit/b-modal-nav.test.js',
-      '../tests/unit/b-modal-cart-access.test.js',
     ],
   },
 
@@ -97,7 +95,7 @@ module.exports = {
     'tout fichier js/* portant @domain shared-cart-modal doit être listé dans files.js de ce manifeste',
     'tout test unitaire couvrant un fichier files.js de ce manifeste doit être listé dans files.tests',
     'le bouton favori de la fiche produit garde aria-pressed et son libellé Ajouter ou Retirer synchronisés avec l état réel',
-    'sur desktop le bouton panier centre cible le side-cart integre par un focus et un signal visuel perceptible sans fermer la fiche produit ni ouvrir le drawer mobile',
+    'sur desktop le bouton panier centre ouvre le recapitulatif canonique du checkout sans cibler le side-cart ; sur mobile il ouvre le drawer de relecture',
   ],
 
   // Dette consignée (R7 — hors périmètre de ce palier) :

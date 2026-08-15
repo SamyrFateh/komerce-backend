@@ -28,6 +28,7 @@ const mockUpdateModalNavArrows = jest.fn();
 const mockNavigateModal = jest.fn();
 const mockSyncModalQtyUI = jest.fn();
 const mockSetupModalCart = jest.fn();
+const { bus } = require('../../js/b-bus.js');
 
 jest.mock('../../js/b-utils.js', () => ({
   sanitize: jest.fn((value) => String(value == null ? '' : value)),
@@ -258,14 +259,15 @@ test('setupModal déplace les actions, câble favoris, panier et overlay', () =>
   expect(dom.modalOverlay.classList.contains('open')).toBe(false);
 });
 
-test('panier modal desktop reste dans le PDP et cible le side-cart intégré', () => {
+test('panier modal desktop ouvre le récapitulatif canonique, pas le side-cart', () => {
   mockIsDesktop.mockReturnValue(true);
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
 
   openModal(1);
 
   const sideCart = document.getElementById('k-side-cart');
-  sideCart.scrollIntoView = jest.fn();
+  const emitSpy = jest.spyOn(bus, 'emit');
+  emitSpy.mockClear();
 
   expect(sideCart.parentElement).toBe(document.getElementById('k-modal-cart-slot'));
   expect(sideCart.classList.contains('k-side-cart--in-modal')).toBe(true);
@@ -273,15 +275,12 @@ test('panier modal desktop reste dans le PDP et cible le side-cart intégré', (
 
   dom.modalCartBtn.click();
 
+  expect(emitSpy).toHaveBeenCalledWith('checkout:open');
   expect(dom.modalOverlay.classList.contains('open')).toBe(true);
   expect(mockOpenCart).not.toHaveBeenCalled();
   expect(sideCart.classList.contains('k-side-cart--in-modal')).toBe(true);
-  expect(sideCart.scrollIntoView).toHaveBeenCalledWith({
-    behavior: 'smooth',
-    block: 'nearest',
-    inline: 'nearest',
-  });
 
+  emitSpy.mockRestore();
   closeModal();
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
 });
