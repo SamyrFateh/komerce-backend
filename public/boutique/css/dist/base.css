@@ -2596,7 +2596,7 @@ body:has(#k-page-scroll.k-pager-active) {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: 50% 0%;
+    object-position: 50% 10%;
     aspect-ratio: unset;
     display: block;
   }

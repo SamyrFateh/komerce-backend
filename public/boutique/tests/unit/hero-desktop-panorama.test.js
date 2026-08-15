@@ -34,7 +34,7 @@ describe('hero desktop panoramique Komerce', () => {
       /html\.k-home-premium-v1 \.k-hero-mini-slogan--premium\s*\{[^}]*width:\s*43%[^}]*background:\s*transparent[^}]*z-index:\s*2/s
     );
     expect(hero).toMatch(
-      /html\.k-home-premium-v1 \.k-hero-img\s*\{[^}]*object-position:\s*50% 0%/s
+      /html\.k-home-premium-v1 \.k-hero-img\s*\{[^}]*object-position:\s*50% 10%/s
     );
     expect(hero).not.toMatch(/grid-template-columns:\s*1fr 1fr/);
   });
