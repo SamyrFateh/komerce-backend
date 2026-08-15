@@ -27,13 +27,18 @@ describe('PDP desktop premium polish — lot 2', () => {
     expect(desc).toMatch(/margin-bottom:\s*8px/);
   });
 
-  test('le centrage absolu du panier est réservé au mobile', () => {
+  test('le panier est centre sur la modal desktop et garde son offset mobile', () => {
     const beforeMobile = polish.split('/* ── Mobile')[0];
     expect(beforeMobile).not.toMatch(/#k-modal \.k-modal-cart-btn\s*\{/);
 
     const mobile = polish.match(/@media \(max-width: 899px\) \{([\s\S]*?)\n\}\n\n\/\* ── Desktop/)?.[1] ?? '';
     expect(mobile).toMatch(/#k-modal \.k-modal-cart-btn\s*\{[^}]*position:\s*absolute/s);
     expect(mobile).toMatch(/left:\s*calc\(50%\s*\+\s*18px\)/);
+
+    const desktop = polish.match(/@media \(min-width: 900px\) \{([\s\S]*)/)?.[1] ?? '';
+    expect(desktop).toMatch(/#k-modal \.k-modal-cart-btn\s*\{[^}]*position:\s*absolute/s);
+    expect(desktop).toMatch(/left:\s*50%/);
+    expect(desktop).toMatch(/transform:\s*translate\(-50%,\s*-50%\)/);
   });
 
   test('les CTA desktop restent compacts et utilisent des libellés courts', () => {

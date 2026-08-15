@@ -162,6 +162,7 @@ module.exports = {
     'le snapshot modalVariantCombo de transition est une copie de selected_options, jamais une seconde intelligence de stock',
     'le guard de repaint legacy est transitoire jusqu à PDC-6 et ne dérive aucune vérité métier',
     'le product-zone desktop reste en display:grid avec grid-template-columns',
+    'sur desktop, le bouton panier de la topbar est ancre au centre horizontal exact de la modal independamment du bouton de fermeture et de son badge',
     'sur mobile, la topbar scrollée ne superpose jamais le panier au titre ; le retour-haut reste au-dessus de la barre transactionnelle et les suggestions conservent des titres lisibles',
   ],
 

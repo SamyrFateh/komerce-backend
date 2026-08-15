@@ -17,8 +17,8 @@ const ROOT = path.resolve(__dirname, '../..');
 const CSS_PATH = path.join(ROOT, 'css/modal-product-polish.css');
 const css = fs.readFileSync(CSS_PATH, 'utf8');
 
-describe('modal-product-polish — invariants topbar mobile', () => {
-  test('le centrage du panier reste strictement mobile', () => {
+describe('modal-product-polish — invariants topbar responsive', () => {
+  test('le panier conserve son offset mobile et rejoint le centre exact sur desktop', () => {
     const beforeMobile = css.split('/* ── Mobile')[0];
 
     expect(beforeMobile).not.toMatch(
@@ -37,6 +37,20 @@ describe('modal-product-polish — invariants topbar mobile', () => {
     expect(cart).toMatch(/top\s*:\s*50%/);
     expect(cart).toMatch(/left\s*:\s*calc\(50%\s*\+\s*18px\)/);
     expect(cart).toMatch(
+      /transform\s*:\s*translate\(-50%,\s*-50%\)/
+    );
+
+    const desktop = css.match(
+      /@media \(min-width: 900px\) \{([\s\S]*)/
+    )?.[1] ?? '';
+    const desktopCart = desktop.match(
+      /#k-modal \.k-modal-cart-btn\s*\{([^}]+)\}/s
+    )?.[1] ?? '';
+
+    expect(desktopCart).toMatch(/position\s*:\s*absolute/);
+    expect(desktopCart).toMatch(/top\s*:\s*50%/);
+    expect(desktopCart).toMatch(/left\s*:\s*50%/);
+    expect(desktopCart).toMatch(
       /transform\s*:\s*translate\(-50%,\s*-50%\)/
     );
   });
