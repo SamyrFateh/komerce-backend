@@ -28,6 +28,7 @@ import { setupProductDetailModal } from './b-modal-product-detail-bootstrap.js';
 // FIX GREETING — b-greeting importé mais jamais appelé dans setupBoutiqueRuntime
 import { greetIfKnown } from './b-greeting.js';
 import { setupClientNotifications } from './b-notifications.js';
+import { setupKomerceNavIdentity } from './b-komerce-nav-identity.js';
 
 function setupBoutiqueRuntime() {
   setupSharePhoneGuard();
@@ -41,6 +42,7 @@ function setupBoutiqueRuntime() {
   setupProductDetailModal();
   setupProductOpenContract();
   setupCartProductOpenStyle();
+  setupKomerceNavIdentity();
   // FIX GREETING — appelé après le boot, best-effort (silencieux si non connecté)
   greetIfKnown();
   setupClientNotifications();

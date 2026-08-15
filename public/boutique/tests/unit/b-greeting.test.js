@@ -14,8 +14,8 @@
  * pendant 4s si l'utilisateur est identifié, puis disparaît.
  *
  * Périmètre couvert :
- *   - guard sessionStorage (`kmrc_greeted`) : ne refait jamais l'appel
- *     réseau une fois le chip déjà montré dans la session
+ *   - guard sessionStorage (`kmrc_greeted`) : relit la session pour le shell
+ *     authentifié sans réafficher le chip déjà montré
  *   - silence total sur tous les cas d'échec (réseau, !res.ok, user absent
  *     ou sans id) : aucun chip, aucune exception qui remonte à l'appelant
  *   - cas succès : construction du label (avec/sans prénom, avec/sans
@@ -60,20 +60,23 @@ describe('b-greeting', () => {
     jest.useRealTimers();
   });
 
-  test('guard sessionStorage : si déjà salué cette session, aucun appel réseau', async () => {
+  test('guard sessionStorage : relit la session mais ne réaffiche pas le chip', async () => {
     sessionStorage.setItem(GREETING_KEY, '1');
-    const fetchSpy = mockFetchOnce();
+    const fetchSpy = mockFetchOnce(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ id: 7, full_name: 'Fatima Ali' }),
+    }));
 
     await greetIfKnown();
 
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(document.getElementById(CHIP_ID)).toBeNull();
   });
 
   test('échec réseau (fetch rejette) : silencieux, aucune exception, aucun chip', async () => {
     mockFetchOnce(() => Promise.reject(new Error('offline')));
 
-    await expect(greetIfKnown()).resolves.toBeUndefined();
+    await expect(greetIfKnown()).resolves.toBeNull();
 
     expect(document.getElementById(CHIP_ID)).toBeNull();
     expect(sessionStorage.getItem(GREETING_KEY)).toBeNull();
@@ -149,17 +152,32 @@ describe('b-greeting', () => {
     expect(document.getElementById(CHIP_ID).textContent).toBe('Karibu Fatima 😊');
   });
 
-  test('deuxième appel dans la même session (guard déjà posé) : pas de second fetch', async () => {
+  test('deuxième appel dans la même session : relit la session sans dupliquer le chip', async () => {
     mockFetchOnce(() => Promise.resolve({
       ok: true,
       json: () => Promise.resolve({ id: 7, full_name: 'Fatima' }),
     }));
 
     await greetIfKnown();
-    const fetchAfterFirst = global.fetch.mock.calls.length;
     await greetIfKnown();
 
-    expect(global.fetch.mock.calls.length).toBe(fetchAfterFirst);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(document.querySelectorAll(`#${CHIP_ID}`)).toHaveLength(1);
+  });
+
+  test('succès : publie l’identité vérifiée pour personnaliser Mon Komerce', async () => {
+    const listener = jest.fn();
+    window.addEventListener('komerce:identity-authenticated', listener, { once: true });
+    const user = { id: 7, full_name: 'Fatima Ali' };
+    mockFetchOnce(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(user),
+    }));
+
+    await greetIfKnown();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0][0].detail).toEqual({ user });
   });
 
   describe('cycle de vie du chip (timers)', () => {

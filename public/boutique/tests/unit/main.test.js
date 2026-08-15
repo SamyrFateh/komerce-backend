@@ -24,6 +24,7 @@ const mockGreetIfKnown = jest.fn();
 const mockIsDesktop = jest.fn();
 const mockSetupModalDesktopEnhancers = jest.fn();
 const mockSetupClientNotifications = jest.fn();
+const mockSetupKomerceNavIdentity = jest.fn();
 
 jest.mock('../../js/b-utils.js', () => ({}));
 jest.mock('../../js/b-bus.js', () => ({ bus: mockBus }));
@@ -60,6 +61,7 @@ jest.mock('../../js/b-modal-product-detail-bootstrap.js', () => ({
 }));
 jest.mock('../../js/b-greeting.js', () => ({ greetIfKnown: mockGreetIfKnown }));
 jest.mock('../../js/b-notifications.js', () => ({ setupClientNotifications: mockSetupClientNotifications }));
+jest.mock('../../js/b-komerce-nav-identity.js', () => ({ setupKomerceNavIdentity: mockSetupKomerceNavIdentity }));
 
 test('main initialise le runtime et applique les enrichissements desktop au premier resize', () => {
   jest.useFakeTimers();
@@ -77,6 +79,7 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
   expect(mockSetupProductOpenContract).toHaveBeenCalledTimes(1);
   expect(mockSetupCartProductOpenStyle).toHaveBeenCalledTimes(1);
+  expect(mockSetupKomerceNavIdentity).toHaveBeenCalledTimes(1);
   expect(mockGreetIfKnown).toHaveBeenCalledTimes(1);
   expect(mockSetupClientNotifications).toHaveBeenCalledTimes(1);
 

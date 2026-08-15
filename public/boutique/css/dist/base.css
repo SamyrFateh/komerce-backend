@@ -1058,6 +1058,29 @@ body {
   line-height: 1.1;
 }
 .k-bnav-btn svg, .k-bnav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+.k-komerce-nav-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 22px;
+}
+.k-komerce-nav-icon > svg { grid-area: 1 / 1; }
+.k-komerce-nav-avatar { display: none; overflow: visible; }
+.is-authenticated .k-komerce-nav-icon-default { display: none; }
+.is-authenticated .k-komerce-nav-avatar { display: block; }
+.k-komerce-nav-avatar-bg { fill: var(--sand-warm); stroke: var(--ocean-dark); stroke-width: 1.4; }
+.k-komerce-nav-avatar-face { fill: var(--coral-soft); stroke: var(--coral); stroke-width: 1.15; }
+.k-komerce-nav-avatar-eye { fill: var(--text); stroke: none; }
+.k-komerce-nav-avatar-smile { fill: none; stroke: var(--text); stroke-width: 1.05; stroke-linecap: round; }
+.k-komerce-nav-avatar-shoulders { fill: var(--ocean-light); stroke: var(--ocean-dark); stroke-width: 1.15; stroke-linejoin: round; }
+.k-bnav .k-komerce-nav-label {
+  display: block;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .k-bnav-badge {
   top: 4px;
   right: calc(50% - 18px);
@@ -1690,6 +1713,11 @@ body:has(#k-page-scroll.k-pager-active) {
     width: 18px; height: 18px;
     stroke: currentColor; fill: none; stroke-width: 2;
     flex-shrink: 0;
+  }
+  .k-header-nav-btn .k-komerce-nav-icon,
+  .k-header-nav-btn .k-komerce-nav-icon > svg {
+    width: 20px;
+    height: 20px;
   }
   .k-header-nav-btn:hover {
     background: var(--white);

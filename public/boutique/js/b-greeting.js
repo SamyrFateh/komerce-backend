@@ -20,7 +20,8 @@
  *   - Si l'utilisateur est identifié, affiche un petit chip "Kwezi Fatima 😊"
  *     en haut à droite, fond clair, pendant 4 s puis disparaît.
  *   - Ne bloque rien, n'utilise pas le toast général.
- *   - Ne s'affiche qu'une fois par session (sessionStorage guard).
+ *   - Le chip ne s'affiche qu'une fois par session (sessionStorage guard),
+ *     mais la session est toujours relue afin de personnaliser la navigation.
  *   - Aucune erreur réseau ne remonte à l'utilisateur.
  *
  * Intégration : importé dans main.js, appelé dans setupBoutiqueRuntime().
@@ -77,7 +78,7 @@ function showGreetingChip(label) {
  * Silencieux en cas d'échec (utilisateur non connecté ou réseau indisponible).
  */
 export async function greetIfKnown() {
-  if (sessionStorage.getItem(GREETING_KEY)) return;
+  const alreadyGreeted = Boolean(sessionStorage.getItem(GREETING_KEY));
 
   try {
     const res = await fetch('/api/auth/me', {
@@ -85,14 +86,24 @@ export async function greetIfKnown() {
       credentials: 'include',
     });
 
-    if (!res.ok) return;
+    if (!res.ok) return null;
 
     const user = await res.json();
-    if (!user || !user.id) return;
+    if (!user || !user.id) return null;
+
+    // Le même signal vérifié alimente désormais la tête neutre + le prénom
+    // dans l'entrée Mon Komerce. Le détail évite un second GET /api/auth/me.
+    window.dispatchEvent(new CustomEvent('komerce:identity-authenticated', {
+      detail: { user },
+    }));
+
+    if (alreadyGreeted) return user;
 
     sessionStorage.setItem(GREETING_KEY, '1');
     showGreetingChip(buildLabel(user));
+    return user;
   } catch (_) {
     // réseau indisponible ou cookie expiré → silencieux
+    return null;
   }
 }

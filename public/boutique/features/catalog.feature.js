@@ -68,6 +68,7 @@ module.exports = {
     ],
     tests: [
       '../tests/unit/b-favs.test.js',
+      '../tests/unit/b-greeting.test.js',
       '../tests/unit/render-home-sections.test.js',
       '../tests/unit/render-categories.test.js',
     ],

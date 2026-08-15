@@ -56,12 +56,14 @@ module.exports = {
   files: {
     js: [
       '../js/b-komerce.js',
+      '../js/b-komerce-nav-identity.js',
     ],
     css: [
       '../css/komerce.css',
     ],
     tests: [
       '../tests/unit/b-komerce.test.js',
+      '../tests/unit/b-komerce-nav-identity.test.js',
     ],
   },
 
@@ -96,6 +98,7 @@ module.exports = {
     "les documents essentiels précèdent le wallet compact sans sous-onglet et ne sont jamais liés depuis WhatsApp",
     "Mon Komerce n'affiche aucun mouvement wallet, reçu de retrait, document douane ou document technique dans Mes documents",
     "avant une identification Mon Komerce, la navigation revient sur un fond Boutique neutre ; une erreur Suivi ou Mes Partages ne reste jamais exposée sous la modale",
+    "la navigation affiche une tête neutre non genrée et le prénom uniquement après confirmation de la session authentifiée",
   ],
 
 };

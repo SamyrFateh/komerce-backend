@@ -81,6 +81,7 @@ module.exports = {
       'orders — accès au panier et au suivi',
       'wallet — accès à la surface wallet',
       'notifications-client — initialisation du bandeau essentiel',
+      'account — personnalisation authentifiée de l entrée Mon Komerce',
     ],
   },
   authority: 'boutique — le shell compose les surfaces mais ne possède aucune vérité métier.',
