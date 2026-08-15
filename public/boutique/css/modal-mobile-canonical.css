@@ -162,7 +162,7 @@
      36vh single) rendait la hauteur du hero dépendante du mode galerie
      plutôt que d'un ratio stable — Golden Elite (multi-image) produisait un
      cadre visiblement plus haut qu'une fixture SVG single-image, à contenu
-     équivalent. Remplacé par un ratio 16:9 compact, identique
+     équivalent. Remplacé par un ratio 4:3 compact, identique
      quel que soit gallery-mode ou has-variants : la hauteur ne dépend plus
      que de la largeur du wrapper, donc cohérente entre produits.
 
@@ -177,12 +177,12 @@
   #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"],
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
     height: auto;
     min-height: 150px;
-    max-height: 48vh;
-    max-height: 48dvh;
-    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+    max-height: 62vh;
+    max-height: 62dvh;
+    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.62);
   }
 
   /* MDM-9 : le sujet réel (single-image) reste compensé par un zoom CSS
@@ -194,19 +194,19 @@
 
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
      k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
-     ratio 16:9 (plus compact que l'ancien 48vh), le hero libère déjà plus
+     ratio 4:3 (plus compact que l'ancien 48vh), le hero libère déjà plus
      d'espace vertical pour les chips Taille qu'avant — pas de surcharge
      supplémentaire nécessaire ici. Règle conservée à titre explicite pour
      ne pas dépendre implicitement du fallback ci-dessus si le contrat
      évolue. */
   #k-modal.k-modal--has-variants .k-modal-img-wrap,
   #k-modal.k-modal--has-variants .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
     height: auto;
     min-height: 150px;
-    max-height: 48vh;
-    max-height: 48dvh;
-    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+    max-height: 62vh;
+    max-height: 62dvh;
+    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.62);
   }
 
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {

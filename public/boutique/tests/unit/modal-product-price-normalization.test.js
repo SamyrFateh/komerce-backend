@@ -80,7 +80,7 @@ describe('modal-product — normalisation du prix mobile', () => {
     expect(css).not.toMatch(/k-mobile-premium-v1/);
   });
 
-  test('le média mobile a une géométrie stable en ratio 16:9, indépendante du mode galerie', () => {
+  test('le média mobile a une géométrie ample en ratio 4:3, indépendante du mode galerie', () => {
     // Selecteur combiné (base + multiple + single partagent désormais le
     // même ratio) : recherche directe dans la feuille plutôt que via
     // l'helper rule() (qui ne matche que des sélecteurs simples exacts).
@@ -89,10 +89,10 @@ describe('modal-product — normalisation du prix mobile', () => {
     );
     expect(match).not.toBeNull();
     const block = match[1];
-    expect(block).toMatch(/aspect-ratio:\s*16\s*\/\s*9/);
+    expect(block).toMatch(/aspect-ratio:\s*4\s*\/\s*3/);
     expect(block).toMatch(/min-height:\s*150px/);
     // max-height reste un garde-fou (vh), plus la source de hauteur normale
-    expect(block).toMatch(/max-height:\s*48vh/);
+    expect(block).toMatch(/max-height:\s*62vh/);
     expect(block).toMatch(/height:\s*auto/);
   });
 });

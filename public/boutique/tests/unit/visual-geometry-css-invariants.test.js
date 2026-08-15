@@ -1035,7 +1035,7 @@ describe('POLISH final ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â logo desktop, badg
     expect(rail).toMatch(/border-radius\s*:\s*14px/);
 
     expect(personal).toMatch(/background\s*:\s*var\(--sand\)/);
-    expect(list).toMatch(/background\s*:\s*var\(--sand-warm\)/);
+    expect(list).toMatch(/background\s*:\s*var\(--sand\)/);
     expect(list).toMatch(/border-color\s*:\s*var\(--stone-border\)/);
   });
 });

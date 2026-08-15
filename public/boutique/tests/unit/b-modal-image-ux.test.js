@@ -9,11 +9,11 @@
 /**
  * tests/unit/b-modal-image-ux.test.js
  *
- * Module js/b-modal-image-ux.js — compteur 1/N, bouton "Voir en grand",
- * lightbox plein écran, swipe, Escape et sync carousel.
+ * Module js/b-modal-image-ux.js â€” compteur 1/N, bouton "Voir en grand",
+ * lightbox plein Ã©cran, swipe, Escape et sync carousel.
  *
- * PDC-4 ajoute une différence intentionnelle : une fiche détail mobile enrichie
- * montre le compteur dès 2 médias, alors que le parcours legacy conserve son
+ * PDC-4 ajoute une diffÃ©rence intentionnelle : une fiche dÃ©tail mobile enrichie
+ * montre le compteur dÃ¨s 2 mÃ©dias, alors que le parcours legacy conserve son
  * seuil historique > 5 images.
  */
 
@@ -54,18 +54,19 @@ describe('b-modal-image-ux', () => {
 
     state.carouselIndex = 0;
     state.modalProductDetail = null;
+    window.matchMedia = jest.fn().mockReturnValue({ matches: false });
     jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(); return 1; });
   });
 
   describe('compteur 1/N', () => {
-    test('<= 5 images legacy -> compteur masqué, dots réaffichés', () => {
+    test('<= 5 images legacy -> compteur masquÃ©, dots rÃ©affichÃ©s', () => {
       buildModalDom(3);
       setupImageUX();
       expect(document.querySelector('.k-modal-counter').classList.contains('is-visible')).toBe(false);
       expect(document.querySelector('.k-modal-dots').style.display).toBe('');
     });
 
-    test('fiche détail mobile enrichie -> compteur visible dès 2 médias', () => {
+    test('fiche dÃ©tail mobile enrichie -> compteur visible dÃ¨s 2 mÃ©dias', () => {
       buildModalDom(2);
       state.modalProductDetail = { product: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' } };
       window.matchMedia = jest.fn().mockReturnValue({ matches: true });
@@ -79,7 +80,7 @@ describe('b-modal-image-ux', () => {
       expect(document.querySelector('.k-modal-dots').style.display).toBe('none');
     });
 
-    test('fiche détail desktop conserve le seuil historique du compteur', () => {
+    test('fiche dÃ©tail desktop conserve le seuil historique du compteur', () => {
       buildModalDom(2);
       state.modalProductDetail = { product: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' } };
       window.matchMedia = jest.fn().mockReturnValue({ matches: false });
@@ -90,7 +91,7 @@ describe('b-modal-image-ux', () => {
       expect(document.querySelector('.k-modal-dots').style.display).toBe('');
     });
 
-    test('> 5 images -> compteur "1/N" visible, dots masqués', () => {
+    test('> 5 images -> compteur "1/N" visible, dots masquÃ©s', () => {
       buildModalDom(8);
       setupImageUX();
       const counter = document.querySelector('.k-modal-counter');
@@ -109,7 +110,7 @@ describe('b-modal-image-ux', () => {
   });
 
   describe('bouton "Voir en grand"', () => {
-    test('injecté dans .k-modal-img-wrap', () => {
+    test('injectÃ© dans .k-modal-img-wrap', () => {
       buildModalDom(3);
       setupImageUX();
       const btn = document.querySelector('.k-modal-view-full');
@@ -117,7 +118,16 @@ describe('b-modal-image-ux', () => {
       expect(btn.getAttribute('aria-label')).toBe('Voir en grand');
     });
 
-    test('ré-ouverture (2e appel) -> pas de doublon du bouton', () => {
+    test('mobile -> le hero suffit, aucun bouton Voir en grand injectÃ©', () => {
+      buildModalDom(3);
+      window.matchMedia = jest.fn().mockReturnValue({ matches: true });
+
+      setupImageUX();
+
+      expect(document.querySelector('.k-modal-view-full')).toBeNull();
+    });
+
+    test('rÃ©-ouverture (2e appel) -> pas de doublon du bouton', () => {
       buildModalDom(3);
       setupImageUX();
       setupImageUX();
@@ -133,7 +143,7 @@ describe('b-modal-image-ux', () => {
   });
 
   describe('lightbox fullscreen', () => {
-    test('affiche les slides en haute résolution (w_800 -> w_1600)', () => {
+    test('affiche les slides en haute rÃ©solution (w_800 -> w_1600)', () => {
       buildModalDom(3);
       setupImageUX();
       document.querySelector('.k-modal-view-full').click();
@@ -143,7 +153,7 @@ describe('b-modal-image-ux', () => {
       expect(imgs[0].src).not.toContain('w_800');
     });
 
-    test('compteur fullscreen affiche 1/N à l\'ouverture', () => {
+    test('compteur fullscreen affiche 1/N Ã  l\'ouverture', () => {
       buildModalDom(3);
       setupImageUX();
       document.querySelector('.k-modal-view-full').click();
@@ -183,7 +193,7 @@ describe('b-modal-image-ux', () => {
       expect(document.querySelector('.k-modal-fullscreen-counter').textContent).toContain('2');
     });
 
-    test('swipe < 44px -> ignoré (pas de changement de slide)', () => {
+    test('swipe < 44px -> ignorÃ© (pas de changement de slide)', () => {
       buildModalDom(3);
       setupImageUX();
       document.querySelector('.k-modal-view-full').click();
@@ -212,7 +222,7 @@ describe('b-modal-image-ux', () => {
       expect(document.querySelector('.k-modal-fullscreen').classList.contains('is-open')).toBe(false);
     });
 
-    test('handlers fullscreen (Escape, swipe) installés une seule fois même après 2 setupImageUX()', () => {
+    test('handlers fullscreen (Escape, swipe) installÃ©s une seule fois mÃªme aprÃ¨s 2 setupImageUX()', () => {
       buildModalDom(3);
       setupImageUX();
       setupImageUX();
@@ -240,7 +250,7 @@ describe('b-modal-image-ux', () => {
       expect(document.querySelector('.k-modal-fullscreen').classList.contains('is-open')).toBe(false);
     });
 
-    test('desktop, média unique sans variantes -> clic ouvre la lightbox', () => {
+    test('desktop, mÃ©dia unique sans variantes -> clic ouvre la lightbox', () => {
       buildModalDom(1);
       state.modalSelection = { selection_supported: false };
       window.matchMedia = jest.fn().mockReturnValue({ matches: false });
@@ -255,7 +265,7 @@ describe('b-modal-image-ux', () => {
       expect(fs.querySelector('.k-modal-fullscreen-slide img').src).toContain('w_1600');
     });
 
-    test('desktop, média unique avec variantes -> clic ne détourne pas le configurateur', () => {
+    test('desktop, mÃ©dia unique avec variantes -> clic ne dÃ©tourne pas le configurateur', () => {
       buildModalDom(1);
       dom.modal.classList.add('k-modal--has-variants');
       state.modalSelection = { selection_supported: true };
@@ -269,7 +279,7 @@ describe('b-modal-image-ux', () => {
   });
 
   describe('sync carousel:changed', () => {
-    test('bus.emit("carousel:changed", idx) met à jour le compteur (>5 images)', () => {
+    test('bus.emit("carousel:changed", idx) met Ã  jour le compteur (>5 images)', () => {
       buildModalDom(8);
       setupImageUX();
       bus.emit('carousel:changed', 4);

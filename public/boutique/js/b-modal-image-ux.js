@@ -107,6 +107,14 @@ function _injectViewFullBtn() {
   let existing = imgWrap.querySelector('.k-modal-view-full');
   if (existing) existing.remove();
 
+  // Mobile : le hero est désormais suffisamment grand.
+  // Le tap direct sur l'image conserve la lightbox/pinch-zoom.
+  const isMobile =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(max-width: 899px)').matches;
+
+  if (isMobile) return;
+
   let btn = document.createElement('button');
   btn.className = 'k-modal-view-full';
   btn.setAttribute('aria-label', 'Voir en grand');

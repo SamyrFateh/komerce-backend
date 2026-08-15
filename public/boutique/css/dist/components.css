@@ -2175,7 +2175,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   backface-visibility: visible;
   -webkit-backface-visibility: visible;
 }
-.k-qty { grid-column: 1; grid-row: 1; display: none; align-items: center; justify-content: space-between; width: 100%; background: var(--hero-bg); border-radius: 8px; overflow: hidden; height: 44px; flex-shrink: 0; }
+.k-qty { grid-column: 1; grid-row: 1; display: none; align-items: center; justify-content: space-between; width: 100%; background: var(--white); border: 2px solid var(--action-commerce-border); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
 /* Cycle bouton↔stepper (réf architecture.html) : hors-panier = bouton « Ajouter »
    pleine largeur, stepper masqué ; en-panier = stepper − N + affiché, bouton masqué.
    Un seul contrôle visible à la fois. is-in-cart posée par _syncModalQtyUI(). */
@@ -2183,7 +2183,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-actions--filled .k-add-cart-btn { display: none; }
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 500; transition: background .15s; touch-action: manipulation; cursor: pointer; }
 .k-qty-btn:active { background: var(--sand-dark); }
-.k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 500; }
+.k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 750; }
 .k-add-cart-btn { grid-column: 1; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--action-commerce-text); border: 2px solid var(--action-commerce-border); border-radius: 50px; font-size: 14px; font-weight: 500; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; /* P0-fix : overflow:hidden + text-overflow:ellipsis retirés — la troncature "Ajouter au pa…" venait de ce bloc + flex:1 1 0 desktop. Le conteneur .k-modal-actions gère l'overflow. */ }
 /* Poids visuel "Ajouter" : outline jaune + encre sombre le rattachent à la
    famille commerce sans rivaliser avec Acheter maintenant, qui reste plein. */
@@ -6061,7 +6061,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      36vh single) rendait la hauteur du hero dépendante du mode galerie
      plutôt que d'un ratio stable — Golden Elite (multi-image) produisait un
      cadre visiblement plus haut qu'une fixture SVG single-image, à contenu
-     équivalent. Remplacé par un ratio 16:9 compact, identique
+     équivalent. Remplacé par un ratio 4:3 compact, identique
      quel que soit gallery-mode ou has-variants : la hauteur ne dépend plus
      que de la largeur du wrapper, donc cohérente entre produits.
 
@@ -6076,12 +6076,12 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"],
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
     height: auto;
     min-height: 150px;
-    max-height: 48vh;
-    max-height: 48dvh;
-    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+    max-height: 62vh;
+    max-height: 62dvh;
+    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.62);
   }
 
   /* MDM-9 : le sujet réel (single-image) reste compensé par un zoom CSS
@@ -6093,19 +6093,19 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
      k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
-     ratio 16:9 (plus compact que l'ancien 48vh), le hero libère déjà plus
+     ratio 4:3 (plus compact que l'ancien 48vh), le hero libère déjà plus
      d'espace vertical pour les chips Taille qu'avant — pas de surcharge
      supplémentaire nécessaire ici. Règle conservée à titre explicite pour
      ne pas dépendre implicitement du fallback ci-dessus si le contrat
      évolue. */
   #k-modal.k-modal--has-variants .k-modal-img-wrap,
   #k-modal.k-modal--has-variants .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
     height: auto;
     min-height: 150px;
-    max-height: 48vh;
-    max-height: 48dvh;
-    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+    max-height: 62vh;
+    max-height: 62dvh;
+    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.62);
   }
 
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {
@@ -7233,7 +7233,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-footer-actions button,
 #k-cart-share, #k-cart-clear, #k-cart-continue {
   min-height: 36px;
-  border: 1px solid var(--action-btn-border); border-radius: 11px;
+  border: 1.5px solid var(--stone-border); border-radius: 11px;
   background: var(--white); color: var(--action-btn-text);
   font-size: 11px; font-weight: 750;
   cursor: pointer;
@@ -10458,12 +10458,29 @@ body.cart-open  #k-section-index { display:none; }
   }
 
   .k-cart-header:has(#k-cart-surface-switch-drawer[data-active="list"]) {
-    background: color-mix(in srgb, var(--sand-warm) 68%, var(--white));
+    background: var(--white);
   }
 
   .k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-surface-switch-drawer[data-active="list"] {
-    background: var(--sand-warm);
+    background: var(--sand);
     border-color: var(--stone-border);
+  }
+
+  /* Terrain mobile : deux états lisibles sans double coloration du chrome. */
+  #k-cart-surface-switch-drawer
+  .k-tab-personal.k-cart-tab--active {
+    border: 1.5px solid var(--stone-border);
+    background: var(--white);
+    box-shadow: none;
+    transform: none;
+  }
+
+  #k-cart-surface-switch-drawer
+  .k-cart-tab-group--active {
+    border: 1.5px solid var(--stone-border);
+    background: var(--sand-warm);
+    box-shadow: none;
+    transform: none;
   }
 }
 
@@ -10644,7 +10661,7 @@ body.cart-open  #k-section-index { display:none; }
 .k-snap-btn-secondary {
   min-height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--action-btn-border);
+  border: 1.5px solid var(--stone-border);
   border-radius: 11px;
   font-weight: 750;
   font-size: .82rem;
@@ -10668,7 +10685,7 @@ body.cart-open  #k-section-index { display:none; }
 .k-snap-link {
   min-height: 36px;
   padding: 0 8px;
-  border: 1px solid var(--action-btn-border);
+  border: 1.5px solid var(--stone-border);
   border-radius: 11px;
   background: var(--white);
   font-size: 11px;

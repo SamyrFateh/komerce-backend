@@ -300,7 +300,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-footer-actions button,
 #k-cart-share, #k-cart-clear, #k-cart-continue {
   min-height: 36px;
-  border: 1px solid var(--action-btn-border); border-radius: 11px;
+  border: 1.5px solid var(--stone-border); border-radius: 11px;
   background: var(--white); color: var(--action-btn-text);
   font-size: 11px; font-weight: 750;
   cursor: pointer;
