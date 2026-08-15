@@ -22,9 +22,14 @@ const fs   = require('fs');
 const path = require('path');
 
 const CSS = path.resolve(__dirname, '../../css');
+const BOUTIQUE = path.resolve(__dirname, '../..');
 
 function readCss(name) {
   return fs.readFileSync(path.join(CSS, name), 'utf8');
+}
+
+function readBoutiqueHtml() {
+  return fs.readFileSync(path.join(BOUTIQUE, 'index.html'), 'utf8');
 }
 
 describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS statiques (LOT 1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“6, 2026-08)', () => {
@@ -633,15 +638,31 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(desktop).not.toMatch(/100,175,90/);
     });
 
-    it('LOT10-d : le premium ne regonfle plus la recherche ÃƒÆ’Ã‚Â  54px', () => {
+    it('LOT10-d : la recherche desktop reste contenue à 430px', () => {
       const premium =
         layout.match(/html\.k-home-premium-v1 \.k-search\s*\{([^}]+)\}/s)?.[1] ?? '';
 
       expect(premium).not.toMatch(/min-height\s*:\s*54px/);
       expect(premium).not.toMatch(/14px 36px/);
 
-      expect(layout).toMatch(/max-width\s*:\s*680px/);
-      expect(layout).toMatch(/max-width\s*:\s*760px/);
+      const desktopSearch = [...layout.matchAll(/\.k-search\s*\{([^}]+)\}/gs)]
+        .map(m => m[1])
+        .find(b => /flex\s*:\s*0 1 430px/.test(b)) || '';
+
+      expect(desktopSearch).toMatch(/max-width\s*:\s*430px/);
+      expect(layout).not.toMatch(/max-width\s*:\s*(680|760)px/);
+    });
+
+    it('LOT10-d2 : Mon Komerce précède la recherche dans le bandeau desktop', () => {
+      const html = readBoutiqueHtml();
+      const headerStart = html.indexOf('<header class="k-header"');
+      const headerEnd = html.indexOf('</header>', headerStart);
+      const header = html.slice(headerStart, headerEnd);
+
+      expect(header.indexOf('id="k-header-komerce-btn"')).toBeGreaterThan(-1);
+      expect(header.indexOf('id="k-search"')).toBeGreaterThan(-1);
+      expect(header.indexOf('id="k-header-komerce-btn"')).toBeLessThan(header.indexOf('id="k-search"'));
+      expect(header.indexOf('id="k-search"')).toBeLessThan(header.indexOf('class="k-header-actions"'));
     });
 
     it('LOT10-e : le groupe actions et avatar sont resserrÃƒÆ’Ã‚Â©s', () => {

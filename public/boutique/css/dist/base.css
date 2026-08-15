@@ -1240,7 +1240,7 @@ body:has(#k-page-scroll.k-pager-active) {
   .k-header-inner {
     height: 68px;
     margin: 0 auto;
-    gap: 18px;
+    gap: 10px;
     padding-inline: clamp(24px, 3vw, 32px);
   }
 
@@ -1249,10 +1249,11 @@ body:has(#k-page-scroll.k-pager-active) {
   .k-logo-text { display: none; }
   .k-logo-icon { display: none; }
 
-  /* Barre recherche centrale large */
+  /* Recherche volontairement contenue : elle reste utile sans devenir
+     l'élément dominant du bandeau. */
   .k-search {
-    flex: 1 1 0;
-    max-width: 680px;
+    flex: 0 1 430px;
+    max-width: 430px;
     height: 44px;
     border-radius: 999px;
     border: 1px solid rgba(42,33,23,.10);
@@ -1362,7 +1363,7 @@ body:has(#k-page-scroll.k-pager-active) {
   .k-header { height: 72px; }
   .k-header-inner { height: 72px; }
   .k-logo-img { height: 44px; }
-  .k-search { height: 46px; max-width: 760px; }
+  .k-search { height: 46px; max-width: 430px; }
   .k-search input { height: 46px; font-size: 16px; }
 
   .k-card-name { font-size: 13px; }
@@ -1761,6 +1762,7 @@ body:has(#k-page-scroll.k-pager-active) {
     display: flex;
     align-items: center;
     gap: 6px;
+    margin-left: auto;
   }
 
   /* k-cart-btn.k-header-action desktop — BUG-AVATAR-2 :
@@ -1792,7 +1794,7 @@ body:has(#k-page-scroll.k-pager-active) {
   .k-header-inner {
     max-width: 1480px;
     min-height: 68px;
-    gap: 18px;
+    gap: 10px;
   }
 }
 

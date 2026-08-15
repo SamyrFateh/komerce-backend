@@ -38,7 +38,7 @@
      Ne jamais remettre en inline, ne jamais ajouter defer/async, ne jamais
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=182">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=183">
 <link rel="stylesheet" href="/boutique/css/dist/components.css?v=564">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=107">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
@@ -112,6 +112,21 @@
         <span class="k-logo-wordmark">Komerce</span>
       </span>
     </a>
+    <button class="k-header-nav-btn k-header-nav-btn--group" data-tab="komerce" aria-label="Mon Komerce" id="k-header-komerce-btn">
+      <span class="k-komerce-nav-icon" aria-hidden="true">
+        <svg class="k-komerce-nav-icon-default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+        <svg class="k-komerce-nav-avatar" viewBox="0 0 24 24">
+          <circle class="k-komerce-nav-avatar-bg" cx="12" cy="12" r="10"/>
+          <circle class="k-komerce-nav-avatar-face" cx="12" cy="10" r="5.25"/>
+          <circle class="k-komerce-nav-avatar-eye" cx="10" cy="9.5" r=".65"/>
+          <circle class="k-komerce-nav-avatar-eye" cx="14" cy="9.5" r=".65"/>
+          <path class="k-komerce-nav-avatar-smile" d="M9.7 12.1c.7.8 1.45 1.2 2.3 1.2s1.6-.4 2.3-1.2"/>
+          <path class="k-komerce-nav-avatar-shoulders" d="M5.5 21c.7-4 3-6 6.5-6s5.8 2 6.5 6"/>
+        </svg>
+      </span>
+      <span class="k-komerce-nav-label" data-default-label="Mon Komerce">Mon Komerce</span>
+      <span class="k-header-group-badge" id="k-header-group-badge"></span>
+    </button>
     <div class="k-search" id="k-search">
       <svg class="k-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
       <input type="search" id="k-search-input" placeholder="Rechercher un produit..." autocomplete="off">
@@ -134,21 +149,6 @@
           <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/>
         </svg>
         <span>Mes Partages</span>
-      </button>
-      <button class="k-header-nav-btn k-header-nav-btn--group" data-tab="komerce" aria-label="Mon Komerce" id="k-header-komerce-btn">
-        <span class="k-komerce-nav-icon" aria-hidden="true">
-          <svg class="k-komerce-nav-icon-default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
-          <svg class="k-komerce-nav-avatar" viewBox="0 0 24 24">
-            <circle class="k-komerce-nav-avatar-bg" cx="12" cy="12" r="10"/>
-            <circle class="k-komerce-nav-avatar-face" cx="12" cy="10" r="5.25"/>
-            <circle class="k-komerce-nav-avatar-eye" cx="10" cy="9.5" r=".65"/>
-            <circle class="k-komerce-nav-avatar-eye" cx="14" cy="9.5" r=".65"/>
-            <path class="k-komerce-nav-avatar-smile" d="M9.7 12.1c.7.8 1.45 1.2 2.3 1.2s1.6-.4 2.3-1.2"/>
-            <path class="k-komerce-nav-avatar-shoulders" d="M5.5 21c.7-4 3-6 6.5-6s5.8 2 6.5 6"/>
-          </svg>
-        </span>
-        <span class="k-komerce-nav-label" data-default-label="Mon Komerce">Mon Komerce</span>
-        <span class="k-header-group-badge" id="k-header-group-badge"></span>
       </button>
       <button class="k-cart-btn k-header-action" id="k-cart-btn" aria-label="Panier">
         <img src="/images/avatar_seule.png" class="k-cart-avatar" alt="">
