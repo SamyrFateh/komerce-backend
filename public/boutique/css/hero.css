@@ -697,7 +697,7 @@
   /* ── Hero lui-même : hauteur compacte ── */
   html.k-home-premium-v1 .k-hero {
     overflow: clip;
-    padding-top: clamp(22px, 2.2vw, 34px);
+    padding-top: clamp(16px, 1.4vw, 22px);
   }
 
   html.k-home-premium-v1 .k-hero-inner {

@@ -43,6 +43,9 @@ describe('hero desktop panoramique Komerce', () => {
     expect(hero).toMatch(
       /body\.k-view-shop #k-header-spacer\s*\{[^}]*height:\s*0 !important/s
     );
+    expect(hero).toMatch(
+      /html\.k-home-premium-v1 \.k-hero\s*\{[^}]*padding-top:\s*clamp\(16px, 1\.4vw, 22px\)/s
+    );
   });
 
   test('recompose la hauteur et le titre quand le side cart réserve sa largeur', () => {
