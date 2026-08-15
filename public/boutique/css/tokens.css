@@ -150,6 +150,7 @@
   --commerce-yellow-hover:     #F2C800;
   --commerce-yellow-shadow:    0 3px 9px rgba(171,137,0,.20);
   --commerce-yellow-shadow-sm: 0 2px 8px rgba(171,137,0,.18);
+  --cart-badge-text:           #111;  /* compteur panier — contraste maximal sur jaune commerce */
 
   /* ── Rôles chromatiques UI — doctrine Boutique 2026-08 ────────────────
    * Commerce   : ajouter, acheter, commander, payer.

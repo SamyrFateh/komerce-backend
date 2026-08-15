@@ -10429,6 +10429,44 @@ body.cart-open  #k-section-index { display:none; }
   color: var(--text-muted);
 }
 
+/* ── PARITÉ MOBILE — distinction Panier personnel / Liste partagée ──────
+ * cart.css neutralise volontairement le chrome générique du header mobile
+ * (#k-cart-surface-switch-drawer : border:0/background:transparent).
+ * Ici, le composant shared-list reprend possession de SON rail grâce au
+ * data-active déjà maintenu par group-side-cart.js.
+ *
+ * Panier personnel = header blanc, rail neutre.
+ * Liste partagée   = contexte sable chaud, comme desktop.
+ */
+@media (max-width: 899px) {
+  .k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-surface-switch-drawer.k-cart-tabs {
+    min-height: 44px;
+    height: 44px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--sand);
+  }
+
+  .k-cart-header:has(#k-cart-surface-switch-drawer[data-active="personal"]) {
+    background: var(--white);
+  }
+
+  .k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-surface-switch-drawer[data-active="personal"] {
+    background: var(--sand);
+    border-color: var(--border);
+  }
+
+  .k-cart-header:has(#k-cart-surface-switch-drawer[data-active="list"]) {
+    background: color-mix(in srgb, var(--sand-warm) 68%, var(--white));
+  }
+
+  .k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-surface-switch-drawer[data-active="list"] {
+    background: var(--sand-warm);
+    border-color: var(--stone-border);
+  }
+}
+
 /* Conserver .k-list-indicator pour rétrocompatibilité éventuelle — à
    supprimer après confirmation du déploiement. */
 .k-list-indicator {
