@@ -271,7 +271,7 @@
     gap: clamp(14px, 6vw, 24px);
     padding: 5px 0;
     border-top: 0.5px solid var(--sand-dark);
-    margin-top: 2px;
+    margin-top: 6px;
   }
   #k-modal .k-modal-trust-item {
     display: flex;

@@ -67,6 +67,18 @@ describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
     );
   });
 
+  test('adds only the agreed 8px of breathing room to mobile product identity', () => {
+    expect(css).toMatch(
+      /#k-modal\s+\.k-modal-sku\s*\{[^}]*margin-top:\s*2px/s
+    );
+    expect(css).toMatch(
+      /#k-modal\s+\.k-modal-price-row\s*\{[^}]*margin-top:\s*4px/s
+    );
+    expect(productCss).toMatch(
+      /#k-modal\s+\.k-modal-trust\s*\{[^}]*padding:\s*5px 0[^}]*margin-top:\s*6px/s
+    );
+  });
+
   test('uses compact color, size and delivery controls below the hero', () => {
     expect(css).toMatch(
       /#k-modal\s+\.k-sku-color-dot\s*\{[^}]*width:\s*30px[^}]*height:\s*30px/s
