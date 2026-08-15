@@ -1083,8 +1083,10 @@ body:has(#k-page-scroll.k-pager-active) {
   .k-header-actions {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    flex: 1 1 auto;
+    min-width: 0;
     gap: 6px;
-    margin-left: auto;
   }
 
   /* k-cart-btn.k-header-action desktop — BUG-AVATAR-2 :

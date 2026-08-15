@@ -653,7 +653,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(layout).not.toMatch(/max-width\s*:\s*(680|760)px/);
     });
 
-    it('LOT10-d2 : Mon Komerce précède la recherche dans le bandeau desktop', () => {
+    it('LOT10-d2 : Mon Komerce ouvre la zone de navigation après la recherche', () => {
       const html = readBoutiqueHtml();
       const headerStart = html.indexOf('<header class="k-header"');
       const headerEnd = html.indexOf('</header>', headerStart);
@@ -661,8 +661,9 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
 
       expect(header.indexOf('id="k-header-komerce-btn"')).toBeGreaterThan(-1);
       expect(header.indexOf('id="k-search"')).toBeGreaterThan(-1);
-      expect(header.indexOf('id="k-header-komerce-btn"')).toBeLessThan(header.indexOf('id="k-search"'));
       expect(header.indexOf('id="k-search"')).toBeLessThan(header.indexOf('class="k-header-actions"'));
+      expect(header.indexOf('class="k-header-actions"')).toBeLessThan(header.indexOf('id="k-header-komerce-btn"'));
+      expect(header.indexOf('id="k-header-komerce-btn"')).toBeLessThan(header.indexOf('data-tab="fav"'));
     });
 
     it('LOT10-e : le groupe actions et avatar sont resserrÃƒÆ’Ã‚Â©s', () => {
@@ -680,6 +681,8 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
         ) || '';
 
       expect(actions).toMatch(/gap\s*:\s*6px/);
+      expect(actions).toMatch(/justify-content\s*:\s*space-between/);
+      expect(actions).toMatch(/flex\s*:\s*1 1 auto/);
       expect(desktopCart).toMatch(/width\s*:\s*36px/);
       expect(desktopCart).toMatch(/height\s*:\s*40px/);
     });
