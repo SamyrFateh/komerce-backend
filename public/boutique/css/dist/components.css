@@ -2512,8 +2512,11 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-cart-slot {
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    padding-block: 16px;
+    box-sizing: border-box;
     border-left: 1px solid var(--border);
-    overflow-y: auto;
+    overflow: hidden;
     min-height: 0;
   }
   /* Slot vide (avant reparentage JS, ou si mountSideCartInModal n'a pas
@@ -2557,8 +2560,8 @@ html.k-mobile-premium-v1 .k-chip-label {
        Le carousel n'a plus à réserver artificiellement le rail via padding. */
     grid-column: 1; grid-row: 1;
     display: grid;
-    grid-template-columns: 52px minmax(0, 1fr);
-    column-gap: 8px;
+    grid-template-columns: 68px minmax(0, 1fr);
+    column-gap: 10px;
     align-items: stretch;
     border-radius: 0;
     margin: 0;
@@ -2605,10 +2608,10 @@ html.k-mobile-premium-v1 .k-chip-label {
     grid-row: 1;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     position: static;
-    width: 52px;
-    min-width: 52px;
+    width: 68px;
+    min-width: 68px;
     max-height: 100%;
     margin: 8px 0;
     z-index: 8;
@@ -2624,10 +2627,27 @@ html.k-mobile-premium-v1 .k-chip-label {
      n'anime transform ni box-shadow au hover. Version T-021 conservée (plus
      stricte que le checkpoint T-028 d'origine, qui réintroduisait un
      box-shadow décoratif issu d'une base pré-T-021). */
-  #k-modal .k-modal-thumb { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 10px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
+  #k-modal .k-modal-thumb {
+    width: 68px;
+    height: 68px;
+    flex: 0 0 68px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-text-10);
+    background: var(--white);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color .14s;
+  }
   #k-modal .k-modal-thumb:hover { border-color: var(--text); }
-  #k-modal .k-modal-thumb.is-active { border: 1.5px solid var(--text); }
-  #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
+  #k-modal .k-modal-thumb.is-active {
+    border: 2px solid var(--text);
+  }
+  #k-modal .k-modal-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 3px;
+  }
   .k-modal-zoom-preview {
     display: block; position: absolute;
     top: 16px; right: 16px; left: auto;
@@ -3283,27 +3303,27 @@ html.k-mobile-premium-v1 .k-chip-label {
 
 
 /* ── modal-media.css ─────────────────────────────────────── */
-/* ═══════════════════════════════════════════════════════════════
-   KOMERCE — modal-media.css
+﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   KOMERCE â€” modal-media.css
    Carousel, image wrap, zoom, fullscreen, bouton favori,
    recently viewed, keyboard hint.
-   Découpage Sprint 6 — S6.2 (extrait de modal.css)
-   ═══════════════════════════════════════════════════════════════ */
+   DÃ©coupage Sprint 6 â€” S6.2 (extrait de modal.css)
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ── IMAGE + CAROUSEL ────────────────────────────────────────── */
-/* Source de vérité unique pour .k-modal-img-wrap.
-   top:auto et z-index:1 consolidés depuis interactions.css (fix carousel overlay mobile).
-   background:var(--sand) retenu (interactions.css surchargeait le gradient — intentionnel). */
-/* ── Skeleton shimmer pendant le chargement de l'image ───────
-   Couche pseudo-élément animée. Disparaît dès qu'une image
-   .k-modal-slide a la classe is-loaded (posée par b-modal.js
+/* â”€â”€ IMAGE + CAROUSEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Source de vÃ©ritÃ© unique pour .k-modal-img-wrap.
+   top:auto et z-index:1 consolidÃ©s depuis interactions.css (fix carousel overlay mobile).
+   background:var(--sand) retenu (interactions.css surchargeait le gradient â€” intentionnel). */
+/* â”€â”€ Skeleton shimmer pendant le chargement de l'image â”€â”€â”€â”€â”€â”€â”€
+   Couche pseudo-Ã©lÃ©ment animÃ©e. DisparaÃ®t dÃ¨s qu'une image
+   .k-modal-slide a la classe is-loaded (posÃ©e par b-modal.js
    sur l'event load de l'image). */
 .k-modal-img-wrap::before {
   content: ''; position: absolute; inset: 0; z-index: 1;
   background: linear-gradient(90deg,
     var(--sand-gradient-0) 0%,
     var(--surface-white-55) 50%,
-    var(--sand-gradient-0) 100%); /* [T-029] littéraux rgba remplacés par tokens — dégradé shimmer fonctionnel conservé */
+    var(--sand-gradient-0) 100%); /* [T-029] littÃ©raux rgba remplacÃ©s par tokens â€” dÃ©gradÃ© shimmer fonctionnel conservÃ© */
   background-size: 200% 100%;
   animation: k-modal-shimmer 1.4s linear infinite;
   pointer-events: none;
@@ -3314,13 +3334,13 @@ html.k-mobile-premium-v1 .k-chip-label {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-/* ── Zone image — hauteur mobile (mobile-first, sans media query) ──────
-   Sprint 1 (30/05/2026) : les deux anciens blocs @media à largeur max
-   (petits et très petits écrans) ont été supprimés — violation I-7 / M-MOB-11.
-   Remplacés par cette règle base unique : 45vh / 400px couvre tous
-   les mobiles sans fragmentation. Le desktop écrase via @media min-width 900px.
+/* â”€â”€ Zone image â€” hauteur mobile (mobile-first, sans media query) â”€â”€â”€â”€â”€â”€
+   Sprint 1 (30/05/2026) : les deux anciens blocs @media Ã  largeur max
+   (petits et trÃ¨s petits Ã©crans) ont Ã©tÃ© supprimÃ©s â€” violation I-7 / M-MOB-11.
+   RemplacÃ©s par cette rÃ¨gle base unique : 45vh / 400px couvre tous
+   les mobiles sans fragmentation. Le desktop Ã©crase via @media min-width 900px.
    Position relative : ancre locale des overlays image (compteur, dots, Voir en grand).
-   flex:0 0 auto : empêche .k-modal-scroll de compresser l'image au profit des détails. */
+   flex:0 0 auto : empÃªche .k-modal-scroll de compresser l'image au profit des dÃ©tails. */
 .k-modal-img-wrap { position: relative; display: block; flex: 0 0 auto; order: 0; height: 45vh; min-height: 260px; max-height: 400px; overflow: hidden; }
 .k-modal-carousel { width: 100%; height: 100%; overflow: hidden; }
 .k-modal-carousel-track { display: flex; height: 100%; transition: transform .3s cubic-bezier(.22,1,.36,1); }
@@ -3336,8 +3356,8 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-thumbs { display: none; } /* visible desktop uniquement */
 .k-modal-carousel-handle { display: none; }
 
-/* ── COMPTEUR "3/12" mobile (Temu-style) ─────────────────────
-   S'affiche en bas à droite de l'image quand le produit a > 5 images.
+/* â”€â”€ COMPTEUR "3/12" mobile (Temu-style) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   S'affiche en bas Ã  droite de l'image quand le produit a > 5 images.
    Plus lisible que des dots quand il y en a beaucoup. */
 .k-modal-counter {
   display: none;
@@ -3351,12 +3371,12 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 .k-modal-counter.is-visible { display: block; }
 
-/* ── BOUTON "VOIR EN GRAND" — bas-gauche de l'image ──────────────
-   Pill semi-transparent injecté par b-modal-image-ux.js.
-   Mobile : toujours visible. Desktop : révélé uniquement pour un média
-   unique sans variantes, là où toute la surface image ouvre la lightbox. */
+/* â”€â”€ BOUTON "VOIR EN GRAND" â€” bas-gauche de l'image â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Pill semi-transparent injectÃ© par b-modal-image-ux.js.
+   Mobile : toujours visible. Desktop : rÃ©vÃ©lÃ© uniquement pour un mÃ©dia
+   unique sans variantes, lÃ  oÃ¹ toute la surface image ouvre la lightbox. */
 .k-modal-view-full {
-  position: absolute; bottom: 12px; left: 10px; z-index: 3; /* S2.3 — bottom revient à 12px ; était 28px pour éviter la zone de chevauchement margin-top:-20px, supprimée en S2.2 */
+  position: absolute; bottom: 12px; left: 10px; z-index: 3; /* S2.3 â€” bottom revient Ã  12px ; Ã©tait 28px pour Ã©viter la zone de chevauchement margin-top:-20px, supprimÃ©e en S2.2 */
   display: flex; align-items: center; gap: 5px;
   padding: 4px 12px;
   background: var(--overlay-dark-md); color: var(--white);
@@ -3368,37 +3388,33 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-view-full svg { width: 13px; height: 13px; flex-shrink: 0; }
 @media (min-width: 900px) {
   .k-modal-view-full { display: none; }
-  #k-modal:not(.k-modal--has-variants)
-  .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-view-full {
-    display: flex;
-  }
 }
 
-/* ── EDGE-TO-EDGE mobile — supprimé Sprint 1 (30/05/2026)
-   Les règles hauteur-image à largeur max ont été fusionnées dans la règle base
-   .k-modal-img-wrap ci-dessus. Plus de fragmentation par breakpoint. ──── */
+/* â”€â”€ EDGE-TO-EDGE mobile â€” supprimÃ© Sprint 1 (30/05/2026)
+   Les rÃ¨gles hauteur-image Ã  largeur max ont Ã©tÃ© fusionnÃ©es dans la rÃ¨gle base
+   .k-modal-img-wrap ci-dessus. Plus de fragmentation par breakpoint. â”€â”€â”€â”€ */
 
-/* ── BOUTON FAVORI MODALE (LOT N-2 — enfant en flux de .k-modal-name-row) ──
-   Un seul bouton dans le DOM (index.html), toujours à côté du h2 dans
-   .k-modal-name-row : il n'y a pas de cas où il est posé sur le média.
-   L'ancien position:absolute pariait sur l'endroit où le titre casse sa
-   ligne (voir Fait 3 de l'audit) ; ownership tranché : la géométrie
-   appartient à .k-modal-name-row (modal-product.css), ce bouton n'y ajoute
+/* â”€â”€ BOUTON FAVORI MODALE (LOT N-2 â€” enfant en flux de .k-modal-name-row) â”€â”€
+   Un seul bouton dans le DOM (index.html), toujours Ã  cÃ´tÃ© du h2 dans
+   .k-modal-name-row : il n'y a pas de cas oÃ¹ il est posÃ© sur le mÃ©dia.
+   L'ancien position:absolute pariait sur l'endroit oÃ¹ le titre casse sa
+   ligne (voir Fait 3 de l'audit) ; ownership tranchÃ© : la gÃ©omÃ©trie
+   appartient Ã  .k-modal-name-row (modal-product.css), ce bouton n'y ajoute
    que sa propre taille via flex-shrink:0. */
 .k-modal-fav-btn {
   flex: 0 0 auto;
   width: 42px; height: 42px;
   background: var(--surface-sand-94);
   /* Bordure fine (2026-07-30) : le halo diffus (box-shadow var(--elev-1))
-     avait été retiré par l'audit 2026-07 car trop flou sur fond clair.
-     Un liseré net de 1px donne la même lisibilité sans réintroduire de
-     flou — le bouton ne se fond plus dans le fond crème de la modale. */
+     avait Ã©tÃ© retirÃ© par l'audit 2026-07 car trop flou sur fond clair.
+     Un liserÃ© net de 1px donne la mÃªme lisibilitÃ© sans rÃ©introduire de
+     flou â€” le bouton ne se fond plus dans le fond crÃ¨me de la modale. */
   border: 1px solid var(--border-text-10); border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; line-height: 1;
   box-shadow: none;
   cursor: pointer; z-index: 4;
-  /* [T-028] transform + easing spring retirés : plus aucune règle
+  /* [T-028] transform + easing spring retirÃ©s : plus aucune rÃ¨gle
      .k-modal-fav-btn n'anime transform, l'easing spring devenait mort. */
   transition: background .2s var(--ease),
               border-color .2s var(--ease),
@@ -3409,19 +3425,19 @@ html.k-mobile-premium-v1 .k-chip-label {
   user-select: none;
 }
 .k-modal-fav-btn.liked {
-  /* Assoupli (2026-07-30) : l'ancien fond --pink saturé + double anneau
+  /* Assoupli (2026-07-30) : l'ancien fond --pink saturÃ© + double anneau
      blanc/rose (0 0 0 2px white, 0 0 0 4px pink-shadow) lisait comme trop
-     agressif à côté du titre produit. Fond --pink-light + liseré simple :
-     le cœur ❤️ reste rouge (état "actif" toujours clair), le fond ne
+     agressif Ã  cÃ´tÃ© du titre produit. Fond --pink-light + liserÃ© simple :
+     le cÅ“ur â¤ï¸ reste rouge (Ã©tat "actif" toujours clair), le fond ne
      domine plus visuellement le reste de la fiche produit. */
   background: var(--pink-light);
   border-color: var(--pink-shadow-30);
   box-shadow: none;
 }
-/* [T-028] .k-modal-fav-btn.k-pop + @keyframes k-modal-fav-pop retirées :
-   scale décoratif au "like". Le JS (b-cart.js, hors périmètre CSS) continue
+/* [T-028] .k-modal-fav-btn.k-pop + @keyframes k-modal-fav-pop retirÃ©es :
+   scale dÃ©coratif au "like". Le JS (b-cart.js, hors pÃ©rimÃ¨tre CSS) continue
    de basculer la classe .k-pop sur #k-modal-fav-btn, mais sans animation
-   associée cela n'a plus d'effet visuel. */
+   associÃ©e cela n'a plus d'effet visuel. */
 @media (hover: hover) and (pointer: fine) {
   .k-modal-fav-btn:hover { box-shadow: var(--elev-2); }
 }
@@ -3429,8 +3445,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-fav-btn { width: 46px; height: 46px; font-size: 22px; }
 }
 
-/* ── FULLSCREEN IMAGE (mobile, tap on image) ─────────────────
-   Overlay plein écran qui laisse le navigateur gérer le pinch-zoom
+/* â”€â”€ FULLSCREEN IMAGE (mobile, tap on image) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Overlay plein Ã©cran qui laisse le navigateur gÃ©rer le pinch-zoom
    nativement (touch-action: pinch-zoom sur l'image).
    Tap simple ferme. Swipe horizontal change d'image. */
 .k-modal-fullscreen {
@@ -3448,7 +3464,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   background: var(--surface-white-92); color: var(--text);
   border: none; display: flex; align-items: center; justify-content: center;
   z-index: 2; cursor: pointer;
-  -webkit-tap-highlight-color: transparent; /* [T-029] halo décoratif retiré : le fond opaque suffit */
+  -webkit-tap-highlight-color: transparent; /* [T-029] halo dÃ©coratif retirÃ© : le fond opaque suffit */
 }
 .k-modal-fullscreen-close svg { width: 18px; height: 18px; }
 .k-modal-fullscreen-counter {
@@ -3471,7 +3487,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-fullscreen-slide img {
   max-width: 100%; max-height: 100%;
   object-fit: contain; user-select: none;
-  /* pinch-zoom natif autorisé */
+  /* pinch-zoom natif autorisÃ© */
   touch-action: pinch-zoom;
   -webkit-user-drag: none;
 }
@@ -3501,7 +3517,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   #k-modal .k-modal-carousel-handle--prev {
-    left: calc(52px + 8px + 12px);
+    left: calc(68px + 10px + 12px);
   }
 
   #k-modal .k-modal-carousel-handle--next {
@@ -3519,11 +3535,11 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 }
 
-/* ── Desktop : le curseur annonce uniquement un zoom réellement actif. */
+/* â”€â”€ Desktop : le curseur annonce uniquement un zoom rÃ©ellement actif. */
 @media (min-width: 900px) {
   #k-modal:not(.k-modal--has-variants)
   .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-carousel {
-    cursor: zoom-in;
+    cursor: default;
   }
 
   #k-modal .k-modal-slide {
@@ -3532,11 +3548,11 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-carousel:hover
   .k-modal-carousel-track
   .k-modal-slide:not(.is-hidden) {
-    transform: scale(1.02);
+    transform: scale(var(--k-modal-subject-scale, 1));
   }
 }
 
-/* ── Desktop : Recently Viewed (ex boutique-desktop.css) ────────── */
+/* â”€â”€ Desktop : Recently Viewed (ex boutique-desktop.css) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (min-width: 900px) {
   .k-modal-recent {
     padding: 18px 24px 28px;
@@ -3563,21 +3579,21 @@ html.k-mobile-premium-v1 .k-chip-label {
     border-radius: 10px;
     overflow: hidden;
     cursor: pointer;
-    /* [T-028] transform retiré : hover-lift décoratif parasite retiré,
-       plus aucune règle .k-modal-recent-card n'anime transform. */
+    /* [T-028] transform retirÃ© : hover-lift dÃ©coratif parasite retirÃ©,
+       plus aucune rÃ¨gle .k-modal-recent-card n'anime transform. */
     transition: border-color .12s, box-shadow .12s;
     padding: 0;
     text-align: left;
     min-width: 0;
   }
   .k-modal-recent-card:hover {
-    /* [T-028] transform: translateY(-2px) retiré : hover-lift décoratif
-       parasite. Le feedback au survol reste porté par bordure + ombre. */
-    border-color: var(--coral-focus-40); /* [T-029] littéral rgba remplacé par token, halo décoratif retiré */
+    /* [T-028] transform: translateY(-2px) retirÃ© : hover-lift dÃ©coratif
+       parasite. Le feedback au survol reste portÃ© par bordure + ombre. */
+    border-color: var(--coral-focus-40); /* [T-029] littÃ©ral rgba remplacÃ© par token, halo dÃ©coratif retirÃ© */
   }
   .k-modal-recent-img {
     aspect-ratio: 1;
-    background: var(--sand); /* [T-029] dégradé décoratif aplati en couleur solide */
+    background: var(--sand); /* [T-029] dÃ©gradÃ© dÃ©coratif aplati en couleur solide */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3608,92 +3624,111 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 }
 
-/* [T-028] Keyboard hint neutralisé : élément toujours injecté par
-   b-modal-core.js (hors périmètre CSS de T-028), désormais masqué plutôt
-   que stylé — c'était un hint décoratif sans réelle valeur d'usage. */
+/* [T-028] Keyboard hint neutralisÃ© : Ã©lÃ©ment toujours injectÃ© par
+   b-modal-core.js (hors pÃ©rimÃ¨tre CSS de T-028), dÃ©sormais masquÃ© plutÃ´t
+   que stylÃ© â€” c'Ã©tait un hint dÃ©coratif sans rÃ©elle valeur d'usage. */
 @media (min-width: 900px) {
   .k-modal-keyboard-hint {
     display: none;
   }
 }
 
-/* ── D6/T-018 — Géométrie intrinsèque du hero desktop ────────────
-   Ownership : modal-media.css devient propriétaire de la géométrie
-   intrinsèque du hero desktop (ratio, bornes de taille), tandis que
-   modal-shell.css reste propriétaire du confinement global de la
-   modal / product-zone / scroll des détails.
-   Ancien owner (modal-shell.css §6) posait height:100%/max-height:100%
-   sur .k-modal-img-wrap, forçant une hauteur pleine (~842px) dérivée
-   du confinement du shell — retiré, remplacé ici par une géométrie
-   intrinsèque indépendante du viewport (aspect-ratio, pas de vh/dvh),
+/* â”€â”€ D6/T-018 â€” GÃ©omÃ©trie intrinsÃ¨que du hero desktop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Ownership : modal-media.css devient propriÃ©taire de la gÃ©omÃ©trie
+   intrinsÃ¨que du hero desktop (ratio, bornes de taille), tandis que
+   modal-shell.css reste propriÃ©taire du confinement global de la
+   modal / product-zone / scroll des dÃ©tails.
+   Ancien owner (modal-shell.css Â§6) posait height:100%/max-height:100%
+   sur .k-modal-img-wrap, forÃ§ant une hauteur pleine (~842px) dÃ©rivÃ©e
+   du confinement du shell â€” retirÃ©, remplacÃ© ici par une gÃ©omÃ©trie
+   intrinsÃ¨que indÃ©pendante du viewport (aspect-ratio, pas de vh/dvh),
    robuste aux futurs ajustements de grille (T-020).
    Le confinement du shell (product-zone en flux, .k-modal-main seul scroll
-   owner desktop — RÉF-2026-07f, addendum g) reste inchangé et continue
-   d'encadrer horizontalement un contenu droit long — cette règle ne fait
-   que borner la taille du hero LUI-MÊME à l'intérieur de cet espace. */
+   owner desktop â€” RÃ‰F-2026-07f, addendum g) reste inchangÃ© et continue
+   d'encadrer horizontalement un contenu droit long â€” cette rÃ¨gle ne fait
+   que borner la taille du hero LUI-MÃŠME Ã  l'intÃ©rieur de cet espace. */
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    min-height: 0;
+    min-height: 480px;
     max-height: none;
     /* ProductMedia complet :
-       rail 52px + gap 8px + hero carré jusqu'à 640px. */
-    max-width: min(100%, 700px);
+       rail 52px + gap 8px + hero carrÃ© jusqu'Ã  640px. */
+    max-width: none;
     width: 100%;
-    height: auto;
-    /* T-018-bis — DÉCISION A (audit desktop finition, 2026-07) :
-       align-self repasse de `center` à `start`. La note MIGRATION v3.0
-       précédente confondait deux sujets distincts : position:sticky
+    height: calc(100dvh - 90px);
+    /* T-018-bis â€” DÃ‰CISION A (audit desktop finition, 2026-07) :
+       align-self repasse de `center` Ã  `start`. La note MIGRATION v3.0
+       prÃ©cÃ©dente confondait deux sujets distincts : position:sticky
        pilotait le comportement au SCROLL, tandis qu'align-self pilote
        l'alignement VERTICAL dans la ligne de grille. Retirer le sticky ne
-       justifiait pas de centrer le média face à un récit potentiellement
-       long (fixture Stress : 142px de vide artificiel constaté au-dessus
+       justifiait pas de centrer le mÃ©dia face Ã  un rÃ©cit potentiellement
+       long (fixture Stress : 142px de vide artificiel constatÃ© au-dessus
        de l'image avant correction). Depuis le 5H, le wrapper porte la
-       composition rail + gap + carousel ; le ratio carré et sa borne 640px
-       appartiennent au carousel, pas au wrapper. Owner de cette décision : ce bloc de règle
+       composition rail + gap + carousel ; le ratio carrÃ© et sa borne 640px
+       appartiennent au carousel, pas au wrapper. Owner de cette dÃ©cision : ce bloc de rÃ¨gle
        (modal-media.css) et son oracle jumeau
        tests/unit/modal-desktop-scroll-owner.test.js, qui verrouille
-       littéralement `align-self:start` et sert de preuve de non-régression.
-       Preuve visuelle : audit Playwright live (mesure DOM top média = top
-       récit = 108px, diff:0, capture desktop-stress-hero-alignment.png). */
-    margin-inline: auto;
+       littÃ©ralement `align-self:start` et sert de preuve de non-rÃ©gression.
+       Preuve visuelle : audit Playwright live (mesure DOM top mÃ©dia = top
+       rÃ©cit = 108px, diff:0, capture desktop-stress-hero-alignment.png). */
+    margin-inline: 0;
     margin-block: 0;
-    align-self: start;
+    align-self: stretch;
     /* Contour visible (cf. reference-modale-4-etats.html v2.1) : le container
-       image n'avait jamais de border nulle part — flottait sans cadre contre
-       le fond ivoire du shell. background/border-radius NE sont PAS ajoutés
-       ici : déjà owned ailleurs (background: modal-product-lot4-hybrid.css
-       "D6 — Hero desktop en aplat" via --hero-bg ; border-radius:0 volontaire
-       dans modal-shell.css, bloc sticky ≥900px — coins carrés assumés). */
+       image n'avait jamais de border nulle part â€” flottait sans cadre contre
+       le fond ivoire du shell. background/border-radius NE sont PAS ajoutÃ©s
+       ici : dÃ©jÃ  owned ailleurs (background: modal-product-lot4-hybrid.css
+       "D6 â€” Hero desktop en aplat" via --hero-bg ; border-radius:0 volontaire
+       dans modal-shell.css, bloc sticky â‰¥900px â€” coins carrÃ©s assumÃ©s). */
     border: 0;
   }
 
-  /* UX-REVUE KRF-033 — produit simple, média unique : la fiche n'a aucun
-     axe de variantes à préserver dans le premier écran. Le hero utilise donc
-     la hauteur déjà créée par le récit voisin (carré, borné à 640px) au lieu
-     de rester figé en 4:3 avec une zone morte sous lui. Le gutter de 92px,
-     réservé au rail de miniatures, disparaît puisqu'il n'existe aucune
-     miniature dans ce mode. Résultat sur le témoin Arnaud Rousseau : zone
-     utile du média sensiblement agrandie sans déplacer le configurateur. */
+  /* UX-REVUE KRF-033 â€” produit simple, mÃ©dia unique : la fiche n'a aucun
+     axe de variantes Ã  prÃ©server dans le premier Ã©cran. Le hero utilise donc
+     la hauteur dÃ©jÃ  crÃ©Ã©e par le rÃ©cit voisin (carrÃ©, bornÃ© Ã  640px) au lieu
+     de rester figÃ© en 4:3 avec une zone morte sous lui. Le gutter de 92px,
+     rÃ©servÃ© au rail de miniatures, disparaÃ®t puisqu'il n'existe aucune
+     miniature dans ce mode. RÃ©sultat sur le tÃ©moin Arnaud Rousseau : zone
+     utile du mÃ©dia sensiblement agrandie sans dÃ©placer le configurateur. */
   #k-modal:not(.k-modal--has-variants)
   .k-modal-product-zone .k-modal-img-wrap[data-gallery-mode="single"] {
     min-height: 0;
     max-height: none;
-    max-width: min(100%, 640px);
+    max-width: none;
   }
 
-  /* Hero PDP desktop : le carré appartient au carousel, pas au wrapper
-     qui peut également contenir le rail de miniatures. */
+  /* Hero PDP desktop : le carrÃ© appartient au carousel, pas au wrapper
+     qui peut Ã©galement contenir le rail de miniatures. */
   #k-modal .k-modal-product-zone .k-modal-carousel {
     width: 100%;
-    max-width: 640px;
+    max-width: none;
     height: auto;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 4 / 3;
     align-self: start;
   }
 
   #k-modal:not(.k-modal--has-variants)
   .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {
     object-position: center center;
+    transform: scale(var(--k-modal-subject-scale, 1));
+    transform-origin: center center;
+  }
+}
+
+
+
+/* FINISH-PDP-SUBJECT-SCALE
+   Le hero desktop montre le produit plutôt que les marges du fichier source. */
+@media (min-width: 900px) {
+  #k-modal .k-modal-product-zone .k-modal-slide {
+    transform: scale(var(--k-modal-subject-scale, 1));
+    transform-origin: center center;
+  }
+
+  #k-modal .k-modal-carousel:hover
+  .k-modal-carousel-track
+  .k-modal-slide:not(.is-hidden) {
+    transform: scale(var(--k-modal-subject-scale, 1));
   }
 }
 

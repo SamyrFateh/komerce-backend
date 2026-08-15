@@ -252,13 +252,10 @@ function _setupCarouselTap() {
   if (!carousel) return;
   carousel.addEventListener('click', function() {
     const isMobile = window.matchMedia('(max-width: 899px)').matches;
-    const isInspectableDesktopSingle =
-      !isMobile &&
-      _getSlides().length === 1 &&
-      !state.modalSelection?.selection_supported &&
-      !modalZone('.k-modal')?.classList.contains('k-modal--has-variants');
 
-    if (isMobile || isInspectableDesktopSingle) {
+    // Mobile conserve la lightbox tactile.
+    // Desktop : le hero est désormais la vue produit finale.
+    if (isMobile) {
       _openFs(state.carouselIndex || 0);
     }
   });

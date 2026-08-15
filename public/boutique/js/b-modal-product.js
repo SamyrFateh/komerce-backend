@@ -114,30 +114,85 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
    */
   function _applySubjectScale(wrap, img) {
     if (!wrap || !img) return;
+
+    const isSingle =
+      wrap.dataset.galleryMode === 'single';
+
+    const clearScale = function() {
+      img.style.removeProperty('--k-modal-subject-scale');
+
+      // Contrat MDM-9 historique :
+      // le média single expose aussi la variable sur le wrapper.
+      if (isSingle) {
+        wrap.style.removeProperty('--k-modal-subject-scale');
+      }
+    };
+
+    const setScale = function(value) {
+      // Nouveau contrat desktop galerie :
+      // chaque image possède son facteur propre.
+      img.style.setProperty('--k-modal-subject-scale', value);
+
+      // Compat MDM-9/mobile single.
+      if (isSingle) {
+        wrap.style.setProperty('--k-modal-subject-scale', value);
+      }
+    };
+
     try {
       let nw = img.naturalWidth;
       let nh = img.naturalHeight;
+
       if (!nw || !nh) return;
 
       let canvas = document.createElement('canvas');
-      let maxDim = 200; // suffisant pour un bounding box, coût de scan négligeable
-      let scaleFactor = Math.min(1, maxDim / Math.max(nw, nh));
-      let cw = Math.max(1, Math.round(nw * scaleFactor));
-      let ch = Math.max(1, Math.round(nh * scaleFactor));
+      let maxDim = 200;
+      let scaleFactor =
+        Math.min(1, maxDim / Math.max(nw, nh));
+
+      let cw =
+        Math.max(1, Math.round(nw * scaleFactor));
+
+      let ch =
+        Math.max(1, Math.round(nh * scaleFactor));
+
       canvas.width = cw;
       canvas.height = ch;
-      let ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (!ctx) { wrap.style.removeProperty('--k-modal-subject-scale'); return; }
+
+      let ctx =
+        canvas.getContext('2d', {
+          willReadFrequently: true,
+        });
+
+      if (!ctx) {
+        clearScale();
+        return;
+      }
 
       ctx.drawImage(img, 0, 0, cw, ch);
-      let data = ctx.getImageData(0, 0, cw, ch).data;
+
+      let data =
+        ctx.getImageData(0, 0, cw, ch).data;
+
       let WHITE = 245;
-      let minX = cw, minY = ch, maxX = 0, maxY = 0, found = false;
+
+      let minX = cw;
+      let minY = ch;
+      let maxX = 0;
+      let maxY = 0;
+      let found = false;
+
       for (let y = 0; y < ch; y++) {
         for (let x = 0; x < cw; x++) {
           let idx = (y * cw + x) * 4;
-          if (data[idx] < WHITE || data[idx + 1] < WHITE || data[idx + 2] < WHITE) {
+
+          if (
+            data[idx] < WHITE ||
+            data[idx + 1] < WHITE ||
+            data[idx + 2] < WHITE
+          ) {
             found = true;
+
             if (x < minX) minX = x;
             if (x > maxX) maxX = x;
             if (y < minY) minY = y;
@@ -146,26 +201,51 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
         }
       }
 
-      if (!found || maxX <= minX || maxY <= minY) {
-        wrap.style.removeProperty('--k-modal-subject-scale');
+      if (
+        !found ||
+        maxX <= minX ||
+        maxY <= minY
+      ) {
+        clearScale();
         return;
       }
 
-      let subjectFracW = (maxX - minX + 1) / cw;
-      let subjectFracH = (maxY - minY + 1) / ch;
-      let limitingFrac = Math.max(subjectFracW, subjectFracH);
-      if (limitingFrac <= 0) { wrap.style.removeProperty('--k-modal-subject-scale'); return; }
+      let subjectFracW =
+        (maxX - minX + 1) / cw;
 
-      let SAFETY = 0.88;   // marge pour ne jamais toucher les bords du wrapper
-      let MAX_SCALE = 2.5; // plafond raisonnable (sujet minuscule → pas de zoom absurde)
-      let scale = Math.min(MAX_SCALE, (1 / limitingFrac) * SAFETY);
-      scale = Math.max(1, scale); // jamais de zoom arrière
+      let subjectFracH =
+        (maxY - minY + 1) / ch;
 
-      wrap.style.setProperty('--k-modal-subject-scale', scale.toFixed(3));
+      let limitingFrac =
+        Math.max(subjectFracW, subjectFracH);
+
+      if (limitingFrac <= 0) {
+        clearScale();
+        return;
+      }
+
+      /*
+       * Single :
+       *   contrat MDM-9 historique, sécurité 12 %.
+       *
+       * Multiple desktop :
+       *   légère occupation supplémentaire autorisée,
+       *   puisque chaque slide possède son propre scale.
+       */
+      let SAFETY = isSingle ? 0.88 : 0.92;
+      let MAX_SCALE = 2.5;
+
+      let scale =
+        Math.min(
+          MAX_SCALE,
+          (1 / limitingFrac) * SAFETY
+        );
+
+      scale = Math.max(1, scale);
+
+      setScale(scale.toFixed(3));
     } catch (_) {
-      // Canvas cross-origin ou indisponible (ex. jsdom en test unitaire) —
-      // on retombe sur l'affichage d'origine (object-fit:contain, scale 1).
-      wrap.style.removeProperty('--k-modal-subject-scale');
+      clearScale();
     }
   }
 
@@ -222,19 +302,22 @@ import { optimizeImgUrl, fmtPrice, applyProductImageFallback } from './b-utils.j
         // Fallback Android Chrome : si load/error ne se déclenchent pas en 3s, on retire le shimmer
         setTimeout(killShimmer, 3000);
 
-        // MDM-9 §1 : en mode single, une fois l'image réellement décodée,
-        // on mesure le sujet (bounding box pixels non-blancs) et on pose
-        // --k-modal-subject-scale pour que le CSS zoome dessus sans jamais
-        // rogner ses bords (cf. _applySubjectScale).
-        if (galleryMode === 'single') {
-          let applyScale = function() { _applySubjectScale(imgWrapForSkeleton, img); };
-          if (img.complete && img.naturalWidth > 0) {
-            applyScale();
-          } else {
-            img.addEventListener('load', applyScale, { once: true });
-          }
+
+      }
+      // FINISH-PDP-SUBJECT-SCALE
+      // Chaque slide mesure son propre sujet : single ET galerie desktop.
+      if (imgWrapForSkeleton) {
+        const applySubjectScale = function() {
+          _applySubjectScale(imgWrapForSkeleton, img);
+        };
+
+        if (img.complete && img.naturalWidth > 0) {
+          applySubjectScale();
+        } else {
+          img.addEventListener('load', applySubjectScale, { once: true });
         }
       }
+
       track.appendChild(img);
     });
     dom.modalImg = track.querySelector('.k-modal-slide');

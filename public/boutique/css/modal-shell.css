@@ -589,8 +589,11 @@
   #k-modal .k-modal-cart-slot {
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    padding-block: 16px;
+    box-sizing: border-box;
     border-left: 1px solid var(--border);
-    overflow-y: auto;
+    overflow: hidden;
     min-height: 0;
   }
   /* Slot vide (avant reparentage JS, ou si mountSideCartInModal n'a pas
@@ -634,8 +637,8 @@
        Le carousel n'a plus à réserver artificiellement le rail via padding. */
     grid-column: 1; grid-row: 1;
     display: grid;
-    grid-template-columns: 52px minmax(0, 1fr);
-    column-gap: 8px;
+    grid-template-columns: 68px minmax(0, 1fr);
+    column-gap: 10px;
     align-items: stretch;
     border-radius: 0;
     margin: 0;
@@ -682,10 +685,10 @@
     grid-row: 1;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     position: static;
-    width: 52px;
-    min-width: 52px;
+    width: 68px;
+    min-width: 68px;
     max-height: 100%;
     margin: 8px 0;
     z-index: 8;
@@ -701,10 +704,27 @@
      n'anime transform ni box-shadow au hover. Version T-021 conservée (plus
      stricte que le checkpoint T-028 d'origine, qui réintroduisait un
      box-shadow décoratif issu d'une base pré-T-021). */
-  #k-modal .k-modal-thumb { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 10px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
+  #k-modal .k-modal-thumb {
+    width: 68px;
+    height: 68px;
+    flex: 0 0 68px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-text-10);
+    background: var(--white);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color .14s;
+  }
   #k-modal .k-modal-thumb:hover { border-color: var(--text); }
-  #k-modal .k-modal-thumb.is-active { border: 1.5px solid var(--text); }
-  #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
+  #k-modal .k-modal-thumb.is-active {
+    border: 2px solid var(--text);
+  }
+  #k-modal .k-modal-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 3px;
+  }
   .k-modal-zoom-preview {
     display: block; position: absolute;
     top: 16px; right: 16px; left: auto;

@@ -250,7 +250,7 @@ describe('b-modal-image-ux', () => {
       expect(document.querySelector('.k-modal-fullscreen').classList.contains('is-open')).toBe(false);
     });
 
-    test('desktop, mÃ©dia unique sans variantes -> clic ouvre la lightbox', () => {
+    test('desktop, media unique sans variantes -> le hero reste la vue finale', () => {
       buildModalDom(1);
       state.modalSelection = { selection_supported: false };
       window.matchMedia = jest.fn().mockReturnValue({ matches: false });
@@ -260,11 +260,8 @@ describe('b-modal-image-ux', () => {
 
       const fs = document.querySelector('.k-modal-fullscreen');
       expect(fs).not.toBeNull();
-      expect(fs.classList.contains('is-open')).toBe(true);
-      expect(fs.getAttribute('role')).toBe('dialog');
-      expect(fs.querySelector('.k-modal-fullscreen-slide img').src).toContain('w_1600');
+      expect(fs.classList.contains('is-open')).toBe(false);
     });
-
     test('desktop, mÃ©dia unique avec variantes -> clic ne dÃ©tourne pas le configurateur', () => {
       buildModalDom(1);
       dom.modal.classList.add('k-modal--has-variants');

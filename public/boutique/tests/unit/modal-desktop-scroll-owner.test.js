@@ -106,20 +106,20 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
     }
   });
 
-  test('l\'image reste bornée indépendamment de la ligne de grille (modal-media.css, D6/T-018)', () => {
+  test('le hero desktop exploite toute sa colonne sans recréer de scroll owner', () => {
     const imgRule = media.match(/#k-modal \.k-modal-product-zone \.k-modal-img-wrap\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(imgRule).not.toMatch(/aspect-ratio\s*:/);
-    expect(imgRule).toMatch(/min-height\s*:\s*0/);
+    expect(imgRule).toMatch(/min-height\s*:\s*480px/);
     expect(imgRule).toMatch(/max-height\s*:\s*none/);
-    expect(imgRule).toMatch(/max-width\s*:\s*min\(100%,\s*700px\)/);
-    expect(imgRule).toMatch(/align-self\s*:\s*start/);
+    expect(imgRule).toMatch(/max-width\s*:\s*none/);
+    expect(imgRule).toMatch(/align-self\s*:\s*stretch/);
 
     const carouselRule = media.match(
       /#k-modal \.k-modal-product-zone \.k-modal-carousel\s*\{([^}]*)\}/
     )?.[1] ?? '';
 
-    expect(carouselRule).toMatch(/aspect-ratio\s*:\s*1\s*\/\s*1/);
-    expect(carouselRule).toMatch(/max-width\s*:\s*640px/);
+    expect(carouselRule).toMatch(/aspect-ratio\s*:\s*4\s*\/\s*3/);
+    expect(carouselRule).toMatch(/max-width\s*:\s*none/);
     expect(carouselRule).toMatch(/height\s*:\s*auto/);
     expect(carouselRule).toMatch(/align-self\s*:\s*start/);
   });
@@ -135,8 +135,12 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
     expect(simpleHero).not.toMatch(/aspect-ratio\s*:/);
     expect(simpleHero).toMatch(/min-height\s*:\s*0/);
     expect(simpleHero).toMatch(/max-height\s*:\s*none/);
-    expect(simpleHero).toMatch(/max-width\s*:\s*min\(100%,\s*640px\)/);
+    expect(simpleHero).toMatch(/max-width\s*:\s*none/);
     expect(simpleSlide).not.toMatch(/padding\s*:/);
     expect(simpleSlide).toMatch(/object-position\s*:\s*center\s+center/);
+    expect(simpleSlide).toMatch(/transform\s*:\s*scale\(var\(--k-modal-subject-scale,\s*1\)\)/);
+    expect(simpleSlide).toMatch(
+      /transform\s*:\s*scale\(var\(--k-modal-subject-scale,\s*1\)\)/
+    );
   });
 });

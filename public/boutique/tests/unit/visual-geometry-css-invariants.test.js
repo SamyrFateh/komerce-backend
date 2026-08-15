@@ -1050,3 +1050,113 @@ describe('POLISH final ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â logo desktop, badg
     expect(activeGroup).toMatch(/background\s*:\s*transparent/);
   });
 });
+
+
+describe('PDP desktop - hero imposant et panier centre', () => {
+  it('utilise un hero 4:3 pleine largeur sans plafond artificiel', () => {
+    const css = readCss('modal-media.css');
+
+    const wrapper = css.match(
+      /#k-modal \.k-modal-product-zone \.k-modal-img-wrap\s*\{([^}]+)\}/s
+    )?.[1] ?? '';
+
+    const carousel = css.match(
+      /#k-modal \.k-modal-product-zone \.k-modal-carousel\s*\{([^}]+)\}/s
+    )?.[1] ?? '';
+
+    expect(wrapper).toMatch(/width\s*:\s*100%/);
+    expect(wrapper).toMatch(/max-width\s*:\s*none/);
+    expect(carousel).toMatch(/width\s*:\s*100%/);
+    expect(carousel).toMatch(/max-width\s*:\s*none/);
+    expect(carousel).toMatch(/aspect-ratio\s*:\s*4\s*\/\s*3/);
+  });
+
+  it('centre le panier court et borne le panier long dans la modal', () => {
+    const css = readCss('boutique-desktop.css');
+
+    const cart = css.match(
+      /\.k-side-cart--in-modal\s*\{([^}]+)\}/s
+    )?.[1] ?? '';
+
+    expect(cart).toMatch(/height\s*:\s*auto/);
+    expect(cart).toMatch(/max-height\s*:\s*calc\(100dvh\s*-\s*90px\)/);
+    expect(cart).toMatch(/min-height\s*:\s*0/);
+    expect(cart).toMatch(/flex\s*:\s*0\s+1\s+auto/);
+    expect(cart).toMatch(/margin-block\s*:\s*0/);
+  });
+});
+
+
+describe('FINISH PDP desktop media', () => {
+  it('agrandit le rail et les miniatures avec un cadre premium', () => {
+    const shell = readCss('modal-shell.css');
+    const media = readCss('modal-media.css');
+
+    const mediaBlocks = [
+      ...shell.matchAll(
+        /#k-modal \.k-modal-product-zone \.k-modal-img-wrap\s*\{([^}]+)\}/gs
+      ),
+    ].map((m) => m[1]);
+
+    const grid =
+      mediaBlocks.find((b) => /grid-template-columns/.test(b)) ?? '';
+
+    const thumb =
+      shell.match(
+        /#k-modal \.k-modal-thumb\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+    const thumbImg =
+      shell.match(
+        /#k-modal \.k-modal-thumb img\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+    expect(grid).toMatch(
+      /grid-template-columns\s*:\s*68px\s+minmax\(0,\s*1fr\)/
+    );
+    expect(grid).toMatch(/column-gap\s*:\s*10px/);
+
+    expect(thumb).toMatch(/width\s*:\s*68px/);
+    expect(thumb).toMatch(/height\s*:\s*68px/);
+    expect(thumb).toMatch(
+      /border\s*:\s*1\.5px\s+solid/
+    );
+
+    expect(thumbImg).toMatch(/padding\s*:\s*3px/);
+
+    expect(media).toMatch(
+      /left\s*:\s*calc\(68px\s*\+\s*10px\s*\+\s*12px\)/
+    );
+  });
+
+  it('centre réellement un panier court dans son slot', () => {
+    const shell = readCss('modal-shell.css');
+    const desktop = readCss('boutique-desktop.css');
+
+    const slotBlocks = [
+      ...shell.matchAll(
+        /#k-modal \.k-modal-cart-slot\s*\{([^}]+)\}/gs
+      ),
+    ].map((m) => m[1]);
+
+    const slot =
+      slotBlocks.find((b) => /justify-content/.test(b)) ?? '';
+
+    const items =
+      desktop.match(
+        /\.k-side-cart--in-modal \.k-sc-items\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
+
+    expect(slot).toMatch(
+      /justify-content\s*:\s*center/
+    );
+    expect(slot).toMatch(/padding-block\s*:\s*16px/);
+
+    expect(items).toMatch(
+      /flex\s*:\s*0\s+1\s+auto/
+    );
+    expect(items).toMatch(
+      /max-height\s*:\s*min\(54dvh,\s*520px\)/
+    );
+  });
+});
