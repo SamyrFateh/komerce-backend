@@ -48,7 +48,7 @@ function renderChipPhoto(category) {
   // Priorité : image réelle > SVG > texte court. Si l'image échoue, on révèle le fallback.
   if (category.image) {
     return `<span class="k-chip-photo k-chip-photo--img">
-      <img src="${sanitize(category.image)}" alt="${sanitize(category.label)}" loading="lazy" width="80" height="80" onerror="this.closest('.k-chip-photo').classList.add('is-img-error');this.remove();">
+      <img src="${sanitize(category.image)}" alt="${sanitize(category.label)}" loading="lazy" width="640" height="348" onerror="this.closest('.k-chip-photo').classList.add('is-img-error');this.remove();">
       <span class="k-chip-fallback" aria-hidden="true">${fallbackBadge(category)}</span>
     </span>`;
   }

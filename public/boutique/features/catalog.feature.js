@@ -68,6 +68,14 @@ module.exports = {
     ],
     assets: [
       '../../images/komerce_hero_desktop_panorama_v2.webp',
+      '../categories/all-v2.webp',
+      '../categories/soldes-v2.webp',
+      '../categories/mode-v2.webp',
+      '../categories/maison-v2.webp',
+      '../categories/tech-v2.webp',
+      '../categories/bricolage-v2.webp',
+      '../categories/creations-v2.webp',
+      '../categories/auto-v2.webp',
     ],
     tests: [
       '../tests/unit/b-favs.test.js',
@@ -115,6 +123,7 @@ module.exports = {
     'les adaptations desktop du catalogue ne deviennent jamais un shell applicatif global',
     'les catégories restent sur une ligne et défilent horizontalement quand la largeur disponible ne suffit pas',
     'sur desktop premium, catégories et sous-catégories forment un stack compact de même largeur sans modifier le rail mobile',
+    'les huit images du rail sont déclarées une seule fois dans shop-schema et partagent un format panoramique cohérent',
     'le hero desktop conserve son texte et les deux visages lisibles avec ou sans réserve du side cart, sans modifier le hero mobile',
     'chaque bouton favori expose son état réel par aria-pressed et un libellé Ajouter ou Retirer synchronisé',
     'ajout, achat et promotion utilisent l accent commerce ; l état déjà au panier reste positif et le favori actif reste éditorial',

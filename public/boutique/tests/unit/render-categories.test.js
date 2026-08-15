@@ -45,6 +45,14 @@ describe('render-categories — renderCategoryRailMarkup', () => {
     expect(buttonCount).toBe(rail.length);
   });
 
+  it('les huit entrées visibles utilisent le set panoramique v2', () => {
+    const rail = getRailCategories();
+    expect(rail).toHaveLength(8);
+    rail.forEach((category) => {
+      expect(category.image).toMatch(/^\/boutique\/categories\/[a-z-]+-v2\.webp$/);
+    });
+  });
+
   it('chaque bouton porte data-cat avec la clé de la catégorie', () => {
     const html = renderCategoryRailMarkup(null);
     const rail = getRailCategories();

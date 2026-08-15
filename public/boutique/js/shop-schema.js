@@ -70,17 +70,20 @@ const _ICON_SVGS = {
   'Sur-mesure':     '<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>',
 };
 
-// ─── _CATEGORY_IMAGES — aligné sur les clés du seed 061 (DSC-A2 partiel) ─────
-// Clés orphelines (bricolage, creations, auto) retirées — absentes du seed 061.
-// Clés manquantes (enfant, sport, sur-mesure) : placeholder neutre en attendant
-// les assets définitifs (DSC-A2).
+// ─── _CATEGORY_IMAGES — source unique du rail image ─────────────────────────
+// Une campagne visuelle se met à jour ici, sans dupliquer les chemins dans
+// index.html. Tous les assets partagent le même format 640×348 et la même
+// direction photo ; le renderer fournit le fallback si un fichier échoue.
 const _CATEGORY_IMAGES = {
-  all:              '/boutique/categories/all.jpg',
-  Soldes:           '/boutique/categories/soldes.jpg',
-  'Mode & Beauté':  '/boutique/categories/mode.jpg',
-  Tech:             '/boutique/categories/tech.jpg',
+  all:                       '/boutique/categories/all-v2.webp',
+  Soldes:                    '/boutique/categories/soldes-v2.webp',
+  'Mode & Beauté':           '/boutique/categories/mode-v2.webp',
+  Maison:                    '/boutique/categories/maison-v2.webp',
+  Tech:                      '/boutique/categories/tech-v2.webp',
+  Bricolage:                 '/boutique/categories/bricolage-v2.webp',
+  'Créations personnelles':  '/boutique/categories/creations-v2.webp',
+  Auto:                      '/boutique/categories/auto-v2.webp',
   Enfant:           '/boutique/categories/enfant.jpg',       // DSC-A2 : asset à créer
-  Maison:           '/boutique/categories/maison.jpg',
   Sport:            '/boutique/categories/sport.jpg',        // DSC-A2 : asset à créer
   'Sur-mesure':     '/boutique/categories/sur-mesure.jpg',   // DSC-A2 : asset à créer
 };
@@ -166,7 +169,7 @@ const _FALLBACK_CATEGORIES = [
   {
     key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.',
     type: NAV_TYPES.UNIVERSE, sectionEmoji: '🔧', iconSvg: null,
-    image: null, dbKeys: ['Bricolage'], filterType: null, filter: null,
+    image: _CATEGORY_IMAGES.Bricolage, dbKeys: ['Bricolage'], filterType: null, filter: null,
     displayOrder: 5, showInRail: true, showInSections: true, showInMobileRail: true,
     subcategories: [
       { key: 'Outillage',    label: 'Outils & Fixation',        shortLabel: 'Outils', icon: '🔧', dbKeys: ['Outillage'] },
@@ -177,7 +180,7 @@ const _FALLBACK_CATEGORIES = [
   {
     key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.',
     type: NAV_TYPES.UNIVERSE, sectionEmoji: '✨', iconSvg: null,
-    image: null, dbKeys: ['Créations', 'Sur-mesure'], filterType: null, filter: null,
+    image: _CATEGORY_IMAGES['Créations personnelles'], dbKeys: ['Créations', 'Sur-mesure'], filterType: null, filter: null,
     displayOrder: 6, showInRail: true, showInSections: true, showInMobileRail: true,
     subcategories: [
       { key: 'Cérémonie',  label: 'Tenues de cérémonie',   shortLabel: 'Cérémo.',  icon: '👑', dbKeys: ['Cérémonie'] },
@@ -188,7 +191,7 @@ const _FALLBACK_CATEGORIES = [
   {
     key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto',
     type: NAV_TYPES.UNIVERSE, sectionEmoji: '🚗', iconSvg: null,
-    image: null, dbKeys: ['Auto', 'Moto'], filterType: null, filter: null,
+    image: _CATEGORY_IMAGES.Auto, dbKeys: ['Auto', 'Moto'], filterType: null, filter: null,
     displayOrder: 7, showInRail: true, showInSections: true, showInMobileRail: true,
     subcategories: [
       { key: 'Filtres',   label: 'Filtres & Entretien',       shortLabel: 'Filtres', icon: '🔧', dbKeys: ['Filtres'] },
