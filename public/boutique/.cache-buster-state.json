@@ -1,11 +1,11 @@
 {
-  "version": 579,
+  "version": 581,
   "hashes": {
-    "base.css": "1527260ea7f2",
+    "base.css": "bcfd0a40a97e",
     "components.css": "f901a0a135da",
     "desktop.css": "1ae2538e5fb8"
   },
-  "updatedAt": "2026-08-15T13:32:42.695Z",
-  "bumpedFrom": 578,
+  "updatedAt": "2026-08-15T13:39:03.228Z",
+  "bumpedFrom": 580,
   "reason": "3 bundle(s) modifié(s) : base.css, components.css, desktop.css"
 }

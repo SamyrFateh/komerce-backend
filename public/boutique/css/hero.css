@@ -735,7 +735,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: 50% 46%;
+    object-position: 50% 0%;
     aspect-ratio: unset;
     display: block;
   }
@@ -954,15 +954,12 @@
     height: 72px;
   }
 
-  /* ── 2. Gap navbar→hero : supprimer l'espace blanc entre les deux ──
-     Scopé à body.k-view-shop : le header est position: sticky et occupe
-     déjà sa place dans le flux sur les autres onglets (Favoris/Suivi/
-     Mon Komerce), donc ce spacer y serait redondant (double la réserve).
-     Le reset sur les autres onglets se fait en JS (switchView(), b-nav.js)
-     plutôt qu'ici, pour éviter un second !important CSS face au style
-     inline posé par index.html — cf. check:important guard. */
+  /* ── 2. Gap navbar→hero : supprimer la double réserve desktop ──
+     Le header est sticky et occupe déjà sa place dans le flux à partir de
+     900px. Le spacer inline ne sert qu'au header fixed mobile : le conserver
+     ici ajoutait 72px avant le padding respirant du hero. */
   html.k-home-premium-v1 body.k-view-shop #k-header-spacer {
-    height: var(--header-h, 72px) !important;
+    height: 0 !important;
   }
   html.k-home-premium-v1 .k-hero {
     margin-top: 0;

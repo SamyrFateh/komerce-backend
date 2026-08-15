@@ -33,7 +33,16 @@ describe('hero desktop panoramique Komerce', () => {
     expect(hero).toMatch(
       /html\.k-home-premium-v1 \.k-hero-mini-slogan--premium\s*\{[^}]*width:\s*43%[^}]*background:\s*transparent[^}]*z-index:\s*2/s
     );
+    expect(hero).toMatch(
+      /html\.k-home-premium-v1 \.k-hero-img\s*\{[^}]*object-position:\s*50% 0%/s
+    );
     expect(hero).not.toMatch(/grid-template-columns:\s*1fr 1fr/);
+  });
+
+  test('ne double pas la réserve du header sticky sur desktop', () => {
+    expect(hero).toMatch(
+      /body\.k-view-shop #k-header-spacer\s*\{[^}]*height:\s*0 !important/s
+    );
   });
 
   test('recompose la hauteur et le titre quand le side cart réserve sa largeur', () => {
