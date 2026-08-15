@@ -1234,11 +1234,20 @@
 
   /* ── Attention state (highlight quand l'avatar panier est cliqué) ── */
   #k-side-cart.is-attention {
-    box-shadow:
-      0 0 0 3px var(--border-coral-13),
-      0 14px 40px var(--border-text-15);
-    transform: translateY(-2px);
-    transition: box-shadow .22s ease, transform .22s ease;
+    animation: k-side-cart-attention .7s ease-out;
+  }
+
+  @keyframes k-side-cart-attention {
+    0%, 45% {
+      box-shadow:
+        inset 0 0 0 2px var(--border-coral-22),
+        0 14px 40px var(--border-text-15);
+      transform: translateY(-2px);
+    }
+    100% {
+      box-shadow: none;
+      transform: none;
+    }
   }
 
   /* L'état "is-expanded" n'est plus nécessaire : la liste scrolle
@@ -1292,6 +1301,10 @@
   .k-cats-shell {
     max-width: 1540px;
   }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+  #k-side-cart.is-attention { animation: none; }
 }
 
 

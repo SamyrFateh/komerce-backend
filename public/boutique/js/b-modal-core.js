@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_id, product_data, cart_state, modal_events
  * @outputs       product_detail_modal, add_to_cart_path, suggestions_slot, modal_lifecycle
- * @depends       b-store.js, b-cart.js, b-cart-core.js, b-modal-product.js, b-modal-suggestions.js, b-modal-nav.js, b-modal-cart.js, b-modal-image-ux.js
+ * @depends       b-store.js, b-cart.js, b-cart-core.js, b-modal-product.js, b-modal-suggestions.js, b-modal-nav.js, b-modal-cart.js, b-modal-cart-access.js, b-modal-image-ux.js
  * @used-by       b-modal.js, b-catalog.js, b-subcat.js, b-cart.js
  * @doctrine      participant_peut_verifier, boutique_preuve_confiance, modal_produit_sans_chevauchement
  * @impact-areas  product-discovery, participant-flow, creator-flow, modal-layout, cart, suggestions
@@ -73,6 +73,7 @@ import {
 import { renderSuggestions }                 from './b-modal-suggestions.js';
 import { updateModalNavArrows, navigateModal } from './b-modal-nav.js';
 import { _syncModalQtyUI, setupModalCart, resetAddCartButtonState }   from './b-modal-cart.js';
+import { focusIntegratedSideCart } from './b-modal-cart-access.js';
 
 'use strict';
 
@@ -629,11 +630,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         const sideCart = document.getElementById('k-side-cart');
         if (sideCart?.classList.contains('k-side-cart--in-modal')) {
           bus.emit('side-cart:render');
-          sideCart.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
-            inline: 'nearest',
-          });
+          focusIntegratedSideCart(sideCart);
           return;
         }
       }
