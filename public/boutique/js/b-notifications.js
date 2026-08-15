@@ -28,20 +28,21 @@ function ensureBanner() {
   if (banner) return banner;
   banner = document.createElement('aside');
   banner.id = 'k-client-notification';
-  banner.className = 'k-client-notification u-hidden';
+  banner.className = 'k-client-notification';
   banner.setAttribute('aria-live', 'polite');
   banner.setAttribute('aria-atomic', 'true');
-  const spacer = document.getElementById('k-header-spacer');
-  if (spacer) spacer.insertAdjacentElement('afterend', banner);
-  else document.body.prepend(banner);
+  // Overlay global : il ne doit appartenir ni au header, ni au hero, ni à
+  // leur flux de mise en page.
+  document.body.append(banner);
   return banner;
 }
 
 function hideBanner() {
   const banner = document.getElementById('k-client-notification');
   if (!banner) return;
-  banner.classList.add('u-hidden');
-  banner.replaceChildren();
+  // Un bandeau vide ne doit jamais réserver d'espace ni se confondre avec
+  // le header. Il sera recréé uniquement lorsqu'un message réel existe.
+  banner.remove();
 }
 
 function renderCurrent() {
@@ -123,7 +124,6 @@ function refreshWhenVisible() {
 export function setupClientNotifications() {
   if (installed) return;
   installed = true;
-  ensureBanner();
   refreshClientNotifications({ force: true });
   window.addEventListener('komerce:identity-authenticated', () => refreshClientNotifications({ force: true }));
   window.addEventListener('focus', () => refreshClientNotifications());

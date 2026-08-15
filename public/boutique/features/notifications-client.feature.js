@@ -52,6 +52,8 @@ module.exports = {
   authority: 'boutique — ce slice possède uniquement la projection du message, jamais l événement métier source.',
   invariants: [
     'une absence de session masque le bandeau sans ouvrir l OTP',
+    'aucun conteneur vide ne modifie le header ou ne réserve d espace sans notification réelle',
+    'sur desktop comme mobile un bandeau réel flotte sous la navigation sans appartenir au flux du header ou du hero',
     'une seule notification prioritaire est visible à la fois',
     'acquitter le message ne modifie jamais la commande',
     'la commande disponible reste mise en évidence jusqu au retrait',

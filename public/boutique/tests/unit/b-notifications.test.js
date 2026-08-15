@@ -8,6 +8,8 @@
 const mockEmit = jest.fn();
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
+const fs = require('fs');
+const path = require('path');
 jest.mock('../../js/b-bus.js', () => ({ bus: { emit: mockEmit } }));
 jest.mock('../../js/b-utils.js', () => ({ apiGet: mockApiGet, apiPost: mockApiPost }));
 const { setupClientNotifications, refreshClientNotifications } = require('../../js/b-notifications.js');
@@ -28,8 +30,19 @@ test('affiche uniquement l\'information utile et ouvre Commandes', async () => {
   const banner = document.getElementById('k-client-notification');
   expect(banner.textContent).toContain('Votre colis est disponible');
   expect(banner.textContent).not.toMatch(/facture|wallet|whatsapp/i);
+  expect(banner.parentElement).toBe(document.body);
   banner.querySelector('.k-client-notification__view').click();
   expect(mockEmit).toHaveBeenCalledWith('nav:goto-track', { orderReference: 'K7A78R6' });
+});
+
+test('reste un overlay compact sans participer au flux du header ou du hero', () => {
+  const css = fs.readFileSync(path.resolve(__dirname, '../../css/notifications.css'), 'utf8');
+  const block = css.match(/\.k-client-notification\s*\{([^}]+)\}/s)?.[1] || '';
+  expect(block).toMatch(/position\s*:\s*fixed/);
+  expect(block).toMatch(/left\s*:\s*50%/);
+  expect(block).toMatch(/transform\s*:\s*translateX\(-50%\)/);
+  expect(block).toMatch(/max-width\s*:\s*min\(720px/);
+  expect(block).not.toMatch(/position\s*:\s*relative/);
 });
 
 test.each([
@@ -58,7 +71,13 @@ test('acquitte explicitement puis masque le bandeau', async () => {
   document.querySelector('.k-client-notification__ack').click();
   await flush();
   expect(mockApiPost).toHaveBeenCalledWith('/api/auth/me/notifications/notif-2/ack', null, { retries: 0 });
-  expect(document.getElementById('k-client-notification').classList).toContain('u-hidden');
+  expect(document.getElementById('k-client-notification')).toBeNull();
+});
+
+test('ne monte aucun conteneur vide lorsque le flux ne contient aucun message', async () => {
+  mockApiGet.mockResolvedValueOnce({ notifications: [] });
+  await refreshClientNotifications({ force: true });
+  expect(document.getElementById('k-client-notification')).toBeNull();
 });
 
 test('reste silencieux sans session et ne relance pas pendant le throttle', async () => {
@@ -92,11 +111,11 @@ test('conserve le message si l acquittement échoue', async () => {
   expect(document.getElementById('k-client-notification').classList).not.toContain('u-hidden');
 });
 
-test('peut monter le bandeau sans spacer de header', async () => {
+test('monte le bandeau sur le body sans dépendre du spacer de header', async () => {
   document.body.innerHTML = '';
   mockApiGet.mockResolvedValueOnce({ notifications: [{
     id: 'notif-4', title: 'Colis disponible', message: 'Retrait au relais.',
   }] });
   await refreshClientNotifications({ force: true });
-  expect(document.body.firstElementChild.id).toBe('k-client-notification');
+  expect(document.body.lastElementChild.id).toBe('k-client-notification');
 });

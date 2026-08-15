@@ -43,6 +43,8 @@ Une exception sans action ou simple détail technique ne devient pas une notific
 - Le retrait, l'annulation ou le remboursement résout les jalons de commande encore ouverts.
 - Une émission manquée est réconciliée depuis la vérité du statut commande à la prochaine lecture authentifiée.
 - L'absence de session masque silencieusement le bandeau et ne déclenche pas un parcours OTP.
+- Sans notification réelle, aucun conteneur de bandeau n'est monté et le header conserve sa géométrie canonique.
+- Avec un message réel, le bandeau flotte sous la navigation sur desktop comme mobile sans réserver d'espace dans le header ou le hero ; il disparaît après acquittement.
 - L'application visible rafraîchit au plus une fois par minute ; ce polling ne crée aucun nouvel événement.
 - Aucun document, lien documentaire ou notification métier n'est envoyé par WhatsApp.
 - Les animations respectent `prefers-reduced-motion`.
