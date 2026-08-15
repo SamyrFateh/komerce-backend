@@ -1022,7 +1022,7 @@ describe('b-cart', () => {
       activateList({ cart: { title: 'Sync multi-client' } });
       const titleLabel = document.getElementById('k-side-cart').querySelector('.k-sc-title-label');
       expect(titleLabel.textContent).toBe('Liste de Samsam');
-      expect(document.getElementById('k-sc-snapshot-status').textContent).toBe('Ouverte');
+      expect(document.getElementById('k-sc-snapshot-status')).toBeNull();
 
       clearSharedListContext();
       state.cart = [{ product: { id: 1, name: 'Riz', price_kmf: 1000 }, qty: 1 }];
@@ -1031,12 +1031,12 @@ describe('b-cart', () => {
       expect(titleLabel.textContent).toBe('Mon panier');
     });
 
-    it('créateur desktop : expose état, organisateur, progression et reste dans la surface visible', () => {
+    it('créateur desktop : laisse l’état OPEN implicite et expose progression et reste dans la surface visible', () => {
       activateList({ isCreator: true });
       const sideCart = document.getElementById('k-side-cart');
 
       expect(sideCart.querySelector('.k-sc-title-label').textContent).toBe('Ma liste');
-      expect(sideCart.querySelector('#k-sc-snapshot-status').textContent).toBe('Ouverte');
+      expect(sideCart.querySelector('#k-sc-snapshot-status')).toBeNull();
       expect(sideCart.querySelector('.k-sc-snapshot-progress-copy').textContent)
         .toBe('1/2 achetés · Organisée par Samsam');
       expect(sideCart.querySelector('.k-cart-snapshot-progress span').style.width).toBe('50%');

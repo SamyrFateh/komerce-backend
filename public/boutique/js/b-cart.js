@@ -763,13 +763,6 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     return { html, wrapClass: '' };
   }
 
-  function snapshotStatusLabel(status) {
-    // L'état est explicite dans les deux surfaces : après un rechargement,
-    // l'utilisateur distingue immédiatement une liste encore ouverte d'un
-    // panier personnel ou d'une liste clôturée.
-    return { open: 'Ouverte', closed: 'Clôturée', cancelled: 'Annulée' }[status] ?? '';
-  }
-
   /**
    * GAP-07 §11 — formate variant_combo ({couleur:'Noir', taille:'M'}) en
    * "Noir · Taille M" pour l'affichage sous le nom du produit. Purement
@@ -872,14 +865,6 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     });
   }
 
-  function snapshotStatusText(context) {
-    // Le titre canonique porte déjà toute la relation utile : « Ma liste »
-    // pour l'organisateur, « Liste de Sam » pour le participant. Répéter le
-    // prénom (ou une phrase de contexte) dans le même en-tête créait un
-    // second niveau typographique et désalignait les deux surfaces.
-    return snapshotStatusLabel(context.status);
-  }
-
   /**
    * Mandat cohérence post-LOT 13, §3.b — sous-total de la sélection
    * locale courante (context.selectedIds), jamais un solde de liste.
@@ -909,30 +894,6 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   }
 
   /**
-   * Insère (une fois) puis met à jour un petit badge de statut texte DANS
-   * un conteneur canonique existant (jamais un bandeau propre). `id` doit
-   * être unique par conteneur cible (drawer vs side cart desktop).
-   */
-  function applySnapshotStatusBadge(container, id, context, anchorSelector) {
-    if (!container) return;
-    const text = snapshotStatusText(context);
-    let badge = container.querySelector('#' + id);
-    if (!text) {
-      badge?.remove();
-      return;
-    }
-    if (!badge) {
-      badge = document.createElement('span');
-      badge.id = id;
-      badge.className = 'k-cart-snapshot-status';
-      const anchor = anchorSelector ? container.querySelector(anchorSelector) : null;
-      if (anchor) container.insertBefore(badge, anchor);
-      else container.appendChild(badge);
-    }
-    badge.textContent = text;
-  }
-
-  /**
    * GAP-05 (Lot 2) — résumé "Contributeurs : Ali · 2 articles, Fatima ·
    * 1 article" dans le header canonique. Vide (donc invisible) si non
    * organisateur ou si aucune ligne réclamée : context.contributors est
@@ -951,12 +912,13 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
   }
 
   /**
-   * Insère (une fois) puis met à jour la ligne de résumé contributeurs,
-   * juste après le badge de statut existant dans le même conteneur
-   * canonique. Retire l'élément quand le texte devient vide (jamais un
+   * Insère (une fois) puis met à jour la ligne de résumé contributeurs
+   * dans le conteneur canonique. Le statut OPEN n'est jamais un prérequis :
+   * seule une liste active peut occuper cette surface. Retire l'élément
+   * quand le texte devient vide (jamais un
    * élément vide laissé dans le DOM).
    */
-  function applySnapshotContributorsSummary(container, statusBadgeId, id, context) {
+  function applySnapshotContributorsSummary(container, id, context) {
     if (!container) return;
     const text = contributorsSummaryText(context);
     let el = container.querySelector('#' + id);
@@ -968,9 +930,7 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       el = document.createElement('div');
       el.id = id;
       el.className = 'k-cart-snapshot-contributors';
-      const badge = container.querySelector('#' + statusBadgeId);
-      if (badge) badge.insertAdjacentElement('afterend', el);
-      else container.appendChild(el);
+      container.appendChild(el);
     }
     el.textContent = text;
   }
@@ -1011,12 +971,12 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
    */
   function applySnapshotDrawerFooter(context, items, actions) {
     const header = document.getElementById('k-cart-header');
-    // Le drawer mobile porte déjà "Ma liste" / "Liste de …" : le badge
-    // Ouverte/Clôturée ajoutait un libellé d'administration dans le parcours
-    // client. Le side-cart desktop conserve son statut compact ; le drawer le
-    // retire explicitement, y compris après un rendu précédent.
+    // Le drawer porte déjà "Ma liste" / "Liste de …" : un éventuel badge
+    // hérité Ouverte/Clôturée serait un libellé d'administration redondant.
+    // Le retirer explicitement nettoie aussi un DOM rendu par une version
+    // précédente de l'application.
     header?.querySelector('#k-cart-snapshot-status')?.remove();
-    applySnapshotContributorsSummary(header, 'k-cart-snapshot-status', 'k-cart-snapshot-contributors', context);
+    applySnapshotContributorsSummary(header, 'k-cart-snapshot-contributors', context);
 
     if (!dom.cartFooter) return;
     dom.cartFooter.classList.remove('u-hidden');
@@ -1133,8 +1093,8 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
     const titleBar = sc.querySelector('.k-sc-title-bar');
     const titleLabel = sc.querySelector('.k-sc-title-label');
     if (titleLabel) titleLabel.textContent = context.title || 'Liste partagée';
-    applySnapshotStatusBadge(titleBar, 'k-sc-snapshot-status', context, null);
-    applySnapshotContributorsSummary(titleBar, 'k-sc-snapshot-status', 'k-sc-snapshot-contributors', context);
+    titleBar?.querySelector('#k-sc-snapshot-status')?.remove();
+    applySnapshotContributorsSummary(titleBar, 'k-sc-snapshot-contributors', context);
 
     SIDECART_NATIVE_BTN_IDS_TO_HIDE.forEach((id) => sc.querySelector('#' + id)?.classList.add('u-hidden'));
 

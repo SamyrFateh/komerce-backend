@@ -109,7 +109,6 @@ body.cart-open .k-hero { pointer-events: none; }
 
 /* Une vraie méta métier reste possible, mais sous forme compacte,
    jamais comme un deuxième header. */
-.k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-snapshot-status,
 .k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-snapshot-contributors {
   grid-column: 1 / -1;
   min-width: 0;

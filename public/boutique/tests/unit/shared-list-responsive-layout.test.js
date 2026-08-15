@@ -29,6 +29,8 @@ const { BUNDLES } = require('../../scripts/css-bundles');
 
 const cssPath = path.resolve(__dirname, '../../css/shared-list-side-cart-responsive.css');
 const css = fs.readFileSync(cssPath, 'utf8');
+const tabsCssPath = path.resolve(__dirname, '../../css/shared-list-side-cart.css');
+const tabsCss = fs.readFileSync(tabsCssPath, 'utf8');
 
 function compact(value) {
   return String(value).replace(/\s+/g, ' ').trim();
@@ -113,6 +115,26 @@ describe('liste partageable — layout étroit side cart / drawer', () => {
     );
     expect(css).not.toMatch(
       /#k-side-cart \.k-cart-snapshot-item \.k-cart-item-name\s*\{/
+    );
+  });
+});
+
+describe('liste partageable — navigation desktop unifiée', () => {
+  it('distingue sobrement Panier et Liste par l’état actif et un séparateur central', () => {
+    expect(tabsCss).toMatch(
+      /\.k-cart-tab--active\s*\{[^}]*color:\s*var\(--text\)[^}]*font-weight:\s*800/s
+    );
+    expect(tabsCss).toMatch(
+      /@media \(min-width: 900px\)[\s\S]*?#k-cart-surface-switch\.k-cart-tabs\s*\{[^}]*background:\s*var\(--surface-sand-97\)/
+    );
+    expect(tabsCss).toMatch(
+      /#k-cart-surface-switch\.k-cart-tabs::after\s*\{[^}]*top:\s*14px[^}]*bottom:\s*14px[^}]*left:\s*50%[^}]*width:\s*1px[^}]*background:\s*var\(--stone-border\)/s
+    );
+  });
+
+  it('conserve sur mobile le rail plat sans contour englobant', () => {
+    expect(tabsCss).toMatch(
+      /@media \(max-width: 899px\)[\s\S]*?> #k-cart-surface-switch-drawer\.k-cart-tabs\s*\{[^}]*border:\s*0[^}]*background:\s*transparent/s
     );
   });
 });

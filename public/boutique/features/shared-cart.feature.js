@@ -85,6 +85,7 @@ module.exports = {
     'une commande ne mélange jamais panier personnel et lignes de liste',
     'quitter × ne ferme ni ne modifie la liste',
     'CLOSED/CANCELLED restent historiques et ne résident jamais dans le side cart',
+    'sur desktop comme sur mobile, l onglet actif porte seul le titre de la liste ; le statut OPEN implicite ne crée jamais une seconde barre',
     'retirer une liste sauvegardée ne supprime jamais la liste ni son token public',
     'la création d une liste partagée part toujours du panier canonique via Partager, y compris depuis le pied de page',
     'toute confirmation de liste nomme son dialogue, confine le focus, rend le fond inerte, accepte Échap et restaure le focus au déclencheur',

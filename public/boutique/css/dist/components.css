@@ -7124,7 +7124,6 @@ body.cart-open .k-hero { pointer-events: none; }
 
 /* Une vraie méta métier reste possible, mais sous forme compacte,
    jamais comme un deuxième header. */
-.k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-snapshot-status,
 .k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-snapshot-contributors {
   grid-column: 1 / -1;
   min-width: 0;
@@ -10330,22 +10329,9 @@ body.cart-open  #k-section-index { display:none; }
   display: inline-flex;
 }
 
-/* ── Badge de statut inséré dans le chrome canonique ──────────────────────
- * Inséré DANS #k-cart-header / .k-sc-title-bar (existants), jamais un
- * bandeau propre — voir b-cart.js::applySnapshotStatusBadge.
- */
-.k-cart-snapshot-status {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* ── Résumé contributeurs (GAP-05, Lot 2) ─────────────────────────────────
- * Inséré juste après .k-cart-snapshot-status dans le même conteneur
- * canonique — voir b-cart.js::applySnapshotContributorsSummary. Visible
+ * Inséré dans le conteneur canonique — voir
+ * b-cart.js::applySnapshotContributorsSummary. Visible
  * uniquement organisateur (payload backend gaté, jamais un filtrage CSS).
  */
 .k-cart-snapshot-contributors {
@@ -10443,7 +10429,7 @@ body.cart-open  #k-section-index { display:none; }
   border-radius: 11px;
   box-shadow: 0 4px 14px rgba(42,33,23,.08);
   transform: translateY(-1px);
-  font-weight: 760;
+  font-weight: 800;
 }
 
 .k-cart-tabs[data-active="personal"] .k-tab-personal.k-cart-tab--active {
@@ -10499,9 +10485,6 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 /* [Ma liste + ×] est UNE seule surface active.
- * Le trait appartient au groupe complet : aucun raccord, aucun petit
- * segment sous le ×, même rendu desktop et mobile. */
-/* [Ma liste + ×] est UNE seule surface active.
  * Aucun enfant ne dessine l'indicateur : le groupe possède l'unique trait. */
 .k-cart-tab-group--active {
   position: relative;
@@ -10524,6 +10507,34 @@ body.cart-open  #k-section-index { display:none; }
 
 .k-cart-tab-group--active .k-cart-tab-exit {
   color: var(--text-muted);
+}
+
+/* DESKTOP — le rail reste une seule pièce. La distinction vient de l'état
+ * actif (fond, graisse et relief), complété par un axe central très fin ;
+ * le contour extérieur reste volontairement discret. */
+@media (min-width: 900px) {
+  #k-cart-surface-switch.k-cart-tabs {
+    position: relative;
+    background: var(--surface-sand-97);
+  }
+
+  #k-cart-surface-switch.k-cart-tabs::after {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    top: 14px;
+    bottom: 14px;
+    left: 50%;
+    width: 1px;
+    background: var(--stone-border);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  #k-cart-surface-switch.k-cart-tabs > * {
+    position: relative;
+    z-index: 1;
+  }
 }
 
 /* ── MOBILE — navigation Panier / Liste premium ───────────────────────
@@ -11087,6 +11098,7 @@ body.is-shared-list-context #k-cart-recap-word {
   font-size: 10.5px;
   font-weight: 700;
 }
+
 
 /* ── shared-list-side-cart-responsive.css ────────────────── */
 /**
