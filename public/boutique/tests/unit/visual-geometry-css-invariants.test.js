@@ -1016,26 +1016,37 @@ describe('POLISH final ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â logo desktop, badg
     expect(badge).toMatch(/font-weight\s*:\s*900/);
   });
 
-  it('restaure sur mobile le rail et diffÃƒÆ’Ã‚Â©rencie visuellement panier et liste', () => {
+  it('présente Panier/Liste mobile comme des tabs premium sans capsule englobante', () => {
     const css = readCss('shared-list-side-cart.css');
 
     const rail = css.match(
       /#k-cart-surface-switch-drawer\.k-cart-tabs\s*\{([^}]+)\}/s
     )?.[1] ?? '';
 
-    const personal = css.match(
-      /#k-cart-surface-switch-drawer\[data-active="personal"\]\s*\{([^}]+)\}/s
+    const active = css.match(
+      /#k-cart-surface-switch-drawer \.k-cart-tab--active,([\s\S]*?)\{([^}]+)\}/
+    )?.[2] ?? '';
+
+    const underline = css.match(
+      /#k-cart-surface-switch-drawer \.k-cart-tab--active::after\s*\{([^}]+)\}/s
     )?.[1] ?? '';
 
-    const list = css.match(
-      /#k-cart-surface-switch-drawer\[data-active="list"\]\s*\{([^}]+)\}/s
+    const activeGroup = css.match(
+      /#k-cart-surface-switch-drawer \.k-cart-tab-group--active\s*\{([^}]+)\}/s
     )?.[1] ?? '';
 
-    expect(rail).toMatch(/border\s*:\s*1px\s+solid\s+var\(--border\)/);
-    expect(rail).toMatch(/border-radius\s*:\s*14px/);
+    expect(rail).toMatch(/border\s*:\s*0/);
+    expect(rail).toMatch(/background\s*:\s*transparent/);
+    expect(rail).toMatch(/box-shadow\s*:\s*none/);
 
-    expect(personal).toMatch(/background\s*:\s*var\(--sand\)/);
-    expect(list).toMatch(/background\s*:\s*var\(--sand\)/);
-    expect(list).toMatch(/border-color\s*:\s*var\(--stone-border\)/);
+    expect(active).toMatch(/font-weight\s*:\s*800/);
+    expect(active).toMatch(/background\s*:\s*transparent/);
+
+    expect(underline).toMatch(/width\s*:\s*32px/);
+    expect(underline).toMatch(/height\s*:\s*2px/);
+    expect(underline).toMatch(/background\s*:\s*var\(--text\)/);
+
+    expect(activeGroup).toMatch(/border\s*:\s*0/);
+    expect(activeGroup).toMatch(/background\s*:\s*transparent/);
   });
 });

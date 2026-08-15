@@ -359,58 +359,117 @@
   color: var(--text-muted);
 }
 
-/* ── PARITÉ MOBILE — distinction Panier personnel / Liste partagée ──────
- * cart.css neutralise volontairement le chrome générique du header mobile
- * (#k-cart-surface-switch-drawer : border:0/background:transparent).
- * Ici, le composant shared-list reprend possession de SON rail grâce au
- * data-active déjà maintenu par group-side-cart.js.
- *
- * Panier personnel = header blanc, rail neutre.
- * Liste partagée   = contexte sable chaud, comme desktop.
+/* ── MOBILE — navigation Panier / Liste premium ───────────────────────
+ * Le header reste une surface blanche unique.
+ * Aucun rail/capsule englobant : deux tabs typographiques, l'état actif
+ * est porté uniquement par un trait fin. Le × reste une action indépendante.
  */
 @media (max-width: 899px) {
-  .k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-surface-switch-drawer.k-cart-tabs {
-    min-height: 44px;
-    height: 44px;
-    padding: 3px;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    background: var(--sand);
-  }
-
-  .k-cart-header:has(#k-cart-surface-switch-drawer[data-active="personal"]) {
+  .k-cart-header:has(#k-cart-surface-switch-drawer) {
     background: var(--white);
   }
 
-  .k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-surface-switch-drawer[data-active="personal"] {
-    background: var(--sand);
-    border-color: var(--border);
+  .k-cart-header:has(#k-cart-surface-switch-drawer)
+  > #k-cart-surface-switch-drawer.k-cart-tabs {
+    min-height: 50px;
+    height: 50px;
+    padding: 0;
+    gap: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
-  .k-cart-header:has(#k-cart-surface-switch-drawer[data-active="list"]) {
-    background: var(--white);
+  #k-cart-surface-switch-drawer .k-cart-tab {
+    position: relative;
+    height: 50px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
   }
 
-  .k-cart-header:has(#k-cart-surface-switch-drawer) > #k-cart-surface-switch-drawer[data-active="list"] {
-    background: var(--sand);
-    border-color: var(--stone-border);
-  }
-
-  /* Terrain mobile : deux états lisibles sans double coloration du chrome. */
-  #k-cart-surface-switch-drawer
+  #k-cart-surface-switch-drawer .k-cart-tab--active,
+  #k-cart-surface-switch-drawer[data-active="personal"]
   .k-tab-personal.k-cart-tab--active {
-    border: 1.5px solid var(--stone-border);
-    background: var(--white);
+    color: var(--text);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+    font-weight: 800;
+  }
+
+  #k-cart-surface-switch-drawer .k-cart-tab--active::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 3px;
+    width: 32px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--text);
+    transform: translateX(-50%);
+  }
+
+  #k-cart-surface-switch-drawer .k-cart-tab-group {
+    position: relative;
+    display: block;
+    min-width: 0;
+    height: 50px;
+  }
+
+  #k-cart-surface-switch-drawer
+  .k-cart-tab-group .k-tab-shared-list {
+    width: 100%;
+    height: 50px;
+    padding: 0 28px;
+  }
+
+  #k-cart-surface-switch-drawer .k-cart-tab-group--active {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+    overflow: visible;
+  }
+
+  #k-cart-surface-switch-drawer
+  .k-cart-tab-group--active
+  .k-tab-shared-list.k-cart-tab--active {
+    background: transparent;
+    border: 0;
     box-shadow: none;
     transform: none;
   }
 
+  #k-cart-surface-switch-drawer .k-cart-tab-exit,
   #k-cart-surface-switch-drawer
-  .k-cart-tab-group--active {
-    border: 1.5px solid var(--stone-border);
-    background: var(--sand-warm);
+  .k-cart-tab-group--active .k-cart-tab-exit {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 28px;
+    height: 50px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 15px;
     box-shadow: none;
     transform: none;
+  }
+
+  #k-cart-surface-switch-drawer .k-cart-tab-exit:active {
+    color: var(--text);
   }
 }
 
