@@ -1275,10 +1275,12 @@
   /* Largeur "wide" des conteneurs de centrage ≥1200px.
      Rapatrié de desktop-commerce-skeleton.css (supprimé le 31/05 — fichier mort).
      La réserve du side cart borne ensuite cette largeur dans le viewport. */
-  .k-header-inner,
+  .k-header-inner {
+    max-width: 1540px;
+  }
   .k-hero-inner,
   .k-cats-shell {
-    max-width: 1540px;
+    max-width: 1680px;
   }
 }
 

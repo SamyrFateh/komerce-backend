@@ -307,7 +307,7 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
   /* Image : 1600×525 (ratio ~3:1) — lune + têtes + logo Komerce visibles.
-     Fallback pour pages sans .k-home-premium-v1 (DIRECTION A gagne sinon). */
+     Fallback pour pages sans .k-home-premium-v1 (le panorama premium gagne sinon). */
   .k-hero-img {
     height: auto;
     aspect-ratio: 1600 / 525;
@@ -533,36 +533,10 @@
       linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 55%, var(--white)) 100%);
   }
 
-  html.k-home-premium-v1 .k-hero-inner {
-    padding-inline: clamp(26px, 3.6vw, 60px);
-  }
-
   html.k-home-premium-v1 .k-hero-media {
     overflow: hidden;
   }
 
-  html.k-home-premium-v1 .k-hero-mini-slogan--premium { max-width: 510px; }
-
-  html.k-home-premium-v1 .k-hero-badge { letter-spacing: .06em; }
-
-  html.k-home-premium-v1 .k-hero-sub {
-    margin-top: 14px;
-  }
-
-  html.k-home-premium-v1 .k-hero-cta-primary {
-    min-height: 44px;
-  }
-
-  html.k-home-premium-v1 .k-hero-cta-ghost {
-  }
-
-  html.k-home-premium-v1 .k-hero-trust {
-    align-items: center;
-    padding: 7px 10px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--white) 78%, transparent);
-    border: 1px solid var(--border-text-06);
-  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -707,12 +681,11 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   DIRECTION A — HERO DESKTOP SPLIT  (≥900px + .k-home-premium-v1)
+   HERO DESKTOP PANORAMIQUE  (≥900px + .k-home-premium-v1)
    Structure réelle : .k-hero-inner > .k-hero-media > (picture + .k-hero-mini-slogan)
-   Stratégie : .k-hero-media devient un grid 50/50 inversé :
-     colonne 1 = mini-slogan (texte), colonne 2 = picture (image).
-   Hauteur compacte : clamp(180px, 22vw, 240px).
-   Zéro modif HTML.
+   Le visuel occupe toute la carte ; le contenu éditorial se pose dans la
+   réserve claire prévue dans l'asset. Le side-cart réduit le contenant,
+   jamais l'échelle du texte ni la lisibilité des visages.
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
@@ -724,45 +697,50 @@
   /* ── Hero lui-même : hauteur compacte ── */
   html.k-home-premium-v1 .k-hero {
     overflow: clip;
+    padding-top: clamp(22px, 2.2vw, 34px);
   }
 
   html.k-home-premium-v1 .k-hero-inner {
+    width: calc(100% - clamp(32px, 2.6vw, 48px));
+    max-width: 1680px;
     height: 100%;
-    max-width: var(--container);
     margin: 0 auto;
+    padding-inline: 0;
   }
 
-  /* ── k-hero-media : grid 50/50 ── */
+  /* ── Carte panorama unique ── */
   html.k-home-premium-v1 .k-hero-media {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     grid-template-rows: 1fr;
-    height: 100%;
+    height: clamp(320px, 21vw, 368px);
     margin: 0;
-    border-radius: 0;
-    box-shadow: none;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 12px 34px var(--border-text-06);
     position: relative;
     background: var(--hero-bg);
   }
 
-  /* ── Colonne droite : image ── */
+  /* ── Image plein cadre ── */
   html.k-home-premium-v1 .k-hero-media picture {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 1;
     display: block;
     overflow: hidden;
+    border-radius: inherit;
   }
 
   html.k-home-premium-v1 .k-hero-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: 50% 35%;
+    object-position: 50% 46%;
     aspect-ratio: unset;
     display: block;
   }
 
-  /* ── Colonne gauche : texte ── */
+  /* ── Texte superposé dans la réserve claire de l'asset ── */
   html.k-home-premium-v1 .k-hero-mini-slogan--premium {
     display: flex !important;
     flex-direction: column;
@@ -770,20 +748,16 @@
     gap: 0;
     grid-column: 1;
     grid-row: 1;
-    padding: 0 36px 0 clamp(20px, 4vw, 52px);
-    background: var(--hero-bg);
-    /* Fondu doux vers la droite (vers l'image) */
+    align-self: stretch;
+    width: 43%;
+    max-width: 650px;
+    padding: 0 clamp(30px, 3.4vw, 58px);
+    background: transparent;
     position: relative;
+    z-index: 2;
   }
   html.k-home-premium-v1 .k-hero-mini-slogan--premium::after {
-    content: '';
-    position: absolute;
-    right: -28px;
-    top: 0; bottom: 0;
-    width: 56px;
-    background: linear-gradient(to right, var(--hero-bg), transparent);
-    pointer-events: none;
-    z-index: 1;
+    content: none;
   }
 
   /* Masquer le bubble & logo-glow sur desktop */
@@ -816,7 +790,7 @@
   html.k-home-premium-v1 .k-hero-mini-slogan--premium .k-line-1 {
     display: block;
     font-family: var(--font-display);
-    font-size: clamp(22px, 2.4vw, 32px);
+    font-size: clamp(34px, 2.75vw, 50px);
     font-weight: 800;
     line-height: 1.1;
     color: var(--green-dark-text);
@@ -827,23 +801,23 @@
   html.k-home-premium-v1 .k-hero-mini-slogan--premium .k-line-2 {
     display: block;
     font-family: var(--font-display);
-    font-size: clamp(22px, 2.4vw, 32px);
+    font-size: clamp(34px, 2.75vw, 50px);
     font-weight: 800;
     font-style: italic;
     line-height: 1.1;
     color: var(--coral);
     letter-spacing: -.02em;
-    margin-bottom: 8px;
+    margin-bottom: 14px;
   }
 
   /* Sous-titre */
   html.k-home-premium-v1 .k-hero-sub {
     display: block;
-    font-size: clamp(11px, 1vw, 13px);
+    font-size: clamp(13px, 1.05vw, 16px);
     color: var(--hero-text-muted);
     line-height: 1.45;
-    margin: 0 0 6px;
-    max-width: 300px;
+    margin: 0 0 18px;
+    max-width: 420px;
   }
 
   /* CTAs row */
@@ -851,18 +825,19 @@
     display: flex;
     gap: 8px;
     align-items: center;
-    flex-wrap: wrap;
-    margin-bottom: 5px;
+    flex-wrap: nowrap;
+    margin-bottom: 16px;
   }
 
   html.k-home-premium-v1 .k-hero-cta-primary {
     background: var(--coral);
     color: var(--white);
     border: none;
-    border-radius: var(--radius-sm);
-    padding: 8px 16px;
+    min-height: 46px;
+    border-radius: 10px;
+    padding: 10px 20px;
     font-family: var(--font);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(200,92,45,.28);
@@ -878,10 +853,11 @@
     background: transparent;
     color: var(--green-text);
     border: 1.5px solid currentColor;
-    border-radius: var(--radius-sm);
-    padding: 7px 14px;
+    min-height: 46px;
+    border-radius: 10px;
+    padding: 9px 18px;
     font-family: var(--font);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: background .15s, color .15s;
@@ -897,9 +873,13 @@
     display: flex !important;
     align-items: center;
     gap: 5px;
-    font-size: 10.5px;
+    font-size: 11.5px;
     color: var(--hero-text-soft);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
   html.k-home-premium-v1 .k-hero-trust .k-trust-sep {
     color: var(--hero-text-faint);
@@ -909,16 +889,16 @@
   html.k-home-premium-v1 .k-hero-media::after {
     content: '● Livraison express disponible';
     position: absolute;
-    top: 14px;
-    right: 18px;
+    top: 16px;
+    right: 20px;
     background: rgba(255,255,255,.92);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     border: 1px solid rgba(42,122,62,.18);
     border-radius: 20px;
-    padding: 5px 12px;
+    padding: 6px 13px;
     font-family: var(--font);
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--green-dark-text);
     letter-spacing: .01em;
@@ -930,14 +910,36 @@
      #k-hero-fixed-wrap est overflow:visible → les chips ne sont plus clippées.
      top = header premium (72px) au lieu de 68px base. */
   html.k-home-premium-v1 .k-hero-cats-sticky {
-    margin-top: 0;
     /* header premium h = 72px (règle ci-dessous dans CORRECTIONS) */
   }
 }
-/* ══ FIN DIRECTION A DESKTOP SPLIT ════════════════════════════ */
+/* Le panneau latéral réserve sa largeur dans le body. On réduit seulement la
+   hauteur du panorama et la taille display maximale : les personnages restent
+   à leur échelle, l'image conserve son recadrage plein cadre. */
+@media (min-width: 1200px) {
+  html.k-home-premium-v1 body.sc-reserve .k-hero-media,
+  html.k-home-premium-v1 body:has(.k-side-cart.has-items) .k-hero-media {
+    height: clamp(306px, 17.5vw, 332px);
+  }
+
+  html.k-home-premium-v1 body.sc-reserve .k-hero-mini-slogan--premium .k-line-1,
+  html.k-home-premium-v1 body.sc-reserve .k-hero-mini-slogan--premium .k-line-2,
+  html.k-home-premium-v1 body:has(.k-side-cart.has-items) .k-hero-mini-slogan--premium .k-line-1,
+  html.k-home-premium-v1 body:has(.k-side-cart.has-items) .k-hero-mini-slogan--premium .k-line-2 {
+    font-size: clamp(34px, 2.35vw, 44px);
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+  html.k-home-premium-v1 .k-hero-cta-row,
+  html.k-home-premium-v1 .k-hero-trust {
+    flex-wrap: wrap;
+  }
+}
+/* ══ FIN HERO DESKTOP PANORAMIQUE ═════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════════
-   DIRECTION A — CORRECTIONS NAVBAR + LOGO + ALIGNEMENT TEXTE
+   HERO PANORAMIQUE — CORRECTIONS NAVBAR + LOGO + ALIGNEMENT TEXTE
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
@@ -1037,7 +1039,7 @@
     position: sticky;
     top: var(--header-h, 72px);
     z-index: 110;                 /* > .k-header (z-index:100) */
-    margin-top: 0;
+    margin-top: 12px;
     background: var(--page-bg);   /* opaque : la grille ne transparaît pas dessous */
     box-shadow:
       0 1px 0 var(--border-text-07),
