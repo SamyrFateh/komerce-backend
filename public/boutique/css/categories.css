@@ -915,7 +915,12 @@ html.k-mobile-premium-v1 .k-chip-label {
 
 /* ── Premium desktop home — catégories (rapatrié de b-home-premium-v1.js, Lot 3) ── */
 @media (min-width: 900px) {
-  html.k-home-premium-v1 .k-cats-shell { padding-top: 0; }
+  html.k-home-premium-v1 .k-cats-shell {
+    width: calc(100% - clamp(32px, 2.6vw, 48px));
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 0;
+  }
 
   html.k-home-premium-v1 .k-cats::before {
     content: none;
@@ -923,25 +928,55 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   html.k-home-premium-v1 .k-cats {
     position: relative;
-    gap: 12px;
+    gap: 10px;
   }
 
   html.k-home-premium-v1 .k-chip {
-    border-radius: 24px;
-    min-width: 132px;
-    height: 88px;
-    min-height: 88px;
-    background: color-mix(in srgb, var(--white) 78%, transparent);
-    box-shadow: 0 14px 34px var(--border-text-06);
+    flex-basis: 118px;
+    min-width: 118px;
+    height: 64px;
+    min-height: 64px;
+    border: 1px solid var(--border-text-06);
+    border-radius: 16px;
+    background: var(--sand-warm);
+    box-shadow: none;
     transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
   }
 
-  html.k-home-premium-v1 .k-chip:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 20px 44px var(--border-text-08);
+  html.k-home-premium-v1 .k-chip-photo img {
+    filter: saturate(.78) contrast(.96) brightness(.90);
   }
 
-  html.k-home-premium-v1 .k-chip-label { font-weight: 850; }
+  html.k-home-premium-v1 .k-chip::after {
+    background: linear-gradient(to bottom, rgba(18, 12, 6, .04) 12%, rgba(18, 12, 6, .52) 100%);
+  }
+
+  html.k-home-premium-v1 .k-chip:hover {
+    transform: translateY(-1px);
+    border-color: var(--border-text-10);
+    box-shadow: 0 8px 18px var(--border-text-08);
+  }
+
+  html.k-home-premium-v1 .k-chip:hover .k-chip-photo img {
+    transform: scale(1.035);
+    filter: saturate(1.04) contrast(1) brightness(.98);
+  }
+
+  html.k-home-premium-v1 .k-chip.active {
+    transform: none;
+    border-color: var(--ocean-dark);
+    box-shadow: inset 0 -3px 0 var(--ocean-dark), 0 4px 12px var(--border-text-06);
+  }
+
+  html.k-home-premium-v1 .k-chip.active .k-chip-photo img {
+    filter: saturate(1.04) contrast(1) brightness(.96);
+  }
+
+  html.k-home-premium-v1 .k-chip-label {
+    padding: 5px 7px 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+  }
 }
 
 /* ── ANIMATION CHANGEMENT DE CATÉGORIE ───────────────────────────

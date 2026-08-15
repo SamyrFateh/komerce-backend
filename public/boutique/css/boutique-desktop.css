@@ -662,6 +662,104 @@
 #k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(4) { animation-delay: .08s; }
 #k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(5) { animation-delay: .10s; }
 
+/* ── Premium home : continuité catégories → sous-catégories ─────────
+   Les deux niveaux forment un seul stack de navigation. Le rail image
+   conserve le rôle d'univers ; ce second niveau reste textuel, compact et
+   horizontal pour prolonger la sélection sans concurrencer le hero. */
+@media (min-width: 900px) {
+  html.k-home-premium-v1 #k-subcats-wrap {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    width: calc(100% - clamp(32px, 2.6vw, 48px));
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 7px 0 9px;
+    border-top: 1px solid var(--border-text-06);
+  }
+
+  html.k-home-premium-v1 #k-subcats-wrap .k-subcats-context {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  html.k-home-premium-v1 #k-subcats-wrap .k-subcats-back {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    justify-content: center;
+    border-width: 1px;
+    background: transparent;
+  }
+
+  html.k-home-premium-v1 #k-subcats-wrap .k-subcats-back span {
+    display: none;
+  }
+
+  html.k-home-premium-v1 #k-subcats-wrap .k-subcats-title {
+    gap: 6px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 750;
+    letter-spacing: -.012em;
+    white-space: nowrap;
+  }
+
+  html.k-home-premium-v1 #k-subcats-wrap .k-subcats-emoji {
+    font-size: 15px;
+  }
+
+  html.k-home-premium-v1 #k-subcats-wrap .k-subcats-count {
+    padding: 2px 7px;
+    font-size: 10px;
+    background: transparent;
+    border: 1px solid var(--border-text-06);
+  }
+
+  html.k-home-premium-v1 #k-subcats-wrap .k-subcats-rail {
+    flex-wrap: nowrap;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    gap: 6px;
+    overflow-x: auto;
+  }
+
+  html.k-home-premium-v1 #k-subcats-wrap .k-subchip,
+  html.k-home-premium-v1 #k-subcats-wrap .k-subchip[data-subcat=""] {
+    display: inline-flex;
+    height: 30px;
+    padding: 0 11px;
+    border-width: 1px;
+    background: var(--surface-white-88);
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    font-weight: 650;
+  }
+
+  html.k-home-premium-v1 #k-subcats-wrap .k-subchip:hover {
+    transform: none;
+    border-color: var(--ocean-dark);
+    box-shadow: none;
+  }
+
+  html.k-home-premium-v1 #k-subcats-wrap .k-subchip.active {
+    background: color-mix(in srgb, var(--ocean-light) 18%, var(--white));
+    border-color: var(--ocean-dark);
+    box-shadow: inset 0 -2px 0 var(--ocean-dark);
+    color: var(--ocean-dark);
+    font-weight: 750;
+  }
+}
+
 @media (min-width: 900px) {
   .k-sec-subcats { display: none; }
   .k-sec-subchip { display: none; }

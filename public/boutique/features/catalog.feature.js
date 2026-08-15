@@ -75,6 +75,7 @@ module.exports = {
       '../tests/unit/render-home-sections.test.js',
       '../tests/unit/render-categories.test.js',
       '../tests/unit/hero-desktop-panorama.test.js',
+      '../tests/unit/category-subcategory-continuity.test.js',
     ],
   },
 
@@ -113,6 +114,7 @@ module.exports = {
     'aucun renderer ne reconstruit un stock par axe',
     'les adaptations desktop du catalogue ne deviennent jamais un shell applicatif global',
     'les catégories restent sur une ligne et défilent horizontalement quand la largeur disponible ne suffit pas',
+    'sur desktop premium, catégories et sous-catégories forment un stack compact de même largeur sans modifier le rail mobile',
     'le hero desktop conserve son texte et les deux visages lisibles avec ou sans réserve du side cart, sans modifier le hero mobile',
     'chaque bouton favori expose son état réel par aria-pressed et un libellé Ajouter ou Retirer synchronisé',
     'ajout, achat et promotion utilisent l accent commerce ; l état déjà au panier reste positif et le favori actif reste éditorial',

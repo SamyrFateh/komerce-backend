@@ -2897,11 +2897,9 @@ body:has(#k-page-scroll.k-pager-active) {
     position: sticky;
     top: var(--header-h, 72px);
     z-index: 110;                 /* > .k-header (z-index:100) */
-    margin-top: 12px;
+    margin-top: 8px;
     background: var(--page-bg);   /* opaque : la grille ne transparaît pas dessous */
-    box-shadow:
-      0 1px 0 var(--border-text-07),
-      0 6px 18px -12px rgba(28, 26, 23, .22);
+    box-shadow: 0 1px 0 var(--border-text-07);
   }
 }
 /* ══ FIN LOT NAV-STICKY-DESKTOP ════════════════════════════════════ */
