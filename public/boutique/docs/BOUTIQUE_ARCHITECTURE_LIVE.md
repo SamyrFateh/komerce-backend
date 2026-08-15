@@ -14,26 +14,26 @@
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1353 | 🔴 **ORPHELIN** |
+| `boutique-desktop.css` | 1365 | 🔴 **ORPHELIN** |
 | `cart.css` | 2202 | 🔴 **ORPHELIN** |
 | `categories.css` | 988 | 🔴 **ORPHELIN** |
-| `checkout-vertical-rail.css` | 1014 | 🔴 **ORPHELIN** |
+| `checkout-vertical-rail.css` | 1069 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
-| `hero.css` | 1023 | 🔴 **ORPHELIN** |
+| `hero.css` | 1096 | 🔴 **ORPHELIN** |
 | `identity.css` | 346 | 🔴 **ORPHELIN** |
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
 | `komerce.css` | 330 | 🔴 **ORPHELIN** |
-| `layout.css` | 1151 | 🔴 **ORPHELIN** |
+| `layout.css` | 1149 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 26 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
-| `modal-media.css` | 414 | 🔴 **ORPHELIN** |
+| `modal-media.css` | 429 | 🔴 **ORPHELIN** |
 | `modal-mobile-canonical.css` | 779 | 🔴 **ORPHELIN** |
 | `modal-mobile-suggestion-actions.css` | 65 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 682 | 🔴 **ORPHELIN** |
 | `modal-product-polish.css` | 401 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1512 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 1360 | 🔴 **ORPHELIN** |
-| `notifications.css` | 53 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 1380 | 🔴 **ORPHELIN** |
+| `notifications.css` | 54 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 926 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
@@ -41,8 +41,8 @@
 | `shared-list-library-remove.css` | 60 | 🔴 **ORPHELIN** |
 | `shared-list-lists-tab.css` | 213 | 🔴 **ORPHELIN** |
 | `shared-list-side-cart-responsive.css` | 91 | 🔴 **ORPHELIN** |
-| `shared-list-side-cart.css` | 798 | 🔴 **ORPHELIN** |
-| `tokens.css` | 585 | 🔴 **ORPHELIN** |
+| `shared-list-side-cart.css` | 922 | 🔴 **ORPHELIN** |
+| `tokens.css` | 586 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
@@ -50,9 +50,9 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=178
- 2. /boutique/css/dist/components.css?v=551
- 3. /boutique/css/dist/desktop.css?v=105
+ 1. /boutique/css/dist/base.css?v=181
+ 2. /boutique/css/dist/components.css?v=560
+ 3. /boutique/css/dist/desktop.css?v=107
 ```
 
 ## 3. Cartographie des sélecteurs critiques

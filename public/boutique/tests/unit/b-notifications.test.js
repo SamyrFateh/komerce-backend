@@ -32,6 +32,21 @@ test('affiche uniquement l\'information utile et ouvre Commandes', async () => {
   expect(mockEmit).toHaveBeenCalledWith('nav:goto-track', { orderReference: 'K7A78R6' });
 });
 
+test.each([
+  ['order.preparation', 'important', '⚙️'],
+  ['order.shipped', 'important', '🚚'],
+  ['order.exception.delay', 'urgent', '⚠️'],
+])('distingue visuellement le message %s', async (eventKey, severity, icon) => {
+  mockApiGet.mockResolvedValueOnce({ notifications: [{
+    id: eventKey, event_key: eventKey, severity,
+    title: 'Suivi de commande', message: 'Information utile.',
+  }] });
+  await refreshClientNotifications({ force: true });
+  const banner = document.getElementById('k-client-notification');
+  expect(banner.classList).toContain(`k-client-notification--${severity}`);
+  expect(banner.querySelector('.k-client-notification__icon').textContent).toBe(icon);
+});
+
 test('acquitte explicitement puis masque le bandeau', async () => {
   // Le module est idempotent entre tests ; le refresh post-auth force le flux.
   mockApiGet.mockResolvedValueOnce({ notifications: [{

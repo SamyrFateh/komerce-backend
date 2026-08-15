@@ -58,7 +58,11 @@ function renderCurrent() {
   const icon = document.createElement('span');
   icon.className = 'k-client-notification__icon';
   icon.setAttribute('aria-hidden', 'true');
-  icon.textContent = '📦';
+  icon.textContent = notification.event_key?.startsWith('order.exception.')
+    ? '⚠️'
+    : notification.event_key === 'order.preparation'
+      ? '⚙️'
+      : notification.event_key === 'order.shipped' ? '🚚' : '📦';
 
   const copy = document.createElement('div');
   copy.className = 'k-client-notification__copy';

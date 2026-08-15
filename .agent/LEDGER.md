@@ -102,7 +102,9 @@ Clos pour le périmètre indiscutable :
 - Une notification essentielle est un petit bandeau actionnable qui reste visible jusqu'à acquittement, pas un fil bavard.
 - Après acquittement, la vérité reste dans l'onglet métier concerné, notamment Commandes.
 - Le statut « colis prêt au relais » peut recevoir un signal visuel fort et temporaire ; le clignotement est réservé à cette urgence actionnable pour éviter le spam perceptif.
-- Le premier cycle est implémenté pour `orders.status = available` : émission idempotente, bandeau compact, action vers Commandes, acquittement propriétaire et résolution au retrait/annulation/remboursement.
+- Le cycle client couvre trois jalons idempotents : `preparation`, `shipped` et `available`. Un jalon plus récent remplace l'ancien ; `in_transit` ne crée pas de quatrième message.
+- Le contrat `order.exception.*` est disponible pour les seuls événements exceptionnels actionnables ; aucun faux déclencheur générique n'est inventé.
+- Le bandeau reste compact, renvoie vers Commandes, exige un acquittement propriétaire et se résout au retrait/annulation/remboursement.
 - Une lecture authentifiée réconcilie toute émission manquée depuis la vérité commande ; aucune panne de notification ne bloque une transition terrain.
 - La commande disponible reste mise en évidence jusqu'au retrait, indépendamment de l'acquittement ; `prefers-reduced-motion` supprime l'animation.
 - Le chargement sans session reste silencieux et ne déclenche jamais l'OTP.

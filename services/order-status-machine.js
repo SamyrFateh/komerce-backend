@@ -440,23 +440,24 @@ async function transitionOrderStatus({
   // Projection client essentielle uniquement. L'émission est idempotente et
   // best-effort pour ne jamais bloquer un retrait ou une transition terrain.
   // GET /api/auth/me/notifications réconcilie les émissions manquées depuis
-  // la vérité orders.status='available'.
+  // la vérité du statut commande.
   try {
     // Un client SQL fourni appartient à une transaction appelante : une
     // erreur SQL même catchée la placerait en état aborted. Dans ce cas on ne
     // projette rien ici ; la lecture client réconcilie après le commit depuis
     // orders.status. Sans transaction externe, le statut est déjà durable et
     // la projection best-effort peut être tentée immédiatement.
-    if (!dbClient && newStatus === 'available') {
-      await clientNotifications.emitPickupReady({
+    if (!dbClient && ['preparation', 'shipped', 'available'].includes(newStatus)) {
+      await clientNotifications.emitOrderMilestone({
         dbClient: q,
+        status: newStatus,
         userId: order.user_id,
         orderId: order.id,
         orderReference: order.reference,
         relaisName: order.relais_name,
       });
     } else if (!dbClient && ['collected', 'cancelled', 'refunded'].includes(newStatus)) {
-      await clientNotifications.resolvePickupForOrder(order.id, { dbClient: q });
+      await clientNotifications.resolveOrderMilestones(order.id, { dbClient: q });
     }
   } catch (notificationErr) {
     log.error({ err: notificationErr, order_id: orderId, status: newStatus }, 'Client notification projection failed; reconciliation will retry');

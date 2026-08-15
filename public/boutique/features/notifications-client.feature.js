@@ -23,7 +23,9 @@ module.exports = {
     in: [
       'lecture silencieuse du flux authentifié',
       'bandeau compact, action Commandes et acquittement explicite',
+      'trois jalons commande : préparation, expédition et disponibilité au relais',
       'mise en évidence d une commande disponible au relais',
+      'projection prioritaire d un événement exceptionnel actionnable',
     ],
     out: [
       'fil de tous les événements métier',

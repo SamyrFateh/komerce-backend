@@ -1,6 +1,6 @@
 -- @migration 132_client_notifications.sql
 -- @domain    notifications
--- @purpose   Bandeau client essentiel, acquittable et rattaché à une commande
+-- @purpose   Jalons et exceptions client essentiels, acquittables et rattachés à une commande
 
 CREATE TABLE IF NOT EXISTS client_notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

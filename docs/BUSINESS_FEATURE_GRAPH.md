@@ -1148,7 +1148,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `sendOtpMessage / sendMagicLink` | `services/notifications/otp-auth.js` | notifications | resolved |
 | `notifyLoyaltyEarned` | `services/notifications/loyalty.js` | notifications | resolved |
 | `notifyText` | `services/notifications/misc.js` | notifications | resolved |
-| `emitPickupReady / resolvePickupForOrder` | `services/client-notification-service.js` | notifications | resolved |
+| `emitOrderMilestone / emitExceptional / resolveOrderMilestones` | `services/client-notification-service.js` | notifications | resolved |
 | `transitionOrderStatus` | `services/order-status-machine.js` | orders | resolved |
 | `checkoutCart` | `public/boutique/js/b-checkout.js` | orders | resolved |
 | `makeInput` | `public/boutique/js/b-checkout.js` | orders | resolved |

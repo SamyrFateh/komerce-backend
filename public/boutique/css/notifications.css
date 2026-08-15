@@ -32,6 +32,7 @@
 .k-client-notification__view { border:1px solid var(--cta-green); background:var(--cta-green); color:var(--white); }
 .k-client-notification__ack { border:1px solid var(--stone-border); background:var(--stone); color:var(--stone-text); }
 .k-client-notification__ack:disabled { opacity:.55; cursor:wait; }
+.k-client-notification--important { border-color:var(--sage-dark); background:var(--sage-bg-pale); }
 
 .k-myorder-card[data-action-required="true"] {
   border-color:var(--status-available-text);

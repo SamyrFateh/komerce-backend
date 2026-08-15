@@ -12883,7 +12883,7 @@
       },
       {
         "feature": "notifications",
-        "fn": "emitPickupReady / resolvePickupForOrder",
+        "fn": "emitOrderMilestone / emitExceptional / resolveOrderMilestones",
         "file": "services/client-notification-service.js",
         "status": "resolved"
       },

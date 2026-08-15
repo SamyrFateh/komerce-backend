@@ -31,7 +31,8 @@ module.exports = {
       'moteur d\'alertes internes',
       'routes d\'emission de notification',
       'cycle in-app client open -> acknowledged | resolved',
-      'réconciliation des colis disponibles sans notification',
+      'réconciliation des trois jalons préparation, expédition et disponibilité',
+      'contrat explicite order.exception.* pour les événements exceptionnels actionnables',
     ],
     out: [
       'tests/unit/notification-service.test.js',
@@ -159,7 +160,7 @@ module.exports = {
       { fn: 'sendOtpMessage / sendMagicLink', file: 'services/notifications/otp-auth.js' },
       { fn: 'notifyLoyaltyEarned', file: 'services/notifications/loyalty.js' },
       { fn: 'notifyText',    file: 'services/notifications/misc.js' },
-      { fn: 'emitPickupReady / resolvePickupForOrder', file: 'services/client-notification-service.js' },
+      { fn: 'emitOrderMilestone / emitExceptional / resolveOrderMilestones', file: 'services/client-notification-service.js' },
     ],
     consumes: [
       "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)",
@@ -197,6 +198,8 @@ module.exports = {
     'acquitter une notification ne modifie jamais l état métier de la commande',
     'seuls les événements essentiels et actionnables entrent dans le flux client',
     'la lecture réconcilie une émission manquée depuis la vérité métier sans créer de doublon',
+    'un jalon plus récent résout le jalon précédent de la même commande sans créer un message pour in_transit',
+    'une exception exige une clé order.exception.* et un déclencheur métier confirmé',
   ],
 
   // ── Classification ────────────────────────────────────────────────────────
