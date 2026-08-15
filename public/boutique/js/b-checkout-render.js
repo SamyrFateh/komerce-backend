@@ -26,7 +26,117 @@
  * (risque de cycle). Il peut importer b-utils.js pour sanitize/fmt.
  */
 
-import { fmt, sanitize } from './b-utils.js';
+import { fmt, sanitize, optimizeImgUrl } from './b-utils.js';
+
+/**
+ * Rayon de continuité affiché sous le récapitulatif desktop.
+ *
+ * Fonction pure : les décisions (déjà inclus, variante à choisir, ajout
+ * direct possible) sont préparées par b-checkout.js. Ce renderer ne lit
+ * aucun état global et ne mute jamais le panier ou CheckoutSelection.
+ */
+export function renderCheckoutRecentProducts(container, entries = [], actions = {}) {
+  if (!container || !Array.isArray(entries) || !entries.length) return null;
+
+  const section = document.createElement('section');
+  section.className = 'ck-checkout-recent';
+  section.setAttribute('aria-labelledby', 'ck-checkout-recent-title');
+
+  const heading = document.createElement('div');
+  heading.className = 'ck-checkout-recent-heading';
+  heading.innerHTML =
+    '<div>'
+      + '<h3 id="ck-checkout-recent-title">Récemment consultés</h3>'
+      + '<p>Retrouvez vos derniers choix sans quitter la commande.</p>'
+    + '</div>';
+
+  const grid = document.createElement('div');
+  grid.className = 'ck-checkout-recent-grid';
+
+  entries.forEach((entry) => {
+    const product = entry?.product || {};
+    const card = document.createElement('article');
+    card.className = 'ck-checkout-recent-card';
+    card.dataset.productId = String(product.id ?? '');
+
+    const productLink = document.createElement('button');
+    productLink.type = 'button';
+    productLink.className = 'ck-checkout-recent-product';
+    productLink.setAttribute('aria-label', 'Voir ' + (product.name || 'ce produit'));
+
+    const media = document.createElement('span');
+    media.className = 'ck-checkout-recent-media';
+    const rawImage = product.image_url
+      || product.image
+      || product.images?.[0]?.url
+      || product.images?.[0]
+      || '';
+    if (rawImage) {
+      const image = document.createElement('img');
+      image.src = optimizeImgUrl(rawImage, 240);
+      image.alt = '';
+      image.loading = 'lazy';
+      image.addEventListener('error', () => image.remove(), { once: true });
+      media.appendChild(image);
+    }
+
+    const copy = document.createElement('span');
+    copy.className = 'ck-checkout-recent-copy';
+
+    const name = document.createElement('strong');
+    name.className = 'ck-checkout-recent-name';
+    name.textContent = product.name || 'Produit';
+
+    const detail = document.createElement('span');
+    detail.className = 'ck-checkout-recent-detail';
+    detail.textContent = entry.variantLabel
+      || (entry.action === 'choose' ? 'Options à choisir' : 'Consulté récemment');
+
+    copy.append(name, detail);
+    productLink.append(media, copy);
+    productLink.addEventListener('click', () => actions.onOpen?.(entry));
+
+    const footer = document.createElement('div');
+    footer.className = 'ck-checkout-recent-footer';
+
+    const price = document.createElement('span');
+    price.className = 'ck-checkout-recent-price';
+    price.textContent = fmt(
+      Number(product.price_kmf ?? product.price ?? 0) || 0,
+      'KMF'
+    );
+    footer.appendChild(price);
+
+    if (entry.action === 'included') {
+      const status = document.createElement('span');
+      status.className = 'ck-checkout-recent-status';
+      status.textContent = '✓ Dans la commande';
+      footer.appendChild(status);
+    } else {
+      const action = document.createElement('button');
+      action.type = 'button';
+      action.className = 'ck-checkout-recent-action';
+      action.disabled = entry.action === 'unavailable';
+      action.textContent = entry.action === 'choose'
+        ? 'Choisir'
+        : entry.action === 'unavailable'
+          ? 'Indisponible'
+          : 'Ajouter';
+      action.addEventListener('click', () => {
+        if (entry.action === 'choose') actions.onOpen?.(entry);
+        else if (entry.action === 'add') actions.onAdd?.(entry, action);
+      });
+      footer.appendChild(action);
+    }
+
+    card.append(productLink, footer);
+    grid.appendChild(card);
+  });
+
+  section.append(heading, grid);
+  container.appendChild(section);
+  return section;
+}
 
 // ── Sélecteur de zone de livraison ───────────────────────────────────────────
 
@@ -407,4 +517,3 @@ export function applyIdentityToCard(card, identity) {
     pv.remove();
   }
 }
-

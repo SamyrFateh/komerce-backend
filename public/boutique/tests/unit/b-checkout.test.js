@@ -65,6 +65,7 @@ jest.mock('../../js/b-cart.js', () => ({
   closeCart: jest.fn(),
   renderCart: jest.fn(),
   clearCart: jest.fn(),
+  addToCart: jest.fn(),
 }));
 
 jest.mock('../../js/b-scroll-owner.js', () => ({
@@ -99,6 +100,7 @@ jest.mock('../../js/b-checkout-render.js', () => ({
     if (onChange) el.addEventListener('click', onChange);
     return el;
   }),
+  renderCheckoutRecentProducts: jest.fn(),
   makeInput: jest.fn(() => global.document.createElement('div')),
   makePhoneInput: jest.fn(() => global.document.createElement('div')),
 }));
@@ -130,11 +132,11 @@ const { bus } = require('../../js/b-bus.js');
 const { state, dom, scroll } = require('../../js/b-store.js');
 const { showToast } = require('../../js/b-cart-core.js');
 const { apiPost, apiGet } = require('../../js/b-utils.js');
-const { clearCart, openCart, closeCart } = require('../../js/b-cart.js');
+const { clearCart, openCart, closeCart, addToCart } = require('../../js/b-cart.js');
 const { requireIdentity, getCurrentIdentity, restoreIdentity, bindChangeIdentity, openIdentityModal } = require('../../js/b-identity.js');
 const { digitsOnly: _digitsOnly, normalizeLocal: _normalizeLocal, prettifyLocal: _prettifyLocal, buildE164: _buildE164 } =
   require('../../js/b-phone.js');
-const { buildOrderSuccessDOM, buildIdentityRecapDOM, applyIdentityToCard, renderStepHeader, setCheckoutConfirmButton, makeInput: _makeInputRender, makePhoneInput: _makePhoneInputRender } =
+const { buildOrderSuccessDOM, buildIdentityRecapDOM, applyIdentityToCard, renderStepHeader, renderCheckoutRecentProducts, setCheckoutConfirmButton, makeInput: _makeInputRender, makePhoneInput: _makePhoneInputRender } =
   require('../../js/b-checkout-render.js');
 const { scrollToPosition } = require('../../js/b-scroll-owner.js');
 const { renderPayPalButton, isPayPalEnabled, ensurePayPalSDK } = require('../../js/b-paypal.js');
@@ -143,6 +145,7 @@ const {
   digitsOnly, normalizeLocal, prettifyLocal, buildE164,
   checkoutCart, closeOrderModal, updateWalletDisplay, checkWalletBalance,
   submitOrder, renderOrderSuccess, renderCheckout,
+  buildCheckoutRecentChoices,
   makeInput, makePhoneInput, makeIntlPhoneInput,
   getDefaultPhoneCodeForZone,
 } = require('../../js/b-checkout.js');
@@ -195,6 +198,8 @@ describe('b-checkout', () => {
     state.pendingStripeOrderRef = null;
     state.shareToken = null;
     state.checkoutDisplayContext = null;
+    state.products = [];
+    state.viewedHistory = [];
     scroll.savedY = 0;
     getCurrentIdentity.mockReturnValue(null);
   });
@@ -996,6 +1001,94 @@ describe('b-checkout', () => {
       dom.orderModal.dispatchEvent(new Event('click', { bubbles: true }));
 
       expect(dom.orderModal.classList.contains('open')).toBe(false);
+    });
+  });
+
+  describe('checkout — continuité avec les produits récemment consultés', () => {
+    it('déduplique, inverse la récence et distingue inclusion, ajout et choix de variante', () => {
+      const products = [
+        { id: 1, name: 'Dans la commande', price_kmf: 1000 },
+        { id: 2, name: 'Simple', price_kmf: 2000 },
+        { id: 3, name: 'Avec variantes', price_kmf: 3000, has_variants: true },
+        { id: 4, name: 'Indisponible', price_kmf: 4000, is_available: false },
+      ];
+      const selection = {
+        source: 'personal-cart',
+        items: [{ product: products[0], qty: 1 }],
+      };
+
+      const entries = buildCheckoutRecentChoices(
+        [1, 2, 3, 2, 4],
+        products,
+        selection,
+        [],
+        6
+      );
+
+      expect(entries.map((entry) => entry.product.id)).toEqual([4, 2, 3, 1]);
+      expect(entries.map((entry) => entry.action)).toEqual([
+        'unavailable',
+        'add',
+        'choose',
+        'included',
+      ]);
+    });
+
+    it('réutilise une unique ligne variante connue et conserve son libellé', () => {
+      const product = { id: 8, name: 'Robe', price_kmf: 12000, has_variants: true };
+      const line = {
+        product,
+        qty: 1,
+        variant_combo: { couleur: 'Beige', taille: 'M' },
+        variant_label: 'Beige / M',
+      };
+
+      const [entry] = buildCheckoutRecentChoices(
+        [8],
+        [product],
+        { source: 'personal-cart', items: [] },
+        [line]
+      );
+
+      expect(entry.action).toBe('add');
+      expect(entry.cartLine).toBe(line);
+      expect(entry.variantLabel).toBe('Beige / M');
+    });
+
+    it('ne projette jamais l’historique personnel dans un checkout de liste partagée', () => {
+      expect(buildCheckoutRecentChoices(
+        [1],
+        [{ id: 1, name: 'Produit' }],
+        { source: 'shared-list', items: [] },
+        []
+      )).toEqual([]);
+    });
+
+    it('un ajout explicite enrichit CheckoutSelection et recalcule le total', async () => {
+      const current = { product: { id: 1, name: 'Initial', price_kmf: 3000 }, qty: 1 };
+      const recentProduct = { id: 2, name: 'Récent', price_kmf: 5000 };
+      const addedLine = { product: recentProduct, qty: 1, variant_combo: null };
+      state.cart = [current];
+      state.products = [current.product, recentProduct];
+      state.viewedHistory = [2];
+      addToCart.mockReturnValue(addedLine);
+
+      checkoutCart();
+      await flush();
+
+      const firstCall = renderCheckoutRecentProducts.mock.calls[0];
+      expect(firstCall).toBeDefined();
+      const [entry] = firstCall[1];
+      firstCall[2].onAdd(entry);
+
+      expect(addToCart).toHaveBeenCalledWith(recentProduct, 1, null, undefined);
+      expect(state.orderData.checkoutSelection.items).toHaveLength(2);
+      expect(state.orderData.checkoutSelection.items[1]).toMatchObject({
+        product: recentProduct,
+        qty: 1,
+        checkout_included: true,
+      });
+      expect(state.orderData.checkoutSelection.total).toBe(8000);
     });
   });
 

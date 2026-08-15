@@ -36,7 +36,11 @@ module.exports = {
   service: "Tunnel de commande canonique : récapitulatif, identité, point de retrait, paiement et confirmation en cartes indépendantes.",
 
   perimeter: {
-    in:  ['fichiers js/* annotes @domain checkout', 'présentation responsive du tunnel checkout'],
+    in:  [
+      'fichiers js/* annotes @domain checkout',
+      'présentation responsive du tunnel checkout',
+      'projection desktop des produits récemment consultés sous le récapitulatif du panier personnel',
+    ],
     out: [
       'cycle de vie backend de la commande (feature orders, owner canonique)',
       'encaissement Stripe/PayPal/cash (feature payments, capacité consommée)',
@@ -53,12 +57,9 @@ module.exports = {
     ],
     tests: [
       '../tests/unit/b-checkout.test.js',
-      // teste b-checkout.js directement (require réel) ; mocke b-checkout-render.js
-      // en tant que collaborateur (normal), ne teste donc pas ce fichier en direct.
-      // (décoy ../../../tests/unit/b-checkout-pure.test.js supprimé 2026-07-09 :
-      // 0 import réel, logique recopiée. Couverture réelle des fonctions
-      // pures désormais dans b-checkout.test.js — cf. describe('getDefaultPhoneCodeForZone')
-      // et describe('délégation téléphone (b-phone.js)') — et dans b-phone.test.js.)
+      '../tests/unit/b-checkout-render.test.js',
+      // b-checkout.test.js teste l'orchestrateur réel en mockant ses
+      // collaborateurs ; b-checkout-render.test.js couvre le renderer DOM pur.
     ],
   },
 
@@ -78,6 +79,7 @@ module.exports = {
       'orders — feature canonique : création et cycle de vie de la commande',
       'auth — b-checkout.js importe b-identity.js, b-phone.js',
       'boutique — b-checkout.js importe b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-scroll-owner.js',
+      'catalogue — historique local canonique state.viewedHistory et produits déjà chargés',
       'payment — b-checkout.js importe b-paypal.js ; l’encaissement reste possédé par payments',
       'wallet — b-checkout.js appelle /api/wallet',
     ],
@@ -92,6 +94,7 @@ module.exports = {
     'le checkout final présente des cartes indépendantes sans fausse progression ; son chrome est neutre, les moyens de paiement restent compacts et le wallet ne devient jamais une étape obligatoire',
     'le checkout rend sa coque et son récapitulatif immédiatement, indépendamment du chargement des SDK de paiement',
     'une intention Acheter maintenant finalise uniquement la ligne courante explicitement transmise, sans absorber le panier personnel existant',
+    'le rayon récemment consulté est limité au checkout du panier personnel ; il ne sélectionne jamais une variante implicitement et ne modifie CheckoutSelection qu’après une action Ajouter explicite',
     'les CTA de récapitulatif et de paiement utilisent l accent commerce ; le chrome reste neutre et les couleurs propres aux moyens de paiement sont préservées',
   ],
 

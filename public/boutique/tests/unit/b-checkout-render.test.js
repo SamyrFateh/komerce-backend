@@ -28,11 +28,59 @@ const {
   buildOrderSuccessDOM,
   buildIdentityRecapDOM,
   applyIdentityToCard,
+  renderCheckoutRecentProducts,
 } = require('../../js/b-checkout-render.js');
 const { fmt } = require('../../js/b-utils.js');
 
 beforeEach(() => {
   document.body.innerHTML = '';
+});
+
+describe('renderCheckoutRecentProducts', () => {
+  const product = (id, name) => ({
+    id,
+    name,
+    price_kmf: id * 1000,
+    image_url: `https://example.test/${id}.jpg`,
+  });
+
+  it('ne rend rien sans entrée', () => {
+    const container = document.createElement('div');
+    expect(renderCheckoutRecentProducts(container, [])).toBeNull();
+    expect(container.children).toHaveLength(0);
+  });
+
+  it('rend les états inclus, ajout, choix et indisponible', () => {
+    const container = document.createElement('div');
+    renderCheckoutRecentProducts(container, [
+      { product: product(1, 'Déjà choisi'), action: 'included' },
+      { product: product(2, 'Produit simple'), action: 'add' },
+      { product: product(3, 'Produit à variantes'), action: 'choose', variantLabel: 'Beige / M' },
+      { product: product(4, 'Produit épuisé'), action: 'unavailable' },
+    ]);
+
+    expect(container.querySelectorAll('.ck-checkout-recent-card')).toHaveLength(4);
+    expect(container.textContent).toContain('✓ Dans la commande');
+    expect(container.textContent).toContain('Ajouter');
+    expect(container.textContent).toContain('Choisir');
+    expect(container.textContent).toContain('Indisponible');
+    expect(container.textContent).toContain('Beige / M');
+    expect(container.querySelector('.ck-checkout-recent-action:disabled').textContent).toBe('Indisponible');
+  });
+
+  it('délègue l’ouverture de fiche et l’ajout sans logique métier locale', () => {
+    const container = document.createElement('div');
+    const onOpen = jest.fn();
+    const onAdd = jest.fn();
+    const entry = { product: product(2, 'Produit simple'), action: 'add' };
+    renderCheckoutRecentProducts(container, [entry], { onOpen, onAdd });
+
+    container.querySelector('.ck-checkout-recent-product').click();
+    container.querySelector('.ck-checkout-recent-action').click();
+
+    expect(onOpen).toHaveBeenCalledWith(entry);
+    expect(onAdd).toHaveBeenCalledWith(entry, expect.any(HTMLButtonElement));
+  });
 });
 
 describe('renderFulfillmentSelector', () => {

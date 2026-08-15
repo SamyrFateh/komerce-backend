@@ -26,7 +26,7 @@ import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost, optimizeImgUrl } from './b-utils.js';
 import { showToast, saveCart } from './b-cart-core.js';
 import { renderPayPalButton, isPayPalEnabled, ensurePayPalSDK } from './b-paypal.js'; // Migration 079
-import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
+import { openCart, closeCart, renderCart, clearCart, addToCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
 import { requireIdentity, getCurrentIdentity, restoreIdentity, openIdentityModal }  from './b-identity.js';
 import {
@@ -34,6 +34,7 @@ import {
   setCheckoutConfirmButton  as _setCheckoutConfirmButton,
   buildOrderSuccessDOM,
   renderStepHeader,
+  renderCheckoutRecentProducts,
   makeInput                 as _makeInputRender,
   makePhoneInput            as _makePhoneInputRender,
 } from './b-checkout-render.js';
@@ -243,6 +244,183 @@ function _checkoutItems() {
 
 function _checkoutTotal() {
   return _checkoutSelectionTotal(_currentCheckoutSelection().items);
+}
+
+function _checkoutLineProductId(line) {
+  return String(line?.product?.id ?? line?.id ?? '');
+}
+
+function _checkoutLineIdentity(line) {
+  return [
+    _checkoutLineProductId(line),
+    JSON.stringify(line?.variant_combo || null),
+    String(line?.requested_transport_rail ?? ''),
+  ].join('::');
+}
+
+function _productHasVariants(product) {
+  return Boolean(
+    product?.has_variants
+    || product?.hasVariants
+    || product?.variants?.length
+    || product?.inventory_model === 'SKU'
+  );
+}
+
+/**
+ * Prépare la projection produit du parcours récent sans effet de bord.
+ * L'historique est produit-level : un choix de variante n'est affiché que
+ * lorsqu'une ligne panier/checkout existante le rend certain.
+ */
+export function buildCheckoutRecentChoices(
+  viewedHistory = state.viewedHistory,
+  products = state.products,
+  checkoutSelection = _currentCheckoutSelection(),
+  cart = state.cart,
+  limit = 6
+) {
+  if (checkoutSelection?.source !== 'personal-cart') return [];
+
+  const history = Array.isArray(viewedHistory) ? viewedHistory : [];
+  const catalog = Array.isArray(products) ? products : [];
+  const selectionItems = Array.isArray(checkoutSelection?.items)
+    ? checkoutSelection.items
+    : [];
+  const cartItems = Array.isArray(cart) ? cart : [];
+  const seen = new Set();
+  const entries = [];
+
+  [...history].reverse().forEach((id) => {
+    if (entries.length >= limit) return;
+    const productId = String(id);
+    if (seen.has(productId)) return;
+
+    const product = catalog.find((candidate) => String(candidate?.id) === productId);
+    if (!product) return;
+    seen.add(productId);
+
+    const selectedLines = selectionItems.filter(
+      (line) => _checkoutLineProductId(line) === productId
+    );
+    const includedLine = selectedLines.find(_checkoutItemIncluded);
+    const cartLines = cartItems.filter(
+      (line) => _checkoutLineProductId(line) === productId
+    );
+    const certainLine = includedLine || (cartLines.length === 1 ? cartLines[0] : null);
+    const available = product.is_available !== false
+      && (product.stock == null || Number(product.stock) > 0);
+
+    let action = 'add';
+    if (!available) action = 'unavailable';
+    else if (includedLine) action = 'included';
+    else if (_productHasVariants(product) && cartLines.length !== 1) action = 'choose';
+
+    entries.push({
+      product,
+      action,
+      cartLine: action === 'add' && cartLines.length === 1 ? cartLines[0] : null,
+      variantLabel: certainLine?.variant_label || '',
+    });
+  });
+
+  return entries;
+}
+
+function _invalidateCheckoutPaymentAttempt() {
+  state.checkoutAttemptKey = null;
+  state.pendingStripeOrderRef = null;
+  state.pendingPaypalOrderRef = null;
+}
+
+function _mergeRecentCartLineIntoCheckout(cartLine) {
+  const current = _currentCheckoutSelection();
+  if (!cartLine || current.source !== 'personal-cart') return false;
+
+  const identity = _checkoutLineIdentity(cartLine);
+  const existingIndex = current.items.findIndex(
+    (item) => _checkoutLineIdentity(item) === identity
+  );
+  const nextItems = current.items.map((item, index) => (
+    index === existingIndex
+      ? {
+          ...item,
+          product: item.product || cartLine.product,
+          qty: Number(cartLine.qty || 1),
+          checkout_included: true,
+        }
+      : item
+  ));
+
+  if (existingIndex === -1) {
+    nextItems.push({
+      ...cartLine,
+      qty: Number(cartLine.qty || 1),
+      checkout_included: true,
+    });
+  }
+
+  state.orderData.checkoutSelection = {
+    ...current,
+    items: nextItems,
+    total: _checkoutSelectionTotal(nextItems),
+  };
+  _invalidateCheckoutPaymentAttempt();
+  return true;
+}
+
+function _openRecentProduct(entry) {
+  const id = entry?.product?.id;
+  if (id == null) return;
+  closeOrderModal();
+  setTimeout(() => bus.emit('modal:open', { id }), 150);
+}
+
+function _renderCheckoutRecentShelf(container) {
+  if (
+    typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && !window.matchMedia('(min-width: 900px)').matches
+  ) return;
+
+  const entries = buildCheckoutRecentChoices();
+  if (!entries.length) return;
+
+  renderCheckoutRecentProducts(container, entries, {
+    onOpen: _openRecentProduct,
+    onAdd: (entry) => {
+      const options = entry.cartLine
+        ? {
+            existingLine: entry.cartLine,
+            requested_transport_rail: entry.cartLine.requested_transport_rail ?? null,
+          }
+        : undefined;
+      const cartLine = addToCart(entry.product, 1, null, options);
+      if (!_mergeRecentCartLineIntoCheckout(cartLine)) return;
+      showToast('✓ Ajouté à cette commande', 'success');
+      _refreshCheckoutPrimaryProjection(container);
+    },
+  });
+}
+
+function _refreshCheckoutPrimaryProjection(container) {
+  const current = _currentCheckoutSelection();
+  const previousSummary = container?.querySelector('#ck-order-summary');
+  const nextSummary = _buildRecapItemsBlock(
+    current.items,
+    current.source,
+    state.checkoutDisplayContext
+  );
+
+  if (previousSummary && nextSummary) {
+    nextSummary.id = 'ck-order-summary';
+    nextSummary.classList.add('ck-recap-step--embedded');
+    previousSummary.replaceWith(nextSummary);
+  }
+
+  container?.querySelector('.ck-checkout-recent')?.remove();
+  _renderCheckoutRecentShelf(container);
+  refreshCheckoutComputedUI();
+  updateWalletDisplay();
 }
 
 /**
@@ -1177,6 +1355,10 @@ export function renderCheckout() {
       orderSummary.id = 'ck-order-summary';
       orderSummary.classList.add('ck-recap-step--embedded');
       checkoutPrimary.appendChild(orderSummary);
+    }
+
+    if (od.checkoutSelection.source === 'personal-cart') {
+      _renderCheckoutRecentShelf(checkoutPrimary);
     }
 
     // Pays/zone (Comores/France) déplacé DANS le picker de relais (cf. _openRelaisPicker) :
