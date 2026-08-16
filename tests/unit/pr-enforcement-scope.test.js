@@ -1,5 +1,6 @@
 'use strict';
 
+const cp = require('child_process');
 const {
   norm,
   isBackendFile,
@@ -12,6 +13,7 @@ const {
   isBoutiquePackageFile,
   isBoutiqueRelevant,
   classify,
+  diffFiles,
 } = require('../../scripts/pr-enforcement-scope');
 
 describe('PR enforcement scope — backend + migrations + Boutique', () => {
@@ -33,6 +35,13 @@ describe('PR enforcement scope — backend + migrations + Boutique', () => {
     'tests/invariants/money.spec.js',
     'tests/contract/orders.test.js',
     'tests/notifications/send.test.js',
+    'tests/integration/orders.test.js',
+    'tests/e2e-api/wallet.e2e.test.js',
+    'tests/e2e/smoke.js',
+    'tests/fixtures/catalog/golden.js',
+    'tests/helpers/e2eDbKit.js',
+    'tests/governance/map.test.js',
+    'tests/e2e.sh',
     'tests/parcelOptimization.test.js',
     'package.json',
     'package-lock.json',
@@ -112,6 +121,42 @@ describe('PR enforcement scope — backend + migrations + Boutique', () => {
       'services/orders.js',
       'tests/unit/orders.test.js',
     ]);
+  });
+
+  test('une modification de test integration/e2e backend réveille le backend', () => {
+    const result = classify([
+      'tests/integration/orders.test.js',
+      'tests/e2e-api/wallet.e2e.test.js',
+      'tests/fixtures/catalog/golden.js',
+    ]);
+    expect(result.backend).toBe(true);
+    expect(result.backendFiles).toEqual([
+      'tests/e2e-api/wallet.e2e.test.js',
+      'tests/fixtures/catalog/golden.js',
+      'tests/integration/orders.test.js',
+    ]);
+  });
+
+  test('diffFiles ne filtre aucun statut Git — les suppressions restent visibles', () => {
+    const spawn = jest.spyOn(cp, 'spawnSync').mockReturnValue({
+      status: 0,
+      stdout: 'services/deleted.js\ntests/integration/deleted.test.js\n',
+      stderr: '',
+    });
+
+    try {
+      expect(diffFiles('base-sha', 'head-sha')).toEqual([
+        'services/deleted.js',
+        'tests/integration/deleted.test.js',
+      ]);
+      expect(spawn).toHaveBeenCalledWith(
+        'git',
+        ['diff', '--name-only', 'base-sha', 'head-sha'],
+        { encoding: 'utf8' }
+      );
+    } finally {
+      spawn.mockRestore();
+    }
   });
 
   test('une nouvelle migration déclenche migrations sans prétendre que le dump a changé', () => {
