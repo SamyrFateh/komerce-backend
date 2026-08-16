@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 'use strict';
+// probe: vérifie que le job governance s'exécute (PR de test)
 
 /**
  * Classifie le diff d'une PR pour l'enforcement GitHub ciblé.
