@@ -758,10 +758,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `UNRESOLVED_INTERNAL_API` (medium) — utils/reference.js — génération de références commande/colis (null) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — validators/index.js — barrel des schémas Joi (null) — statut: undeclared-in-graph
 
-**Implementation** : 278 fichier(s) déclaré(s)
+**Implementation** : 279 fichier(s) déclaré(s)
   - assets : 37
   - bootstrap : 9
-  - ci : 22
+  - ci : 23
   - config : 12
   - db : 16
   - docs : 60

@@ -238,8 +238,9 @@ module.exports = {
       '.github/CODEOWNERS',
       '.github/copilot-instructions.md',
       '.github/pull_request_template.md',
-      // Workflow ACTIF — GitHub Actions ne charge que `.github/workflows/`.
+      // Workflows ACTIFS — GitHub Actions ne charge que `.github/workflows/`.
       '.github/workflows/ci.yml',
+      '.github/workflows/pr-enforcement.yml',
       // Workflows EN PAUSE (revue gouvernance CI/CD 2026-08-14, cf.
       // `.github/workflows-disabled/README.md`) : conservés dans Git mais
       // inactifs, réactivés individuellement après revue (chantier CI cible :
