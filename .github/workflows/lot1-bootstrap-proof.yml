@@ -1,0 +1,66 @@
+name: Lot 1 PR enforcement bootstrap proof
+
+on:
+  push:
+    branches:
+      - agent/lot1-pr-enforcement-backend
+
+permissions:
+  contents: write
+
+jobs:
+  prove:
+    if: ${{ !contains(github.event.head_commit.message, '[lot1-write]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+
+      - name: Align active workflow ownership
+        run: node scripts/lot1-bootstrap.js
+
+      - name: Prove scope classifier including doc-only non-trigger
+        run: npx jest --config jest.unit.config.js tests/unit/pr-enforcement-scope.test.js --runInBand --forceExit
+
+      - name: Prove intended backend gates on current tree
+        run: |
+          node scripts/code-quality-gate.js --strict
+          node scripts/feature-guard.js --strict
+          node scripts/contract-check.js
+          node scripts/run-staged-related-tests.js --files "tests/unit/pr-enforcement-scope.test.js"
+
+      - name: Regenerate canonical governance projections
+        run: |
+          rm -f .github/workflows/lot1-bootstrap-proof.yml
+          rm -f scripts/lot1-bootstrap.js
+          node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+          node scripts/gen-feature-360.js
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+
+      - name: Persist final Lot 1 tree
+        shell: bash
+        run: |
+          git config user.name "Komerce CI Lot 1"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A \
+            features/infrastructure.feature.js \
+            docs/BUSINESS_FEATURE_GRAPH.json \
+            docs/BUSINESS_FEATURE_GRAPH.md \
+            docs/O6_INVENTORY.md \
+            docs/FEATURE_360.json \
+            docs/FEATURE_360.md \
+            .github/workflows/lot1-bootstrap-proof.yml \
+            scripts/lot1-bootstrap.js
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(ci): finalize Lot 1 workflow ownership and projections [lot1-write]"
+            git push origin HEAD:agent/lot1-pr-enforcement-backend
+          fi
+          git diff --exit-code
