@@ -31,7 +31,7 @@ const {
 } = require('../helpers/boutique.helpers');
 const {
   verifySession, verifyWalletBalance,
-  provisionTestWallet, assertNotProdIfMutant, // [R5]
+  provisionTestWallet, assertMutantTargetSafe, // [R5]
 } = require('../helpers/api.helpers');
 const { getOrderByRef } = require('../helpers/business.helpers');
 
@@ -42,7 +42,7 @@ test.describe('FLOW — Cycle de vie wallet complet (F02 → F03 → F11)', () =
   let initialBalance;
 
   test.beforeAll(async ({ browser }) => {
-    assertNotProdIfMutant(); // [R5][FAIL-CLOSED]
+    await assertMutantTargetSafe(); // [R5][FAIL-CLOSED]
     if (!process.env.ALLOW_ORDER_SUBMIT || !process.env.ALLOW_ORDER_CANCEL) {
       throw new Error(
         '[R5] wallet-lifecycle nécessite ALLOW_ORDER_SUBMIT=true ET ALLOW_ORDER_CANCEL=true — ' +

@@ -7,63 +7,58 @@
  */
 /**
  * @unit  r5-prod-guard.test.js
- * @brief [R5] Preuve du fail-closed : assertNotProdIfMutant() lève une erreur
- *        si BASE_URL pointe la production et ALLOW_MUTANTS_ON_PROD est absent.
+ * @brief [R5] Preuve fail-closed par identité d'environnement runtime.
  *
- * DoD R5 : "Un run mutant sur BASE_URL=prod = refusé, prouvé par un test de config."
+ * Le domaine n'est jamais utilisé pour décider staging/prod : komerce.co
+ * peut être staging aujourd'hui et production après go-live.
  */
 
-const { assertNotProdIfMutant } = require('../e2e/helpers/api.helpers');
+const {
+  assertDeclaredMutantTargetSafe,
+  assertRemoteMutantTargetSafe,
+} = require('../e2e/helpers/environment.helpers');
 
-describe('[R5] fail-closed — assertNotProdIfMutant', () => {
-  const originalEnv = { ...process.env };
+function health(environment) {
+  return jest.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ status: 'ok', komerce_env: environment }),
+  }));
+}
 
-  afterEach(() => {
-    // Restaurer l'environnement après chaque test
-    Object.keys(process.env).forEach(k => { if (!(k in originalEnv)) delete process.env[k]; });
-    Object.assign(process.env, originalEnv);
+describe('[R5] fail-closed — runtime environment identity', () => {
+  test('komerce.co est autorisé quand runner ET serveur déclarent staging', async () => {
+    const env = { KOMERCE_ENV: 'staging', BASE_URL: 'https://komerce.co/boutique/' };
+    await expect(assertRemoteMutantTargetSafe({ env, fetchImpl: health('staging') }))
+      .resolves.toMatchObject({ environment: 'staging' });
   });
 
-  test('lève une erreur si BASE_URL=komerce.co sans ALLOW_MUTANTS_ON_PROD', () => {
-    process.env.BASE_URL = 'https://komerce.co/boutique/';
-    delete process.env.ALLOW_MUTANTS_ON_PROD;
-
-    expect(() => assertNotProdIfMutant()).toThrow(/FAIL-CLOSED/);
-    expect(() => assertNotProdIfMutant()).toThrow(/komerce\.co/);
+  test('production est refusée avant tout appel réseau, quel que soit le domaine', () => {
+    const env = { KOMERCE_ENV: 'production', BASE_URL: 'https://komerce.co/boutique/' };
+    expect(() => assertDeclaredMutantTargetSafe(env)).toThrow(/FAIL-CLOSED/);
+    expect(() => assertDeclaredMutantTargetSafe(env)).toThrow(/production/);
   });
 
-  test('lève une erreur si BASE_URL=https://www.komerce.co', () => {
-    process.env.BASE_URL = 'https://www.komerce.co/boutique/';
-    delete process.env.ALLOW_MUTANTS_ON_PROD;
-
-    expect(() => assertNotProdIfMutant()).toThrow(/FAIL-CLOSED/);
+  test('un runner staging est refusé si le serveur annonce production', async () => {
+    const env = { KOMERCE_ENV: 'staging', BASE_URL: 'https://komerce.co/boutique/' };
+    await expect(assertRemoteMutantTargetSafe({ env, fetchImpl: health('production') }))
+      .rejects.toThrow(/runner="staging".*serveur="production"/);
   });
 
-  test('ne lève PAS d\'erreur si BASE_URL = staging (hors komerce.co)', () => {
-    process.env.BASE_URL = 'https://staging.komerce.dev/boutique/';
-    delete process.env.ALLOW_MUTANTS_ON_PROD;
-
-    expect(() => assertNotProdIfMutant()).not.toThrow();
+  test('KOMERCE_ENV absent est refusé : aucun fallback hostname', () => {
+    const env = { BASE_URL: 'https://komerce.co/boutique/' };
+    expect(() => assertDeclaredMutantTargetSafe(env)).toThrow(/KOMERCE_ENV absent/);
   });
 
-  test('ne lève PAS d\'erreur si BASE_URL = localhost', () => {
-    process.env.BASE_URL = 'http://localhost:3000/boutique/';
-    delete process.env.ALLOW_MUTANTS_ON_PROD;
-
-    expect(() => assertNotProdIfMutant()).not.toThrow();
+  test('une identité serveur absente/unknown est refusée', async () => {
+    const env = { KOMERCE_ENV: 'staging', BASE_URL: 'https://komerce.co/boutique/' };
+    await expect(assertRemoteMutantTargetSafe({ env, fetchImpl: health('unknown') }))
+      .rejects.toThrow(/komerce_env valide/);
   });
 
-  test('ne lève PAS d\'erreur si ALLOW_MUTANTS_ON_PROD=1, même sur prod (override explicite)', () => {
-    process.env.BASE_URL = 'https://komerce.co/boutique/';
-    process.env.ALLOW_MUTANTS_ON_PROD = '1';
-
-    expect(() => assertNotProdIfMutant()).not.toThrow();
-  });
-
-  test('ne lève PAS d\'erreur si BASE_URL est absent (mode local)', () => {
-    delete process.env.BASE_URL;
-    delete process.env.ALLOW_MUTANTS_ON_PROD;
-
-    expect(() => assertNotProdIfMutant()).not.toThrow();
+  test('test local est autorisé si le serveur annonce aussi test', async () => {
+    const env = { KOMERCE_ENV: 'test', BASE_URL: 'http://localhost:3000/boutique/' };
+    await expect(assertRemoteMutantTargetSafe({ env, fetchImpl: health('test') }))
+      .resolves.toMatchObject({ environment: 'test' });
   });
 });

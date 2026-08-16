@@ -22,7 +22,7 @@
  *   TEST_ACCOUNT_PHONE=3211234 TEST_ACCOUNT_OTP=123456 \
  *   ALLOW_ORDER_SUBMIT=true ALLOW_ORDER_CANCEL=true \
  *   ALLOW_GROUP_FLOW=true ALLOW_STATUS_CHANGE=true \
- *   BASE_URL=https://staging.komerce.co/boutique/ \
+ *   KOMERCE_ENV=staging BASE_URL=https://komerce.co/boutique/ \
  *   node scripts/e2e-business-run.js
  *
  *   # Un seul test (debug)

@@ -30,7 +30,7 @@
 'use strict';
 const { test, expect } = require('@playwright/test');
 const { BASE_URL } = require('../helpers/boutique.helpers');
-const { getRecentOrders, verifySession, verifyWalletBalance, assertNotProdIfMutant } = require('../helpers/api.helpers');
+const { getRecentOrders, verifySession, verifyWalletBalance, assertMutantTargetSafe } = require('../helpers/api.helpers');
 const { getOrderByRef } = require('../helpers/business.helpers');
 
 const API_BASE = (process.env.BASE_URL || 'http://localhost:3000/boutique/').replace('/boutique/', '');
@@ -38,8 +38,8 @@ const API_BASE = (process.env.BASE_URL || 'http://localhost:3000/boutique/').rep
 test.describe('FLOW — Annulation avec remboursement wallet (F03)', () => {
 
   // [R5] Précondition dure — throw si absent, pas de skip
-  test.beforeAll(() => {
-    assertNotProdIfMutant(); // [R5][FAIL-CLOSED]
+  test.beforeAll(async () => {
+    await assertMutantTargetSafe(); // [R5][FAIL-CLOSED]
     if (!process.env.ALLOW_ORDER_CANCEL) {
       throw new Error(
         '[R5] F03 nécessite ALLOW_ORDER_CANCEL=true — staging uniquement. ' +

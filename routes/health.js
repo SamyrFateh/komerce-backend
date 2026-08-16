@@ -49,6 +49,7 @@ router.get('/', async (req, res, next) => {
       uptime_s: Math.floor(process.uptime()),
       version: process.env.npm_package_version || 'unknown',
       node_env: process.env.NODE_ENV || 'development',
+      komerce_env: process.env.KOMERCE_ENV || 'unknown',
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
