@@ -1,0 +1,186 @@
+name: Audit closure exact-main proof
+
+on:
+  push:
+    branches:
+      - agent/proof-audit-closure-20260816
+
+permissions:
+  contents: read
+
+jobs:
+  audit-closure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - name: Checkout exact current main
+        uses: actions/checkout@v4
+        with:
+          ref: fad4cdd71bd4853db2a289393002c5e02e297b9c
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Prove exact SHA
+        run: |
+          test "$(git rev-parse HEAD)" = "fad4cdd71bd4853db2a289393002c5e02e297b9c"
+          echo "AUDIT_SHA=$(git rev-parse HEAD)"
+
+      - run: npm ci
+
+      - name: Build canonical test database
+        run: |
+          PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+
+      - id: quality
+        name: quality:gate
+        continue-on-error: true
+        run: npm run quality:gate
+
+      - id: docs
+        name: gate:docs-lint
+        continue-on-error: true
+        run: npm run gate:docs-lint
+
+      - id: alerts
+        name: alerts:contract
+        continue-on-error: true
+        run: npm run alerts:contract:check
+
+      - id: meta
+        name: meta:graph:check
+        continue-on-error: true
+        run: npm run meta:graph:check
+
+      - id: dashboards
+        name: dashboards:360:check
+        continue-on-error: true
+        run: npm run dashboards:360:check
+
+      - id: business_graph
+        name: business-graph:check
+        continue-on-error: true
+        run: npm run business-graph:check
+
+      - id: feature_guard
+        name: feature:check
+        continue-on-error: true
+        run: npm run feature:check
+
+      - id: ratchet
+        name: business-graph:ratchet
+        continue-on-error: true
+        run: npm run business-graph:ratchet-check
+
+      - id: feature360
+        name: feature:360:check
+        continue-on-error: true
+        run: npm run feature:360:check
+
+      - id: classification
+        name: feature:classification:strict
+        continue-on-error: true
+        run: npm run feature:classification:strict
+
+      - id: registry_doc
+        name: feature:registry-doc
+        continue-on-error: true
+        run: npm run feature:registry-doc
+
+      - id: security360
+        name: security:360:check
+        continue-on-error: true
+        run: npm run security:360:check
+
+      - id: invariant
+        name: feature:invariant:strict
+        continue-on-error: true
+        run: npm run feature:invariant:check:strict
+
+      - id: arch
+        name: arch:gate
+        continue-on-error: true
+        run: npm run arch:gate
+
+      - id: map
+        name: map:check
+        continue-on-error: true
+        run: npm run map:check
+
+      - id: tree
+        name: Generated artifacts remain current
+        continue-on-error: true
+        run: git diff --exit-code
+
+      - name: Audit closure verdict
+        env:
+          QUALITY: ${{ steps.quality.outcome }}
+          DOCS: ${{ steps.docs.outcome }}
+          ALERTS: ${{ steps.alerts.outcome }}
+          META: ${{ steps.meta.outcome }}
+          DASHBOARDS: ${{ steps.dashboards.outcome }}
+          BUSINESS_GRAPH: ${{ steps.business_graph.outcome }}
+          FEATURE_GUARD: ${{ steps.feature_guard.outcome }}
+          RATCHET: ${{ steps.ratchet.outcome }}
+          FEATURE360: ${{ steps.feature360.outcome }}
+          CLASSIFICATION: ${{ steps.classification.outcome }}
+          REGISTRY_DOC: ${{ steps.registry_doc.outcome }}
+          SECURITY360: ${{ steps.security360.outcome }}
+          INVARIANT: ${{ steps.invariant.outcome }}
+          ARCH: ${{ steps.arch.outcome }}
+          MAP: ${{ steps.map.outcome }}
+          TREE: ${{ steps.tree.outcome }}
+        run: |
+          printf '%-24s %s\n' \
+            quality "$QUALITY" \
+            docs "$DOCS" \
+            alerts "$ALERTS" \
+            meta "$META" \
+            dashboards "$DASHBOARDS" \
+            business_graph "$BUSINESS_GRAPH" \
+            feature_guard "$FEATURE_GUARD" \
+            ratchet "$RATCHET" \
+            feature360 "$FEATURE360" \
+            classification "$CLASSIFICATION" \
+            registry_doc "$REGISTRY_DOC" \
+            security360 "$SECURITY360" \
+            invariant "$INVARIANT" \
+            arch "$ARCH" \
+            map "$MAP" \
+            tree "$TREE"
+          for v in "$QUALITY" "$DOCS" "$ALERTS" "$META" "$DASHBOARDS" "$BUSINESS_GRAPH" "$FEATURE_GUARD" "$RATCHET" "$FEATURE360" "$CLASSIFICATION" "$REGISTRY_DOC" "$SECURITY360" "$INVARIANT" "$ARCH" "$MAP" "$TREE"; do
+            test "$v" = success || exit 1
+          done
