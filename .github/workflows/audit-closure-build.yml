@@ -92,6 +92,9 @@ jobs:
           node scripts/db-snapshot.js
           node scripts/check-schema-freshness.js --all
 
+      - name: Reconcile SCHEMA.md with live snapshot
+        run: npm run arch:reconcile:write
+
       - name: Remove temporary builder from canonical audit tree
         run: git rm .github/workflows/audit-closure-build.yml
 
