@@ -41,8 +41,21 @@ jobs:
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -50,6 +63,6 @@ jobs:
       - run: npm ci
       - name: Charger le schéma canonique
         run: |
-          PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f schema.sql
-          bash scripts/ci-migrate-pending.sh
+          PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
       - run: npm run test:integration
