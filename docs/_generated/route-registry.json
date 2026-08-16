@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-14T21:20:00.038Z",
+  "generatedAt": "2026-08-16T19:02:41.042Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 462,
+  "count": 464,
   "routes": [
     {
       "method": "GET",
@@ -1667,6 +1667,26 @@
       "mountPrefix": "/api/auth/me/documents",
       "localPath": "/:id/download",
       "routeFile": "routes/documents.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/auth/me/notifications",
+      "mountPrefix": "/api/auth/me/notifications",
+      "localPath": "/",
+      "routeFile": "routes/client-notifications.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/me/notifications/:id/ack",
+      "mountPrefix": "/api/auth/me/notifications",
+      "localPath": "/:id/ack",
+      "routeFile": "routes/client-notifications.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

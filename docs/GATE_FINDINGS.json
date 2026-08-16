@@ -44,8 +44,8 @@
       "script": "scripts/feature-classification-check.js",
       "status": "ok",
       "exitCode": 0,
-      "errorCount": 1,
-      "warningCount": 12,
+      "errorCount": 0,
+      "warningCount": 11,
       "coverageCount": 0,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
@@ -754,15 +754,6 @@
     {
       "gate": "gate:feature-classification-check",
       "scope": "root",
-      "type": "KIND-INVALID",
-      "verdict": "fail",
-      "feature": "infrastructure",
-      "file": null,
-      "message": "kind \"technical-foundation\" non autorisé"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
       "type": "RATIONALE-SHORT",
       "verdict": "warn",
       "feature": "auth-identity",
@@ -775,15 +766,6 @@
       "type": "RATIONALE-SHORT",
       "verdict": "warn",
       "feature": "catalog",
-      "file": null,
-      "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "RATIONALE-SHORT",
-      "verdict": "warn",
-      "feature": "infrastructure",
       "file": null,
       "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
     }

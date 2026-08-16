@@ -74,7 +74,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 |---|---|---|---|---|---|
 | backend | 25 | 25 | 289 | 289 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 14 | 14 | 79 | 79 | 0 |
+| boutique | 14 | 14 | 80 | 80 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 

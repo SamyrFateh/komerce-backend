@@ -34,6 +34,7 @@ module.exports = {
     kind:     'technical-foundation',
     rationale: [
       'Socle technique pur (arbitrage B, 2026-07-29). Les écritures runtime constatées sur finance_config / charges / economic_snapshots ont été re-scopées vers economic-engine, users vers auth-identity, business_rules vers la feature business-rules. Ne subsistent que des écritures technical-writer (DDL de démarrage, crons d\'orchestration).',
+      'technical-foundation est distinct de technical-transversal : ce socle possède explicitement le bootstrap, les migrations/DDL techniques et les primitives d’exécution partagées, sans posséder de vérité métier ni décider un cycle de vie métier.',
     ],
   },
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',

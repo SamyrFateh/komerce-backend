@@ -1,6 +1,6 @@
 # Registre Canonique des Features — Application complète Komerce
 
-> **Version** : 1.6 — 2026-07 (Lot O1.2 : scission `wallet-loyalty` → `wallet` + `loyalty` ; Lot O1.3 : `sourcing` ajouté au registre canonique (précédemment absent malgré manifest et code déjà en place) ; Lot O1.4 : scission `purchasing` d'`orders` ; Lot O1.5 : `dashboard` reclassé `transversal` dans ce tableau, `admin-dashboard` reclassé projection/ui-shell — gouvernance corrective, aucun code runtime déplacé ; Lot O2 : scission `unsold-resolution` d'`inventory` et `incident-management` de `platform-ops` ; retags `purchasing-admin-service.js` → `purchasing` et `admin-risk-provisions.js` → `economic-engine` ; correction du copié-collé `auth`/`auth-identity`)
+> **Version** : 1.7 — 2026-08 (Lot O1.2 : scission `wallet-loyalty` → `wallet` + `loyalty` ; Lot O1.3 : `sourcing` ajouté au registre canonique (précédemment absent malgré manifest et code déjà en place) ; Lot O1.4 : scission `purchasing` d'`orders` ; Lot O1.5 : `dashboard` reclassé `transversal` dans ce tableau, `admin-dashboard` reclassé projection/ui-shell — gouvernance corrective, aucun code runtime déplacé ; Lot O2 : scission `unsold-resolution` d'`inventory` et `incident-management` de `platform-ops` ; retags `purchasing-admin-service.js` → `purchasing` et `admin-risk-provisions.js` → `economic-engine` ; correction du copié-collé `auth`/`auth-identity`)
 > **Statut** : registre actif — gouverné par `docs/doctrine/FEATURE_DOCTRINE.md`
 > **Construit à partir de** : headers `@komerce-arch` réels (`@domain`) du dépôt
 > **backend**, croisés avec les fichiers réels des dépôts **bout** (boutique frontend)
@@ -54,6 +54,7 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 24 | `sourcing` | feature | backend | [`sourcing.feature.js`](../../features/sourcing.feature.js) | production | Qualification de candidats fournisseur avant catalogue (scan, décision garder/watchlist/rejeter) — extrait de `logistics` (Lot O1.3, 2026-07-12) |
 | 25 | `unsold-resolution` | feature | backend | [`unsold-resolution.feature.js`](../../features/unsold-resolution.feature.js) | production | Arbitrage et liquidation de la valeur immobilisée d'une commande invendue (WhatsApp, revendeur, don, destruction) — scindé d'`inventory` (Lot O2, 2026-07-12) |
 | 26 | `incident-management` | transversal (business) | backend | [`incident-management.feature.js`](../../features/incident-management.feature.js) | production | Détection, qualification et résolution d'écarts opérationnels avec impact client traçable — scindé de `platform-ops` (Lot O2, 2026-07-12) |
+| 27 | `business-rules` | transversal (business) | backend | [`business-rules.feature.js`](../../features/business-rules.feature.js) | production | Référentiel versionné des règles métier paramétrables, servi aux features consommatrices avec valeur de repli |
 
 > ⚠️ **Note sur les lignes #19/#20 vs #22/#23** : le dépôt dashboards contient un
 > sous-dossier `dashboards/` imbriqué (donc `public/dashboards/**` une fois déployé)

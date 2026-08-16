@@ -6,25 +6,25 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 368
-- Files with full headers: 342
+- Scanned code files: 369
+- Files with full headers: 343
 - Files with lite headers: 26
-- Files with any headers: 368
+- Files with any headers: 369
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 779
-- Edges: 4204
+- Graph nodes: 785
+- Edges: 4213
 - DB tables: 109
-- Doctrines: 171
-- Impact areas: 131
-- Unresolved code edges: 423
+- Doctrines: 173
+- Impact areas: 134
+- Unresolved code edges: 424
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
 
 ## Domains
 
-- account: 1
+- account: 2
 - auth: 8
 - auth-identity: 5
 - bootstrap: 2
@@ -81,7 +81,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
-- ui-component: 36
+- ui-component: 37
 - ui-controller: 1
 - ui-enhancer: 3
 - ui-infrastructure: 1
@@ -589,6 +589,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
 - uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
 - depends: bootstrap/api-routes.js -> routes/economic-engine.js (routes/economic-engine.js)
+- depends: bootstrap/server-lifecycle.js -> node:http (node:http)
 - depends: bootstrap/startup-migrations.js -> scripts/migration-037-fix-products.js (scripts/migration-037-fix-products.js)
 - depends: bootstrap/startup-migrations.js -> scripts/migration-038-replace-products.js (scripts/migration-038-replace-products.js)
 - depends: bootstrap/startup-migrations.js -> scripts/migration-039-french-descriptions.js (scripts/migration-039-french-descriptions.js)
@@ -699,7 +700,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/boutique-suggestions.js -> doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md (doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md)
 - depends: routes/boutique-suggestions.js -> product-store (product-store)
 - depends: routes/boutique-suggestions.js -> services/boutique-suggestion-service.js (services/boutique-suggestion-service.js)
-- depends: routes/carriers.js -> db.js (db.js)
 
 ## Files Still Without Headers Or Aggregation
 
