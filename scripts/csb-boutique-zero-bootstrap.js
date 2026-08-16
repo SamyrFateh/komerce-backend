@@ -17,7 +17,7 @@ patchBuilder(
 
 patchBuilder(
 `replaceOnce(\n  'public/boutique/css/checkout-vertical-rail.css',\n  \"  grid-template-columns: repeat(2, minmax(0,1fr));\",\n  \"  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));\",\n  'recipient grid is container-adaptive'\n);`,
-`replaceRegex(\n  'public/boutique/css/checkout-vertical-rail.css',\n  /(\\.ck-recipient-grid\\s*\\{[\\s\\S]*?grid-template-columns:\\s*)repeat\\(2,\\s*minmax\\(0,1fr\\)\\)/,\n  '$1repeat(auto-fit, minmax(min(100%, 180px), 1fr))',\n  1,\n  'recipient grid is container-adaptive'\n);`,
+`replaceRegex(\n  'public/boutique/css/checkout-vertical-rail.css',\n  /(\\.ck-recipient-grid\\s*\\{[\\s\\S]*?grid-template-columns:\\s*)repeat\\(2,\\s*minmax\\(0,1fr\\)\\)/,\n  '$1repeat(auto-fit, minmax(min(100%, 180px), 1fr))',\n  2,\n  'recipient grid is container-adaptive'\n);`,
 'recipient grid'
 );
 
