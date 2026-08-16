@@ -1,0 +1,59 @@
+name: Governance Lot 0 recovery proof
+
+on:
+  push:
+    branches:
+      - agent/governance-lot0-recovery
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Capture current gate evidence
+        shell: bash
+        run: |
+          set -u
+          mkdir -p evidence
+
+          capture() {
+            name="$1"
+            shift
+            set +e
+            "$@" >"evidence/${name}.log" 2>&1
+            rc=$?
+            set -e
+            printf '%s\n' "$rc" >"evidence/${name}.exit"
+            echo "${name}: exit ${rc}"
+          }
+
+          capture deploy-css node public/boutique/scripts/deploy-css.js
+          capture breakpoints node public/boutique/scripts/check-breakpoints.js --strict
+          capture specificity node public/boutique/scripts/css-specificity-guard.js --strict
+          capture gate-findings node scripts/gen-gate-findings.js
+          capture feature-guard node scripts/feature-guard.js --strict
+          capture business-graph-check node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          capture feature-360-check node scripts/feature-360-check.js
+
+          git status --short > evidence/git-status-after.log
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-lot0-recovery-evidence
+          path: evidence/
+          if-no-files-found: error
