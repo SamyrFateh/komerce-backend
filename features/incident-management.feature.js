@@ -57,6 +57,10 @@ module.exports = {
   // constraints), lifecycle engageant, multi-consommateurs symétrique (Signal 4
   // de la doctrine — transversal).
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'incidents',
+    ],
     tables: [
       'incidents: RW',
       'orders: R',
@@ -91,7 +95,7 @@ module.exports = {
       'logistics (scan-engine écrit incidents — SQL inline)',
       'payments (reconciliation-service écrit incidents — SQL inline)',
       'notifications (alert-engine écrit incidents — SQL inline)',
-      'dashboard / ops-api legacy (écrit incidents — SQL inline)',
+      'dashboard',
     ],
 
     // TARGET CONSUMERS AFTER WIRING — état visé une fois la dette de câblage

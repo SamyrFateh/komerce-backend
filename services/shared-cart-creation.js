@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        user_id, basket_id, cart_items, options
  * @outputs       shared_cart, items, token
- * @depends       db.js, services/shared-cart-internals.js, services/product-admin-service.js
+ * @depends       db.js, services/shared-cart-internals.js, services/ports/catalog-sellable-unit-port.js
  * @used-by       routes/shared-cart.js
  * @db-read       basket_items, baskets, product_skus, products, shared_carts, users
  * @db-write      basket_items, baskets, shared_cart_events, shared_cart_items, shared_carts
@@ -41,7 +41,7 @@
 
 const db = require('../db');
 const { CONFIG, generateToken, r, withTransaction, addEvent } = require('./shared-cart-internals');
-const productAdminService = require('./product-admin-service');
+const catalogSellableUnitPort = require('./ports/catalog-sellable-unit-port');
 
 function httpError(message, status = 400, code = null) {
   const e = new Error(message);
@@ -285,7 +285,7 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
 
     // Mandat §8 — boundary canonique. Ce writer ne reconstruit plus
     // manuellement resolveActiveSku + contrôle stock + computeSellablePricing
-    // + products.image_url : resolveSellableUnit() (product-admin-service.js)
+    // + products.image_url : resolveSellableUnit() via le port catalog canonique
     // est l'unique point d'entrée, y compris pour le média (SKU canonique via
     // product_sku_media → catalog_media, fallback products.image_url — §9).
     // Un produit introuvable/inactif reste un skip silencieux (comportement
@@ -304,7 +304,7 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
 
       let unit;
       try {
-        unit = await productAdminService.resolveSellableUnit(client, {
+        unit = await catalogSellableUnitPort.resolveSellableUnit(client, {
           productId: item.product_id,
           variantCombo: variantComboRaw,
           quantity: qty,

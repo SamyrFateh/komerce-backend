@@ -23,7 +23,7 @@
 
 import { state } from './b-store.js';
 import { fmt, bindCarouselDots, apiPost } from './b-utils.js';
-import { showToast } from './b-cart-core.js';
+import { showToast } from './ports/cart-intent-port.js';
 import { bus } from './b-bus.js';
 import { renderProductCard } from './render/render-product-card.js';
 

@@ -43,6 +43,7 @@ module.exports = {
     ],
     services: [
       'services/monitoring.js',
+      'services/ports/catalog-sellable-unit-port.js',
       'services/simulator/cleanup.js',
       'services/simulator/engine.js',
       'services/simulator/journal.js',
@@ -53,7 +54,7 @@ module.exports = {
       'routes/health.js',
       'routes/ops-api.js',
       'routes/config.js',
-    
+
       'routes/simulator.js',],
     boutique: [
       // Backfill gouvernance globale : socle technique Boutique (bus, state, api-client,
@@ -65,6 +66,9 @@ module.exports = {
       'js/b-bus.js',
       'js/b-utils.js',
       'js/b-scroll-owner.js',
+      'js/ports/cart-intent-port.js',
+      'js/ports/catalog-presentation-port.js',
+      'js/ports/shared-list-projection-port.js',
       'index.html',
     ],
       tests: [
@@ -179,6 +183,12 @@ module.exports = {
       'economic-engine (calcul de prix ponctuel pour modules sur-mesure — services/pricing-engine.js recommend, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)',
       'logistics (simulateur declenche une transition colis via transitionParcelStatus — services/parcel-operations.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)',
       'orders (simulateur declenche une transition commande via transitionOrderStatus — services/order-status-machine.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)',
+
+      'auth-identity',
+
+      'catalog',
+
+      'purchasing',
     ],
   },
 

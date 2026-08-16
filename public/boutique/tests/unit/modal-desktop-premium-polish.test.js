@@ -18,9 +18,8 @@ describe('PDP desktop premium polish', () => {
   });
 
   test('donne davantage de présence au media desktop', () => {
-    expect(media).toMatch(/max-width:\s*min\(100%,\s*700px\)/);
-    expect(media).toMatch(/max-width:\s*640px/);
-    expect(media).toMatch(/aspect-ratio:\s*1\s*\/\s*1/);
+    expect(media).toMatch(/#k-modal \.k-modal-product-zone \.k-modal-img-wrap\s*\{[^}]*max-width:\s*none[^}]*width:\s*100%[^}]*height:\s*calc\(100dvh - 90px\)/s);
+    expect(media).toMatch(/#k-modal \.k-modal-product-zone \.k-modal-carousel\s*\{[^}]*max-width:\s*none[^}]*aspect-ratio:\s*4\s*\/\s*3/s);
   });
 
   test('renforce la hiérarchie titre prix actions', () => {

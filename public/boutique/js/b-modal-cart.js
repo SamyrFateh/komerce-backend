@@ -21,7 +21,7 @@ import { addToCart, quickAdd, quickRemove, setQty } from './b-cart.js';
 import {
   buildModalCartProduct,
   isModalPurchaseReady,
-} from './view-models/modal-cart-product-model.js';
+} from './ports/catalog-presentation-port.js';
 
 let _selectionReconcileInstalled = false;
 let _detailReadyReconcileInstalled = false;

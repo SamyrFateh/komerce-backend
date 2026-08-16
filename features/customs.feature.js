@@ -21,6 +21,18 @@ module.exports = {
   since:    '2025-11',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: { ownsTables: true, ownsLifecycle: true, activeService: true, externalSideEffect: 'none', surface: 'api+service' },
+    rationale: [
+      "possède le cycle de déclaration douanière et les tables customs_shipments/customs_categories qui matérialisent ce service métier",
+      "la classification douanière est un pivot métier autonome ; logistics et documents la consomment sans en posséder les règles",
+    ],
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Classer et declarer un colis douanierement ; la declaration est le pivot, jamais une optimisation.',
 

@@ -111,7 +111,7 @@ Règles du registre :
 > qu'il justifie la création d'une feature propre ?
 >
 > Vérifiable par machine : `npm run feature:classification`  
-> Strict en CI dès phase 3 : `npm run feature:classification:strict`
+> Strict global en CI (backfill clos 2026-08-16) : `npm run feature:classification:strict` — erreurs et warnings bloquent
 
 ---
 
@@ -523,3 +523,7 @@ de feature met à jour le registre dans la même PR que le code.
 Cette doctrine ne change pas avec chaque feature — elle change quand la **définition même**
 de ce qu'est une feature chez Komerce évolue. C'est volontairement le document le plus
 stable de la pyramide.
+
+## Ownership de lifecycle par table — Clean Signal Boundary
+
+Pour une table écrite par plusieurs features, `db.lifecycleOwnerOf` désigne explicitement la feature propriétaire du cycle de vie de cette table. Le booléen historique `classification.signals.ownsTables` reste un signal de classification de feature, mais ne suffit plus à attribuer une table multi-writer lorsqu’une déclaration par table existe. Les autres writers restent visibles dans le Business Graph ; ils sont une topologie attendue seulement tant que le lifecycle owner est univoque et que le ratchet ne constate aucune relation supplémentaire.

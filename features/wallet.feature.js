@@ -81,6 +81,11 @@ module.exports = {
   // lu seul (join pour nom/tel, aucun UPDATE users dans wallet-service.js ni
   // routes/wallet.js).
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'wallet_transactions',
+      'wallets',
+    ],
     tables: [
       'orders: RW',      // wallet_applied_kmf uniquement
       'users: R',

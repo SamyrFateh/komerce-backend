@@ -40,7 +40,7 @@ import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
 import { renderAddControl } from './render/render-product-card.js';
 import { getProductCartSummary, getCartItemProductId } from './cart-product-summary.js';
-import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInCart, exitSharedListRenderMode, setCartSurface, reopenSharedListCart } from './group/group-side-cart.js';
+import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInCart, exitSharedListRenderMode, setCartSurface, reopenSharedListCart } from './ports/shared-list-projection-port.js';
 
 'use strict';
 

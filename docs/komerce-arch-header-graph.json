@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 369,
-    "filesWithFullHeaders": 343,
+    "scannedCodeFiles": 373,
+    "filesWithFullHeaders": 347,
     "filesWithLiteHeaders": 26,
-    "filesWithAnyHeaders": 369,
+    "filesWithAnyHeaders": 373,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 785,
-    "edges": 4213,
-    "dbTables": 109,
-    "doctrines": 173,
-    "impactAreas": 134,
+    "graphNodes": 794,
+    "edges": 4251,
+    "dbTables": 110,
+    "doctrines": 175,
+    "impactAreas": 136,
     "unresolvedCodeEdges": 424,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
@@ -45,6 +45,7 @@
     "payment": 17,
     "tracking": 1,
     "wallet": 4,
+    "operations": 15,
     "economic-engine": 39,
     "customs": 6,
     "dashboard": 26,
@@ -52,7 +53,6 @@
     "orders": 21,
     "documents": 15,
     "auth-identity": 5,
-    "operations": 11,
     "inventory": 2,
     "loyalty": 2,
     "purchasing": 7,
@@ -80,7 +80,7 @@
     "ui-controller": 1,
     "ui-state": 1,
     "util-ui": 1,
-    "ui-infrastructure": 1,
+    "ui-infrastructure": 4,
     "state": 1,
     "util": 25,
     "domain-helper": 1,
@@ -96,13 +96,14 @@
     "service": 140,
     "external-adapter": 2,
     "machine": 1,
+    "service-adapter": 1,
     "data-service": 1,
     "validators": 1
   },
   "byCriticality": {
     "critical": 55,
     "medium": 107,
-    "high": 173,
+    "high": 177,
     "low": 34
   },
   "nodes": [
@@ -3785,6 +3786,135 @@
         "boutique"
       ],
       "version": "2026-07"
+    },
+    {
+      "id": "public/boutique/js/ports/cart-intent-port.js",
+      "file": "public/boutique/js/ports/cart-intent-port.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "boutique-cart-intent-port",
+      "domain": "operations",
+      "layer": "ui-infrastructure",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "cart_intents",
+        "cart_state",
+        "product_id"
+      ],
+      "outputs": [
+        "cart_commands",
+        "cart_projection_queries"
+      ],
+      "depends": [
+        "b-cart.js",
+        "b-cart-core.js",
+        "cart-product-summary.js"
+      ],
+      "usedBy": [
+        "b-catalog.js",
+        "render-product-card.js",
+        "b-modal-suggestions.js",
+        "b-modal-desktop-product.js",
+        "b-modal-buybox-shared.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "feature_boundary_adapter",
+        "no_business_rule_ownership"
+      ],
+      "impactAreas": [
+        "boutique",
+        "feature-boundaries"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "public/boutique/js/ports/catalog-presentation-port.js",
+      "file": "public/boutique/js/ports/catalog-presentation-port.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "boutique-catalog-presentation-port",
+      "domain": "operations",
+      "layer": "ui-infrastructure",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_snapshot",
+        "modal_selection"
+      ],
+      "outputs": [
+        "catalog_presentation_helpers"
+      ],
+      "depends": [
+        "shop-schema.js",
+        "b-modal-product-fields.js",
+        "modal-cart-product-model.js"
+      ],
+      "usedBy": [
+        "b-modal-core.js",
+        "b-modal-cart.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "feature_boundary_adapter",
+        "no_business_rule_ownership"
+      ],
+      "impactAreas": [
+        "boutique",
+        "feature-boundaries"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "public/boutique/js/ports/shared-list-projection-port.js",
+      "file": "public/boutique/js/ports/shared-list-projection-port.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "boutique-shared-list-projection-port",
+      "domain": "operations",
+      "layer": "ui-infrastructure",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "shared_list_token",
+        "shared_list_context"
+      ],
+      "outputs": [
+        "shared_list_projection_commands",
+        "shared_list_library_projection"
+      ],
+      "depends": [
+        "group-side-cart.js",
+        "group-api.js",
+        "group-list-labels.js"
+      ],
+      "usedBy": [
+        "b-cart.js",
+        "b-tracking.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "feature_boundary_adapter",
+        "no_business_rule_ownership"
+      ],
+      "impactAreas": [
+        "boutique",
+        "feature-boundaries"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "public/boutique/js/product-store.js",
@@ -13275,6 +13405,51 @@
       "version": "2026-06"
     },
     {
+      "id": "services/ports/catalog-sellable-unit-port.js",
+      "file": "services/ports/catalog-sellable-unit-port.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-sellable-unit-port",
+      "domain": "operations",
+      "layer": "service-adapter",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_id",
+        "variant_combo",
+        "quantity",
+        "transaction_client"
+      ],
+      "outputs": [
+        "canonical_sellable_unit"
+      ],
+      "depends": [
+        "services/product-admin-service.js"
+      ],
+      "usedBy": [
+        "services/shared-cart-creation.js"
+      ],
+      "dbRead": [
+        "none_direct"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned"
+      ],
+      "doctrine": [
+        "feature_boundary_adapter",
+        "no_business_rule_ownership"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "catalog",
+        "sellable-unit-resolution"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "services/pricing-apply.js",
       "file": "services/pricing-apply.js",
       "type": "file",
@@ -14622,7 +14797,7 @@
       "depends": [
         "db.js",
         "services/shared-cart-internals.js",
-        "services/product-admin-service.js"
+        "services/ports/catalog-sellable-unit-port.js"
       ],
       "usedBy": [
         "routes/shared-cart.js"
@@ -17712,6 +17887,11 @@
       "table": "user_pickup_authorizations"
     },
     {
+      "id": "db:none_direct",
+      "type": "db-table",
+      "table": "none_direct"
+    },
+    {
       "id": "db:price_history",
       "type": "db-table",
       "table": "price_history"
@@ -18140,6 +18320,16 @@
       "id": "doctrine:errors_lisibles",
       "type": "doctrine",
       "doctrine": "errors_lisibles"
+    },
+    {
+      "id": "doctrine:feature_boundary_adapter",
+      "type": "doctrine",
+      "doctrine": "feature_boundary_adapter"
+    },
+    {
+      "id": "doctrine:no_business_rule_ownership",
+      "type": "doctrine",
+      "doctrine": "no_business_rule_ownership"
     },
     {
       "id": "doctrine:product_source_unique",
@@ -19082,6 +19272,11 @@
       "area": "all-boutique-api"
     },
     {
+      "id": "impact:feature-boundaries",
+      "type": "impact-area",
+      "area": "feature-boundaries"
+    },
+    {
       "id": "impact:offline-fallback",
       "type": "impact-area",
       "area": "offline-fallback"
@@ -19265,6 +19460,11 @@
       "id": "impact:auth-identity",
       "type": "impact-area",
       "area": "auth-identity"
+    },
+    {
+      "id": "impact:sellable-unit-resolution",
+      "type": "impact-area",
+      "area": "sellable-unit-resolution"
     },
     {
       "id": "impact:purchasing",
@@ -24765,6 +24965,186 @@
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/ports/cart-intent-port.js",
+      "to": "public/boutique/js/b-cart.js",
+      "type": "depends",
+      "label": "b-cart.js"
+    },
+    {
+      "from": "public/boutique/js/ports/cart-intent-port.js",
+      "to": "public/boutique/js/b-cart-core.js",
+      "type": "depends",
+      "label": "b-cart-core.js"
+    },
+    {
+      "from": "public/boutique/js/ports/cart-intent-port.js",
+      "to": "public/boutique/js/cart-product-summary.js",
+      "type": "depends",
+      "label": "cart-product-summary.js"
+    },
+    {
+      "from": "public/boutique/js/b-catalog.js",
+      "to": "public/boutique/js/ports/cart-intent-port.js",
+      "type": "uses",
+      "label": "b-catalog.js"
+    },
+    {
+      "from": "public/boutique/js/render/render-product-card.js",
+      "to": "public/boutique/js/ports/cart-intent-port.js",
+      "type": "uses",
+      "label": "render-product-card.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-suggestions.js",
+      "to": "public/boutique/js/ports/cart-intent-port.js",
+      "type": "uses",
+      "label": "b-modal-suggestions.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-desktop-product.js",
+      "to": "public/boutique/js/ports/cart-intent-port.js",
+      "type": "uses",
+      "label": "b-modal-desktop-product.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "public/boutique/js/ports/cart-intent-port.js",
+      "type": "uses",
+      "label": "b-modal-buybox-shared.js"
+    },
+    {
+      "from": "public/boutique/js/ports/cart-intent-port.js",
+      "to": "doctrine:feature_boundary_adapter",
+      "type": "doctrine",
+      "label": "feature_boundary_adapter"
+    },
+    {
+      "from": "public/boutique/js/ports/cart-intent-port.js",
+      "to": "doctrine:no_business_rule_ownership",
+      "type": "doctrine",
+      "label": "no_business_rule_ownership"
+    },
+    {
+      "from": "public/boutique/js/ports/cart-intent-port.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/ports/cart-intent-port.js",
+      "to": "impact:feature-boundaries",
+      "type": "impact",
+      "label": "feature-boundaries"
+    },
+    {
+      "from": "public/boutique/js/ports/catalog-presentation-port.js",
+      "to": "public/boutique/js/shop-schema.js",
+      "type": "depends",
+      "label": "shop-schema.js"
+    },
+    {
+      "from": "public/boutique/js/ports/catalog-presentation-port.js",
+      "to": "public/boutique/js/b-modal-product-fields.js",
+      "type": "depends",
+      "label": "b-modal-product-fields.js"
+    },
+    {
+      "from": "public/boutique/js/ports/catalog-presentation-port.js",
+      "to": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "type": "depends",
+      "label": "modal-cart-product-model.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-core.js",
+      "to": "public/boutique/js/ports/catalog-presentation-port.js",
+      "type": "uses",
+      "label": "b-modal-core.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-cart.js",
+      "to": "public/boutique/js/ports/catalog-presentation-port.js",
+      "type": "uses",
+      "label": "b-modal-cart.js"
+    },
+    {
+      "from": "public/boutique/js/ports/catalog-presentation-port.js",
+      "to": "doctrine:feature_boundary_adapter",
+      "type": "doctrine",
+      "label": "feature_boundary_adapter"
+    },
+    {
+      "from": "public/boutique/js/ports/catalog-presentation-port.js",
+      "to": "doctrine:no_business_rule_ownership",
+      "type": "doctrine",
+      "label": "no_business_rule_ownership"
+    },
+    {
+      "from": "public/boutique/js/ports/catalog-presentation-port.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/ports/catalog-presentation-port.js",
+      "to": "impact:feature-boundaries",
+      "type": "impact",
+      "label": "feature-boundaries"
+    },
+    {
+      "from": "public/boutique/js/ports/shared-list-projection-port.js",
+      "to": "public/boutique/js/group/group-side-cart.js",
+      "type": "depends",
+      "label": "group-side-cart.js"
+    },
+    {
+      "from": "public/boutique/js/ports/shared-list-projection-port.js",
+      "to": "public/boutique/js/group/group-api.js",
+      "type": "depends",
+      "label": "group-api.js"
+    },
+    {
+      "from": "public/boutique/js/ports/shared-list-projection-port.js",
+      "to": "public/boutique/js/group/group-list-labels.js",
+      "type": "depends",
+      "label": "group-list-labels.js"
+    },
+    {
+      "from": "public/boutique/js/b-cart.js",
+      "to": "public/boutique/js/ports/shared-list-projection-port.js",
+      "type": "uses",
+      "label": "b-cart.js"
+    },
+    {
+      "from": "public/boutique/js/b-tracking.js",
+      "to": "public/boutique/js/ports/shared-list-projection-port.js",
+      "type": "uses",
+      "label": "b-tracking.js"
+    },
+    {
+      "from": "public/boutique/js/ports/shared-list-projection-port.js",
+      "to": "doctrine:feature_boundary_adapter",
+      "type": "doctrine",
+      "label": "feature_boundary_adapter"
+    },
+    {
+      "from": "public/boutique/js/ports/shared-list-projection-port.js",
+      "to": "doctrine:no_business_rule_ownership",
+      "type": "doctrine",
+      "label": "no_business_rule_ownership"
+    },
+    {
+      "from": "public/boutique/js/ports/shared-list-projection-port.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/ports/shared-list-projection-port.js",
+      "to": "impact:feature-boundaries",
+      "type": "impact",
+      "label": "feature-boundaries"
     },
     {
       "from": "public/boutique/js/product-store.js",
@@ -38625,6 +39005,54 @@
       "label": "logistics"
     },
     {
+      "from": "services/ports/catalog-sellable-unit-port.js",
+      "to": "services/product-admin-service.js",
+      "type": "depends",
+      "label": "services/product-admin-service.js"
+    },
+    {
+      "from": "services/shared-cart-creation.js",
+      "to": "services/ports/catalog-sellable-unit-port.js",
+      "type": "uses",
+      "label": "services/shared-cart-creation.js"
+    },
+    {
+      "from": "services/ports/catalog-sellable-unit-port.js",
+      "to": "db:none_direct",
+      "type": "db-read",
+      "label": "none_direct"
+    },
+    {
+      "from": "services/ports/catalog-sellable-unit-port.js",
+      "to": "doctrine:feature_boundary_adapter",
+      "type": "doctrine",
+      "label": "feature_boundary_adapter"
+    },
+    {
+      "from": "services/ports/catalog-sellable-unit-port.js",
+      "to": "doctrine:no_business_rule_ownership",
+      "type": "doctrine",
+      "label": "no_business_rule_ownership"
+    },
+    {
+      "from": "services/ports/catalog-sellable-unit-port.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/ports/catalog-sellable-unit-port.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/ports/catalog-sellable-unit-port.js",
+      "to": "impact:sellable-unit-resolution",
+      "type": "impact",
+      "label": "sellable-unit-resolution"
+    },
+    {
       "from": "services/pricing-apply.js",
       "to": "db",
       "type": "depends",
@@ -40588,9 +41016,9 @@
     },
     {
       "from": "services/shared-cart-creation.js",
-      "to": "services/product-admin-service.js",
+      "to": "services/ports/catalog-sellable-unit-port.js",
       "type": "depends",
-      "label": "services/product-admin-service.js"
+      "label": "services/ports/catalog-sellable-unit-port.js"
     },
     {
       "from": "routes/shared-cart.js",
@@ -45822,6 +46250,7 @@
         "public/boutique/js/b-tracking.js",
         "public/boutique/js/boutique.js",
         "public/boutique/js/group/group-side-cart.js",
+        "public/boutique/js/ports/cart-intent-port.js",
         "public/boutique/js/render/render-product-card.js"
       ]
     },
@@ -46001,6 +46430,8 @@
         "public/boutique/js/boutique.js",
         "public/boutique/js/cart-product-summary.js",
         "public/boutique/js/group/group-side-cart.js",
+        "public/boutique/js/ports/cart-intent-port.js",
+        "public/boutique/js/ports/shared-list-projection-port.js",
         "public/boutique/js/shop-schema.js",
         "routes/shared-cart.js"
       ]
@@ -46126,6 +46557,7 @@
         "public/boutique/js/boutique.js",
         "public/boutique/js/card-config.js",
         "public/boutique/js/controllers/home-controller.js",
+        "public/boutique/js/ports/cart-intent-port.js",
         "public/boutique/js/product-store.js",
         "public/boutique/js/render/render-categories.js",
         "public/boutique/js/render/render-home-sections.js",
@@ -46690,6 +47122,7 @@
         "public/boutique/js/b-modal.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-utils.js",
+        "public/boutique/js/ports/cart-intent-port.js",
         "public/boutique/js/view-models/modal-cart-product-model.js"
       ]
     },
@@ -46713,6 +47146,7 @@
       "mustCheck": [
         "impact:boutique",
         "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/ports/catalog-presentation-port.js",
         "public/boutique/js/view-models/modal-cart-product-model.js"
       ]
     },
@@ -46788,6 +47222,7 @@
         "public/boutique/js/b-product-open-contract.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-subcat.js",
+        "public/boutique/js/ports/catalog-presentation-port.js",
         "routes/products.js"
       ]
     },
@@ -46879,6 +47314,7 @@
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js",
+        "public/boutique/js/ports/cart-intent-port.js",
         "public/boutique/js/view-models/delivery-mode-model.js",
         "public/boutique/js/view-models/modal-cart-product-model.js",
         "public/boutique/js/view-models/modal-selection-model.js",
@@ -47086,7 +47522,8 @@
         "public/boutique/js/b-modal-desktop-product.js",
         "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-store.js",
-        "public/boutique/js/b-utils.js"
+        "public/boutique/js/b-utils.js",
+        "public/boutique/js/ports/catalog-presentation-port.js"
       ]
     },
     "public/boutique/js/b-modal-product.js": {
@@ -47207,6 +47644,7 @@
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js",
+        "public/boutique/js/ports/cart-intent-port.js",
         "public/boutique/js/render/render-product-card.js"
       ]
     },
@@ -47875,6 +48313,7 @@
         "public/boutique/js/group/group-library-remove.js",
         "public/boutique/js/group/group-list-labels.js",
         "public/boutique/js/group/group-side-cart.js",
+        "public/boutique/js/ports/shared-list-projection-port.js",
         "routes/documents.js",
         "routes/orders.js",
         "routes/otp.js",
@@ -48106,7 +48545,8 @@
         "impact:catalog",
         "impact:favorites",
         "impact:recommendations",
-        "public/boutique/js/b-cart.js"
+        "public/boutique/js/b-cart.js",
+        "public/boutique/js/ports/cart-intent-port.js"
       ]
     },
     "public/boutique/js/controllers/home-controller.js": {
@@ -48195,6 +48635,7 @@
         "public/boutique/js/b-tracking.js",
         "public/boutique/js/group/group-library-remove.js",
         "public/boutique/js/group/group-side-cart.js",
+        "public/boutique/js/ports/shared-list-projection-port.js",
         "routes/shared-cart-saved.js",
         "routes/shared-cart.js"
       ]
@@ -48318,7 +48759,8 @@
         "impact:side-cart",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-tracking.js",
-        "public/boutique/js/group/group-side-cart.js"
+        "public/boutique/js/group/group-side-cart.js",
+        "public/boutique/js/ports/shared-list-projection-port.js"
       ]
     },
     "public/boutique/js/group/group-price-variation.js": {
@@ -48414,7 +48856,8 @@
         "public/boutique/js/b-utils.js",
         "public/boutique/js/group/group-api.js",
         "public/boutique/js/group/group-checkout-adapter.js",
-        "public/boutique/js/group/group-list-labels.js"
+        "public/boutique/js/group/group-list-labels.js",
+        "public/boutique/js/ports/shared-list-projection-port.js"
       ]
     },
     "public/boutique/js/group/group-state.js": {
@@ -48537,6 +48980,132 @@
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "public/boutique/js/b-notifications.js",
         "public/boutique/js/boutique.js"
+      ]
+    },
+    "public/boutique/js/ports/cart-intent-port.js": {
+      "role": "boutique-cart-intent-port",
+      "domain": "operations",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-cart-core.js",
+        "public/boutique/js/cart-product-summary.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/b-catalog.js",
+        "public/boutique/js/render/render-product-card.js",
+        "public/boutique/js/b-modal-suggestions.js",
+        "public/boutique/js/b-modal-desktop-product.js",
+        "public/boutique/js/b-modal-buybox-shared.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "feature_boundary_adapter",
+        "no_business_rule_ownership"
+      ],
+      "impactAreas": [
+        "boutique",
+        "feature-boundaries"
+      ],
+      "mustCheck": [
+        "doctrine:feature_boundary_adapter",
+        "doctrine:no_business_rule_ownership",
+        "impact:boutique",
+        "impact:feature-boundaries",
+        "public/boutique/js/b-cart-core.js",
+        "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-catalog.js",
+        "public/boutique/js/b-modal-buybox-shared.js",
+        "public/boutique/js/b-modal-desktop-product.js",
+        "public/boutique/js/b-modal-suggestions.js",
+        "public/boutique/js/cart-product-summary.js",
+        "public/boutique/js/render/render-product-card.js"
+      ]
+    },
+    "public/boutique/js/ports/catalog-presentation-port.js": {
+      "role": "boutique-catalog-presentation-port",
+      "domain": "operations",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/shop-schema.js",
+        "public/boutique/js/b-modal-product-fields.js",
+        "public/boutique/js/view-models/modal-cart-product-model.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/b-modal-cart.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "feature_boundary_adapter",
+        "no_business_rule_ownership"
+      ],
+      "impactAreas": [
+        "boutique",
+        "feature-boundaries"
+      ],
+      "mustCheck": [
+        "doctrine:feature_boundary_adapter",
+        "doctrine:no_business_rule_ownership",
+        "impact:boutique",
+        "impact:feature-boundaries",
+        "public/boutique/js/b-modal-cart.js",
+        "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/b-modal-product-fields.js",
+        "public/boutique/js/shop-schema.js",
+        "public/boutique/js/view-models/modal-cart-product-model.js"
+      ]
+    },
+    "public/boutique/js/ports/shared-list-projection-port.js": {
+      "role": "boutique-shared-list-projection-port",
+      "domain": "operations",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/group/group-side-cart.js",
+        "public/boutique/js/group/group-api.js",
+        "public/boutique/js/group/group-list-labels.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-tracking.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "feature_boundary_adapter",
+        "no_business_rule_ownership"
+      ],
+      "impactAreas": [
+        "boutique",
+        "feature-boundaries"
+      ],
+      "mustCheck": [
+        "doctrine:feature_boundary_adapter",
+        "doctrine:no_business_rule_ownership",
+        "impact:boutique",
+        "impact:feature-boundaries",
+        "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-tracking.js",
+        "public/boutique/js/group/group-api.js",
+        "public/boutique/js/group/group-list-labels.js",
+        "public/boutique/js/group/group-side-cart.js"
       ]
     },
     "public/boutique/js/product-store.js": {
@@ -48671,6 +49240,7 @@
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-modal-suggestions.js",
+        "public/boutique/js/ports/cart-intent-port.js",
         "public/boutique/js/render/render-home-sections.js"
       ]
     },
@@ -48717,6 +49287,7 @@
         "public/boutique/js/b-desktop-sidebar.js",
         "public/boutique/js/b-subcat.js",
         "public/boutique/js/controllers/home-controller.js",
+        "public/boutique/js/ports/catalog-presentation-port.js",
         "public/boutique/js/product-store.js",
         "public/boutique/js/render/render-home-sections.js"
       ]
@@ -48842,7 +49413,8 @@
         "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-cart.js",
         "public/boutique/js/b-modal-desktop-product.js",
-        "public/boutique/js/b-modal-mobile-product.js"
+        "public/boutique/js/b-modal-mobile-product.js",
+        "public/boutique/js/ports/catalog-presentation-port.js"
       ]
     },
     "public/boutique/js/view-models/modal-selection-model.js": {
@@ -57672,6 +58244,45 @@
         "utils/pickup-receipt-html.js"
       ]
     },
+    "services/ports/catalog-sellable-unit-port.js": {
+      "role": "catalog-sellable-unit-port",
+      "domain": "operations",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/product-admin-service.js"
+      ],
+      "directUsedBy": [
+        "services/shared-cart-creation.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "none_direct"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "feature_boundary_adapter",
+        "no_business_rule_ownership"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "catalog",
+        "sellable-unit-resolution"
+      ],
+      "mustCheck": [
+        "db:none_direct",
+        "doctrine:feature_boundary_adapter",
+        "doctrine:no_business_rule_ownership",
+        "impact:catalog",
+        "impact:sellable-unit-resolution",
+        "impact:shared-cart",
+        "services/product-admin-service.js",
+        "services/shared-cart-creation.js"
+      ]
+    },
     "services/pricing-apply.js": {
       "role": "economic-engine-pricing-apply",
       "domain": "economic-engine",
@@ -58121,9 +58732,9 @@
         "routes/orders/create.js",
         "routes/products.js",
         "services/catalog-overrides.js",
+        "services/ports/catalog-sellable-unit-port.js",
         "services/product-price-audit.js",
         "services/product-publication-guard.js",
-        "services/shared-cart-creation.js",
         "utils/logger.js"
       ]
     },
@@ -58929,7 +59540,7 @@
       "directDependsOn": [
         "db.js",
         "services/shared-cart-internals.js",
-        "services/product-admin-service.js"
+        "services/ports/catalog-sellable-unit-port.js"
       ],
       "directUsedBy": [
         "routes/shared-cart.js"
@@ -58971,7 +59582,7 @@
         "doctrine:snapshot_fige",
         "impact:creator-flow",
         "routes/shared-cart.js",
-        "services/product-admin-service.js",
+        "services/ports/catalog-sellable-unit-port.js",
         "services/shared-cart-internals.js"
       ]
     },

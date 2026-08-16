@@ -86,6 +86,10 @@ module.exports = {
   // orders passe R → RW au Lot O2 : services/purchasing-admin-service.js
   // (retaggé depuis dashboard) y écrit également (outils admin de correction).
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'purchase_orders',
+    ],
     tables: [
       'alerts: W',              // purchasing-trigger-service.js (échec déclenchement), repair-ordered-without-purchase-orders.js
       'order_items: R',
@@ -127,7 +131,7 @@ module.exports = {
     consumes: [
       'orders (lecture : order_items, orders — le besoin d\'achat naît d\'une commande client)',
       'auth (garde admin)',
-      'notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)',
+      'notifications (notification fournisseur WhatsApp, via services/notification-service.js)',
       'logistics (declenche scan preparation + notification client apres reception hub complete — services/scan-operations.js triggerScan3, O7.2 Cycle C)',
     ],
   },

@@ -59,12 +59,11 @@ import {
   openCart, closeCart, markAllCartButtons,
 }                         from './b-cart.js';
 import {
-  normalizeCategoryKey, getCategorySectionEmoji,
-}                         from './shop-schema.js';
+  normalizeCategoryKey, getCategorySectionEmoji, paintProvisionalFields,
+}                         from './ports/catalog-presentation-port.js';
 import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { setupImageUX }     from './b-modal-image-ux.js';
 import { setupSocialProof } from './b-modal-social-proof.js';
-import { paintProvisionalFields } from './b-modal-product-fields.js';
 import {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
   _syncScrollPadding,

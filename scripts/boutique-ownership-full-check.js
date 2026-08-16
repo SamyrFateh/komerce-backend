@@ -2,40 +2,39 @@
 'use strict';
 
 /**
- * boutique-ownership-full-check.js — Gate full (branche governance/boutique-global-ownership).
+ * boutique-ownership-full-check.js — gate global de rattachement Boutique.
  *
- *   Contrairement à scripts/touched-files-feature-gate.js (qui ne regarde que le diff git),
- *   ce script scanne TOUT public/boutique/js/** et public/boutique/css/*.css et vérifie que
- *   chaque fichier applicatif est rattaché à une carte features/*.feature.js (ou exclu
- *   légitimement : tests, dist, scripts infra — même périmètre que le Gate 1).
+ * Contrairement à scripts/touched-files-feature-gate.js (qui ne regarde que le diff git),
+ * ce script scanne TOUT public/boutique et vérifie que chaque fichier applicatif
+ * gouvernable est rattaché à une carte features/*.feature.js.
  *
- *   Mode actuel : WARN ONLY. Le backfill (governance/boutique-global-ownership) n'est pas
- *   encore stabilisé — ne pas transformer ces warnings en échec de build avant nouvelle passe.
- *   Voir docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md §6 pour la dette détaillée.
+ * Les artefacts, tests et harnais de diagnostic non applicatifs sont exclus explicitement
+ * du périmètre. Le gate est STRICT par défaut : tout nouvel orphelin applicatif bloque.
  *
  * Usage :
- *   node scripts/boutique-ownership-full-check.js            # rapport, exit 0 toujours
- *   node scripts/boutique-ownership-full-check.js --strict   # exit 1 si non-couverts (future passe)
+ *   node scripts/boutique-ownership-full-check.js            # strict, exit 1 si orphelin
+ *   node scripts/boutique-ownership-full-check.js --strict   # idem, explicite
+ *   node scripts/boutique-ownership-full-check.js --report   # rapport non bloquant
  */
 
 const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const STRICT = process.argv.includes('--strict');
+const STRICT = !process.argv.includes('--report');
 const C = { red: '\x1b[31m', grn: '\x1b[32m', ylw: '\x1b[33m', dim: '\x1b[2m', bld: '\x1b[1m', r: '\x1b[0m' };
 
-// Même périmètre d'exclusion que scripts/touched-files-feature-gate.js
+// Même périmètre d'exclusion que scripts/touched-files-feature-gate.js,
+// complété par les harnais de mesure navigateur : ce sont des outils de diagnostic,
+// jamais du code applicatif chargé par la Boutique.
 const ENFORCE_EXT = /\.(js|mjs|cjs|ts|css|html)$/;
 const EXCLUDE = [
   /^archive\//, /node_modules\//, /\/dist\//, /\.github\//, /(^|\/)docs\//,
   /\.md$/, /\.feature\.js$/, /(^|\/)tests?\//, /\.spec\.js$/, /\.test\.js$/,
   /(^|\/)migrations\//, /(^|\/)scripts\//,
   /package(-lock)?\.json$/, /\.config\.(js|cjs|mjs)$/,
-  // Backfill gouvernance globale (governance/boutique-global-ownership) :
-  // sortie générée (rapport Playwright, jamais du code applicatif) et harnais
-  // de test manuel isolé — voir BOUTIQUE_COMPONENT_OWNERSHIP.md §6.2.
   /(^|\/)playwright-report\//,
+  /(^|\/)harnais\/geometry\//,
   /(^|\/)test-modal-view-model\.html$/,
 ];
 
@@ -103,11 +102,11 @@ for (const f of enforced) {
   else orphans.push(f);
 }
 
-console.log(`\n${C.bld}Gate full — Rattachement Boutique global (governance/boutique-global-ownership)${C.r}`);
+console.log(`\n${C.bld}Gate full — Rattachement Boutique global${C.r}`);
 console.log(`${C.dim}${enforced.length} fichier(s) applicatif(s) Boutique gouvernables, ${owned.length} rattaché(s), ${orphans.length} non rattaché(s)${C.r}\n`);
 
 if (orphans.length) {
-  console.log(`${C.ylw}${C.bld}⚠ ${orphans.length} fichier(s) sans carte feature (dette documentée en partie dans BOUTIQUE_COMPONENT_OWNERSHIP.md §6.2) :${C.r}`);
+  console.log(`${C.ylw}${C.bld}⚠ ${orphans.length} fichier(s) applicatif(s) sans carte feature :${C.r}`);
   orphans.sort().forEach(f => console.log(`${C.ylw}   - ${f}${C.r}`));
 }
 
@@ -115,9 +114,13 @@ const coverage = enforced.length ? Math.round((owned.length / enforced.length) *
 console.log(`\n${C.bld}Couverture : ${coverage}%${C.r}`);
 
 if (STRICT && orphans.length) {
-  console.log(`\n${C.red}${C.bld}✖ Mode --strict : backfill non terminé.${C.r}`);
+  console.log(`\n${C.red}${C.bld}✖ Ownership Boutique strict : ${orphans.length} orphelin(s) applicatif(s).${C.r}`);
   process.exit(1);
 }
 
-console.log(`\n${C.grn}${C.bld}✔ Rapport généré (mode warning — ne bloque pas tant que --strict n'est pas activé).${C.r}`);
+if (STRICT) {
+  console.log(`\n${C.grn}${C.bld}✔ Ownership Boutique strict : 0 orphelin applicatif.${C.r}`);
+} else {
+  console.log(`\n${C.grn}${C.bld}✔ Rapport ownership généré (--report non bloquant).${C.r}`);
+}
 process.exit(0);

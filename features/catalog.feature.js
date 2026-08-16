@@ -26,6 +26,7 @@ module.exports = {
     kind:     'business-feature',
     rationale: [
       'Propriétaire exclusif de products, catalog_media, product_variants, product_skus, product_sku_media, et des règles de canonicalisation, dédoublonnage et publication (arbitrage D, 2026-07-29).',
+      'Possède le lifecycle de publication des unités vendables et le contrat Product Detail canonique consommé par la Boutique.',
     ],
   },
   since:    '2025-09',
@@ -237,6 +238,14 @@ module.exports = {
   },
 
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'catalog_media',
+      'product_sku_media',
+      'product_skus',
+      'product_variants',
+      'products',
+    ],
     tables: [
       'alerts: W',
       'boutique_categories: RW',
@@ -324,6 +333,8 @@ module.exports = {
       'logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',
       'auth',
+
+      'auth-identity',
     ],
   },
 

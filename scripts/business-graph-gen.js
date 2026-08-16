@@ -789,16 +789,26 @@ function build() {
       lifecycleOwner = writerNames[0];
       resolution = 'single-writer';
     } else if (writerNames.length > 1) {
-      const owningCandidates = writerNames.filter(fn => {
-        const node = featureNodeByName.get(fn);
+      const explicitLifecycleCandidates = writerNames.filter(fn => {
         const m = manifests.find(mm => mm.name === fn);
-        return m && m.classification && m.classification.signals && m.classification.signals.ownsTables === true;
+        return m && m.db && Array.isArray(m.db.lifecycleOwnerOf) && m.db.lifecycleOwnerOf.includes(table);
       });
-      if (owningCandidates.length === 1) {
-        lifecycleOwner = owningCandidates[0];
-        resolution = 'multi-writer-resolved-by-classification-signal';
-      } else {
+      if (explicitLifecycleCandidates.length === 1) {
+        lifecycleOwner = explicitLifecycleCandidates[0];
+        resolution = 'multi-writer-resolved-by-explicit-lifecycle-owner';
+      } else if (explicitLifecycleCandidates.length > 1) {
         resolution = 'ambiguous-multi-writer';
+      } else {
+        const owningCandidates = writerNames.filter(fn => {
+          const m = manifests.find(mm => mm.name === fn);
+          return m && m.classification && m.classification.signals && m.classification.signals.ownsTables === true;
+        });
+        if (owningCandidates.length === 1) {
+          lifecycleOwner = owningCandidates[0];
+          resolution = 'multi-writer-resolved-by-classification-signal';
+        } else {
+          resolution = 'ambiguous-multi-writer';
+        }
       }
     } else {
       resolution = 'no-declared-writer';
@@ -814,11 +824,14 @@ function build() {
         type: 'WRITER-NOT-OWNER', ref: table,
         msg: `table "${table}" a ${writerNames.length} écrivain(s) déclaré(s) (${writerNames.join(', ')}) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur`,
       });
-    } else if (resolution === 'multi-writer-resolved-by-classification-signal' && writerNames.length > 1) {
+    } else if ((resolution === 'multi-writer-resolved-by-classification-signal' || resolution === 'multi-writer-resolved-by-explicit-lifecycle-owner') && writerNames.length > 1) {
       const others = writerNames.filter(w => w !== lifecycleOwner);
+      const ownerSource = resolution === 'multi-writer-resolved-by-explicit-lifecycle-owner'
+        ? 'db.lifecycleOwnerOf'
+        : 'classification.signals.ownsTables';
       warns.push({
         type: 'WRITER-NOT-OWNER', ref: table,
-        msg: `table "${table}" : lifecycle owner = ${lifecycleOwner} (classification.signals.ownsTables), mais aussi écrite par ${others.join(', ')}`,
+        msg: `table "${table}" : lifecycle owner = ${lifecycleOwner} (${ownerSource}), mais aussi écrite par ${others.join(', ')}`,
       });
     }
   }

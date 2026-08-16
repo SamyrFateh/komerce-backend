@@ -29,7 +29,7 @@ import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { renderSubtotalInto, renderPaymentModes, wireBuyNowButton } from './b-modal-buybox-shared.js';
 import { deriveDeliveryMode, reconcileDeliverySelection } from './view-models/delivery-mode-model.js';
-import { showToast } from './b-cart-core.js';
+import { showToast } from './ports/cart-intent-port.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
 import {
   buildProductContentViewModel,

@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 369
-- Files with full headers: 343
+- Scanned code files: 373
+- Files with full headers: 347
 - Files with lite headers: 26
-- Files with any headers: 369
+- Files with any headers: 373
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 785
-- Edges: 4213
-- DB tables: 109
-- Doctrines: 173
-- Impact areas: 134
+- Graph nodes: 794
+- Edges: 4251
+- DB tables: 110
+- Doctrines: 175
+- Impact areas: 136
 - Unresolved code edges: 424
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
@@ -43,7 +43,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - logistics: 35
 - loyalty: 2
 - notification: 19
-- operations: 11
+- operations: 15
 - orders: 21
 - payment: 17
 - purchasing: 7
@@ -78,13 +78,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route-manifest: 1
 - schema: 1
 - service: 140
+- service-adapter: 1
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
 - ui-component: 37
 - ui-controller: 1
 - ui-enhancer: 3
-- ui-infrastructure: 1
+- ui-infrastructure: 4
 - ui-page: 5
 - ui-renderer: 8
 - ui-service: 1
@@ -183,6 +184,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/group/group-library-remove.js — shared-cart-library-removal-ui (shared-cart, high, full)
 - public/boutique/js/group/group-list-labels.js — shared-list-display-labels (shared-cart, high, full)
 - public/boutique/js/komerce-api.js — boutique-api-client (boutique, high, full)
+- public/boutique/js/ports/cart-intent-port.js — boutique-cart-intent-port (operations, high, full)
+- public/boutique/js/ports/catalog-presentation-port.js — boutique-catalog-presentation-port (operations, high, full)
+- public/boutique/js/ports/shared-list-projection-port.js — boutique-shared-list-projection-port (operations, high, full)
 - public/boutique/js/product-store.js — boutique-product-store (catalog, high, full)
 - public/boutique/js/shop-schema.js — boutique-taxonomy-schema (catalog, high, full)
 - public/boutique/js/view-models/modal-cart-product-model.js — modal-cart-product-snapshot-model (catalog, high, full)
@@ -292,6 +296,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/parcelOptimizationService.js — logistics-parcel-optimization-service (logistics, high, full)
 - services/pickup-authorization-service.js — pickup-authorization-service (auth-identity, high, full)
 - services/pickup-secret-service.js — pickup-secret-service (logistics, high, full)
+- services/ports/catalog-sellable-unit-port.js — catalog-sellable-unit-port (operations, high, full)
 - services/pricing-apply.js — economic-engine-pricing-apply (economic-engine, high, full)
 - services/pricing-cdr.js — economic-engine-pricing-cdr (economic-engine, high, full)
 - services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)

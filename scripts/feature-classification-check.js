@@ -6,10 +6,9 @@
  * Complément de feature-registry-check.js (niveau 0) et feature-guard.js (niveau 5).
  *
  * Philosophie ratchet :
- *   Phase 1 (actuelle) : warning-only — rapport lisible, pas d'exit(1) par défaut.
- *   Phase 2 : --strict local sur manifest modifié.
- *   Phase 3 : --strict par domaine après backfill.
- *   Phase 4 : --strict global en CI.
+ *   Phase 4 (active depuis 2026-08-16) : backfill global fermé.
+ *   Le mode normal reste un rapport ; --strict bloque erreurs ET warnings.
+ *   Toute nouvelle dette de classification redevient donc un signal attribuable au changement courant.
  *
  * Usage :
  *   node scripts/feature-classification-check.js              → rapport complet
@@ -229,9 +228,10 @@ function checkManifest(m) {
   // ── Warning : effet externe sans invariant associé ────────────────────────
   if (eff && eff !== 'none') {
     const invs = m.invariants || [];
-    const hasEffectInvariant = invs.some(inv =>
-      /idempotence|webhook|stripe|paypal|whatsapp|meta|outbound|message|payment|refund/i.test(inv)
-    );
+    const hasEffectInvariant = invs.some(inv => {
+      const text = typeof inv === 'string' ? inv : (inv && typeof inv.statement === 'string' ? inv.statement : '');
+      return /idempotence|webhook|stripe|paypal|whatsapp|meta|outbound|message|payment|refund|rembours|auth[- ]?token|token/i.test(text);
+    });
     if (!hasEffectInvariant) {
       warnings.push({
         type: 'SIDEEFFECT-NO-INVARIANT', feature: name,
@@ -283,7 +283,7 @@ function run() {
   // ── Sortie JSON ───────────────────────────────────────────────────────────
   if (JSON_OUTPUT) {
     console.log(JSON.stringify({ summary, errors: allErrors, warnings: allWarnings }, null, 2));
-    if (STRICT && allErrors.length > 0) process.exit(1);
+    if (STRICT && (allErrors.length > 0 || allWarnings.length > 0)) process.exit(1);
     return;
   }
 
@@ -328,8 +328,8 @@ function run() {
   const ratchetPhase = summary.unclassified === 0 ? 'Phase 2+ (tous classifiés)' : 'Phase 1 (backfill en cours)';
   console.log(`  Ratchet : ${ratchetPhase}\n`);
 
-  if (STRICT && allErrors.length > 0) {
-    console.log('  ── Mode --strict : exit(1)\n');
+  if (STRICT && (allErrors.length > 0 || allWarnings.length > 0)) {
+    console.log('  ── Mode --strict : toute erreur OU dette de classification résiduelle bloque — exit(1)\n');
     process.exit(1);
   }
 }

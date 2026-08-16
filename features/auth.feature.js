@@ -21,6 +21,18 @@ module.exports = {
   since:    '2025-08',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    axis: 'support',
+    kind: 'technical-transversal',
+    decision: 'transversal-technique',
+    signals: { ownsTables: false, ownsLifecycle: false, activeService: true, externalSideEffect: 'auth-token', surface: 'middleware' },
+    rationale: [
+      'fournit les gardes JWT/session/rôles consommées transversalement sans porter de règle métier propre aux commandes, paiements ou paniers',
+      'la vérité d’identité et le lifecycle de revoked_tokens appartiennent à auth-identity ; auth ne possède que la primitive technique de garde',
+    ],
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   // Corrigé au Lot O2 (2026-07-12) — était un copié-collé du texte d'auth-identity.
   service: 'Fournir les gardes transverses d\'authentification et de vérification d\'identité ' +
@@ -51,10 +63,7 @@ module.exports = {
     ],
     routes: [
     ],
-    migrations: [
-      'migrations/072_jwt_revocation.sql',
-      'migrations/084_jwt_revocation.sql',
-    ],
+    migrations: [],
     boutique: [
       // Backfill gouvernance globale : header @komerce-arch domain=auth confirmé
       // dans docs/BOUTIQUE_360.json pour les 3 fichiers.
@@ -110,8 +119,8 @@ module.exports = {
       { fn: 'requireAuth / requireVerifiedIdentity / softAuth', file: 'middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js' },
     ],
     consumes: [
-      'notification',
-      'operations',
+      'notifications',
+      'platform-ops',
       'orders',
     ],
   },
@@ -122,6 +131,7 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'toute route mutante passe par un middleware d\'auth declare — jamais d\'acces direct sans garde',
+    'un auth-token révoqué est refusé avant toute logique métier ; la vérité de révocation est portée par auth-identity',
   ],
 
 };

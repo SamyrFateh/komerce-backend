@@ -78,7 +78,7 @@
         "since": "2025-08",
         "service": "Fournir les gardes transverses d'authentification et de vérification d'identité (middlewares JWT/session/rôles) consommées par toutes les autres features.",
         "businessKind": "technical-transversal",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -142,7 +142,7 @@
         "since": "2025-11",
         "service": "Classer et declarer un colis douanierement ; la declaration est le pivot, jamais une optimisation.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -190,7 +190,7 @@
         "since": "2025-09",
         "service": "Calculer le prix, le cout et la marge d'un produit ou d'une commande selon une strategie tarifaire versionnee.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -238,7 +238,7 @@
         "since": "2026-01",
         "service": "Réceptionner, affecter et dispatcher les articles au hub.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -254,7 +254,7 @@
         "since": "2025-08",
         "service": "Faire transiter un colis du scan initial au retrait final, avec tracking client et transporteur.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -318,7 +318,7 @@
         "since": "2025-09",
         "service": "Encaisser un paiement (carte, PayPal, especes au retrait) et confirmer son etat de facon idempotente.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -382,7 +382,7 @@
         "since": "2025-11",
         "service": "Rembourser un client (wallet, cash, panier partage) de facon tracable et sans double remboursement.",
         "businessKind": "business-transversal",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -414,7 +414,7 @@
         "since": "2026-07",
         "service": "Identifier, qualifier et arbitrer des opportunités fournisseur ou produit (scan pricing, décision garder/watchlist/rejeter) avant leur entrée dans le catalogue.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -708,20 +708,6 @@
       },
       {
         "feature": "auth",
-        "category": "migrations",
-        "declared": "migrations/072_jwt_revocation.sql",
-        "resolvedPath": "migrations/072_jwt_revocation.sql",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "auth",
-        "category": "migrations",
-        "declared": "migrations/084_jwt_revocation.sql",
-        "resolvedPath": "migrations/084_jwt_revocation.sql",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "auth",
         "category": "tests",
         "declared": "tests/unit/auth-guest.test.js",
         "resolvedPath": "tests/unit/auth-guest.test.js",
@@ -838,6 +824,20 @@
         "declared": "utils/name-normalize.js",
         "resolvedPath": "utils/name-normalize.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "migrations",
+        "declared": "migrations/072_jwt_revocation.sql",
+        "resolvedPath": "migrations/072_jwt_revocation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "migrations",
+        "declared": "migrations/084_jwt_revocation.sql",
+        "resolvedPath": "migrations/084_jwt_revocation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "auth-identity",
@@ -7520,6 +7520,13 @@
       {
         "feature": "platform-ops",
         "category": "services",
+        "declared": "services/ports/catalog-sellable-unit-port.js",
+        "resolvedPath": "services/ports/catalog-sellable-unit-port.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "services",
         "declared": "services/simulator/cleanup.js",
         "resolvedPath": "services/simulator/cleanup.js",
         "status": "resolved-in-technical-graph"
@@ -7620,6 +7627,27 @@
         "category": "boutique",
         "declared": "js/b-scroll-owner.js",
         "resolvedPath": "public/boutique/js/b-scroll-owner.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "boutique",
+        "declared": "js/ports/cart-intent-port.js",
+        "resolvedPath": "public/boutique/js/ports/cart-intent-port.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "boutique",
+        "declared": "js/ports/catalog-presentation-port.js",
+        "resolvedPath": "public/boutique/js/ports/catalog-presentation-port.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "boutique",
+        "declared": "js/ports/shared-list-projection-port.js",
+        "resolvedPath": "public/boutique/js/ports/shared-list-projection-port.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -12960,15 +12988,15 @@
     "consumesFeature": [
       {
         "from": "auth",
-        "to": "notification",
-        "raw": "notification",
-        "resolved": false
+        "to": "notifications",
+        "raw": "notifications",
+        "resolved": true
       },
       {
         "from": "auth",
-        "to": "operations",
-        "raw": "operations",
-        "resolved": false
+        "to": "platform-ops",
+        "raw": "platform-ops",
+        "resolved": true
       },
       {
         "from": "auth",
@@ -13040,6 +13068,12 @@
         "from": "catalog",
         "to": "auth",
         "raw": "auth",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
+        "to": "auth-identity",
+        "raw": "auth-identity",
         "resolved": true
       },
       {
@@ -13237,14 +13271,8 @@
       {
         "from": "incident-management",
         "to": "dashboard",
-        "raw": "dashboard / ops-api legacy (écrit incidents — SQL inline)",
+        "raw": "dashboard",
         "resolved": true
-      },
-      {
-        "from": "incident-management",
-        "to": "ops-api legacy",
-        "raw": "dashboard / ops-api legacy (écrit incidents — SQL inline)",
-        "resolved": false
       },
       {
         "from": "infrastructure",
@@ -13290,15 +13318,15 @@
       },
       {
         "from": "infrastructure",
-        "to": "notification",
-        "raw": "notification — bootstrap/api-routes.js monte les routes notification",
-        "resolved": false
+        "to": "notifications",
+        "raw": "notifications",
+        "resolved": true
       },
       {
         "from": "infrastructure",
-        "to": "operations",
-        "raw": "operations — bootstrap/api-routes.js monte les routes operations",
-        "resolved": false
+        "to": "platform-ops",
+        "raw": "platform-ops",
+        "resolved": true
       },
       {
         "from": "infrastructure",
@@ -13308,9 +13336,9 @@
       },
       {
         "from": "infrastructure",
-        "to": "payment",
-        "raw": "payment — bootstrap/api-routes.js monte les routes payment",
-        "resolved": false
+        "to": "payments",
+        "raw": "payments",
+        "resolved": true
       },
       {
         "from": "infrastructure",
@@ -13452,9 +13480,27 @@
       },
       {
         "from": "notifications",
-        "to": "toutes les features emettrices",
-        "raw": "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement",
-        "resolved": false
+        "to": "orders",
+        "raw": "orders",
+        "resolved": true
+      },
+      {
+        "from": "notifications",
+        "to": "payments",
+        "raw": "payments",
+        "resolved": true
+      },
+      {
+        "from": "notifications",
+        "to": "shared-cart",
+        "raw": "shared-cart",
+        "resolved": true
+      },
+      {
+        "from": "notifications",
+        "to": "refunds",
+        "raw": "refunds",
+        "resolved": true
       },
       {
         "from": "orders",
@@ -13536,21 +13582,9 @@
       },
       {
         "from": "orders",
-        "to": "notification",
-        "raw": "notification",
-        "resolved": false
-      },
-      {
-        "from": "orders",
         "to": "notifications",
         "raw": "notifications (projection idempotente du retrait disponible)",
         "resolved": true
-      },
-      {
-        "from": "orders",
-        "to": "payment",
-        "raw": "payment",
-        "resolved": false
       },
       {
         "from": "orders",
@@ -13649,6 +13683,24 @@
         "resolved": true
       },
       {
+        "from": "platform-ops",
+        "to": "auth-identity",
+        "raw": "auth-identity",
+        "resolved": true
+      },
+      {
+        "from": "platform-ops",
+        "to": "catalog",
+        "raw": "catalog",
+        "resolved": true
+      },
+      {
+        "from": "platform-ops",
+        "to": "purchasing",
+        "raw": "purchasing",
+        "resolved": true
+      },
+      {
         "from": "purchasing",
         "to": "orders",
         "raw": "orders (lecture : order_items, orders — le besoin d'achat naît d'une commande client)",
@@ -13662,9 +13714,9 @@
       },
       {
         "from": "purchasing",
-        "to": "notification",
-        "raw": "notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)",
-        "resolved": false
+        "to": "notifications",
+        "raw": "notifications (notification fournisseur WhatsApp, via services/notification-service.js)",
+        "resolved": true
       },
       {
         "from": "purchasing",
@@ -13722,15 +13774,9 @@
       },
       {
         "from": "shared-cart",
-        "to": "products",
-        "raw": "products (lecture seule)",
-        "resolved": false
-      },
-      {
-        "from": "shared-cart",
-        "to": "notification",
-        "raw": "notification (émission uniquement — WhatsApp création de liste)",
-        "resolved": false
+        "to": "notifications",
+        "raw": "notifications (émission uniquement — WhatsApp création de liste)",
+        "resolved": true
       },
       {
         "from": "shared-cart",
@@ -13742,6 +13788,12 @@
         "from": "shared-cart",
         "to": "auth-identity",
         "raw": "auth-identity (projection boutique : b-share-cart.js consomme identité et téléphone)",
+        "resolved": true
+      },
+      {
+        "from": "shared-cart",
+        "to": "recommendations",
+        "raw": "recommendations",
         "resolved": true
       },
       {
@@ -15958,7 +16010,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth-identity",
@@ -16249,7 +16301,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "catalog",
@@ -16523,47 +16575,11 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "public/boutique/js/b-catalog.js",
-                "targetFile": "public/boutique/js/b-cart-core.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-catalog.js",
-                "targetFile": "public/boutique/js/b-cart.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/render/render-product-card.js",
-                "targetFile": "public/boutique/js/b-cart-core.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/render/render-product-card.js",
-                "targetFile": "public/boutique/js/cart-product-summary.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-modal-desktop-product.js",
-                "targetFile": "public/boutique/js/b-cart-core.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-subcat.js",
-                "targetFile": "public/boutique/js/b-cart-core.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-subcat.js",
-                "targetFile": "public/boutique/js/b-cart.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-favs.js",
-                "targetFile": "public/boutique/js/b-cart-core.js"
-              },
-              {
                 "sourceFileId": "public/boutique/tests/unit/b-favs.test.js",
                 "targetFile": "public/boutique/js/b-cart-core.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-favs.test.js",
-                "targetFile": "public/boutique/js/b-cart.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-modal-buybox-shared.js",
                 "targetFile": "public/boutique/js/b-cart.js"
               },
               {
@@ -18555,7 +18571,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "infrastructure",
@@ -18615,7 +18631,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "infrastructure",
@@ -18647,7 +18663,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "infrastructure",
@@ -20617,22 +20633,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "public/boutique/js/b-tracking.js",
-                "targetFile": "public/boutique/js/group/group-side-cart.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-tracking.js",
-                "targetFile": "public/boutique/js/group/group-api.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-tracking.js",
-                "targetFile": "public/boutique/js/group/group-list-labels.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-cart.js",
-                "targetFile": "public/boutique/js/group/group-side-cart.js"
-              },
-              {
                 "sourceFileId": "public/boutique/tests/unit/b-tracking.test.js",
                 "targetFile": "public/boutique/js/group/group-api.js"
               },
@@ -21340,7 +21340,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "platform-ops",
@@ -21422,6 +21422,10 @@
                 "targetFile": "public/boutique/js/b-pager.js"
               },
               {
+                "sourceFileId": "services/ports/catalog-sellable-unit-port.js",
+                "targetFile": "services/product-admin-service.js"
+              },
+              {
                 "sourceFileId": "tests/integration/isweep-services.test.js",
                 "targetFile": "services/product-publication-guard.js"
               },
@@ -21454,7 +21458,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "platform-ops",
@@ -21814,7 +21818,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "platform-ops",
@@ -22014,7 +22018,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "purchasing",
@@ -22070,26 +22074,6 @@
               {
                 "sourceFileId": "services/boutique-ranking-engine.js",
                 "targetFile": "db.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
-      },
-      {
-        "from": "recommendations",
-        "to": "orders",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "public/boutique/js/b-modal-suggestions.js",
-                "targetFile": "public/boutique/js/b-cart.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-modal-suggestions.js",
-                "targetFile": "public/boutique/js/cart-product-summary.js"
               }
             ]
           }
@@ -22290,34 +22274,6 @@
       },
       {
         "from": "shared-cart",
-        "to": "catalog",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "public/boutique/js/b-modal-core.js",
-                "targetFile": "public/boutique/js/shop-schema.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-modal-core.js",
-                "targetFile": "public/boutique/js/b-modal-product-fields.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-modal-cart.js",
-                "targetFile": "public/boutique/js/view-models/modal-cart-product-model.js"
-              },
-              {
-                "sourceFileId": "services/shared-cart-creation.js",
-                "targetFile": "services/product-admin-service.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
-      },
-      {
-        "from": "shared-cart",
         "to": "infrastructure",
         "channels": [
           {
@@ -22406,7 +22362,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "shared-cart",
@@ -22522,6 +22478,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-modal-cart.js",
                 "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "services/shared-cart-creation.js",
+                "targetFile": "services/ports/catalog-sellable-unit-port.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-share-cart.js",
@@ -22708,7 +22668,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "sourcing",
@@ -23114,10 +23074,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 773
+        "filesObserved": 774
       },
       "boutique": {
-        "filesObserved": 142,
+        "filesObserved": 145,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -23149,12 +23109,12 @@
     ],
     "familySummary": {
       "PROJECTION": 10,
-      "COMPOSITION_ROOT_WIRING": 14,
-      "NON_RUNTIME_TEST": 8,
+      "COMPOSITION_ROOT_WIRING": 11,
+      "NON_RUNTIME_TEST": 9,
       "TECHNICAL_PRIMITIVE": 31,
-      "BUSINESS_TRANSVERSAL_SERVICE": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT": 4,
-      "BUSINESS_FEATURE_INTERFACE": 5,
+      "BUSINESS_TRANSVERSAL_SERVICE": 0,
+      "CROSS_FEATURE_DIRECT_IMPORT": 0,
+      "BUSINESS_FEATURE_INTERFACE": 0,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
     },
@@ -23340,21 +23300,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "auth",
-        "to": "notifications",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
-        "consumerKind": "technical-transversal",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "auth-identity",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
@@ -23396,23 +23341,6 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
-      },
-      {
-        "from": "catalog",
-        "to": "auth-identity",
-        "family": "BUSINESS_FEATURE_INTERFACE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -23434,19 +23362,17 @@
       {
         "from": "catalog",
         "to": "orders",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_AND_TEST",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
         "consumerKind": "business-feature",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
         ],
         "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "catalog",
@@ -23460,10 +23386,8 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "customs",
@@ -23637,51 +23561,6 @@
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "technical-foundation",
         "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "application-wiring-not-consumption",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "infrastructure",
-        "to": "notifications",
-        "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-foundation",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "application-wiring-not-consumption",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "infrastructure",
-        "to": "payments",
-        "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-foundation",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "application-wiring-not-consumption",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "infrastructure",
-        "to": "platform-ops",
-        "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-foundation",
-        "providerKind": "technical-transversal",
         "channels": [
           "static-code"
         ],
@@ -23889,19 +23768,17 @@
       {
         "from": "orders",
         "to": "shared-cart",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_AND_TEST",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
         "consumerKind": "business-feature",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
         ],
         "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "payments",
@@ -23918,42 +23795,6 @@
         "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
-      },
-      {
-        "from": "platform-ops",
-        "to": "auth-identity",
-        "family": "BUSINESS_FEATURE_INTERFACE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "technical-transversal",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface",
-          "static-code"
-        ],
-        "couplingObserved": "interface",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
-      },
-      {
-        "from": "platform-ops",
-        "to": "catalog",
-        "family": "BUSINESS_FEATURE_INTERFACE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "technical-transversal",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface",
-          "static-code"
-        ],
-        "couplingObserved": "interface",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
       },
       {
         "from": "platform-ops",
@@ -23998,22 +23839,6 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "non-runtime-evidence",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "platform-ops",
-        "to": "purchasing",
-        "family": "BUSINESS_FEATURE_INTERFACE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "technical-transversal",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface",
-          "static-code"
-        ],
-        "couplingObserved": "interface",
-        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -24063,21 +23888,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "purchasing",
-        "to": "notifications",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "recommendations",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
@@ -24091,23 +23901,6 @@
         "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
-      },
-      {
-        "from": "recommendations",
-        "to": "orders",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
       },
       {
         "from": "recommendations",
@@ -24156,23 +23949,6 @@
       },
       {
         "from": "shared-cart",
-        "to": "catalog",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
-      },
-      {
-        "from": "shared-cart",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
@@ -24188,21 +23964,6 @@
       },
       {
         "from": "shared-cart",
-        "to": "notifications",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "shared-cart",
         "to": "platform-ops",
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
@@ -24213,22 +23974,6 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "shared-cart",
-        "to": "recommendations",
-        "family": "BUSINESS_FEATURE_INTERFACE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface",
-          "static-code"
-        ],
-        "couplingObserved": "mixed",
-        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -24300,124 +24045,28 @@
       "PROJECTION|RUNTIME_ONLY|projection|piloting-capability|interface": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|technical-primitive": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 6,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-foundation|technical-primitive": 5,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-foundation|technical-primitive": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 5,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|technical-transversal|business-file-import": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|mixed": 2,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
-      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1
+      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1
     },
-    "runtimeCycles": [
-      {
-        "nodes": [
-          "auth-identity",
-          "platform-ops"
-        ],
-        "key": "auth-identity<->platform-ops",
-        "directions": [
-          {
-            "from": "auth-identity",
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "from": "platform-ops",
-            "to": "auth-identity",
-            "family": "BUSINESS_FEATURE_INTERFACE"
-          }
-        ]
-      },
-      {
-        "nodes": [
-          "catalog",
-          "platform-ops"
-        ],
-        "key": "catalog<->platform-ops",
-        "directions": [
-          {
-            "from": "catalog",
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "from": "platform-ops",
-            "to": "catalog",
-            "family": "BUSINESS_FEATURE_INTERFACE"
-          }
-        ]
-      }
-    ],
-    "exceptions": [
-      {
-        "from": "shared-cart",
-        "to": "catalog",
-        "decision": "accepted-dependency",
-        "rationale": "Le modal panier partagé consomme en lecture seule les données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié."
-      },
-      {
-        "from": "catalog",
-        "to": "orders",
-        "decision": "accepted-dependency",
-        "rationale": "Les surfaces catalogue déclenchent les opérations du panier personnel — ajout, quantité et résumé de ligne — à partir d'un produit sélectionné. La dépendance va du canal de découverte vers l'intention d'achat ; le panier ne modifie aucun état du catalogue."
-      },
-      {
-        "from": "recommendations",
-        "to": "orders",
-        "decision": "accepted-dependency",
-        "rationale": "Une recommandation permet explicitement d'ajouter le produit suggéré au panier personnel et de construire son résumé de ligne. La recommandation ne possède ni le panier ni son cycle de persistance."
-      },
-      {
-        "from": "auth-identity",
-        "to": "platform-ops",
-        "decision": "accepted-dependency",
-        "rationale": "La surface d'identité consomme les primitives techniques du shell — bus, store et utilitaires UI. Cette direction ne transfère aucune autorité métier à platform-ops et ne constitue pas un cycle de modules."
-      },
-      {
-        "from": "platform-ops",
-        "to": "auth-identity",
-        "decision": "accepted-dependency",
-        "rationale": "Le client API transversal expose des appels vers les endpoints d'authentification et le shell monte la surface identité. Il s'agit d'un adaptateur technique et de composition, sans ownership de la logique d'identité."
-      },
-      {
-        "from": "catalog",
-        "to": "platform-ops",
-        "decision": "accepted-dependency",
-        "rationale": "Le catalogue consomme le bus, le store, les utilitaires et l'ownership de scroll fournis par le socle. Ces primitives restent techniques et ne possèdent aucune règle catalogue."
-      },
-      {
-        "from": "platform-ops",
-        "to": "catalog",
-        "decision": "accepted-dependency",
-        "rationale": "Le shell monte les modules de découverte produit et le client API transversal appelle les endpoints catalogue. La couture est un wiring et un adaptateur d'interface ; platform-ops ne possède ni produit, ni prix, ni stock."
-      },
-      {
-        "from": "orders",
-        "to": "shared-cart",
-        "decision": "accepted-dependency",
-        "rationale": "Dépendance frontend résiduelle hors checkout : le slice orders-client possède le renderer canonique du panier (b-cart.js) et le shell de suivi / Mon Komerce (b-tracking.js). b-cart compose encore la surface de liste active via group-side-cart ; b-tracking compose encore l'onglet Mes listes via group-api, group-list-labels et l'activation de group-side-cart. Le checkout canonique est désormais découplé de shared-cart et n'est explicitement pas couvert par cette exception. La couture UI restante sera inversée ou extraite dans le lot de dette frontend dédié."
-      }
-    ],
+    "runtimeCycles": [],
+    "exceptions": [],
     "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
@@ -24446,8 +24095,8 @@
       "readers": [
         "auth"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "auth-identity",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "users": {
       "writers": [
@@ -24480,8 +24129,8 @@
         "shared-cart",
         "wallet"
       ],
-      "lifecycleOwner": "loyalty",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": "auth-identity",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "invoices": {
       "writers": [
@@ -24500,7 +24149,7 @@
         "platform-ops"
       ],
       "lifecycleOwner": "documents",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "loyalty_tiers": {
       "writers": [
@@ -24544,7 +24193,7 @@
         "shared-cart"
       ],
       "lifecycleOwner": "orders",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "orders": {
       "writers": [
@@ -24598,8 +24247,8 @@
         "shared-cart",
         "unsold-resolution"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "orders",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "otp_codes": {
       "writers": [
@@ -24645,8 +24294,8 @@
         "orders",
         "recommendations"
       ],
-      "lifecycleOwner": "platform-ops",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": "logistics",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "products": {
       "writers": [
@@ -24680,8 +24329,8 @@
         "shared-cart",
         "unsold-resolution"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "catalog",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "relais": {
       "writers": [
@@ -24703,8 +24352,8 @@
         "platform-ops",
         "purchasing"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "logistics",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "user_pickup_authorizations": {
       "writers": [
@@ -24773,8 +24422,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "notifications",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "boutique_categories": {
       "writers": [
@@ -24848,8 +24497,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "catalog",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "price_history": {
       "writers": [
@@ -24863,8 +24512,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "economic-engine",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "product_skus": {
       "writers": [
@@ -24878,8 +24527,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "catalog",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "product_sku_media": {
       "writers": [
@@ -24893,8 +24542,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "catalog",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "product_variants": {
       "writers": [
@@ -24915,8 +24564,8 @@
         "logistics",
         "orders"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "catalog",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "product_content_profile": {
       "writers": [
@@ -24963,8 +24612,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "sourcing",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "sourcing_candidates": {
       "writers": [
@@ -24978,8 +24627,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "sourcing",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "supplier_catalog_imports": {
       "writers": [
@@ -25059,8 +24708,8 @@
       "readers": [
         "dashboard"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "economic-engine",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "parcel_items": {
       "writers": [
@@ -25088,8 +24737,8 @@
         "orders",
         "payments"
       ],
-      "lifecycleOwner": "platform-ops",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": "logistics",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "basket_items": {
       "writers": [
@@ -25104,7 +24753,7 @@
       ],
       "readers": [],
       "lifecycleOwner": "shared-cart",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "baskets": {
       "writers": [
@@ -25119,7 +24768,7 @@
       ],
       "readers": [],
       "lifecycleOwner": "shared-cart",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "exchange_rates": {
       "writers": [
@@ -25160,8 +24809,8 @@
       "readers": [
         "platform-ops"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "incident-management",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "loyalty_rewards": {
       "writers": [
@@ -25176,7 +24825,7 @@
       ],
       "readers": [],
       "lifecycleOwner": "loyalty",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "order_comments": {
       "writers": [
@@ -25191,7 +24840,7 @@
       ],
       "readers": [],
       "lifecycleOwner": "orders",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "order_incidents": {
       "writers": [
@@ -25231,7 +24880,7 @@
       ],
       "readers": [],
       "lifecycleOwner": "orders",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "partners": {
       "writers": [
@@ -25262,7 +24911,7 @@
         "notifications"
       ],
       "lifecycleOwner": "orders",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "scan_events": {
       "writers": [
@@ -25281,8 +24930,8 @@
         "payments",
         "platform-ops"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "logistics",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "scans": {
       "writers": [
@@ -25304,8 +24953,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "logistics",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "signals": {
       "writers": [
@@ -25333,7 +24982,7 @@
       ],
       "readers": [],
       "lifecycleOwner": "orders",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "suppliers_stats": {
       "writers": [],
@@ -25358,7 +25007,7 @@
         "documents"
       ],
       "lifecycleOwner": "wallet",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "wallets": {
       "writers": [
@@ -25376,7 +25025,7 @@
         "refunds"
       ],
       "lifecycleOwner": "wallet",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "refunds": {
       "writers": [
@@ -25471,8 +25120,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "economic-engine",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "economic_variables": {
       "writers": [
@@ -25634,8 +25283,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "logistics",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "pickup_reveal_codes": {
       "writers": [
@@ -25649,8 +25298,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "logistics",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "schema_migrations": {
       "writers": [
@@ -25734,8 +25383,8 @@
       "readers": [
         "logistics"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "purchasing",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "shipments": {
       "writers": [
@@ -25779,8 +25428,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "notifications",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "cart_shares": {
       "writers": [
@@ -25794,8 +25443,8 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "shared-cart",
+      "resolution": "multi-writer-resolved-by-explicit-lifecycle-owner"
     },
     "customs_history": {
       "writers": [
@@ -25966,8 +25615,8 @@
       "backend": {
         "manifestsDiscovered": 25,
         "manifestsConnected": 25,
-        "technicalNodesTotal": 289,
-        "technicalNodesOwned": 289,
+        "technicalNodesTotal": 290,
+        "technicalNodesOwned": 290,
         "technicalOrphans": 0
       },
       "dash": {
@@ -25981,8 +25630,8 @@
       "boutique": {
         "manifestsDiscovered": 14,
         "manifestsConnected": 14,
-        "technicalNodesTotal": 80,
-        "technicalNodesOwned": 80,
+        "technicalNodesTotal": 83,
+        "technicalNodesOwned": 83,
         "technicalOrphans": 0
       }
     },
@@ -26056,66 +25705,6 @@
   "drifts": {
     "error": [],
     "warn": [
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "auth -> \"notification\" (entrée: \"notification\")",
-        "msg": "contract.consumes de auth référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "auth -> \"operations\" (entrée: \"operations\")",
-        "msg": "contract.consumes de auth référence \"operations\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "incident-management -> \"ops-api legacy\" (entrée: \"dashboard / ops-api legacy (écrit incidents — SQL inline)\")",
-        "msg": "contract.consumes de incident-management référence \"ops-api legacy\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "infrastructure -> \"notification\" (entrée: \"notification — bootstrap/api-routes.js monte les routes notification\")",
-        "msg": "contract.consumes de infrastructure référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "infrastructure -> \"operations\" (entrée: \"operations — bootstrap/api-routes.js monte les routes operations\")",
-        "msg": "contract.consumes de infrastructure référence \"operations\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "infrastructure -> \"payment\" (entrée: \"payment — bootstrap/api-routes.js monte les routes payment\")",
-        "msg": "contract.consumes de infrastructure référence \"payment\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "notifications -> \"toutes les features emettrices\" (entrée: \"toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement\")",
-        "msg": "contract.consumes de notifications référence \"toutes les features emettrices\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "orders -> \"notification\" (entrée: \"notification\")",
-        "msg": "contract.consumes de orders référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "orders -> \"payment\" (entrée: \"payment\")",
-        "msg": "contract.consumes de orders référence \"payment\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "purchasing -> \"notification\" (entrée: \"notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)\")",
-        "msg": "contract.consumes de purchasing référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "shared-cart -> \"notification\" (entrée: \"notification (émission uniquement — WhatsApp création de liste)\")",
-        "msg": "contract.consumes de shared-cart référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "shared-cart -> \"products\" (entrée: \"products (lecture seule)\")",
-        "msg": "contract.consumes de shared-cart référence \"products\", ne correspond à aucun nom de feature connu"
-      },
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
         "ref": "admin-dashboard",
@@ -26218,11 +25807,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
       },
@@ -26238,18 +25822,13 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "catalog -> auth-identity",
-        "msg": "dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"auth-identity\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26315,21 +25894,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> loyalty",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"loyalty\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"payments\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26399,22 +25963,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> shared-cart",
-        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "payments -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: interface+static-code, 45 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> auth-identity",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-identity\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> catalog",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 20 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"catalog\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26433,11 +25987,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> purchasing",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"purchasing\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> recommendations",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"recommendations\""
       },
@@ -26453,18 +26002,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "purchasing -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "recommendations -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "recommendations -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"orders\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26483,28 +26022,13 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> catalog",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"catalog\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 52 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> recommendations",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"recommendations\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 53 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26529,182 +26053,182 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "alerts",
-        "msg": "table \"alerts\" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"alerts\" : lifecycle owner = notifications (db.lifecycleOwnerOf), mais aussi écrite par catalog, logistics, orders, payments, purchasing"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "basket_items",
-        "msg": "table \"basket_items\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard"
+        "msg": "table \"basket_items\" : lifecycle owner = shared-cart (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "baskets",
-        "msg": "table \"baskets\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard"
+        "msg": "table \"baskets\" : lifecycle owner = shared-cart (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "cart_shares",
-        "msg": "table \"cart_shares\" a 2 écrivain(s) déclaré(s) (orders, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"cart_shares\" : lifecycle owner = shared-cart (db.lifecycleOwnerOf), mais aussi écrite par orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "catalog_media",
-        "msg": "table \"catalog_media\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"catalog_media\" : lifecycle owner = catalog (db.lifecycleOwnerOf), mais aussi écrite par sourcing"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "economic_snapshots",
-        "msg": "table \"economic_snapshots\" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"economic_snapshots\" : lifecycle owner = economic-engine (db.lifecycleOwnerOf), mais aussi écrite par infrastructure"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "incidents",
-        "msg": "table \"incidents\" a 5 écrivain(s) déclaré(s) (dashboard, incident-management, logistics, notifications, payments) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"incidents\" : lifecycle owner = incident-management (db.lifecycleOwnerOf), mais aussi écrite par dashboard, logistics, notifications, payments"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "invoices",
-        "msg": "table \"invoices\" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi écrite par dashboard"
+        "msg": "table \"invoices\" : lifecycle owner = documents (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "loyalty_rewards",
-        "msg": "table \"loyalty_rewards\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par dashboard"
+        "msg": "table \"loyalty_rewards\" : lifecycle owner = loyalty (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "notification_log",
-        "msg": "table \"notification_log\" a 2 écrivain(s) déclaré(s) (notifications, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"notification_log\" : lifecycle owner = notifications (db.lifecycleOwnerOf), mais aussi écrite par platform-ops"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_comments",
-        "msg": "table \"order_comments\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
+        "msg": "table \"order_comments\" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_item_real_cost_allocations",
-        "msg": "table \"order_item_real_cost_allocations\" a 2 écrivain(s) déclaré(s) (customs, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"order_item_real_cost_allocations\" : lifecycle owner = economic-engine (db.lifecycleOwnerOf), mais aussi écrite par customs"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_items",
-        "msg": "table \"order_items\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics"
+        "msg": "table \"order_items\" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par dashboard, logistics"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_status_history",
-        "msg": "table \"order_status_history\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
+        "msg": "table \"order_status_history\" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "orders",
-        "msg": "table \"orders\" a 9 écrivain(s) déclaré(s) (customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, wallet) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"orders\" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par customs, dashboard, inventory, logistics, payments, platform-ops, purchasing, wallet"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "parcel_items",
-        "msg": "table \"parcel_items\" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, inventory, logistics"
+        "msg": "table \"parcel_items\" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par dashboard, inventory, platform-ops"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "parcels",
-        "msg": "table \"parcels\" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par customs, dashboard, logistics, payments"
+        "msg": "table \"parcels\" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par customs, dashboard, payments, platform-ops"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "pickup_print_tokens",
-        "msg": "table \"pickup_print_tokens\" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"pickup_print_tokens\" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par infrastructure"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "pickup_reveal_codes",
-        "msg": "table \"pickup_reveal_codes\" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"pickup_reveal_codes\" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par infrastructure"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "price_history",
-        "msg": "table \"price_history\" a 2 écrivain(s) déclaré(s) (catalog, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"price_history\" : lifecycle owner = economic-engine (db.lifecycleOwnerOf), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "product_sku_media",
-        "msg": "table \"product_sku_media\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"product_sku_media\" : lifecycle owner = catalog (db.lifecycleOwnerOf), mais aussi écrite par sourcing"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "product_skus",
-        "msg": "table \"product_skus\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"product_skus\" : lifecycle owner = catalog (db.lifecycleOwnerOf), mais aussi écrite par sourcing"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "product_variants",
-        "msg": "table \"product_variants\" a 3 écrivain(s) déclaré(s) (catalog, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"product_variants\" : lifecycle owner = catalog (db.lifecycleOwnerOf), mais aussi écrite par economic-engine, sourcing"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "products",
-        "msg": "table \"products\" a 4 écrivain(s) déclaré(s) (catalog, dashboard, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"products\" : lifecycle owner = catalog (db.lifecycleOwnerOf), mais aussi écrite par dashboard, economic-engine, sourcing"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "purchase_orders",
-        "msg": "table \"purchase_orders\" a 2 écrivain(s) déclaré(s) (orders, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"purchase_orders\" : lifecycle owner = purchasing (db.lifecycleOwnerOf), mais aussi écrite par orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "recipients",
-        "msg": "table \"recipients\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
+        "msg": "table \"recipients\" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "relais",
-        "msg": "table \"relais\" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"relais\" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "revoked_tokens",
-        "msg": "table \"revoked_tokens\" a 2 écrivain(s) déclaré(s) (auth-identity, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"revoked_tokens\" : lifecycle owner = auth-identity (db.lifecycleOwnerOf), mais aussi écrite par infrastructure"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "scan_events",
-        "msg": "table \"scan_events\" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"scan_events\" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "scans",
-        "msg": "table \"scans\" a 4 écrivain(s) déclaré(s) (dashboard, logistics, orders, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"scans\" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par dashboard, orders, platform-ops"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "sms_log",
-        "msg": "table \"sms_log\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
+        "msg": "table \"sms_log\" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "sourcing_candidate_events",
-        "msg": "table \"sourcing_candidate_events\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"sourcing_candidate_events\" : lifecycle owner = sourcing (db.lifecycleOwnerOf), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "sourcing_candidates",
-        "msg": "table \"sourcing_candidates\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"sourcing_candidates\" : lifecycle owner = sourcing (db.lifecycleOwnerOf), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "users",
-        "msg": "table \"users\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard"
+        "msg": "table \"users\" : lifecycle owner = auth-identity (db.lifecycleOwnerOf), mais aussi écrite par auth, dashboard, loyalty"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "wallet_transactions",
-        "msg": "table \"wallet_transactions\" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard"
+        "msg": "table \"wallet_transactions\" : lifecycle owner = wallet (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "wallets",
-        "msg": "table \"wallets\" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard"
+        "msg": "table \"wallets\" : lifecycle owner = wallet (db.lifecycleOwnerOf), mais aussi écrite par dashboard"
       }
     ]
   }

@@ -62,7 +62,7 @@ describe('hero desktop panoramique Komerce', () => {
       /html\.k-home-premium-v1 \.k-cats::before\s*\{[^}]*content:\s*none/s
     );
     expect(categories).toMatch(
-      /html\.k-home-premium-v1 \.k-chip\s*\{[^}]*height:\s*88px[^}]*min-height:\s*88px/s
+      /html\.k-home-premium-v1 \.k-chip\s*\{[^}]*height:\s*64px[^}]*min-height:\s*64px/s
     );
   });
 });

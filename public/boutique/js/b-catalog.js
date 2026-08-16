@@ -40,12 +40,9 @@ import {
 }                         from './b-utils.js';
 import {
   showToast, cartQty, updateCartBadge, isFav,
-}                         from './b-cart-core.js';
-import {
-  renderCartBody,
-  toggleFav, quickAdd, quickRemove, markAllCartButtons,
+  renderCartBody, toggleFav, quickAdd, quickRemove, markAllCartButtons,
   pruneObsoleteCart, openCartWithHighlight,
-}                         from './b-cart.js';
+}                         from './ports/cart-intent-port.js';
 import {
   initFlatSubcat, renderSubcatChips,
 }                              from './b-subcat.js';

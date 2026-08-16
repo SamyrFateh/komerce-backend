@@ -21,6 +21,18 @@ module.exports = {
   since:    '2025-08',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: { ownsTables: true, ownsLifecycle: true, activeService: true, externalSideEffect: 'none', surface: 'api+service' },
+    rationale: [
+      "possède le cycle de vie du colis du scan au retrait ainsi que les secrets et preuves opérationnelles de remise",
+      "tracking, relais et transit constituent un domaine métier autonome distinct de la douane, du pricing et de la commande",
+    ],
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Faire transiter un colis du scan initial au retrait final, avec tracking client et transporteur.',
 
@@ -165,6 +177,16 @@ module.exports = {
   // Champ auto-généré : à corriger à la main si une requête dynamique
   // (nom de table construit par variable) a échappé au scan.
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'parcel_items',
+      'parcels',
+      'pickup_print_tokens',
+      'pickup_reveal_codes',
+      'relais',
+      'scan_events',
+      'scans',
+    ],
     tables: [
       'alerts: W',
       'business_rules: R',

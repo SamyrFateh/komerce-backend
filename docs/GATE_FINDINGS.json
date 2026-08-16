@@ -30,8 +30,8 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 0,
-      "warningCount": 0,
-      "coverageCount": 80,
+      "warningCount": 3,
+      "coverageCount": 83,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -45,7 +45,7 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 0,
-      "warningCount": 11,
+      "warningCount": 0,
       "coverageCount": 0,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
@@ -76,7 +76,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 110,
+      "coverageCount": 113,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -90,8 +90,8 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 0,
-      "warningCount": 27,
-      "coverageCount": 80,
+      "warningCount": 28,
+      "coverageCount": 83,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -106,7 +106,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 11,
-      "coverageCount": 111,
+      "coverageCount": 114,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -121,7 +121,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 111,
+      "coverageCount": 114,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -427,7 +427,7 @@
       "type": "TEXT-GATE-DIAGNOSTIC",
       "feature": "orders",
       "file": null,
-      "message": "⚠ js/b-cart.js — 3 export(s) non consommé(s) :",
+      "message": "⚠ js/b-cart.js — 5 export(s) non consommé(s) :",
       "sourceFile": "public/boutique/js/b-cart.js"
     },
     {
@@ -539,6 +539,16 @@
       "file": null,
       "message": "⚠ js/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :",
       "sourceFile": "public/boutique/js/b-modal-product-detail-bootstrap.js"
+    },
+    {
+      "gate": "check:imports",
+      "scope": "boutique",
+      "verdict": "warn",
+      "type": "TEXT-GATE-DIAGNOSTIC",
+      "feature": "catalog",
+      "file": null,
+      "message": "⚠ js/b-modal-product-fields.js — 1 export(s) non consommé(s) :",
+      "sourceFile": "public/boutique/js/b-modal-product-fields.js"
     },
     {
       "gate": "check:imports",
@@ -671,103 +681,34 @@
       "sourceFile": "public/boutique/js/b-wallet.js"
     },
     {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
+      "gate": "gate:feature-registry-check",
+      "scope": "boutique",
+      "type": "ORPHAN",
       "verdict": "warn",
-      "feature": "auth-identity",
+      "feature": "platform-ops",
       "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+      "message": "non déclaré dans aucun manifest feature",
+      "sourceFile": "public/boutique/js/ports/cart-intent-port.js"
     },
     {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
+      "gate": "gate:feature-registry-check",
+      "scope": "boutique",
+      "type": "ORPHAN",
       "verdict": "warn",
-      "feature": "customs",
+      "feature": "platform-ops",
       "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+      "message": "non déclaré dans aucun manifest feature",
+      "sourceFile": "public/boutique/js/ports/catalog-presentation-port.js"
     },
     {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
+      "gate": "gate:feature-registry-check",
+      "scope": "boutique",
+      "type": "ORPHAN",
       "verdict": "warn",
-      "feature": "economic-engine",
+      "feature": "platform-ops",
       "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "inventory",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "logistics",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "payments",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "refunds",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "sourcing",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "SIDEEFFECT-NO-INVARIANT",
-      "verdict": "warn",
-      "feature": "purchasing",
-      "file": null,
-      "message": "externalSideEffect \"outbound-message\" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "RATIONALE-SHORT",
-      "verdict": "warn",
-      "feature": "auth-identity",
-      "file": null,
-      "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "RATIONALE-SHORT",
-      "verdict": "warn",
-      "feature": "catalog",
-      "file": null,
-      "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
+      "message": "non déclaré dans aucun manifest feature",
+      "sourceFile": "public/boutique/js/ports/shared-list-projection-port.js"
     }
   ]
 }

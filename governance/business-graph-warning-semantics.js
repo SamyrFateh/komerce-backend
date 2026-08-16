@@ -91,6 +91,10 @@ function loadKnownFeatureNames(ROOT) {
 // ── Règles par famille ───────────────────────────────────────────────────
 
 function classifyWriterNotOwner(w) {
+  const explicit = w.msg.match(/lifecycle owner = ([a-z0-9-]+) \(db\.lifecycleOwnerOf\), mais aussi écrite par (.+)$/);
+  if (explicit) {
+    return { category: 'EXPECTED_TOPOLOGY', reason: `lifecycle owner explicite par table = ${explicit[1]} ; les écrivains additionnels restent déclarés et toute hausse du nombre de relations fera échouer le ratchet` };
+  }
   // Cas spécifique repéré en Phase E : la table "users" déclare
   // classification.signals.ownsTables -> loyalty, ce qui est structurellement
   // improbable pour la table d'identité centrale (auth-identity gère
@@ -197,6 +201,24 @@ function classifyExposedRouteUnresolved(w) {
   return null;
 }
 
+function classifyObservedUndeclared(w, ctx) {
+  const m = String(w.ref || '').match(/^(.+?) -> (.+)$/);
+  if (!m) return null;
+  let graph = ctx && ctx.graph;
+  if (!graph && ctx && ctx.ROOT) {
+    try { graph = JSON.parse(require('fs').readFileSync(require('path').join(ctx.ROOT, 'docs', 'BUSINESS_FEATURE_GRAPH.json'), 'utf8')); } catch (_) {}
+  }
+  const c = graph && graph.o6 && Array.isArray(graph.o6.pairClassifications)
+    ? graph.o6.pairClassifications.find(x => x.from === m[1] && x.to === m[2])
+    : null;
+  if (!c) return null;
+  const structural = new Set(['PROJECTION', 'COMPOSITION_ROOT_WIRING', 'NON_RUNTIME_TEST', 'TECHNICAL_PRIMITIVE']);
+  if (structural.has(c.family)) {
+    return { category: 'EXPECTED_TOPOLOGY', reason: `disposition O6 = ${c.family} (${c.policy || 'policy'}) : relation observée structurelle, suivie par ratchet mais non qualifiée de dette` };
+  }
+  return { category: 'ACTIONABLE_DRIFT', reason: `disposition O6 = ${c.family} : frontière business à déclarer, accepter explicitement ou remédier` };
+}
+
 // ── Point d'entrée ───────────────────────────────────────────────────────
 
 /**
@@ -209,6 +231,9 @@ function classify(w, ctx) {
   switch (w.type) {
     case 'WRITER-NOT-OWNER':
       result = classifyWriterNotOwner(w);
+      break;
+    case 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY':
+      result = classifyObservedUndeclared(w, ctx);
       break;
     case 'CONSUMES-REFERENCE-UNRESOLVED':
       result = classifyConsumesUnresolved(w, loadKnownFeatureNames((ctx && ctx.ROOT) || process.cwd()));

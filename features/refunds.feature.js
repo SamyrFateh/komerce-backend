@@ -21,6 +21,18 @@ module.exports = {
   since:    '2025-11',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    axis: 'business',
+    kind: 'business-transversal',
+    decision: 'feature-transverse',
+    signals: { ownsTables: true, ownsLifecycle: true, activeService: true, externalSideEffect: 'refund', surface: 'service' },
+    rationale: [
+      'orchestration de remboursement partagée par orders, shared-cart, wallet et documents sans appartenir à un seul de ces domaines',
+      'possède la trace refunds et l’invariant anti-double-application tout en restant un service transverse sans route HTTP propre',
+    ],
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Rembourser un client (wallet, cash, panier partage) de facon tracable et sans double remboursement.',
 

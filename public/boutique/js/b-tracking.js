@@ -38,8 +38,7 @@ import {
   digitsOnly,
   normalizeLocal,
 } from './b-phone.js';
-import { getSharedCartLibrary } from './group/group-api.js';
-import { sharedListDisplayLabel } from './group/group-list-labels.js';
+import { getSharedCartLibrary, sharedListDisplayLabel } from './ports/shared-list-projection-port.js';
 import { requireIdentity, restoreIdentity } from './b-identity.js';
 
 'use strict';
@@ -494,7 +493,7 @@ function wireLibraryItemOpen(el) {
         const { switchView, activateNavTab } = await import('./b-nav.js');
         activateNavTab('shop');
         switchView('shop');
-        const { activateFromParticipantUrl } = await import('./group/group-side-cart.js');
+        const { activateFromParticipantUrl } = await import('./ports/shared-list-projection-port.js');
         await activateFromParticipantUrl(token);
       } finally {
         btn.disabled = false;

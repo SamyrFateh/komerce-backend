@@ -86,7 +86,7 @@ const countByKey = {};   // "TYPE::CATEGORY" -> count
 const typeOf = {};       // "TYPE::CATEGORY" -> TYPE (pour affichage groupé)
 const categoryOf = {};   // "TYPE::CATEGORY" -> CATEGORY
 for (const w of warns) {
-  const { category } = semantics.classify(w, { ROOT });
+  const { category } = semantics.classify(w, { ROOT, graph });
   const key = `${w.type}::${category}`;
   countByKey[key] = (countByKey[key] || 0) + 1;
   typeOf[key] = w.type;

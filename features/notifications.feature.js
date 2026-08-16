@@ -122,6 +122,11 @@ module.exports = {
   // Champ auto-généré : à corriger à la main si une requête dynamique
   // (nom de table construit par variable) a échappé au scan.
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'alerts',
+      'notification_log',
+    ],
     tables: [
       'alerts: W',
       'client_notifications: RW',
@@ -165,7 +170,7 @@ module.exports = {
     consumes: [
       "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)",
 
-      'toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement',
+      'orders', 'payments', 'shared-cart', 'refunds',
     ],
   },
 

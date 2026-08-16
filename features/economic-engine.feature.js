@@ -21,6 +21,18 @@ module.exports = {
   since:    '2025-09',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: { ownsTables: true, ownsLifecycle: true, activeService: true, externalSideEffect: 'none', surface: 'api+service' },
+    rationale: [
+      "possède les stratégies tarifaires versionnées, les calculs de coût/marge et leurs projections économiques persistées",
+      "rend un service de pricing autonome consommé par catalog, orders et les surfaces de pilotage sans appartenir à leur cycle de vie",
+    ],
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Calculer le prix, le cout et la marge d\'un produit ou d\'une commande selon une strategie tarifaire versionnee.',
 
@@ -200,6 +212,12 @@ module.exports = {
   // Champ auto-généré : à corriger à la main si une requête dynamique
   // (nom de table construit par variable) a échappé au scan.
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'economic_snapshots',
+      'order_item_real_cost_allocations',
+      'price_history',
+    ],
     tables: [
       'business_rules: R',
       'charges: RW',

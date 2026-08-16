@@ -21,6 +21,18 @@ module.exports = {
   since:    '2026-07',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: { ownsTables: true, ownsLifecycle: true, activeService: true, externalSideEffect: 'none', surface: 'api+service' },
+    rationale: [
+      "possède le cycle candidat fournisseur raw_imported → normalized → scanned → décision avant entrée catalogue",
+      "la qualification garder/watchlist/rejeter est une décision métier autonome, explicitement séparée de la fiche catalog une fois créée",
+    ],
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Identifier, qualifier et arbitrer des opportunités fournisseur ou produit ' +
            '(scan pricing, décision garder/watchlist/rejeter) avant leur entrée dans le catalogue.',
@@ -98,6 +110,11 @@ module.exports = {
   // ou rejet). Séquence cible : CATALOG importe → SOURCING qualifie → CATALOG
   // publie. Exception documentée, même motif que `refunds` dans FEATURE_DOCTRINE.md.
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'sourcing_candidate_events',
+      'sourcing_candidates',
+    ],
     tables: [
       'sourcing_candidates: RW',        // partagé avec catalog (W à la création, import)
       'sourcing_candidate_events: RW',  // partagé avec catalog (W à la création)

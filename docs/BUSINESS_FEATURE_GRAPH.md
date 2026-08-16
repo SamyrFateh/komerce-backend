@@ -72,9 +72,9 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 25 | 25 | 289 | 289 | 0 |
+| backend | 25 | 25 | 290 | 290 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 14 | 14 | 80 | 80 | 0 |
+| boutique | 14 | 14 | 83 | 83 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -110,13 +110,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Fournir les gardes transverses d'authentification et de vérification d'identité (middlewares JWT/session/rôles) consommées par toutes les autres features.
 
 - middleware: 6
-- migrations: 2
 - tests: 8
 - tables owned (lifecycle): 0
 - tables written: 1
 - interfaces exposed: 0
 - internal APIs: 3
-- dependencies (consumes): 3 — notification, operations, orders
+- dependencies (consumes): 3 — notifications, platform-ops, orders
 - consumers: 21 — auth-identity, business-rules, catalog, customs, dashboard, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, recommendations, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
 
 ### auth-identity _(business-feature)_
@@ -127,14 +126,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 3
 - boutique: 3
 - utils: 1
-- migrations: 1
+- migrations: 3
 - tests: 6
-- tables owned (lifecycle): 2 — `otp_codes`, `user_pickup_authorizations`
+- tables owned (lifecycle): 4 — `revoked_tokens`, `users`, `otp_codes`, `user_pickup_authorizations`
 - tables written: 4
 - interfaces exposed: 23
 - internal APIs: 3
 - dependencies (consumes): 4 — auth, notifications, wallet, documents
-- consumers: 6 — documents, logistics, loyalty, orders, shared-cart, wallet
+- consumers: 8 — catalog, documents, logistics, loyalty, orders, platform-ops, shared-cart, wallet
 
 ### business-rules _(business-transversal)_
 
@@ -165,12 +164,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - boutique: 38
 - dash: 4
 - tests: 38
-- tables owned (lifecycle): 8 — `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `product_content_profile`, `product_content_sections`, `product_attributes`, `supplier_catalog_imports`
+- tables owned (lifecycle): 13 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `catalog_media`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_attributes`, `supplier_catalog_imports`
 - tables written: 17
 - interfaces exposed: 31
 - internal APIs: 1
-- dependencies (consumes): 5 — business-rules, economic-engine, logistics, shared-cart, auth
-- consumers: 8 — economic-engine, infrastructure, inventory, logistics, orders, recommendations, sourcing, unsold-resolution
+- dependencies (consumes): 6 — business-rules, economic-engine, logistics, shared-cart, auth, auth-identity
+- consumers: 9 — economic-engine, infrastructure, inventory, logistics, orders, platform-ops, recommendations, sourcing, unsold-resolution
 
 ### customs _(business-feature)_
 
@@ -244,7 +243,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 18
 - dash: 6
 - tests: 46
-- tables owned (lifecycle): 15 — `exchange_rates`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_components`, `economic_variables`, `finance_config`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
+- tables owned (lifecycle): 18 — `price_history`, `order_item_real_cost_allocations`, `exchange_rates`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_components`, `economic_snapshots`, `economic_variables`, `finance_config`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
 - tables written: 20
 - interfaces exposed: 73
 - internal APIs: 1
@@ -257,11 +256,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 1
 - tests: 1
-- tables owned (lifecycle): 0
+- tables owned (lifecycle): 1 — `incidents`
 - tables written: 1
 - interfaces exposed: 0
 - internal APIs: 5
-- dependencies (consumes): 5 — logistics, payments, notifications, dashboard, ops-api legacy
+- dependencies (consumes): 4 — logistics, payments, notifications, dashboard
 - consumers: 0
 
 ### infrastructure _(technical-foundation)_
@@ -285,7 +284,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 5
 - interfaces exposed: 4
 - internal APIs: 11
-- dependencies (consumes): 14 — auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notification, operations, orders, payment, recommendations, shared-cart, wallet
+- dependencies (consumes): 14 — auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notifications, platform-ops, orders, payments, recommendations, shared-cart, wallet
 - consumers: 1 — business-rules
 
 ### inventory _(business-feature)_
@@ -328,7 +327,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - boutique: 1
 - dash: 2
 - tests: 33
-- tables owned (lifecycle): 4 — `carriers`, `parcel_events`, `pickup_verify_attempts`, `shipments`
+- tables owned (lifecycle): 11 — `parcels`, `relais`, `parcel_items`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `carriers`, `parcel_events`, `pickup_verify_attempts`, `shipments`
 - tables written: 15
 - interfaces exposed: 70
 - internal APIs: 1
@@ -342,7 +341,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 1
 - routes: 1
 - tests: 3
-- tables owned (lifecycle): 3 — `users`, `loyalty_tiers`, `loyalty_rewards`
+- tables owned (lifecycle): 2 — `loyalty_tiers`, `loyalty_rewards`
 - tables written: 3
 - interfaces exposed: 7
 - internal APIs: 0
@@ -358,12 +357,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - utils: 1
 - services: 12
 - routes: 4
-- tables owned (lifecycle): 1 — `client_notifications`
+- tables owned (lifecycle): 3 — `alerts`, `client_notifications`, `notification_log`
 - tables written: 4
 - interfaces exposed: 6
 - internal APIs: 7
-- dependencies (consumes): 2 — auth, toutes les features emettrices
-- consumers: 6 — auth-identity, incident-management, logistics, loyalty, orders, payments
+- dependencies (consumes): 5 — auth, orders, payments, shared-cart, refunds
+- consumers: 10 — auth, auth-identity, incident-management, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart
 
 ### orders _(business-feature)_
 
@@ -374,12 +373,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 12
 - boutique: 3
 - tests: 27
-- tables owned (lifecycle): 8 — `order_items`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `disputes`
+- tables owned (lifecycle): 9 — `order_items`, `orders`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `disputes`
 - tables written: 13
 - interfaces exposed: 27
 - internal APIs: 3
-- dependencies (consumes): 17 — business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notification, notifications, payment, refunds
-- consumers: 12 — auth, dashboard, documents, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, refunds, shared-cart, unsold-resolution
+- dependencies (consumes): 15 — business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds
+- consumers: 13 — auth, dashboard, documents, economic-engine, infrastructure, logistics, notifications, payments, platform-ops, purchasing, refunds, shared-cart, unsold-resolution
 
 ### payments _(business-feature)_
 
@@ -395,7 +394,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 18
 - internal APIs: 2
 - dependencies (consumes): 10 — platform-ops, auth, refunds, documents, notifications, business-rules, orders, logistics, loyalty, purchasing
-- consumers: 5 — dashboard, incident-management, logistics, orders, wallet
+- consumers: 7 — dashboard, incident-management, infrastructure, logistics, notifications, orders, wallet
 
 ### platform _(frontend-transversal)_
 
@@ -414,16 +413,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Exposer la sante applicative, la configuration et les modules actifs — infrastructure d'exploitation, pas de service metier.
 
 - compositionRoots: 3
-- services: 6
+- services: 7
 - routes: 5
-- boutique: 6
+- boutique: 9
 - tests: 19
-- tables owned (lifecycle): 5 — `parcels`, `parcel_items`, `fabrics`, `garment_models`, `store_credits`
+- tables owned (lifecycle): 3 — `fabrics`, `garment_models`, `store_credits`
 - tables written: 8
 - interfaces exposed: 33
 - internal APIs: 0
-- dependencies (consumes): 5 — business-rules, auth, economic-engine, logistics, orders
-- consumers: 1 — payments
+- dependencies (consumes): 8 — business-rules, auth, economic-engine, logistics, orders, auth-identity, catalog, purchasing
+- consumers: 3 — auth, infrastructure, payments
 
 ### purchasing _(business-feature)_
 
@@ -432,12 +431,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 6
 - routes: 1
 - tests: 9
-- tables owned (lifecycle): 2 — `product_suppliers`, `suppliers`
+- tables owned (lifecycle): 3 — `product_suppliers`, `purchase_orders`, `suppliers`
 - tables written: 5
 - interfaces exposed: 10
 - internal APIs: 2
-- dependencies (consumes): 4 — orders, auth, notification, logistics
-- consumers: 4 — dashboard, logistics, orders, payments
+- dependencies (consumes): 4 — orders, auth, notifications, logistics
+- consumers: 5 — dashboard, logistics, orders, payments, platform-ops
 
 ### recommendations _(business-feature)_
 
@@ -451,7 +450,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 1
 - internal APIs: 0
 - dependencies (consumes): 3 — catalog, auth, logistics
-- consumers: 2 — dashboard, infrastructure
+- consumers: 3 — dashboard, infrastructure, shared-cart
 
 ### refunds _(business-transversal)_
 
@@ -465,7 +464,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 1
 - dependencies (consumes): 4 — orders, shared-cart, wallet, documents
-- consumers: 4 — documents, logistics, orders, payments
+- consumers: 5 — documents, logistics, notifications, orders, payments
 
 ### shared-cart _(business-feature)_
 
@@ -477,12 +476,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tests: 11
 - boutique: 11
 - dash: 1
-- tables owned (lifecycle): 6 — `basket_items`, `baskets`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
+- tables owned (lifecycle): 7 — `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
 - tables written: 7
 - interfaces exposed: 16
 - internal APIs: 0
-- dependencies (consumes): 5 — orders, products, notification, auth, auth-identity
-- consumers: 3 — catalog, infrastructure, refunds
+- dependencies (consumes): 5 — orders, notifications, auth, auth-identity, recommendations
+- consumers: 4 — catalog, infrastructure, notifications, refunds
 
 ### sourcing _(business-feature)_
 
@@ -491,7 +490,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 4
 - routes: 1
 - tests: 1
-- tables owned (lifecycle): 0
+- tables owned (lifecycle): 2 — `sourcing_candidate_events`, `sourcing_candidates`
 - tables written: 7
 - interfaces exposed: 11
 - internal APIs: 0
@@ -543,22 +542,22 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 | Table | Lifecycle owner | Résolution | Writers | Readers |
 |---|---|---|---|---|
-| `alerts` | _ambiguë_ | ambiguous-multi-writer | catalog, logistics, notifications, orders, payments, purchasing | — |
-| `basket_items` | `shared-cart` | multi-writer-resolved-by-classification-signal | dashboard, shared-cart | — |
-| `baskets` | `shared-cart` | multi-writer-resolved-by-classification-signal | dashboard, shared-cart | — |
+| `alerts` | `notifications` | multi-writer-resolved-by-explicit-lifecycle-owner | catalog, logistics, notifications, orders, payments, purchasing | — |
+| `basket_items` | `shared-cart` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, shared-cart | — |
+| `baskets` | `shared-cart` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, shared-cart | — |
 | `boutique_categories` | `catalog` | single-writer | catalog | — |
 | `boutique_subcategories` | `catalog` | single-writer | catalog | — |
 | `business_rules` | `business-rules` | single-writer | business-rules | dashboard, economic-engine, logistics |
 | `business_rules_history` | `business-rules` | single-writer | business-rules | dashboard |
 | `carriers` | `logistics` | single-writer | logistics | — |
-| `cart_shares` | _ambiguë_ | ambiguous-multi-writer | orders, shared-cart | — |
+| `cart_shares` | `shared-cart` | multi-writer-resolved-by-explicit-lifecycle-owner | orders, shared-cart | — |
 | `cash_collections` | `payments` | single-writer | payments | — |
 | `cash_deposits` | `payments` | single-writer | payments | — |
 | `catalog_enrichment_runs` | `catalog` | single-writer | catalog | — |
 | `catalog_exclusions` | _ambiguë_ | no-declared-writer | — | catalog |
 | `catalog_field_overrides` | `catalog` | single-writer | catalog | — |
 | `catalog_glossary` | _ambiguë_ | no-declared-writer | — | catalog |
-| `catalog_media` | _ambiguë_ | ambiguous-multi-writer | catalog, sourcing | — |
+| `catalog_media` | `catalog` | multi-writer-resolved-by-explicit-lifecycle-owner | catalog, sourcing | — |
 | `charges` | `economic-engine` | single-writer | economic-engine | — |
 | `client_notifications` | `notifications` | single-writer | notifications | — |
 | `competitor_prices` | `economic-engine` | single-writer | economic-engine | — |
@@ -571,35 +570,35 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `customs_shipment_parcels` | `customs` | single-writer | customs | documents, economic-engine |
 | `customs_shipments` | `customs` | single-writer | customs | dashboard, documents, economic-engine |
 | `disputes` | `orders` | single-writer | orders | — |
-| `economic_snapshots` | _ambiguë_ | ambiguous-multi-writer | economic-engine, infrastructure | — |
+| `economic_snapshots` | `economic-engine` | multi-writer-resolved-by-explicit-lifecycle-owner | economic-engine, infrastructure | — |
 | `economic_variables` | `economic-engine` | single-writer | economic-engine | — |
 | `exchange_rates` | `economic-engine` | single-writer | economic-engine | dashboard |
 | `fabrics` | `platform-ops` | single-writer | platform-ops | economic-engine |
 | `finance_config` | `economic-engine` | single-writer | economic-engine | loyalty |
 | `garment_models` | `platform-ops` | single-writer | platform-ops | economic-engine |
-| `incidents` | _ambiguë_ | ambiguous-multi-writer | dashboard, incident-management, logistics, notifications, payments | platform-ops |
+| `incidents` | `incident-management` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, incident-management, logistics, notifications, payments | platform-ops |
 | `inventory_items` | `inventory` | single-writer | inventory | — |
-| `invoices` | `documents` | multi-writer-resolved-by-classification-signal | dashboard, documents | auth-identity, logistics, platform-ops |
-| `loyalty_rewards` | `loyalty` | multi-writer-resolved-by-classification-signal | dashboard, loyalty | — |
+| `invoices` | `documents` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, documents | auth-identity, logistics, platform-ops |
+| `loyalty_rewards` | `loyalty` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, loyalty | — |
 | `loyalty_tiers` | `loyalty` | single-writer | loyalty | auth-identity |
-| `notification_log` | _ambiguë_ | ambiguous-multi-writer | notifications, platform-ops | — |
-| `order_comments` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
+| `notification_log` | `notifications` | multi-writer-resolved-by-explicit-lifecycle-owner | notifications, platform-ops | — |
+| `order_comments` | `orders` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, orders | — |
 | `order_incidents` | `dashboard` | single-writer | dashboard | — |
 | `order_item_cost_imputations` | `orders` | single-writer | orders | dashboard, economic-engine |
-| `order_item_real_cost_allocations` | _ambiguë_ | ambiguous-multi-writer | customs, economic-engine | dashboard |
-| `order_items` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, logistics, orders | auth-identity, catalog, customs, documents, economic-engine, inventory, payments, platform-ops, purchasing, recommendations, shared-cart |
-| `order_status_history` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
-| `orders` | _ambiguë_ | ambiguous-multi-writer | customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, wallet | auth-identity, catalog, documents, economic-engine, incident-management, loyalty, notifications, recommendations, refunds, shared-cart, unsold-resolution |
+| `order_item_real_cost_allocations` | `economic-engine` | multi-writer-resolved-by-explicit-lifecycle-owner | customs, economic-engine | dashboard |
+| `order_items` | `orders` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, logistics, orders | auth-identity, catalog, customs, documents, economic-engine, inventory, payments, platform-ops, purchasing, recommendations, shared-cart |
+| `order_status_history` | `orders` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, orders | — |
+| `orders` | `orders` | multi-writer-resolved-by-explicit-lifecycle-owner | customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, wallet | auth-identity, catalog, documents, economic-engine, incident-management, loyalty, notifications, recommendations, refunds, shared-cart, unsold-resolution |
 | `otp_codes` | `auth-identity` | single-writer | auth-identity | — |
 | `parcel_events` | `logistics` | single-writer | logistics | — |
-| `parcel_items` | `platform-ops` | multi-writer-resolved-by-classification-signal | dashboard, inventory, logistics, platform-ops | customs, documents, economic-engine, orders, payments |
-| `parcels` | `platform-ops` | multi-writer-resolved-by-classification-signal | customs, dashboard, logistics, payments, platform-ops | auth-identity, documents, economic-engine, incident-management, inventory, notifications, orders, recommendations |
+| `parcel_items` | `logistics` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, inventory, logistics, platform-ops | customs, documents, economic-engine, orders, payments |
+| `parcels` | `logistics` | multi-writer-resolved-by-explicit-lifecycle-owner | customs, dashboard, logistics, payments, platform-ops | auth-identity, documents, economic-engine, incident-management, inventory, notifications, orders, recommendations |
 | `partners` | `dashboard` | single-writer | dashboard | — |
 | `paypal_events_processed` | `payments` | single-writer | payments | — |
-| `pickup_print_tokens` | _ambiguë_ | ambiguous-multi-writer | infrastructure, logistics | — |
-| `pickup_reveal_codes` | _ambiguë_ | ambiguous-multi-writer | infrastructure, logistics | — |
+| `pickup_print_tokens` | `logistics` | multi-writer-resolved-by-explicit-lifecycle-owner | infrastructure, logistics | — |
+| `pickup_reveal_codes` | `logistics` | multi-writer-resolved-by-explicit-lifecycle-owner | infrastructure, logistics | — |
 | `pickup_verify_attempts` | `logistics` | single-writer | logistics | — |
-| `price_history` | _ambiguë_ | ambiguous-multi-writer | catalog, economic-engine | — |
+| `price_history` | `economic-engine` | multi-writer-resolved-by-explicit-lifecycle-owner | catalog, economic-engine | — |
 | `pricing_benchmarks` | _ambiguë_ | no-declared-writer | — | economic-engine |
 | `pricing_category_dims` | `economic-engine` | single-writer | economic-engine | — |
 | `pricing_category_taxes` | `economic-engine` | single-writer | economic-engine | — |
@@ -610,19 +609,19 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `product_attributes` | `catalog` | single-writer | catalog | — |
 | `product_content_profile` | `catalog` | single-writer | catalog | — |
 | `product_content_sections` | `catalog` | single-writer | catalog | — |
-| `product_sku_media` | _ambiguë_ | ambiguous-multi-writer | catalog, sourcing | — |
-| `product_skus` | _ambiguë_ | ambiguous-multi-writer | catalog, sourcing | — |
+| `product_sku_media` | `catalog` | multi-writer-resolved-by-explicit-lifecycle-owner | catalog, sourcing | — |
+| `product_skus` | `catalog` | multi-writer-resolved-by-explicit-lifecycle-owner | catalog, sourcing | — |
 | `product_suppliers` | `purchasing` | single-writer | purchasing | logistics |
-| `product_variants` | _ambiguë_ | ambiguous-multi-writer | catalog, economic-engine, sourcing | logistics, orders |
-| `products` | _ambiguë_ | ambiguous-multi-writer | catalog, dashboard, economic-engine, sourcing | auth-identity, customs, documents, inventory, logistics, orders, platform-ops, purchasing, recommendations, shared-cart, unsold-resolution |
-| `purchase_orders` | _ambiguë_ | ambiguous-multi-writer | orders, purchasing | logistics |
-| `recipients` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | documents, economic-engine, logistics, notifications |
+| `product_variants` | `catalog` | multi-writer-resolved-by-explicit-lifecycle-owner | catalog, economic-engine, sourcing | logistics, orders |
+| `products` | `catalog` | multi-writer-resolved-by-explicit-lifecycle-owner | catalog, dashboard, economic-engine, sourcing | auth-identity, customs, documents, inventory, logistics, orders, platform-ops, purchasing, recommendations, shared-cart, unsold-resolution |
+| `purchase_orders` | `purchasing` | multi-writer-resolved-by-explicit-lifecycle-owner | orders, purchasing | logistics |
+| `recipients` | `orders` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, orders | documents, economic-engine, logistics, notifications |
 | `refunds` | `refunds` | single-writer | refunds | documents, economic-engine, orders |
-| `relais` | _ambiguë_ | ambiguous-multi-writer | dashboard, logistics | auth-identity, documents, economic-engine, notifications, orders, platform-ops, purchasing |
-| `revoked_tokens` | _ambiguë_ | ambiguous-multi-writer | auth-identity, infrastructure | auth |
+| `relais` | `logistics` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, logistics | auth-identity, documents, economic-engine, notifications, orders, platform-ops, purchasing |
+| `revoked_tokens` | `auth-identity` | multi-writer-resolved-by-explicit-lifecycle-owner | auth-identity, infrastructure | auth |
 | `risk_provisions` | `economic-engine` | single-writer | economic-engine | — |
-| `scan_events` | _ambiguë_ | ambiguous-multi-writer | dashboard, logistics | incident-management, notifications, payments, platform-ops |
-| `scans` | _ambiguë_ | ambiguous-multi-writer | dashboard, logistics, orders, platform-ops | — |
+| `scan_events` | `logistics` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, logistics | incident-management, notifications, payments, platform-ops |
+| `scans` | `logistics` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, logistics, orders, platform-ops | — |
 | `schema_migrations` | `infrastructure` | single-writer | infrastructure | — |
 | `shared_cart_events` | `shared-cart` | single-writer | shared-cart | — |
 | `shared_cart_items` | `shared-cart` | single-writer | shared-cart | — |
@@ -630,9 +629,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `shared_carts` | `shared-cart` | single-writer | shared-cart | — |
 | `shipments` | `logistics` | single-writer | logistics | — |
 | `signals` | `decision-signals` | single-writer | decision-signals | dashboard |
-| `sms_log` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
-| `sourcing_candidate_events` | _ambiguë_ | ambiguous-multi-writer | catalog, sourcing | — |
-| `sourcing_candidates` | _ambiguë_ | ambiguous-multi-writer | catalog, sourcing | — |
+| `sms_log` | `orders` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, orders | — |
+| `sourcing_candidate_events` | `sourcing` | multi-writer-resolved-by-explicit-lifecycle-owner | catalog, sourcing | — |
+| `sourcing_candidates` | `sourcing` | multi-writer-resolved-by-explicit-lifecycle-owner | catalog, sourcing | — |
 | `store_credits` | `platform-ops` | single-writer | platform-ops | economic-engine |
 | `stripe_events_processed` | `payments` | single-writer | payments | — |
 | `supplier_catalog_imports` | `catalog` | single-writer | catalog | sourcing |
@@ -641,13 +640,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `transaction_documents` | `documents` | single-writer | documents | — |
 | `unsold_items` | `unsold-resolution` | single-writer | unsold-resolution | — |
 | `user_pickup_authorizations` | `auth-identity` | single-writer | auth-identity | — |
-| `users` | `loyalty` | multi-writer-resolved-by-classification-signal | auth, auth-identity, dashboard, loyalty | business-rules, documents, economic-engine, logistics, notifications, orders, payments, platform-ops, shared-cart, wallet |
+| `users` | `auth-identity` | multi-writer-resolved-by-explicit-lifecycle-owner | auth, auth-identity, dashboard, loyalty | business-rules, documents, economic-engine, logistics, notifications, orders, payments, platform-ops, shared-cart, wallet |
 | `v_loyalty_summary` | _ambiguë_ | no-declared-writer | — | loyalty |
 | `v_unsold_pipeline` | _ambiguë_ | no-declared-writer | — | unsold-resolution |
 | `wallet_consumptions` | `wallet` | single-writer | wallet | — |
 | `wallet_credit_lots` | `wallet` | single-writer | wallet | — |
-| `wallet_transactions` | `wallet` | multi-writer-resolved-by-classification-signal | dashboard, wallet | documents |
-| `wallets` | `wallet` | multi-writer-resolved-by-classification-signal | dashboard, wallet | documents, refunds |
+| `wallet_transactions` | `wallet` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, wallet | documents |
+| `wallets` | `wallet` | multi-writer-resolved-by-explicit-lifecycle-owner | dashboard, wallet | documents, refunds |
 
 ## Interface ownership
 
@@ -1162,8 +1161,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 | Feature | consumes | Résolu ? |
 |---|---|---|
-| auth | notification (`notification`) | ✖ |
-| auth | operations (`operations`) | ✖ |
+| auth | notifications (`notifications`) | ✔ |
+| auth | platform-ops (`platform-ops`) | ✔ |
 | auth | orders (`orders`) | ✔ |
 | auth-identity | auth (`auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)`) | ✔ |
 | auth-identity | notifications (`notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)`) | ✔ |
@@ -1176,6 +1175,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | catalog | logistics (`logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)`) | ✔ |
 | catalog | shared-cart (`shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)`) | ✔ |
 | catalog | auth (`auth`) | ✔ |
+| catalog | auth-identity (`auth-identity`) | ✔ |
 | customs | logistics (`logistics (colis a classer)`) | ✔ |
 | customs | documents (`documents (facture douane generee)`) | ✔ |
 | customs | auth (`auth`) | ✔ |
@@ -1208,8 +1208,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | incident-management | logistics (`logistics (scan-engine écrit incidents — SQL inline)`) | ✔ |
 | incident-management | payments (`payments (reconciliation-service écrit incidents — SQL inline)`) | ✔ |
 | incident-management | notifications (`notifications (alert-engine écrit incidents — SQL inline)`) | ✔ |
-| incident-management | dashboard (`dashboard / ops-api legacy (écrit incidents — SQL inline)`) | ✔ |
-| incident-management | ops-api legacy (`dashboard / ops-api legacy (écrit incidents — SQL inline)`) | ✖ |
+| incident-management | dashboard (`dashboard`) | ✔ |
 | infrastructure | auth (`auth — bootstrap/api-routes.js monte les routes auth`) | ✔ |
 | infrastructure | catalog (`catalog — bootstrap/api-routes.js monte les routes catalog`) | ✔ |
 | infrastructure | customs (`customs — bootstrap/api-routes.js monte les routes customs`) | ✔ |
@@ -1217,10 +1216,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | infrastructure | economic-engine (`economic-engine — bootstrap/api-routes.js monte les routes economic-engine`) | ✔ |
 | infrastructure | inventory (`inventory — bootstrap/api-routes.js monte les routes inventory`) | ✔ |
 | infrastructure | logistics (`logistics — bootstrap/api-routes.js monte les routes logistics`) | ✔ |
-| infrastructure | notification (`notification — bootstrap/api-routes.js monte les routes notification`) | ✖ |
-| infrastructure | operations (`operations — bootstrap/api-routes.js monte les routes operations`) | ✖ |
+| infrastructure | notifications (`notifications`) | ✔ |
+| infrastructure | platform-ops (`platform-ops`) | ✔ |
 | infrastructure | orders (`orders — bootstrap/api-routes.js monte les routes orders`) | ✔ |
-| infrastructure | payment (`payment — bootstrap/api-routes.js monte les routes payment`) | ✖ |
+| infrastructure | payments (`payments`) | ✔ |
 | infrastructure | recommendations (`recommendations — bootstrap/api-routes.js monte les routes recommendations`) | ✔ |
 | infrastructure | shared-cart (`shared-cart — bootstrap/api-routes.js monte les routes shared-cart`) | ✔ |
 | infrastructure | wallet (`wallet — bootstrap/api-routes.js monte les routes wallet`) | ✔ |
@@ -1244,7 +1243,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | loyalty | auth-identity (`auth-identity (identification du client)`) | ✔ |
 | loyalty | wallet (`wallet (aucune écriture — v_loyalty_summary et le calcul de palier ne lisent pas les tables wallet)`) | ✔ |
 | notifications | auth (`auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)`) | ✔ |
-| notifications | toutes les features emettrices (`toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement`) | ✖ |
+| notifications | orders (`orders`) | ✔ |
+| notifications | payments (`payments`) | ✔ |
+| notifications | shared-cart (`shared-cart`) | ✔ |
+| notifications | refunds (`refunds`) | ✔ |
 | orders | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)`) | ✔ |
 | orders | wallet (`wallet (application credit)`) | ✔ |
 | orders | economic-engine (`economic-engine (cout figure a la commande)`) | ✔ |
@@ -1258,9 +1260,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | orders | customs (`customs`) | ✔ |
 | orders | dashboard (`dashboard`) | ✔ |
 | orders | documents (`documents`) | ✔ |
-| orders | notification (`notification`) | ✖ |
 | orders | notifications (`notifications (projection idempotente du retrait disponible)`) | ✔ |
-| orders | payment (`payment`) | ✖ |
 | orders | refunds (`refunds`) | ✔ |
 | payments | platform-ops (`platform-ops (FF-C1 2026-07-29 — monitoring et exploitation technique ; preuve: routes/payments.js -> services/monitoring.js)`) | ✔ |
 | payments | auth (`auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/cash.js -> middleware/auth.js ; routes/payments.js -> middleware/auth.js ; routes/pickup-pay-cash.js -> middleware/auth.js ; +2)`) | ✔ |
@@ -1277,9 +1277,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | platform-ops | economic-engine (`economic-engine (calcul de prix ponctuel pour modules sur-mesure — services/pricing-engine.js recommend, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
 | platform-ops | logistics (`logistics (simulateur declenche une transition colis via transitionParcelStatus — services/parcel-operations.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
 | platform-ops | orders (`orders (simulateur declenche une transition commande via transitionOrderStatus — services/order-status-machine.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
+| platform-ops | auth-identity (`auth-identity`) | ✔ |
+| platform-ops | catalog (`catalog`) | ✔ |
+| platform-ops | purchasing (`purchasing`) | ✔ |
 | purchasing | orders (`orders (lecture : order_items, orders — le besoin d'achat naît d'une commande client)`) | ✔ |
 | purchasing | auth (`auth (garde admin)`) | ✔ |
-| purchasing | notification (`notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)`) | ✖ |
+| purchasing | notifications (`notifications (notification fournisseur WhatsApp, via services/notification-service.js)`) | ✔ |
 | purchasing | logistics (`logistics (declenche scan preparation + notification client apres reception hub complete — services/scan-operations.js triggerScan3, O7.2 Cycle C)`) | ✔ |
 | recommendations | catalog (`catalog (lecture produit)`) | ✔ |
 | recommendations | auth (`auth`) | ✔ |
@@ -1289,10 +1292,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | refunds | wallet (`wallet (credit)`) | ✔ |
 | refunds | documents (`documents (reçu)`) | ✔ |
 | shared-cart | orders (`orders (arbitrage de la réclamation via order_items.shared_cart_item_id — feature orders, migration 123)`) | ✔ |
-| shared-cart | products (`products (lecture seule)`) | ✖ |
-| shared-cart | notification (`notification (émission uniquement — WhatsApp création de liste)`) | ✖ |
+| shared-cart | notifications (`notifications (émission uniquement — WhatsApp création de liste)`) | ✔ |
 | shared-cart | auth (`auth`) | ✔ |
 | shared-cart | auth-identity (`auth-identity (projection boutique : b-share-cart.js consomme identité et téléphone)`) | ✔ |
+| shared-cart | recommendations (`recommendations`) | ✔ |
 | sourcing | catalog (`catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, supplier-catalog-scanner pour le scan pricing lui-même, et depuis PDC-8 Lot 6 : catalog-promotion.js — appelé dans la transaction de POST .../import-product pour promouvoir normalized_source_contract V2 vers catalog_media/product_variants/product_skus/product_sku_media)`) | ✔ |
 | sourcing | economic-engine (`economic-engine (pricing-engine.loadGlobalConfig — config de scan)`) | ✔ |
 | sourcing | auth (`auth`) | ✔ |
@@ -1314,22 +1317,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### WARN / DEBT (130)
+### WARN / DEBT (105)
 
 Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
 
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ auth -> "notification" (entrée: "notification") — contract.consumes de auth référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ auth -> "operations" (entrée: "operations") — contract.consumes de auth référence "operations", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ incident-management -> "ops-api legacy" (entrée: "dashboard / ops-api legacy (écrit incidents — SQL inline)") — contract.consumes de incident-management référence "ops-api legacy", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ infrastructure -> "notification" (entrée: "notification — bootstrap/api-routes.js monte les routes notification") — contract.consumes de infrastructure référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ infrastructure -> "operations" (entrée: "operations — bootstrap/api-routes.js monte les routes operations") — contract.consumes de infrastructure référence "operations", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ infrastructure -> "payment" (entrée: "payment — bootstrap/api-routes.js monte les routes payment") — contract.consumes de infrastructure référence "payment", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ notifications -> "toutes les features emettrices" (entrée: "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement") — contract.consumes de notifications référence "toutes les features emettrices", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ orders -> "notification" (entrée: "notification") — contract.consumes de orders référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ orders -> "payment" (entrée: "payment") — contract.consumes de orders référence "payment", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ purchasing -> "notification" (entrée: "notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)") — contract.consumes de purchasing référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "notification" (entrée: "notification (émission uniquement — WhatsApp création de liste)") — contract.consumes de shared-cart référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "products" (entrée: "products (lecture seule)") — contract.consumes de shared-cart référence "products", ne correspond à aucun nom de feature connu
 - **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:backend — 16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé
@@ -1338,116 +1329,103 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 - **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /webhook/authkey-whatsapp — "GET /webhook/authkey-whatsapp" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> catalog — dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "catalog"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> customs — dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "customs"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> dashboard — dépendance cross-feature observée (canal: interface, 14 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "dashboard"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> decision-signals — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "decision-signals"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> documents — dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "documents"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> economic-engine — dépendance cross-feature observée (canal: interface, 22 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "economic-engine"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> inventory — dépendance cross-feature observée (canal: interface, 5 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "inventory"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> logistics — dépendance cross-feature observée (canal: interface, 7 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "logistics"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> orders — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "orders"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> payments — dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "payments"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "auth" vers "auth-identity"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> platform-ops — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "platform-ops"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> auth-identity — dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "auth-identity"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> platform-ops — dépendance cross-feature observée (canal: static-code, 62 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "platform-ops"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ customs -> infrastructure — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "customs" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ dashboard -> infrastructure — dépendance cross-feature observée (canal: static-code, 46 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ decision-signals -> infrastructure — dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez "decision-signals" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ documents -> auth — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "documents" vers "auth"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ documents -> infrastructure — dépendance cross-feature observée (canal: static-code, 21 preuve(s)) sans contract.consumes déclaré chez "documents" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ economic-engine -> infrastructure — dépendance cross-feature observée (canal: static-code, 72 preuve(s)) sans contract.consumes déclaré chez "economic-engine" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ incident-management -> infrastructure — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "incident-management" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "auth-identity"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> business-rules — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "business-rules"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> decision-signals — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "decision-signals"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> documents — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "documents"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> loyalty — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "loyalty"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> notifications — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> payments — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "payments"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> platform-ops — dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "platform-ops"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> purchasing — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "purchasing"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> sourcing — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "sourcing"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ infrastructure -> unsold-resolution — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "unsold-resolution"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ inventory -> infrastructure — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ inventory -> logistics — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "logistics"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ inventory -> orders — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "orders"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ inventory -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "payments"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ logistics -> infrastructure — dépendance cross-feature observée (canal: static-code, 74 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ loyalty -> infrastructure — dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez "loyalty" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> infrastructure — dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> platform-ops — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "platform-ops"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 57 preuve(s)) sans contract.consumes déclaré chez "orders" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> platform-ops — dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez "orders" vers "platform-ops"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> shared-cart — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "orders" vers "shared-cart"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 45 preuve(s)) sans contract.consumes déclaré chez "payments" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> auth-identity — dépendance cross-feature observée (canal: interface+static-code, 6 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "auth-identity"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> catalog — dépendance cross-feature observée (canal: interface+static-code, 20 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "catalog"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 27 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "payments"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> purchasing — dépendance cross-feature observée (canal: interface+static-code, 2 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "purchasing"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> recommendations — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "recommendations"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> shared-cart — dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "shared-cart"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ purchasing -> infrastructure — dépendance cross-feature observée (canal: static-code, 20 preuve(s)) sans contract.consumes déclaré chez "purchasing" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ purchasing -> notifications — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "purchasing" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ recommendations -> infrastructure — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "recommendations" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ recommendations -> orders — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "recommendations" vers "orders"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ recommendations -> platform-ops — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "recommendations" vers "platform-ops"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ refunds -> infrastructure — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ refunds -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "payments"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> catalog — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "catalog"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> infrastructure — dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> notifications — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> platform-ops — dépendance cross-feature observée (canal: static-code, 52 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "platform-ops"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> recommendations — dépendance cross-feature observée (canal: interface+static-code, 4 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "recommendations"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ sourcing -> infrastructure — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "sourcing" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ unsold-resolution -> infrastructure — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "unsold-resolution" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ wallet -> infrastructure — dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez "wallet" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ wallet -> platform-ops — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "wallet" vers "platform-ops"
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ alerts — table "alerts" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ basket_items — table "basket_items" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ baskets — table "baskets" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ cart_shares — table "cart_shares" a 2 écrivain(s) déclaré(s) (orders, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ catalog_media — table "catalog_media" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ economic_snapshots — table "economic_snapshots" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ incidents — table "incidents" a 5 écrivain(s) déclaré(s) (dashboard, incident-management, logistics, notifications, payments) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ invoices — table "invoices" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ loyalty_rewards — table "loyalty_rewards" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ notification_log — table "notification_log" a 2 écrivain(s) déclaré(s) (notifications, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ order_comments — table "order_comments" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_item_real_cost_allocations — table "order_item_real_cost_allocations" a 2 écrivain(s) déclaré(s) (customs, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_items — table "order_items" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ order_status_history — table "order_status_history" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" a 9 écrivain(s) déclaré(s) (customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, wallet) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcel_items — table "parcel_items" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, inventory, logistics
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcels — table "parcels" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par customs, dashboard, logistics, payments
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ pickup_print_tokens — table "pickup_print_tokens" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ pickup_reveal_codes — table "pickup_reveal_codes" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ price_history — table "price_history" a 2 écrivain(s) déclaré(s) (catalog, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ product_sku_media — table "product_sku_media" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ product_skus — table "product_skus" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ product_variants — table "product_variants" a 3 écrivain(s) déclaré(s) (catalog, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ products — table "products" a 4 écrivain(s) déclaré(s) (catalog, dashboard, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ purchase_orders — table "purchase_orders" a 2 écrivain(s) déclaré(s) (orders, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ recipients — table "recipients" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ relais — table "relais" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ revoked_tokens — table "revoked_tokens" a 2 écrivain(s) déclaré(s) (auth-identity, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ scan_events — table "scan_events" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ scans — table "scans" a 4 écrivain(s) déclaré(s) (dashboard, logistics, orders, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ sms_log — table "sms_log" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidate_events — table "sourcing_candidate_events" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidates — table "sourcing_candidates" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[ACTIONABLE_DRIFT]_ users — table "users" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ wallet_transactions — table "wallet_transactions" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ wallets — table "wallets" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard -> catalog — dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "catalog"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard -> customs — dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "customs"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard -> dashboard — dépendance cross-feature observée (canal: interface, 14 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "dashboard"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard -> decision-signals — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "decision-signals"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard -> documents — dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "documents"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard -> economic-engine — dépendance cross-feature observée (canal: interface, 22 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "economic-engine"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard -> inventory — dépendance cross-feature observée (canal: interface, 5 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "inventory"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard -> logistics — dépendance cross-feature observée (canal: interface, 7 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "logistics"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard -> orders — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "orders"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard -> payments — dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "payments"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ auth -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "auth" vers "auth-identity"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ auth-identity -> platform-ops — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "platform-ops"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ catalog -> platform-ops — dépendance cross-feature observée (canal: static-code, 62 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "platform-ops"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ customs -> infrastructure — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "customs" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ dashboard -> infrastructure — dépendance cross-feature observée (canal: static-code, 46 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ decision-signals -> infrastructure — dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez "decision-signals" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ documents -> auth — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "documents" vers "auth"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ documents -> infrastructure — dépendance cross-feature observée (canal: static-code, 21 preuve(s)) sans contract.consumes déclaré chez "documents" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ economic-engine -> infrastructure — dépendance cross-feature observée (canal: static-code, 72 preuve(s)) sans contract.consumes déclaré chez "economic-engine" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ incident-management -> infrastructure — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "incident-management" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ infrastructure -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "auth-identity"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ infrastructure -> business-rules — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "business-rules"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ infrastructure -> decision-signals — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "decision-signals"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ infrastructure -> documents — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "documents"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ infrastructure -> loyalty — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "loyalty"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ infrastructure -> purchasing — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "purchasing"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ infrastructure -> sourcing — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "sourcing"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ infrastructure -> unsold-resolution — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "unsold-resolution"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ inventory -> infrastructure — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ inventory -> logistics — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "logistics"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ inventory -> orders — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "orders"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ inventory -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "payments"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ logistics -> infrastructure — dépendance cross-feature observée (canal: static-code, 74 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ loyalty -> infrastructure — dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez "loyalty" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ notifications -> infrastructure — dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ notifications -> platform-ops — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "platform-ops"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ orders -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 57 preuve(s)) sans contract.consumes déclaré chez "orders" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ orders -> platform-ops — dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez "orders" vers "platform-ops"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ orders -> shared-cart — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "orders" vers "shared-cart"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ payments -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 45 preuve(s)) sans contract.consumes déclaré chez "payments" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ platform-ops -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 27 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ platform-ops -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "notifications"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ platform-ops -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "payments"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ platform-ops -> recommendations — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "recommendations"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ platform-ops -> shared-cart — dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "shared-cart"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ purchasing -> infrastructure — dépendance cross-feature observée (canal: static-code, 20 preuve(s)) sans contract.consumes déclaré chez "purchasing" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ recommendations -> infrastructure — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "recommendations" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ recommendations -> platform-ops — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "recommendations" vers "platform-ops"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ refunds -> infrastructure — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ refunds -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "payments"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ shared-cart -> infrastructure — dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ shared-cart -> platform-ops — dépendance cross-feature observée (canal: static-code, 53 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "platform-ops"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ sourcing -> infrastructure — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "sourcing" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ unsold-resolution -> infrastructure — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "unsold-resolution" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ wallet -> infrastructure — dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez "wallet" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[EXPECTED_TOPOLOGY]_ wallet -> platform-ops — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "wallet" vers "platform-ops"
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ alerts — table "alerts" : lifecycle owner = notifications (db.lifecycleOwnerOf), mais aussi écrite par catalog, logistics, orders, payments, purchasing
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ basket_items — table "basket_items" : lifecycle owner = shared-cart (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ baskets — table "baskets" : lifecycle owner = shared-cart (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ cart_shares — table "cart_shares" : lifecycle owner = shared-cart (db.lifecycleOwnerOf), mais aussi écrite par orders
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ catalog_media — table "catalog_media" : lifecycle owner = catalog (db.lifecycleOwnerOf), mais aussi écrite par sourcing
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ economic_snapshots — table "economic_snapshots" : lifecycle owner = economic-engine (db.lifecycleOwnerOf), mais aussi écrite par infrastructure
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ incidents — table "incidents" : lifecycle owner = incident-management (db.lifecycleOwnerOf), mais aussi écrite par dashboard, logistics, notifications, payments
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ invoices — table "invoices" : lifecycle owner = documents (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ loyalty_rewards — table "loyalty_rewards" : lifecycle owner = loyalty (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ notification_log — table "notification_log" : lifecycle owner = notifications (db.lifecycleOwnerOf), mais aussi écrite par platform-ops
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ order_comments — table "order_comments" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ order_item_real_cost_allocations — table "order_item_real_cost_allocations" : lifecycle owner = economic-engine (db.lifecycleOwnerOf), mais aussi écrite par customs
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ order_items — table "order_items" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par dashboard, logistics
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ order_status_history — table "order_status_history" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ orders — table "orders" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par customs, dashboard, inventory, logistics, payments, platform-ops, purchasing, wallet
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ parcel_items — table "parcel_items" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par dashboard, inventory, platform-ops
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ parcels — table "parcels" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par customs, dashboard, payments, platform-ops
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ pickup_print_tokens — table "pickup_print_tokens" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par infrastructure
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ pickup_reveal_codes — table "pickup_reveal_codes" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par infrastructure
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ price_history — table "price_history" : lifecycle owner = economic-engine (db.lifecycleOwnerOf), mais aussi écrite par catalog
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ product_sku_media — table "product_sku_media" : lifecycle owner = catalog (db.lifecycleOwnerOf), mais aussi écrite par sourcing
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ product_skus — table "product_skus" : lifecycle owner = catalog (db.lifecycleOwnerOf), mais aussi écrite par sourcing
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ product_variants — table "product_variants" : lifecycle owner = catalog (db.lifecycleOwnerOf), mais aussi écrite par economic-engine, sourcing
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ products — table "products" : lifecycle owner = catalog (db.lifecycleOwnerOf), mais aussi écrite par dashboard, economic-engine, sourcing
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ purchase_orders — table "purchase_orders" : lifecycle owner = purchasing (db.lifecycleOwnerOf), mais aussi écrite par orders
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ recipients — table "recipients" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ relais — table "relais" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ revoked_tokens — table "revoked_tokens" : lifecycle owner = auth-identity (db.lifecycleOwnerOf), mais aussi écrite par infrastructure
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ scan_events — table "scan_events" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ scans — table "scans" : lifecycle owner = logistics (db.lifecycleOwnerOf), mais aussi écrite par dashboard, orders, platform-ops
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ sms_log — table "sms_log" : lifecycle owner = orders (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ sourcing_candidate_events — table "sourcing_candidate_events" : lifecycle owner = sourcing (db.lifecycleOwnerOf), mais aussi écrite par catalog
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ sourcing_candidates — table "sourcing_candidates" : lifecycle owner = sourcing (db.lifecycleOwnerOf), mais aussi écrite par catalog
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ users — table "users" : lifecycle owner = auth-identity (db.lifecycleOwnerOf), mais aussi écrite par auth, dashboard, loyalty
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ wallet_transactions — table "wallet_transactions" : lifecycle owner = wallet (db.lifecycleOwnerOf), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ wallets — table "wallets" : lifecycle owner = wallet (db.lifecycleOwnerOf), mais aussi écrite par dashboard
 
 ## Orphan technical nodes
 
@@ -1461,8 +1439,8 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 773 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 142 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- backend : 774 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 145 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1485,7 +1463,7 @@ Meta Graph monté : oui.
 | admin-dashboard | sourcing | interface | 3 | **DECLARED_AND_OBSERVED** |
 | auth | auth-identity | static-code | 3 | **OBSERVED_UNDECLARED** |
 | auth | infrastructure | static-code | 13 | **OBSERVED_UNDECLARED** |
-| auth | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
+| auth | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | auth-identity | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | auth-identity | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
 | auth-identity | infrastructure | static-code | 16 | **OBSERVED_UNDECLARED** |
@@ -1496,12 +1474,12 @@ Meta Graph monté : oui.
 | business-rules | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | business-rules | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| catalog | auth-identity | interface | 1 | **OBSERVED_UNDECLARED** |
+| catalog | auth-identity | interface | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | business-rules | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | catalog | economic-engine | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | catalog | infrastructure | static-code | 36 | **OBSERVED_UNDECLARED** |
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| catalog | orders | static-code | 12 | **OBSERVED_UNDECLARED** |
+| catalog | orders | static-code | 3 | **OBSERVED_UNDECLARED** |
 | catalog | platform-ops | static-code | 62 | **OBSERVED_UNDECLARED** |
 | catalog | shared-cart | static-code, interface | 11 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1544,10 +1522,10 @@ Meta Graph monté : oui.
 | infrastructure | inventory | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | infrastructure | logistics | static-code | 21 | **DECLARED_AND_OBSERVED** |
 | infrastructure | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
-| infrastructure | notifications | static-code | 4 | **OBSERVED_UNDECLARED** |
+| infrastructure | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | infrastructure | orders | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| infrastructure | payments | static-code | 4 | **OBSERVED_UNDECLARED** |
-| infrastructure | platform-ops | static-code | 5 | **OBSERVED_UNDECLARED** |
+| infrastructure | payments | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| infrastructure | platform-ops | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | infrastructure | purchasing | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | recommendations | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | infrastructure | shared-cart | static-code | 6 | **DECLARED_AND_OBSERVED** |
@@ -1590,7 +1568,7 @@ Meta Graph monté : oui.
 | orders | payments | static-code, interface | 8 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 37 | **OBSERVED_UNDECLARED** |
 | orders | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| orders | shared-cart | static-code | 7 | **OBSERVED_UNDECLARED** |
+| orders | shared-cart | static-code | 3 | **OBSERVED_UNDECLARED** |
 | orders | wallet | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | payments | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | payments | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1604,26 +1582,25 @@ Meta Graph monté : oui.
 | payments | purchasing | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | payments | refunds | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | platform-ops | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| platform-ops | auth-identity | static-code, interface | 6 | **OBSERVED_UNDECLARED** |
+| platform-ops | auth-identity | static-code, interface | 6 | **DECLARED_AND_OBSERVED** |
 | platform-ops | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| platform-ops | catalog | static-code, interface | 20 | **OBSERVED_UNDECLARED** |
+| platform-ops | catalog | static-code, interface | 21 | **DECLARED_AND_OBSERVED** |
 | platform-ops | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | infrastructure | static-code, interface | 27 | **OBSERVED_UNDECLARED** |
 | platform-ops | logistics | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
 | platform-ops | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | orders | static-code, interface | 16 | **DECLARED_AND_OBSERVED** |
 | platform-ops | payments | static-code | 1 | **OBSERVED_UNDECLARED** |
-| platform-ops | purchasing | static-code, interface | 2 | **OBSERVED_UNDECLARED** |
+| platform-ops | purchasing | static-code, interface | 2 | **DECLARED_AND_OBSERVED** |
 | platform-ops | recommendations | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | shared-cart | static-code | 6 | **OBSERVED_UNDECLARED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | infrastructure | static-code | 20 | **OBSERVED_UNDECLARED** |
 | purchasing | logistics | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| purchasing | notifications | static-code | 2 | **OBSERVED_UNDECLARED** |
+| purchasing | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | recommendations | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | infrastructure | static-code | 1 | **OBSERVED_UNDECLARED** |
-| recommendations | orders | static-code | 2 | **OBSERVED_UNDECLARED** |
 | recommendations | platform-ops | static-code | 7 | **OBSERVED_UNDECLARED** |
 | refunds | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | refunds | infrastructure | static-code | 3 | **OBSERVED_UNDECLARED** |
@@ -1632,12 +1609,11 @@ Meta Graph monté : oui.
 | refunds | wallet | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | shared-cart | auth | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | shared-cart | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| shared-cart | catalog | static-code | 4 | **OBSERVED_UNDECLARED** |
 | shared-cart | infrastructure | static-code | 15 | **OBSERVED_UNDECLARED** |
-| shared-cart | notifications | static-code | 2 | **OBSERVED_UNDECLARED** |
+| shared-cart | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | shared-cart | orders | static-code | 9 | **DECLARED_AND_OBSERVED** |
-| shared-cart | platform-ops | static-code | 52 | **OBSERVED_UNDECLARED** |
-| shared-cart | recommendations | static-code, interface | 4 | **OBSERVED_UNDECLARED** |
+| shared-cart | platform-ops | static-code | 53 | **OBSERVED_UNDECLARED** |
+| shared-cart | recommendations | static-code, interface | 4 | **DECLARED_AND_OBSERVED** |
 | sourcing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | sourcing | catalog | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | sourcing | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1665,11 +1641,9 @@ Meta Graph monté : oui.
 - `admin-dashboard` → `payments` (canaux: interface)
 - `auth` → `auth-identity` (canaux: static-code)
 - `auth` → `infrastructure` (canaux: static-code)
-- `auth` → `notifications` (canaux: static-code)
 - `auth-identity` → `infrastructure` (canaux: static-code)
 - `auth-identity` → `logistics` (canaux: static-code)
 - `auth-identity` → `platform-ops` (canaux: static-code)
-- `catalog` → `auth-identity` (canaux: interface)
 - `catalog` → `infrastructure` (canaux: static-code)
 - `catalog` → `orders` (canaux: static-code)
 - `catalog` → `platform-ops` (canaux: static-code)
@@ -1685,9 +1659,6 @@ Meta Graph monté : oui.
 - `infrastructure` → `decision-signals` (canaux: static-code)
 - `infrastructure` → `documents` (canaux: static-code)
 - `infrastructure` → `loyalty` (canaux: static-code)
-- `infrastructure` → `notifications` (canaux: static-code)
-- `infrastructure` → `payments` (canaux: static-code)
-- `infrastructure` → `platform-ops` (canaux: static-code)
 - `infrastructure` → `purchasing` (canaux: static-code)
 - `infrastructure` → `sourcing` (canaux: static-code)
 - `infrastructure` → `unsold-resolution` (canaux: static-code)
@@ -1703,26 +1674,18 @@ Meta Graph monté : oui.
 - `orders` → `platform-ops` (canaux: static-code)
 - `orders` → `shared-cart` (canaux: static-code)
 - `payments` → `infrastructure` (canaux: static-code, interface)
-- `platform-ops` → `auth-identity` (canaux: static-code, interface)
-- `platform-ops` → `catalog` (canaux: static-code, interface)
 - `platform-ops` → `infrastructure` (canaux: static-code, interface)
 - `platform-ops` → `notifications` (canaux: static-code)
 - `platform-ops` → `payments` (canaux: static-code)
-- `platform-ops` → `purchasing` (canaux: static-code, interface)
 - `platform-ops` → `recommendations` (canaux: static-code)
 - `platform-ops` → `shared-cart` (canaux: static-code)
 - `purchasing` → `infrastructure` (canaux: static-code)
-- `purchasing` → `notifications` (canaux: static-code)
 - `recommendations` → `infrastructure` (canaux: static-code)
-- `recommendations` → `orders` (canaux: static-code)
 - `recommendations` → `platform-ops` (canaux: static-code)
 - `refunds` → `infrastructure` (canaux: static-code)
 - `refunds` → `payments` (canaux: static-code)
-- `shared-cart` → `catalog` (canaux: static-code)
 - `shared-cart` → `infrastructure` (canaux: static-code)
-- `shared-cart` → `notifications` (canaux: static-code)
 - `shared-cart` → `platform-ops` (canaux: static-code)
-- `shared-cart` → `recommendations` (canaux: static-code, interface)
 - `sourcing` → `infrastructure` (canaux: static-code)
 - `unsold-resolution` → `infrastructure` (canaux: static-code)
 - `wallet` → `infrastructure` (canaux: static-code)
@@ -1730,6 +1693,7 @@ Meta Graph monté : oui.
 
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
 
+- `auth` → `platform-ops` (déclaré : `platform-ops`)
 - `auth` → `orders` (déclaré : `orders`)
 - `customs` → `logistics` (déclaré : `logistics (colis a classer)`)
 - `dashboard` → `payments` (déclaré : `payments (lecture paiements)`)
@@ -1745,13 +1709,17 @@ Meta Graph monté : oui.
 - `incident-management` → `logistics` (déclaré : `logistics (scan-engine écrit incidents — SQL inline)`)
 - `incident-management` → `payments` (déclaré : `payments (reconciliation-service écrit incidents — SQL inline)`)
 - `incident-management` → `notifications` (déclaré : `notifications (alert-engine écrit incidents — SQL inline)`)
-- `incident-management` → `dashboard` (déclaré : `dashboard / ops-api legacy (écrit incidents — SQL inline)`)
+- `incident-management` → `dashboard` (déclaré : `dashboard`)
 - `inventory` → `catalog` (déclaré : `catalog (produit concerne)`)
 - `logistics` → `customs` (déclaré : `customs (statut declaration)`)
 - `logistics` → `economic-engine` (déclaré : `economic-engine`)
 - `logistics` → `wallet` (déclaré : `wallet`)
 - `loyalty` → `auth-identity` (déclaré : `auth-identity (identification du client)`)
 - `loyalty` → `wallet` (déclaré : `wallet (aucune écriture — v_loyalty_summary et le calcul de palier ne lisent pas les tables wallet)`)
+- `notifications` → `orders` (déclaré : `orders`)
+- `notifications` → `payments` (déclaré : `payments`)
+- `notifications` → `shared-cart` (déclaré : `shared-cart`)
+- `notifications` → `refunds` (déclaré : `refunds`)
 - `orders` → `purchasing` (déclaré : `purchasing (lecture — engagement fournisseur déclenché par une commande ; scindée d'orders au Lot O1.4)`)
 - `orders` → `dashboard` (déclaré : `dashboard`)
 - `recommendations` → `auth` (déclaré : `auth`)
@@ -1792,15 +1760,15 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | Family | N | Policy |
 |---|---|---|
 | PROJECTION | 10 | projection-dependency-policy |
-| COMPOSITION_ROOT_WIRING | 14 | application-wiring-not-consumption |
-| NON_RUNTIME_TEST | 8 | non-runtime-evidence |
+| COMPOSITION_ROOT_WIRING | 11 | application-wiring-not-consumption |
+| NON_RUNTIME_TEST | 9 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 31 | technical-dependency-policy |
-| BUSINESS_TRANSVERSAL_SERVICE | 2 | business-dependency-declare-candidate |
-| CROSS_FEATURE_DIRECT_IMPORT | 4 | boundary-remediation-required |
-| BUSINESS_FEATURE_INTERFACE | 5 | business-dependency-declare-candidate |
+| BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
+| CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
+| BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **74** | |
+| **TOTAL** | **61** | |
 
 ### Projection dependencies
 
@@ -1826,9 +1794,6 @@ Bootstrap/cron/error-handler qui montent ou déclenchent une feature. Pas une co
 - `infrastructure` → `decision-signals` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `documents` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `loyalty` — business-file-import, RUNTIME_ONLY
-- `infrastructure` → `notifications` — business-file-import, RUNTIME_ONLY
-- `infrastructure` → `payments` — business-file-import, RUNTIME_ONLY
-- `infrastructure` → `platform-ops` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `purchasing` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `sourcing` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `unsold-resolution` — business-file-import, RUNTIME_ONLY
@@ -1842,10 +1807,11 @@ Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
 
 - `auth-identity` → `logistics` — business-file-import, TEST_ONLY
 - `auth` → `auth-identity` — business-file-import, TEST_ONLY
-- `auth` → `notifications` — business-file-import, TEST_ONLY
+- `catalog` → `orders` — business-file-import, TEST_ONLY
 - `inventory` → `logistics` — business-file-import, TEST_ONLY
 - `inventory` → `orders` — business-file-import, TEST_ONLY
 - `inventory` → `payments` — business-file-import, TEST_ONLY
+- `orders` → `shared-cart` — business-file-import, TEST_ONLY
 - `platform-ops` → `payments` — business-file-import, TEST_ONLY
 - `refunds` → `payments` — business-file-import, TEST_ONLY
 
@@ -1854,10 +1820,10 @@ Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
 Usage de db.js / middleware / logger / utils / validators d'un transversal technique. Politique technique, pas `contract.consumes`.
 
 - `auth-identity` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
-- `auth-identity` → `platform-ops` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
+- `auth-identity` → `platform-ops` — business-file-import, RUNTIME_AND_TEST
 - `auth` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `catalog` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
-- `catalog` → `platform-ops` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
+- `catalog` → `platform-ops` — business-file-import, RUNTIME_AND_TEST
 - `customs` → `infrastructure` — technical-primitive, RUNTIME_ONLY
 - `dashboard` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `decision-signals` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
@@ -1889,27 +1855,19 @@ Usage de db.js / middleware / logger / utils / validators d'un transversal techn
 
 Consommation réelle d'un service transversal métier — candidat `contract.consumes` (internal API préférée).
 
-- `purchasing` → `notifications` — business-file-import, RUNTIME_AND_TEST
-- `shared-cart` → `notifications` — business-file-import, RUNTIME_AND_TEST
+- _none_
 
 ### Cross-feature direct imports
 
 require() direct d'un fichier d'une autre business-feature — couture à casser AVANT déclaration.
 
-- `catalog` → `orders` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
-- `orders` → `shared-cart` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
-- `recommendations` → `orders` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
-- `shared-cart` → `catalog` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
+- _none_
 
 ### Business feature interfaces
 
 Consommation d'une business-feature via interface/http — candidat `contract.consumes`.
 
-- `catalog` → `auth-identity` — interface, RUNTIME_ONLY
-- `platform-ops` → `auth-identity` — interface, RUNTIME_AND_TEST _(exception: runtime-cycle)_
-- `platform-ops` → `catalog` — interface, RUNTIME_AND_TEST _(exception: runtime-cycle)_
-- `platform-ops` → `purchasing` — interface, RUNTIME_AND_TEST
-- `shared-cart` → `recommendations` — mixed, RUNTIME_AND_TEST
+- _none_
 
 ### Piloting capability dependencies
 
@@ -1921,21 +1879,13 @@ Consommation de decision-signals (capacité de pilotage).
 
 Ledger `governance/feature-dependency-exceptions.json` — uniquement les paires dont la politique de famille ne suffit pas (imports directs, cycles, ownership suspects). Une entrée dont la paire disparaît d'O5 devient stale (bloquant).
 
-- `auth-identity` → `platform-ops` — **accepted-dependency** — La surface d'identité consomme les primitives techniques du shell — bus, store et utilitaires UI. Cette direction ne transfère aucune autorité métier à platform-ops et ne constitue pas un cycle de modules.
-- `catalog` → `orders` — **accepted-dependency** — Les surfaces catalogue déclenchent les opérations du panier personnel — ajout, quantité et résumé de ligne — à partir d'un produit sélectionné. La dépendance va du canal de découverte vers l'intention d'achat ; le panier ne modifie aucun état du catalogue.
-- `catalog` → `platform-ops` — **accepted-dependency** — Le catalogue consomme le bus, le store, les utilitaires et l'ownership de scroll fournis par le socle. Ces primitives restent techniques et ne possèdent aucune règle catalogue.
-- `orders` → `shared-cart` — **accepted-dependency** — Dépendance frontend résiduelle hors checkout : le slice orders-client possède le renderer canonique du panier (b-cart.js) et le shell de suivi / Mon Komerce (b-tracking.js). b-cart compose encore la surface de liste active via group-side-cart ; b-tracking compose encore l'onglet Mes listes via group-api, group-list-labels et l'activation de group-side-cart. Le checkout canonique est désormais découplé de shared-cart et n'est explicitement pas couvert par cette exception. La couture UI restante sera inversée ou extraite dans le lot de dette frontend dédié.
-- `platform-ops` → `auth-identity` — **accepted-dependency** — Le client API transversal expose des appels vers les endpoints d'authentification et le shell monte la surface identité. Il s'agit d'un adaptateur technique et de composition, sans ownership de la logique d'identité.
-- `platform-ops` → `catalog` — **accepted-dependency** — Le shell monte les modules de découverte produit et le client API transversal appelle les endpoints catalogue. La couture est un wiring et un adaptateur d'interface ; platform-ops ne possède ni produit, ni prix, ni stock.
-- `recommendations` → `orders` — **accepted-dependency** — Une recommandation permet explicitement d'ajouter le produit suggéré au panier personnel et de construire son résumé de ligne. La recommandation ne possède ni le panier ni son cycle de persistance.
-- `shared-cart` → `catalog` — **accepted-dependency** — Le modal panier partagé consomme en lecture seule les données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié.
+- _none_
 
 ### Runtime cycles
 
 Cycles runtime réels (après exclusion test-only + composition-root). Chaque direction porte une décision dans le ledger.
 
-- `auth-identity` ↔ `platform-ops` — auth-identity→platform-ops (TECHNICAL_PRIMITIVE) ; platform-ops→auth-identity (BUSINESS_FEATURE_INTERFACE)
-- `catalog` ↔ `platform-ops` — catalog→platform-ops (TECHNICAL_PRIMITIVE) ; platform-ops→catalog (BUSINESS_FEATURE_INTERFACE)
+- _none_
 
 ### Ontology gap coverage (flux local-manifest séparé, hors paires)
 

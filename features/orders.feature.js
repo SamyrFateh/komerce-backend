@@ -147,6 +147,15 @@ module.exports = {
   // O1.4). product_suppliers et suppliers ont quitté orders — plus aucun
   // fichier resté dans orders ne les touche (vérifié par grep, 2026-07-12).
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'order_comments',
+      'order_items',
+      'order_status_history',
+      'orders',
+      'recipients',
+      'sms_log',
+    ],
     tables: [
       'alerts: W',
       'cart_shares: W',
@@ -239,9 +248,7 @@ module.exports = {
       'customs',
       'dashboard',
       'documents',
-      'notification',
       'notifications (projection idempotente du retrait disponible)',
-      'payment',
       'refunds',
     ],
   },

@@ -35,7 +35,7 @@
 
 import { fmtPrice } from './b-utils.js';
 import { bus } from './b-bus.js';
-import { addToCart } from './b-cart.js';
+import { addToCart } from './ports/cart-intent-port.js';
 import { state, getRequestedTransportRail } from './b-store.js';
 import {
   buildModalCartProduct,

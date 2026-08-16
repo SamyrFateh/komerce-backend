@@ -149,6 +149,12 @@ module.exports = {
   // migration 124 ; stripe_events_processed n'est plus touché par cette
   // feature (plus de webhook shared-cart).
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'basket_items',
+      'baskets',
+      'cart_shares',
+    ],
     tables: [
       'basket_items: RW',
       'baskets: RW',
@@ -191,10 +197,11 @@ module.exports = {
     ],
     consumes: [
       'orders (arbitrage de la réclamation via order_items.shared_cart_item_id — feature orders, migration 123)',
-      'products (lecture seule)',
-      'notification (émission uniquement — WhatsApp création de liste)',
+      'notifications (émission uniquement — WhatsApp création de liste)',
       'auth',
       'auth-identity (projection boutique : b-share-cart.js consomme identité et téléphone)',
+
+      'recommendations',
     ],
   },
 

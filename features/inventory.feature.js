@@ -21,6 +21,18 @@ module.exports = {
   since:    '2026-01',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: { ownsTables: true, ownsLifecycle: true, activeService: true, externalSideEffect: 'none', surface: 'api+service' },
+    rationale: [
+      "possède le stock hub et le cycle réception-affectation-dispatch, avec invariant de stock non négatif",
+      "inventory décide l’état physique disponible au hub ; catalog, orders et logistics ne font que traverser ou consommer ce service",
+    ],
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Réceptionner, affecter et dispatcher les articles au hub.',
 

@@ -118,6 +118,10 @@ module.exports = {
   // Champ auto-généré : à corriger à la main si une requête dynamique
   // (nom de table construit par variable) a échappé au scan.
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'invoices',
+    ],
     tables: [
       'customs_shipment_parcels: R',
       'customs_shipments: R',

@@ -21,6 +21,18 @@ module.exports = {
   since:    '2025-09',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: { ownsTables: true, ownsLifecycle: true, activeService: true, externalSideEffect: 'payment', surface: 'api+service' },
+    rationale: [
+      "possède les événements de paiement et la confirmation idempotente Stripe, PayPal et cash",
+      "l’encaissement est un cycle métier autonome ; orders consomme son résultat sans posséder les webhooks ni leur idempotence",
+    ],
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Encaisser un paiement (carte, PayPal, especes au retrait) et confirmer son etat de facon idempotente.',
 

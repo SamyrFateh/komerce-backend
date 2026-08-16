@@ -27,8 +27,7 @@ import {
   renderProductCarousel,
   productImageFallbackAttr,
 } from '../b-utils.js';
-import { isFav } from '../b-cart-core.js';
-import { getProductCartSummary } from '../cart-product-summary.js';
+import { isFav, getProductCartSummary } from '../ports/cart-intent-port.js';
 import { buildProductCardViewModel } from '../view-models/product-card-view-model.js';
 import { getCategoryByKey } from '../shop-schema.js';
 

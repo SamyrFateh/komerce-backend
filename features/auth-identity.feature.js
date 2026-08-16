@@ -28,6 +28,7 @@ module.exports = {
     kind:     'business-feature',
     rationale: [
       'Propriétaire de `users` et `otp_codes` (arbitrage A, 2026-07-29). Cycle de vie propre : OTP, magic-link, guest-checkout. Expose revokeSessions() comme protocole de mutation.',
+      'Possède aussi le lifecycle de révocation des sessions et des autorisations nominatives de retrait ; les middlewares de garde restent dans le transversal technique auth.',
     ],
   },
   since:    '2025-08',
@@ -84,6 +85,8 @@ module.exports = {
       'utils/name-normalize.js',
     ],
     migrations: [
+      'migrations/072_jwt_revocation.sql',
+      'migrations/084_jwt_revocation.sql',
       'migrations/121_exceptional_pickup_authorization.sql',
     ],
       tests: [
@@ -109,6 +112,11 @@ module.exports = {
   // Champ auto-généré : à corriger à la main si une requête dynamique
   // (nom de table construit par variable) a échappé au scan.
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'users',
+      'revoked_tokens',
+    ],
     tables: [
       'invoices: R',
       'loyalty_tiers: R',

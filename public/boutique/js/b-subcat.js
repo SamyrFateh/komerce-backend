@@ -30,15 +30,14 @@ import {
 }                         from './b-utils.js';
 import { getSubcategories, matchesSubcategory } from './shop-schema.js';
 import {
-  showToast,
-}                         from './b-cart-core.js';
+  showToast, toggleFav, quickAdd, quickRemove, openCartWithHighlight,
+}                         from './ports/cart-intent-port.js';
 import {
   _setupMobilePager,
   destroyMobilePager,
 }                         from './b-pager.js';
 import { _renderCard, renderGrid } from './b-catalog.js';
 import { openModal }               from './b-modal.js';
-import { toggleFav, quickAdd, quickRemove, openCartWithHighlight } from './b-cart.js';
 import { isDesktop }               from './b-scroll-owner.js';
 
 

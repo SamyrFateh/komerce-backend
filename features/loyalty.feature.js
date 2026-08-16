@@ -77,6 +77,10 @@ module.exports = {
   //   (hors ownership loyalty, voir ONTOLOGY_GAP) écrit aussi le statut de
   //   cette même table — multi-writer réel entre deux owners actuels.
   db: {
+    // Clean Signal Boundary: lifecycle ownership is table-specific.
+    lifecycleOwnerOf: [
+      'loyalty_rewards',
+    ],
     tables: [
       'finance_config: R',
       'loyalty_rewards: RW',    // insert + lecture pending (loyalty-service.js) ; voir ONTOLOGY_GAP pour l'écriture admin-loyalty.js
