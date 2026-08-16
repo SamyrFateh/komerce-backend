@@ -1,0 +1,82 @@
+name: PR enforcement
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-enforcement-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect PR scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.scope.outputs.backend }}
+      backend_files: ${{ steps.scope.outputs.backend_files }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - id: scope
+        name: Classify changed files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/pr-enforcement-scope.js --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT"
+
+  backend:
+    name: Backend gates
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Quality gate
+        run: node scripts/code-quality-gate.js --strict
+      - name: Feature guard
+        run: node scripts/feature-guard.js --strict
+      - name: Contract consumer check
+        run: node scripts/contract-check.js
+      - name: Related unit tests
+        env:
+          BACKEND_FILES: ${{ needs.changes.outputs.backend_files }}
+        run: node scripts/run-staged-related-tests.js --files "$BACKEND_FILES"
+      - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
+  verdict:
+    name: Required verdict
+    if: always()
+    needs: [changes, backend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate scoped results
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          BACKEND_RESULT: ${{ needs.backend.result }}
+        run: |
+          echo "changes=$CHANGES_RESULT"
+          echo "backend=$BACKEND_RESULT"
+          test "$CHANGES_RESULT" = "success"
+          if [ "$BACKEND_RESULT" != "success" ] && [ "$BACKEND_RESULT" != "skipped" ]; then
+            echo "Backend enforcement failed: $BACKEND_RESULT"
+            exit 1
+          fi
