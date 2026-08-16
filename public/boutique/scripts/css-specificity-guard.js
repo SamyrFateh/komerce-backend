@@ -85,11 +85,17 @@ function parseCSS(content, filename) {
   let depth = 0;
   const mediaAt = {};
   let inKF = false, kfBase = -1;
-  let sel = null, props = {}, sline = 0;
+  let sel = null, props = {}, sline = 0, sourceFile = filename, sourceLineBase = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const ln = i + 1;
     const s  = lines[i].trim();
+    const sourceMarker = s.match(/^\/\* ── ([^ ]+\.css) /);
+    if (sourceMarker) {
+      sourceFile = 'public/boutique/css/' + sourceMarker[1];
+      sourceLineBase = ln;
+      continue;
+    }
     const o  = (s.match(/{/g) || []).length;
     const c  = (s.match(/}/g) || []).length;
 
@@ -127,7 +133,15 @@ function parseCSS(content, filename) {
       for (const d of Object.keys(mediaAt).map(Number).sort((a, b) => a - b)) {
         if (d <= depth) media = mediaAt[d];
       }
-      rules.push({ file: filename, line: sline, selector: sel, media, props: { ...props } });
+      rules.push({
+        file: filename,
+        line: sline,
+        sourceFile,
+        sourceLine: Math.max(1, sline - sourceLineBase),
+        selector: sel,
+        media,
+        props: { ...props },
+      });
       sel = null; props = {};
     }
 
@@ -218,8 +232,8 @@ function scan(globalClasses) {
         if (r.props[prop] === baseRule.props[prop]) continue;
         findings.push({
           globalClass: matchedClass,
-          overriding: { selector: r.selector, file: r.file, line: r.line, media: r.media, value: r.props[prop] },
-          overridden: { selector: baseSelector, file: baseRule.file, line: baseRule.line, media: baseRule.media, value: baseRule.props[prop] },
+          overriding: { selector: r.selector, file: r.file, line: r.line, sourceFile: r.sourceFile, sourceLine: r.sourceLine, media: r.media, value: r.props[prop] },
+          overridden: { selector: baseSelector, file: baseRule.file, line: baseRule.line, sourceFile: baseRule.sourceFile, sourceLine: baseRule.sourceLine, media: baseRule.media, value: baseRule.props[prop] },
           prop,
           specGlobal, specBase,
         });
@@ -274,16 +288,17 @@ if (findings.length === 0) {
 console.log(`${BLD}Overrides silencieux détectés (invisibles pour css-guard.js) :${R}\n`);
 findings.forEach(f => {
   console.log(`${RED}🔴 .${f.globalClass}${R} — propriété ${BLD}${f.prop}${R}`);
-  console.log(`   gagnant  ${DIM}${f.overriding.file}:L${f.overriding.line}${R} ${f.overriding.selector}`);
+  console.log(`   gagnant  ${DIM}${f.overriding.sourceFile || f.overriding.file}:L${f.overriding.sourceLine || f.overriding.line}${R} ${f.overriding.selector}`);
   console.log(`            → ${f.overriding.value}  ${DIM}(spécificité ${f.specGlobal.join(',')})${R}`);
-  console.log(`   perdant  ${DIM}${f.overridden.file}:L${f.overridden.line}${R} ${f.overridden.selector}`);
+  console.log(`   perdant  ${DIM}${f.overridden.sourceFile || f.overridden.file}:L${f.overridden.sourceLine || f.overridden.line}${R} ${f.overridden.selector}`);
   console.log(`            → ${f.overridden.value}  ${DIM}(spécificité ${f.specBase.join(',')})${R}`);
   console.log('');
 });
-console.log(`${BLD}Total : ${findings.length} override(s)${R}`);
+const semanticCount = new Set(findings.map(keyOf)).size;
+console.log(`${BLD}Total : ${findings.length} occurrence(s), ${semanticCount} override(s) sémantique(s)${R}`);
 
 if (save) {
-  const keys = findings.map(keyOf).sort();
+  const keys = [...new Set(findings.map(keyOf))].sort();
   fs.writeFileSync(BASELINE, JSON.stringify({ total: keys.length, keys, savedAt: new Date().toISOString() }, null, 2));
   console.log(`${GRN}${BLD}✔ Baseline figée à ${keys.length} override(s).${R}`);
   process.exitCode = 0;
@@ -299,7 +314,12 @@ if (!baseline) {
   return;
 }
 const known = new Set(baseline.keys || []);
-const regressions = findings.map(f => ({ f, k: keyOf(f) })).filter(x => !known.has(x.k));
+const regressionsByKey = new Map();
+for (const f of findings) {
+  const k = keyOf(f);
+  if (!known.has(k) && !regressionsByKey.has(k)) regressionsByKey.set(k, { f, k });
+}
+const regressions = [...regressionsByKey.values()];
 
 if (regressions.length === 0) {
   console.log(`\n${GRN}${BLD}✔ Aucune hausse hors baseline.${R}`);

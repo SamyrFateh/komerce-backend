@@ -59,9 +59,13 @@ module.exports = {
 
   files: {
     ci: [
-      '.github/workflows/showcase-catalog-media-audit.yml',
-      '.github/workflows/showcase-catalog-staging-deploy.yml',
+      // Workflow ACTIF (.github/workflows/).
       '.github/workflows/showcase-v2-staging-deploy.yml',
+      // Workflows showcase-catalog EN PAUSE (revue gouvernance 2026-08-14,
+      // cf. `.github/workflows-disabled/README.md`) — déclarés à leur
+      // emplacement réel pour rester possédés (ni faux « absent », ni orphelins).
+      '.github/workflows-disabled/showcase-catalog-media-audit.yml',
+      '.github/workflows-disabled/showcase-catalog-staging-deploy.yml',
     ],
     utils: [
       'utils/categories-cache.js',

@@ -143,8 +143,12 @@ function parseTextFindings(gate, output, exitCode) {
     if (!/(❌|✖|⚠|\bWARN(?:ING)?\b|\bERROR\b|\bFAIL(?:ED)?\b|violation|interdit|inconnu|manquant|orphelin|conflict|duplicate|d[ée]passe)/i.test(message)) continue;
     if (!file && !currentFile) continue;
     const warn = /(⚠|\bWARN(?:ING)?\b|avertissement)/i.test(message);
-    const fail = /(❌|✖|\bERROR\b|\bFAIL(?:ED)?\b|violation|interdit|conflict|duplicate)/i.test(message);
-    findings.push({ gate, scope: 'boutique', verdict: fail ? 'fail' : warn ? 'warn' : exitCode ? 'fail' : 'warn', type: 'TEXT-GATE-DIAGNOSTIC', feature: null, file: file || currentFile, message });
+    const failSignal = /(❌|✖|\bERROR\b|\bFAIL(?:ED)?\b|violation|interdit|conflict|duplicate)/i.test(message);
+    // Un gate qui termine avec exit 0 a validé sa baseline : les diagnostics
+    // de dette visible restent des WARN, jamais des FAIL projetés.
+    // Un exit non nul conserve en revanche les signaux d'échec explicites.
+    const verdict = exitCode === 0 ? 'warn' : failSignal ? 'fail' : warn ? 'warn' : 'fail';
+    findings.push({ gate, scope: 'boutique', verdict, type: 'TEXT-GATE-DIAGNOSTIC', feature: null, file: file || currentFile, message });
   }
   return findings;
 }
@@ -205,6 +209,10 @@ function selfCheck() {
   const local = new Map([['orders-client', { canonicalFeature: 'orders', files: { boutique: ['../js/x.js'] } }]]);
   const owners = buildCanonicalFileIndex(root, local).get('public/boutique/js/x.js');
   if (!owners || [...owners].join(',') !== 'orders') throw new Error('P3b local ownership precedence self-check failed');
+  const okDebt = parseTextFindings('check:test', 'public/boutique/css/a.css — 2 violations baseline', 0);
+  if (okDebt.length !== 1 || okDebt[0].verdict !== 'warn') throw new Error('P3b successful gate diagnostic must project as warn');
+  const failedDebt = parseTextFindings('check:test', 'public/boutique/css/a.css — 1 violation hors baseline', 1);
+  if (failedDebt.length !== 1 || failedDebt[0].verdict !== 'fail') throw new Error('P3b failing gate diagnostic must project as fail');
 }
 
 function sourceRecord(src, result, raw, attribution, coverage, extraError) {

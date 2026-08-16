@@ -76,8 +76,8 @@ if (total === 0) {
 let fileNames = Object.keys(perFile);
 for (let j = 0; j < fileNames.length; j++) {
   let fname = fileNames[j];
-  let pad = fname;
-  while (pad.length < 34) pad += ' ';
+  let pad = 'public/boutique/css/' + fname;
+  while (pad.length < 58) pad += ' ';
   console.log('   >> ' + pad + ' ' + perFile[fname].map(function(v) { return v + 'px'; }).join(', '));
 }
 console.log('\n   Total : ' + total + ' violations dans ' + fileNames.length + ' fichiers.');
