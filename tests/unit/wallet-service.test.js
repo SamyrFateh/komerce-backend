@@ -5,17 +5,21 @@
  */
 
 /**
- * KOMERCE — Tests Unitaires: wallet-service.js (V2.5)
+ * KOMERCE — Tests Unitaires: wallet-service.js (V2.6 — P1 concurrence)
  *
  * Couvre:
  *   ✅ credit() — création de lots
  *   ✅ credit() — idempotence via idempotencyKey
+ *   ✅ credit()/debit() — récupération 23505 via SAVEPOINT
  *   ✅ debit() — consommation FIFO
  *   ✅ debit() — insufficient balance
  *   ✅ reverseLot() — block if consumed
  *   ✅ reverseLot() — block negative balance
  *
- * Strategy: mock db.getClient() and db.query()
+ * Strategy: mock db.getClient() and db.query(). Les commandes transactionnelles
+ * SAVEPOINT/ROLLBACK TO/RELEASE sont interceptées séparément pour ne pas
+ * consommer les fixtures de requêtes métier ; elles restent assertables via
+ * mockClient.query.mock.calls.
  * Run: npx jest tests/unit/wallet-service.test.js
  */
 
@@ -23,14 +27,22 @@
 
 const mockQuery = jest.fn();
 const mockClient = {
-  query: mockQuery,
+  query: jest.fn((sql, params) => {
+    const command = typeof sql === 'string' ? sql.trim() : '';
+    if (/^(SAVEPOINT|ROLLBACK TO SAVEPOINT|RELEASE SAVEPOINT)\b/i.test(command)) {
+      return Promise.resolve({ rows: [], rowCount: 0 });
+    }
+    return mockQuery(sql, params);
+  }),
   release: jest.fn(),
 };
+const mockWithTransaction = jest.fn(async (callback) => callback(mockClient));
 
 jest.mock('../../db', () => ({
   query: jest.fn(),
   getClient: jest.fn(() => mockClient),
   pool: { connect: jest.fn(() => mockClient) },
+  withTransaction: mockWithTransaction,
 }));
 
 jest.mock('../../services/documents/wallet-receipt', () => ({
@@ -109,8 +121,55 @@ describe('wallet credit()', () => {
 
     expect(result.duplicate).toBe(true);
     expect(result.transaction.id).toBe('tx-existing');
-    // Only 1 query (the idempotence check)
+    // Only 1 data query (the idempotence check)
     expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
+  test('23505 concurrent sur idx_wtx_idempotency → rollback du mouvement perdant puis duplicate=true', async () => {
+    const uniqueViolation = Object.assign(new Error('duplicate key value violates unique constraint'), {
+      code: '23505',
+      constraint: 'idx_wtx_idempotency',
+      detail: 'Key (idempotency_key)=(refund_same) already exists.',
+    });
+    const existingTx = { id: 'tx-winner', type: 'credit', amount_kmf: 5000, idempotency_key: 'refund_same' };
+
+    mockQuery
+      .mockResolvedValueOnce({ rows: [] }) // fast dup check
+      .mockResolvedValueOnce({ rows: [{ id: 'wallet-1', user_id: 'user-1', balance_kmf: 0 }] }) // wallet FOR UPDATE
+      .mockResolvedValueOnce({ rows: [{ balance_kmf: 5000 }] }) // losing balance UPDATE
+      .mockRejectedValueOnce(uniqueViolation) // INSERT ledger loses uniqueness race
+      .mockResolvedValueOnce({ rows: [existingTx] }); // winner visible after ROLLBACK TO
+
+    const result = await walletService.credit(mockClient, {
+      userId: 'user-1',
+      amountKmf: 5000,
+      reason: 'order_cancel',
+      idempotencyKey: 'refund_same',
+    });
+
+    expect(result).toEqual({ transaction: existingTx, duplicate: true });
+    const controlSql = mockClient.query.mock.calls.map(([sql]) => String(sql).trim());
+    expect(controlSql).toContain('SAVEPOINT wallet_idempotency_guard');
+    expect(controlSql).toContain('ROLLBACK TO SAVEPOINT wallet_idempotency_guard');
+    expect(controlSql).toContain('RELEASE SAVEPOINT wallet_idempotency_guard');
+    // Aucun lot n'est créé par le perdant : 5 requêtes métier, la dernière est
+    // la relecture de la transaction gagnante.
+    expect(mockQuery).toHaveBeenCalledTimes(5);
+  });
+
+  test('pool canonique db → mutation automatiquement enveloppée par withTransaction', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'wallet-1', user_id: 'user-1', balance_kmf: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ balance_kmf: 1000 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'tx-1', type: 'credit', amount_kmf: 1000 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'lot-1', remaining_kmf: 1000 }] });
+
+    const result = await walletService.credit(db, {
+      userId: 'user-1', amountKmf: 1000, reason: 'order_cancel',
+    });
+
+    expect(mockWithTransaction).toHaveBeenCalledTimes(1);
+    expect(result.duplicate).toBe(false);
   });
 });
 
@@ -172,6 +231,34 @@ describe('wallet debit()', () => {
     // lot-1 fully consumed (3000), lot-2 partially (2000)
     expect(result.consumptions[0].amount_kmf).toBe(3000);
     expect(result.consumptions[1].amount_kmf).toBe(2000);
+  });
+
+  test('23505 concurrent sur idx_wtx_idempotency → rollback du débit perdant puis duplicate=true', async () => {
+    const uniqueViolation = Object.assign(new Error('duplicate key value violates unique constraint'), {
+      code: '23505',
+      constraint: 'idx_wtx_idempotency',
+      detail: 'Key (idempotency_key)=(checkout_same) already exists.',
+    });
+    const existingTx = { id: 'tx-winner', type: 'debit', amount_kmf: 3000, idempotency_key: 'checkout_same' };
+
+    mockQuery
+      .mockResolvedValueOnce({ rows: [] }) // fast dup check
+      .mockResolvedValueOnce({ rows: [{ id: 'wallet-1', user_id: 'user-1', balance_kmf: 10000 }] })
+      .mockResolvedValueOnce({ rows: [{ balance_kmf: 7000 }] }) // losing debit UPDATE
+      .mockRejectedValueOnce(uniqueViolation) // INSERT ledger loses race
+      .mockResolvedValueOnce({ rows: [existingTx] }); // winner read after rollback-to-savepoint
+
+    const result = await walletService.debit(mockClient, {
+      userId: 'user-1', amountKmf: 3000, reason: 'checkout', idempotencyKey: 'checkout_same',
+    });
+
+    expect(result).toEqual({ transaction: existingTx, consumptions: [], duplicate: true });
+    const controlSql = mockClient.query.mock.calls.map(([sql]) => String(sql).trim());
+    expect(controlSql).toContain('SAVEPOINT wallet_idempotency_guard');
+    expect(controlSql).toContain('ROLLBACK TO SAVEPOINT wallet_idempotency_guard');
+    expect(controlSql).toContain('RELEASE SAVEPOINT wallet_idempotency_guard');
+    // Pas de SELECT lots / consommation par le perdant.
+    expect(mockQuery).toHaveBeenCalledTimes(5);
   });
 });
 
@@ -345,8 +432,8 @@ describe('applyToOrder()', () => {
       .mockResolvedValueOnce({ rows: [{ id: 'order-1', user_id: 'user-1', total_kmf: 3000, reference: 'KMC-001' }] })
       // getOrCreateWallet (no forUpdate)
       .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 5000 }] })
-      // debit(): idempotence check (no key passed here — applyToOrder always sets idempotencyKey)
-      .mockResolvedValueOnce({ rows: [] }) // dup check → not found
+      // debit(): idempotence check
+      .mockResolvedValueOnce({ rows: [] })
       // debit(): getOrCreateWallet FOR UPDATE
       .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 5000 }] })
       // debit(): UPDATE balance
@@ -386,7 +473,6 @@ describe('applyToOrder()', () => {
       // applyToOrder(): UPDATE orders (wallet_applied_kmf)
       .mockResolvedValueOnce({ rows: [{}] })
       // markPaid(): no-op — la garde du validateur a bloqué la transition
-      // (ex. commande passée 'refunded'/'failed' entre-temps) : rowCount=0.
       .mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
     await expect(
@@ -423,22 +509,11 @@ describe('applyToOrder()', () => {
   });
 
   // ── Reproduction exacte du défaut clôturé (RECONCILIATION §4.7) ──────────
-  // 1. application wallet partielle lors de la création (déjà persistée :
-  //    wallet_applied_kmf > 0, payment_status = 'pending', total_kmf > 0
-  //    non couvert) ;
-  // 2. second appel /wallet/apply -> applyToOrder() avec la même clé
-  //    d'idempotence checkout_<orderId> (stable, cf. commentaire du contrat
-  //    au-dessus de applyToOrder) ;
-  // 3. debit() retrouve la transaction existante -> duplicate:true ;
-  // 4. AUCUNE nouvelle requête de débit (balance, lot, consumption) ;
-  // 5. wallet_applied_kmf n'est PAS réécrit (aucun UPDATE orders émis) ;
-  // 6. payment_status n'est PAS touché (markPaid() jamais appelé).
   test('P5-wallet — second appel avec la même clé checkout_<orderId> : duplicate:true, aucun nouveau débit, wallet_applied_kmf et payment_status inchangés', async () => {
-    const ALREADY_APPLIED = 1200; // partiel, appliqué à la création
-    const TOTAL_KMF = 3000;       // reste à payer > 0, donc pas encore 'paid'
+    const ALREADY_APPLIED = 1200;
+    const TOTAL_KMF = 3000;
 
     mockQuery
-      // 1) SELECT order FOR UPDATE — état déjà persisté après l'application partielle
       .mockResolvedValueOnce({
         rows: [{
           id: 'order-1', user_id: 'user-1', reference: 'KMC-777',
@@ -446,29 +521,20 @@ describe('applyToOrder()', () => {
           payment_status: 'pending',
         }],
       })
-      // 2) getOrCreateWallet (no forUpdate)
       .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 5000 }] })
-      // 3) debit(): idempotence check sur checkout_order-1 -> transaction déjà existante
       .mockResolvedValueOnce({ rows: [{ id: 'tx-existing', idempotency_key: 'checkout_order-1', amount_kmf: ALREADY_APPLIED }] });
 
-    const queriesBeforeCall = mockQuery.mock.calls.length; // 0 — juste posé pour lisibilité
+    const queriesBeforeCall = mockQuery.mock.calls.length;
 
     const result = await walletService.applyToOrder(mockClient, {
-      userId: 'user-1', orderId: 'order-1', amountKmf: 1800, // le client retente le solde restant
+      userId: 'user-1', orderId: 'order-1', amountKmf: 1800,
     });
 
-    // duplicate:true, aucune donnée financière inventée/rejouée
     expect(result.duplicate).toBe(true);
     expect(result.applied_kmf).toBe(ALREADY_APPLIED);
     expect(result.remaining_to_pay).toBe(TOTAL_KMF - ALREADY_APPLIED);
-
-    // Exactement 3 requêtes exécutées : SELECT order, getOrCreateWallet, dup-check.
-    // Rien de plus — donc aucun UPDATE balance/lot/consumption/orders, et
-    // markPaid() (qui commencerait par une requête supplémentaire) jamais appelé.
     expect(mockQuery.mock.calls.length).toBe(queriesBeforeCall + 3);
 
-    // Aucun appel ne porte sur orders.wallet_applied_kmf ou payment_status —
-    // seule requête UPDATE possible serait un 4e appel, absent ici.
     const updateOrdersCalls = mockQuery.mock.calls.filter(
       ([sql]) => /UPDATE\s+orders/i.test(sql)
     );
@@ -491,24 +557,17 @@ describe('removeFromOrder()', () => {
 
   test('reverses consumptions and re-credits wallet', async () => {
     mockQuery
-      // SELECT consumptions FOR UPDATE
       .mockResolvedValueOnce({
         rows: [
           { credit_lot_id: 'lot-1', amount_kmf: 1000, wallet_id: 'w-1' },
           { credit_lot_id: 'lot-2', amount_kmf: 500, wallet_id: 'w-1' },
         ],
       })
-      // UPDATE lot-1
       .mockResolvedValueOnce({ rows: [{}] })
-      // UPDATE lot-2
       .mockResolvedValueOnce({ rows: [{}] })
-      // UPDATE wallet_consumptions reversed_at
       .mockResolvedValueOnce({ rows: [{}] })
-      // UPDATE wallets balance
       .mockResolvedValueOnce({ rows: [{ balance_kmf: 4500 }] })
-      // INSERT wallet_transactions
       .mockResolvedValueOnce({ rows: [{ id: 'tx-reversal', amount_kmf: 1500 }] })
-      // UPDATE orders wallet_applied_kmf = 0
       .mockResolvedValueOnce({ rows: [{}] });
 
     const result = await walletService.removeFromOrder(mockClient, { orderId: 'order-1' });
@@ -579,7 +638,7 @@ describe('ensureWalletTables() [LOT R2 — verification only, DDL owned by migra
     mockQuery.mockResolvedValueOnce({
       rows: [{
         wallets: true,
-        wallet_transactions: false, // manquant : migrations/014c pas jouée
+        wallet_transactions: false,
         wallet_credit_lots: true,
         wallet_consumptions: true,
         idx_wtx_idempotency: true,
@@ -642,9 +701,9 @@ describe('getTransactions()', () => {
 
   test('returns paginated transactions with total', async () => {
     db.query
-      .mockResolvedValueOnce({ rows: [{ id: 'w-1' }] }) // wallet id
-      .mockResolvedValueOnce({ rows: [{ c: 5 }] }) // count
-      .mockResolvedValueOnce({ rows: [{ id: 'tx-1' }, { id: 'tx-2' }] }); // page
+      .mockResolvedValueOnce({ rows: [{ id: 'w-1' }] })
+      .mockResolvedValueOnce({ rows: [{ c: 5 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'tx-1' }, { id: 'tx-2' }] });
 
     const result = await walletService.getTransactions('user-1', { limit: 2, offset: 0 });
 
@@ -674,7 +733,6 @@ describe('listWallets()', () => {
 
     expect(result.total).toBe(1);
     expect(db.query.mock.calls[0][0]).toMatch(/ILIKE/);
-    // NB: le tableau `p` est partagé/muté (limit/offset poussés après le 1er appel)
     expect(db.query.mock.calls[0][1][0]).toBe('%fatima%');
   });
 });
