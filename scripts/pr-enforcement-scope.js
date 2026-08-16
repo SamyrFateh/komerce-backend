@@ -7,7 +7,7 @@
  * Lot 1  : backend + tests backend racine.
  * Lot 2A : migrations + dump live.
  * Lot 2B : Boutique runtime source + unit tests, sans css/dist ni E2E.
- * Lot 3  : governance / feature-first.
+ * Lot 3  : governance / feature-first + workflows GitHub Actions actifs.
  *
  * Tous les statuts Git du diff sont pris en compte. Une suppression doit
  * réveiller le même domaine qu'une création/modification du même chemin.
@@ -74,16 +74,17 @@ function isBoutiqueRelevant(file) {
 }
 
 // Lot 3 — governance / feature-first : cartes, baselines/ontologie, logique des
-// gates, capabilities, et les projections canoniques dérivées. Une PR qui ne
-// touche que ces fichiers doit rejouer feature-guard + business-graph --check +
-// feature-360 --check (mode check, jamais --write), sinon le domaine gouvernance
-// n'est pas enforced (Required verdict passait à vide auparavant).
+// gates, capabilities, workflows GitHub Actions actifs et projections canoniques
+// dérivées. Une PR qui ne touche que ces fichiers doit rejouer feature-guard +
+// business-graph --check + feature-360 --check (mode check, jamais --write),
+// sinon le domaine gouvernance n'est pas enforced (Required verdict passe à vide).
 function isGovernanceFile(file) {
   const f = norm(file);
   return /^features\/.+\.feature\.js$/i.test(f)
     || /^governance\/.+/i.test(f)
     || /^scripts\/.+\.(?:js|cjs|mjs)$/i.test(f)
     || /^capabilities\/.+\.(?:js|cjs|mjs)$/i.test(f)
+    || /^\.github\/workflows\/.+/i.test(f)
     || /^docs\/(?:FEATURE_360|BUSINESS_FEATURE_GRAPH|O6_INVENTORY)\.(?:json|md)$/i.test(f);
 }
 
