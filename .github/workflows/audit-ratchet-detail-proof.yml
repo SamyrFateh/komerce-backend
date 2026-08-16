@@ -1,0 +1,33 @@
+name: Audit ratchet detail proof
+on:
+  push:
+    branches: [agent/proof-audit-closure-20260816]
+permissions:
+  contents: read
+jobs:
+  detail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fad4cdd71bd4853db2a289393002c5e02e297b9c
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - name: Generate current graph and print ratchet-sensitive cases
+        run: |
+          node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique >/dev/null
+          node - <<'NODE'
+          const path = require('path');
+          const graph = require('./docs/BUSINESS_FEATURE_GRAPH.json');
+          const semantics = require('./governance/business-graph-warning-semantics.js');
+          const ROOT = process.cwd();
+          for (const w of graph.drifts.warn || []) {
+            const c = semantics.classify(w, { ROOT }).category;
+            if ((w.type === 'WRITER-NOT-OWNER' && c === 'EXPECTED_TOPOLOGY') ||
+                (w.type === 'DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED' && c === 'GENERATOR_LIMITATION')) {
+              console.log(JSON.stringify({type:w.type, category:c, ref:w.ref, msg:w.msg}));
+            }
+          }
+          NODE
