@@ -1,6 +1,6 @@
 {
   "version": "GF-2.1",
-  "generatedAt": "2026-08-12",
+  "generatedAt": "2026-08-16",
   "contract": {
     "minimumAttributableSources": 18,
     "configuredSources": 18,
@@ -31,7 +31,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 78,
+      "coverageCount": 80,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -45,7 +45,7 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 1,
-      "warningCount": 14,
+      "warningCount": 12,
       "coverageCount": 0,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
@@ -76,7 +76,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 107,
+      "coverageCount": 110,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -90,8 +90,8 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 0,
-      "warningCount": 24,
-      "coverageCount": 78,
+      "warningCount": 27,
+      "coverageCount": 80,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -106,7 +106,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 11,
-      "coverageCount": 108,
+      "coverageCount": 111,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -121,7 +121,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 108,
+      "coverageCount": 111,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -136,7 +136,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 29,
+      "coverageCount": 30,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -151,7 +151,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 29,
+      "coverageCount": 30,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -166,7 +166,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 29,
+      "coverageCount": 30,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -180,8 +180,8 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 0,
-      "warningCount": 0,
-      "coverageCount": 29,
+      "warningCount": 1,
+      "coverageCount": 30,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -196,7 +196,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 29,
+      "coverageCount": 30,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -211,7 +211,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 29,
+      "coverageCount": 30,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -226,7 +226,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 29,
+      "coverageCount": 30,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -241,7 +241,7 @@
       "exitCode": 0,
       "errorCount": 0,
       "warningCount": 0,
-      "coverageCount": 29,
+      "coverageCount": 30,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
       "unprojectableFiles": [],
@@ -287,7 +287,7 @@
       "type": "TEXT-GATE-DIAGNOSTIC",
       "feature": "orders",
       "file": null,
-      "message": "↳ Référencé en CSS : css/cart.css:2144, css/cart.css:2155 … — sélecteur legacy ou JS manquant",
+      "message": "↳ Référencé en CSS : css/cart.css:2188, css/cart.css:2199 … — sélecteur legacy ou JS manquant",
       "sourceFile": "public/boutique/css/cart.css"
     },
     {
@@ -391,6 +391,16 @@
       "sourceFile": "public/boutique/js/b-nav.js"
     },
     {
+      "gate": "check:breakpoints",
+      "scope": "boutique",
+      "verdict": "warn",
+      "type": "TEXT-GATE-DIAGNOSTIC",
+      "feature": "shared-cart",
+      "file": null,
+      "message": "Total : 2 violations dans 2 fichiers.",
+      "sourceFile": "public/boutique/css/shared-list-library-remove.css"
+    },
+    {
       "gate": "check:imports",
       "scope": "boutique",
       "verdict": "warn",
@@ -417,7 +427,7 @@
       "type": "TEXT-GATE-DIAGNOSTIC",
       "feature": "orders",
       "file": null,
-      "message": "⚠ js/b-cart.js — 4 export(s) non consommé(s) :",
+      "message": "⚠ js/b-cart.js — 3 export(s) non consommé(s) :",
       "sourceFile": "public/boutique/js/b-cart.js"
     },
     {
@@ -437,7 +447,7 @@
       "type": "TEXT-GATE-DIAGNOSTIC",
       "feature": "orders",
       "file": null,
-      "message": "⚠ js/b-checkout.js — 1 export(s) non consommé(s) :",
+      "message": "⚠ js/b-checkout.js — 2 export(s) non consommé(s) :",
       "sourceFile": "public/boutique/js/b-checkout.js"
     },
     {
@@ -469,6 +479,16 @@
       "file": null,
       "message": "⚠ js/b-identity.js — 1 export(s) non consommé(s) :",
       "sourceFile": "public/boutique/js/b-identity.js"
+    },
+    {
+      "gate": "check:imports",
+      "scope": "boutique",
+      "verdict": "warn",
+      "type": "TEXT-GATE-DIAGNOSTIC",
+      "feature": "auth-identity",
+      "file": null,
+      "message": "⚠ js/b-komerce-nav-identity.js — 1 export(s) non consommé(s) :",
+      "sourceFile": "public/boutique/js/b-komerce-nav-identity.js"
     },
     {
       "gate": "check:imports",
@@ -539,6 +559,16 @@
       "file": null,
       "message": "⚠ js/b-nav.js — 1 export(s) non consommé(s) :",
       "sourceFile": "public/boutique/js/b-nav.js"
+    },
+    {
+      "gate": "check:imports",
+      "scope": "boutique",
+      "verdict": "warn",
+      "type": "TEXT-GATE-DIAGNOSTIC",
+      "feature": "notifications",
+      "file": null,
+      "message": "⚠ js/b-notifications.js — 1 export(s) non consommé(s) :",
+      "sourceFile": "public/boutique/js/b-notifications.js"
     },
     {
       "gate": "check:imports",
@@ -625,10 +655,20 @@
       "scope": "boutique",
       "verdict": "warn",
       "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
+      "feature": "wallet",
+      "file": null,
+      "message": "⚠ js/b-wallet.js — 1 export(s) non consommé(s) :",
+      "sourceFile": "public/boutique/js/b-wallet.js"
+    },
+    {
+      "gate": "check:imports",
+      "scope": "boutique",
+      "verdict": "warn",
+      "type": "TEXT-GATE-DIAGNOSTIC",
+      "feature": "wallet",
       "file": null,
       "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant.",
-      "sourceFile": "public/boutique/js/b-utils.js"
+      "sourceFile": "public/boutique/js/b-wallet.js"
     },
     {
       "gate": "gate:feature-classification-check",
@@ -645,15 +685,6 @@
       "type": "CLASSIFICATION-MISSING",
       "verdict": "warn",
       "feature": "customs",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "documents",
       "file": null,
       "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
     },
@@ -681,15 +712,6 @@
       "type": "CLASSIFICATION-MISSING",
       "verdict": "warn",
       "feature": "logistics",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "orders",
       "file": null,
       "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
     },
