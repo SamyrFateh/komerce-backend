@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 // probe: vérifie que le job governance s'exécute (PR de test)
+// proof 2026-08-16: governance scoped job must execute, not skip
 
 /**
  * Classifie le diff d'une PR pour l'enforcement GitHub ciblé.
