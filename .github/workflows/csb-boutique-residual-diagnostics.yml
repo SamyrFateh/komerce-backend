@@ -24,11 +24,14 @@ jobs:
           npm ci
           npm --prefix public/boutique ci
       - name: Apply Boutique clean-signal closure
-        run: node scripts/csb-boutique-zero.js
+        run: |
+          node scripts/csb-boutique-zero-bootstrap.js
+          node scripts/csb-boutique-zero.js
       - name: Remove proof machinery before projections
         run: |
-          rm -f scripts/csb-boutique-zero.js .github/workflows/csb-boutique-residual-diagnostics.yml
+          rm -f scripts/csb-boutique-zero.js scripts/csb-boutique-zero-bootstrap.js .github/workflows/csb-boutique-residual-diagnostics.yml
           test ! -e scripts/csb-boutique-zero.js
+          test ! -e scripts/csb-boutique-zero-bootstrap.js
           test ! -e .github/workflows/csb-boutique-residual-diagnostics.yml
       - name: Prove Boutique registry has zero orphans
         run: node public/boutique/scripts/feature-registry-check.js --strict
