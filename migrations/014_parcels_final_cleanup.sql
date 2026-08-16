@@ -1,5 +1,4 @@
 -- Migration 014: Parcels final cleanup — remove legacy columns, add indexes
--- Controlled negative proof: editing an existing migration must be rejected.
 -- Add indexes for common parcel queries
 CREATE INDEX IF NOT EXISTS idx_parcels_order_id ON parcels(order_id);
 CREATE INDEX IF NOT EXISTS idx_parcels_status ON parcels(status);
