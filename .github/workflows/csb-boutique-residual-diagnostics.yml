@@ -1,0 +1,28 @@
+name: CSB Boutique residual diagnostics
+
+on:
+  push:
+    branches:
+      - agent/clean-signal-boundary-20260816
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Boutique feature registry
+        run: node public/boutique/scripts/feature-registry-check.js || true
+      - name: Boutique JS imports
+        run: node public/boutique/scripts/check-js-imports.js || true
+      - name: Boutique body classes
+        run: node public/boutique/scripts/check-body-classes.js || true
+      - name: Boutique breakpoints
+        run: npm --prefix public/boutique run check:breakpoints || true
