@@ -26,15 +26,22 @@ jobs:
       - name: Align active workflow ownership
         run: node scripts/lot1-bootstrap.js
 
-      - name: Prove scope classifier including doc-only non-trigger
-        run: npx jest --config jest.unit.config.js tests/unit/pr-enforcement-scope.test.js --runInBand --forceExit
+      - name: Prove scope and contract scanner semantics
+        run: |
+          npx jest --config jest.unit.config.js \
+            tests/unit/pr-enforcement-scope.test.js \
+            tests/unit/contract-check-runtime-scan.test.js \
+            --runInBand --forceExit
+
+      - name: Refresh contract from mounted runtime routes
+        run: node scripts/contract-generate.js
 
       - name: Prove intended backend gates on current tree
         run: |
           node scripts/code-quality-gate.js --strict
           node scripts/feature-guard.js --strict
           node scripts/contract-check.js
-          node scripts/run-staged-related-tests.js --files "tests/unit/pr-enforcement-scope.test.js"
+          node scripts/run-staged-related-tests.js --files "scripts/contract-check.js,tests/unit/contract-check-runtime-scan.test.js,tests/unit/pr-enforcement-scope.test.js"
 
       - name: Regenerate canonical governance projections
         run: |
@@ -52,6 +59,8 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add -A \
             features/infrastructure.feature.js \
+            docs/contract/openapi.json \
+            docs/contract/DEBT.md \
             docs/BUSINESS_FEATURE_GRAPH.json \
             docs/BUSINESS_FEATURE_GRAPH.md \
             docs/O6_INVENTORY.md \
