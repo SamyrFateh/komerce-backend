@@ -7,13 +7,39 @@ on:
 permissions:
   contents: write
 
-env:
-  DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: audit-closure-test-jwt-secret
+      ADMIN_PASSWORD: audit-closure-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_audit_closure_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_audit_closure_placeholder
+      QR_SECRET: audit-closure-test-qr-secret
+      AUTHKEY_API_KEY: audit-closure-test-authkey
+      PAYPAL_CLIENT_ID: audit-closure-test-paypal-client
+      PAYPAL_CLIENT_SECRET: audit-closure-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: audit-closure-test-paypal-webhook
+      META_WA_APP_SECRET: audit-closure-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,12 +101,38 @@ jobs:
                   raise SystemExit('infrastructure rationale anchor missing')
               s = s.replace(anchor, anchor + '\n' + second, 1)
           p.write_text(s)
+
+          # The invariant is declared @test-requires none. Use the repository's
+          # dedicated audit runner, which injects only cartography-safe dummy env,
+          # instead of calling the raw generator directly.
+          p = Path('tests/invariants/auth-identity.mutating-routes-guarded.test.js')
+          s = p.read_text()
+          old = "    execFileSync('node', ['scripts/gen-security-360.js'], {"
+          new = "    execFileSync('node', ['scripts/run-security-360.js'], {"
+          if old in s:
+              s = s.replace(old, new, 1)
+          elif new not in s:
+              raise SystemExit('auth-identity invariant security runner anchor missing')
+          s = s.replace(
+              '// Passe l\'env du processus Jest au sous-processus : gen-security-360.js\n'
+              '// charge server.js qui exige JWT_SECRET et autres secrets de test.\n'
+              '// Sans cela, le script sort en exit 1 avant d\'avoir analysé les routes\n'
+              '// — ce qui ferait échouer tous les tests.each suivants avec une erreur\n'
+              '// d\'environnement, pas une erreur de sécurité (violation invariant §2).',
+              '// Passe par run-security-360.js, le runner canonique de cartographie,\n'
+              '// qui fournit les seules valeurs factices nécessaires à l\'audit sans\n'
+              '// rendre ce test @test-requires dépendant de secrets externes.',
+              1,
+          )
+          p.write_text(s)
           PY
 
       - name: Refresh route registry from actual wiring
         run: node scripts/gen-route-registry.js
 
       - name: Install pg_dump 18 shim
+        env:
+          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
         run: |
           test -n "$DATABASE_URL"
           docker pull postgres:18
@@ -88,6 +140,8 @@ jobs:
           sudo chmod +x /usr/local/bin/pg_dump
 
       - name: Refresh canonical Railway staging schema
+        env:
+          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
         run: |
           node scripts/db-snapshot.js
           node scripts/check-schema-freshness.js --all
@@ -124,6 +178,11 @@ jobs:
 
           p.write_text(s)
           PY
+
+      - name: Build disposable invariant test database from fresh canonical snapshot
+        run: |
+          PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
 
       - name: Reconcile architecture debt budget
         run: npm run arch:reconcile:write
@@ -173,9 +232,6 @@ jobs:
         run: npm run feature:360:gen
 
       - name: Closure gates on resulting tree
-        env:
-          NODE_ENV: test
-          KOMERCE_ENV: test
         run: |
           npm run feature:registry-doc
           npm run feature:classification:strict
