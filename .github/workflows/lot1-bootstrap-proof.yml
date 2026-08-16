@@ -34,6 +34,9 @@ jobs:
             --runInBand --forceExit
 
       - name: Refresh contract from mounted runtime routes
+        env:
+          NODE_ENV: test
+          JWT_SECRET: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
         run: node scripts/contract-generate.js
 
       - name: Prove intended backend gates on current tree
