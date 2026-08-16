@@ -21,6 +21,9 @@ jobs:
     outputs:
       backend: ${{ steps.scope.outputs.backend }}
       backend_files: ${{ steps.scope.outputs.backend_files }}
+      migrations: ${{ steps.scope.outputs.migrations }}
+      migration_files: ${{ steps.scope.outputs.migration_files }}
+      schema_dump: ${{ steps.scope.outputs.schema_dump }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,10 +64,37 @@ jobs:
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
+  migrations:
+    name: Migration and schema gates
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Migration immutability
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/check-migration-immutability.js --base "$BASE_SHA" --head "$HEAD_SHA"
+      - name: Schema freshness
+        run: node scripts/check-schema-freshness.js
+      - name: Schema anti-resurrection
+        if: needs.changes.outputs.schema_dump == 'true'
+        run: node scripts/check-schema-resurrection.js
+      - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
   verdict:
     name: Required verdict
     if: always()
-    needs: [changes, backend]
+    needs: [changes, backend, migrations]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -72,11 +102,15 @@ jobs:
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
+          MIGRATIONS_RESULT: ${{ needs.migrations.result }}
         run: |
           echo "changes=$CHANGES_RESULT"
           echo "backend=$BACKEND_RESULT"
+          echo "migrations=$MIGRATIONS_RESULT"
           test "$CHANGES_RESULT" = "success"
-          if [ "$BACKEND_RESULT" != "success" ] && [ "$BACKEND_RESULT" != "skipped" ]; then
-            echo "Backend enforcement failed: $BACKEND_RESULT"
-            exit 1
-          fi
+          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT"; do
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              echo "Scoped enforcement failed: $result"
+              exit 1
+            fi
+          done

@@ -1,8 +1,14 @@
 'use strict';
 
-const { norm, isBackendFile, classify } = require('../../scripts/pr-enforcement-scope');
+const {
+  norm,
+  isBackendFile,
+  isMigrationFile,
+  isLiveSchemaFile,
+  classify,
+} = require('../../scripts/pr-enforcement-scope');
 
-describe('PR enforcement scope — Lot 1 backend', () => {
+describe('PR enforcement scope — backend + migrations', () => {
   test('normalise les chemins Windows', () => {
     expect(norm('services\\orders.js')).toBe('services/orders.js');
   });
@@ -41,16 +47,30 @@ describe('PR enforcement scope — Lot 1 backend', () => {
     expect(isBackendFile(file)).toBe(false);
   });
 
-  test('un changement doc-only ne déclenche pas le backend', () => {
+  test.each([
+    'migrations/144_future.sql',
+    'migrations/014c_wallet_foundation.sql',
+    'migrations/_superseded/099_old.sql',
+  ])('classe %s comme migration SQL', file => {
+    expect(isMigrationFile(file)).toBe(true);
+  });
+
+  test('reconnaît uniquement le dump live canonique', () => {
+    expect(isLiveSchemaFile('docs/db/railway-live-schema.sql')).toBe(true);
+    expect(isLiveSchemaFile('docs/db/other-schema.sql')).toBe(false);
+  });
+
+  test('un changement doc-only ne déclenche ni backend ni migrations', () => {
     const result = classify([
       'docs/README.md',
       'docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md',
     ]);
     expect(result.backend).toBe(false);
-    expect(result.backendFiles).toEqual([]);
+    expect(result.migrations).toBe(false);
+    expect(result.schemaDump).toBe(false);
   });
 
-  test('un changement backend déclenche et conserve seulement les fichiers backend', () => {
+  test('un changement backend déclenche uniquement le backend', () => {
     const result = classify([
       'docs/README.md',
       'services/orders.js',
@@ -58,10 +78,26 @@ describe('PR enforcement scope — Lot 1 backend', () => {
       'public/boutique/css/layout.css',
     ]);
     expect(result.backend).toBe(true);
+    expect(result.migrations).toBe(false);
     expect(result.backendFiles).toEqual([
       'services/orders.js',
       'tests/unit/orders.test.js',
     ]);
+  });
+
+  test('une nouvelle migration déclenche migrations sans prétendre que le dump a changé', () => {
+    const result = classify(['migrations/144_future.sql']);
+    expect(result.backend).toBe(false);
+    expect(result.migrations).toBe(true);
+    expect(result.schemaDump).toBe(false);
+    expect(result.migrationFiles).toEqual(['migrations/144_future.sql']);
+  });
+
+  test('un changement du dump déclenche migrations et le sous-gate resurrection', () => {
+    const result = classify(['docs/db/railway-live-schema.sql']);
+    expect(result.migrations).toBe(true);
+    expect(result.schemaDump).toBe(true);
+    expect(result.migrationFiles).toEqual([]);
   });
 
   test('déduplique et trie le diff avant classification', () => {

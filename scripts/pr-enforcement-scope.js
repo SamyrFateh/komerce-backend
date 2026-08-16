@@ -4,8 +4,8 @@
 /**
  * Classifie le diff d'une PR pour l'enforcement GitHub ciblé.
  *
- * Lot 1 : seul le domaine backend est actif. Les domaines migrations,
- * boutique et governance seront ajoutés par lots séparés après preuve.
+ * Lot 1 : backend.
+ * Lot 2A : migrations + dump live, sans mélanger Boutique/governance.
  *
  * Usage GitHub Actions :
  *   node scripts/pr-enforcement-scope.js --base <sha> --head <sha> --github-output <path>
@@ -33,13 +33,26 @@ function isBackendFile(file) {
     || /^tests\/parcelOptimization\.test\.js$/i.test(f);
 }
 
+function isMigrationFile(file) {
+  return /^migrations\/.+\.sql$/i.test(norm(file));
+}
+
+function isLiveSchemaFile(file) {
+  return norm(file) === 'docs/db/railway-live-schema.sql';
+}
+
 function classify(files) {
   const changedFiles = [...new Set((files || []).map(norm).filter(Boolean))].sort();
   const backendFiles = changedFiles.filter(isBackendFile);
+  const migrationFiles = changedFiles.filter(isMigrationFile);
+  const schemaDump = changedFiles.some(isLiveSchemaFile);
   return {
     changedFiles,
     backendFiles,
+    migrationFiles,
     backend: backendFiles.length > 0,
+    migrations: migrationFiles.length > 0 || schemaDump,
+    schemaDump,
   };
 }
 
@@ -59,6 +72,9 @@ function appendGithubOutput(path, model) {
   const lines = [
     `backend=${model.backend ? 'true' : 'false'}`,
     `backend_files=${model.backendFiles.join(',')}`,
+    `migrations=${model.migrations ? 'true' : 'false'}`,
+    `migration_files=${model.migrationFiles.join(',')}`,
+    `schema_dump=${model.schemaDump ? 'true' : 'false'}`,
     `changed_count=${model.changedFiles.length}`,
   ];
   fs.appendFileSync(path, lines.join('\n') + '\n', 'utf8');
@@ -83,4 +99,10 @@ if (require.main === module) {
   }
 }
 
-module.exports = { norm, isBackendFile, classify };
+module.exports = {
+  norm,
+  isBackendFile,
+  isMigrationFile,
+  isLiveSchemaFile,
+  classify,
+};
