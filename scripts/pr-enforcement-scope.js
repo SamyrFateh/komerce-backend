@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 'use strict';
-// probe: vérifie que le job governance s'exécute (PR de test)
 
 /**
  * Classifie le diff d'une PR pour l'enforcement GitHub ciblé.
  *
- * Lot 1  : backend.
+ * Lot 1  : backend + tests backend racine.
  * Lot 2A : migrations + dump live.
  * Lot 2B : Boutique runtime source + unit tests, sans css/dist ni E2E.
+ * Lot 3  : governance / feature-first.
+ *
+ * Tous les statuts Git du diff sont pris en compte. Une suppression doit
+ * réveiller le même domaine qu'une création/modification du même chemin.
  *
  * Usage GitHub Actions :
  *   node scripts/pr-enforcement-scope.js --base <sha> --head <sha> --github-output <path>
@@ -31,8 +34,7 @@ function isBackendFile(file) {
   const f = norm(file);
   return /^(?:server\.js|package(?:-lock)?\.json|jest\.unit\.config\.js)$/i.test(f)
     || /^(?:routes|services|middleware|utils|validators|core|bootstrap|db)\/.+/i.test(f)
-    || /^tests\/(?:unit|invariants|contract|notifications)\/.+\.(?:test|spec)\.(?:js|cjs|mjs|ts)$/i.test(f)
-    || /^tests\/parcelOptimization\.test\.js$/i.test(f);
+    || /^tests\/.+/i.test(f);
 }
 
 function isMigrationFile(file) {
@@ -121,7 +123,9 @@ function classify(files) {
 
 function diffFiles(base, head) {
   if (!base || !head) throw new Error('Les SHA --base et --head sont obligatoires.');
-  const r = cp.spawnSync('git', ['diff', '--name-only', '--diff-filter=ACMR', base, head], {
+  // Aucun --diff-filter : créations, modifications, renommages, suppressions et
+  // changements de type doivent tous être visibles par le classifier.
+  const r = cp.spawnSync('git', ['diff', '--name-only', base, head], {
     encoding: 'utf8',
   });
   if (r.status !== 0) {
@@ -185,4 +189,5 @@ module.exports = {
   isBoutiqueRelevant,
   isGovernanceFile,
   classify,
+  diffFiles,
 };
