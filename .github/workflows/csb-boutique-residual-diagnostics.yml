@@ -26,3 +26,11 @@ jobs:
         run: node public/boutique/scripts/check-body-classes.js || true
       - name: Boutique breakpoints
         run: npm --prefix public/boutique run check:breakpoints || true
+      - name: Locate stale body contracts
+        run: |
+          echo '--- ck-is-me ---'
+          grep -R -n --exclude-dir=node_modules --exclude-dir=dist 'ck-is-me' public/boutique || true
+          echo '--- k-ck-id-btns-row ---'
+          grep -R -n --exclude-dir=node_modules --exclude-dir=dist 'k-ck-id-btns-row' public/boutique || true
+          echo '--- k-order-body--recap ---'
+          grep -R -n --exclude-dir=node_modules --exclude-dir=dist 'k-order-body--recap' public/boutique || true
