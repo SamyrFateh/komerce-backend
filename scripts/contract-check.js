@@ -41,6 +41,14 @@ const KNOWN_DEAD = [
   '/api/card-config',
 ];
 
+// Le checker protège les consommateurs RUNTIME. Les fixtures/tests/rapports peuvent
+// contenir des URLs synthétiques (ex. order-l7-001) qui ne sont pas des appels
+// applicatifs et ne doivent jamais devenir des dérives de contrat.
+const NON_RUNTIME_DIRS = new Set([
+  'node_modules', '.git', 'tests', 'test', '__tests__',
+  'coverage', 'playwright-report', 'test-results',
+]);
+
 function scanDir(dir) {
   const paths  = new Map(); // normalizedPath → Set<fichier>
   const fields = new Map(); // field → Set<fichier>
@@ -50,7 +58,7 @@ function scanDir(dir) {
   function walk(d) {
     for (const entry of fs.readdirSync(d, { withFileTypes: true })) {
       const full = path.join(d, entry.name);
-      if (entry.isDirectory() && !['node_modules','.git'].includes(entry.name)) {
+      if (entry.isDirectory() && !NON_RUNTIME_DIRS.has(entry.name)) {
         walk(full);
       } else if (entry.isFile() && entry.name.endsWith('.js')) {
         const src  = fs.readFileSync(full, 'utf8');
