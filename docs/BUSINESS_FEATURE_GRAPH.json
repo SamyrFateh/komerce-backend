@@ -5252,6 +5252,13 @@
       {
         "feature": "infrastructure",
         "category": "ci",
+        "declared": ".github/workflows/pr-enforcement.yml",
+        "resolvedPath": ".github/workflows/pr-enforcement.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
         "declared": ".github/workflows-disabled/README.md",
         "resolvedPath": ".github/workflows-disabled/README.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11600,16 +11607,16 @@
         "entry": "GET /api/auth/me/notifications",
         "method": "GET",
         "path": "/api/auth/me/notifications",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/client-notifications.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "notifications",
         "entry": "POST /api/auth/me/notifications/:id/ack",
         "method": "POST",
         "path": "/api/auth/me/notifications/{id}/ack",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/client-notifications.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "notifications",
@@ -26148,16 +26155,6 @@
         "type": "EXPOSED-ROUTE-UNRESOLVED",
         "ref": "infrastructure / GET /webhook/authkey-whatsapp",
         "msg": "\"GET /webhook/authkey-whatsapp\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "notifications / GET /api/auth/me/notifications",
-        "msg": "\"GET /api/auth/me/notifications\" déclaré par notifications mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "notifications / POST /api/auth/me/notifications/{id}/ack",
-        "msg": "\"POST /api/auth/me/notifications/{id}/ack\" déclaré par notifications mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

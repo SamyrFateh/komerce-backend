@@ -7559,7 +7559,7 @@
             ]
           },
           "ci": {
-            "count": 22,
+            "count": 23,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -7669,6 +7669,11 @@
               {
                 "declared": ".github/workflows/ci.yml",
                 "resolvedPath": ".github/workflows/ci.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/pr-enforcement.yml",
+                "resolvedPath": ".github/workflows/pr-enforcement.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -8774,7 +8779,7 @@
             ]
           }
         },
-        "totalFiles": 278,
+        "totalFiles": 279,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
