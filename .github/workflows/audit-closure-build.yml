@@ -24,11 +24,11 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+
       - name: Apply reviewed source-of-truth fixes
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
 
           # 1) Canonical registry: business-rules exists and must be indexed.
           p = Path('docs/doctrine/APP_FEATURE_REGISTRY.md')
@@ -122,13 +122,15 @@ jobs:
               throw new Error(`Unreviewed ratchet growth: ${key} ${old} -> ${count}`);
             }
           }
-          // Ratchet forward: reductions become the new maximum; only the two reviewed semantic shifts may grow.
           for (const key of Object.keys(baseline.baseline)) {
             baseline.baseline[key] = current[key] || 0;
           }
-          baseline._comment_audit_closure_20260816 = 'Audit closure review: total warnings decreased. WRITER-NOT-OWNER::EXPECTED_TOPOLOGY is 10 after explicit owner resolution: in every case an owner exists and dashboard is the sole additional writer (reviewed run 31964880950). DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED::GENERATOR_LIMITATION is 2: services/notifications/otp-auth.js and services/order-status-machine.js dynamic require patterns, both resolved by ownership but statically non-resolvable. All other categories are tightened to the current lower count; no unreviewed category growth is accepted.';
+          baseline._comment_audit_closure_20260816 = 'Audit closure review: total warnings decreased. WRITER-NOT-OWNER::EXPECTED_TOPOLOGY is 10 after explicit owner resolution: in every case an owner exists and dashboard is the sole additional writer (reviewed run 31964880950). DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED::GENERATOR_LIMITATION is 2: dynamic require patterns resolved by ownership but statically non-resolvable. All other categories are tightened to the current lower count; no unreviewed category growth is accepted.';
           fs.writeFileSync(file, JSON.stringify(baseline, null, 4) + '\n');
           NODE
+
+      - name: Remove temporary builder from canonical audit tree
+        run: git rm .github/workflows/audit-closure-build.yml
 
       - name: Regenerate Feature 360
         run: npm run feature:360:gen
@@ -151,11 +153,10 @@ jobs:
           npm run map:check
           git diff --check
 
-      - name: Remove temporary builder and commit canonical closure tree
+      - name: Commit canonical closure tree
         run: |
           git config user.name 'SamyrFateh'
           git config user.email 'fatehsamyr@gmail.com'
-          git rm .github/workflows/audit-closure-build.yml
           git add -A
           git status --short
           git commit -m 'fix(governance): close remaining audit drift'
