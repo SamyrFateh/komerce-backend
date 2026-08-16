@@ -30,7 +30,6 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          # 1) Canonical registry: business-rules exists and must be indexed.
           p = Path('docs/doctrine/APP_FEATURE_REGISTRY.md')
           s = p.read_text()
           s = s.replace('> **Version** : 1.6 — 2026-07', '> **Version** : 1.7 — 2026-08', 1)
@@ -48,7 +47,6 @@ jobs:
               s = '\n'.join(out) + ('\n' if s.endswith('\n') else '')
           p.write_text(s)
 
-          # 2) Ontology: technical-foundation is a real support kind, distinct from technical-transversal.
           p = Path('docs/doctrine/FEATURE_DOCTRINE.md')
           s = p.read_text()
           row = '| `technical-foundation` | Socle technique qui possède le bootstrap, le DDL/migrations techniques et les primitives d’exécution, sans porter de vérité ni de règle métier | `infrastructure` |'
@@ -94,6 +92,9 @@ jobs:
           node scripts/db-snapshot.js
           node scripts/check-schema-freshness.js --all
 
+      - name: Remove temporary builder from canonical audit tree
+        run: git rm .github/workflows/audit-closure-build.yml
+
       - name: Regenerate business graph
         run: npm run business-graph:gen
 
@@ -128,9 +129,6 @@ jobs:
           baseline._comment_audit_closure_20260816 = 'Audit closure review: total warnings decreased. WRITER-NOT-OWNER::EXPECTED_TOPOLOGY is 10 after explicit owner resolution: in every case an owner exists and dashboard is the sole additional writer (reviewed run 31964880950). DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED::GENERATOR_LIMITATION is 2: dynamic require patterns resolved by ownership but statically non-resolvable. All other categories are tightened to the current lower count; no unreviewed category growth is accepted.';
           fs.writeFileSync(file, JSON.stringify(baseline, null, 4) + '\n');
           NODE
-
-      - name: Remove temporary builder from canonical audit tree
-        run: git rm .github/workflows/audit-closure-build.yml
 
       - name: Regenerate Feature 360
         run: npm run feature:360:gen
