@@ -42,8 +42,8 @@ jobs:
           }
 
           capture deploy-css node public/boutique/scripts/deploy-css.js
-          cp public/boutique/scripts/.css-specificity-guard-baseline.json evidence/
-          cp public/boutique/scripts/.breakpoints-baseline.json evidence/
+          cp public/boutique/scripts/.css-specificity-guard-baseline.json evidence/specificity-baseline.json
+          cp public/boutique/scripts/.breakpoints-baseline.json evidence/breakpoints-baseline.json
           cp public/boutique/scripts/css-bundles.js evidence/
           cp public/boutique/css/dist/base.css evidence/dist/
           cp public/boutique/css/dist/components.css evidence/dist/
