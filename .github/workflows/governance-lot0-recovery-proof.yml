@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -u
-          mkdir -p evidence
+          mkdir -p evidence/dist
 
           capture() {
             name="$1"
@@ -42,6 +42,13 @@ jobs:
           }
 
           capture deploy-css node public/boutique/scripts/deploy-css.js
+          cp public/boutique/scripts/.css-specificity-guard-baseline.json evidence/
+          cp public/boutique/scripts/.breakpoints-baseline.json evidence/
+          cp public/boutique/scripts/css-bundles.js evidence/
+          cp public/boutique/css/dist/base.css evidence/dist/
+          cp public/boutique/css/dist/components.css evidence/dist/
+          cp public/boutique/css/dist/desktop.css evidence/dist/
+
           capture breakpoints node public/boutique/scripts/check-breakpoints.js --strict
           capture specificity node public/boutique/scripts/css-specificity-guard.js --strict
           capture gate-findings node scripts/gen-gate-findings.js
