@@ -13,6 +13,7 @@
 'use strict';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000/boutique/';
+const { assertRemoteMutantTargetSafe } = require('./environment.helpers');
 
 /**
  * Vérifie qu'un produit a bien été ajouté au panier côté client (localStorage).
@@ -291,7 +292,7 @@ module.exports = {
   // R5 — provisionnement et gardes fail-closed
   provisionTestWallet,
   requireOrders,
-  assertNotProdIfMutant,
+  assertMutantTargetSafe,
 };
 
 // ── R5 — Helpers de provisionnement (dé-conditionnement des skips) ───────────
@@ -395,21 +396,13 @@ async function requireOrders(page) {
 }
 
 /**
- * [R5] Garde fail-closed : lève une erreur si BASE_URL pointe vers la
- * production et que le flag ALLOW_MUTANTS_ON_PROD est absent.
- * À appeler dans beforeAll des specs mutantes (cancel-refund, stress-business,
- * wallet-payment, wallet-lifecycle).
+ * [R5] Garde fail-closed à deux facteurs d’environnement :
+ * 1. le runner déclare KOMERCE_ENV=test|staging ;
+ * 2. le serveur ciblé doit publier exactement la même valeur via /health.
+ * Le domaine n’entre jamais dans la décision staging/production.
  */
-function assertNotProdIfMutant() {
-  const base = process.env.BASE_URL || '';
-  const PROD_HOSTS = ['komerce.co'];
-  const isProd = PROD_HOSTS.some(h => base.includes(h));
-  if (isProd && !process.env.ALLOW_MUTANTS_ON_PROD) {
-    throw new Error(
-      `[R5][FAIL-CLOSED] Test mutant refusé sur URL de production "${base}". ` +
-      'Utiliser un environnement staging. Pour forcer (dangereux) : ALLOW_MUTANTS_ON_PROD=1.'
-    );
-  }
+async function assertMutantTargetSafe() {
+  return assertRemoteMutantTargetSafe();
 }
 
 // (exports consolidés dans module.exports ci-dessus)

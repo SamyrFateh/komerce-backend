@@ -27,7 +27,7 @@ const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
   openCheckout, selectRecipientOther,
 } = require('../helpers/boutique.helpers');
-const { verifySession, verifyWalletBalance, getRecentOrders, assertNotProdIfMutant } = require('../helpers/api.helpers');
+const { verifySession, verifyWalletBalance, getRecentOrders, assertMutantTargetSafe } = require('../helpers/api.helpers');
 const { getProductStock } = require('../helpers/business.helpers');
 
 const API_BASE = (process.env.BASE_URL || 'http://localhost:3000/boutique/').replace('/boutique/', '');
@@ -38,8 +38,8 @@ const API_BASE = (process.env.BASE_URL || 'http://localhost:3000/boutique/').rep
 test.describe('STRESS — Concurrence stock (S1)', () => {
 
   // [R5] Précondition dure (remplace test.skip conditionnel)
-  test.beforeAll(() => {
-    assertNotProdIfMutant();
+  test.beforeAll(async () => {
+    await assertMutantTargetSafe();
     if (!process.env.ALLOW_ORDER_SUBMIT) throw new Error('[R5] ALLOW_ORDER_SUBMIT requis — ce test ne peut pas être skippé');
   });
   test.setTimeout(90_000);
@@ -290,8 +290,8 @@ test.describe('STRESS — Gros panier (S2)', () => {
 test.describe('STRESS — Wallet au centime près (S3)', () => {
 
   // [R5] Précondition dure
-  test.beforeAll(() => {
-    assertNotProdIfMutant();
+  test.beforeAll(async () => {
+    await assertMutantTargetSafe();
     if (!process.env.ALLOW_ORDER_SUBMIT) throw new Error('[R5] ALLOW_ORDER_SUBMIT requis — ce test ne peut pas être skippé');
   });
 
@@ -538,8 +538,8 @@ test.describe('STRESS — Back button (S6)', () => {
 test.describe('STRESS — 2 onglets même user (S7)', () => {
 
   // [R5] Précondition dure (remplace test.skip conditionnel)
-  test.beforeAll(() => {
-    assertNotProdIfMutant();
+  test.beforeAll(async () => {
+    await assertMutantTargetSafe();
     if (!process.env.ALLOW_ORDER_SUBMIT) throw new Error('[R5] ALLOW_ORDER_SUBMIT requis — ce test ne peut pas être skippé');
   });
   test.setTimeout(90_000);

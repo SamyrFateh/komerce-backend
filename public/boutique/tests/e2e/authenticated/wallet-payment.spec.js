@@ -32,7 +32,7 @@ const {
 } = require('../helpers/boutique.helpers');
 const {
   verifySession, verifyWalletBalance,
-  provisionTestWallet, assertNotProdIfMutant, // [R5]
+  provisionTestWallet, assertMutantTargetSafe, // [R5]
 } = require('../helpers/api.helpers');
 
 test.describe('FLOW — Commande payée 100% wallet (F02)', () => {
@@ -41,7 +41,7 @@ test.describe('FLOW — Commande payée 100% wallet (F02)', () => {
   let walletBefore;
 
   test.beforeAll(async ({ browser }) => {
-    assertNotProdIfMutant(); // [R5][FAIL-CLOSED] refuse si BASE_URL = prod
+    await assertMutantTargetSafe(); // [R5][FAIL-CLOSED] refuse si BASE_URL = prod
     if (!process.env.ALLOW_ORDER_SUBMIT) {
       throw new Error(
         '[R5] F02 nécessite ALLOW_ORDER_SUBMIT=true — staging uniquement. ' +
