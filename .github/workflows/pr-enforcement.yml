@@ -24,6 +24,14 @@ jobs:
       migrations: ${{ steps.scope.outputs.migrations }}
       migration_files: ${{ steps.scope.outputs.migration_files }}
       schema_dump: ${{ steps.scope.outputs.schema_dump }}
+      boutique: ${{ steps.scope.outputs.boutique }}
+      boutique_files: ${{ steps.scope.outputs.boutique_files }}
+      boutique_test_files: ${{ steps.scope.outputs.boutique_test_files }}
+      boutique_css: ${{ steps.scope.outputs.boutique_css }}
+      boutique_js: ${{ steps.scope.outputs.boutique_js }}
+      boutique_html: ${{ steps.scope.outputs.boutique_html }}
+      boutique_unit: ${{ steps.scope.outputs.boutique_unit }}
+      boutique_package: ${{ steps.scope.outputs.boutique_package }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -91,10 +99,81 @@ jobs:
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
+  boutique:
+    name: Boutique source gates
+    needs: changes
+    if: needs.changes.outputs.boutique == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Install Boutique test dependencies
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true' || needs.changes.outputs.boutique_package == 'true'
+        run: npm --prefix public/boutique ci
+
+      - name: JS quality
+        if: needs.changes.outputs.boutique_js == 'true'
+        run: node scripts/code-quality-gate.js --strict
+
+      - name: CSS source gates
+        if: needs.changes.outputs.boutique_css == 'true'
+        run: |
+          node public/boutique/scripts/check-important.js --strict
+          node public/boutique/scripts/check-breakpoints.js --strict
+          node public/boutique/scripts/check-css-vars.js --strict
+          node public/boutique/scripts/check-zindex-contract.js --strict
+          node public/boutique/scripts/check-sticky-integrity.js --strict
+
+      - name: JS source gates
+        if: needs.changes.outputs.boutique_js == 'true'
+        run: |
+          node public/boutique/scripts/check-js-imports.js
+          node public/boutique/scripts/check-no-css-injection.js
+
+      - name: HTML balance
+        if: needs.changes.outputs.boutique_html == 'true'
+        run: node public/boutique/scripts/check-html-balance.js
+
+      - name: Body-class contract
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
+        run: node public/boutique/scripts/check-body-classes.js
+
+      - name: Boutique architecture
+        if: needs.changes.outputs.boutique_css == 'true' || needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
+        run: node public/boutique/scripts/audit-boutique-arch.js
+
+      - name: Sanitization on added front lines
+        if: needs.changes.outputs.boutique_js == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/arch-doctrine-sanitize-check.js --diff="$BASE_SHA"
+
+      - name: Related Boutique unit tests
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true'
+        env:
+          BOUTIQUE_TEST_FILES: ${{ needs.changes.outputs.boutique_test_files }}
+        run: node scripts/run-staged-related-tests.js --files "$BOUTIQUE_TEST_FILES"
+
+      - name: Full Boutique unit tests after dependency changes
+        if: needs.changes.outputs.boutique_package == 'true'
+        run: npm --prefix public/boutique run test:unit -- --forceExit
+
+      - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
   verdict:
     name: Required verdict
     if: always()
-    needs: [changes, backend, migrations]
+    needs: [changes, backend, migrations, boutique]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -103,12 +182,14 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
           MIGRATIONS_RESULT: ${{ needs.migrations.result }}
+          BOUTIQUE_RESULT: ${{ needs.boutique.result }}
         run: |
           echo "changes=$CHANGES_RESULT"
           echo "backend=$BACKEND_RESULT"
           echo "migrations=$MIGRATIONS_RESULT"
+          echo "boutique=$BOUTIQUE_RESULT"
           test "$CHANGES_RESULT" = "success"
-          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT"; do
+          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$BOUTIQUE_RESULT"; do
             if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
               echo "Scoped enforcement failed: $result"
               exit 1

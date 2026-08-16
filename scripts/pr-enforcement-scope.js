@@ -4,8 +4,9 @@
 /**
  * Classifie le diff d'une PR pour l'enforcement GitHub ciblé.
  *
- * Lot 1 : backend.
- * Lot 2A : migrations + dump live, sans mélanger Boutique/governance.
+ * Lot 1  : backend.
+ * Lot 2A : migrations + dump live.
+ * Lot 2B : Boutique runtime source + unit tests, sans css/dist ni E2E.
  *
  * Usage GitHub Actions :
  *   node scripts/pr-enforcement-scope.js --base <sha> --head <sha> --github-output <path>
@@ -41,18 +42,62 @@ function isLiveSchemaFile(file) {
   return norm(file) === 'docs/db/railway-live-schema.sql';
 }
 
+function isBoutiqueCssSource(file) {
+  return /^public\/boutique\/css\/(?!dist\/).+\.css$/i.test(norm(file));
+}
+
+function isBoutiqueJsSource(file) {
+  return /^public\/boutique\/js\/.+\.(?:js|cjs|mjs|ts)$/i.test(norm(file));
+}
+
+function isBoutiqueHtml(file) {
+  return norm(file) === 'public/boutique/index.html';
+}
+
+function isBoutiqueUnitTest(file) {
+  return /^public\/boutique\/tests\/unit\/.+\.(?:test|spec)\.(?:js|cjs|mjs|ts)$/i.test(norm(file));
+}
+
+function isBoutiquePackageFile(file) {
+  return /^public\/boutique\/package(?:-lock)?\.json$/i.test(norm(file));
+}
+
+function isBoutiqueRelevant(file) {
+  return isBoutiqueCssSource(file)
+    || isBoutiqueJsSource(file)
+    || isBoutiqueHtml(file)
+    || isBoutiqueUnitTest(file)
+    || isBoutiquePackageFile(file);
+}
+
 function classify(files) {
   const changedFiles = [...new Set((files || []).map(norm).filter(Boolean))].sort();
   const backendFiles = changedFiles.filter(isBackendFile);
   const migrationFiles = changedFiles.filter(isMigrationFile);
   const schemaDump = changedFiles.some(isLiveSchemaFile);
+  const boutiqueFiles = changedFiles.filter(isBoutiqueRelevant);
+  const boutiqueCss = changedFiles.some(isBoutiqueCssSource);
+  const boutiqueJs = changedFiles.some(isBoutiqueJsSource);
+  const boutiqueHtml = changedFiles.some(isBoutiqueHtml);
+  const boutiqueUnit = changedFiles.some(isBoutiqueUnitTest);
+  const boutiquePackage = changedFiles.some(isBoutiquePackageFile);
+  const boutiqueTestFiles = boutiqueFiles.filter(file => isBoutiqueJsSource(file) || isBoutiqueUnitTest(file));
+
   return {
     changedFiles,
     backendFiles,
     migrationFiles,
+    boutiqueFiles,
+    boutiqueTestFiles,
     backend: backendFiles.length > 0,
     migrations: migrationFiles.length > 0 || schemaDump,
     schemaDump,
+    boutique: boutiqueFiles.length > 0,
+    boutiqueCss,
+    boutiqueJs,
+    boutiqueHtml,
+    boutiqueUnit,
+    boutiquePackage,
   };
 }
 
@@ -75,6 +120,14 @@ function appendGithubOutput(path, model) {
     `migrations=${model.migrations ? 'true' : 'false'}`,
     `migration_files=${model.migrationFiles.join(',')}`,
     `schema_dump=${model.schemaDump ? 'true' : 'false'}`,
+    `boutique=${model.boutique ? 'true' : 'false'}`,
+    `boutique_files=${model.boutiqueFiles.join(',')}`,
+    `boutique_test_files=${model.boutiqueTestFiles.join(',')}`,
+    `boutique_css=${model.boutiqueCss ? 'true' : 'false'}`,
+    `boutique_js=${model.boutiqueJs ? 'true' : 'false'}`,
+    `boutique_html=${model.boutiqueHtml ? 'true' : 'false'}`,
+    `boutique_unit=${model.boutiqueUnit ? 'true' : 'false'}`,
+    `boutique_package=${model.boutiquePackage ? 'true' : 'false'}`,
     `changed_count=${model.changedFiles.length}`,
   ];
   fs.appendFileSync(path, lines.join('\n') + '\n', 'utf8');
@@ -104,5 +157,11 @@ module.exports = {
   isBackendFile,
   isMigrationFile,
   isLiveSchemaFile,
+  isBoutiqueCssSource,
+  isBoutiqueJsSource,
+  isBoutiqueHtml,
+  isBoutiqueUnitTest,
+  isBoutiquePackageFile,
+  isBoutiqueRelevant,
   classify,
 };

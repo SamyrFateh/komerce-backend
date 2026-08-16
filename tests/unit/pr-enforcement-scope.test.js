@@ -5,10 +5,16 @@ const {
   isBackendFile,
   isMigrationFile,
   isLiveSchemaFile,
+  isBoutiqueCssSource,
+  isBoutiqueJsSource,
+  isBoutiqueHtml,
+  isBoutiqueUnitTest,
+  isBoutiquePackageFile,
+  isBoutiqueRelevant,
   classify,
 } = require('../../scripts/pr-enforcement-scope');
 
-describe('PR enforcement scope — backend + migrations', () => {
+describe('PR enforcement scope — backend + migrations + Boutique', () => {
   test('normalise les chemins Windows', () => {
     expect(norm('services\\orders.js')).toBe('services/orders.js');
   });
@@ -60,13 +66,36 @@ describe('PR enforcement scope — backend + migrations', () => {
     expect(isLiveSchemaFile('docs/db/other-schema.sql')).toBe(false);
   });
 
-  test('un changement doc-only ne déclenche ni backend ni migrations', () => {
+  test.each([
+    ['public/boutique/css/layout.css', isBoutiqueCssSource],
+    ['public/boutique/js/b-cart.js', isBoutiqueJsSource],
+    ['public/boutique/index.html', isBoutiqueHtml],
+    ['public/boutique/tests/unit/b-cart.test.js', isBoutiqueUnitTest],
+    ['public/boutique/package.json', isBoutiquePackageFile],
+    ['public/boutique/package-lock.json', isBoutiquePackageFile],
+  ])('reconnaît %s comme source Boutique pertinente', (file, predicate) => {
+    expect(predicate(file)).toBe(true);
+    expect(isBoutiqueRelevant(file)).toBe(true);
+  });
+
+  test.each([
+    'public/boutique/css/dist/base.css',
+    'public/boutique/tests/e2e/authenticated/wallet-payment.spec.js',
+    'public/boutique/playwright.config.js',
+    'public/boutique/categories/mode-v2.webp',
+    'public/boutique/scripts/check-sticky-integrity.js',
+  ])('exclut %s du domaine runtime Boutique du Lot 2B', file => {
+    expect(isBoutiqueRelevant(file)).toBe(false);
+  });
+
+  test('un changement doc-only ne déclenche aucun domaine actif', () => {
     const result = classify([
       'docs/README.md',
       'docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md',
     ]);
     expect(result.backend).toBe(false);
     expect(result.migrations).toBe(false);
+    expect(result.boutique).toBe(false);
     expect(result.schemaDump).toBe(false);
   });
 
@@ -75,10 +104,10 @@ describe('PR enforcement scope — backend + migrations', () => {
       'docs/README.md',
       'services/orders.js',
       'tests/unit/orders.test.js',
-      'public/boutique/css/layout.css',
     ]);
     expect(result.backend).toBe(true);
     expect(result.migrations).toBe(false);
+    expect(result.boutique).toBe(false);
     expect(result.backendFiles).toEqual([
       'services/orders.js',
       'tests/unit/orders.test.js',
@@ -89,6 +118,7 @@ describe('PR enforcement scope — backend + migrations', () => {
     const result = classify(['migrations/144_future.sql']);
     expect(result.backend).toBe(false);
     expect(result.migrations).toBe(true);
+    expect(result.boutique).toBe(false);
     expect(result.schemaDump).toBe(false);
     expect(result.migrationFiles).toEqual(['migrations/144_future.sql']);
   });
@@ -98,6 +128,32 @@ describe('PR enforcement scope — backend + migrations', () => {
     expect(result.migrations).toBe(true);
     expect(result.schemaDump).toBe(true);
     expect(result.migrationFiles).toEqual([]);
+  });
+
+  test('un CSS Boutique source déclenche seulement la branche CSS', () => {
+    const result = classify(['public/boutique/css/layout.css']);
+    expect(result.boutique).toBe(true);
+    expect(result.boutiqueCss).toBe(true);
+    expect(result.boutiqueJs).toBe(false);
+    expect(result.boutiqueHtml).toBe(false);
+    expect(result.boutiqueUnit).toBe(false);
+    expect(result.boutiqueTestFiles).toEqual([]);
+  });
+
+  test('un JS + test Boutique déclenchent related-tests sans embarquer css/dist', () => {
+    const result = classify([
+      'public/boutique/js/b-cart.js',
+      'public/boutique/tests/unit/b-cart.test.js',
+      'public/boutique/css/dist/components.css',
+    ]);
+    expect(result.boutique).toBe(true);
+    expect(result.boutiqueJs).toBe(true);
+    expect(result.boutiqueUnit).toBe(true);
+    expect(result.boutiqueTestFiles).toEqual([
+      'public/boutique/js/b-cart.js',
+      'public/boutique/tests/unit/b-cart.test.js',
+    ]);
+    expect(result.boutiqueFiles).not.toContain('public/boutique/css/dist/components.css');
   });
 
   test('déduplique et trie le diff avant classification', () => {
