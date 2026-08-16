@@ -97,3 +97,93 @@ replaceOnce(
       '.github/workflows-disabled/schema-refresh.yml',
     ],`
 );
+
+replaceOnce(
+  'public/boutique/scripts/check-breakpoints.js',
+`  let fname = fileNames[j];
+  let pad = fname;
+  while (pad.length < 34) pad += ' ';
+  console.log('   >> ' + pad + ' ' + perFile[fname].map(function(v) { return v + 'px'; }).join(', '));`,
+`  let fname = fileNames[j];
+  let pad = 'public/boutique/css/' + fname;
+  while (pad.length < 58) pad += ' ';
+  console.log('   >> ' + pad + ' ' + perFile[fname].map(function(v) { return v + 'px'; }).join(', '));`
+);
+
+replaceOnce(
+  'public/boutique/scripts/css-specificity-guard.js',
+  '  let sel = null, props = {}, sline = 0;',
+  '  let sel = null, props = {}, sline = 0, sourceFile = filename, sourceLineBase = 0;'
+);
+
+replaceOnce(
+  'public/boutique/scripts/css-specificity-guard.js',
+`    const s  = lines[i].trim();
+    const o  = (s.match(/{/g) || []).length;`,
+`    const s  = lines[i].trim();
+    const sourceMarker = s.match(/^\\/\\* ── ([^ ]+\\.css) /);
+    if (sourceMarker) {
+      sourceFile = 'public/boutique/css/' + sourceMarker[1];
+      sourceLineBase = ln;
+      continue;
+    }
+    const o  = (s.match(/{/g) || []).length;`
+);
+
+replaceOnce(
+  'public/boutique/scripts/css-specificity-guard.js',
+`      rules.push({ file: filename, line: sline, selector: sel, media, props: { ...props } });`,
+`      rules.push({
+        file: filename,
+        line: sline,
+        sourceFile,
+        sourceLine: Math.max(1, sline - sourceLineBase),
+        selector: sel,
+        media,
+        props: { ...props },
+      });`
+);
+
+replaceOnce(
+  'public/boutique/scripts/css-specificity-guard.js',
+`          overriding: { selector: r.selector, file: r.file, line: r.line, media: r.media, value: r.props[prop] },
+          overridden: { selector: baseSelector, file: baseRule.file, line: baseRule.line, media: baseRule.media, value: baseRule.props[prop] },`,
+`          overriding: { selector: r.selector, file: r.file, line: r.line, sourceFile: r.sourceFile, sourceLine: r.sourceLine, media: r.media, value: r.props[prop] },
+          overridden: { selector: baseSelector, file: baseRule.file, line: baseRule.line, sourceFile: baseRule.sourceFile, sourceLine: baseRule.sourceLine, media: baseRule.media, value: baseRule.props[prop] },`
+);
+
+replaceOnce(
+  'public/boutique/scripts/css-specificity-guard.js',
+`console.log(\`${'${BLD}'}Total : ${'${findings.length}'} override(s)${'${R}'}\`);`,
+`const semanticCount = new Set(findings.map(keyOf)).size;
+console.log(\`${'${BLD}'}Total : ${'${findings.length}'} occurrence(s), ${'${semanticCount}'} override(s) sémantique(s)${'${R}'}\`);`
+);
+
+replaceOnce(
+  'public/boutique/scripts/css-specificity-guard.js',
+`  const keys = findings.map(keyOf).sort();`,
+`  const keys = [...new Set(findings.map(keyOf))].sort();`
+);
+
+replaceOnce(
+  'public/boutique/scripts/css-specificity-guard.js',
+`const regressions = findings.map(f => ({ f, k: keyOf(f) })).filter(x => !known.has(x.k));`,
+`const regressionsByKey = new Map();
+for (const f of findings) {
+  const k = keyOf(f);
+  if (!known.has(k) && !regressionsByKey.has(k)) regressionsByKey.set(k, { f, k });
+}
+const regressions = [...regressionsByKey.values()];`
+);
+
+replaceOnce(
+  'public/boutique/scripts/css-specificity-guard.js',
+`  console.log(\`   gagnant  ${'${DIM}'}${'${f.overriding.file}'}:L${'${f.overriding.line}'}${'${R}'} ${'${f.overriding.selector}'}\`);`,
+`  console.log(\`   gagnant  ${'${DIM}'}${'${f.overriding.sourceFile || f.overriding.file}'}:L${'${f.overriding.sourceLine || f.overriding.line}'}${'${R}'} ${'${f.overriding.selector}'}\`);`
+);
+
+replaceOnce(
+  'public/boutique/scripts/css-specificity-guard.js',
+`  console.log(\`   perdant  ${'${DIM}'}${'${f.overridden.file}'}:L${'${f.overridden.line}'}${'${R}'} ${'${f.overridden.selector}'}\`);`,
+`  console.log(\`   perdant  ${'${DIM}'}${'${f.overridden.sourceFile || f.overridden.file}'}:L${'${f.overridden.sourceLine || f.overridden.line}'}${'${R}'} ${'${f.overridden.selector}'}\`);`
+);
