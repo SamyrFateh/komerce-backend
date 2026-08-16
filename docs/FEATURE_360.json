@@ -50,16 +50,16 @@
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
     "ontologyGaps": 0,
-    "debtItemsTotal": 138,
-    "gateHealthy": 14,
+    "debtItemsTotal": 120,
+    "gateHealthy": 13,
     "gateBlocked": 1
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 50,
-    "attributedFindings": 50,
+    "totalFindings": 52,
+    "attributedFindings": 52,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -1240,7 +1240,7 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 4,
+        "warnCount": 5,
         "gatesReporting": [
           "check:imports",
           "gate:feature-classification-check"
@@ -1253,6 +1253,14 @@
             "verdict": "warn",
             "file": null,
             "message": "⚠ js/b-identity.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-komerce-nav-identity.js — 1 export(s) non consommé(s) :"
           },
           {
             "gate": "check:imports",
@@ -1829,14 +1837,14 @@
             "count": 3,
             "files": [
               {
-                "declared": ".github/workflows/showcase-catalog-media-audit.yml",
-                "resolvedPath": ".github/workflows/showcase-catalog-media-audit.yml",
-                "status": "missing-on-disk"
+                "declared": ".github/workflows-disabled/showcase-catalog-media-audit.yml",
+                "resolvedPath": ".github/workflows-disabled/showcase-catalog-media-audit.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": ".github/workflows/showcase-catalog-staging-deploy.yml",
-                "resolvedPath": ".github/workflows/showcase-catalog-staging-deploy.yml",
-                "status": "missing-on-disk"
+                "declared": ".github/workflows-disabled/showcase-catalog-staging-deploy.yml",
+                "resolvedPath": ".github/workflows-disabled/showcase-catalog-staging-deploy.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
                 "declared": ".github/workflows/showcase-v2-staging-deploy.yml",
@@ -2364,7 +2372,7 @@
         "totalFiles": 135,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 31,
+          "count": 32,
           "files": [
             {
               "declared": "../css/dist/components.css",
@@ -2537,6 +2545,13 @@
             {
               "declared": "../tests/unit/modal-cart-product-model.test.js",
               "resolvedPath": "public/boutique/tests/unit/modal-cart-product-model.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/modal-cart-sku-guard.test.js",
+              "resolvedPath": "public/boutique/tests/unit/modal-cart-sku-guard.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -3043,7 +3058,7 @@
         "status": "ATTENTION",
         "manifestPresent": true,
         "registryPresent": true,
-        "orphanFiles": 2,
+        "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
@@ -3133,7 +3148,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 12,
+        "debtCount": 10,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -3184,16 +3199,6 @@
             "type": "DIRECT_CROSS_FEATURE_IMPORT",
             "severity": "high",
             "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/showcase-catalog-media-audit.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/showcase-catalog-staging-deploy.yml déclaré, statut résolution: missing-on-disk"
           }
         ]
       },
@@ -5208,7 +5213,8 @@
         "tout téléchargement client exige une session et filtre par owner_user_id",
         "la projection client ne liste que les factures et reçus de remboursement ; les autres documents restent internes ou administratifs",
         "une URL de téléchargement client n'est exposée que lorsque le PDF existe et est disponible",
-        "le PDF disponible possède une empreinte SHA-256 et ne peut pas être remplacé"
+        "le PDF disponible possède une empreinte SHA-256 et ne peut pas être remplacé",
+        "le PDF de facture est dérivé du HTML canonique qui embarque le vrai logo Komerce et porte une template_version dédiée"
       ],
       "implementation": {
         "byCategory": {
@@ -5684,22 +5690,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 5,
@@ -7564,7 +7559,7 @@
             ]
           },
           "ci": {
-            "count": 20,
+            "count": 22,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -7582,89 +7577,99 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": ".github/workflows/apply-komerce-arch-headers.yml",
-                "resolvedPath": ".github/workflows/apply-komerce-arch-headers.yml",
-                "status": "missing-on-disk"
+                "declared": ".github/workflows-disabled/README.md",
+                "resolvedPath": ".github/workflows-disabled/README.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": ".github/workflows/carte-first.yml",
-                "resolvedPath": ".github/workflows/carte-first.yml",
-                "status": "missing-on-disk"
+                "declared": ".github/workflows-disabled/apply-komerce-arch-headers.yml",
+                "resolvedPath": ".github/workflows-disabled/apply-komerce-arch-headers.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/carte-first.yml",
+                "resolvedPath": ".github/workflows-disabled/carte-first.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/ci-full-gated.yml",
+                "resolvedPath": ".github/workflows-disabled/ci-full-gated.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/contract-conformance.yml",
+                "resolvedPath": ".github/workflows-disabled/contract-conformance.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/contract.yml",
+                "resolvedPath": ".github/workflows-disabled/contract.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/docs-guard.yml",
+                "resolvedPath": ".github/workflows-disabled/docs-guard.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/e2e-boutique.yml",
+                "resolvedPath": ".github/workflows-disabled/e2e-boutique.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/e2e.yml",
+                "resolvedPath": ".github/workflows-disabled/e2e.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/generate-komerce-arch-graph.yml",
+                "resolvedPath": ".github/workflows-disabled/generate-komerce-arch-graph.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/governance.yml",
+                "resolvedPath": ".github/workflows-disabled/governance.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/impact-check.yml",
+                "resolvedPath": ".github/workflows-disabled/impact-check.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/lot7-finalize-governance-once.yml",
+                "resolvedPath": ".github/workflows-disabled/lot7-finalize-governance-once.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/lot7-staging-business-qualification.yml",
+                "resolvedPath": ".github/workflows-disabled/lot7-staging-business-qualification.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/lot8-pre-go-live-certification.yml",
+                "resolvedPath": ".github/workflows-disabled/lot8-pre-go-live-certification.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/lot8-reconcile-current-main-once.yml",
+                "resolvedPath": ".github/workflows-disabled/lot8-reconcile-current-main-once.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/pr-governance.yml",
+                "resolvedPath": ".github/workflows-disabled/pr-governance.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows-disabled/schema-refresh.yml",
+                "resolvedPath": ".github/workflows-disabled/schema-refresh.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
                 "declared": ".github/workflows/ci.yml",
                 "resolvedPath": ".github/workflows/ci.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": ".github/workflows/contract-conformance.yml",
-                "resolvedPath": ".github/workflows/contract-conformance.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/contract.yml",
-                "resolvedPath": ".github/workflows/contract.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/docs-guard.yml",
-                "resolvedPath": ".github/workflows/docs-guard.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/e2e-boutique.yml",
-                "resolvedPath": ".github/workflows/e2e-boutique.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/e2e.yml",
-                "resolvedPath": ".github/workflows/e2e.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/generate-komerce-arch-graph.yml",
-                "resolvedPath": ".github/workflows/generate-komerce-arch-graph.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/governance.yml",
-                "resolvedPath": ".github/workflows/governance.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/impact-check.yml",
-                "resolvedPath": ".github/workflows/impact-check.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/lot7-finalize-governance-once.yml",
-                "resolvedPath": ".github/workflows/lot7-finalize-governance-once.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/lot7-staging-business-qualification.yml",
-                "resolvedPath": ".github/workflows/lot7-staging-business-qualification.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/lot8-pre-go-live-certification.yml",
-                "resolvedPath": ".github/workflows/lot8-pre-go-live-certification.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/lot8-reconcile-current-main-once.yml",
-                "resolvedPath": ".github/workflows/lot8-reconcile-current-main-once.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/pr-governance.yml",
-                "resolvedPath": ".github/workflows/pr-governance.yml",
-                "status": "missing-on-disk"
-              },
-              {
-                "declared": ".github/workflows/schema-refresh.yml",
-                "resolvedPath": ".github/workflows/schema-refresh.yml",
-                "status": "missing-on-disk"
               }
             ]
           },
@@ -8769,7 +8774,7 @@
             ]
           }
         },
-        "totalFiles": 276,
+        "totalFiles": 278,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -9074,7 +9079,7 @@
         "status": "ATTENTION",
         "manifestPresent": true,
         "registryPresent": true,
-        "orphanFiles": 16,
+        "orphanFiles": 0,
         "unresolvedInternalApis": 11,
         "declaredOnlyDependencyCount": 3,
         "ontologyGapsLinked": 0,
@@ -9107,7 +9112,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 34,
+        "debtCount": 18,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -9143,86 +9148,6 @@
             "type": "CONSUMES_REFERENCE_UNRESOLVED",
             "severity": "low",
             "evidence": "contract.consumes référence \"payment — bootstrap/api-routes.js monte les routes payment\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/apply-komerce-arch-headers.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/carte-first.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/contract-conformance.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/contract.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/docs-guard.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/e2e-boutique.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/e2e.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/generate-komerce-arch-graph.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/governance.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/impact-check.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/lot7-finalize-governance-once.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/lot7-staging-business-qualification.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/lot8-pre-go-live-certification.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/lot8-reconcile-current-main-once.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/pr-governance.yml déclaré, statut résolution: missing-on-disk"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "ci/.github/workflows/schema-refresh.yml déclaré, statut résolution: missing-on-disk"
           },
           {
             "type": "UNRESOLVED_INTERNAL_API",
@@ -11206,27 +11131,36 @@
         "kind": "business-transversal",
         "status": "production"
       },
-      "service": "Emettre une alerte ou un message sortant (WhatsApp, notification interne) declenche par une autre feature.",
+      "service": "Projeter une information essentielle dans l application avec acquittement propriétaire ; conserver les canaux sortants historiques séparés et best-effort.",
       "perimeter": {
         "in": [
           "envoi WhatsApp via Meta",
           "moteur d'alertes internes",
-          "routes d'emission de notification"
+          "routes d'emission de notification",
+          "cycle in-app client open -> acknowledged | resolved",
+          "réconciliation des trois jalons préparation, expédition et disponibilité",
+          "contrat explicite order.exception.* pour les événements exceptionnels actionnables"
         ],
         "out": [
-          "decision de declencher une notification (reste a la feature emettrice : orders, payments, etc.)",
-          "tests/unit/notification-service.test.js"
+          "tests/unit/notification-service.test.js",
+          "décision métier de notifier (reste à la feature émettrice)"
         ]
       },
       "authority": "backend-core — tout changement de template ou de canal doit etre valide par le proprietaire de notification-service.js",
       "invariants": [
         "notifications est un puits d'evenements — elle ne decide jamais elle-meme qu'un evenement metier a eu lieu",
-        "livraison outbound best-effort — l'echec d'envoi WhatsApp ne doit jamais bloquer la transaction emettrice (fire-and-forget)"
+        "livraison outbound best-effort — l'echec d'envoi WhatsApp ne doit jamais bloquer la transaction emettrice (fire-and-forget)",
+        "une notification client est idempotente et accessible uniquement à son propriétaire authentifié",
+        "acquitter une notification ne modifie jamais l état métier de la commande",
+        "seuls les événements essentiels et actionnables entrent dans le flux client",
+        "la lecture réconcilie une émission manquée depuis la vérité métier sans créer de doublon",
+        "un jalon plus récent résout le jalon précédent de la même commande sans créer un message pour in_transit",
+        "une exception exige une clé order.exception.* et un déclencheur métier confirmé"
       ],
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 5,
+            "count": 6,
             "files": [
               {
                 "declared": "migrations/022b_sms_queue.sql",
@@ -11252,15 +11186,25 @@
                 "declared": "migrations/089_notification_log_ref_widening.sql",
                 "resolvedPath": "migrations/089_notification_log_ref_widening.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/132_client_notifications.sql",
+                "resolvedPath": "migrations/132_client_notifications.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "routes": {
-            "count": 3,
+            "count": 4,
             "files": [
               {
                 "declared": "routes/alerts.js",
                 "resolvedPath": "routes/alerts.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/client-notifications.js",
+                "resolvedPath": "routes/client-notifications.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -11276,7 +11220,7 @@
             ]
           },
           "services": {
-            "count": 11,
+            "count": 12,
             "files": [
               {
                 "declared": "services/alert-engine.js",
@@ -11286,6 +11230,11 @@
               {
                 "declared": "services/authkey-client.js",
                 "resolvedPath": "services/authkey-client.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/client-notification-service.js",
+                "resolvedPath": "services/client-notification-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -11336,7 +11285,7 @@
             ]
           },
           "tests": {
-            "count": 16,
+            "count": 18,
             "files": [
               {
                 "declared": "core/test-whatsapp-notifications.js",
@@ -11371,6 +11320,16 @@
               {
                 "declared": "tests/unit/authkey-client.test.js",
                 "resolvedPath": "tests/unit/authkey-client.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/client-notification-service.test.js",
+                "resolvedPath": "tests/unit/client-notification-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/client-notifications-route.test.js",
+                "resolvedPath": "tests/unit/client-notifications-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -11431,21 +11390,54 @@
             ]
           }
         },
-        "totalFiles": 36,
-        "boutiqueManifest": null,
+        "totalFiles": 41,
+        "boutiqueManifest": "notifications-client",
         "boutiqueFiles": {
-          "count": 0,
-          "files": []
+          "count": 3,
+          "files": [
+            {
+              "declared": "../css/notifications.css",
+              "resolvedPath": "public/boutique/css/notifications.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../js/b-notifications.js",
+              "resolvedPath": "public/boutique/js/b-notifications.js",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-notifications.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-notifications.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            }
+          ]
         }
       },
       "ownership": {
-        "ownsTables": [],
+        "ownsTables": [
+          {
+            "table": "client_notifications",
+            "resolution": "single-writer"
+          }
+        ],
         "writesTables": [
           {
             "table": "alerts",
             "mode": "W",
             "lifecycleOwner": null,
             "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "client_notifications",
+            "mode": "RW",
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "owner"
           },
           {
             "table": "incidents",
@@ -11488,13 +11480,24 @@
         ]
       },
       "data": {
-        "ownsTables": [],
+        "ownsTables": [
+          {
+            "table": "client_notifications",
+            "resolution": "single-writer"
+          }
+        ],
         "writesTables": [
           {
             "table": "alerts",
             "mode": "W",
             "lifecycleOwner": null,
             "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "client_notifications",
+            "mode": "RW",
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "owner"
           },
           {
             "table": "incidents",
@@ -11539,6 +11542,11 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "emitOrderMilestone / emitExceptional / resolveOrderMilestones",
+            "file": "services/client-notification-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "notifyLoyaltyEarned",
             "file": "services/notifications/loyalty.js",
             "status": "resolved"
@@ -11570,7 +11578,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 4
+          "count": 6
         }
       },
       "businessDependencies": [
@@ -11606,7 +11614,7 @@
         },
         {
           "consumer": "orders",
-          "disposition": "BUSINESS_TRANSVERSAL_SERVICE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
           ]
@@ -11637,12 +11645,16 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 2,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
         "details": [
           {
             "to": "infrastructure",
+            "family": "TECHNICAL_PRIMITIVE"
+          },
+          {
+            "to": "platform-ops",
             "family": "TECHNICAL_PRIMITIVE"
           }
         ]
@@ -11666,11 +11678,22 @@
         "ambiguousOwnershipCount": 3
       },
       "gateHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 0,
-        "gatesReporting": [],
-        "findings": []
+        "warnCount": 1,
+        "gatesReporting": [
+          "check:imports"
+        ],
+        "findings": [
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-notifications.js — 1 export(s) non consommé(s) :"
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 4,
@@ -11883,7 +11906,7 @@
             ]
           },
           "tests": {
-            "count": 26,
+            "count": 27,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
@@ -11953,6 +11976,11 @@
               {
                 "declared": "tests/unit/order-service.test.js",
                 "resolvedPath": "tests/unit/order-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-status-client-notifications.test.js",
+                "resolvedPath": "tests/unit/order-status-client-notifications.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12028,7 +12056,7 @@
             ]
           }
         },
-        "totalFiles": 50,
+        "totalFiles": 51,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 12,
@@ -12503,7 +12531,7 @@
         },
         {
           "provider": "notifications",
-          "disposition": "BUSINESS_TRANSVERSAL_SERVICE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
           ]
@@ -12642,11 +12670,10 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 10,
+        "warnCount": 9,
         "gatesReporting": [
           "check:body-classes",
-          "check:imports",
-          "gate:feature-classification-check"
+          "check:imports"
         ],
         "findings": [
           {
@@ -12655,7 +12682,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "↳ Référencé en CSS : css/cart.css:2144, css/cart.css:2155 … — sélecteur legacy ou JS manquant"
+            "message": "↳ Référencé en CSS : css/cart.css:2188, css/cart.css:2199 … — sélecteur legacy ou JS manquant"
           },
           {
             "gate": "check:body-classes",
@@ -12687,7 +12714,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "⚠ js/b-cart.js — 4 export(s) non consommé(s) :"
+            "message": "⚠ js/b-cart.js — 3 export(s) non consommé(s) :"
           },
           {
             "gate": "check:imports",
@@ -12703,7 +12730,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "⚠ js/b-checkout.js — 1 export(s) non consommé(s) :"
+            "message": "⚠ js/b-checkout.js — 2 export(s) non consommé(s) :"
           },
           {
             "gate": "check:imports",
@@ -12720,14 +12747,6 @@
             "verdict": "warn",
             "file": null,
             "message": "⚠ js/b-tracking.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
           }
         ]
       },
@@ -14252,11 +14271,15 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 1,
         "testOnlyRelations": 1,
-        "compositionRootRelations": 2,
+        "compositionRootRelations": 3,
         "details": [
           {
             "to": "infrastructure",
             "family": "TECHNICAL_PRIMITIVE"
+          },
+          {
+            "to": "notifications",
+            "family": "COMPOSITION_ROOT_WIRING"
           },
           {
             "to": "payments",
@@ -14293,7 +14316,7 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 13,
+        "warnCount": 12,
         "gatesReporting": [
           "check:body-classes",
           "check:imports"
@@ -14394,14 +14417,6 @@
             "verdict": "warn",
             "file": null,
             "message": "⚠ js/b-utils.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant."
           }
         ]
       },
@@ -15684,7 +15699,7 @@
         "totalFiles": 53,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
-          "count": 17,
+          "count": 18,
           "files": [
             {
               "declared": "../js/b-modal-cart.js",
@@ -15801,6 +15816,13 @@
             {
               "declared": "../tests/unit/b-modal-social-proof.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-modal-social-proof.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/modal-cart-stepper-cycle.test.js",
+              "resolvedPath": "public/boutique/tests/unit/modal-cart-stepper-cycle.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -16088,11 +16110,20 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 3,
+        "warnCount": 4,
         "gatesReporting": [
+          "check:breakpoints",
           "check:imports"
         ],
         "findings": [
+          {
+            "gate": "check:breakpoints",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "Total : 2 violations dans 2 fichiers."
+          },
           {
             "gate": "check:imports",
             "scope": "boutique",
@@ -17044,11 +17075,30 @@
         "ambiguousOwnershipCount": 1
       },
       "gateHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 0,
-        "gatesReporting": [],
-        "findings": []
+        "warnCount": 2,
+        "gatesReporting": [
+          "check:imports"
+        ],
+        "findings": [
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-wallet.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant."
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 1,

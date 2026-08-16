@@ -919,22 +919,22 @@
       {
         "feature": "catalog",
         "category": "ci",
-        "declared": ".github/workflows/showcase-catalog-media-audit.yml",
-        "resolvedPath": ".github/workflows/showcase-catalog-media-audit.yml",
-        "status": "missing-on-disk"
-      },
-      {
-        "feature": "catalog",
-        "category": "ci",
-        "declared": ".github/workflows/showcase-catalog-staging-deploy.yml",
-        "resolvedPath": ".github/workflows/showcase-catalog-staging-deploy.yml",
-        "status": "missing-on-disk"
-      },
-      {
-        "feature": "catalog",
-        "category": "ci",
         "declared": ".github/workflows/showcase-v2-staging-deploy.yml",
         "resolvedPath": ".github/workflows/showcase-v2-staging-deploy.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows-disabled/showcase-catalog-media-audit.yml",
+        "resolvedPath": ".github/workflows-disabled/showcase-catalog-media-audit.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows-disabled/showcase-catalog-staging-deploy.yml",
+        "resolvedPath": ".github/workflows-disabled/showcase-catalog-staging-deploy.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5245,20 +5245,6 @@
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/apply-komerce-arch-headers.yml",
-        "resolvedPath": ".github/workflows/apply-komerce-arch-headers.yml",
-        "status": "missing-on-disk"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/carte-first.yml",
-        "resolvedPath": ".github/workflows/carte-first.yml",
-        "status": "missing-on-disk"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
         "declared": ".github/workflows/ci.yml",
         "resolvedPath": ".github/workflows/ci.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5266,100 +5252,128 @@
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/contract-conformance.yml",
-        "resolvedPath": ".github/workflows/contract-conformance.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/README.md",
+        "resolvedPath": ".github/workflows-disabled/README.md",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/contract.yml",
-        "resolvedPath": ".github/workflows/contract.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/apply-komerce-arch-headers.yml",
+        "resolvedPath": ".github/workflows-disabled/apply-komerce-arch-headers.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/docs-guard.yml",
-        "resolvedPath": ".github/workflows/docs-guard.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/carte-first.yml",
+        "resolvedPath": ".github/workflows-disabled/carte-first.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/e2e-boutique.yml",
-        "resolvedPath": ".github/workflows/e2e-boutique.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/ci-full-gated.yml",
+        "resolvedPath": ".github/workflows-disabled/ci-full-gated.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/e2e.yml",
-        "resolvedPath": ".github/workflows/e2e.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/contract-conformance.yml",
+        "resolvedPath": ".github/workflows-disabled/contract-conformance.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/generate-komerce-arch-graph.yml",
-        "resolvedPath": ".github/workflows/generate-komerce-arch-graph.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/contract.yml",
+        "resolvedPath": ".github/workflows-disabled/contract.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/governance.yml",
-        "resolvedPath": ".github/workflows/governance.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/docs-guard.yml",
+        "resolvedPath": ".github/workflows-disabled/docs-guard.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/impact-check.yml",
-        "resolvedPath": ".github/workflows/impact-check.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/e2e-boutique.yml",
+        "resolvedPath": ".github/workflows-disabled/e2e-boutique.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/lot7-finalize-governance-once.yml",
-        "resolvedPath": ".github/workflows/lot7-finalize-governance-once.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/e2e.yml",
+        "resolvedPath": ".github/workflows-disabled/e2e.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/lot7-staging-business-qualification.yml",
-        "resolvedPath": ".github/workflows/lot7-staging-business-qualification.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/generate-komerce-arch-graph.yml",
+        "resolvedPath": ".github/workflows-disabled/generate-komerce-arch-graph.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/lot8-pre-go-live-certification.yml",
-        "resolvedPath": ".github/workflows/lot8-pre-go-live-certification.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/governance.yml",
+        "resolvedPath": ".github/workflows-disabled/governance.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/lot8-reconcile-current-main-once.yml",
-        "resolvedPath": ".github/workflows/lot8-reconcile-current-main-once.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/impact-check.yml",
+        "resolvedPath": ".github/workflows-disabled/impact-check.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/pr-governance.yml",
-        "resolvedPath": ".github/workflows/pr-governance.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/lot7-finalize-governance-once.yml",
+        "resolvedPath": ".github/workflows-disabled/lot7-finalize-governance-once.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/schema-refresh.yml",
-        "resolvedPath": ".github/workflows/schema-refresh.yml",
-        "status": "missing-on-disk"
+        "declared": ".github/workflows-disabled/lot7-staging-business-qualification.yml",
+        "resolvedPath": ".github/workflows-disabled/lot7-staging-business-qualification.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows-disabled/lot8-pre-go-live-certification.yml",
+        "resolvedPath": ".github/workflows-disabled/lot8-pre-go-live-certification.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows-disabled/lot8-reconcile-current-main-once.yml",
+        "resolvedPath": ".github/workflows-disabled/lot8-reconcile-current-main-once.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows-disabled/pr-governance.yml",
+        "resolvedPath": ".github/workflows-disabled/pr-governance.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows-disabled/schema-refresh.yml",
+        "resolvedPath": ".github/workflows-disabled/schema-refresh.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "infrastructure",
@@ -13886,6 +13900,14 @@
       },
       {
         "boutiqueManifest": "account",
+        "category": "js",
+        "declared": "../js/b-komerce-nav-identity.js",
+        "resolvedPath": "public/boutique/js/b-komerce-nav-identity.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "account",
         "category": "css",
         "declared": "../css/komerce.css",
         "resolvedPath": "public/boutique/css/komerce.css",
@@ -13897,6 +13919,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-komerce.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-komerce.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "account",
+        "category": "tests",
+        "declared": "../tests/unit/b-komerce-nav-identity.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-komerce-nav-identity.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -14246,9 +14276,81 @@
       },
       {
         "boutiqueManifest": "catalog",
+        "category": "assets",
+        "declared": "../categories/all-v2.webp",
+        "resolvedPath": "public/boutique/categories/all-v2.webp",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "assets",
+        "declared": "../categories/soldes-v2.webp",
+        "resolvedPath": "public/boutique/categories/soldes-v2.webp",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "assets",
+        "declared": "../categories/mode-v2.webp",
+        "resolvedPath": "public/boutique/categories/mode-v2.webp",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "assets",
+        "declared": "../categories/maison-v2.webp",
+        "resolvedPath": "public/boutique/categories/maison-v2.webp",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "assets",
+        "declared": "../categories/tech-v2.webp",
+        "resolvedPath": "public/boutique/categories/tech-v2.webp",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "assets",
+        "declared": "../categories/bricolage-v2.webp",
+        "resolvedPath": "public/boutique/categories/bricolage-v2.webp",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "assets",
+        "declared": "../categories/creations-v2.webp",
+        "resolvedPath": "public/boutique/categories/creations-v2.webp",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "assets",
+        "declared": "../categories/auto-v2.webp",
+        "resolvedPath": "public/boutique/categories/auto-v2.webp",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
         "category": "tests",
         "declared": "../tests/unit/b-favs.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-favs.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/b-greeting.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-greeting.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -14265,6 +14367,22 @@
         "category": "tests",
         "declared": "../tests/unit/render-categories.test.js",
         "resolvedPath": "public/boutique/tests/unit/render-categories.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/hero-desktop-panorama.test.js",
+        "resolvedPath": "public/boutique/tests/unit/hero-desktop-panorama.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/category-subcategory-continuity.test.js",
+        "resolvedPath": "public/boutique/tests/unit/category-subcategory-continuity.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -14297,6 +14415,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-checkout.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-checkout.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
+        "category": "tests",
+        "declared": "../tests/unit/b-checkout-render.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-checkout-render.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -14529,6 +14655,14 @@
         "category": "tests",
         "declared": "../tests/unit/modal-mobile-canonical.test.js",
         "resolvedPath": "public/boutique/tests/unit/modal-mobile-canonical.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "tests",
+        "declared": "../tests/unit/modal-cart-sku-guard.test.js",
+        "resolvedPath": "public/boutique/tests/unit/modal-cart-sku-guard.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15193,6 +15327,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-modal-nav.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-modal-nav.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart-modal",
+        "category": "tests",
+        "declared": "../tests/unit/modal-cart-stepper-cycle.test.js",
+        "resolvedPath": "public/boutique/tests/unit/modal-cart-stepper-cycle.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -20328,6 +20470,10 @@
                 "targetFile": "public/boutique/js/b-scroll-owner.js"
               },
               {
+                "sourceFileId": "public/boutique/tests/unit/b-checkout-render.test.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/b-cart-core.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
@@ -21152,6 +21298,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/b-komerce-nav-identity.js"
+              },
               {
                 "sourceFileId": "public/boutique/js/b-nav.js",
                 "targetFile": "public/boutique/js/b-komerce.js"
@@ -22468,6 +22618,10 @@
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-core-active-flows.test.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-modal-core-active-flows.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
               {
@@ -22504,6 +22658,10 @@
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-nav.test.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/modal-cart-stepper-cycle.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
               }
             ]
@@ -22938,6 +23096,13 @@
           "kind": "require",
           "raw": "'../services/suppliers/connectors/' + supplier + '-connector'"
         }
+      ],
+      "boutique": [
+        {
+          "sourceFileId": "public/boutique/tests/unit/modal-cart-sku-guard.test.js",
+          "kind": "require",
+          "raw": "bundleConfigPath"
+        }
       ]
     },
     "coverage": {
@@ -22945,7 +23110,7 @@
         "filesObserved": 773
       },
       "boutique": {
-        "filesObserved": 134,
+        "filesObserved": 142,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -25882,98 +26047,7 @@
     "note": "\"cross-repo\" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation=\"external-path-scope\" ci-dessus pour le scope concerné."
   },
   "drifts": {
-    "error": [
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "catalog / .github/workflows/showcase-catalog-media-audit.yml",
-        "msg": "catalog.files.ci déclare \".github/workflows/showcase-catalog-media-audit.yml\" -> \".github/workflows/showcase-catalog-media-audit.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "catalog / .github/workflows/showcase-catalog-staging-deploy.yml",
-        "msg": "catalog.files.ci déclare \".github/workflows/showcase-catalog-staging-deploy.yml\" -> \".github/workflows/showcase-catalog-staging-deploy.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/apply-komerce-arch-headers.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/apply-komerce-arch-headers.yml\" -> \".github/workflows/apply-komerce-arch-headers.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/carte-first.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/carte-first.yml\" -> \".github/workflows/carte-first.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/contract-conformance.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/contract-conformance.yml\" -> \".github/workflows/contract-conformance.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/contract.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/contract.yml\" -> \".github/workflows/contract.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/docs-guard.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/docs-guard.yml\" -> \".github/workflows/docs-guard.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/e2e-boutique.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/e2e-boutique.yml\" -> \".github/workflows/e2e-boutique.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/e2e.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/e2e.yml\" -> \".github/workflows/e2e.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/generate-komerce-arch-graph.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/generate-komerce-arch-graph.yml\" -> \".github/workflows/generate-komerce-arch-graph.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/governance.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/governance.yml\" -> \".github/workflows/governance.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/impact-check.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/impact-check.yml\" -> \".github/workflows/impact-check.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/lot7-finalize-governance-once.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/lot7-finalize-governance-once.yml\" -> \".github/workflows/lot7-finalize-governance-once.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/lot7-staging-business-qualification.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/lot7-staging-business-qualification.yml\" -> \".github/workflows/lot7-staging-business-qualification.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/lot8-pre-go-live-certification.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/lot8-pre-go-live-certification.yml\" -> \".github/workflows/lot8-pre-go-live-certification.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/lot8-reconcile-current-main-once.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/lot8-reconcile-current-main-once.yml\" -> \".github/workflows/lot8-reconcile-current-main-once.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/pr-governance.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/pr-governance.yml\" -> \".github/workflows/pr-governance.yml\", introuvable sur disque"
-      },
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / .github/workflows/schema-refresh.yml",
-        "msg": "infrastructure.files.ci déclare \".github/workflows/schema-refresh.yml\" -> \".github/workflows/schema-refresh.yml\", introuvable sur disque"
-      }
-    ],
+    "error": [],
     "warn": [
       {
         "type": "CONSUMES-REFERENCE-UNRESOLVED",
@@ -26049,6 +26123,11 @@
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
         "msg": "16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé"
+      },
+      {
+        "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
+        "ref": "scope:boutique",
+        "msg": "1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
@@ -26318,7 +26397,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26333,7 +26412,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> auth-identity",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-identity\""
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-identity\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26423,7 +26502,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 50 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 52 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

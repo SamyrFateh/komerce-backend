@@ -12557,7 +12557,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   50% { box-shadow:0 0 0 5px var(--border-sage-14); }
 }
 
-@media (max-width:700px) {
+@media (max-width:899px) {
   .k-client-notification {
     top:calc(var(--header-h,44px) + env(safe-area-inset-top,0px) + 8px);
     align-items:flex-start;
@@ -13785,7 +13785,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   }
 }
 
-@media (min-width: 900px) and (max-width: 1120px) {
+@media (min-width: 900px) and (max-width: 1199px) {
   .ck-checkout-recent-grid {
     grid-template-columns: repeat(2, minmax(0,1fr));
   }

@@ -275,7 +275,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 6
 - scripts: 87
 - docs: 60
-- ci: 20
+- ci: 22
 - assets: 37
 - db: 16
 - routes: 1
@@ -1310,28 +1310,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ## Drifts
 
-### ERROR (18)
+### ERROR (0)
 
-- **[FILE-DECLARED-INEXISTANT]** catalog / .github/workflows/showcase-catalog-media-audit.yml — catalog.files.ci déclare ".github/workflows/showcase-catalog-media-audit.yml" -> ".github/workflows/showcase-catalog-media-audit.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** catalog / .github/workflows/showcase-catalog-staging-deploy.yml — catalog.files.ci déclare ".github/workflows/showcase-catalog-staging-deploy.yml" -> ".github/workflows/showcase-catalog-staging-deploy.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/apply-komerce-arch-headers.yml — infrastructure.files.ci déclare ".github/workflows/apply-komerce-arch-headers.yml" -> ".github/workflows/apply-komerce-arch-headers.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/carte-first.yml — infrastructure.files.ci déclare ".github/workflows/carte-first.yml" -> ".github/workflows/carte-first.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/contract-conformance.yml — infrastructure.files.ci déclare ".github/workflows/contract-conformance.yml" -> ".github/workflows/contract-conformance.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/contract.yml — infrastructure.files.ci déclare ".github/workflows/contract.yml" -> ".github/workflows/contract.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/docs-guard.yml — infrastructure.files.ci déclare ".github/workflows/docs-guard.yml" -> ".github/workflows/docs-guard.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/e2e-boutique.yml — infrastructure.files.ci déclare ".github/workflows/e2e-boutique.yml" -> ".github/workflows/e2e-boutique.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/e2e.yml — infrastructure.files.ci déclare ".github/workflows/e2e.yml" -> ".github/workflows/e2e.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/generate-komerce-arch-graph.yml — infrastructure.files.ci déclare ".github/workflows/generate-komerce-arch-graph.yml" -> ".github/workflows/generate-komerce-arch-graph.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/governance.yml — infrastructure.files.ci déclare ".github/workflows/governance.yml" -> ".github/workflows/governance.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/impact-check.yml — infrastructure.files.ci déclare ".github/workflows/impact-check.yml" -> ".github/workflows/impact-check.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/lot7-finalize-governance-once.yml — infrastructure.files.ci déclare ".github/workflows/lot7-finalize-governance-once.yml" -> ".github/workflows/lot7-finalize-governance-once.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/lot7-staging-business-qualification.yml — infrastructure.files.ci déclare ".github/workflows/lot7-staging-business-qualification.yml" -> ".github/workflows/lot7-staging-business-qualification.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/lot8-pre-go-live-certification.yml — infrastructure.files.ci déclare ".github/workflows/lot8-pre-go-live-certification.yml" -> ".github/workflows/lot8-pre-go-live-certification.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/lot8-reconcile-current-main-once.yml — infrastructure.files.ci déclare ".github/workflows/lot8-reconcile-current-main-once.yml" -> ".github/workflows/lot8-reconcile-current-main-once.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/pr-governance.yml — infrastructure.files.ci déclare ".github/workflows/pr-governance.yml" -> ".github/workflows/pr-governance.yml", introuvable sur disque
-- **[FILE-DECLARED-INEXISTANT]** infrastructure / .github/workflows/schema-refresh.yml — infrastructure.files.ci déclare ".github/workflows/schema-refresh.yml" -> ".github/workflows/schema-refresh.yml", introuvable sur disque
+- none
 
-### WARN / DEBT (131)
+### WARN / DEBT (132)
 
 Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
 
@@ -1350,6 +1333,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:backend — 16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé
+- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:boutique — 1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
@@ -1403,10 +1387,10 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> infrastructure — dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> platform-ops — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "platform-ops"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 57 preuve(s)) sans contract.consumes déclaré chez "orders" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> platform-ops — dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez "orders" vers "platform-ops"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> platform-ops — dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez "orders" vers "platform-ops"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> shared-cart — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "orders" vers "shared-cart"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 45 preuve(s)) sans contract.consumes déclaré chez "payments" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> auth-identity — dépendance cross-feature observée (canal: interface+static-code, 5 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "auth-identity"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> auth-identity — dépendance cross-feature observée (canal: interface+static-code, 6 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> catalog — dépendance cross-feature observée (canal: interface+static-code, 20 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "catalog"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 27 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "notifications"
@@ -1424,7 +1408,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> catalog — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "catalog"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> infrastructure — dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> notifications — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> platform-ops — dépendance cross-feature observée (canal: static-code, 50 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "platform-ops"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> platform-ops — dépendance cross-feature observée (canal: static-code, 52 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "platform-ops"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ shared-cart -> recommendations — dépendance cross-feature observée (canal: interface+static-code, 4 preuve(s)) sans contract.consumes déclaré chez "shared-cart" vers "recommendations"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ sourcing -> infrastructure — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "sourcing" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ unsold-resolution -> infrastructure — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "unsold-resolution" vers "infrastructure"
@@ -1480,7 +1464,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 773 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 134 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 142 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1606,7 +1590,7 @@ Meta Graph monté : oui.
 | orders | loyalty | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 8 | **DECLARED_AND_OBSERVED** |
-| orders | platform-ops | static-code | 36 | **OBSERVED_UNDECLARED** |
+| orders | platform-ops | static-code | 37 | **OBSERVED_UNDECLARED** |
 | orders | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 7 | **OBSERVED_UNDECLARED** |
 | orders | wallet | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
@@ -1622,7 +1606,7 @@ Meta Graph monté : oui.
 | payments | purchasing | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | payments | refunds | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | platform-ops | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| platform-ops | auth-identity | static-code, interface | 5 | **OBSERVED_UNDECLARED** |
+| platform-ops | auth-identity | static-code, interface | 6 | **OBSERVED_UNDECLARED** |
 | platform-ops | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | catalog | static-code, interface | 20 | **OBSERVED_UNDECLARED** |
 | platform-ops | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1654,7 +1638,7 @@ Meta Graph monté : oui.
 | shared-cart | infrastructure | static-code | 15 | **OBSERVED_UNDECLARED** |
 | shared-cart | notifications | static-code | 2 | **OBSERVED_UNDECLARED** |
 | shared-cart | orders | static-code | 9 | **DECLARED_AND_OBSERVED** |
-| shared-cart | platform-ops | static-code | 50 | **OBSERVED_UNDECLARED** |
+| shared-cart | platform-ops | static-code | 52 | **OBSERVED_UNDECLARED** |
 | shared-cart | recommendations | static-code, interface | 4 | **OBSERVED_UNDECLARED** |
 | sourcing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | sourcing | catalog | static-code | 9 | **DECLARED_AND_OBSERVED** |
@@ -1797,6 +1781,7 @@ Meta Graph monté : oui.
 ### Dynamic dependencies non résolues statiquement (limitation du modèle, jamais inventées)
 
 - scope `backend` : 16 appel(s) — ex. `tests/unit/modal-mobile-canonical.test.js`: `CSS_BUNDLES_PATH`, `scripts/boutique-ownership-full-check.js`: `path.join(abs, f`, `scripts/contract-generate.js`: `...`
+- scope `boutique` : 1 appel(s) — ex. `public/boutique/tests/unit/modal-cart-sku-guard.test.js`: `bundleConfigPath`
 
 ## O6 — Dependency Disposition
 
