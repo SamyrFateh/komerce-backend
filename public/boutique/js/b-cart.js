@@ -1,4 +1,5 @@
 /**
+// CI scope proof: Boutique JS gates (temporary, never merge).
  * @komerce-arch
  * @role          boutique-cart-and-side-cart
  * @domain        boutique
