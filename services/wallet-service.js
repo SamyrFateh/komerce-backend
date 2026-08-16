@@ -10,14 +10,14 @@
  * @used-by       routes/wallet.js, routes/payments.js, services/order-payment-confirmation.js
  * @db-read       orders, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-write      orders, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
- * @db-txn        resolve_before_behavior_change
+ * @db-txn        credit_debit_idempotent, wallet_ledger_append_only
  * @doctrine      wallet_ledger_trace, credit_debit_idempotent, wallet_non_cadeau_cache
  * @impact-areas  wallet
- * @version       2026-06
+ * @version       2026-08
  */
 
 /**
- * KOMERCE — Wallet Service v1.2 (F23 race fix) (Phase 5: reverseLot with consumption guard)
+ * KOMERCE — Wallet Service v1.3 (P1 monetary integrity)
  *
  * Système de portefeuille client unifié.
  * Remplace l'ancien système store_credits.
@@ -28,7 +28,7 @@
  *   - 1 wallet par user (lazy creation)
  *   - Transactions immutables (contrepassation uniquement, pas de suppression)
  *   - Consommation FIFO des lots de crédit
- *   - Idempotence sur les créations automatiques
+ *   - Idempotence sur les créations automatiques, y compris sous concurrence
  *   - Traçabilité complète
  */
 
@@ -39,15 +39,17 @@ const walletReceiptService = require('./documents/wallet-receipt');
 const { markPaid } = require('./payment-service');
 const log = require('../utils/logger').child({ module: 'wallet-service' });
 
+const IDEMPOTENCY_SAVEPOINT = 'wallet_idempotency_guard';
+
 // ── Schema Verification ─────────────────────────────────────────────────────
 // LOT R2 — DEBT-01 : le DDL (CREATE TABLE wallets/wallet_transactions/
 // wallet_credit_lots/wallet_consumptions + index + orders.wallet_applied_kmf)
 // vit désormais dans la migration versionnée migrations/014c_wallet_foundation.sql
 // (contrat reproduit exactement depuis docs/db/railway-live-schema.sql).
 // Cette fonction ne fait plus de DDL au boot : elle VÉRIFIE seulement (lecture
-// catalogue) et échoue bruyamment (throw) si le contrat n'est pas là —
-// non-fatal pour le process, attribuable via boot-guard.js, cf.
-// tests/unit/bootstrap-server-lifecycle.test.js.
+// catalogue) et échoue bruyamment (throw) si le contrat n'est pas là. Le
+// lifecycle serveur décide du caractère fatal de cette vérification avant
+// ouverture du port HTTP (P1 Wallet Lot A).
 async function ensureWalletTables() {
   const client = await db.getClient();
   try {
@@ -94,44 +96,117 @@ async function getOrCreateWallet(client, userId, { forUpdate = false } = {}) {
   return res.rows[0];
 }
 
+// ── Idempotence concurrente ─────────────────────────────────────────────────
+// PostgreSQL place une transaction en état aborted après une unique_violation.
+// Pour pouvoir transformer proprement le 23505 de l'index idempotency en
+// résultat duplicate:true, le mouvement de balance + l'INSERT ledger sont
+// protégés par un SAVEPOINT. ROLLBACK TO annule le mouvement perdant, rend la
+// transaction de nouveau utilisable, puis on relit la transaction gagnante.
+function isIdempotencyUniqueViolation(err) {
+  if (!err || err.code !== '23505') return false;
+  if (err.constraint === 'idx_wtx_idempotency') return true;
+  return /idempotency_key/i.test(err.detail || '');
+}
+
+async function findIdempotentTransaction(client, idempotencyKey, userId) {
+  if (!idempotencyKey) return null;
+  const { rows } = await client.query(
+    `SELECT wt.*
+       FROM wallet_transactions wt
+       JOIN wallets w ON w.id = wt.wallet_id
+      WHERE wt.idempotency_key = $1
+        AND w.user_id = $2
+      LIMIT 1`,
+    [idempotencyKey, userId]
+  );
+  return rows[0] || null;
+}
+
+async function recoverConcurrentDuplicate(client, { err, idempotencyKey, userId }) {
+  if (!isIdempotencyUniqueViolation(err)) throw err;
+
+  await client.query(`ROLLBACK TO SAVEPOINT ${IDEMPOTENCY_SAVEPOINT}`);
+  const existing = await findIdempotentTransaction(client, idempotencyKey, userId);
+  await client.query(`RELEASE SAVEPOINT ${IDEMPOTENCY_SAVEPOINT}`);
+
+  // Une collision globale appartenant à un autre wallet n'est PAS un rejeu
+  // légitime : ne jamais exposer/retourner la transaction d'un autre user.
+  if (!existing) throw err;
+
+  log.info({
+    idempotency_key: idempotencyKey,
+    transaction_id: existing.id,
+  }, '[WALLET] concurrent duplicate recovered after unique violation');
+
+  return existing;
+}
+
+function withCanonicalTransactionIfNeeded(client, operation) {
+  // Quelques orchestrateurs historiques passent le module db (pool) lui-même.
+  // Un SAVEPOINT n'existe que dans une transaction : on normalise uniquement
+  // CE cas canonique via la primitive partagée. Un PoolClient fourni par un
+  // caller reste sous la responsabilité de sa transaction externe.
+  if (client === db) return db.withTransaction(operation);
+  return operation(client);
+}
+
 // ── Credit : Ajouter un avoir au wallet ─────────────────────────────────────
 async function credit(client, opts) {
+  return withCanonicalTransactionIfNeeded(client, (txClient) => creditInTransaction(txClient, opts));
+}
+
+async function creditInTransaction(client, opts) {
   const {
     userId, amountKmf, reason, referenceId,
     idempotencyKey, note, metadata, expiresAt, createdBy,
   } = opts;
 
-  // Idempotence
+  // Fast path séquentiel : évite tout verrou/mouvement si le rejeu est déjà
+  // visible. La contrainte unique reste l'arbitre final sous concurrence.
   if (idempotencyKey) {
-    const dup = await client.query(
-      'SELECT * FROM wallet_transactions WHERE idempotency_key = $1',
-      [idempotencyKey]
-    );
-    if (dup.rows.length) return { transaction: dup.rows[0], duplicate: true };
+    const dup = await findIdempotentTransaction(client, idempotencyKey, userId);
+    if (dup) return { transaction: dup, duplicate: true };
   }
 
   const wallet = await getOrCreateWallet(client, userId, { forUpdate: true });
 
-  // F23 fix: atomic update prevents race conditions
+  if (idempotencyKey) {
+    await client.query(`SAVEPOINT ${IDEMPOTENCY_SAVEPOINT}`);
+  }
+
+  // F23 fix: atomic update prevents races on the wallet row. Sous concurrence
+  // d'une même clé, le SAVEPOINT permet d'annuler CE mouvement si l'INSERT
+  // ledger perd ensuite la course sur idx_wtx_idempotency.
   const { rows: [updatedW] } = await client.query(
     'UPDATE wallets SET balance_kmf = balance_kmf + $1, updated_at = NOW() WHERE id = $2 RETURNING balance_kmf',
     [amountKmf, wallet.id]
   );
   const newBalance = updatedW.balance_kmf;
 
-  const txRes = await client.query(`
-    INSERT INTO wallet_transactions
-      (wallet_id, type, amount_kmf, balance_after_kmf,
-       reason, reference_id, idempotency_key, note, metadata, created_by)
-    VALUES ($1,'credit',$2,$3,$4,$5,$6,$7,$8::jsonb,$9)
-    RETURNING *
-  `, [
-    wallet.id, amountKmf, newBalance, reason,
-    referenceId || null, idempotencyKey || null,
-    note || null, JSON.stringify(metadata || {}),
-    createdBy || null,
-  ]);
-  const tx = txRes.rows[0];
+  let tx;
+  try {
+    const txRes = await client.query(`
+      INSERT INTO wallet_transactions
+        (wallet_id, type, amount_kmf, balance_after_kmf,
+         reason, reference_id, idempotency_key, note, metadata, created_by)
+      VALUES ($1,'credit',$2,$3,$4,$5,$6,$7,$8::jsonb,$9)
+      RETURNING *
+    `, [
+      wallet.id, amountKmf, newBalance, reason,
+      referenceId || null, idempotencyKey || null,
+      note || null, JSON.stringify(metadata || {}),
+      createdBy || null,
+    ]);
+    tx = txRes.rows[0];
+  } catch (err) {
+    if (!idempotencyKey) throw err;
+    const existing = await recoverConcurrentDuplicate(client, { err, idempotencyKey, userId });
+    return { transaction: existing, duplicate: true };
+  }
+
+  if (idempotencyKey) {
+    await client.query(`RELEASE SAVEPOINT ${IDEMPOTENCY_SAVEPOINT}`);
+  }
 
   const lotRes = await client.query(`
     INSERT INTO wallet_credit_lots
@@ -152,18 +227,19 @@ async function issueReceiptForCredit(walletTransactionId, issuedBy) {
 
 // ── Debit : Consommation FIFO des lots ──────────────────────────────────────
 async function debit(client, opts) {
+  return withCanonicalTransactionIfNeeded(client, (txClient) => debitInTransaction(txClient, opts));
+}
+
+async function debitInTransaction(client, opts) {
   const {
     userId, amountKmf, reason, referenceId,
     idempotencyKey, note, metadata,
   } = opts;
 
   if (idempotencyKey) {
-    const dup = await client.query(
-      'SELECT * FROM wallet_transactions WHERE idempotency_key = $1',
-      [idempotencyKey]
-    );
-    if (dup.rows.length) {
-      return { transaction: dup.rows[0], consumptions: [], duplicate: true };
+    const dup = await findIdempotentTransaction(client, idempotencyKey, userId);
+    if (dup) {
+      return { transaction: dup, consumptions: [], duplicate: true };
     }
   }
 
@@ -174,25 +250,41 @@ async function debit(client, opts) {
     );
   }
 
-  // F23 fix: atomic update prevents race conditions
+  if (idempotencyKey) {
+    await client.query(`SAVEPOINT ${IDEMPOTENCY_SAVEPOINT}`);
+  }
+
+  // F23 fix: atomic update prevents races on the wallet row. Si le ledger
+  // perd la course d'idempotence, ROLLBACK TO SAVEPOINT restaure ce solde.
   const { rows: [updatedW] } = await client.query(
     'UPDATE wallets SET balance_kmf = balance_kmf - $1, updated_at = NOW() WHERE id = $2 RETURNING balance_kmf',
     [amountKmf, wallet.id]
   );
   const newBalance = updatedW.balance_kmf;
 
-  const txRes = await client.query(`
-    INSERT INTO wallet_transactions
-      (wallet_id, type, amount_kmf, balance_after_kmf,
-       reason, reference_id, idempotency_key, note, metadata)
-    VALUES ($1,'debit',$2,$3,$4,$5,$6,$7,$8::jsonb)
-    RETURNING *
-  `, [
-    wallet.id, amountKmf, newBalance, reason,
-    referenceId || null, idempotencyKey || null,
-    note || null, JSON.stringify(metadata || {}),
-  ]);
-  const tx = txRes.rows[0];
+  let tx;
+  try {
+    const txRes = await client.query(`
+      INSERT INTO wallet_transactions
+        (wallet_id, type, amount_kmf, balance_after_kmf,
+         reason, reference_id, idempotency_key, note, metadata)
+      VALUES ($1,'debit',$2,$3,$4,$5,$6,$7,$8::jsonb)
+      RETURNING *
+    `, [
+      wallet.id, amountKmf, newBalance, reason,
+      referenceId || null, idempotencyKey || null,
+      note || null, JSON.stringify(metadata || {}),
+    ]);
+    tx = txRes.rows[0];
+  } catch (err) {
+    if (!idempotencyKey) throw err;
+    const existing = await recoverConcurrentDuplicate(client, { err, idempotencyKey, userId });
+    return { transaction: existing, consumptions: [], duplicate: true };
+  }
+
+  if (idempotencyKey) {
+    await client.query(`RELEASE SAVEPOINT ${IDEMPOTENCY_SAVEPOINT}`);
+  }
 
   // FIFO — lots les plus anciens en premier
   const lots = await client.query(`
@@ -563,4 +655,3 @@ module.exports = {
   listWallets,
   getWalletDetail,
 };
-
