@@ -1083,7 +1083,7 @@
     overflow: hidden;
     border: 1px solid rgba(31,48,36,.09);
     border-radius: 13px;
-    background: #fffdfa;
+    background: var(--checkout-recent-card-bg);
   }
 
   .ck-checkout-recent-product {
@@ -1101,7 +1101,7 @@
     width: 100%;
     aspect-ratio: 1.65 / 1;
     overflow: hidden;
-    background: #f4f0e8;
+    background: var(--checkout-recent-media-bg);
   }
 
   .ck-checkout-recent-media img {

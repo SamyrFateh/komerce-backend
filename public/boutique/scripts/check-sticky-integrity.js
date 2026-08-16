@@ -32,8 +32,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const CSS_DIR = path.join(path.resolve(__dirname, '..'), 'css', 'dist');
-const DIST_FILES = ['base.css', 'components.css', 'desktop.css'];
+const CSS_DIR = path.join(path.resolve(__dirname, '..'), 'css');
+const SOURCE_FILES = fs.readdirSync(CSS_DIR)
+  .filter(f => f.endsWith('.css'))
+  .sort();
 const strict = process.argv.includes('--strict');
 
 const RED = '\x1b[31m', GRN = '\x1b[32m', BLD = '\x1b[1m', DIM = '\x1b[2m', R = '\x1b[0m';
@@ -136,7 +138,7 @@ function collect(content, file) {
 }
 
 const merged = new Map();
-for (const f of DIST_FILES) {
+for (const f of SOURCE_FILES) {
   const fp = path.join(CSS_DIR, f);
   if (!fs.existsSync(fp)) continue;
   for (const [k, v] of collect(fs.readFileSync(fp, 'utf8'), f)) {
@@ -146,7 +148,7 @@ for (const f of DIST_FILES) {
   }
 }
 
-console.log(`${BLD}Sticky Integrity — sticky vs centrage vertical (css/dist/)${R}`);
+console.log(`${BLD}Sticky Integrity — sticky vs centrage vertical (CSS source)${R}`);
 
 const violations = [];
 for (const [k, v] of merged) {
