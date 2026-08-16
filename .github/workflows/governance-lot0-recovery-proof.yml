@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   evidence:
@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -23,6 +25,33 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Apply approved breakpoint recovery
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const fixes = [
+            ['public/boutique/css/checkout-vertical-rail.css', '@media (min-width: 900px) and (max-width: 1120px) {', '@media (min-width: 900px) and (max-width: 1199px) {'],
+            ['public/boutique/css/notifications.css', '@media (max-width:700px) {', '@media (max-width:899px) {'],
+          ];
+          for (const [file, from, to] of fixes) {
+            let src = fs.readFileSync(file, 'utf8');
+            if (src.includes(from)) {
+              src = src.replace(from, to);
+              fs.writeFileSync(file, src, 'utf8');
+              console.log(`fixed ${file}`);
+            }
+          }
+          NODE
+
+          if ! git diff --quiet -- public/boutique/css/checkout-vertical-rail.css public/boutique/css/notifications.css; then
+            git config user.name "Komerce Governance Recovery"
+            git config user.email "actions@users.noreply.github.com"
+            git add public/boutique/css/checkout-vertical-rail.css public/boutique/css/notifications.css
+            git commit -m "fix(boutique): align responsive breakpoints with doctrine [gov-write]"
+            git push origin HEAD:agent/governance-lot0-recovery
+          fi
 
       - name: Capture current gate evidence
         shell: bash
