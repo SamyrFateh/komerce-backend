@@ -55,6 +55,8 @@ jobs:
           }
           console.log('breakpoint baseline = 0');
           NODE
+      - name: Rebuild canonical CSS bundles
+        run: npm --prefix public/boutique run deploy:css
       - name: Full Boutique fast certification
         run: npm --prefix public/boutique run check:fast
       - name: Regenerate canonical projections on final tree
