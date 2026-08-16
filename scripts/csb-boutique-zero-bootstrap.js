@@ -21,5 +21,23 @@ patchBuilder(
 'recipient grid'
 );
 
+patchBuilder(
+`replaceOnce(\n  'public/boutique/css/shared-list-library-remove.css',\n  \".k-library-item-row {\\n  display: grid;\\n  grid-template-columns: minmax(0, 1fr) auto;\\n  align-items: stretch;\\n  gap: 8px;\\n  min-width: 0;\\n}\\n\\n.k-library-item-row .k-library-item {\\n  min-width: 0;\\n}\",\n  \".k-library-item-row {\\n  display: flex;\\n  flex-wrap: wrap;\\n  align-items: stretch;\\n  gap: 8px;\\n  min-width: 0;\\n}\\n\\n.k-library-item-row .k-library-item {\\n  flex: 1 1 280px;\\n  min-width: 0;\\n}\",\n  'shared-list row wraps by container width'\n);`,
+`replaceOnce(\n  'public/boutique/css/shared-list-library-remove.css',\n  \".k-library-item-row {\\n  display: grid;\\n  grid-template-columns: minmax(0, 1fr) auto;\\n  align-items: stretch;\\n  gap: 8px;\\n  min-width: 0;\\n}\\n\\n\",\n  \"\",\n  'shared-list row geometry owned by lists-tab stylesheet'\n);`,
+'shared-list duplicate row'
+);
+
+patchBuilder(
+`replaceOnce(\n  'public/boutique/css/shared-list-library-remove.css',\n  \"  align-self: center;\\n  min-height: 40px;\",\n  \"  align-self: center;\\n  flex: 0 0 auto;\\n  margin-left: auto;\\n  min-height: 40px;\",\n  'shared-list remove action flex placement'\n);`,
+`// The row layout stays owned by shared-list-lists-tab.css.\n`,
+'shared-list flex placement'
+);
+
+patchBuilder(
+`replaceRegex(\n  'public/boutique/css/shared-list-library-remove.css',\n  /\\n@media \\(max-width: 430px\\) \\{[\\s\\S]*?\\n\\}\\s*$/,\n  '\\n',\n  1,\n  'remove 430 breakpoint'\n);`,
+`replaceRegex(\n  'public/boutique/css/shared-list-library-remove.css',\n  /\\n@media \\(max-width: 430px\\) \\{[\\s\\S]*?\\n\\}\\s*$/,\n  \"\\n@media (max-width: 899px) {\\n  .k-library-item-remove {\\n    justify-self: end;\\n    min-height: 36px;\\n  }\\n}\\n\",\n  1,\n  'replace bespoke 430 breakpoint with canonical mobile breakpoint'\n);`,
+'shared-list breakpoint'
+);
+
 fs.writeFileSync(path, src);
 console.log('CSB builder bootstrap applied.');
