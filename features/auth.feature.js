@@ -39,9 +39,6 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    ci: [
-      '.github/workflows/pr-enforcement-proof-does-not-exist.yml',
-    ],
     middleware: [
       'middleware/auth.js',
       'middleware/auth-guest.js',
