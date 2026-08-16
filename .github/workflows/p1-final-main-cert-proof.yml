@@ -28,6 +28,7 @@ jobs:
           --health-retries 5
     env:
       NODE_ENV: test
+      KOMERCE_ENV: test
       DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
       JWT_SECRET: ci-test-jwt-secret
       ADMIN_PASSWORD: ci-test-admin-password
@@ -44,7 +45,7 @@ jobs:
       - name: Checkout exact merged main
         uses: actions/checkout@v4
         with:
-          ref: b5657ce7a43af0889ba2d80c8fb7ca8e7c6e1499
+          ref: fad4cdd71bd4853db2a289393002c5e02e297b9c
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -54,7 +55,7 @@ jobs:
 
       - name: Prove exact SHA
         run: |
-          test "$(git rev-parse HEAD)" = "b5657ce7a43af0889ba2d80c8fb7ca8e7c6e1499"
+          test "$(git rev-parse HEAD)" = "fad4cdd71bd4853db2a289393002c5e02e297b9c"
           echo "CERTIFY_SHA=$(git rev-parse HEAD)"
 
       - run: npm ci
@@ -93,7 +94,7 @@ jobs:
           }
           NODE
 
-      - name: Boutique R5 production guard
+      - name: Boutique R5 runtime environment guard
         working-directory: public/boutique
         run: |
           npm ci
