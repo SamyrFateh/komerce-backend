@@ -62,3 +62,5 @@ docs/         doctrine, cartographie, contrats, journal de chantier
 La source de vérité du schéma est `docs/db/railway-live-schema.sql` (dump de
 production), pas un `db/schema.sql` maintenu à la main. Le pipeline CI
 (`ci-migrate.js`) calcule une baseline dynamique par comparaison git.
+
+<!-- Controlled PR-enforcement proof: README-only changes must keep scoped domain jobs skipped. -->
