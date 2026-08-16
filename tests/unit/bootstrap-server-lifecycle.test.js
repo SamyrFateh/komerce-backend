@@ -5,28 +5,11 @@
  */
 
 /**
- * KOMERCE — Tests Unitaires : bootstrap/server-lifecycle.js (Lot 0)
+ * KOMERCE — Tests Unitaires : bootstrap/server-lifecycle.js
  *
- * `bootstrap/server-lifecycle.js` était absent de `collectCoverageFrom`
- * (angle mort structurel, Lot 0). C'est le fichier H2 qui démarre le serveur,
- * lance les init tables (wallet/routing/security) en SÉQUENCE (boot-guard.js,
- * timeout + logging par étape) APRÈS app.listen, déclenche les migrations de
- * démarrage en `setImmediate`, et pose les garde-fous process (SIGTERM
- * gracieux, unhandledRejection, uncaughtException).
- *
- * FIX 2026-07-09 : l'init des tables était en fire-and-forget parallèle AVANT
- * app.listen ; elle est maintenant séquentielle, APRÈS app.listen (le serveur
- * répond déjà), via `runSequential` (boot-guard.js). Les tests ci-dessous sont
- * donc `async` et attendent un `flush()` avant d'observer les appels ensure*.
- *
- * Stratégie de mock :
- * - `process.on` est mocké pour capturer les handlers sans les enregistrer
- *   réellement sur le process (évite toute fuite de listeners entre tests).
- * - `process.exit` est mocké (sinon il tuerait le process de test).
- * - `global.setTimeout` est spié (call-through) pour capturer les délais de
- *   force-kill (10s SIGTERM / 500ms uncaughtException) et les déclencher
- *   manuellement sans attendre — les vrais timers sont nettoyés en afterEach.
- * - `app.listen` et `server.close` sont des mocks contrôlés manuellement.
+ * P1 Wallet / intégrité monétaire — Lot A : ensureWalletTables est désormais
+ * un préflight fatal AVANT server.listen. Routing/security et les migrations de
+ * startup restent post-listen, séquentiels et non fatals.
  *
  * Run : npx jest tests/unit/bootstrap-server-lifecycle.test.js
  */
@@ -41,8 +24,19 @@ const { startServerLifecycle } = require('../../bootstrap/server-lifecycle');
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 function makeDeps(overrides = {}) {
-  const mockServer = { close: jest.fn() };
-  const app = { listen: jest.fn((port, cb) => { cb && cb(); return mockServer; }) };
+  const mockServer = {
+    listening: false,
+    once: jest.fn(),
+    off: jest.fn(),
+    listen: jest.fn((port, cb) => {
+      mockServer.listening = true;
+      if (cb) cb();
+      return mockServer;
+    }),
+    close: jest.fn(),
+  };
+  const app = { __app: true };
+  const createHttpServer = jest.fn(() => mockServer);
   const db = { __db: true };
   const walletService = { ensureWalletTables: jest.fn().mockResolvedValue() };
   const routingService = { ensureRoutingColumns: jest.fn().mockResolvedValue() };
@@ -54,12 +48,20 @@ function makeDeps(overrides = {}) {
 
   return {
     mockServer,
+    createHttpServer,
     deps: {
       app, db, walletService, routingService, parcelSecurity,
       runStartupMigrations, fixAdminHash, fixMissingSchema, runAllSeeds,
+      createHttpServer,
       ...overrides,
     },
   };
+}
+
+async function startReady(deps) {
+  const server = startServerLifecycle(deps);
+  await server.ready;
+  return server;
 }
 
 describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
@@ -82,8 +84,6 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
   });
 
   afterEach(() => {
-    // Nettoie tout vrai timer réellement programmé (10s / 500ms) pour ne pas
-    // laisser de handles ouverts après la fin des tests.
     setTimeoutSpy.mock.results.forEach(r => { try { clearTimeout(r.value); } catch (_) {} });
     exitSpy.mockRestore();
     onSpy.mockRestore();
@@ -91,72 +91,87 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
     process.env.PORT = ORIGINAL_PORT;
   });
 
-  describe('initialisation des tables (séquentielle, post-listen, boot-guard)', () => {
-    test('appelle ensureWalletTables, ensureRoutingColumns(db), ensureSecurityTables(db) en séquence après listen', async () => {
-      const { deps } = makeDeps();
-      startServerLifecycle(deps);
-      // synchrone : rien n'est encore appelé, tout part dans le setImmediate post-listen
-      expect(deps.walletService.ensureWalletTables).not.toHaveBeenCalled();
-      await flush();
-      await flush();
-      await flush();
+  describe('préflight wallet fatal avant listen', () => {
+    test('ensureWalletTables termine avant server.listen ; routing/security restent post-listen', async () => {
+      const { deps, mockServer } = makeDeps();
+      const server = startServerLifecycle(deps);
+
+      expect(mockServer.listen).not.toHaveBeenCalled();
+      expect(deps.routingService.ensureRoutingColumns).not.toHaveBeenCalled();
+      expect(deps.parcelSecurity.ensureSecurityTables).not.toHaveBeenCalled();
+
+      await server.ready;
+
       expect(deps.walletService.ensureWalletTables).toHaveBeenCalledTimes(1);
+      expect(mockServer.listen).toHaveBeenCalledTimes(1);
+      expect(deps.walletService.ensureWalletTables.mock.invocationCallOrder[0])
+        .toBeLessThan(mockServer.listen.mock.invocationCallOrder[0]);
+
+      await flush();
+      await flush();
       expect(deps.routingService.ensureRoutingColumns).toHaveBeenCalledWith(deps.db);
       expect(deps.parcelSecurity.ensureSecurityTables).toHaveBeenCalledWith(deps.db);
     });
 
-    test('succès de chaque étape → log.info "[boot-guard] ... OK" avec une durée', async () => {
+    test('succès du préflight → boot-guard logge ensureWalletTables OK avec durée', async () => {
       const { deps } = makeDeps();
-      startServerLifecycle(deps);
-      await flush();
-      await flush();
-      await flush();
+      await startReady(deps);
       expect(mockLog.info).toHaveBeenCalledWith(
         expect.objectContaining({ step: 'ensureWalletTables', duration_ms: expect.any(Number) }),
         expect.stringMatching(/"ensureWalletTables" OK/)
       );
     });
 
-    test('rejet de ensureWalletTables → log.error boot-guard, pas de crash, séquence continue', async () => {
-      const { deps } = makeDeps();
-      deps.walletService.ensureWalletTables.mockRejectedValue(new Error('wallet down'));
-      startServerLifecycle(deps);
+    test('rejet de ensureWalletTables → aucun listen, aucun ensure post-listen, process exit(1)', async () => {
+      const { deps, mockServer } = makeDeps();
+      const err = new Error('wallet down');
+      deps.walletService.ensureWalletTables.mockRejectedValue(err);
+
+      const server = startServerLifecycle(deps);
+      await expect(server.ready).rejects.toThrow('wallet down');
       await flush();
-      await flush();
-      await flush();
+
       expect(mockLog.error).toHaveBeenCalledWith(
-        expect.objectContaining({ step: 'ensureWalletTables', err: expect.any(Error) }),
+        expect.objectContaining({ step: 'ensureWalletTables', err }),
         expect.stringMatching(/"ensureWalletTables" échec/)
       );
-      // la séquence continue malgré l'échec
-      expect(deps.routingService.ensureRoutingColumns).toHaveBeenCalledWith(deps.db);
-      expect(deps.parcelSecurity.ensureSecurityTables).toHaveBeenCalledWith(deps.db);
+      expect(mockLog.error).toHaveBeenCalledWith(
+        { err },
+        expect.stringMatching(/Préflight wallet critique en échec/)
+      );
+      expect(mockServer.listen).not.toHaveBeenCalled();
+      expect(deps.routingService.ensureRoutingColumns).not.toHaveBeenCalled();
+      expect(deps.parcelSecurity.ensureSecurityTables).not.toHaveBeenCalled();
+      expect(deps.runStartupMigrations).not.toHaveBeenCalled();
+      expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
-    test('rejet de ensureRoutingColumns → log.error boot-guard, pas de crash', async () => {
-      const { deps } = makeDeps();
+    test('rejet de ensureRoutingColumns → non fatal après listen', async () => {
+      const { deps, mockServer } = makeDeps();
       deps.routingService.ensureRoutingColumns.mockRejectedValue(new Error('routing down'));
-      startServerLifecycle(deps);
+      await startReady(deps);
       await flush();
       await flush();
-      await flush();
+      expect(mockServer.listen).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledWith(
         expect.objectContaining({ step: 'ensureRoutingColumns', err: expect.any(Error) }),
         expect.stringMatching(/"ensureRoutingColumns" échec/)
       );
+      expect(exitSpy).not.toHaveBeenCalled();
     });
 
-    test('rejet de ensureSecurityTables → log.error boot-guard, pas de crash', async () => {
-      const { deps } = makeDeps();
+    test('rejet de ensureSecurityTables → non fatal après listen', async () => {
+      const { deps, mockServer } = makeDeps();
       deps.parcelSecurity.ensureSecurityTables.mockRejectedValue(new Error('security down'));
-      startServerLifecycle(deps);
+      await startReady(deps);
       await flush();
       await flush();
-      await flush();
+      expect(mockServer.listen).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledWith(
         expect.objectContaining({ step: 'ensureSecurityTables', err: expect.any(Error) }),
         expect.stringMatching(/"ensureSecurityTables" échec/)
       );
+      expect(exitSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -168,11 +183,10 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
       else process.env.KOMERCE_SKIP_STARTUP_MIGRATIONS = ORIGINAL_SKIP;
     });
 
-    test('KOMERCE_SKIP_STARTUP_MIGRATIONS=true → runStartupMigrations jamais appelé', async () => {
+    test('true → runStartupMigrations jamais appelé', async () => {
       process.env.KOMERCE_SKIP_STARTUP_MIGRATIONS = 'true';
       const { deps } = makeDeps();
-      startServerLifecycle(deps);
-      await flush();
+      await startReady(deps);
       await flush();
       await flush();
       expect(deps.runStartupMigrations).not.toHaveBeenCalled();
@@ -181,11 +195,10 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
       );
     });
 
-    test('flag absent ou différent de "true" → runStartupMigrations appelé normalement', async () => {
+    test('flag absent ou différent de true → runStartupMigrations appelé', async () => {
       delete process.env.KOMERCE_SKIP_STARTUP_MIGRATIONS;
       const { deps } = makeDeps();
-      startServerLifecycle(deps);
-      await flush();
+      await startReady(deps);
       await flush();
       await flush();
       expect(deps.runStartupMigrations).toHaveBeenCalledTimes(1);
@@ -193,10 +206,6 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
   });
 
   describe('KOMERCE_SKIP_BOOT_ENSURE', () => {
-    // FIX 2026-07-09 : incident prod — ensureRoutingColumns/ensureSecurityTables
-    // en contention avec du trafic live, pool DB immobilisé au boot (catalogue
-    // en spinner). Ce flag permet de sauter ces deux étapes au redémarrage sans
-    // toucher à ensureWalletTables (31ms, sans risque, toujours actif).
     const ORIGINAL_SKIP = process.env.KOMERCE_SKIP_BOOT_ENSURE;
 
     afterEach(() => {
@@ -204,18 +213,17 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
       else process.env.KOMERCE_SKIP_BOOT_ENSURE = ORIGINAL_SKIP;
     });
 
-    test('KOMERCE_SKIP_BOOT_ENSURE=true → ensureRoutingColumns/ensureSecurityTables jamais appelés, ensureWalletTables l\'est toujours', async () => {
+    test('true → routing/security sautés mais préflight wallet toujours exécuté', async () => {
       process.env.KOMERCE_SKIP_BOOT_ENSURE = 'true';
       const { deps } = makeDeps();
-      startServerLifecycle(deps);
-      await flush();
+      await startReady(deps);
       await flush();
       await flush();
       expect(deps.walletService.ensureWalletTables).toHaveBeenCalledTimes(1);
       expect(deps.routingService.ensureRoutingColumns).not.toHaveBeenCalled();
       expect(deps.parcelSecurity.ensureSecurityTables).not.toHaveBeenCalled();
       expect(mockLog.info).toHaveBeenCalledWith(
-        expect.stringMatching(/KOMERCE_SKIP_BOOT_ENSURE=true/)
+        expect.stringMatching(/préflight ensureWalletTables déjà validé et non skippable/)
       );
       expect(mockLog.info).toHaveBeenCalledWith(
         expect.objectContaining({ step: 'ensureRoutingColumns' }),
@@ -227,11 +235,10 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
       );
     });
 
-    test('flag absent ou différent de "true" → les 3 étapes tournent normalement', async () => {
+    test('flag absent → les 3 vérifications tournent', async () => {
       delete process.env.KOMERCE_SKIP_BOOT_ENSURE;
       const { deps } = makeDeps();
-      startServerLifecycle(deps);
-      await flush();
+      await startReady(deps);
       await flush();
       await flush();
       expect(deps.walletService.ensureWalletTables).toHaveBeenCalledTimes(1);
@@ -241,42 +248,55 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
   });
 
   describe('démarrage du serveur HTTP', () => {
-    test('app.listen appelé avec le port par défaut 3000 si PORT non défini', () => {
-      const { deps } = makeDeps();
+    test('crée une vraie abstraction serveur à partir de app', () => {
+      const { deps, createHttpServer } = makeDeps();
       startServerLifecycle(deps);
-      expect(deps.app.listen).toHaveBeenCalledWith(3000, expect.any(Function));
+      expect(createHttpServer).toHaveBeenCalledWith(deps.app);
     });
 
-    test('app.listen appelé avec process.env.PORT si défini', () => {
+    test('listen utilise le port par défaut 3000 après préflight', async () => {
+      const { deps, mockServer } = makeDeps();
+      await startReady(deps);
+      expect(mockServer.listen).toHaveBeenCalledWith(3000, expect.any(Function));
+    });
+
+    test('listen utilise process.env.PORT', async () => {
       process.env.PORT = '4242';
-      const { deps } = makeDeps();
-      startServerLifecycle(deps);
-      expect(deps.app.listen).toHaveBeenCalledWith('4242', expect.any(Function));
+      const { deps, mockServer } = makeDeps();
+      await startReady(deps);
+      expect(mockServer.listen).toHaveBeenCalledWith('4242', expect.any(Function));
     });
 
-    test('port explicite passé en option prime sur tout', () => {
-      const { deps } = makeDeps();
-      startServerLifecycle({ ...deps, port: 9999 });
-      expect(deps.app.listen).toHaveBeenCalledWith(9999, expect.any(Function));
+    test('port explicite prime sur process.env.PORT', async () => {
+      process.env.PORT = '4242';
+      const { deps, mockServer } = makeDeps();
+      const server = startServerLifecycle({ ...deps, port: 9999 });
+      await server.ready;
+      expect(mockServer.listen).toHaveBeenCalledWith(9999, expect.any(Function));
     });
 
-    test('log.info émis au démarrage avec le port', () => {
+    test('log.info de démarrage n’est émis qu’après préflight/listen', async () => {
       const { deps } = makeDeps();
-      startServerLifecycle(deps);
-      expect(mockLog.info).toHaveBeenCalledWith(expect.stringMatching(/port 3000/));
+      const server = startServerLifecycle(deps);
+      expect(mockLog.info).not.toHaveBeenCalledWith(expect.stringMatching(/KOMERCE API v12\.4/));
+      await server.ready;
+      expect(mockLog.info).toHaveBeenCalledWith(expect.stringMatching(/préflight wallet OK/));
     });
 
-    test('retourne l\'instance server renvoyée par app.listen', () => {
+    test('retourne immédiatement l’instance server et expose server.ready', async () => {
       const { deps, mockServer } = makeDeps();
       const result = startServerLifecycle(deps);
       expect(result).toBe(mockServer);
+      expect(result.ready).toBeInstanceOf(Promise);
+      await result.ready;
     });
   });
 
-  describe('migrations de démarrage (setImmediate, background)', () => {
-    test('runStartupMigrations appelé avec {db, fixAdminHash, fixMissingSchema, runAllSeeds}', async () => {
+  describe('migrations de démarrage (post-listen, background)', () => {
+    test('runStartupMigrations reçoit les dépendances attendues', async () => {
       const { deps } = makeDeps();
-      startServerLifecycle(deps);
+      await startReady(deps);
+      await flush();
       await flush();
       expect(deps.runStartupMigrations).toHaveBeenCalledWith({
         db: deps.db,
@@ -286,10 +306,10 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
       });
     });
 
-    test('rejet de runStartupMigrations → log.error non-fatal, pas de crash', async () => {
+    test('rejet de runStartupMigrations → log.error non fatal', async () => {
       const { deps } = makeDeps();
       deps.runStartupMigrations.mockRejectedValue(new Error('migration boom'));
-      startServerLifecycle(deps);
+      await startReady(deps);
       await flush();
       await flush();
       expect(mockLog.error).toHaveBeenCalledWith(
@@ -299,9 +319,9 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
       expect(exitSpy).not.toHaveBeenCalled();
     });
 
-    test('succès de runStartupMigrations → aucun log.error', async () => {
+    test('succès → aucun log.error', async () => {
       const { deps } = makeDeps();
-      startServerLifecycle(deps);
+      await startReady(deps);
       await flush();
       await flush();
       expect(mockLog.error).not.toHaveBeenCalled();
@@ -309,44 +329,50 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
   });
 
   describe('garde-fou SIGTERM — fermeture gracieuse', () => {
-    test('SIGTERM déclenche log.info puis server.close()', () => {
+    test('après listen, SIGTERM déclenche server.close()', async () => {
       const { deps, mockServer } = makeDeps();
-      startServerLifecycle(deps);
+      await startReady(deps);
       handlers.SIGTERM();
       expect(mockLog.info).toHaveBeenCalledWith(expect.stringMatching(/SIGTERM reçu/));
       expect(mockServer.close).toHaveBeenCalledTimes(1);
     });
 
-    test('close() réussi → log.info fermeture propre + process.exit(0)', () => {
+    test('close réussi → process.exit(0)', async () => {
       const { deps, mockServer } = makeDeps();
-      startServerLifecycle(deps);
+      await startReady(deps);
       handlers.SIGTERM();
-      // simule la fin réelle de server.close()
       mockServer.close.mock.calls[0][0]();
       expect(mockLog.info).toHaveBeenCalledWith(expect.stringMatching(/fermé proprement/));
       expect(exitSpy).toHaveBeenCalledWith(0);
     });
 
-    test('un force-kill à 10s est programmé à chaque SIGTERM', () => {
+    test('un force-kill à 10s est programmé après listen', async () => {
       const { deps } = makeDeps();
-      startServerLifecycle(deps);
+      await startReady(deps);
       handlers.SIGTERM();
       expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 10_000);
     });
 
-    test("si close() ne rappelle jamais, le timer de force-kill appelle process.exit(1)", () => {
+    test('si close ne rappelle jamais, le force-kill appelle exit(1)', async () => {
       const { deps } = makeDeps();
+      await startReady(deps);
+      handlers.SIGTERM();
+      const forceKillCall = setTimeoutSpy.mock.calls.find(c => c[1] === 10_000);
+      forceKillCall[0]();
+      expect(exitSpy).toHaveBeenCalledWith(1);
+    });
+
+    test('SIGTERM avant listen arrête proprement sans appeler close', () => {
+      const { deps, mockServer } = makeDeps();
       startServerLifecycle(deps);
       handlers.SIGTERM();
-      // ne pas invoquer le callback de close() — simule un close qui traîne
-      const forceKillCall = setTimeoutSpy.mock.calls.find(c => c[1] === 10_000);
-      forceKillCall[0](); // déclenche manuellement le timer de force-kill
-      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(mockServer.close).not.toHaveBeenCalled();
+      expect(exitSpy).toHaveBeenCalledWith(0);
     });
   });
 
   describe('garde-fous crash (NEW-07)', () => {
-    test('unhandledRejection → log.error avec la raison, pas de process.exit', () => {
+    test('unhandledRejection → log.error avec raison, pas d’exit', () => {
       const { deps } = makeDeps();
       startServerLifecycle(deps);
       const reason = new Error('promise oubliée');
@@ -355,7 +381,7 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
       expect(exitSpy).not.toHaveBeenCalled();
     });
 
-    test('uncaughtException → log.error avec l\'erreur', () => {
+    test('uncaughtException → log.error avec erreur', () => {
       const { deps } = makeDeps();
       startServerLifecycle(deps);
       const err = new Error('crash fatal');
@@ -363,7 +389,7 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
       expect(mockLog.error).toHaveBeenCalledWith({ err }, '[uncaughtException]');
     });
 
-    test('uncaughtException programme un process.exit(1) à 500ms', () => {
+    test('uncaughtException programme exit(1) à 500ms', () => {
       const { deps } = makeDeps();
       startServerLifecycle(deps);
       handlers.uncaughtException(new Error('crash fatal'));
@@ -375,7 +401,7 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
   });
 
   describe('enregistrement des listeners process', () => {
-    test('enregistre bien SIGTERM, unhandledRejection et uncaughtException', () => {
+    test('enregistre SIGTERM, unhandledRejection et uncaughtException', () => {
       const { deps } = makeDeps();
       startServerLifecycle(deps);
       expect(onSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
