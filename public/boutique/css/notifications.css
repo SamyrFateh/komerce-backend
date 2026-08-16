@@ -47,7 +47,7 @@
   50% { box-shadow:0 0 0 5px var(--border-sage-14); }
 }
 
-@media (max-width:700px) {
+@media (max-width:899px) {
   .k-client-notification {
     top:calc(var(--header-h,44px) + env(safe-area-inset-top,0px) + 8px);
     align-items:flex-start;
