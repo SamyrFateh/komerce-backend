@@ -57,8 +57,52 @@ jobs:
           NODE
       - name: Rebuild canonical CSS bundles
         run: npm --prefix public/boutique run deploy:css
-      - name: Full Boutique fast certification
-        run: npm --prefix public/boutique run check:fast
+      - name: Fast 01 quality
+        run: npm --prefix public/boutique run quality:gate
+      - name: Fast 02 group wording
+        run: npm --prefix public/boutique run check:group-wording
+      - name: Fast 03 html
+        run: npm --prefix public/boutique run check:html
+      - name: Fast 04 imports
+        run: npm --prefix public/boutique run check:imports
+      - name: Fast 05 body classes
+        run: npm --prefix public/boutique run check:body-classes
+      - name: Fast 06 no injection
+        run: npm --prefix public/boutique run check:no-injection
+      - name: Fast 07 assets
+        run: npm --prefix public/boutique run check:assets
+      - name: Fast 08 important
+        run: npm --prefix public/boutique run check:important
+      - name: Fast 09 css guard
+        run: npm --prefix public/boutique run check:css-guard
+      - name: Fast 10 specificity
+        run: npm --prefix public/boutique run check:css-specificity-guard
+      - name: Fast 11 dist only
+        run: npm --prefix public/boutique run check:css-dist-only
+      - name: Fast 12 cache
+        run: npm --prefix public/boutique run check:cache
+      - name: Fast 13 breakpoints
+        run: npm --prefix public/boutique run check:breakpoints
+      - name: Fast 14 visual lock
+        run: npm --prefix public/boutique run check:visual-lock
+      - name: Fast 15 architecture
+        run: npm --prefix public/boutique run audit:arch
+      - name: Fast 16 architecture live
+        run: npm --prefix public/boutique run audit:arch:live
+      - name: Fast 17 ownership
+        run: npm --prefix public/boutique run audit:ownership
+      - name: Fast 18 modal ownership
+        run: npm --prefix public/boutique run audit:modal-ownership
+      - name: Fast 19 modal layout
+        run: npm --prefix public/boutique run audit:modal-layout
+      - name: Fast 20 registry
+        run: npm --prefix public/boutique run audit:registry
+      - name: Fast 21 audit gate
+        run: npm --prefix public/boutique run audit:gate
+      - name: Fast 22 feature guard
+        run: npm --prefix public/boutique run feature:guard:strict
+      - name: Fast 23 unit tests
+        run: npm --prefix public/boutique run test:unit
       - name: Regenerate canonical projections on final tree
         run: |
           npm run arch:gen
