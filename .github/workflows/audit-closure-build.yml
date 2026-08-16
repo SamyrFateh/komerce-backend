@@ -92,7 +92,40 @@ jobs:
           node scripts/db-snapshot.js
           node scripts/check-schema-freshness.js --all
 
-      - name: Reconcile SCHEMA.md with live snapshot
+      - name: Document verified live client notifications schema
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('docs/SCHEMA.md')
+          s = p.read_text()
+
+          if '| Tables | 104 | Vérifié sur le dump live Railway. |' in s:
+              s = s.replace(
+                  '| Tables | 104 | Vérifié sur le dump live Railway. |',
+                  '| Tables | 105 | Vérifié sur le dump live Railway. |',
+                  1,
+              )
+          elif '| Tables | 105 | Vérifié sur le dump live Railway. |' not in s:
+              raise SystemExit('SCHEMA.md table-count anchor missing')
+
+          s = s.replace(
+              '### 4.13 Monitoring et alertes (8 tables)',
+              '### 4.13 Monitoring et alertes (10 tables)',
+              1,
+          )
+
+          row = '| `client_notifications` | Notifications in-app essentielles rattachées à une commande, acquittables, sans canal externe ni contenu sensible. Unicité `(user_id, event_key, entity_type, entity_id)` ; statuts `open` / `acknowledged` / `resolved`. Migration 132, vérifiée live sur Railway le 2026-08-16. |'
+          if row not in s:
+              anchor = '| `notification_log` | Log notifications (email, push). |'
+              if anchor not in s:
+                  raise SystemExit('SCHEMA.md notification_log anchor missing')
+              s = s.replace(anchor, anchor + '\n' + row, 1)
+
+          p.write_text(s)
+          PY
+
+      - name: Reconcile architecture debt budget
         run: npm run arch:reconcile:write
 
       - name: Remove temporary builder from canonical audit tree
