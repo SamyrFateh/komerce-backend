@@ -70,6 +70,20 @@ function isBoutiqueRelevant(file) {
     || isBoutiquePackageFile(file);
 }
 
+// Lot 3 — governance / feature-first : cartes, baselines/ontologie, logique des
+// gates, capabilities, et les projections canoniques dérivées. Une PR qui ne
+// touche que ces fichiers doit rejouer feature-guard + business-graph --check +
+// feature-360 --check (mode check, jamais --write), sinon le domaine gouvernance
+// n'est pas enforced (Required verdict passait à vide auparavant).
+function isGovernanceFile(file) {
+  const f = norm(file);
+  return /^features\/.+\.feature\.js$/i.test(f)
+    || /^governance\/.+/i.test(f)
+    || /^scripts\/.+\.(?:js|cjs|mjs)$/i.test(f)
+    || /^capabilities\/.+\.(?:js|cjs|mjs)$/i.test(f)
+    || /^docs\/(?:FEATURE_360|BUSINESS_FEATURE_GRAPH|O6_INVENTORY)\.(?:json|md)$/i.test(f);
+}
+
 function classify(files) {
   const changedFiles = [...new Set((files || []).map(norm).filter(Boolean))].sort();
   const backendFiles = changedFiles.filter(isBackendFile);
@@ -82,6 +96,7 @@ function classify(files) {
   const boutiqueUnit = changedFiles.some(isBoutiqueUnitTest);
   const boutiquePackage = changedFiles.some(isBoutiquePackageFile);
   const boutiqueTestFiles = boutiqueFiles.filter(file => isBoutiqueJsSource(file) || isBoutiqueUnitTest(file));
+  const governanceFiles = changedFiles.filter(isGovernanceFile);
 
   return {
     changedFiles,
@@ -89,6 +104,7 @@ function classify(files) {
     migrationFiles,
     boutiqueFiles,
     boutiqueTestFiles,
+    governanceFiles,
     backend: backendFiles.length > 0,
     migrations: migrationFiles.length > 0 || schemaDump,
     schemaDump,
@@ -98,6 +114,7 @@ function classify(files) {
     boutiqueHtml,
     boutiqueUnit,
     boutiquePackage,
+    governance: governanceFiles.length > 0,
   };
 }
 
@@ -128,6 +145,8 @@ function appendGithubOutput(path, model) {
     `boutique_html=${model.boutiqueHtml ? 'true' : 'false'}`,
     `boutique_unit=${model.boutiqueUnit ? 'true' : 'false'}`,
     `boutique_package=${model.boutiquePackage ? 'true' : 'false'}`,
+    `governance=${model.governance ? 'true' : 'false'}`,
+    `governance_files=${model.governanceFiles.join(',')}`,
     `changed_count=${model.changedFiles.length}`,
   ];
   fs.appendFileSync(path, lines.join('\n') + '\n', 'utf8');
@@ -163,5 +182,6 @@ module.exports = {
   isBoutiqueUnitTest,
   isBoutiquePackageFile,
   isBoutiqueRelevant,
+  isGovernanceFile,
   classify,
 };

@@ -170,10 +170,35 @@ jobs:
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
+  governance:
+    name: Governance and feature-first gates
+    needs: changes
+    if: needs.changes.outputs.governance == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # Gates pure-Node, aucun npm ci necessaire. Mode --check uniquement :
+      # ne jamais generer (--write) en CI. Le git diff final prouve l'absence
+      # de mutation, donc l'absence de faux-rouge d'artefact.
+      - name: Feature slice guard
+        run: node scripts/feature-guard.js --strict
+      - name: Business graph reconstructible and fresh
+        run: node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+      - name: Feature 360 canonical projection fresh
+        run: node scripts/feature-360-check.js
+      - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
   verdict:
     name: Required verdict
     if: always()
-    needs: [changes, backend, migrations, boutique]
+    needs: [changes, backend, migrations, boutique, governance]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -183,13 +208,15 @@ jobs:
           BACKEND_RESULT: ${{ needs.backend.result }}
           MIGRATIONS_RESULT: ${{ needs.migrations.result }}
           BOUTIQUE_RESULT: ${{ needs.boutique.result }}
+          GOVERNANCE_RESULT: ${{ needs.governance.result }}
         run: |
           echo "changes=$CHANGES_RESULT"
           echo "backend=$BACKEND_RESULT"
           echo "migrations=$MIGRATIONS_RESULT"
           echo "boutique=$BOUTIQUE_RESULT"
+          echo "governance=$GOVERNANCE_RESULT"
           test "$CHANGES_RESULT" = "success"
-          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$BOUTIQUE_RESULT"; do
+          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
             if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
               echo "Scoped enforcement failed: $result"
               exit 1
