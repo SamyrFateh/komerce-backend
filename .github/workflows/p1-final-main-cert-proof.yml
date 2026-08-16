@@ -1,0 +1,100 @@
+name: P1 final main certification proof
+
+on:
+  push:
+    branches:
+      - agent/proof-p1-final-main-20260816
+
+permissions:
+  contents: read
+
+jobs:
+  certify-main:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - name: Checkout exact merged main
+        uses: actions/checkout@v4
+        with:
+          ref: b5657ce7a43af0889ba2d80c8fb7ca8e7c6e1499
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Prove exact SHA
+        run: |
+          test "$(git rev-parse HEAD)" = "b5657ce7a43af0889ba2d80c8fb7ca8e7c6e1499"
+          echo "CERTIFY_SHA=$(git rev-parse HEAD)"
+
+      - run: npm ci
+
+      - name: Build canonical test database
+        run: |
+          PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+
+      - name: Integration campaign
+        run: npm run test:integration
+
+      - name: Wallet REAL_DB feature campaign
+        run: node scripts/run-e2e-feature-tests.js --feature=wallet
+
+      - name: Wallet monetary invariant
+        run: npx jest tests/invariants/wallet.single-application-per-event.test.js --ci --runInBand
+
+      - name: R5 money specs contain no executable test.skip
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const files = [
+            'public/boutique/tests/e2e/authenticated/cancel-refund.spec.js',
+            'public/boutique/tests/e2e/authenticated/order-history.spec.js',
+            'public/boutique/tests/e2e/authenticated/stress-business.spec.js',
+            'public/boutique/tests/e2e/authenticated/wallet-lifecycle.spec.js',
+            'public/boutique/tests/e2e/authenticated/wallet-payment.spec.js',
+          ];
+          for (const file of files) {
+            const src = fs.readFileSync(file, 'utf8');
+            if (/\btest\.skip\s*\(/.test(src)) {
+              throw new Error(`[R5] executable test.skip found in ${file}`);
+            }
+            console.log(`PASS no test.skip: ${file}`);
+          }
+          NODE
+
+      - name: Boutique R5 production guard
+        working-directory: public/boutique
+        run: |
+          npm ci
+          npx jest tests/unit/r5-prod-guard.test.js --runInBand
