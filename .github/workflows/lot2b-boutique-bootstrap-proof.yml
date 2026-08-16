@@ -29,6 +29,9 @@ jobs:
       - name: Install Boutique dependencies
         run: npm --prefix public/boutique ci
 
+      - name: Prove Boutique PR scope routing
+        run: npx jest --config jest.unit.config.js tests/unit/pr-enforcement-scope.test.js --runInBand --forceExit
+
       - name: Repair exact source-level issues revealed by audit
         run: node scripts/lot2b-bootstrap-fix.js
 
