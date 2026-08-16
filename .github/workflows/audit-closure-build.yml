@@ -95,7 +95,10 @@ jobs:
       - name: Remove temporary builder from canonical audit tree
         run: git rm .github/workflows/audit-closure-build.yml
 
-      - name: Regenerate business graph
+      - name: Regenerate architecture graph first
+        run: npm run arch:gen
+
+      - name: Regenerate business graph from final architecture graph
         run: npm run business-graph:gen
 
       - name: Realign reviewed ratchet categories and tighten all reductions
@@ -132,9 +135,6 @@ jobs:
 
       - name: Regenerate Feature 360
         run: npm run feature:360:gen
-
-      - name: Regenerate architecture graph
-        run: npm run arch:gen
 
       - name: Closure gates on resulting tree
         env:
