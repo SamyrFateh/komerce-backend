@@ -28,3 +28,21 @@ replaceOnce(
   '    background: #f4f0e8;',
   '    background: var(--checkout-recent-media-bg);'
 );
+
+replaceOnce(
+  'public/boutique/scripts/check-sticky-integrity.js',
+  `const CSS_DIR = path.join(path.resolve(__dirname, '..'), 'css', 'dist');\nconst DIST_FILES = ['base.css', 'components.css', 'desktop.css'];`,
+  `const CSS_DIR = path.join(path.resolve(__dirname, '..'), 'css');\nconst SOURCE_FILES = fs.readdirSync(CSS_DIR)\n  .filter(f => f.endsWith('.css'))\n  .sort();`
+);
+
+replaceOnce(
+  'public/boutique/scripts/check-sticky-integrity.js',
+  'for (const f of DIST_FILES) {',
+  'for (const f of SOURCE_FILES) {'
+);
+
+replaceOnce(
+  'public/boutique/scripts/check-sticky-integrity.js',
+  'Sticky Integrity — sticky vs centrage vertical (css/dist/)',
+  'Sticky Integrity — sticky vs centrage vertical (CSS source)'
+);
