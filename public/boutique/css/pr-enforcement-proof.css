@@ -1,0 +1,4 @@
+/* Controlled negative proof: check-important --strict must reject this rule. */
+.__pr_enforcement_proof {
+  color:red !important;
+}
