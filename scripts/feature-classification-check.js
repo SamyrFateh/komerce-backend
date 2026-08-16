@@ -55,6 +55,7 @@ const ALLOWED_KINDS = new Set([
   'business-feature',
   'business-transversal',
   'technical-transversal',
+  'technical-foundation',
   'aggregation-readonly',
   'integration-adapter',
   'deprecated',

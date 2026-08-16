@@ -48,7 +48,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 104 | Vérifié sur le dump live Railway. |
+| Tables | 105 | Vérifié sur le dump live Railway. |
 | Vues | 17 | Vérifié sur le dump live Railway. |
 | ENUMs | 12 | Types métier présents dans le dump live Railway. |
 | Index | 264 | Performance + contraintes uniques |
@@ -254,11 +254,12 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `loyalty_tiers` | Niveaux fidélité. |
 | `loyalty_rewards` | Récompenses. |
 
-### 4.13 Monitoring et alertes (8 tables)
+### 4.13 Monitoring et alertes (10 tables)
 
 | Table | Rôle |
 |---|---|
 | `notification_log` | Log notifications (email, push). |
+| `client_notifications` | Notifications in-app essentielles rattachées à une commande, acquittables, sans canal externe ni contenu sensible. Unicité `(user_id, event_key, entity_type, entity_id)` ; statuts `open` / `acknowledged` / `resolved`. Migration 132, vérifiée live sur Railway le 2026-08-16. |
 | `sms_log` | Log SMS. |
 | `signals` | Signaux opérationnels. |
 | `alerts` | Alertes. |

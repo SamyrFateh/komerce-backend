@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-08-12T10:42:28.748Z",
+  "generatedAt": "2026-08-16T19:03:11.450Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 473,
-    "protected": 426,
+    "total": 475,
+    "protected": 429,
     "public": 5,
-    "unprotected": 40,
+    "unprotected": 39,
     "admin_no_guard": 0,
     "unknown": 2
   },
@@ -78,12 +78,6 @@
     },
     {
       "key": "POST /api/client/magic-link",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "GET /api/invoices/public/{token}",
       "level": "UNPROTECTED",
       "severity": "medium",
       "roles": []
@@ -1453,6 +1447,26 @@
       "roles": []
     },
     {
+      "key": "GET /api/auth/me/documents/{id}/download",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/me/documents",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/me/notifications/{id}/ack",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/me/notifications",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "DELETE /api/auth/me/pickup-authorization",
       "level": "PROTECTED",
       "roles": []
@@ -2056,11 +2070,6 @@
       ]
     },
     {
-      "key": "POST /api/invoices/{orderId}/deliver",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
       "key": "GET /api/invoices/{orderId}/download",
       "level": "PROTECTED",
       "roles": []
@@ -2076,14 +2085,11 @@
       "roles": []
     },
     {
-      "key": "GET /api/invoices/public/{token}",
-      "level": "UNPROTECTED",
-      "roles": []
-    },
-    {
       "key": "GET /api/invoices",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/logistics/labels/{shipment_id}",

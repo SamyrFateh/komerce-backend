@@ -130,6 +130,7 @@ Règles du registre :
 | `business-feature` | Feature métier autonome, possède ses tables, son cycle de vie, son service actif | `shared-cart`, `orders`, `payments` |
 | `business-transversal` | Rendu de service actif, consommée par plusieurs features, pas de domaine métier propre | `notifications`, `documents`, `refunds` |
 | `technical-transversal` | Infrastructure consommée par toutes, aucune règle métier | `auth`, `operations` |
+| `technical-foundation` | Socle technique qui possède le bootstrap, le DDL/migrations techniques et les primitives d’exécution, sans porter de vérité ni de règle métier | `infrastructure` |
 | `aggregation-readonly` | Surface admin/pilotage en lecture pure, interdit de muter le domaine d'une autre feature | `dashboard` |
 | `integration-adapter` | Adaptateur vers un système externe (Stripe, PayPal, Meta, AuthKey) | partie de `payments`, `notifications` |
 | `deprecated` | En cours de retrait — aucune nouvelle logique | (cf. workflow démontage) |

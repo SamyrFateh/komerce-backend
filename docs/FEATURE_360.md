@@ -14,13 +14,13 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Ambiguous ownership signals : **63**
 - Ontology gaps : **0**
 - Debt items (total) : **120**
-- Gate health — healthy : **13** · blocked : **1**
+- Gate health — healthy : **14** · blocked : **0**
 
 ## Gate findings — intégrité de projection
 
 - Source : `docs/GATE_FINDINGS.json` (version GF-2.1)
 - Sources de gates : **18** (0 en échec)
-- Findings : **52** total, **52** attribué(s), **0** sans attribution exploitable
+- Findings : **50** total, **50** attribué(s), **0** sans attribution exploitable
 - Fichiers non projetables : **0**
 - Fichiers multi-projetés : **0**
 
@@ -734,9 +734,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 11, declared-only deps: 3, ambiguous ownership: 4, ontology gaps: 0
-**Gate health** : 🔴 BLOCKED — gates: gate:feature-classification-check, fail: 1, warn: 1
-  - [gate:feature-classification-check] 🔴 KIND-INVALID — kind "technical-foundation" non autorisé
-  - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** (18) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table economic_snapshots — écrite par infrastructure (W), aucun lifecycle owner résolu (multi-writer non classifié)

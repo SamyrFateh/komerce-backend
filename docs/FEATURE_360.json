@@ -51,15 +51,15 @@
     "ambiguousOwnershipSignals": 63,
     "ontologyGaps": 0,
     "debtItemsTotal": 120,
-    "gateHealthy": 13,
-    "gateBlocked": 1
+    "gateHealthy": 14,
+    "gateBlocked": 0
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 52,
-    "attributedFindings": 52,
+    "totalFindings": 50,
+    "attributedFindings": 50,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -9091,30 +9091,11 @@
         "ambiguousOwnershipCount": 4
       },
       "gateHealth": {
-        "status": "BLOCKED",
-        "failCount": 1,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "KIND-INVALID",
-            "verdict": "fail",
-            "file": null,
-            "message": "kind \"technical-foundation\" non autorisé"
-          },
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "RATIONALE-SHORT",
-            "verdict": "warn",
-            "file": null,
-            "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
-          }
-        ]
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 18,

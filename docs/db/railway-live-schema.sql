@@ -4,7 +4,7 @@
 
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
--- Dumped by pg_dump version 18.3
+-- Dumped by pg_dump version 18.6 (Debian 18.6-1.pgdg13+2)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -935,6 +935,40 @@ CREATE TABLE public.charges (
 
 
 --
+-- Name: client_notifications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.client_notifications (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    event_key text NOT NULL,
+    entity_type text NOT NULL,
+    entity_id uuid NOT NULL,
+    order_reference text NOT NULL,
+    severity text DEFAULT 'important'::text NOT NULL,
+    title text NOT NULL,
+    message text NOT NULL,
+    action_target text DEFAULT 'orders'::text NOT NULL,
+    requires_ack boolean DEFAULT true NOT NULL,
+    status text DEFAULT 'open'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    acknowledged_at timestamp with time zone,
+    resolved_at timestamp with time zone,
+    CONSTRAINT client_notifications_action_target_check CHECK ((action_target = 'orders'::text)),
+    CONSTRAINT client_notifications_entity_type_check CHECK ((entity_type = 'order'::text)),
+    CONSTRAINT client_notifications_severity_check CHECK ((severity = ANY (ARRAY['important'::text, 'urgent'::text]))),
+    CONSTRAINT client_notifications_status_check CHECK ((status = ANY (ARRAY['open'::text, 'acknowledged'::text, 'resolved'::text])))
+);
+
+
+--
+-- Name: TABLE client_notifications; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.client_notifications IS 'Notifications in-app essentielles. Aucun canal externe et aucun contenu sensible.';
+
+
+--
 -- Name: competitor_prices; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1669,8 +1703,21 @@ CREATE TABLE public.invoices (
     delivered_via text,
     delivered_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    public_token text
+    public_token text,
+    owner_user_id uuid,
+    pdf_content bytea,
+    pdf_sha256 text,
+    pdf_filename text,
+    pdf_generated_at timestamp with time zone,
+    template_version text DEFAULT '2026-08-v1'::text NOT NULL
 );
+
+
+--
+-- Name: COLUMN invoices.public_token; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.public_token IS 'DEPRECATED 2026-08: aucune route publique; téléchargement authentifié uniquement';
 
 
 --
@@ -4188,7 +4235,7 @@ CREATE TABLE public.transaction_documents (
     order_id uuid,
     refund_id uuid,
     reference text NOT NULL,
-    status text DEFAULT 'generated'::text NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
     file_url text,
     file_storage_key text,
     issued_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -4196,7 +4243,13 @@ CREATE TABLE public.transaction_documents (
     metadata jsonb,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT transaction_documents_status_check CHECK ((status = ANY (ARRAY['generated'::text, 'delivered'::text, 'error'::text]))),
+    owner_user_id uuid,
+    pdf_content bytea,
+    pdf_sha256 text,
+    pdf_filename text,
+    pdf_generated_at timestamp with time zone,
+    template_version text DEFAULT '2026-08-v1'::text NOT NULL,
+    CONSTRAINT transaction_documents_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'available'::text, 'error'::text]))),
     CONSTRAINT transaction_documents_type_check CHECK ((document_type = ANY (ARRAY['refund_receipt'::text, 'contribution_receipt'::text, 'wallet_receipt'::text, 'pickup_proof'::text, 'purchase_order'::text, 'customs_invoice'::text])))
 );
 
@@ -5037,6 +5090,22 @@ ALTER TABLE ONLY public.catalog_media
 
 ALTER TABLE ONLY public.charges
     ADD CONSTRAINT charges_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: client_notifications client_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_notifications
+    ADD CONSTRAINT client_notifications_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: client_notifications client_notifications_user_id_event_key_entity_type_entity_i_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_notifications
+    ADD CONSTRAINT client_notifications_user_id_event_key_entity_type_entity_i_key UNIQUE (user_id, event_key, entity_type, entity_id);
 
 
 --
@@ -6131,6 +6200,20 @@ CREATE INDEX idx_catalog_overrides_product ON public.catalog_field_overrides USI
 
 
 --
+-- Name: idx_client_notifications_entity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_client_notifications_entity ON public.client_notifications USING btree (entity_type, entity_id);
+
+
+--
+-- Name: idx_client_notifications_user_open; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_client_notifications_user_open ON public.client_notifications USING btree (user_id, severity, created_at DESC) WHERE (status = 'open'::text);
+
+
+--
 -- Name: idx_comments_order; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6429,6 +6512,13 @@ CREATE INDEX idx_invoices_number ON public.invoices USING btree (invoice_number)
 --
 
 CREATE INDEX idx_invoices_order ON public.invoices USING btree (order_id);
+
+
+--
+-- Name: idx_invoices_owner_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_invoices_owner_created ON public.invoices USING btree (owner_user_id, created_at DESC) WHERE (owner_user_id IS NOT NULL);
 
 
 --
@@ -7860,6 +7950,13 @@ CREATE INDEX idx_txdoc_order ON public.transaction_documents USING btree (order_
 
 
 --
+-- Name: idx_txdoc_owner_issued; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_txdoc_owner_issued ON public.transaction_documents USING btree (owner_user_id, issued_at DESC) WHERE (owner_user_id IS NOT NULL);
+
+
+--
 -- Name: idx_txdoc_refund; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8398,6 +8495,14 @@ ALTER TABLE ONLY public.catalog_media
 
 
 --
+-- Name: client_notifications client_notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_notifications
+    ADD CONSTRAINT client_notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: competitor_prices competitor_prices_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8579,6 +8684,14 @@ ALTER TABLE ONLY public.incidents
 
 ALTER TABLE ONLY public.invoices
     ADD CONSTRAINT invoices_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id);
+
+
+--
+-- Name: invoices invoices_owner_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoices
+    ADD CONSTRAINT invoices_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
@@ -9451,6 +9564,14 @@ ALTER TABLE ONLY public.transaction_documents
 
 ALTER TABLE ONLY public.transaction_documents
     ADD CONSTRAINT transaction_documents_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE SET NULL;
+
+
+--
+-- Name: transaction_documents transaction_documents_owner_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transaction_documents
+    ADD CONSTRAINT transaction_documents_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --

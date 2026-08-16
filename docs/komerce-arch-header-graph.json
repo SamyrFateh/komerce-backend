@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 368,
-    "filesWithFullHeaders": 342,
+    "scannedCodeFiles": 369,
+    "filesWithFullHeaders": 343,
     "filesWithLiteHeaders": 26,
-    "filesWithAnyHeaders": 368,
+    "filesWithAnyHeaders": 369,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 779,
-    "edges": 4204,
+    "graphNodes": 785,
+    "edges": 4213,
     "dbTables": 109,
-    "doctrines": 171,
-    "impactAreas": 131,
-    "unresolvedCodeEdges": 423,
+    "doctrines": 173,
+    "impactAreas": 134,
+    "unresolvedCodeEdges": 424,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -39,7 +39,7 @@
     "catalog": 64,
     "checkout": 2,
     "shared-cart": 21,
-    "account": 1,
+    "account": 2,
     "shared-cart-modal": 7,
     "recommendations": 4,
     "payment": 17,
@@ -71,7 +71,7 @@
     "manual-test": 1,
     "middleware": 11,
     "ui-bootstrap": 4,
-    "ui-component": 36,
+    "ui-component": 37,
     "ui-enhancer": 3,
     "ui-renderer": 8,
     "ui-page": 5,
@@ -101,7 +101,7 @@
   },
   "byCriticality": {
     "critical": 55,
-    "medium": 106,
+    "medium": 107,
     "high": 173,
     "low": 34
   },
@@ -414,6 +414,8 @@
         "side_effects"
       ],
       "depends": [
+        "node:http",
+        "bootstrap/boot-guard.js",
         "utils/logger.js"
       ],
       "usedBy": [
@@ -429,7 +431,7 @@
       "impactAreas": [
         "bootstrap"
       ],
-      "version": "2026-07"
+      "version": "2026-08"
     },
     {
       "id": "bootstrap/startup-migrations.js",
@@ -1060,7 +1062,7 @@
         "hero",
         "csp"
       ],
-      "version": "2026-07"
+      "version": "2026-08"
     },
     {
       "id": "public/boutique/js/b-boutique-wow-style.js",
@@ -1845,6 +1847,45 @@
         "participant-flow"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/b-komerce-nav-identity.js",
+      "file": "public/boutique/js/b-komerce-nav-identity.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "komerce-nav-authenticated-identity",
+      "domain": "account",
+      "layer": "ui-component",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_user",
+        "komerce:identity-authenticated"
+      ],
+      "outputs": [
+        "personalized_komerce_navigation_entry"
+      ],
+      "depends": [
+        "b-identity.js"
+      ],
+      "usedBy": [
+        "main.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "authenticated_session_only",
+        "no_gender_inference"
+      ],
+      "impactAreas": [
+        "account-navigation",
+        "mobile-bnav",
+        "desktop-header"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "public/boutique/js/b-komerce.js",
@@ -15991,7 +16032,8 @@
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "credit_debit_idempotent",
+        "wallet_ledger_append_only"
       ],
       "doctrine": [
         "wallet_ledger_trace",
@@ -16001,7 +16043,7 @@
       "impactAreas": [
         "wallet"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "services/whatsapp-meta.js",
@@ -17865,6 +17907,16 @@
       "doctrine": "premiere_commande_sans_friction"
     },
     {
+      "id": "doctrine:authenticated_session_only",
+      "type": "doctrine",
+      "doctrine": "authenticated_session_only"
+    },
+    {
+      "id": "doctrine:no_gender_inference",
+      "type": "doctrine",
+      "doctrine": "no_gender_inference"
+    },
+    {
       "id": "doctrine:wallet_visible_client",
       "type": "doctrine",
       "doctrine": "wallet_visible_client"
@@ -18805,6 +18857,21 @@
       "area": "tracking"
     },
     {
+      "id": "impact:account-navigation",
+      "type": "impact-area",
+      "area": "account-navigation"
+    },
+    {
+      "id": "impact:mobile-bnav",
+      "type": "impact-area",
+      "area": "mobile-bnav"
+    },
+    {
+      "id": "impact:desktop-header",
+      "type": "impact-area",
+      "area": "desktop-header"
+    },
+    {
       "id": "impact:account",
       "type": "impact-area",
       "area": "account"
@@ -19580,6 +19647,18 @@
       "to": "impact:bootstrap",
       "type": "impact",
       "label": "bootstrap"
+    },
+    {
+      "from": "bootstrap/server-lifecycle.js",
+      "to": "node:http",
+      "type": "depends",
+      "label": "node:http"
+    },
+    {
+      "from": "bootstrap/server-lifecycle.js",
+      "to": "bootstrap/boot-guard.js",
+      "type": "depends",
+      "label": "bootstrap/boot-guard.js"
     },
     {
       "from": "bootstrap/server-lifecycle.js",
@@ -21902,6 +21981,48 @@
       "to": "impact:participant-flow",
       "type": "impact",
       "label": "participant-flow"
+    },
+    {
+      "from": "public/boutique/js/b-komerce-nav-identity.js",
+      "to": "public/boutique/js/b-identity.js",
+      "type": "depends",
+      "label": "b-identity.js"
+    },
+    {
+      "from": "public/boutique/js/main.js",
+      "to": "public/boutique/js/b-komerce-nav-identity.js",
+      "type": "uses",
+      "label": "main.js"
+    },
+    {
+      "from": "public/boutique/js/b-komerce-nav-identity.js",
+      "to": "doctrine:authenticated_session_only",
+      "type": "doctrine",
+      "label": "authenticated_session_only"
+    },
+    {
+      "from": "public/boutique/js/b-komerce-nav-identity.js",
+      "to": "doctrine:no_gender_inference",
+      "type": "doctrine",
+      "label": "no_gender_inference"
+    },
+    {
+      "from": "public/boutique/js/b-komerce-nav-identity.js",
+      "to": "impact:account-navigation",
+      "type": "impact",
+      "label": "account-navigation"
+    },
+    {
+      "from": "public/boutique/js/b-komerce-nav-identity.js",
+      "to": "impact:mobile-bnav",
+      "type": "impact",
+      "label": "mobile-bnav"
+    },
+    {
+      "from": "public/boutique/js/b-komerce-nav-identity.js",
+      "to": "impact:desktop-header",
+      "type": "impact",
+      "label": "desktop-header"
     },
     {
       "from": "public/boutique/js/b-komerce.js",
@@ -44843,6 +44964,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "node:http",
+        "bootstrap/boot-guard.js",
         "utils/logger.js"
       ],
       "directUsedBy": [
@@ -46378,6 +46501,7 @@
         "impact:tracking",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-checkout.js",
+        "public/boutique/js/b-komerce-nav-identity.js",
         "public/boutique/js/b-komerce.js",
         "public/boutique/js/b-phone.js",
         "public/boutique/js/b-share-cart.js",
@@ -46386,6 +46510,42 @@
         "public/boutique/js/b-wallet.js",
         "public/boutique/js/group/group-side-cart.js",
         "routes/otp.js"
+      ]
+    },
+    "public/boutique/js/b-komerce-nav-identity.js": {
+      "role": "komerce-nav-authenticated-identity",
+      "domain": "account",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/b-identity.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/main.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "authenticated_session_only",
+        "no_gender_inference"
+      ],
+      "impactAreas": [
+        "account-navigation",
+        "mobile-bnav",
+        "desktop-header"
+      ],
+      "mustCheck": [
+        "doctrine:authenticated_session_only",
+        "doctrine:no_gender_inference",
+        "impact:account-navigation",
+        "impact:desktop-header",
+        "impact:mobile-bnav",
+        "public/boutique/js/b-identity.js",
+        "public/boutique/js/main.js"
       ]
     },
     "public/boutique/js/b-komerce.js": {
@@ -48372,6 +48532,7 @@
       "mustCheck": [
         "impact:boutique",
         "public/boutique/js/b-bus.js",
+        "public/boutique/js/b-komerce-nav-identity.js",
         "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "public/boutique/js/b-notifications.js",
@@ -61979,6 +62140,12 @@
       "to": "routes/economic-engine.js",
       "type": "depends",
       "label": "routes/economic-engine.js"
+    },
+    {
+      "from": "bootstrap/server-lifecycle.js",
+      "to": "node:http",
+      "type": "depends",
+      "label": "node:http"
     },
     {
       "from": "bootstrap/startup-migrations.js",

@@ -79,7 +79,7 @@ describe('invariant auth-identity — toute route mutante passe par un middlewar
     // Sans cela, le script sort en exit 1 avant d'avoir analysé les routes
     // — ce qui ferait échouer tous les tests.each suivants avec une erreur
     // d'environnement, pas une erreur de sécurité (violation invariant §2).
-    execFileSync('node', ['scripts/gen-security-360.js'], {
+    execFileSync('node', ['scripts/run-security-360.js'], {
       cwd: ROOT,
       stdio: 'pipe',
       env: { ...process.env },
