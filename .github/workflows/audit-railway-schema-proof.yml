@@ -1,0 +1,42 @@
+name: Audit Railway schema proof
+on:
+  push:
+    branches: [agent/proof-audit-closure-20260816]
+permissions:
+  contents: read
+jobs:
+  railway-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fad4cdd71bd4853db2a289393002c5e02e297b9c
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - name: Refuse missing Railway secret
+        run: test -n "$DATABASE_URL"
+      - name: Install pg_dump 18 shim
+        run: |
+          docker pull postgres:18
+          printf '#!/bin/sh\nexec docker run --rm --network host postgres:18 pg_dump "$@"\n' | sudo tee /usr/local/bin/pg_dump >/dev/null
+          sudo chmod +x /usr/local/bin/pg_dump
+      - name: Snapshot staging schema read-only
+        run: node scripts/db-snapshot.js
+      - name: Prove migration 132 table exists in live snapshot
+        run: grep -q 'client_notifications' docs/db/railway-live-schema.sql
+      - name: Strict freshness against all migrations
+        run: node scripts/check-schema-freshness.js --all
+      - name: Show whether committed snapshot was stale
+        run: |
+          if git diff --quiet -- docs/db/railway-live-schema.sql; then
+            echo 'SNAPSHOT_DIFF=clean'
+          else
+            echo 'SNAPSHOT_DIFF=stale'
+            git diff --stat -- docs/db/railway-live-schema.sql
+          fi
