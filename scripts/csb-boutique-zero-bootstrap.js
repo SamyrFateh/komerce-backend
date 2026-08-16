@@ -1,0 +1,11 @@
+'use strict';
+const fs = require('fs');
+const path = 'scripts/csb-boutique-zero.js';
+let src = fs.readFileSync(path, 'utf8');
+const old = `replaceOnce(\n  'public/boutique/js/b-subcat.js',\n  \"        renderGrid();\\n        let _sc = dom.pageScroll;\",\n  \"        bus.emit('catalog:render-request');\\n        let _sc = dom.pageScroll;\",\n  'subcat requests catalog rerender through bus'\n);`;
+const replacement = `\n{\n  const path = 'public/boutique/js/b-subcat.js';\n  let src = read(path);\n  const count = (src.match(/renderGrid\\(\\);/g) || []).length;\n  if (count < 1) throw new Error('subcat: expected at least one catalog rerender call');\n  src = src.replace(/renderGrid\\(\\);/g, \"bus.emit('catalog:render-request');\");\n  if (/renderGrid\\s*\\(/.test(src)) throw new Error('subcat: direct renderGrid reference remains');\n  write(path, src);\n}\n`;
+const count = src.split(old).length - 1;
+if (count !== 1) throw new Error('bootstrap: expected one old subcat builder block, got ' + count);
+src = src.replace(old, replacement);
+fs.writeFileSync(path, src);
+console.log('CSB builder bootstrap applied.');
