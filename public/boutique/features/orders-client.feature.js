@@ -79,6 +79,7 @@ module.exports = {
       'documents — factures et reçus de remboursement privés filtrés par référence de commande',
       'wallet — lecture du solde courant sans historique de mouvements',
       'notifications-client — navigation depuis le bandeau et urgence retrait',
+      'shared-cart — b-cart.js et b-tracking.js consomment uniquement shared-cart-surface-api.js / shared-cart-library-api.js',
     ],
   },
   authority: 'boutique — ce slice possède l intention d achat locale et sa projection de suivi, jamais la vérité stock ni la machine de statut.',

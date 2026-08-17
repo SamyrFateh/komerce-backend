@@ -46,12 +46,12 @@
     "healthy": 7,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 164,
-    "directCrossFeatureImports": 2,
+    "businessDependencies": 165,
+    "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
     "ontologyGaps": 0,
-    "debtItemsTotal": 109,
+    "debtItemsTotal": 108,
     "gateHealthy": 14,
     "gateBlocked": 0
   },
@@ -13399,6 +13399,13 @@
           ]
         },
         {
+          "provider": "shared-cart",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13498,7 +13505,7 @@
       },
       "boundaryHealth": {
         "status": "ATTENTION",
-        "directCrossFeatureImports": 1,
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 2,
@@ -13601,7 +13608,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 8,
+        "debtCount": 7,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -13637,11 +13644,6 @@
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
             "evidence": "contract.consumes déclare \"purchasing\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -17034,6 +17036,13 @@
         },
         {
           "consumer": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

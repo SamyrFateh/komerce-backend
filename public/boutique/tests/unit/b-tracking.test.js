@@ -59,11 +59,16 @@ jest.mock('../../js/b-phone.js', () => ({
   digitsOnly: jest.fn((v) => (v || '').replace(/\D/g, '')),
   normalizeLocal: jest.fn((code, digits) => digits),
 }));
-jest.mock('../../js/group/group-api.js', () => ({
+jest.mock('../../js/group/shared-cart-library-api.js', () => ({
   getSharedCartLibrary: jest.fn(),
-  closeCart: jest.fn(),
+  sharedListDisplayLabel: jest.fn(({ isCreator = false, creatorFirstName = null, organizerFullName = null } = {}) => {
+    if (isCreator) return 'Ma liste';
+    const raw = String(creatorFirstName || organizerFullName || '').trim();
+    const firstName = raw ? raw.split(/\s+/)[0] : '';
+    return firstName ? 'Liste de ' + firstName : 'Liste reçue';
+  }),
 }));
-jest.mock('../../js/group/group-side-cart.js', () => ({
+jest.mock('../../js/group/shared-cart-surface-api.js', () => ({
   activateFromParticipantUrl: jest.fn(),
 }));
 jest.mock('../../js/b-nav.js', () => ({
@@ -78,8 +83,8 @@ jest.mock('../../js/b-identity.js', () => ({
 const { apiGet, apiPost, apiDownload } = require('../../js/b-utils.js');
 const { showToast } = require('../../js/b-cart-core.js');
 const { flush } = require('./helpers/boutiqueTestKit');
-const { getSharedCartLibrary } = require('../../js/group/group-api.js');
-const { activateFromParticipantUrl } = require('../../js/group/group-side-cart.js');
+const { getSharedCartLibrary } = require('../../js/group/shared-cart-library-api.js');
+const { activateFromParticipantUrl } = require('../../js/group/shared-cart-surface-api.js');
 const { switchView, activateNavTab } = require('../../js/b-nav.js');
 const { requireIdentity, restoreIdentity } = require('../../js/b-identity.js');
 const {

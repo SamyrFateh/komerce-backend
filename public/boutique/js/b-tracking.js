@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        order_reference, phone, otp_code, client_session, library_context, private_documents, wallet_balance
  * @outputs       tracking_view, order_history, timeline, essential_order_documents, otp_state, lists_tab
- * @depends       b-store.js, b-phone.js, b-utils.js, b-cart-core.js, b-identity.js, group/group-api.js, routes/otp.js, routes/orders.js, routes/documents.js, routes/wallet.js, routes/shared-cart.js
+ * @depends       b-store.js, b-phone.js, b-utils.js, b-cart-core.js, b-identity.js, group/shared-cart-library-api.js, group/shared-cart-surface-api.js, routes/otp.js, routes/orders.js, routes/documents.js, routes/wallet.js, routes/shared-cart.js
  * @used-by       b-nav.js, boutique.js, group/group-library-remove.js
  * @doctrine      otp_une_fois, suivi_client_simple, reference_commande_lisible, sauvegarde_explicite_jamais_implicite
  * @impact-areas  tracking, auth, orders, documents, wallet, participant-flow, customer-support, shared-cart, mon-komerce
@@ -38,8 +38,7 @@ import {
   digitsOnly,
   normalizeLocal,
 } from './b-phone.js';
-import { getSharedCartLibrary } from './group/group-api.js';
-import { sharedListDisplayLabel } from './group/group-list-labels.js';
+import { getSharedCartLibrary, sharedListDisplayLabel } from './group/shared-cart-library-api.js';
 import { requireIdentity, restoreIdentity } from './b-identity.js';
 
 'use strict';
@@ -494,7 +493,7 @@ function wireLibraryItemOpen(el) {
         const { switchView, activateNavTab } = await import('./b-nav.js');
         activateNavTab('shop');
         switchView('shop');
-        const { activateFromParticipantUrl } = await import('./group/group-side-cart.js');
+        const { activateFromParticipantUrl } = await import('./group/shared-cart-surface-api.js');
         await activateFromParticipantUrl(token);
       } finally {
         btn.disabled = false;

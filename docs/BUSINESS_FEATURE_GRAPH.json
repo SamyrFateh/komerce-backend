@@ -13980,6 +13980,12 @@
         "resolved": true
       },
       {
+        "from": "orders",
+        "to": "shared-cart",
+        "raw": "shared-cart (projection frontend orders-client uniquement : consommation via shared-cart-surface-api.js / shared-cart-library-api.js ; aucun import direct des internes group/*)",
+        "resolved": true
+      },
+      {
         "from": "payments",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
@@ -15782,6 +15788,22 @@
       {
         "boutiqueManifest": "shared-cart",
         "category": "js",
+        "declared": "../js/group/shared-cart-surface-api.js",
+        "resolvedPath": "public/boutique/js/group/shared-cart-surface-api.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
+        "declared": "../js/group/shared-cart-library-api.js",
+        "resolvedPath": "public/boutique/js/group/shared-cart-library-api.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
         "declared": "../js/group/group-state.js",
         "resolvedPath": "public/boutique/js/group/group-state.js",
         "exists": true,
@@ -15872,6 +15894,22 @@
         "category": "tests",
         "declared": "../tests/unit/group-side-cart.test.js",
         "resolvedPath": "public/boutique/tests/unit/group-side-cart.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "tests",
+        "declared": "../tests/unit/shared-cart-surface-api.test.js",
+        "resolvedPath": "public/boutique/tests/unit/shared-cart-surface-api.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "tests",
+        "declared": "../tests/unit/shared-cart-library-api.test.js",
+        "resolvedPath": "public/boutique/tests/unit/shared-cart-library-api.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -21480,27 +21518,23 @@
             "evidence": [
               {
                 "sourceFileId": "public/boutique/js/b-tracking.js",
-                "targetFile": "public/boutique/js/group/group-side-cart.js"
+                "targetFile": "public/boutique/js/group/shared-cart-surface-api.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-tracking.js",
-                "targetFile": "public/boutique/js/group/group-api.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-tracking.js",
-                "targetFile": "public/boutique/js/group/group-list-labels.js"
+                "targetFile": "public/boutique/js/group/shared-cart-library-api.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-cart.js",
-                "targetFile": "public/boutique/js/group/group-side-cart.js"
+                "targetFile": "public/boutique/js/group/shared-cart-surface-api.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-tracking.test.js",
-                "targetFile": "public/boutique/js/group/group-api.js"
+                "targetFile": "public/boutique/js/group/shared-cart-library-api.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-tracking.test.js",
-                "targetFile": "public/boutique/js/group/group-side-cart.js"
+                "targetFile": "public/boutique/js/group/shared-cart-surface-api.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-cart.test.js",
@@ -21509,7 +21543,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "orders",
@@ -23995,7 +24029,7 @@
         "filesObserved": 798
       },
       "boutique": {
-        "filesObserved": 154,
+        "filesObserved": 158,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -24031,7 +24065,7 @@
       "NON_RUNTIME_TEST": 6,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
-      "CROSS_FEATURE_DIRECT_IMPORT": 2,
+      "CROSS_FEATURE_DIRECT_IMPORT": 1,
       "BUSINESS_FEATURE_INTERFACE": 0,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -24250,23 +24284,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "orders",
-        "to": "shared-cart",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
-      },
-      {
         "from": "platform-ops",
         "to": "auth-passkey",
         "family": "COMPOSITION_ROOT_WIRING",
@@ -24360,7 +24377,7 @@
     "unclassified": [],
     "matrix": {
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 2,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
@@ -24408,12 +24425,6 @@
         "to": "catalog",
         "decision": "accepted-dependency",
         "rationale": "Le shell monte les modules de découverte produit et le client API transversal appelle les endpoints catalogue. La couture est un wiring et un adaptateur d'interface ; platform-ops ne possède ni produit, ni prix, ni stock."
-      },
-      {
-        "from": "orders",
-        "to": "shared-cart",
-        "decision": "accepted-dependency",
-        "rationale": "Dépendance frontend résiduelle hors checkout : le slice orders-client possède le renderer canonique du panier (b-cart.js) et le shell de suivi / Mon Komerce (b-tracking.js). b-cart compose encore la surface de liste active via group-side-cart ; b-tracking compose encore l'onglet Mes listes via group-api, group-list-labels et l'activation de group-side-cart. Le checkout canonique est désormais découplé de shared-cart et n'est explicitement pas couvert par cette exception. La couture UI restante sera inversée ou extraite dans le lot de dette frontend dédié."
       }
     ],
     "staleExceptions": [
@@ -26090,11 +26101,6 @@
         "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
       },
       {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "orders -> shared-cart",
-        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
-      },
-      {
         "type": "WRITER-NOT-OWNER",
         "ref": "alerts",
         "msg": "table \"alerts\" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
@@ -26230,11 +26236,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> orders",
         "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "orders -> shared-cart",
-        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26567,11 +26568,11 @@
       }
     ],
     "summary": {
-      "signals": 28,
-      "debt": 28,
+      "signals": 27,
+      "debt": 27,
       "expectedTopology": 31,
       "generatorLimitations": 8,
-      "classifiedCandidates": 67
+      "classifiedCandidates": 66
     }
   }
 }

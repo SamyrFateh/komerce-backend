@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        cart_state, shared_cart_context, product_actions, viewport
  * @outputs       cart_drawer, side_cart, quantity_changes, shared_cart_item_updates
- * @depends       b-bus.js, b-store.js, b-cart-core.js, b-catalog.js, b-scroll-owner.js, shop-schema.js, group/group-side-cart.js, routes/shared-cart.js
+ * @depends       b-bus.js, b-store.js, b-cart-core.js, b-catalog.js, b-scroll-owner.js, shop-schema.js, group/shared-cart-surface-api.js, routes/shared-cart.js
  * @used-by       boutique.js, b-checkout.js, b-modal-core.js, b-nav.js, b-share-cart.js
  * @doctrine      panier_ouvert_ferme, participant_lecture_seule, side_cart_non_intrusif, modal_produit_sans_chevauchement
  * @impact-areas  checkout-entry, side-cart, shared-cart-editing, participant-flow, responsive-layout
@@ -40,7 +40,7 @@ import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
 import { renderAddControl } from './render/render-product-card.js';
 import { getProductCartSummary, getCartItemProductId } from './cart-product-summary.js';
-import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInCart, exitSharedListRenderMode, setCartSurface, reopenSharedListCart } from './group/group-side-cart.js';
+import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInCart, exitSharedListRenderMode, setCartSurface, reopenSharedListCart } from './group/shared-cart-surface-api.js';
 
 'use strict';
 
