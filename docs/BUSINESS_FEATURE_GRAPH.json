@@ -4,6 +4,7 @@
     "featureManifests": [
       "features/auth.feature.js",
       "features/auth-identity.feature.js",
+      "features/auth-passkey.feature.js",
       "features/business-rules.feature.js",
       "features/catalog.feature.js",
       "features/customs.feature.js",
@@ -38,7 +39,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 29,
+    "businessManifestsResolved": 30,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -93,6 +94,22 @@
         "owner": "backend-core",
         "since": "2025-08",
         "service": "Authentifier un utilisateur et gérer son identité active (OTP, login/register, magic-link, guest-checkout, profil) via les routes exposées.",
+        "businessKind": "business-feature",
+        "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:auth-passkey",
+        "name": "auth-passkey",
+        "file": "features/auth-passkey.feature.js",
+        "legacyType": "transversal",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-08",
+        "service": "Enregistrer et vérifier des passkeys WebAuthn L3 (authentificateur cryptographique, K2 de la doctrine auth) pour un utilisateur déjà identifié — capacité serveur uniquement à ce stade (AUTH-2). L'UI et le login-passkey nominal viennent en AUTH-3/4.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -886,6 +903,34 @@
         "category": "tests",
         "declared": "tests/unit/name-normalize.test.js",
         "resolvedPath": "tests/unit/name-normalize.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "services",
+        "declared": "services/webauthn-service.js",
+        "resolvedPath": "services/webauthn-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "routes",
+        "declared": "routes/auth-passkey.js",
+        "resolvedPath": "routes/auth-passkey.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "migrations",
+        "declared": "migrations/133_webauthn_credentials.sql",
+        "resolvedPath": "migrations/133_webauthn_credentials.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
+        "declared": "tests/unit/auth-passkey.test.js",
+        "resolvedPath": "tests/unit/auth-passkey.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9251,6 +9296,38 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "auth-passkey",
+        "entry": "POST /api/auth/passkey/register/options",
+        "method": "POST",
+        "path": "/api/auth/passkey/register/options",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "auth-passkey",
+        "entry": "POST /api/auth/passkey/register/verify",
+        "method": "POST",
+        "path": "/api/auth/passkey/register/verify",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "auth-passkey",
+        "entry": "POST /api/auth/passkey/login/options",
+        "method": "POST",
+        "path": "/api/auth/passkey/login/options",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "auth-passkey",
+        "entry": "POST /api/auth/passkey/login/verify",
+        "method": "POST",
+        "path": "/api/auth/passkey/login/verify",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
         "feature": "business-rules",
         "entry": "GET /api/admin/rules",
         "method": "GET",
@@ -13001,6 +13078,18 @@
         "resolved": true
       },
       {
+        "from": "auth-passkey",
+        "to": "auth-identity",
+        "raw": "auth-identity (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, AUTH-8 — même politique de session que le login OTP)",
+        "resolved": true
+      },
+      {
+        "from": "auth-passkey",
+        "to": "infrastructure",
+        "raw": "infrastructure (db.js, utils/logger.js)",
+        "resolved": true
+      },
+      {
         "from": "business-rules",
         "to": "auth",
         "raw": "auth (garde de route admin)",
@@ -16171,6 +16260,50 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "auth-passkey",
+        "to": "auth",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/auth-passkey.js",
+                "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "auth-passkey",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/webauthn-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/webauthn-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "routes/auth-passkey.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/auth-passkey.js",
+                "targetFile": "utils/logger.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "business-rules",
         "to": "auth",
         "channels": [
@@ -18183,6 +18316,22 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/otp.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "infrastructure",
+        "to": "auth-passkey",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/auth-passkey.js"
               }
             ]
           }
@@ -23114,7 +23263,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 773
+        "filesObserved": 776
       },
       "boutique": {
         "filesObserved": 142,
@@ -23149,9 +23298,9 @@
     ],
     "familySummary": {
       "PROJECTION": 10,
-      "COMPOSITION_ROOT_WIRING": 14,
+      "COMPOSITION_ROOT_WIRING": 15,
       "NON_RUNTIME_TEST": 8,
-      "TECHNICAL_PRIMITIVE": 31,
+      "TECHNICAL_PRIMITIVE": 32,
       "BUSINESS_TRANSVERSAL_SERVICE": 2,
       "CROSS_FEATURE_DIRECT_IMPORT": 4,
       "BUSINESS_FEATURE_INTERFACE": 5,
@@ -23402,6 +23551,21 @@
         ]
       },
       {
+        "from": "auth-passkey",
+        "to": "auth",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
         "from": "catalog",
         "to": "auth-identity",
         "family": "BUSINESS_FEATURE_INTERFACE",
@@ -23573,6 +23737,21 @@
       {
         "from": "infrastructure",
         "to": "auth-identity",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "auth-passkey",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "technical-foundation",
@@ -24304,13 +24483,14 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|technical-primitive": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-foundation|technical-primitive": 5,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-foundation|technical-primitive": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 7,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
@@ -24469,6 +24649,7 @@
         }
       ],
       "readers": [
+        "auth-passkey",
         "business-rules",
         "documents",
         "economic-engine",
@@ -24715,6 +24896,28 @@
       ],
       "readers": [],
       "lifecycleOwner": "auth-identity",
+      "resolution": "single-writer"
+    },
+    "webauthn_credentials": {
+      "writers": [
+        {
+          "feature": "auth-passkey",
+          "mode": "RW"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "auth-passkey",
+      "resolution": "single-writer"
+    },
+    "webauthn_challenges": {
+      "writers": [
+        {
+          "feature": "auth-passkey",
+          "mode": "RW"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "auth-passkey",
       "resolution": "single-writer"
     },
     "business_rules": {
@@ -25964,8 +26167,8 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 25,
-        "manifestsConnected": 25,
+        "manifestsDiscovered": 26,
+        "manifestsConnected": 26,
         "technicalNodesTotal": 289,
         "technicalNodesOwned": 289,
         "technicalOrphans": 0
@@ -26001,6 +26204,7 @@
       "singleRepoFeatures": [
         "admin-dashboard",
         "auth",
+        "auth-passkey",
         "business-rules",
         "customs",
         "dashboard",
@@ -26148,6 +26352,26 @@
       },
       {
         "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "auth-passkey / POST /api/auth/passkey/login/options",
+        "msg": "\"POST /api/auth/passkey/login/options\" déclaré par auth-passkey mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "auth-passkey / POST /api/auth/passkey/login/verify",
+        "msg": "\"POST /api/auth/passkey/login/verify\" déclaré par auth-passkey mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "auth-passkey / POST /api/auth/passkey/register/options",
+        "msg": "\"POST /api/auth/passkey/register/options\" déclaré par auth-passkey mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "auth-passkey / POST /api/auth/passkey/register/verify",
+        "msg": "\"POST /api/auth/passkey/register/verify\" déclaré par auth-passkey mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
         "ref": "infrastructure / GET /*.html",
         "msg": "\"GET /*.html\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
       },
@@ -26238,6 +26462,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "auth-passkey -> auth",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth-passkey\" vers \"auth\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> auth-identity",
         "msg": "dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"auth-identity\""
       },
@@ -26295,6 +26524,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> auth-identity",
         "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"auth-identity\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> auth-passkey",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"auth-passkey\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
