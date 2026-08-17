@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Remove temporary helper from generation workspace
+        run: rm .github/workflows/tmp-auth3-projection-gen.yml
       - name: Generate Business Graph
         run: node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
       - name: Generate gate findings
