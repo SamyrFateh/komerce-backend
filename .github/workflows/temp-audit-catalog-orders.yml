@@ -31,15 +31,25 @@ jobs:
           }
           walk(graph);
           NODE
-          echo '=== Boutique imports of orders cart internals ==='
-          git grep -nE "from ['\"](\.\.?/)*((b-cart|b-cart-core|cart-product-summary)\.js)['\"]|require\(['\"].*(b-cart|b-cart-core|cart-product-summary)\.js['\"]\)" -- public/boutique/js public/boutique/features public/boutique/tests || true
+          echo '=== Catalog runtime files: direct orders imports + symbol use ==='
+          for f in \
+            public/boutique/js/b-catalog.js \
+            public/boutique/js/render/render-product-card.js \
+            public/boutique/js/b-modal-desktop-product.js \
+            public/boutique/js/b-subcat.js \
+            public/boutique/js/b-favs.js \
+            public/boutique/js/b-modal-buybox-shared.js; do
+            echo "--- $f ---"
+            grep -nE "b-cart|cart-product-summary|showToast|cartQty|updateCartBadge|isFav|toggleFav|quickAdd|quickRemove|markAllCartButtons|pruneObsoleteCart|openCartWithHighlight|addToCart|getProductCartSummary|saveFavs" "$f" || true
+          done
+          echo '=== Definitions/usages inside orders cart internals ==='
+          grep -nE "export function (toggleFav|quickAdd|quickRemove|markAllCartButtons|pruneObsoleteCart|openCartWithHighlight|addToCart|renderCartBody)|export function (cartQty|updateCartBadge|isFav|saveFavs)|showToast" \
+            public/boutique/js/b-cart.js public/boutique/js/b-cart-core.js || true
           echo '=== Catalog-owned files from local manifests ==='
           node - <<'NODE'
           for (const p of ['public/boutique/features/catalog.feature.js','public/boutique/features/modal-product.feature.js']) {
-            try {
-              const m = require('./' + p);
-              console.log('\n' + p + ' => ' + m.name + ' canonical=' + m.canonicalFeature);
-              for (const [kind, xs] of Object.entries(m.files || {})) for (const x of xs || []) console.log(kind + ': ' + x);
-            } catch (e) { console.log(p + ': ' + e.message); }
+            const m = require('./' + p);
+            console.log('\n' + p + ' => ' + m.name + ' canonical=' + m.canonicalFeature);
+            for (const [kind, xs] of Object.entries(m.files || {})) for (const x of xs || []) console.log(kind + ': ' + x);
           }
           NODE
