@@ -32,7 +32,6 @@ function installWebAuthn({ parse = null, create = null } = {}) {
   const PublicKeyCredential = function PublicKeyCredential() {};
   if (parse) PublicKeyCredential.parseCreationOptionsFromJSON = parse;
   Object.defineProperty(window, 'PublicKeyCredential', { configurable: true, value: PublicKeyCredential });
-  global.PublicKeyCredential = PublicKeyCredential;
   Object.defineProperty(window.navigator, 'credentials', {
     configurable: true,
     value: { create: create || jest.fn() },
@@ -41,7 +40,6 @@ function installWebAuthn({ parse = null, create = null } = {}) {
 
 function removeWebAuthn() {
   delete window.PublicKeyCredential;
-  delete global.PublicKeyCredential;
   Object.defineProperty(window.navigator, 'credentials', { configurable: true, value: undefined });
 }
 
