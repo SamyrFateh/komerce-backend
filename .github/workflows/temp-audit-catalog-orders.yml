@@ -1,0 +1,45 @@
+name: Temporary audit catalog orders seam
+
+on:
+  push:
+    branches:
+      - governance/catalog-orders-boundary
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print graph evidence and cart imports
+        run: |
+          node - <<'NODE'
+          const graph = require('./docs/BUSINESS_FEATURE_GRAPH.json');
+          const seen = new Set();
+          function walk(v, path = '$') {
+            if (!v || typeof v !== 'object') return;
+            if (seen.has(v)) return;
+            seen.add(v);
+            if (!Array.isArray(v) && v.from === 'catalog' && v.to === 'orders') {
+              console.log('\n=== ' + path + ' ===');
+              console.log(JSON.stringify(v, null, 2));
+            }
+            if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
+            else Object.entries(v).forEach(([k, x]) => walk(x, `${path}.${k}`));
+          }
+          walk(graph);
+          NODE
+          echo '=== Boutique imports of orders cart internals ==='
+          git grep -nE "from ['\"](\.\.?/)*((b-cart|b-cart-core|cart-product-summary)\.js)['\"]|require\(['\"].*(b-cart|b-cart-core|cart-product-summary)\.js['\"]\)" -- public/boutique/js public/boutique/features public/boutique/tests || true
+          echo '=== Catalog-owned files from local manifests ==='
+          node - <<'NODE'
+          for (const p of ['public/boutique/features/catalog.feature.js','public/boutique/features/modal-product.feature.js']) {
+            try {
+              const m = require('./' + p);
+              console.log('\n' + p + ' => ' + m.name + ' canonical=' + m.canonicalFeature);
+              for (const [kind, xs] of Object.entries(m.files || {})) for (const x of xs || []) console.log(kind + ': ' + x);
+            } catch (e) { console.log(p + ': ' + e.message); }
+          }
+          NODE
