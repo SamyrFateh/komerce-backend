@@ -22,14 +22,13 @@
  *   2. Les exceptions — le manifeste documente LUI-MÊME, dans son propre
  *      champ `security.note`, quelles routes sont publiques PAR CONCEPTION
  *      et pourquoi (OTP gaté par cooldown + plafond DB, magic-link à token
- *      signé, guest-checkout = flux boutique public, orders-by-phone =
- *      lookup client public, admin-reset gaté applicativement par
+ *      signé, guest-checkout = flux boutique public, admin-reset gaté applicativement par
  *      ADMIN_RESET_KEY + ALLOW_ADMIN_RESET). PUBLIC_BY_DESIGN ci-dessous
  *      transcrit cette liste déjà nommée — aucune exception n'est ajoutée
  *      qui ne soit pas déjà documentée dans `security.note`.
  *
  * Preuve mesurée à l'écriture de ce test (voir security.note du manifeste) :
- * 7 routes protégées, 13 publiques par conception, sur 20 déclarées.
+ * 7 routes protégées, 12 publiques par conception, sur 19 déclarées.
  */
 
 const fs = require('fs');
@@ -51,8 +50,8 @@ const featureManifest = require(path.join(ROOT, 'features/auth-identity.feature.
 // inclus ici car ce sont, par définition, les points d'entrée avant
 // authentification — cohérent avec le compte « 13 routes publiques par
 // design » de security.note (3 OTP + 4 magic-link dont 2 GET hors scope
-// mutant + guest-checkout + orders-by-phone + admin-reset + login +
-// register + logout = 13).
+// mutant + guest-checkout + admin-reset + login +
+// register + logout = 12).
 const PUBLIC_BY_DESIGN = new Set([
   'POST /api/auth/otp/request',      // cooldown 5 min/phone + plafond journalier DB
   'POST /api/auth/otp/verify',       // idem, vérif OTP elle-même
@@ -60,7 +59,6 @@ const PUBLIC_BY_DESIGN = new Set([
   'POST /api/auth/magic-link',       // token signé
   'POST /api/client/magic-link',     // idem, alias client
   'POST /api/auth/guest-checkout',   // flux boutique public
-  'POST /api/auth/orders-by-phone',  // client lookup public
   'POST /api/auth/admin-reset',      // gaté applicativement (ADMIN_RESET_KEY + ALLOW_ADMIN_RESET)
   'POST /api/auth/login',            // point d'entrée avant authentification, par définition
   'POST /api/auth/register',         // idem

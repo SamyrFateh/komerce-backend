@@ -762,6 +762,13 @@
       },
       {
         "feature": "auth",
+        "category": "utils",
+        "declared": "utils/auth-token-policy.js",
+        "resolvedPath": "utils/auth-token-policy.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth",
         "category": "migrations",
         "declared": "migrations/072_jwt_revocation.sql",
         "resolvedPath": "migrations/072_jwt_revocation.sql",
@@ -793,6 +800,13 @@
         "category": "tests",
         "declared": "tests/unit/auth-session-policy.test.js",
         "resolvedPath": "tests/unit/auth-session-policy.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth",
+        "category": "tests",
+        "declared": "tests/unit/auth-token-policy.test.js",
+        "resolvedPath": "tests/unit/auth-token-policy.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9332,14 +9346,6 @@
       },
       {
         "feature": "auth-identity",
-        "entry": "POST /api/auth/orders-by-phone",
-        "method": "POST",
-        "path": "/api/auth/orders-by-phone",
-        "routeFile": "routes/auth.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "auth-identity",
         "entry": "POST /api/auth/register",
         "method": "POST",
         "path": "/api/auth/register",
@@ -12928,14 +12934,20 @@
       },
       {
         "feature": "auth",
-        "fn": "signAuthToken / resolveSessionTtlSeconds",
+        "fn": "signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict",
         "file": "utils/auth-session.js",
         "status": "resolved"
       },
       {
         "feature": "auth",
-        "fn": "signAuthToken / resolveSessionTtlSeconds",
+        "fn": "signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict",
         "file": "utils/auth-session-policy.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth",
+        "fn": "signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict",
+        "file": "utils/auth-token-policy.js",
         "status": "resolved"
       },
       {
@@ -23629,7 +23641,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 789
+        "filesObserved": 791
       },
       "boutique": {
         "filesObserved": 152,

@@ -58,7 +58,7 @@ function makeRes() {
 }
 
 function makeToken(payload = {}, options = {}) {
-  return jwt.sign({ id: 'user-001', ...payload }, SECRET, { algorithm: 'HS256', expiresIn: '1h', ...options });
+  return jwt.sign({ id: 'user-001', jti: 'jti-default', auth_time: 1700000000, amr: ['otp'], token_use: 'session', ...payload }, SECRET, { algorithm: 'HS256', expiresIn: '1h', ...options });
 }
 
 beforeEach(() => {
@@ -99,12 +99,11 @@ test('token valide, utilisateur en DB → req.user peuplé, next()', async () =>
 
 test('token valide, utilisateur en cache → pas d\'appel DB SELECT users', async () => {
   userCache.set('user-001', USER);
-  const token = makeToken({ jti: undefined }); // pas de jti → pas de check révocation
+  const token = makeToken({ jti: 'jti-cache' });
   const req   = makeReq(token);
   const next  = jest.fn();
 
-  // Aucun mock DB — si db.query est appelé le test lèvera "no mock"
-  db.query.mockResolvedValue({ rows: [] }); // revoked_tokens seulment si jti présent
+  db.query.mockResolvedValueOnce({ rows: [] }); // revoked_tokens
 
   await softAuthenticate(req, makeRes(), next);
 

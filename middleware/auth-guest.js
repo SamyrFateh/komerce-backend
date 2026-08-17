@@ -6,12 +6,12 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js, utils/phone.js, utils/user-cache.js
- * @db-read      revoked_tokens, users
+ * @depends       db, utils/logger.js, utils/phone.js, utils/user-cache.js, utils/auth-token-policy.js
+ * @db-read       revoked_tokens, users
  * @used-by       routes/orders/create.js, routes/payments-paypal.js, routes/shared-cart.js
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      canonical_session_claims_only, no_guest_checkout
  * @impact-areas  auth
- * @version       2026-06
+ * @version       2026-08
  */
 
 'use strict';
@@ -19,44 +19,23 @@
 /**
  * KOMERCE — Middleware d'authentification (OTP-only, plus de guest checkout)
  *
- * authenticateOrCreateGuest :
- *   1. Si un token valide est présent (cookie kmrc_jwt ou Bearer) :
- *        - refuse (401 Session expirée) si le jti est révoqué
- *        - charge req.user depuis le cache, ou la DB si absent du cache
- *        - refuse (401 identity_required) si le user n'existe pas en DB
- *   2. Sinon (pas de token, token invalide/expiré) → refuse strictement
- *      (401 identity_required)
- *
- * RÈGLE SANS EXCEPTION : aucune commande sans identité vérifiée par OTP.
- * La création de compte se fait UNIQUEMENT via /api/auth/otp/verify (seul
- * endroit où la possession du numéro est prouvée). Le nom du middleware
- * ("...OrCreateGuest") est un historique conservé pour ne pas casser les
- * imports existants — il n'y a plus aucune création de guest ici.
- *
- * Utilisation :
- *   router.post('/', authenticateOrCreateGuest, validate(orders.create), handler)
- *
- * HOOK AGENT (tablette/comptoir, à câbler le jour venu) :
- *   un agent authentifié pourra créer une commande pour un tiers ici,
- *   borné à son relais — son identité (login) remplace l'OTP client.
- *   Pour l'instant : refus strict, aucune exception.
+ * La source de session peut être cookie ou Bearer pour compatibilité API, mais
+ * AUTH-8e impose les claims de session canoniques avant tout chargement user.
+ * Un JWT scoped/signé ne peut jamais devenir une identité checkout.
  */
 
 const jwt  = require('jsonwebtoken');
 const db   = require('../db');
 const log = require('../utils/logger').child({ module: 'auth-guest' });
-// N2 FIX: cache partagé avec auth.js (même Map, même TTL, même invalidation)
 const userCache = require('../utils/user-cache');
-// A-BE-04 FIX: normalisation téléphone centralisée (back-end conservateur, sans devinette pays)
 const { normalizePhone } = require('../utils/phone');
+const { sessionClaimsVerdict } = require('../utils/auth-token-policy');
 
 const _JWT_SECRET  = process.env.JWT_SECRET;
 
-// ── Cache utilisateur partagé via utils/user-cache.js (N2 FIX) ────────
 function getCachedUser(userId) { return userCache.get(userId); }
 function setCachedUser(userId, user) { userCache.set(userId, user); }
 
-// AUTH-8a — lecture centralisée du cookie d'auth (utils/auth-cookie.js)
 const { readAuthToken } = require('../utils/auth-cookie');
 function extractToken(req) { return readAuthToken(req); }
 
@@ -69,20 +48,18 @@ async function isTokenRevoked(jti) {
   return rows.length > 0;
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// MIDDLEWARE PRINCIPAL
-// ══════════════════════════════════════════════════════════════════════
-
 async function authenticateOrCreateGuest(req, res, next) {
   try {
-    // ── CAS 1 : Token valide présent ─────────────────────────────────
     const token = extractToken(req);
     if (token) {
       try {
         const decoded = jwt.verify(token, _JWT_SECRET, { algorithms: ['HS256'] });
+        const sessionVerdict = sessionClaimsVerdict(decoded);
+        if (!sessionVerdict.ok) {
+          log.warn({ reason: sessionVerdict.reason }, '[auth-guest] JWT signé refusé : pas une session');
+          return res.status(401).json({ error: 'Identité requise', code: 'identity_required' });
+        }
 
-        // N4 — refuser explicitement les JWT révoqués.
-        // Ne pas fallthrough vers création guest : une session révoquée doit rester invalide.
         if (await isTokenRevoked(decoded.jti)) {
           return res.status(401).json({ error: 'Session expirée — reconnectez-vous' });
         }
@@ -105,26 +82,14 @@ async function authenticateOrCreateGuest(req, res, next) {
           req.user = user;
           return next();
         }
-        // Token valide mais user introuvable → identité requise (pas de création auto)
         return res.status(401).json({ error: 'Identité requise', code: 'identity_required' });
       } catch (err) {
         if (err.name !== 'JsonWebTokenError' && err.name !== 'TokenExpiredError') {
           log.warn({ err }, '[auth-guest] erreur verif token:');
         }
-        // token invalide/expiré → tombe vers le refus ci-dessous
       }
     }
 
-    // ── CAS 2 : Pas de session vérifiée ──────────────────────────────
-    // RÈGLE SANS EXCEPTION : aucune commande sans identité vérifiée par OTP.
-    // La création de compte se fait UNIQUEMENT via /api/auth/otp/verify
-    // (seul endroit où la possession du numéro est prouvée).
-    // Le front gère ce 401 en déclenchant requireIdentity() → flux OTP.
-    //
-    // HOOK AGENT (tablette/comptoir, à câbler le jour venu) :
-    //   un agent authentifié pourra créer une commande pour un tiers ici,
-    //   borné à son relais — son identité (login) remplace l'OTP client.
-    //   Pour l'instant : refus strict, aucune exception.
     return res.status(401).json({
       error: 'Vérification du numéro requise pour commander',
       code: 'identity_required',
@@ -136,7 +101,6 @@ async function authenticateOrCreateGuest(req, res, next) {
   }
 }
 
-// Invalidation de cache (partagée — invalide aussi le cache de auth.js)
 function invalidateUserCache(userId) {
   userCache.invalidate(userId);
 }
@@ -144,10 +108,5 @@ function invalidateUserCache(userId) {
 module.exports = {
   authenticateOrCreateGuest,
   invalidateUserCache,
-  normalizePhone, // exporté au cas où d'autres modules en ont besoin
+  normalizePhone,
 };
-
-
-
-
-

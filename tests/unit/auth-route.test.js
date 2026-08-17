@@ -23,8 +23,6 @@
  *   POST /auto-register   : 503 sans clé interne configurée, 401 clé absente/
  *                          invalide, 400 sans phone, réutilise compte existant,
  *                          crée un nouveau compte
- *   POST /orders-by-phone : 400 téléphone invalide, rate-limit → 429,
- *                          aucun user → liste vide, succès → token
  *   POST /logout          : sans token → cookie cleared, avec token décodable
  *                          → INSERT revoked_tokens, erreur DB non-fatale
  *   POST /admin-reset     : 503 sans clé configurée, 503 clé trop faible,
@@ -40,7 +38,11 @@ process.env.JWT_SECRET = 'test-secret-stable-32-characters-minimum';
 jest.mock('../../db', () => ({ query: jest.fn() }));
 
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req, _res, next) => { req.user = req.user || { id: 'user-1' }; next(); },
+  authenticate: (req, _res, next) => {
+    req.user = req.user || { id: 'user-1' };
+    req.auth = req.auth || { authTime: Math.floor(Date.now() / 1000), amr: ['passkey'] };
+    next();
+  },
 }));
 
 jest.mock('../../middleware/validate', () => ({
@@ -387,39 +389,6 @@ describe('POST /api/auth/auto-register', () => {
       .set('x-internal-key', 'secret-key').send({ phone: '+269222' });
     expect(res.status).toBe(201);
     expect(res.body.created).toBe(true);
-  });
-});
-
-// ═══════════════════════════════════════════════════════════════════════
-describe('POST /api/auth/orders-by-phone', () => {
-  it('400 si numéro invalide (trop court)', async () => {
-    const res = await request(app).post('/api/auth/orders-by-phone').send({ phone: '123' });
-    expect(res.status).toBe(400);
-  });
-
-  it('429 si trop de tentatives (rate-limit IP)', async () => {
-    for (let i = 0; i < 5; i++) {
-      db.query.mockResolvedValueOnce({ rows: [] });
-      await request(app).post('/api/auth/orders-by-phone').send({ phone: '+269111111' });
-    }
-    const res = await request(app).post('/api/auth/orders-by-phone').send({ phone: '+269111111' });
-    expect(res.status).toBe(429);
-  });
-
-  it('succès → aucun user trouvé → liste vide', async () => {
-    db.query.mockResolvedValueOnce({ rows: [] });
-    const res = await request(app).post('/api/auth/orders-by-phone').send({ phone: '+269999999' });
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ orders: [], name: null });
-  });
-
-  it('succès → user trouvé → token scope orders_read', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'u1', full_name: 'Ali', role: 'client' }] });
-    const res = await request(app).post('/api/auth/orders-by-phone').send({ phone: '+269888888' });
-    expect(res.status).toBe(200);
-    expect(res.body.name).toBe('Ali');
-    const decoded = jwt.verify(res.body.token, process.env.JWT_SECRET);
-    expect(decoded.scope).toBe('orders_read');
   });
 });
 

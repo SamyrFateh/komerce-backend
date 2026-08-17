@@ -30,7 +30,6 @@
     "POST /api/auth/admin-reset",
     "POST /api/auth/guest-checkout",
     "POST /api/auth/magic-link",
-    "POST /api/auth/orders-by-phone",
     "POST /api/auth/otp/request",
     "POST /api/auth/otp/test-reset",
     "POST /api/auth/otp/verify",

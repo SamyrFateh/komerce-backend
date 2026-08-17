@@ -51,6 +51,7 @@ module.exports = {
       'utils/auth-cookie.js',
       'utils/auth-session.js',
       'utils/auth-session-policy.js',
+      'utils/auth-token-policy.js',
     ],
     services: [],
     routes: [],
@@ -63,6 +64,7 @@ module.exports = {
       'tests/unit/auth-cookie.test.js',
       'tests/unit/auth-session.test.js',
       'tests/unit/auth-session-policy.test.js',
+      'tests/unit/auth-token-policy.test.js',
       'tests/unit/auth-guest.test.js',
       'tests/unit/auth-middleware.test.js',
       'tests/unit/csrf-origin.test.js',
@@ -99,7 +101,7 @@ module.exports = {
     exposes: [],
     internalApi: [
       { fn: 'requireAuth / requireVerifiedIdentity / softAuth', file: 'middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js' },
-      { fn: 'signAuthToken / resolveSessionTtlSeconds', file: 'utils/auth-session.js, utils/auth-session-policy.js' },
+      { fn: 'signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict', file: 'utils/auth-session.js, utils/auth-session-policy.js, utils/auth-token-policy.js' },
     ],
     consumes: [
       'notification',
@@ -115,6 +117,7 @@ module.exports = {
     'toute mutation portée par le cookie de session exige une Origin explicitement autorisée (AUTH-8b)',
     'staging/production utilisent exclusivement un cookie de session __Host- Secure, Path=/ et sans Domain (AUTH-8c)',
     'la durée absolue JWT + cookie est plafonnée à 7 jours et chaque preuve OTP/passkey/step-up émet une nouvelle jti (AUTH-8d)',
+    'un JWT scoped ou dépourvu des claims de session canoniques ne peut jamais être élevé en session par les middlewares génériques (AUTH-8e)',
   ],
 
 };

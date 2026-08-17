@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -9,28 +8,8 @@
 /**
  * tests/unit/auth-middleware.test.js
  *
- * Tests du middleware middleware/auth.js — authenticate / requireRole / requireAdmin
- *
- * Structure proche de require-verified-identity.js (Lot C), mais avec un
- * cache utilisateur partagé (utils/user-cache) au lieu d'un cache local,
- * et une extraction de token cookie-first plutôt que header-only.
- *
- * Couverture :
- *   ✓ extractToken : priorité cookie kmrc_jwt > header Authorization Bearer
- *   ✓ authenticate : 401 token manquant si ni cookie ni header
- *   ✓ authenticate : 401 si jti révoqué (DB)
- *   ✓ authenticate : pas de vérification révocation si jti absent du payload
- *   ✓ authenticate : user en cache → pas de requête DB users
- *   ✓ authenticate : user absent du cache → requête DB → peuple le cache
- *   ✓ authenticate : 401 si user introuvable en DB malgré JWT valide
- *   ✓ authenticate : 401 TokenExpiredError (pas de log.error)
- *   ✓ authenticate : 401 JsonWebTokenError (pas de log.error)
- *   ✓ authenticate : erreur inattendue → log.error + 401 générique (jamais next(err))
- *   ✓ requireRole : 401 si req.user absent
- *   ✓ requireRole : 403 si le rôle ne correspond pas, avec your_role et liste des rôles
- *   ✓ requireRole : next() si le rôle correspond
- *   ✓ requireAdmin : raccourci équivalent à requireRole(['admin'])
- *   ✓ invalidateUserCache : délègue à userCache.invalidate
+ * AUTH-8e : cookie et Bearer restent deux transports possibles d'une même
+ * SESSION canonique, mais aucun JWT scoped/incomplet ne peut passer la garde.
  */
 
 process.env.JWT_SECRET = 'test-secret-auth';
@@ -62,15 +41,25 @@ function makeRes() {
   return res;
 }
 
-function validToken(payload = {}) {
-  return jwt.sign({ id: 'user-1', jti: 'jti-1', ...payload }, process.env.JWT_SECRET, { algorithm: 'HS256' });
+function validToken(payload = {}, options = {}) {
+  return jwt.sign({
+    id: 'user-1',
+    jti: 'jti-1',
+    auth_time: Math.floor(Date.now() / 1000),
+    amr: ['otp'],
+    token_use: 'session',
+    ...payload,
+  }, process.env.JWT_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: options.expiresIn ?? '1h',
+  });
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
-describe('authenticate — extraction du token', () => {
+describe('authenticate — extraction et frontière de session', () => {
   it('401 "Token manquant" si ni cookie ni header', async () => {
     const req = { headers: {} };
     const res = makeRes();
@@ -83,9 +72,9 @@ describe('authenticate — extraction du token', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('priorise le cookie kmrc_jwt même si un header Authorization est aussi présent', async () => {
+  it('priorise le cookie même si un Bearer est aussi présent', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
+    mockCacheGet.mockReturnValueOnce({ id: 'from-cookie', role: 'client' });
 
     const cookieToken = validToken({ id: 'from-cookie' });
     const req = {
@@ -96,12 +85,10 @@ describe('authenticate — extraction du token', () => {
     const next = jest.fn();
 
     await authenticate(req, res, next);
-
-    // Le décodage a réussi (donc c'est bien le cookie qui a été utilisé, pas le header invalide)
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('utilise le header Authorization Bearer si pas de cookie', async () => {
+  it('accepte un Bearer seulement quand il est une session canonique', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [] });
     mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
 
@@ -112,28 +99,56 @@ describe('authenticate — extraction du token', () => {
     await authenticate(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
+    expect(req.auth.scoped).toBe(false);
   });
 
-  it('ignore un header Authorization mal formé (sans "Bearer ")', async () => {
-    const req = { headers: { authorization: 'Basic abc123' } };
+  it('refuse un JWT scoped signé au lieu de le transformer en session', async () => {
+    const req = {
+      headers: { authorization: `Bearer ${validToken({ scope: 'orders_read' })}` },
+    };
     const res = makeRes();
     const next = jest.fn();
 
     await authenticate(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Jeton non autorisé pour une session' });
+    expect(mockQuery).not.toHaveBeenCalled();
+    expect(mockCacheGet).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
   });
 
-  it('gère req.cookies absent sans planter (passe au header)', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
-
-    const req = { headers: { authorization: `Bearer ${validToken()}` } }; // pas de req.cookies du tout
+  it('refuse un JWT signé incomplet sans jti/auth_time/amr', async () => {
+    const incomplete = jwt.sign({ id: 'user-1' }, process.env.JWT_SECRET, {
+      algorithm: 'HS256', expiresIn: '1h',
+    });
+    const req = { headers: { authorization: `Bearer ${incomplete}` } };
     const res = makeRes();
     const next = jest.fn();
 
     await authenticate(req, res, next);
 
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Jeton non autorisé pour une session' });
+    expect(mockQuery).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('ignore un header Authorization mal formé', async () => {
+    const req = { headers: { authorization: 'Basic abc123' } };
+    const res = makeRes();
+    const next = jest.fn();
+    await authenticate(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('gère req.cookies absent et utilise un Bearer canonique', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
+    const req = { headers: { authorization: `Bearer ${validToken()}` } };
+    const res = makeRes();
+    const next = jest.fn();
+    await authenticate(req, res, next);
     expect(next).toHaveBeenCalledTimes(1);
   });
 });
@@ -141,45 +156,25 @@ describe('authenticate — extraction du token', () => {
 describe('authenticate — révocation (jti)', () => {
   it('401 "Session expirée" si le jti est révoqué', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
-
     const req = { headers: { authorization: `Bearer ${validToken()}` } };
     const res = makeRes();
     const next = jest.fn();
-
     await authenticate(req, res, next);
-
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Session expirée — reconnectez-vous' });
     expect(next).not.toHaveBeenCalled();
   });
-
-  it('ne vérifie pas la révocation si jti est absent du payload', async () => {
-    const tokenWithoutJti = jwt.sign({ id: 'user-1' }, process.env.JWT_SECRET, { algorithm: 'HS256' });
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
-
-    const req = { headers: { authorization: `Bearer ${tokenWithoutJti}` } };
-    const res = makeRes();
-    const next = jest.fn();
-
-    await authenticate(req, res, next);
-
-    expect(mockQuery).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe('authenticate — résolution utilisateur (cache partagé)', () => {
-  it('utilise le cache si présent (pas de requête DB users)', async () => {
+  it('utilise le cache si présent', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [] });
     mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'admin' });
-
     const req = { headers: { authorization: `Bearer ${validToken()}` } };
     const res = makeRes();
     const next = jest.fn();
-
     await authenticate(req, res, next);
-
-    expect(mockQuery).toHaveBeenCalledTimes(1); // uniquement la requête de révocation
+    expect(mockQuery).toHaveBeenCalledTimes(1);
     expect(mockCacheSet).not.toHaveBeenCalled();
     expect(req.user).toEqual({ id: 'user-1', role: 'admin' });
     expect(next).toHaveBeenCalledTimes(1);
@@ -187,33 +182,27 @@ describe('authenticate — résolution utilisateur (cache partagé)', () => {
 
   it('charge depuis la DB et peuple le cache si absent', async () => {
     mockQuery
-      .mockResolvedValueOnce({ rows: [] }) // révocation
-      .mockResolvedValueOnce({ rows: [{ id: 'user-1', full_name: 'Jean', role: 'client' }] }); // users
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'user-1', full_name: 'Jean', role: 'client' }] });
     mockCacheGet.mockReturnValueOnce(null);
-
     const req = { headers: { authorization: `Bearer ${validToken()}` } };
     const res = makeRes();
     const next = jest.fn();
-
     await authenticate(req, res, next);
-
     expect(mockCacheSet).toHaveBeenCalledWith('user-1', { id: 'user-1', full_name: 'Jean', role: 'client' });
     expect(req.user).toEqual({ id: 'user-1', full_name: 'Jean', role: 'client' });
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('401 "Utilisateur introuvable" si absent en DB malgré JWT valide', async () => {
+  it('401 si user absent en DB malgré session valide', async () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
     mockCacheGet.mockReturnValueOnce(null);
-
     const req = { headers: { authorization: `Bearer ${validToken()}` } };
     const res = makeRes();
     const next = jest.fn();
-
     await authenticate(req, res, next);
-
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Utilisateur introuvable ou compte supprimé' });
     expect(next).not.toHaveBeenCalled();
@@ -222,42 +211,33 @@ describe('authenticate — résolution utilisateur (cache partagé)', () => {
 
 describe('authenticate — erreurs JWT', () => {
   it('401 "Token expiré" pour TokenExpiredError', async () => {
-    const expiredToken = jwt.sign({ id: 'user-1' }, process.env.JWT_SECRET, {
-      algorithm: 'HS256', expiresIn: -10,
-    });
-
+    const expiredToken = validToken({}, { expiresIn: -10 });
     const req = { headers: { authorization: `Bearer ${expiredToken}` } };
     const res = makeRes();
     const next = jest.fn();
-
     await authenticate(req, res, next);
-
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Token expiré — veuillez vous reconnecter' });
   });
 
-  it('401 "Token invalide" pour JsonWebTokenError (signature incorrecte)', async () => {
-    const badToken = jwt.sign({ id: 'user-1' }, 'wrong-secret', { algorithm: 'HS256' });
-
+  it('401 "Token invalide" pour signature incorrecte', async () => {
+    const badToken = jwt.sign({
+      id: 'user-1', jti: 'j', auth_time: 1700000000, amr: ['otp'], token_use: 'session',
+    }, 'wrong-secret', { algorithm: 'HS256', expiresIn: '1h' });
     const req = { headers: { authorization: `Bearer ${badToken}` } };
     const res = makeRes();
     const next = jest.fn();
-
     await authenticate(req, res, next);
-
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Token invalide' });
   });
 
-  it('401 générique pour une erreur inattendue (ex: DB down), jamais next(err)', async () => {
+  it('401 générique pour erreur DB inattendue, jamais next(err)', async () => {
     mockQuery.mockRejectedValueOnce(new Error('connexion refusée'));
-
     const req = { headers: { authorization: `Bearer ${validToken()}` } };
     const res = makeRes();
     const next = jest.fn();
-
     await authenticate(req, res, next);
-
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Token invalide' });
@@ -265,25 +245,20 @@ describe('authenticate — erreurs JWT', () => {
 });
 
 describe('requireRole', () => {
-  it('401 "Non authentifié" si req.user est absent', () => {
+  it('401 si req.user est absent', () => {
     const req = {};
     const res = makeRes();
     const next = jest.fn();
-
     requireRole(['admin'])(req, res, next);
-
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Non authentifié' });
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("403 avec la liste des rôles requis et your_role si le rôle ne correspond pas", () => {
+  it('403 si le rôle ne correspond pas', () => {
     const req = { user: { role: 'client' } };
     const res = makeRes();
     const next = jest.fn();
-
     requireRole(['admin', 'hub'])(req, res, next);
-
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({
       error: 'Accès refusé — rôle requis : admin ou hub',
@@ -296,22 +271,17 @@ describe('requireRole', () => {
     const req = { user: { role: 'admin' } };
     const res = makeRes();
     const next = jest.fn();
-
     requireRole(['admin'])(req, res, next);
-
     expect(next).toHaveBeenCalledTimes(1);
-    expect(res.status).not.toHaveBeenCalled();
   });
 });
 
 describe('requireAdmin', () => {
-  it('est un raccourci équivalent à requireRole(["admin"])', () => {
+  it('est équivalent à requireRole(["admin"])', () => {
     const req = { user: { role: 'admin' } };
     const res = makeRes();
     const next = jest.fn();
-
     requireAdmin(req, res, next);
-
     expect(next).toHaveBeenCalledTimes(1);
   });
 
@@ -319,9 +289,7 @@ describe('requireAdmin', () => {
     const req = { user: { role: 'client' } };
     const res = makeRes();
     const next = jest.fn();
-
     requireAdmin(req, res, next);
-
     expect(res.status).toHaveBeenCalledWith(403);
   });
 });

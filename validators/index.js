@@ -98,9 +98,6 @@ const auth = {
       role:      Joi.string().valid('client').default('client'),
     }),
   },
-  ordersByPhone: {
-    body: Joi.object({ phone: phone.required() }),
-  },
   adminReset: {
     body: Joi.object({
       key:          safeStr(128).required(),
