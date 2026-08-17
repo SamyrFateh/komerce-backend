@@ -10971,12 +10971,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "order_items",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "orders",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -11051,6 +11045,10 @@
           {
             "table": "invoices",
             "lifecycleOwner": "documents"
+          },
+          {
+            "table": "order_items",
+            "lifecycleOwner": "orders"
           },
           {
             "table": "product_suppliers",
@@ -11145,12 +11143,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "order_items",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "orders",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -11225,6 +11217,10 @@
           {
             "table": "invoices",
             "lifecycleOwner": "documents"
+          },
+          {
+            "table": "order_items",
+            "lifecycleOwner": "orders"
           },
           {
             "table": "product_suppliers",
@@ -12530,7 +12526,7 @@
             ]
           },
           "services": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -12546,6 +12542,11 @@
                 "declared": "services/order-cost-snapshot.js",
                 "resolvedPath": "services/order-cost-snapshot.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-item-availability-service.js",
+                "resolvedPath": "services/order-item-availability-service.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/order-payment-confirmation.js",
@@ -12575,7 +12576,7 @@
             ]
           },
           "tests": {
-            "count": 28,
+            "count": 29,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
@@ -12635,6 +12636,11 @@
               {
                 "declared": "tests/unit/order-cost-snapshot.test.js",
                 "resolvedPath": "tests/unit/order-cost-snapshot.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-item-availability-service.test.js",
+                "resolvedPath": "tests/unit/order-item-availability-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12730,7 +12736,7 @@
             ]
           }
         },
-        "totalFiles": 52,
+        "totalFiles": 54,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 14,
@@ -13125,8 +13131,18 @@
             "status": "resolved"
           },
           {
+            "fn": "setOrderItemAvailabilityStatus",
+            "file": "services/order-item-availability-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "transitionOrderStatus",
             "file": "services/order-status-machine.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "updateOrderItemAvailabilityDetails",
+            "file": "services/order-item-availability-service.js",
             "status": "resolved"
           }
         ],

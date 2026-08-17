@@ -6,10 +6,11 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/refund-service.js, utils/logger.js, utils/reference.js, utils/rules.js
+ * @depends       db, services/notification-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/refund-service.js, utils/logger.js, utils/reference.js, utils/rules.js
  * @used-by       routes/orders/parcels.js
  * @db-read       order_items, orders, parcel_items, parcels, products, relais, users
- * @db-write      order_items, parcel_items, parcels
+ * @db-write      parcel_items, parcels
+ * @db-write-via:order-item-availability-service order_items
  * @db-write-via:order-status-machine order_status_history
  * @db-write-via:product-admin-service products
  * @db-write-via:order-status-machine product_variants, order_status_history, products
@@ -52,6 +53,10 @@ const { generateParcelRef }             = require('../utils/reference');
 const { processRefundWithFallback }     = require('./refund-service');
 const { PARCEL_SMS }                    = require('./parcel-service');
 const { transitionOrderStatus, appendOrderHistoryNote } = require('./order-status-machine');
+const {
+  updateOrderItemAvailabilityDetails,
+  setOrderItemAvailabilityStatus,
+} = require('./order-item-availability-service');
 const { adjustStock }                   = require('./product-admin-service');
 const {
   validateParcelCreate,
@@ -102,21 +107,12 @@ async function markAvailability(orderId, items, user) {
     // Mettre à jour chaque article
     const updatedItems = [];
     for (const item of items) {
-      const { rows: [updated] } = await client.query(
-        `UPDATE order_items
-         SET availability_status = $1,
-             estimated_available_at = $2,
-             backorder_reason = $3,
-             updated_at = NOW()
-         WHERE id = $4
-         RETURNING id, product_id, quantity, availability_status, estimated_available_at, backorder_reason`,
-        [
-          item.status,
-          item.estimated_available_at || null,
-          item.reason || null,
-          item.order_item_id,
-        ]
-      );
+      const updated = await updateOrderItemAvailabilityDetails(client, {
+        orderItemId: item.order_item_id,
+        status: item.status,
+        estimatedAvailableAt: item.estimated_available_at || null,
+        backorderReason: item.reason || null,
+      });
       updatedItems.push(updated);
     }
 
@@ -234,10 +230,10 @@ async function partialShip(orderId, body, user) {
         price_kmf:     original.price_kmf,
       });
 
-      await client.query(
-        `UPDATE order_items SET availability_status = 'available', updated_at = NOW()
-         WHERE id = $1`,
-        [ai.order_item_id]
+      await setOrderItemAvailabilityStatus(
+        client,
+        ai.order_item_id,
+        'available'
       );
     }
 
@@ -286,10 +282,10 @@ async function partialShip(orderId, body, user) {
         });
 
         if (!boi._isPartial) {
-          await client.query(
-            `UPDATE order_items SET availability_status = 'backorder', updated_at = NOW()
-             WHERE id = $1`,
-            [boi.id]
+          await setOrderItemAvailabilityStatus(
+            client,
+            boi.id,
+            'backorder'
           );
         }
       }

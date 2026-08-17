@@ -171,7 +171,7 @@ module.exports = {
       'carriers: RW',
       'incidents: RW',
       'invoices: R',
-      'order_items: RW',
+      'order_items: R',  // W-via:order-item-availability-service (orders owner boundary)
       // order_status_history retiré (Sprint A, 2026-07-07) : les 4 anciennes
       // écritures directes (markAvailability, partialShip, updateParcelStatus,
       // cancelBackorder) délèguent maintenant à
