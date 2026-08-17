@@ -3577,6 +3577,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/economic-price-audit-service.js",
+        "resolvedPath": "services/economic-price-audit-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/pricing-strategy-service.js",
         "resolvedPath": "services/pricing-strategy-service.js",
         "status": "resolved-in-technical-graph"
@@ -3901,6 +3908,13 @@
         "category": "tests",
         "declared": "tests/unit/apply-pricing-updates.test.js",
         "resolvedPath": "tests/unit/apply-pricing-updates.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/economic-price-audit-service.test.js",
+        "resolvedPath": "tests/unit/economic-price-audit-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13082,6 +13096,12 @@
         "status": "resolved"
       },
       {
+        "feature": "economic-engine",
+        "fn": "recordProductPriceChange",
+        "file": "services/economic-price-audit-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "incident-management",
         "fn": "listIncidents",
         "file": "services/incident-service.js",
@@ -13410,7 +13430,7 @@
       {
         "from": "catalog",
         "to": "economic-engine",
-        "raw": "economic-engine (prix produit et valorisation commerciale transport)",
+        "raw": "economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)",
         "resolved": true
       },
       {
@@ -17209,6 +17229,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/product-price-audit.js",
+                "targetFile": "services/economic-price-audit-service.js"
+              },
+              {
                 "sourceFileId": "services/supplier-catalog-scanner.js",
                 "targetFile": "services/pricing-engine.js"
               },
@@ -17262,14 +17286,6 @@
               },
               {
                 "sourceFileId": "services/product-admin-service.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/product-price-audit.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/product-price-audit.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -18609,26 +18625,6 @@
       },
       {
         "from": "economic-engine",
-        "to": "catalog",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "services/apply-pricing-updates.js",
-                "targetFile": "services/product-price-audit.js"
-              },
-              {
-                "sourceFileId": "tests/unit/apply-pricing-updates.test.js",
-                "targetFile": "services/product-price-audit.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
-      },
-      {
-        "from": "economic-engine",
         "to": "dashboard",
         "channels": [
           {
@@ -18776,6 +18772,14 @@
               },
               {
                 "sourceFileId": "services/apply-pricing-updates.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/economic-price-audit-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/economic-price-audit-service.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -24092,7 +24096,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 802
+        "filesObserved": 804
       },
       "boutique": {
         "filesObserved": 158,
@@ -25051,25 +25055,6 @@
       "lifecycleOwner": "catalog",
       "resolution": "declared-table-owner"
     },
-    "price_history": {
-      "writers": [
-        {
-          "feature": "catalog",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "economic-engine",
-          "mode": "W",
-          "declaredOwner": true,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "economic-engine",
-      "resolution": "declared-table-owner"
-    },
     "product_skus": {
       "writers": [
         {
@@ -25851,6 +25836,19 @@
       "lifecycleOwner": "platform-ops",
       "resolution": "single-writer"
     },
+    "price_history": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "W",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
     "pricing_benchmarks": {
       "writers": [],
       "readers": [
@@ -26489,11 +26487,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "price_history",
-        "msg": "table \"price_history\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par catalog"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "product_variants",
         "msg": "table \"product_variants\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine"
       },
@@ -26558,11 +26551,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "parcels",
         "msg": "table \"parcels\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par customs, dashboard, payments"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "price_history",
-        "msg": "table \"price_history\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26805,11 +26793,11 @@
       }
     ],
     "summary": {
-      "signals": 14,
-      "debt": 14,
+      "signals": 13,
+      "debt": 13,
       "expectedTopology": 33,
       "generatorLimitations": 8,
-      "classifiedCandidates": 55
+      "classifiedCandidates": 54
     }
   }
 }

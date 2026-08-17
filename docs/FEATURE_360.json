@@ -46,12 +46,12 @@
     "healthy": 14,
     "attention": 16,
     "blocked": 0,
-    "businessDependencies": 166,
+    "businessDependencies": 165,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 44,
+    "debtItemsTotal": 45,
     "gateHealthy": 17,
     "gateBlocked": 0
   },
@@ -2122,7 +2122,7 @@
         "in": [
           "connecteurs fournisseurs (CSV, API, manuel, Noon)",
           "contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait",
-          "publication et audit prix produit",
+          "publication produit et déclenchement de l audit prix via economic-engine",
           "categories boutique admin",
           "catalogue vivant Boutique : grille, cartes produit, ouverture fiche produit",
           "catalogue canonique : produit, medias publics, axes d options descriptifs et unites vendables SKU",
@@ -3225,12 +3225,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "price_history",
-            "mode": "W",
-            "lifecycleOwner": "economic-engine",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "product_attributes",
             "mode": "RW",
             "lifecycleOwner": "catalog",
@@ -3403,12 +3397,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "price_history",
-            "mode": "W",
-            "lifecycleOwner": "economic-engine",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "product_attributes",
             "mode": "RW",
             "lifecycleOwner": "catalog",
@@ -3565,13 +3553,6 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "interface"
-          ]
-        },
-        {
-          "consumer": "economic-engine",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
           ]
         },
         {
@@ -6204,6 +6185,7 @@
       "perimeter": {
         "in": [
           "moteur de pricing et application des regles",
+          "audit des changements de prix produit dans price_history",
           "allocation de cout",
           "strategies tarifaires et matrices admin",
           "gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain economic-engine au Lot O2, était @domain dashboard)"
@@ -6213,9 +6195,10 @@
           "facturation finale (feature orders)"
         ]
       },
-      "authority": "backend-core — tout changement de formule de prix doit etre valide par le proprietaire de pricing-engine.js",
+      "authority": "backend-core — tout changement de formule de prix ou d audit price_history doit rester derrière les services propriétaires economic-engine",
       "invariants": [
-        "une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee"
+        "une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee",
+        "aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js"
       ],
       "implementation": {
         "byCategory": {
@@ -6415,7 +6398,7 @@
             ]
           },
           "services": {
-            "count": 25,
+            "count": 26,
             "files": [
               {
                 "declared": "services/apply-pricing-updates.js",
@@ -6451,6 +6434,11 @@
                 "declared": "services/economic-engine-queries.js",
                 "resolvedPath": "services/economic-engine-queries.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/economic-price-audit-service.js",
+                "resolvedPath": "services/economic-price-audit-service.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/finance-metrics/annulations.js",
@@ -6545,7 +6533,7 @@
             ]
           },
           "tests": {
-            "count": 46,
+            "count": 47,
             "files": [
               {
                 "declared": "tests/integration/sourcing-engine-routes.test.js",
@@ -6635,6 +6623,11 @@
               {
                 "declared": "tests/unit/economic-engine-queries.test.js",
                 "resolvedPath": "tests/unit/economic-engine-queries.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/economic-price-audit-service.test.js",
+                "resolvedPath": "tests/unit/economic-price-audit-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6795,7 +6788,7 @@
             ]
           }
         },
-        "totalFiles": 109,
+        "totalFiles": 111,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -7344,6 +7337,11 @@
             "fn": "recommend",
             "file": "services/pricing-engine.js",
             "status": "resolved"
+          },
+          {
+            "fn": "recordProductPriceChange",
+            "file": "services/economic-price-audit-service.js",
+            "status": "resolved"
           }
         ],
         "httpInterfaces": {
@@ -7353,13 +7351,6 @@
       "businessDependencies": [
         {
           "provider": "auth",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "provider": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -7473,8 +7464,9 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
+        "declaredNotObserved": 2,
         "declaredNotObservedEvidence": [
+          "catalog",
           "wallet"
         ]
       },
@@ -7507,8 +7499,13 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 1,
+        "debtCount": 2,
         "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"catalog\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
