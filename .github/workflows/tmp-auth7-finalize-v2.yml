@@ -1,0 +1,79 @@
+name: Temporary AUTH-7 finalizer v2
+
+on:
+  push:
+    branches: [auth/7-step-up]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      JWT_SECRET: contract-introspection-only-secret-2026-08-not-runtime
+      QR_SECRET: contract-introspection-qr-secret-2026-08-not-runtime
+      DATABASE_URL: postgresql://contract:contract@127.0.0.1:5432/contract
+      FRONTEND_URL: http://localhost:3000
+      INTERNAL_API_KEY: contract-introspection-api-key
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_RP_NAME: Komerce
+      WEBAUTHN_ORIGINS: http://localhost:3000
+      META_WA_APP_SECRET: contract-introspection-meta-secret
+      META_WA_VERIFY_TOKEN: contract-introspection-meta-verify
+      STRIPE_SECRET_KEY: sk_test_contract_introspection_only
+      STRIPE_WEBHOOK_SECRET: whsec_contract_introspection_only
+      PAYPAL_CLIENT_ID: contract-client-id
+      PAYPAL_CLIENT_SECRET: contract-client-secret
+      PAYPAL_WEBHOOK_ID: contract-webhook-id
+      PAYPAL_ENV: sandbox
+      TWILIO_ACCOUNT_SID: AC00000000000000000000000000000000
+      TWILIO_AUTH_TOKEN: contract-token
+      TWILIO_WHATSAPP_FROM: whatsapp:+14155238886
+      AT_API_KEY: contract-key
+      AT_USERNAME: sandbox
+      CLOUDINARY_CLOUD_NAME: contract
+      CLOUDINARY_API_KEY: contract
+      CLOUDINARY_API_SECRET: contract
+      KOMERCE_DISABLE_CRONS: 'true'
+      KOMERCE_SKIP_STARTUP_MIGRATIONS: 'true'
+      KOMERCE_SKIP_BOOT_ENSURE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply AUTH-7 patch and self-clean helpers
+        run: python scripts/tmp-auth7-apply.py
+      - run: npm ci
+      - name: Backend AUTH-7 regression
+        run: npx jest tests/unit/auth-passkey.test.js tests/unit/auth-passkey-management.test.js tests/unit/auth-passkey-step-up.test.js tests/unit/auth-session.test.js tests/unit/require-recent-auth.test.js --runInBand
+      - run: npm --prefix public/boutique ci
+      - name: Boutique AUTH-7 regression
+        working-directory: public/boutique
+        run: npx jest tests/unit/b-passkey-enrollment.test.js tests/unit/b-passkey-login.test.js tests/unit/b-passkey-recovery.test.js tests/unit/b-passkey-security.test.js tests/unit/b-passkey-step-up.test.js tests/unit/b-identity-passkey.test.js tests/unit/b-identity-recovery.test.js --runInBand
+      - name: Contract
+        run: |
+          node scripts/contract-generate.js
+          node scripts/contract-check.js
+      - name: Governance projections
+        run: |
+          node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+          node scripts/gen-gate-findings.js
+          node scripts/gen-feature-360.js
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+          git diff --check
+      - name: Commit final tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(auth): require recent proof for sensitive operations"
+          git push origin HEAD:auth/7-step-up
