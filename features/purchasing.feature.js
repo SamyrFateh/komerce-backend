@@ -30,6 +30,7 @@ module.exports = {
       'déclenchement automatique d\'un bon de commande (purchase_order) quand une commande client nécessite un réassort fournisseur',
       'notification/confirmation du fournisseur (manuel ou WhatsApp) et suivi du statut du bon de commande',
       'réception (partielle ou totale) d\'un bon de commande, et rattachement au flux logistique',
+      'synchronisation d\'annulation : pending/notified suivent l\'annulation de la commande ; les POs engagées déclenchent une alerte sans forçage',
       'réparation/rattrapage des commandes marquées "ordered" sans (ou avec) bon de commande cohérent (outils admin de correction)',
       'gestion des fournisseurs et de leur mapping produit (routes/purchasing.js /suppliers/*)',
       'administration transverse des bons de commande, historiquement exposée depuis le dashboard ' +
@@ -52,6 +53,7 @@ module.exports = {
     services: [
       'services/purchasing-trigger-service.js',
       'services/purchasing-receive-service.js',
+      'services/purchasing-cancel-service.js',
       'services/receive-purchase-order.js',
       'services/repair-ordered-purchasing.js',
       'services/repair-ordered-without-purchase-orders.js',
@@ -77,17 +79,16 @@ module.exports = {
   },
 
   // ── Tables DB (vérifiées par grep .query() réel + headers @komerce-arch, ─
-  // Lot O1.4 2026-07-12). purchase_orders est la table réellement propre à la
-  // feature (créée, mise à jour de statut, receptionnée). suppliers et
-  // product_suppliers sont écrites par routes/purchasing.js (gestion admin du
-  // référentiel fournisseur) mais restent lues par catalog (connecteurs
-  // fournisseurs) et logistics (rattachement colis) — propriété d'écriture
-  // purchasing, lecture cross-feature normale ailleurs.
+  // Lot O1.4 2026-07-12 ; revérifié campagne WNO 2026-08). purchase_orders est
+  // la table propre à la feature : création, statut, réception ET synchronisation
+  // d'annulation sont désormais toutes portées par purchasing.
+  // suppliers et product_suppliers sont écrites par routes/purchasing.js
+  // mais restent lues par catalog et logistics — lecture cross-feature normale.
   // orders passe R → RW au Lot O2 : services/purchasing-admin-service.js
-  // (retaggé depuis dashboard) y écrit également (outils admin de correction).
+  // y écrit également (outils admin de correction).
   db: {
     tables: [
-      'alerts: W',              // purchasing-trigger-service.js (échec déclenchement), repair-ordered-without-purchase-orders.js
+      'alerts: W',              // trigger/repair + purchasing-cancel-service (PO engagée lors d'une annulation)
       'order_items: R',
       'orders: RW',
       'product_suppliers: RW',
@@ -117,16 +118,16 @@ module.exports = {
       'POST /api/purchasing/:id/receive',
       'DELETE /api/purchasing/po/:po_id',
     ],
-    // O7.3 (provider purchasing) : formalise deux services déjà propres
-    // (service-à-service, aucune route utilisée comme API interne) mais
-    // jamais déclarés. Aucun wrapper créé. Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+    // Frontières service-à-service : purchasing reste l'autorité et les
+    // consommateurs déclenchent une capacité, jamais un SQL dans ses tables.
     internalApi: [
       { fn: 'triggerPurchasing', file: 'services/purchasing-trigger-service.js' },
       { fn: 'repairOrderedWithoutPurchaseOrders', file: 'services/repair-ordered-without-purchase-orders.js' },
+      { fn: 'syncPurchaseOrdersOnOrderCancel', file: 'services/purchasing-cancel-service.js' },
     ],
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
-      'orders (lecture : order_items, orders — le besoin d\'achat naît d\'une commande client)',
+      'orders (lecture : order_items, orders — le besoin d\'achat et l\'intention d\'annulation naissent d\'une commande client)',
       'auth (garde admin)',
       'notifications (notification fournisseur WhatsApp, via services/notification-service.js)',
       'logistics (declenche scan preparation + notification client apres reception hub complete — services/scan-operations.js triggerScan3, O7.2 Cycle C)',
@@ -149,7 +150,7 @@ module.exports = {
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement du flux d\'engagement fournisseur (déclenchement, confirmation, réception) doit être validé par le propriétaire de services/purchasing-trigger-service.js et services/purchasing-receive-service.js',
+  authority: 'backend-core — tout changement du flux d\'engagement fournisseur (déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing',
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
@@ -157,6 +158,7 @@ module.exports = {
       test: 'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js' },
     'purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)',
     'une réception ne peut être appliquée qu\'à un bon de commande existant et cohérent',
+    'aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d\'annulation passe par purchasing-cancel-service.js',
   ],
 
   // ── Classification (manifest créé au Lot O1.4) ──────────────────────────
@@ -165,11 +167,11 @@ module.exports = {
     decision: 'feature-autonome',
     signals: {
       ownsTables:          true,   // purchase_orders + écriture suppliers/product_suppliers
-      ownsLifecycle:       true,   // statut du bon de commande (créé → confirmé → reçu), idempotence anti-replay
+      ownsLifecycle:       true,   // statut du bon de commande (créé → confirmé → reçu/annulé), idempotence anti-replay
       activeService:       true,   // "transformer", "déclencher", "constater" — verbes actifs
-      multiConsumer:       false,  // consommé principalement par routes/purchasing.js et le flux hub (routes/cash.js)
-      ownsMigrations:      false,  // tables historiques (purchase_orders, suppliers), pas de migration dédiée trouvée
-      externalSideEffect:  'outbound-message',  // notification fournisseur (WhatsApp / admin)
+      multiConsumer:       false,
+      ownsMigrations:      false,
+      externalSideEffect:  'outbound-message',
       surface:             'api',
     },
     rationale: [

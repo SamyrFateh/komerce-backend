@@ -39,11 +39,9 @@ module.exports = {
       'remboursement (feature refunds, lecture seule sur orders)',
       'tarification (feature economic-engine, orders ne fait que la consommer)',
       'matérialisation, conservation et téléchargement des factures (feature documents ; orders ne fournit que l’événement confirmé et les données source)',
-      'engagement fournisseur : création, confirmation et réception d\'un bon de commande ' +
-        '(feature purchasing, scindée d\'orders au Lot O1.4, 2026-07-12) — orders ne fait que ' +
-        'consommer purchasing (lecture) et libérer les bons de commande liés à l\'annulation ' +
-        '(cancel-order-purchase-orders.js, reste dans orders car appelé exclusivement par ' +
-        'order-status-machine.js)',
+      'engagement fournisseur : création, confirmation, réception et annulation d\'un bon de commande ' +
+        '(feature purchasing, scindée d\'orders au Lot O1.4, 2026-07-12) — orders déclenche ' +
+        'la synchronisation d\'annulation via l\'API interne purchasing, sans SQL direct sur purchase_orders',
     ],
   },
 
@@ -131,7 +129,7 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  // ── Tables DB (inféré, audit 2026-07-06, §axe2 ; revérifié Lot O1.4 2026-07-12) ─
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2 ; revérifié campagne WNO 2026-08) ─
   // Généré par parsing réel des appels .query() (pas un grep de mots) :
   // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
   // Une table listée ici pour PLUSIEURS features est une vraie propriété
@@ -140,13 +138,9 @@ module.exports = {
   // Champ auto-généré : à corriger à la main si une requête dynamique
   // (nom de table construit par variable) a échappé au scan.
   //
-  // purchase_orders reste ici en RW mais désormais réduit à une seule
-  // responsabilité : cancel-order-purchase-orders.js (appelé exclusivement par
-  // order-status-machine.js) libère les bons de commande liés à l'annulation
-  // d'une commande. La création, confirmation et réception d'un bon de commande
-  // appartiennent désormais à la feature purchasing (scindée d'orders au Lot
-  // O1.4). product_suppliers et suppliers ont quitté orders — plus aucun
-  // fichier resté dans orders ne les touche (vérifié par grep, 2026-07-12).
+  // LOT1 WRITER-NOT-OWNER : purchase_orders a quitté le périmètre DB d'orders.
+  // cancel-order-purchase-orders.js est désormais un wrapper sans SQL vers
+  // services/purchasing-cancel-service.js, propriétaire du lifecycle PO.
   db: {
     tables: [
       'alerts: W',
@@ -161,7 +155,6 @@ module.exports = {
       'parcels: R',
       'product_variants: R',  // W-via:product-admin-service (adjustStock variantes)
       'products: R',          // W-via:product-admin-service (adjustStock — order-payment-confirmation.js, order-status-machine.js)
-      'purchase_orders: RW',  // désormais restreint à la libération à l'annulation (cancel-order-purchase-orders.js) — voir note ci-dessus
       'recipients: RW',
       'refunds: R',
       'relais: R',
@@ -233,7 +226,7 @@ module.exports = {
       'economic-engine (cout figure a la commande)',
       'logistics (rattachement colis)',
       'catalog (lecture produit)',
-      'purchasing (lecture — engagement fournisseur déclenché par une commande ; scindée d\'orders au Lot O1.4)',
+      'purchasing (engagement fournisseur + sync annulation via syncPurchaseOrdersOnOrderCancel ; aucun SQL direct orders -> purchase_orders)',
       'loyalty (remise palier au checkout + recalcul apres commande — services/loyalty-service.js getLoyaltyDiscount/recalculateLoyalty, O7.3 provider loyalty)',
       'payments (marque un remboursement — services/payment-service.js markRefunded, O7.3 provider payments)',
       'auth',
@@ -261,7 +254,7 @@ module.exports = {
     { statement: 'snapshot de cout figure a la creation, jamais recalcule retroactivement',
       test: 'tests/e2e-api/orders.cancellation-doctrine.e2e.test.js' },
     'transition de statut uniquement via order-status-machine.js',
-    'annulation libere les achats fournisseurs lies dans la meme transaction',
+    'annulation libere les achats fournisseurs lies dans la meme transaction via purchasing',
   ],
 
   // ── Classification ────────────────────────────────────────────────────────
