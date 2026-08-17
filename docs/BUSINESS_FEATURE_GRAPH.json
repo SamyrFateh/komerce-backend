@@ -13214,15 +13214,21 @@
     "consumesFeature": [
       {
         "from": "auth",
-        "to": "notification",
-        "raw": "notification",
-        "resolved": false
+        "to": "auth-identity",
+        "raw": "auth-identity",
+        "resolved": true
       },
       {
         "from": "auth",
-        "to": "operations",
-        "raw": "operations",
-        "resolved": false
+        "to": "infrastructure",
+        "raw": "infrastructure",
+        "resolved": true
+      },
+      {
+        "from": "auth",
+        "to": "notifications",
+        "raw": "notifications",
+        "resolved": true
       },
       {
         "from": "auth",
@@ -16247,7 +16253,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth",
@@ -16315,7 +16321,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth",
@@ -16331,7 +16337,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth-identity",
@@ -23703,8 +23709,8 @@
     "familySummary": {
       "PROJECTION": 10,
       "COMPOSITION_ROOT_WIRING": 16,
-      "NON_RUNTIME_TEST": 8,
-      "TECHNICAL_PRIMITIVE": 31,
+      "NON_RUNTIME_TEST": 6,
+      "TECHNICAL_PRIMITIVE": 30,
       "BUSINESS_TRANSVERSAL_SERVICE": 2,
       "CROSS_FEATURE_DIRECT_IMPORT": 4,
       "BUSINESS_FEATURE_INTERFACE": 5,
@@ -23859,51 +23865,6 @@
         ],
         "couplingObserved": "interface",
         "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "auth",
-        "to": "auth-identity",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
-        "consumerKind": "technical-transversal",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "auth",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "technical-transversal",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "import-mixed",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "auth",
-        "to": "notifications",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
-        "consumerKind": "technical-transversal",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -24881,9 +24842,6 @@
       "PROJECTION|RUNTIME_ONLY|projection|business-feature|interface": 7,
       "PROJECTION|RUNTIME_ONLY|projection|business-transversal|interface": 2,
       "PROJECTION|RUNTIME_ONLY|projection|piloting-capability|interface": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 2,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|import-mixed": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
@@ -24904,6 +24862,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 2,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
@@ -26665,16 +26624,6 @@
     "warn": [
       {
         "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "auth -> \"notification\" (entrée: \"notification\")",
-        "msg": "contract.consumes de auth référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "auth -> \"operations\" (entrée: \"operations\")",
-        "msg": "contract.consumes de auth référence \"operations\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
         "ref": "incident-management -> \"ops-api legacy\" (entrée: \"dashboard / ops-api legacy (écrit incidents — SQL inline)\")",
         "msg": "contract.consumes de incident-management référence \"ops-api legacy\", ne correspond à aucun nom de feature connu"
       },
@@ -26812,21 +26761,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> payments",
         "msg": "dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"payments\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth -> auth-identity",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"auth\" vers \"auth-identity\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 14 preuve(s)) sans contract.consumes déclaré chez \"auth\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27323,6 +27257,653 @@
         "ref": "wallets",
         "msg": "table \"wallets\" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard"
       }
-    ]
+    ],
+    "debt": [
+      {
+        "type": "CONSUMES-REFERENCE-UNRESOLVED",
+        "ref": "infrastructure -> \"notification\" (entrée: \"notification — bootstrap/api-routes.js monte les routes notification\")",
+        "msg": "contract.consumes de infrastructure référence \"notification\", ne correspond à aucun nom de feature connu"
+      },
+      {
+        "type": "CONSUMES-REFERENCE-UNRESOLVED",
+        "ref": "infrastructure -> \"operations\" (entrée: \"operations — bootstrap/api-routes.js monte les routes operations\")",
+        "msg": "contract.consumes de infrastructure référence \"operations\", ne correspond à aucun nom de feature connu"
+      },
+      {
+        "type": "CONSUMES-REFERENCE-UNRESOLVED",
+        "ref": "infrastructure -> \"payment\" (entrée: \"payment — bootstrap/api-routes.js monte les routes payment\")",
+        "msg": "contract.consumes de infrastructure référence \"payment\", ne correspond à aucun nom de feature connu"
+      },
+      {
+        "type": "CONSUMES-REFERENCE-UNRESOLVED",
+        "ref": "orders -> \"notification\" (entrée: \"notification\")",
+        "msg": "contract.consumes de orders référence \"notification\", ne correspond à aucun nom de feature connu"
+      },
+      {
+        "type": "CONSUMES-REFERENCE-UNRESOLVED",
+        "ref": "orders -> \"payment\" (entrée: \"payment\")",
+        "msg": "contract.consumes de orders référence \"payment\", ne correspond à aucun nom de feature connu"
+      },
+      {
+        "type": "CONSUMES-REFERENCE-UNRESOLVED",
+        "ref": "purchasing -> \"notification\" (entrée: \"notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)\")",
+        "msg": "contract.consumes de purchasing référence \"notification\", ne correspond à aucun nom de feature connu"
+      },
+      {
+        "type": "CONSUMES-REFERENCE-UNRESOLVED",
+        "ref": "shared-cart -> \"notification\" (entrée: \"notification (émission uniquement — WhatsApp création de liste)\")",
+        "msg": "contract.consumes de shared-cart référence \"notification\", ne correspond à aucun nom de feature connu"
+      },
+      {
+        "type": "CONSUMES-REFERENCE-UNRESOLVED",
+        "ref": "shared-cart -> \"products\" (entrée: \"products (lecture seule)\")",
+        "msg": "contract.consumes de shared-cart référence \"products\", ne correspond à aucun nom de feature connu"
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> catalog",
+        "msg": "dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"catalog\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> customs",
+        "msg": "dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"customs\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> dashboard",
+        "msg": "dépendance cross-feature observée (canal: interface, 14 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"dashboard\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> decision-signals",
+        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"decision-signals\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> documents",
+        "msg": "dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"documents\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> economic-engine",
+        "msg": "dépendance cross-feature observée (canal: interface, 22 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"economic-engine\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> inventory",
+        "msg": "dépendance cross-feature observée (canal: interface, 5 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"inventory\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> logistics",
+        "msg": "dépendance cross-feature observée (canal: interface, 7 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"logistics\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> orders",
+        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"orders\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "admin-dashboard -> payments",
+        "msg": "dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"payments\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "auth-identity -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "auth-identity -> logistics",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "auth-identity -> platform-ops",
+        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "catalog -> auth-identity",
+        "msg": "dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"auth-identity\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "catalog -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "catalog -> orders",
+        "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "catalog -> platform-ops",
+        "msg": "dépendance cross-feature observée (canal: static-code, 62 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "customs -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"customs\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "dashboard -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 46 preuve(s)) sans contract.consumes déclaré chez \"dashboard\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "decision-signals -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"decision-signals\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "documents -> auth",
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"documents\" vers \"auth\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "documents -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 21 preuve(s)) sans contract.consumes déclaré chez \"documents\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "economic-engine -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 72 preuve(s)) sans contract.consumes déclaré chez \"economic-engine\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "incident-management -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"incident-management\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> auth-identity",
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"auth-identity\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> auth-passkey",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"auth-passkey\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> business-rules",
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"business-rules\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> decision-signals",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"decision-signals\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> documents",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"documents\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> loyalty",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"loyalty\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> notifications",
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"notifications\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> payments",
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"payments\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> platform-ops",
+        "msg": "dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> purchasing",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> sourcing",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"sourcing\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> unsold-resolution",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"unsold-resolution\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "inventory -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "inventory -> logistics",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"logistics\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "inventory -> orders",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"orders\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "inventory -> payments",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"payments\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "logistics -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 74 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "loyalty -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"loyalty\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "notifications -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "notifications -> platform-ops",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "orders -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 57 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "orders -> platform-ops",
+        "msg": "dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "orders -> shared-cart",
+        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "payments -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 45 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> auth-identity",
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-identity\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> auth-passkey",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-passkey\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> catalog",
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 20 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"catalog\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 27 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> notifications",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"notifications\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> payments",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"payments\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> purchasing",
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"purchasing\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> recommendations",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"recommendations\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> shared-cart",
+        "msg": "dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"shared-cart\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "purchasing -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 20 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "purchasing -> notifications",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"notifications\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "recommendations -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "recommendations -> orders",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"orders\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "recommendations -> platform-ops",
+        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "refunds -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "refunds -> payments",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"payments\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "shared-cart -> catalog",
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"catalog\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "shared-cart -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "shared-cart -> notifications",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"notifications\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "shared-cart -> platform-ops",
+        "msg": "dépendance cross-feature observée (canal: static-code, 52 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "shared-cart -> recommendations",
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"recommendations\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "sourcing -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"sourcing\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "unsold-resolution -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"unsold-resolution\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "wallet -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "wallet -> platform-ops",
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"platform-ops\""
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "alerts",
+        "msg": "table \"alerts\" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "cart_shares",
+        "msg": "table \"cart_shares\" a 2 écrivain(s) déclaré(s) (orders, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "catalog_media",
+        "msg": "table \"catalog_media\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "economic_snapshots",
+        "msg": "table \"economic_snapshots\" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "incidents",
+        "msg": "table \"incidents\" a 5 écrivain(s) déclaré(s) (dashboard, incident-management, logistics, notifications, payments) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "notification_log",
+        "msg": "table \"notification_log\" a 2 écrivain(s) déclaré(s) (notifications, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_item_real_cost_allocations",
+        "msg": "table \"order_item_real_cost_allocations\" a 2 écrivain(s) déclaré(s) (customs, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_items",
+        "msg": "table \"order_items\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "orders",
+        "msg": "table \"orders\" a 9 écrivain(s) déclaré(s) (customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, wallet) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "parcel_items",
+        "msg": "table \"parcel_items\" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, inventory, logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "parcels",
+        "msg": "table \"parcels\" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par customs, dashboard, logistics, payments"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "pickup_print_tokens",
+        "msg": "table \"pickup_print_tokens\" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "pickup_reveal_codes",
+        "msg": "table \"pickup_reveal_codes\" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "price_history",
+        "msg": "table \"price_history\" a 2 écrivain(s) déclaré(s) (catalog, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "product_sku_media",
+        "msg": "table \"product_sku_media\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "product_skus",
+        "msg": "table \"product_skus\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "product_variants",
+        "msg": "table \"product_variants\" a 3 écrivain(s) déclaré(s) (catalog, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "products",
+        "msg": "table \"products\" a 4 écrivain(s) déclaré(s) (catalog, dashboard, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "purchase_orders",
+        "msg": "table \"purchase_orders\" a 2 écrivain(s) déclaré(s) (orders, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "relais",
+        "msg": "table \"relais\" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "revoked_tokens",
+        "msg": "table \"revoked_tokens\" a 2 écrivain(s) déclaré(s) (auth-identity, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "scan_events",
+        "msg": "table \"scan_events\" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "scans",
+        "msg": "table \"scans\" a 4 écrivain(s) déclaré(s) (dashboard, logistics, orders, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "sourcing_candidate_events",
+        "msg": "table \"sourcing_candidate_events\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "sourcing_candidates",
+        "msg": "table \"sourcing_candidates\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "users",
+        "msg": "table \"users\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard"
+      }
+    ],
+    "expectedTopology": [
+      {
+        "type": "DASH-MANIFEST-DUPLICATE-COPY",
+        "ref": "admin-dashboard",
+        "msg": "\"public/features/admin-dashboard.feature.js\" est une copie déclarée de \"public/dashboards/features/admin-dashboard.feature.js\" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique"
+      },
+      {
+        "type": "DASH-MANIFEST-DUPLICATE-COPY",
+        "ref": "legacy-control-tower",
+        "msg": "\"public/features/legacy-control-tower.feature.js\" est une copie déclarée de \"public/dashboards/features/legacy-control-tower.feature.js\" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "basket_items",
+        "msg": "table \"basket_items\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "baskets",
+        "msg": "table \"baskets\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "invoices",
+        "msg": "table \"invoices\" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "loyalty_rewards",
+        "msg": "table \"loyalty_rewards\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_comments",
+        "msg": "table \"order_comments\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_status_history",
+        "msg": "table \"order_status_history\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "recipients",
+        "msg": "table \"recipients\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "sms_log",
+        "msg": "table \"sms_log\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "wallet_transactions",
+        "msg": "table \"wallet_transactions\" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "wallets",
+        "msg": "table \"wallets\" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard"
+      }
+    ],
+    "generatorLimitations": [
+      {
+        "type": "CONSUMES-REFERENCE-UNRESOLVED",
+        "ref": "incident-management -> \"ops-api legacy\" (entrée: \"dashboard / ops-api legacy (écrit incidents — SQL inline)\")",
+        "msg": "contract.consumes de incident-management référence \"ops-api legacy\", ne correspond à aucun nom de feature connu"
+      },
+      {
+        "type": "CONSUMES-REFERENCE-UNRESOLVED",
+        "ref": "notifications -> \"toutes les features emettrices\" (entrée: \"toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement\")",
+        "msg": "contract.consumes de notifications référence \"toutes les features emettrices\", ne correspond à aucun nom de feature connu"
+      },
+      {
+        "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
+        "ref": "scope:backend",
+        "msg": "16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé"
+      },
+      {
+        "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
+        "ref": "scope:boutique",
+        "msg": "1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "logistics / GET/POST /api/parcels",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSE-ENTRY-UNPARSED",
+        "ref": "orders / GET/POST /api/orders",
+        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "infrastructure / GET /*.html",
+        "msg": "\"GET /*.html\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      },
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "infrastructure / GET /webhook/authkey-whatsapp",
+        "msg": "\"GET /webhook/authkey-whatsapp\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      }
+    ],
+    "summary": {
+      "signals": 127,
+      "debt": 107,
+      "expectedTopology": 12,
+      "generatorLimitations": 8
+    }
   }
 }

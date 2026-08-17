@@ -27,6 +27,7 @@ const fs = require('fs');
 const path = require('path');
 // Lot O6 — couche de disposition (qualification/décision) au-dessus des paires O5.
 const featureDependencyDisposition = require('./lib/feature-dependency-disposition');
+const warningSemantics = require('../governance/business-graph-warning-semantics.js');
 
 // Lot O5-closure (régression O4.1.1) : toute valeur de chemin sérialisée dans
 // le JSON/Markdown généré doit utiliser `/`, indépendamment de l'OS qui a
@@ -1187,10 +1188,18 @@ function build() {
       boutique: { mountPath: toPosixPath(path.relative(ROOT, BOUTIQUE_ROOT)) || '.', ...detectScopeRelation(BOUTIQUE_ROOT) },
       note: '"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation="external-path-scope" ci-dessus pour le scope concerné.',
     },
-    drifts: {
-      error: errors.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
-      warn: warns.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
-    },
+    drifts: (() => {
+      const warn = warns.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref)));
+      const semantic = warningSemantics.partition(warn, { ROOT });
+      return {
+        error: errors.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
+        warn, // flux brut conservé pour compatibilité : tous les signaux non-error
+        debt: semantic.debt,
+        expectedTopology: semantic.expectedTopology,
+        generatorLimitations: semantic.generatorLimitations,
+        summary: semantic.summary,
+      };
+    })(),
   };
 
   return { model, sourceErrors };
@@ -1368,21 +1377,25 @@ function renderMd(model) {
   if (!model.drifts.error.length) L.push('- none');
   for (const d of model.drifts.error) L.push(`- **[${d.type}]** ${d.ref} — ${d.msg}`);
   L.push('');
-  L.push(`### WARN / DEBT (${model.drifts.warn.length})`);
+  L.push(`### DETTE / DRIFT ACTIONNABLE (${model.drifts.debt.length})`);
   L.push('');
-  L.push('Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d\'extraction).');
+  L.push('Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.');
   L.push('');
-  if (!model.drifts.warn.length) L.push('- none');
-  let warningSemantics = null;
-  try { warningSemantics = require('../governance/business-graph-warning-semantics.js'); } catch { /* module optionnel */ }
-  for (const d of model.drifts.warn) {
-    let tag = '';
-    if (warningSemantics) {
-      const { category } = warningSemantics.classify(d, { ROOT });
-      tag = ` _[${category}]_`;
-    }
-    L.push(`- **[${d.type}]**${tag} ${d.ref} — ${d.msg}`);
+  if (!model.drifts.debt.length) L.push('- none');
+  for (const d of model.drifts.debt) {
+    const { category } = warningSemantics.classify(d, { ROOT });
+    L.push(`- **[${d.type}]** _[${category}]_ ${d.ref} — ${d.msg}`);
   }
+  L.push('');
+  L.push(`### TOPOLOGIE ATTENDUE — hors dette (${model.drifts.expectedTopology.length})`);
+  L.push('');
+  if (!model.drifts.expectedTopology.length) L.push('- none');
+  for (const d of model.drifts.expectedTopology) L.push(`- **[${d.type}]** ${d.ref} — ${d.msg}`);
+  L.push('');
+  L.push(`### LIMITES DU GÉNÉRATEUR — hors dette (${model.drifts.generatorLimitations.length})`);
+  L.push('');
+  if (!model.drifts.generatorLimitations.length) L.push('- none');
+  for (const d of model.drifts.generatorLimitations) L.push(`- **[${d.type}]** ${d.ref} — ${d.msg}`);
   L.push('');
 
   L.push('## Orphan technical nodes');
@@ -1637,8 +1650,10 @@ if (CHECK) {
   else if (fs.readFileSync(OUT_O6_INVENTORY, 'utf8') !== o6InventoryOut) { stale = true; reasons.push('docs/O6_INVENTORY.md ne correspond plus au générateur'); }
 
   const nErr = model.drifts.error.length;
-  const nWarn = model.drifts.warn.length;
-  console.log(`${C.bld}Business Feature Graph check${C.r} — ${model.nodes.features.length} feature(s), ${nErr} error(s), ${nWarn} warn(s)`);
+  const nDebt = model.drifts.debt.length;
+  const nExpected = model.drifts.expectedTopology.length;
+  const nLimitations = model.drifts.generatorLimitations.length;
+  console.log(`${C.bld}Business Feature Graph check${C.r} — ${model.nodes.features.length} feature(s), ${nErr} error(s), ${nDebt} debt/drift, ${nExpected} expected, ${nLimitations} tool-limit`);
   if (stale) {
     console.log(`${C.red}${C.bld}✖ Artefact stale :${C.r}`);
     reasons.forEach(r => console.log(`${C.red}   ↳ ${r}${C.r}`));
@@ -1647,10 +1662,12 @@ if (CHECK) {
     console.log(`${C.red}${C.bld}✖ ${nErr} référence(s) métier non résolue(s) / contradiction(s) :${C.r}`);
     model.drifts.error.forEach(d => console.log(`${C.red}   [${d.type}] ${d.ref} — ${d.msg}${C.r}`));
   }
-  if (nWarn) {
-    console.log(`${C.ylw}▲ ${nWarn} avertissement(s) / dette visible (non bloquant) :${C.r}`);
-    model.drifts.warn.forEach(d => console.log(`${C.ylw}   [${d.type}] ${d.ref} — ${d.msg}${C.r}`));
+  if (nDebt) {
+    console.log(`${C.ylw}▲ ${nDebt} dette(s) / drift(s) réel(s) visible(s) (non bloquant) :${C.r}`);
+    model.drifts.debt.forEach(d => console.log(`${C.ylw}   [${d.type}] ${d.ref} — ${d.msg}${C.r}`));
   }
+  if (nExpected) console.log(`${C.dim}ℹ ${nExpected} topologie(s) attendue(s), hors dette.${C.r}`);
+  if (nLimitations) console.log(`${C.dim}ℹ ${nLimitations} limite(s) du générateur, hors dette.${C.r}`);
   if (stale || nErr) process.exit(1);
   console.log(`${C.grn}${C.bld}✔ Business Feature Graph reconstructible et à jour.${C.r}`);
   process.exit(0);
@@ -1660,5 +1677,5 @@ fs.mkdirSync(DOCS, { recursive: true });
 fs.writeFileSync(OUT_JSON, jsonOut);
 fs.writeFileSync(OUT_MD, mdOut);
 fs.writeFileSync(OUT_O6_INVENTORY, o6InventoryOut);
-console.log(`${C.grn}${C.bld}✔ Business Feature Graph généré${C.r} — ${model.nodes.features.length} feature(s), ${model.drifts.error.length} error(s), ${model.drifts.warn.length} warn(s)`);
+console.log(`${C.grn}${C.bld}✔ Business Feature Graph généré${C.r} — ${model.nodes.features.length} feature(s), ${model.drifts.error.length} error(s), ${model.drifts.debt.length} debt/drift, ${model.drifts.expectedTopology.length} expected, ${model.drifts.generatorLimitations.length} tool-limit`);
 console.log(`  docs/BUSINESS_FEATURE_GRAPH.json + docs/BUSINESS_FEATURE_GRAPH.md + docs/O6_INVENTORY.md`);

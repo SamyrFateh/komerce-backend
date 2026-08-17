@@ -8,12 +8,12 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **7**
 - Attention : **23**
 - Blocked : **0**
-- Business dependencies : **116**
+- Business dependencies : **119**
 - Direct cross-feature imports : **4**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **63**
 - Ontology gaps : **0**
-- Debt items (total) : **121**
+- Debt items (total) : **119**
 - Gate health — healthy : **14** · blocked : **0**
 
 ## Gate findings — intégrité de projection
@@ -29,8 +29,8 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | Feature | Kind | Boundary | Governance | Owns | Consumes | Consumed by | Debt |
 |---|---|---|---|---|---|---|---|
 | admin-dashboard | projection | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | sourcing | _aucune_ | 0 |
-| auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, shared-cart, sourcing, unsold-resolution, wallet | 5 |
-| auth-identity | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | otp_codes, user_pickup_authorizations | auth, auth-passkey, documents, notifications, wallet | auth-passkey, catalog, logistics, orders, platform-ops, shared-cart, wallet | 1 |
+| auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | auth-identity, infrastructure, notifications | auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, shared-cart, sourcing, unsold-resolution, wallet | 3 |
+| auth-identity | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | otp_codes, user_pickup_authorizations | auth, auth-passkey, documents, notifications, wallet | auth, auth-passkey, catalog, logistics, orders, platform-ops, shared-cart, wallet | 1 |
 | auth-passkey | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | webauthn_challenges, webauthn_credentials | auth, auth-identity, infrastructure, platform-ops | auth-identity | 0 |
 | business-rules | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | business_rules, business_rules_history | auth, infrastructure | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops | 0 |
 | catalog | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, product_attributes, product_content_profile, product_content_sections, supplier_catalog_imports | auth, auth-identity, business-rules, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, platform-ops, recommendations, sourcing | 10 |
@@ -40,12 +40,12 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | documents | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | invoices, transaction_documents | _aucune_ | auth-identity, customs, dashboard, orders, payments, refunds, wallet | 5 |
 | economic-engine | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_components, economic_variables, exchange_rates, finance_config, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_matrices_audit, pricing_strategies, pricing_strategy_history, risk_provisions | auth, catalog, dashboard, logistics, loyalty, orders | catalog, customs, dashboard, infrastructure, orders, platform-ops, sourcing | 6 |
 | incident-management | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | _aucune_ | 6 |
-| infrastructure | technical-foundation | 🟢 HEALTHY | 🟡 ATTENTION | schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, orders, recommendations, shared-cart, wallet | auth-passkey, business-rules | 18 |
+| infrastructure | technical-foundation | 🟢 HEALTHY | 🟡 ATTENTION | schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, orders, recommendations, shared-cart, wallet | auth, auth-passkey, business-rules | 18 |
 | inventory | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | inventory_items | auth | infrastructure | 2 |
 | legacy-control-tower | deprecated | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | logistics | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | carriers, parcel_events, pickup_verify_attempts, shipments | auth, auth-identity, business-rules, catalog, loyalty, notifications, orders, payments, purchasing, refunds | catalog, dashboard, decision-signals, economic-engine, infrastructure, orders, payments, platform-ops, purchasing | 11 |
 | loyalty | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers, users | auth, notifications | economic-engine, logistics, orders, payments | 2 |
-| notifications | business-transversal | 🟢 HEALTHY | 🟡 ATTENTION | client_notifications | auth | auth-identity, logistics, loyalty, orders, payments, purchasing, shared-cart | 4 |
+| notifications | business-transversal | 🟢 HEALTHY | 🟡 ATTENTION | client_notifications | auth | auth, auth-identity, logistics, loyalty, orders, payments, purchasing, shared-cart | 4 |
 | orders | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | customs_history, disputes, order_comments, order_item_cost_imputations, order_items, order_status_history, recipients, sms_log | auth, auth-identity, business-rules, catalog, customs, documents, economic-engine, logistics, loyalty, notifications, payments, refunds, wallet | dashboard, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, refunds, shared-cart | 10 |
 | payments | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | cash_collections, cash_deposits, paypal_events_processed, stripe_events_processed | auth, business-rules, documents, logistics, loyalty, notifications, orders, platform-ops, purchasing, refunds | logistics, orders, wallet | 3 |
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
@@ -126,20 +126,18 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `requireAuth / requireVerifiedIdentity / softAuth` (middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js) — undeclared-in-graph
   - `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` (utils/auth-session.js, utils/auth-session-policy.js, utils/auth-token-policy.js) — undeclared-in-graph
 
-**Consumes** : _aucune_
+**Consumes** : auth-identity (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED)
 **Consumed by** : auth-identity (DECLARED_AND_OBSERVED), auth-passkey (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
-**Technical context** : 1 primitive dependencies, 2 test-only, 0 composition-root
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 2, declared-only deps: 2, ambiguous ownership: 0, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 2, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
 **Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
-**Architectural debt** (5) :
-- `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "notification" — ne correspond à aucun nom de feature connu
-- `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "operations" — ne correspond à aucun nom de feature connu
+**Architectural debt** (3) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "orders" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `UNRESOLVED_INTERNAL_API` (medium) — requireAuth / requireVerifiedIdentity / softAuth (middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict (utils/auth-session.js, utils/auth-session-policy.js, utils/auth-token-policy.js) — statut: undeclared-in-graph
@@ -182,7 +180,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `makeIntlPhoneInput` (public/boutique/js/b-phone.js) — resolved
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-passkey (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
-**Consumed by** : auth-passkey (DECLARED_AND_OBSERVED), catalog (BUSINESS_FEATURE_INTERFACE), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (BUSINESS_FEATURE_INTERFACE), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumed by** : auth (DECLARED_AND_OBSERVED), auth-passkey (DECLARED_AND_OBSERVED), catalog (BUSINESS_FEATURE_INTERFACE), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (BUSINESS_FEATURE_INTERFACE), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -792,7 +790,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - _...1 de plus, voir FEATURE_360.json_
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
-**Consumed by** : auth-passkey (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED)
+**Consumed by** : auth (DECLARED_AND_OBSERVED), auth-passkey (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1093,7 +1091,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `setNotificationOutcomeListener` (services/notifications/internals.js) — resolved
 
 **Consumes** : auth (DECLARED_AND_OBSERVED)
-**Consumed by** : auth-identity (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (BUSINESS_TRANSVERSAL_SERVICE), shared-cart (BUSINESS_TRANSVERSAL_SERVICE)
+**Consumed by** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (BUSINESS_TRANSVERSAL_SERVICE), shared-cart (BUSINESS_TRANSVERSAL_SERVICE)
 
 **Projections** : _aucune_
 

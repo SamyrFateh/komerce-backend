@@ -104,8 +104,9 @@ module.exports = {
       { fn: 'signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict', file: 'utils/auth-session.js, utils/auth-session-policy.js, utils/auth-token-policy.js' },
     ],
     consumes: [
-      'notification',
-      'operations',
+      'auth-identity',
+      'infrastructure',
+      'notifications',
       'orders',
     ],
   },

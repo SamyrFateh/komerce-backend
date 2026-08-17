@@ -118,7 +118,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 1
 - interfaces exposed: 0
 - internal APIs: 6
-- dependencies (consumes): 3 — notification, operations, orders
+- dependencies (consumes): 4 — auth-identity, infrastructure, notifications, orders
 - consumers: 22 — auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, recommendations, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
 
 ### auth-identity _(business-feature)_
@@ -136,7 +136,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 22
 - internal APIs: 3
 - dependencies (consumes): 5 — auth, auth-passkey, notifications, wallet, documents
-- consumers: 7 — auth-passkey, documents, logistics, loyalty, orders, shared-cart, wallet
+- consumers: 8 — auth, auth-passkey, documents, logistics, loyalty, orders, shared-cart, wallet
 
 ### auth-passkey _(business-feature)_
 
@@ -303,7 +303,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 4
 - internal APIs: 11
 - dependencies (consumes): 14 — auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notification, operations, orders, payment, recommendations, shared-cart, wallet
-- consumers: 2 — auth-passkey, business-rules
+- consumers: 3 — auth, auth-passkey, business-rules
 
 ### inventory _(business-feature)_
 
@@ -380,7 +380,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 6
 - internal APIs: 7
 - dependencies (consumes): 2 — auth, toutes les features emettrices
-- consumers: 6 — auth-identity, incident-management, logistics, loyalty, orders, payments
+- consumers: 7 — auth, auth-identity, incident-management, logistics, loyalty, orders, payments
 
 ### orders _(business-feature)_
 
@@ -1191,8 +1191,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 | Feature | consumes | Résolu ? |
 |---|---|---|
-| auth | notification (`notification`) | ✖ |
-| auth | operations (`operations`) | ✖ |
+| auth | auth-identity (`auth-identity`) | ✔ |
+| auth | infrastructure (`infrastructure`) | ✔ |
+| auth | notifications (`notifications`) | ✔ |
 | auth | orders (`orders`) | ✔ |
 | auth-identity | auth (`auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)`) | ✔ |
 | auth-identity | auth-passkey (`auth-passkey (middleware/require-recent-auth.js — preuve récente exigée par les mutations de sécurité du profil)`) | ✔ |
@@ -1348,30 +1349,18 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### WARN / DEBT (132)
+### DETTE / DRIFT ACTIONNABLE (107)
 
-Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
+Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ auth -> "notification" (entrée: "notification") — contract.consumes de auth référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ auth -> "operations" (entrée: "operations") — contract.consumes de auth référence "operations", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ incident-management -> "ops-api legacy" (entrée: "dashboard / ops-api legacy (écrit incidents — SQL inline)") — contract.consumes de incident-management référence "ops-api legacy", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ infrastructure -> "notification" (entrée: "notification — bootstrap/api-routes.js monte les routes notification") — contract.consumes de infrastructure référence "notification", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ infrastructure -> "operations" (entrée: "operations — bootstrap/api-routes.js monte les routes operations") — contract.consumes de infrastructure référence "operations", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ infrastructure -> "payment" (entrée: "payment — bootstrap/api-routes.js monte les routes payment") — contract.consumes de infrastructure référence "payment", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ notifications -> "toutes les features emettrices" (entrée: "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement") — contract.consumes de notifications référence "toutes les features emettrices", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ orders -> "notification" (entrée: "notification") — contract.consumes de orders référence "notification", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ orders -> "payment" (entrée: "payment") — contract.consumes de orders référence "payment", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ purchasing -> "notification" (entrée: "notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)") — contract.consumes de purchasing référence "notification", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "notification" (entrée: "notification (émission uniquement — WhatsApp création de liste)") — contract.consumes de shared-cart référence "notification", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "products" (entrée: "products (lecture seule)") — contract.consumes de shared-cart référence "products", ne correspond à aucun nom de feature connu
-- **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
-- **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
-- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:backend — 16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé
-- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:boutique — 1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé
-- **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /webhook/authkey-whatsapp — "GET /webhook/authkey-whatsapp" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> catalog — dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "catalog"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> customs — dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "customs"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> dashboard — dépendance cross-feature observée (canal: interface, 14 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "dashboard"
@@ -1382,9 +1371,6 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> logistics — dépendance cross-feature observée (canal: interface, 7 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> orders — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "orders"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> payments — dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "payments"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "auth" vers "auth-identity"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 14 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth" vers "notifications"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> platform-ops — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "platform-ops"
@@ -1449,19 +1435,13 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ wallet -> infrastructure — dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez "wallet" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ wallet -> platform-ops — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "wallet" vers "platform-ops"
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ alerts — table "alerts" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ basket_items — table "basket_items" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ baskets — table "baskets" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ cart_shares — table "cart_shares" a 2 écrivain(s) déclaré(s) (orders, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ catalog_media — table "catalog_media" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ economic_snapshots — table "economic_snapshots" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ incidents — table "incidents" a 5 écrivain(s) déclaré(s) (dashboard, incident-management, logistics, notifications, payments) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ invoices — table "invoices" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ loyalty_rewards — table "loyalty_rewards" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ notification_log — table "notification_log" a 2 écrivain(s) déclaré(s) (notifications, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ order_comments — table "order_comments" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_item_real_cost_allocations — table "order_item_real_cost_allocations" a 2 écrivain(s) déclaré(s) (customs, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_items — table "order_items" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ order_status_history — table "order_status_history" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" a 9 écrivain(s) déclaré(s) (customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, wallet) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcel_items — table "parcel_items" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, inventory, logistics
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcels — table "parcels" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par customs, dashboard, logistics, payments
@@ -1473,17 +1453,39 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ product_variants — table "product_variants" a 3 écrivain(s) déclaré(s) (catalog, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ products — table "products" a 4 écrivain(s) déclaré(s) (catalog, dashboard, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ purchase_orders — table "purchase_orders" a 2 écrivain(s) déclaré(s) (orders, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ recipients — table "recipients" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ relais — table "relais" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ revoked_tokens — table "revoked_tokens" a 2 écrivain(s) déclaré(s) (auth-identity, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ scan_events — table "scan_events" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ scans — table "scans" a 4 écrivain(s) déclaré(s) (dashboard, logistics, orders, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ sms_log — table "sms_log" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidate_events — table "sourcing_candidate_events" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidates — table "sourcing_candidates" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[ACTIONABLE_DRIFT]_ users — table "users" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ wallet_transactions — table "wallet_transactions" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ wallets — table "wallets" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
+
+### TOPOLOGIE ATTENDUE — hors dette (12)
+
+- **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
+- **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
+- **[WRITER-NOT-OWNER]** basket_items — table "basket_items" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** baskets — table "baskets" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** invoices — table "invoices" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** loyalty_rewards — table "loyalty_rewards" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** order_comments — table "order_comments" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** order_status_history — table "order_status_history" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** recipients — table "recipients" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** sms_log — table "sms_log" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** wallet_transactions — table "wallet_transactions" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** wallets — table "wallets" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
+
+### LIMITES DU GÉNÉRATEUR — hors dette (8)
+
+- **[CONSUMES-REFERENCE-UNRESOLVED]** incident-management -> "ops-api legacy" (entrée: "dashboard / ops-api legacy (écrit incidents — SQL inline)") — contract.consumes de incident-management référence "ops-api legacy", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** notifications -> "toutes les features emettrices" (entrée: "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement") — contract.consumes de notifications référence "toutes les features emettrices", ne correspond à aucun nom de feature connu
+- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:backend — 16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé
+- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:boutique — 1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé
+- **[EXPOSE-ENTRY-UNPARSED]** logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /webhook/authkey-whatsapp — "GET /webhook/authkey-whatsapp" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 
 ## Orphan technical nodes
 
@@ -1519,9 +1521,9 @@ Meta Graph monté : oui.
 | admin-dashboard | orders | interface | 3 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | payments | interface | 6 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | sourcing | interface | 3 | **DECLARED_AND_OBSERVED** |
-| auth | auth-identity | static-code | 3 | **OBSERVED_UNDECLARED** |
-| auth | infrastructure | static-code | 14 | **OBSERVED_UNDECLARED** |
-| auth | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
+| auth | auth-identity | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| auth | infrastructure | static-code | 14 | **DECLARED_AND_OBSERVED** |
+| auth | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | auth-identity | auth | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | auth-identity | auth-passkey | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | auth-identity | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
@@ -1706,9 +1708,6 @@ Meta Graph monté : oui.
 - `admin-dashboard` → `logistics` (canaux: interface)
 - `admin-dashboard` → `orders` (canaux: interface)
 - `admin-dashboard` → `payments` (canaux: interface)
-- `auth` → `auth-identity` (canaux: static-code)
-- `auth` → `infrastructure` (canaux: static-code)
-- `auth` → `notifications` (canaux: static-code)
 - `auth-identity` → `infrastructure` (canaux: static-code)
 - `auth-identity` → `logistics` (canaux: static-code)
 - `auth-identity` → `platform-ops` (canaux: static-code)
@@ -1838,14 +1837,14 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 |---|---|---|
 | PROJECTION | 10 | projection-dependency-policy |
 | COMPOSITION_ROOT_WIRING | 16 | application-wiring-not-consumption |
-| NON_RUNTIME_TEST | 8 | non-runtime-evidence |
-| TECHNICAL_PRIMITIVE | 31 | technical-dependency-policy |
+| NON_RUNTIME_TEST | 6 | non-runtime-evidence |
+| TECHNICAL_PRIMITIVE | 30 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 2 | business-dependency-declare-candidate |
 | CROSS_FEATURE_DIRECT_IMPORT | 4 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 5 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **76** | |
+| **TOTAL** | **73** | |
 
 ### Projection dependencies
 
@@ -1888,8 +1887,6 @@ Bootstrap/cron/error-handler qui montent ou déclenchent une feature. Pas une co
 Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
 
 - `auth-identity` → `logistics` — business-file-import, TEST_ONLY
-- `auth` → `auth-identity` — business-file-import, TEST_ONLY
-- `auth` → `notifications` — business-file-import, TEST_ONLY
 - `inventory` → `logistics` — business-file-import, TEST_ONLY
 - `inventory` → `orders` — business-file-import, TEST_ONLY
 - `inventory` → `payments` — business-file-import, TEST_ONLY
@@ -1902,7 +1899,6 @@ Usage de db.js / middleware / logger / utils / validators d'un transversal techn
 
 - `auth-identity` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `auth-identity` → `platform-ops` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
-- `auth` → `infrastructure` — import-mixed, RUNTIME_AND_TEST
 - `catalog` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `catalog` → `platform-ops` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
 - `customs` → `infrastructure` — technical-primitive, RUNTIME_ONLY

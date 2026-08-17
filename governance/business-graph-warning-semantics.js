@@ -230,4 +230,44 @@ function classify(w, ctx) {
   return { category: fallback, reason: `aucune règle spécifique ne matche — classement par défaut de la famille "${w.type}"` };
 }
 
-module.exports = { classify, DEFAULT_BY_TYPE };
+const DEBT_CATEGORIES = Object.freeze([
+  'INVALID_DECLARATION',
+  'ACTIONABLE_DRIFT',
+  'KNOWN_DEBT',
+]);
+
+function isDebtCategory(category) {
+  return DEBT_CATEGORIES.includes(category);
+}
+
+function partition(warnings, ctx) {
+  const out = {
+    debt: [],
+    expectedTopology: [],
+    generatorLimitations: [],
+    classified: [],
+  };
+  for (const warning of warnings || []) {
+    const semantic = classify(warning, ctx);
+    out.classified.push({ warning, semantic });
+    if (isDebtCategory(semantic.category)) out.debt.push(warning);
+    else if (semantic.category === 'EXPECTED_TOPOLOGY') out.expectedTopology.push(warning);
+    else if (semantic.category === 'GENERATOR_LIMITATION') out.generatorLimitations.push(warning);
+    else throw new Error('Catégorie de warning Business Graph inconnue: ' + semantic.category);
+  }
+  out.summary = {
+    signals: (warnings || []).length,
+    debt: out.debt.length,
+    expectedTopology: out.expectedTopology.length,
+    generatorLimitations: out.generatorLimitations.length,
+  };
+  return out;
+}
+
+module.exports = {
+  classify,
+  partition,
+  isDebtCategory,
+  DEBT_CATEGORIES,
+  DEFAULT_BY_TYPE,
+};
