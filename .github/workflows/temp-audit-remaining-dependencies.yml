@@ -22,8 +22,27 @@ jobs:
           const graph = require('./docs/BUSINESS_FEATURE_GRAPH.json');
           const rows = (graph.drifts.debt || []).filter(x => x.type === 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY');
           console.log(`COUNT=${rows.length}`);
-          for (const row of rows) {
-            console.log('---');
-            console.log(JSON.stringify(row, null, 2));
+          console.log(rows.map(r => r.ref).join('\n'));
+
+          const wanted = new Set(rows.map(r => r.ref));
+          const found = [];
+          const seen = new Set();
+          function walk(value, path = '$') {
+            if (!value || typeof value !== 'object') return;
+            if (seen.has(value)) return;
+            seen.add(value);
+            if (!Array.isArray(value) && typeof value.from === 'string' && typeof value.to === 'string') {
+              const ref = `${value.from} -> ${value.to}`;
+              if (wanted.has(ref)) found.push({ path, value });
+            }
+            if (Array.isArray(value)) value.forEach((v, i) => walk(v, `${path}[${i}]`));
+            else for (const [k, v] of Object.entries(value)) walk(v, `${path}.${k}`);
+          }
+          walk(graph);
+          console.log(`MATCHING_OBJECTS=${found.length}`);
+          for (const hit of found.filter(h => h.value.from === 'infrastructure')) {
+            console.log('---INFRA-EVIDENCE---');
+            console.log(hit.path);
+            console.log(JSON.stringify(hit.value, null, 2));
           }
           NODE
