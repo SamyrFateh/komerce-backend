@@ -13,11 +13,31 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Audit favorites ownership and tests
+      - name: Verify manifest ownership of favorite consumers
         run: |
-          echo '=== runtime favorite symbol references ==='
-          git grep -nE '\b(isFav|saveFavs|toggleFav)\b' -- public/boutique/js || true
-          echo '=== test favorite symbol references ==='
-          git grep -nE '\b(isFav|saveFavs|toggleFav)\b' -- public/boutique/tests || true
-          echo '=== b-cart favorite test neighborhoods ==='
-          grep -n -B4 -A25 -E 'toggleFav|favori' public/boutique/tests/unit/b-cart.test.js || true
+          echo '=== manifest references ==='
+          git grep -nE "b-modal-core\.js|boutique\.js|b-catalog\.js|b-subcat\.js|render-product-card\.js|b-modal-buybox-shared\.js" -- public/boutique/features features capabilities || true
+          echo '=== graph file owner references ==='
+          node - <<'NODE'
+          const graph = require('./docs/BUSINESS_FEATURE_GRAPH.json');
+          const targets = new Set([
+            'public/boutique/js/b-modal-core.js',
+            'public/boutique/js/boutique.js',
+            'public/boutique/js/b-catalog.js',
+            'public/boutique/js/b-subcat.js',
+            'public/boutique/js/render/render-product-card.js',
+            'public/boutique/js/b-modal-buybox-shared.js',
+          ]);
+          const seen = new Set();
+          function walk(v, path='$') {
+            if (!v || typeof v !== 'object' || seen.has(v)) return;
+            seen.add(v);
+            const txt = JSON.stringify(v);
+            if ([...targets].some(t => txt.includes(t)) && txt.length < 5000) {
+              console.log('\n' + path + '\n' + JSON.stringify(v, null, 2));
+            }
+            if (Array.isArray(v)) v.forEach((x,i)=>walk(x,`${path}[${i}]`));
+            else Object.entries(v).forEach(([k,x])=>walk(x,`${path}.${k}`));
+          }
+          walk(graph);
+          NODE
