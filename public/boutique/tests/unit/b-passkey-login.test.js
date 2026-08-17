@@ -176,11 +176,12 @@ describe('AUTH-4 — login Passkey nominal', () => {
     await flush();
 
     expect(document.getElementById('k-passkey-login-error').textContent).toContain('récupérer votre compte');
+    expect(document.getElementById('k-passkey-login-whatsapp').textContent).toBe('Récupérer avec WhatsApp');
     expect(window.localStorage.length).toBe(0);
     expect(window.sessionStorage.length).toBe(0);
 
     document.getElementById('k-passkey-login-whatsapp').click();
     jest.advanceTimersByTime(160);
-    await expect(promise).resolves.toEqual({ outcome: 'fallback' });
+    await expect(promise).resolves.toEqual({ outcome: 'recovery', reason: 'passkey_unusable' });
   });
 });
