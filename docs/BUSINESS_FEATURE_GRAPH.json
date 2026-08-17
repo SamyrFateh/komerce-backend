@@ -13580,15 +13580,15 @@
       },
       {
         "from": "infrastructure",
-        "to": "notification",
-        "raw": "notification — bootstrap/api-routes.js monte les routes notification",
-        "resolved": false
+        "to": "notifications",
+        "raw": "notifications — bootstrap/api-routes.js monte les routes notification",
+        "resolved": true
       },
       {
         "from": "infrastructure",
-        "to": "operations",
-        "raw": "operations — bootstrap/api-routes.js monte les routes operations",
-        "resolved": false
+        "to": "platform-ops",
+        "raw": "platform-ops — bootstrap/api-routes.js monte les routes operations",
+        "resolved": true
       },
       {
         "from": "infrastructure",
@@ -13598,9 +13598,9 @@
       },
       {
         "from": "infrastructure",
-        "to": "payment",
-        "raw": "payment — bootstrap/api-routes.js monte les routes payment",
-        "resolved": false
+        "to": "payments",
+        "raw": "payments — bootstrap/api-routes.js monte les routes payment",
+        "resolved": true
       },
       {
         "from": "infrastructure",
@@ -13826,21 +13826,9 @@
       },
       {
         "from": "orders",
-        "to": "notification",
-        "raw": "notification",
-        "resolved": false
-      },
-      {
-        "from": "orders",
         "to": "notifications",
         "raw": "notifications (projection idempotente du retrait disponible)",
         "resolved": true
-      },
-      {
-        "from": "orders",
-        "to": "payment",
-        "raw": "payment",
-        "resolved": false
       },
       {
         "from": "orders",
@@ -13952,9 +13940,9 @@
       },
       {
         "from": "purchasing",
-        "to": "notification",
-        "raw": "notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)",
-        "resolved": false
+        "to": "notifications",
+        "raw": "notifications (notification fournisseur WhatsApp, via services/notification-service.js)",
+        "resolved": true
       },
       {
         "from": "purchasing",
@@ -14012,15 +14000,15 @@
       },
       {
         "from": "shared-cart",
-        "to": "products",
-        "raw": "products (lecture seule)",
-        "resolved": false
+        "to": "catalog",
+        "raw": "catalog (lecture seule des produits)",
+        "resolved": true
       },
       {
         "from": "shared-cart",
-        "to": "notification",
-        "raw": "notification (émission uniquement — WhatsApp création de liste)",
-        "resolved": false
+        "to": "notifications",
+        "raw": "notifications (émission uniquement — WhatsApp création de liste)",
+        "resolved": true
       },
       {
         "from": "shared-cart",
@@ -19098,7 +19086,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "infrastructure",
@@ -19158,7 +19146,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "infrastructure",
@@ -19190,7 +19178,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "infrastructure",
@@ -22573,7 +22561,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "purchasing",
@@ -22873,7 +22861,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "shared-cart",
@@ -22965,7 +22953,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "shared-cart",
@@ -23708,11 +23696,11 @@
     ],
     "familySummary": {
       "PROJECTION": 10,
-      "COMPOSITION_ROOT_WIRING": 16,
+      "COMPOSITION_ROOT_WIRING": 13,
       "NON_RUNTIME_TEST": 6,
       "TECHNICAL_PRIMITIVE": 30,
-      "BUSINESS_TRANSVERSAL_SERVICE": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT": 4,
+      "BUSINESS_TRANSVERSAL_SERVICE": 0,
+      "CROSS_FEATURE_DIRECT_IMPORT": 3,
       "BUSINESS_FEATURE_INTERFACE": 5,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -24176,51 +24164,6 @@
       },
       {
         "from": "infrastructure",
-        "to": "notifications",
-        "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-foundation",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "application-wiring-not-consumption",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "infrastructure",
-        "to": "payments",
-        "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-foundation",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "application-wiring-not-consumption",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "infrastructure",
-        "to": "platform-ops",
-        "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-foundation",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "application-wiring-not-consumption",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "infrastructure",
         "to": "purchasing",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
@@ -24607,21 +24550,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "purchasing",
-        "to": "notifications",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "recommendations",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
@@ -24700,23 +24628,6 @@
       },
       {
         "from": "shared-cart",
-        "to": "catalog",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
-      },
-      {
-        "from": "shared-cart",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
@@ -24727,21 +24638,6 @@
         ],
         "couplingObserved": "technical-primitive",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "shared-cart",
-        "to": "notifications",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -24851,11 +24747,10 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-foundation|technical-primitive": 5,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-foundation|technical-primitive": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 7,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|technical-transversal|business-file-import": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|mixed": 2,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 3,
@@ -24864,8 +24759,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
-      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1
@@ -24960,7 +24854,9 @@
         "rationale": "Dépendance frontend résiduelle hors checkout : le slice orders-client possède le renderer canonique du panier (b-cart.js) et le shell de suivi / Mon Komerce (b-tracking.js). b-cart compose encore la surface de liste active via group-side-cart ; b-tracking compose encore l'onglet Mes listes via group-api, group-list-labels et l'activation de group-side-cart. Le checkout canonique est désormais découplé de shared-cart et n'est explicitement pas couvert par cette exception. La couture UI restante sera inversée ou extraite dans le lot de dette frontend dédié."
       }
     ],
-    "staleExceptions": [],
+    "staleExceptions": [
+      "shared-cart->catalog"
+    ],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
     "missingExceptions": [],
@@ -26629,48 +26525,8 @@
       },
       {
         "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "infrastructure -> \"notification\" (entrée: \"notification — bootstrap/api-routes.js monte les routes notification\")",
-        "msg": "contract.consumes de infrastructure référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "infrastructure -> \"operations\" (entrée: \"operations — bootstrap/api-routes.js monte les routes operations\")",
-        "msg": "contract.consumes de infrastructure référence \"operations\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "infrastructure -> \"payment\" (entrée: \"payment — bootstrap/api-routes.js monte les routes payment\")",
-        "msg": "contract.consumes de infrastructure référence \"payment\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
         "ref": "notifications -> \"toutes les features emettrices\" (entrée: \"toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement\")",
         "msg": "contract.consumes de notifications référence \"toutes les features emettrices\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "orders -> \"notification\" (entrée: \"notification\")",
-        "msg": "contract.consumes de orders référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "orders -> \"payment\" (entrée: \"payment\")",
-        "msg": "contract.consumes de orders référence \"payment\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "purchasing -> \"notification\" (entrée: \"notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)\")",
-        "msg": "contract.consumes de purchasing référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "shared-cart -> \"notification\" (entrée: \"notification (émission uniquement — WhatsApp création de liste)\")",
-        "msg": "contract.consumes de shared-cart référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "shared-cart -> \"products\" (entrée: \"products (lecture seule)\")",
-        "msg": "contract.consumes de shared-cart référence \"products\", ne correspond à aucun nom de feature connu"
       },
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -26864,21 +26720,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"payments\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> purchasing",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
       },
@@ -27004,11 +26845,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "purchasing -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "recommendations -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"infrastructure\""
       },
@@ -27034,18 +26870,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> catalog",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"catalog\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27260,46 +27086,6 @@
     ],
     "debt": [
       {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "infrastructure -> \"notification\" (entrée: \"notification — bootstrap/api-routes.js monte les routes notification\")",
-        "msg": "contract.consumes de infrastructure référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "infrastructure -> \"operations\" (entrée: \"operations — bootstrap/api-routes.js monte les routes operations\")",
-        "msg": "contract.consumes de infrastructure référence \"operations\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "infrastructure -> \"payment\" (entrée: \"payment — bootstrap/api-routes.js monte les routes payment\")",
-        "msg": "contract.consumes de infrastructure référence \"payment\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "orders -> \"notification\" (entrée: \"notification\")",
-        "msg": "contract.consumes de orders référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "orders -> \"payment\" (entrée: \"payment\")",
-        "msg": "contract.consumes de orders référence \"payment\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "purchasing -> \"notification\" (entrée: \"notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)\")",
-        "msg": "contract.consumes de purchasing référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "shared-cart -> \"notification\" (entrée: \"notification (émission uniquement — WhatsApp création de liste)\")",
-        "msg": "contract.consumes de shared-cart référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "shared-cart -> \"products\" (entrée: \"products (lecture seule)\")",
-        "msg": "contract.consumes de shared-cart référence \"products\", ne correspond à aucun nom de feature connu"
-      },
-      {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> catalog",
         "msg": "dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"catalog\""
@@ -27451,21 +27237,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"payments\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> purchasing",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
       },
@@ -27591,11 +27362,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "purchasing -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "recommendations -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"infrastructure\""
       },
@@ -27621,18 +27387,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> catalog",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"catalog\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27900,8 +27656,8 @@
       }
     ],
     "summary": {
-      "signals": 127,
-      "debt": 107,
+      "signals": 113,
+      "debt": 93,
       "expectedTopology": 12,
       "generatorLimitations": 8
     }

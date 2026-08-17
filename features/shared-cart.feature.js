@@ -191,8 +191,8 @@ module.exports = {
     ],
     consumes: [
       'orders (arbitrage de la réclamation via order_items.shared_cart_item_id — feature orders, migration 123)',
-      'products (lecture seule)',
-      'notification (émission uniquement — WhatsApp création de liste)',
+      'catalog (lecture seule des produits)',
+      'notifications (émission uniquement — WhatsApp création de liste)',
       'auth',
       'auth-identity (projection boutique : b-share-cart.js consomme identité et téléphone)',
     ],
