@@ -106,10 +106,10 @@
         "name": "auth-passkey",
         "file": "features/auth-passkey.feature.js",
         "legacyType": "transversal",
-        "status": "staging",
+        "status": "production",
         "owner": "backend-core",
         "since": "2026-08",
-        "service": "Enregistrer et vérifier des passkeys WebAuthn L3 (authentificateur cryptographique, K2 de la doctrine auth) pour un utilisateur déjà identifié — capacité serveur uniquement à ce stade (AUTH-2). L'UI et le login-passkey nominal viennent en AUTH-3/4.",
+        "service": "Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→6).",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -930,6 +930,13 @@
       },
       {
         "feature": "auth-passkey",
+        "category": "services",
+        "declared": "services/webauthn-management-service.js",
+        "resolvedPath": "services/webauthn-management-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth-passkey",
         "category": "routes",
         "declared": "routes/auth-passkey.js",
         "resolvedPath": "routes/auth-passkey.js",
@@ -947,6 +954,13 @@
         "category": "tests",
         "declared": "tests/unit/auth-passkey.test.js",
         "resolvedPath": "tests/unit/auth-passkey.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
+        "declared": "tests/unit/auth-passkey-management.test.js",
+        "resolvedPath": "tests/unit/auth-passkey-management.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9344,6 +9358,22 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "auth-passkey",
+        "entry": "GET /api/auth/passkey/credentials",
+        "method": "GET",
+        "path": "/api/auth/passkey/credentials",
+        "routeFile": "routes/auth-passkey.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "auth-passkey",
+        "entry": "DELETE /api/auth/passkey/credentials/{id}",
+        "method": "DELETE",
+        "path": "/api/auth/passkey/credentials/{id}",
+        "routeFile": "routes/auth-passkey.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "business-rules",
         "entry": "GET /api/admin/rules",
         "method": "GET",
@@ -14111,6 +14141,14 @@
       },
       {
         "boutiqueManifest": "auth-passkey",
+        "category": "js",
+        "declared": "../js/b-passkey-security.js",
+        "resolvedPath": "public/boutique/js/b-passkey-security.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth-passkey",
         "category": "tests",
         "declared": "../tests/unit/b-passkey-enrollment.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-passkey-enrollment.test.js",
@@ -14138,6 +14176,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-identity-recovery.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-identity-recovery.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth-passkey",
+        "category": "tests",
+        "declared": "../tests/unit/b-passkey-security.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-passkey-security.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16166,6 +16212,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-identity.js",
                 "targetFile": "public/boutique/js/b-passkey-login.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-komerce.js",
+                "targetFile": "public/boutique/js/b-passkey-security.js"
               }
             ]
           }
@@ -16414,6 +16464,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/webauthn-management-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/auth-passkey.js",
                 "targetFile": "db.js"
               },
@@ -16433,6 +16487,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/b-passkey-security.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-identity-recovery.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
@@ -23418,10 +23476,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 777
+        "filesObserved": 779
       },
       "boutique": {
-        "filesObserved": 148,
+        "filesObserved": 150,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -23454,8 +23512,8 @@
     "familySummary": {
       "PROJECTION": 10,
       "COMPOSITION_ROOT_WIRING": 16,
-      "NON_RUNTIME_TEST": 9,
-      "TECHNICAL_PRIMITIVE": 31,
+      "NON_RUNTIME_TEST": 8,
+      "TECHNICAL_PRIMITIVE": 32,
       "BUSINESS_TRANSVERSAL_SERVICE": 2,
       "CROSS_FEATURE_DIRECT_IMPORT": 5,
       "BUSINESS_FEATURE_INTERFACE": 5,
@@ -23725,15 +23783,15 @@
       {
         "from": "auth-passkey",
         "to": "platform-ops",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
         "providerKind": "technical-transversal",
         "channels": [
           "static-code"
         ],
         "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
+        "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -24670,8 +24728,7 @@
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|technical-transversal|business-file-import": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 6,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
@@ -26617,7 +26674,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> auth-passkey",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"auth-passkey\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"auth-passkey\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26637,7 +26694,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-passkey -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth-passkey\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-passkey\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

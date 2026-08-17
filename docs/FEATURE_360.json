@@ -1336,23 +1336,22 @@
     {
       "id": "auth-passkey",
       "kind": "business-feature",
-      "status": "staging",
+      "status": "production",
       "manifestFile": "features/auth-passkey.feature.js",
       "repo": "backend",
       "identity": {
         "id": "auth-passkey",
         "kind": "business-feature",
-        "status": "staging"
+        "status": "production"
       },
-      "service": "Enregistrer et vérifier des passkeys WebAuthn L3 (authentificateur cryptographique, K2 de la doctrine auth) pour un utilisateur déjà identifié — capacité serveur uniquement à ce stade (AUTH-2). L'UI et le login-passkey nominal viennent en AUTH-3/4.",
+      "service": "Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→6).",
       "perimeter": {
         "in": [
           "génération des options WebAuthn (register/login), vérification cryptographique via @simplewebauthn/server, stockage/rotation des credentials et des challenges éphémères"
         ],
         "out": [
-          "UI/bouton \"Sécuriser Komerce\" (AUTH-3)",
-          "login-passkey comme parcours nominal / step-up (AUTH-4/5)",
-          "recovery et gestion multi-appareils (AUTH-6/7)",
+          "step-up des opérations sensibles (AUTH-7)",
+          "durcissement final de session/cookie/CSRF (AUTH-8b→e)",
           "toute logique OTP/magic-link/guest-checkout — reste dans auth-identity"
         ]
       },
@@ -1365,6 +1364,8 @@
         "requireUserVerification est vérifié par la lib, pas seulement demandé à l'authenticator",
         "credential_id est unique (contrainte DB + vérification applicative avant insert)",
         "une credential revoked_at non nul est inutilisable au login, sans exception",
+        "la gestion AUTH-6 ne retourne jamais credential_id, public_key ni sign_count au navigateur",
+        "une révocation est toujours scellée par id de gestion ET user_id authentifié",
         "sign_count : régression rejetée pour les credentials non sauvegardées (backup_state=false) ; tolérée et tracée pour les passkeys synchronisées (backup_state=true)"
       ],
       "implementation": {
@@ -1390,8 +1391,13 @@
             ]
           },
           "services": {
-            "count": 1,
+            "count": 2,
             "files": [
+              {
+                "declared": "services/webauthn-management-service.js",
+                "resolvedPath": "services/webauthn-management-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
               {
                 "declared": "services/webauthn-service.js",
                 "resolvedPath": "services/webauthn-service.js",
@@ -1400,8 +1406,13 @@
             ]
           },
           "tests": {
-            "count": 1,
+            "count": 2,
             "files": [
+              {
+                "declared": "tests/unit/auth-passkey-management.test.js",
+                "resolvedPath": "tests/unit/auth-passkey-management.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/auth-passkey.test.js",
                 "resolvedPath": "tests/unit/auth-passkey.test.js",
@@ -1410,10 +1421,10 @@
             ]
           }
         },
-        "totalFiles": 4,
+        "totalFiles": 6,
         "boutiqueManifest": "auth-passkey",
         "boutiqueFiles": {
-          "count": 6,
+          "count": 8,
           "files": [
             {
               "declared": "../js/b-passkey-enrollment.js",
@@ -1425,6 +1436,13 @@
             {
               "declared": "../js/b-passkey-login.js",
               "resolvedPath": "public/boutique/js/b-passkey-login.js",
+              "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../js/b-passkey-security.js",
+              "resolvedPath": "public/boutique/js/b-passkey-security.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
@@ -1453,6 +1471,13 @@
             {
               "declared": "../tests/unit/b-passkey-recovery.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-passkey-recovery.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-passkey-security.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-passkey-security.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -1527,7 +1552,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 4
+          "count": 6
         }
       },
       "businessDependencies": [
@@ -1558,13 +1583,13 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 1,
+        "technicalPrimitiveDependencies": 1,
+        "testOnlyRelations": 0,
         "compositionRootRelations": 0,
         "details": [
           {
             "to": "platform-ops",
-            "family": "NON_RUNTIME_TEST"
+            "family": "TECHNICAL_PRIMITIVE"
           }
         ]
       },
