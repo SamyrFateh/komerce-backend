@@ -99,6 +99,7 @@ module.exports = {
       'GET /api/hub/inventory/stats',
     ],
     consumes: ['catalog (produit concerne)',
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'auth',
     ],
   },

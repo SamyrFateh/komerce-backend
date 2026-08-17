@@ -186,6 +186,7 @@ module.exports = {
       'POST /api/relay/orders/:id/incident',
     ],
     consumes: ['orders (lecture commandes)',
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'payments (lecture paiements)',
       'logistics (lecture colis)',
       'inventory (lecture stock)',

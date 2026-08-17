@@ -125,6 +125,7 @@ module.exports = {
       { fn: 'repairOrderedWithoutPurchaseOrders', file: 'services/repair-ordered-without-purchase-orders.js' },
     ],
     consumes: [
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (lecture : order_items, orders — le besoin d\'achat naît d\'une commande client)',
       'auth (garde admin)',
       'notifications (notification fournisseur WhatsApp, via services/notification-service.js)',

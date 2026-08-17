@@ -46,7 +46,7 @@
     "healthy": 7,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 123,
+    "businessDependencies": 151,
     "directCrossFeatureImports": 3,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
@@ -1220,7 +1220,21 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "platform-ops",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -1298,21 +1312,13 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 2,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 1,
         "compositionRootRelations": 0,
         "details": [
           {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
             "to": "logistics",
             "family": "NON_RUNTIME_TEST"
-          },
-          {
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
           }
         ]
       },
@@ -3439,7 +3445,21 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "platform-ops",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -3519,19 +3539,10 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 2,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -4027,6 +4038,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -4058,15 +4076,10 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -5323,6 +5336,13 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5366,15 +5386,10 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -6079,7 +6094,15 @@
           "count": 9
         }
       },
-      "businessDependencies": [],
+      "businessDependencies": [
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "consumedBy": [
         {
           "consumer": "auth-identity",
@@ -6138,16 +6161,12 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 2,
+        "technicalPrimitiveDependencies": 1,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
         "details": [
           {
             "to": "auth",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "to": "infrastructure",
             "family": "TECHNICAL_PRIMITIVE"
           }
         ]
@@ -7378,6 +7397,13 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -7456,15 +7482,10 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -7685,21 +7706,24 @@
           "count": 0
         }
       },
-      "businessDependencies": [],
+      "businessDependencies": [
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "consumedBy": [],
       "projections": {
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -9526,6 +9550,13 @@
           ]
         },
         {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "auth-passkey",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -9534,6 +9565,149 @@
         },
         {
           "consumer": "business-rules",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "incident-management",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "inventory",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "loyalty",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "interface"
+          ]
+        },
+        {
+          "consumer": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "interface"
+          ]
+        },
+        {
+          "consumer": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "interface"
+          ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "recommendations",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "shared-cart",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "sourcing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "unsold-resolution",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -9885,6 +10059,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -9902,14 +10083,10 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 3,
         "compositionRootRelations": 0,
         "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
           {
             "to": "logistics",
             "family": "NON_RUNTIME_TEST"
@@ -11080,6 +11257,13 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "loyalty",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -11195,15 +11379,10 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -11506,6 +11685,13 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -11547,15 +11733,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -12073,6 +12254,20 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -12144,19 +12339,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 2,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",
@@ -13019,6 +13205,14 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "interface"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13046,6 +13240,13 @@
           "channels": [
             "static-code",
             "interface"
+          ]
+        },
+        {
+          "provider": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -13136,19 +13337,10 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 2,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -13804,6 +13996,14 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "interface"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13890,15 +14090,10 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",
@@ -14743,6 +14938,14 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "interface"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -14769,7 +14972,21 @@
       ],
       "consumedBy": [
         {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "auth-passkey",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -14783,7 +15000,42 @@
           ]
         },
         {
+          "consumer": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "recommendations",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "shared-cart",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -14794,17 +15046,13 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 1,
         "compositionRootRelations": 4,
         "details": [
           {
             "to": "auth-passkey",
             "family": "COMPOSITION_ROOT_WIRING"
-          },
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
           },
           {
             "to": "notifications",
@@ -15258,6 +15506,13 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -15314,15 +15569,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",
@@ -15535,6 +15785,20 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -15558,19 +15822,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 2,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -15778,6 +16033,13 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -15819,14 +16081,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 1,
         "compositionRootRelations": 0,
         "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
           {
             "to": "payments",
             "family": "NON_RUNTIME_TEST"
@@ -16568,6 +16826,13 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16576,6 +16841,13 @@
         },
         {
           "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "platform-ops",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -16611,19 +16883,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 2,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",
@@ -16925,6 +17188,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -16940,15 +17210,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",
@@ -17172,6 +17437,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [],
@@ -17179,15 +17451,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -17521,7 +17788,21 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "platform-ops",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -17563,19 +17844,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 2,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",

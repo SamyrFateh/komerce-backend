@@ -89,6 +89,8 @@ module.exports = {
       'GET /api/boutique/suggestions',
     ],
     consumes: ['catalog (lecture produit)',
+      'platform-ops (monitoring/exploitation transverse observé dans le code)',
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'auth',
       'logistics',
     ],

@@ -171,6 +171,8 @@ module.exports = {
       { fn: 'hasActiveAuthorization', file: 'services/pickup-authorization-service.js' },
     ],
     consumes: [
+      'platform-ops (monitoring/exploitation transverse observé dans le code)',
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, non des inversions :
       // auth-identity est business (arbitrage A), ces dépendances sont donc
       // des consommations métier→support et métier→métier ordinaires.

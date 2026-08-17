@@ -191,6 +191,8 @@ module.exports = {
       'POST   /api/admin/shared-carts/:id/note',
     ],
     consumes: [
+      'platform-ops (monitoring/exploitation transverse observé dans le code)',
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (arbitrage de la réclamation via order_items.shared_cart_item_id — feature orders, migration 123)',
       'catalog (lecture seule des produits)',
       'notifications (émission uniquement — WhatsApp création de liste)',

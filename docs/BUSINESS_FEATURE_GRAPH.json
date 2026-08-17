@@ -13273,6 +13273,18 @@
       },
       {
         "from": "auth-identity",
+        "to": "platform-ops",
+        "raw": "platform-ops (monitoring/exploitation transverse observé dans le code)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
         "to": "auth",
         "raw": "auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)",
         "resolved": true
@@ -13339,6 +13351,18 @@
       },
       {
         "from": "catalog",
+        "to": "platform-ops",
+        "raw": "platform-ops (monitoring/exploitation transverse observé dans le code)",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
         "to": "business-rules",
         "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)",
         "resolved": true
@@ -13375,6 +13399,12 @@
       },
       {
         "from": "customs",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "customs",
         "to": "documents",
         "raw": "documents (facture douane generee)",
         "resolved": true
@@ -13395,6 +13425,12 @@
         "from": "dashboard",
         "to": "orders",
         "raw": "orders (lecture commandes)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
       },
       {
@@ -13471,6 +13507,12 @@
       },
       {
         "from": "documents",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "documents",
         "to": "orders",
         "raw": "orders",
         "resolved": true
@@ -13497,6 +13539,12 @@
         "from": "documents",
         "to": "auth-identity",
         "raw": "auth-identity",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
       },
       {
@@ -13539,6 +13587,12 @@
         "from": "economic-engine",
         "to": "loyalty",
         "raw": "loyalty (invalidation du cache de configuration finance apres modification admin — services/loyalty-service.js invalidateConfigCache, O7.3 provider loyalty)",
+        "resolved": true
+      },
+      {
+        "from": "incident-management",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
       },
       {
@@ -13663,8 +13717,20 @@
       },
       {
         "from": "inventory",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "inventory",
         "to": "auth",
         "raw": "auth",
+        "resolved": true
+      },
+      {
+        "from": "logistics",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
       },
       {
@@ -13747,6 +13813,12 @@
       },
       {
         "from": "loyalty",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "loyalty",
         "to": "auth",
         "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/loyalty.js -> middleware/auth.js)",
         "resolved": true
@@ -13771,6 +13843,18 @@
       },
       {
         "from": "notifications",
+        "to": "platform-ops",
+        "raw": "platform-ops (monitoring/exploitation transverse observé dans le code)",
+        "resolved": true
+      },
+      {
+        "from": "notifications",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "notifications",
         "to": "auth",
         "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)",
         "resolved": true
@@ -13780,6 +13864,18 @@
         "to": "toutes les features emettrices",
         "raw": "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement",
         "resolved": false
+      },
+      {
+        "from": "orders",
+        "to": "platform-ops",
+        "raw": "platform-ops (monitoring/exploitation transverse observé dans le code)",
+        "resolved": true
+      },
+      {
+        "from": "orders",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
       },
       {
         "from": "orders",
@@ -13873,6 +13969,12 @@
       },
       {
         "from": "payments",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
         "to": "platform-ops",
         "raw": "platform-ops (FF-C1 2026-07-29 — monitoring et exploitation technique ; preuve: routes/payments.js -> services/monitoring.js)",
         "resolved": true
@@ -13933,6 +14035,12 @@
       },
       {
         "from": "platform-ops",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "platform-ops",
         "to": "business-rules",
         "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/config.js -> utils/rules.js)",
         "resolved": true
@@ -13959,6 +14067,12 @@
         "from": "platform-ops",
         "to": "orders",
         "raw": "orders (simulateur declenche une transition commande via transitionOrderStatus — services/order-status-machine.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)",
+        "resolved": true
+      },
+      {
+        "from": "purchasing",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
       },
       {
@@ -13993,6 +14107,18 @@
       },
       {
         "from": "recommendations",
+        "to": "platform-ops",
+        "raw": "platform-ops (monitoring/exploitation transverse observé dans le code)",
+        "resolved": true
+      },
+      {
+        "from": "recommendations",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "recommendations",
         "to": "auth",
         "raw": "auth",
         "resolved": true
@@ -14001,6 +14127,12 @@
         "from": "recommendations",
         "to": "logistics",
         "raw": "logistics",
+        "resolved": true
+      },
+      {
+        "from": "refunds",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
       },
       {
@@ -14025,6 +14157,18 @@
         "from": "refunds",
         "to": "documents",
         "raw": "documents (reçu)",
+        "resolved": true
+      },
+      {
+        "from": "shared-cart",
+        "to": "platform-ops",
+        "raw": "platform-ops (monitoring/exploitation transverse observé dans le code)",
+        "resolved": true
+      },
+      {
+        "from": "shared-cart",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
       },
       {
@@ -14055,6 +14199,12 @@
         "from": "shared-cart",
         "to": "auth-identity",
         "raw": "auth-identity (projection boutique : b-share-cart.js consomme identité et téléphone)",
+        "resolved": true
+      },
+      {
+        "from": "sourcing",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
       },
       {
@@ -14091,6 +14241,24 @@
         "from": "unsold-resolution",
         "to": "auth",
         "raw": "auth",
+        "resolved": true
+      },
+      {
+        "from": "unsold-resolution",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "wallet",
+        "to": "platform-ops",
+        "raw": "platform-ops (monitoring/exploitation transverse observé dans le code)",
+        "resolved": true
+      },
+      {
+        "from": "wallet",
+        "to": "infrastructure",
+        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
       },
       {
@@ -16525,7 +16693,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth-identity",
@@ -16605,7 +16773,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth-identity",
@@ -17027,7 +17195,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "catalog",
@@ -17379,7 +17547,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "catalog",
@@ -17533,7 +17701,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "dashboard",
@@ -17881,7 +18049,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "dashboard",
@@ -18185,7 +18353,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "economic-engine",
@@ -18605,7 +18773,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "economic-engine",
@@ -18689,7 +18857,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "infrastructure",
@@ -19369,7 +19537,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "inventory",
@@ -19849,7 +20017,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "logistics",
@@ -20093,7 +20261,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "loyalty",
@@ -20205,7 +20373,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "notifications",
@@ -20225,7 +20393,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "orders",
@@ -20772,7 +20940,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "orders",
@@ -21149,7 +21317,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "orders",
@@ -21562,7 +21730,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "payments",
@@ -22186,7 +22354,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "platform-ops",
@@ -22564,7 +22732,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "purchasing",
@@ -22664,7 +22832,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "recommendations",
@@ -22724,7 +22892,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "refunds",
@@ -22768,7 +22936,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "refunds",
@@ -22976,7 +23144,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "shared-cart",
@@ -23264,7 +23432,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "shared-cart",
@@ -23398,7 +23566,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "unsold-resolution",
@@ -23430,7 +23598,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "wallet",
@@ -23538,7 +23706,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "wallet",
@@ -23574,7 +23742,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       }
     ],
     "transversalTopology": [
@@ -23741,7 +23909,7 @@
       "PROJECTION": 10,
       "COMPOSITION_ROOT_WIRING": 13,
       "NON_RUNTIME_TEST": 6,
-      "TECHNICAL_PRIMITIVE": 30,
+      "TECHNICAL_PRIMITIVE": 2,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 3,
       "BUSINESS_FEATURE_INTERFACE": 5,
@@ -23901,21 +24069,6 @@
       },
       {
         "from": "auth-identity",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "auth-identity",
         "to": "logistics",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
@@ -23930,23 +24083,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "auth-identity",
-        "to": "platform-ops",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
-      },
-      {
         "from": "catalog",
         "to": "auth-identity",
         "family": "BUSINESS_FEATURE_INTERFACE",
@@ -23958,21 +24094,6 @@
         ],
         "couplingObserved": "interface",
         "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "catalog",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -23992,53 +24113,6 @@
         "exceptionReasons": [
           "direct-import"
         ]
-      },
-      {
-        "from": "catalog",
-        "to": "platform-ops",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
-      },
-      {
-        "from": "customs",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "dashboard",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-transversal",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
       },
       {
         "from": "decision-signals",
@@ -24062,51 +24136,6 @@
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "business-transversal",
         "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "documents",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-transversal",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "economic-engine",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "incident-management",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-transversal",
-        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -24252,21 +24281,6 @@
       },
       {
         "from": "inventory",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "inventory",
         "to": "logistics",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
@@ -24311,97 +24325,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "logistics",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "loyalty",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "notifications",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-transversal",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "notifications",
-        "to": "platform-ops",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-transversal",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "orders",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "interface",
-          "static-code"
-        ],
-        "couplingObserved": "mixed",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "orders",
-        "to": "platform-ops",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "orders",
         "to": "shared-cart",
         "family": "CROSS_FEATURE_DIRECT_IMPORT",
@@ -24419,22 +24342,6 @@
         ]
       },
       {
-        "from": "payments",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "interface",
-          "static-code"
-        ],
-        "couplingObserved": "mixed",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "platform-ops",
         "to": "auth-identity",
         "family": "BUSINESS_FEATURE_INTERFACE",
@@ -24447,10 +24354,8 @@
         ],
         "couplingObserved": "interface",
         "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "platform-ops",
@@ -24480,24 +24385,6 @@
         ],
         "couplingObserved": "interface",
         "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
-      },
-      {
-        "from": "platform-ops",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "technical-transversal",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "interface",
-          "static-code"
-        ],
-        "couplingObserved": "mixed",
-        "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -24578,36 +24465,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "purchasing",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "recommendations",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "recommendations",
         "to": "orders",
         "family": "CROSS_FEATURE_DIRECT_IMPORT",
@@ -24623,36 +24480,6 @@
         "exceptionReasons": [
           "direct-import"
         ]
-      },
-      {
-        "from": "recommendations",
-        "to": "platform-ops",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "refunds",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-transversal",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
       },
       {
         "from": "refunds",
@@ -24671,36 +24498,6 @@
       },
       {
         "from": "shared-cart",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "shared-cart",
-        "to": "platform-ops",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "shared-cart",
         "to": "recommendations",
         "family": "BUSINESS_FEATURE_INTERFACE",
         "evidenceRole": "RUNTIME_AND_TEST",
@@ -24714,66 +24511,6 @@
         "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
-      },
-      {
-        "from": "sourcing",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "unsold-resolution",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "wallet",
-        "to": "infrastructure",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-foundation",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "wallet",
-        "to": "platform-ops",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
       }
     ],
     "unclassified": [],
@@ -24781,72 +24518,25 @@
       "PROJECTION|RUNTIME_ONLY|projection|business-feature|interface": 7,
       "PROJECTION|RUNTIME_ONLY|projection|business-transversal|interface": 2,
       "PROJECTION|RUNTIME_ONLY|projection|piloting-capability|interface": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 2,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-foundation|technical-primitive": 5,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-foundation|technical-primitive": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|mixed": 2,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 3,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1
     },
-    "runtimeCycles": [
-      {
-        "nodes": [
-          "auth-identity",
-          "platform-ops"
-        ],
-        "key": "auth-identity<->platform-ops",
-        "directions": [
-          {
-            "from": "auth-identity",
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "from": "platform-ops",
-            "to": "auth-identity",
-            "family": "BUSINESS_FEATURE_INTERFACE"
-          }
-        ]
-      },
-      {
-        "nodes": [
-          "catalog",
-          "platform-ops"
-        ],
-        "key": "catalog<->platform-ops",
-        "directions": [
-          {
-            "from": "catalog",
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "from": "platform-ops",
-            "to": "catalog",
-            "family": "BUSINESS_FEATURE_INTERFACE"
-          }
-        ]
-      }
-    ],
+    "runtimeCycles": [],
     "exceptions": [
       {
         "from": "shared-cart",
@@ -24898,10 +24588,15 @@
       }
     ],
     "staleExceptions": [
+      "auth-identity->platform-ops",
+      "catalog->platform-ops",
       "shared-cart->catalog"
     ],
     "duplicateExceptionKeys": [],
-    "illegitimateExceptions": [],
+    "illegitimateExceptions": [
+      "platform-ops->auth-identity",
+      "platform-ops->catalog"
+    ],
     "missingExceptions": [],
     "emptyRationaleExceptions": [],
     "unexplainedRuntimeCycles": [],
@@ -26663,18 +26358,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> logistics",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26683,28 +26368,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "catalog -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> orders",
         "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "catalog -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 62 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "customs -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"customs\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "dashboard -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 46 preuve(s)) sans contract.consumes déclaré chez \"dashboard\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26715,21 +26380,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "documents -> auth",
         "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"documents\" vers \"auth\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "documents -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 21 preuve(s)) sans contract.consumes déclaré chez \"documents\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "economic-engine -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 72 preuve(s)) sans contract.consumes déclaré chez \"economic-engine\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "incident-management -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"incident-management\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26778,11 +26428,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "inventory -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "inventory -> logistics",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"logistics\""
       },
@@ -26798,43 +26443,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "logistics -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 74 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "loyalty -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"loyalty\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "notifications -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "notifications -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "orders -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 57 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "orders -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> shared-cart",
         "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "payments -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 45 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26850,11 +26460,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> catalog",
         "msg": "dépendance cross-feature observée (canal: interface+static-code, 20 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"catalog\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 28 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26883,28 +26488,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "purchasing -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 20 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "recommendations -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "recommendations -> orders",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "recommendations -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "refunds -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26913,38 +26498,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 52 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> recommendations",
         "msg": "dépendance cross-feature observée (canal: interface+static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"recommendations\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "sourcing -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"sourcing\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "unsold-resolution -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"unsold-resolution\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "wallet -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "wallet -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"platform-ops\""
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -27180,18 +26735,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> logistics",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27200,28 +26745,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "catalog -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> orders",
         "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "catalog -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 62 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "customs -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"customs\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "dashboard -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 46 preuve(s)) sans contract.consumes déclaré chez \"dashboard\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27232,21 +26757,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "documents -> auth",
         "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"documents\" vers \"auth\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "documents -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 21 preuve(s)) sans contract.consumes déclaré chez \"documents\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "economic-engine -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 72 preuve(s)) sans contract.consumes déclaré chez \"economic-engine\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "incident-management -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"incident-management\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27295,11 +26805,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "inventory -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "inventory -> logistics",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"logistics\""
       },
@@ -27315,43 +26820,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "logistics -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 74 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "loyalty -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"loyalty\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "notifications -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "notifications -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "orders -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 57 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "orders -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> shared-cart",
         "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "payments -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 45 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27367,11 +26837,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> catalog",
         "msg": "dépendance cross-feature observée (canal: interface+static-code, 20 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"catalog\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 28 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27400,28 +26865,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "purchasing -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 20 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "recommendations -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "recommendations -> orders",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "recommendations -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "refunds -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27430,38 +26875,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 52 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> recommendations",
         "msg": "dépendance cross-feature observée (canal: interface+static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"recommendations\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "sourcing -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"sourcing\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "unsold-resolution -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"unsold-resolution\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "wallet -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "wallet -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"platform-ops\""
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -27699,8 +27114,8 @@
       }
     ],
     "summary": {
-      "signals": 113,
-      "debt": 93,
+      "signals": 85,
+      "debt": 65,
       "expectedTopology": 12,
       "generatorLimitations": 8
     }

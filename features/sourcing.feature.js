@@ -137,6 +137,7 @@ module.exports = {
       'POST /api/admin/sourcing/candidates/:id/watchlist',
     ],
     consumes: [
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, ' +
         'supplier-catalog-scanner pour le scan pricing lui-même, et depuis PDC-8 Lot 6 : ' +
         'catalog-promotion.js — appelé dans la transaction de POST .../import-product pour ' +
