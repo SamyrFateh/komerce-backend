@@ -403,7 +403,8 @@
       "authority": "backend-core — tout changement de middleware d'authentification doit etre valide par le proprietaire de middleware/auth.js",
       "invariants": [
         "toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde",
-        "toute mutation portée par le cookie de session exige une Origin explicitement autorisée (AUTH-8b)"
+        "toute mutation portée par le cookie de session exige une Origin explicitement autorisée (AUTH-8b)",
+        "staging/production utilisent exclusivement un cookie de session __Host- Secure, Path=/ et sans Domain (AUTH-8c)"
       ],
       "implementation": {
         "byCategory": {
@@ -463,8 +464,13 @@
             ]
           },
           "tests": {
-            "count": 9,
+            "count": 10,
             "files": [
+              {
+                "declared": "tests/unit/auth-cookie.test.js",
+                "resolvedPath": "tests/unit/auth-cookie.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/auth-guest.test.js",
                 "resolvedPath": "tests/unit/auth-guest.test.js",
@@ -523,7 +529,7 @@
             ]
           }
         },
-        "totalFiles": 19,
+        "totalFiles": 20,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

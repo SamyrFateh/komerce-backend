@@ -763,6 +763,13 @@
       {
         "feature": "auth",
         "category": "tests",
+        "declared": "tests/unit/auth-cookie.test.js",
+        "resolvedPath": "tests/unit/auth-cookie.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth",
+        "category": "tests",
         "declared": "tests/unit/auth-guest.test.js",
         "resolvedPath": "tests/unit/auth-guest.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -23592,7 +23599,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 786
+        "filesObserved": 787
       },
       "boutique": {
         "filesObserved": 152,

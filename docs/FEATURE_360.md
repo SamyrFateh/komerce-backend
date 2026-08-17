@@ -115,6 +115,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Invariants** :
 - toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde
 - toute mutation portée par le cookie de session exige une Origin explicitement autorisée (AUTH-8b)
+- staging/production utilisent exclusivement un cookie de session __Host- Secure, Path=/ et sans Domain (AUTH-8c)
 
 **Owns** : _aucune_
 **Writes (not owner)** : `users` (writer-not-owner)
@@ -139,10 +140,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "orders" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `UNRESOLVED_INTERNAL_API` (medium) — requireAuth / requireVerifiedIdentity / softAuth (middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js) — statut: undeclared-in-graph
 
-**Implementation** : 19 fichier(s) déclaré(s)
+**Implementation** : 20 fichier(s) déclaré(s)
   - middleware : 7
   - migrations : 2
-  - tests : 9
+  - tests : 10
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth"]_
