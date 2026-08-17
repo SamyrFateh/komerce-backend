@@ -1189,15 +1189,24 @@ function build() {
       note: '"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation="external-path-scope" ci-dessus pour le scope concerné.',
     },
     drifts: (() => {
-      const warn = warns.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref)));
-      const semantic = warningSemantics.partition(warn, { ROOT, pairClassifications: o6Dispositions.classifications });
+      const candidates = warns.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref)));
+      const semantic = warningSemantics.partition(candidates, { ROOT, pairClassifications: o6Dispositions.classifications });
       return {
         error: errors.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
-        warn, // flux brut conservé pour compatibilité : tous les signaux non-error
+        // Doctrine 2026-08-17 : un warning est une anomalie actionnable / dette,
+        // jamais une topologie attendue ni une preuve test-only. Les candidats
+        // restent classifiés ci-dessous et visibles dans leurs inventaires dédiés.
+        warn: semantic.debt,
         debt: semantic.debt,
         expectedTopology: semantic.expectedTopology,
         generatorLimitations: semantic.generatorLimitations,
-        summary: semantic.summary,
+        summary: {
+          signals: semantic.debt.length,
+          debt: semantic.debt.length,
+          expectedTopology: semantic.expectedTopology.length,
+          generatorLimitations: semantic.generatorLimitations.length,
+          classifiedCandidates: candidates.length,
+        },
       };
     })(),
   };
