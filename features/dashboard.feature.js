@@ -85,7 +85,7 @@ module.exports = {
       'order_status_history: RW',
       'orders: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — idem, routes/admin/system.js uniquement (reset/seed-test) ; propriétaire réel : orders
       'parcel_items: R',  // W-via logistics/parcel-item-mutation-service - LOT7
-      'parcels: RW',       // idem parcel_items — routes/hub-dashboard.js écrit en opération réelle
+      'parcels: R',  // W-via logistics/parcel-mutation-service - LOT8
       'partners: RW',
       'products: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — idem, routes/admin/system.js uniquement (reset/seed-test) ; propriétaire réel : catalog
       'recipients: RW',

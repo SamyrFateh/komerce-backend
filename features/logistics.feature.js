@@ -71,6 +71,7 @@ module.exports = {
     services: [
       'services/parcel-operations.js',
       'services/parcel-item-mutation-service.js',
+      'services/parcel-mutation-service.js',
       'services/parcel-security.js',
       'services/scan-operations.js',
       'services/scan-write-service.js',
@@ -137,6 +138,7 @@ module.exports = {
       'tests/unit/scan-engine.test.js',
       'tests/unit/parcel-operations.test.js',
       'tests/unit/parcel-item-mutation-service.test.js',
+      'tests/unit/parcel-mutation-service.test.js',
       'tests/unit/parcel-guards.test.js',
       'tests/unit/parcel-auto-create-service.test.js',
       'tests/unit/hub-operations.test.js',
@@ -305,6 +307,12 @@ module.exports = {
       { fn: 'addParcelItem', file: 'services/parcel-item-mutation-service.js' },
       { fn: 'removeParcelItem', file: 'services/parcel-item-mutation-service.js' },
       { fn: 'assignSingleOrderItemToParcel', file: 'services/parcel-item-mutation-service.js' },
+      { fn: 'createHubParcel', file: 'services/parcel-mutation-service.js' },
+      { fn: 'createAutoPreparedParcel', file: 'services/parcel-mutation-service.js' },
+      { fn: 'setParcelWeight', file: 'services/parcel-mutation-service.js' },
+      { fn: 'appendParcelShipmentInfo', file: 'services/parcel-mutation-service.js' },
+      { fn: 'markCustomsCleared', file: 'services/parcel-mutation-service.js' },
+      { fn: 'markBackorderReminderSent', file: 'services/parcel-mutation-service.js' },
     ],
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',

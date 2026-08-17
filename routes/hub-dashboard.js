@@ -9,8 +9,9 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       order_items, orders, parcel_items, parcels, products
- * @db-write      order_comments, order_incidents, parcels
+ * @db-write      order_comments, order_incidents
  * @db-write-via:parcel-item-mutation-service parcel_items
+ * @db-write-via:parcel-mutation-service parcels
  * @db-write-via:scan-write-service scans
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -54,6 +55,12 @@ const {
   addParcelItem,
   removeParcelItem,
 } = require('../services/parcel-item-mutation-service');
+const {
+  createHubParcel,
+  createAutoPreparedParcel,
+  setParcelWeight,
+  appendParcelShipmentInfo,
+} = require('../services/parcel-mutation-service');
 const log = require('../utils/logger').child({ module: 'hub-dashboard' });
 const hubQueries = require('../services/hub-dashboard-queries');
 
@@ -161,17 +168,14 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
       seal_code = security.generateSealCode();
     } catch(e) { /* security module not critical */ }
 
-    const insertQ = external_code
-      ? `INSERT INTO parcels (reference, external_code, seal_code, order_id, type, notes, status)
-         VALUES ($1, $2, $3, $4, $5, $6, 'draft') RETURNING *`
-      : `INSERT INTO parcels (reference, order_id, type, notes, status)
-         VALUES ($1, $2, $3, $4, 'draft') RETURNING *`;
-
-    const insertParams = external_code
-      ? [reference, external_code, seal_code, order.id, type, notes || null]
-      : [reference, order.id, type, notes || null];
-
-    const { rows: [parcel] } = await db.query(insertQ, insertParams);
+    const parcel = await createHubParcel(db, {
+      reference,
+      externalCode: external_code,
+      sealCode: seal_code,
+      orderId: order.id,
+      type,
+      notes,
+    });
 
     // Auto-assign items if provided
     if (item_ids && item_ids.length) {
@@ -262,21 +266,17 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
       const security = require('../services/parcel-security');
       external_code = security.generateExternalCode();
       seal_code = security.generateSealCode();
-    } catch(e) { /* non-critique */ }
+    } catch(e) { /* security module optional */ }
 
-    const insertQ = external_code
-      ? `INSERT INTO parcels (reference, external_code, seal_code, order_id, type, status, notes)
-         VALUES ($1, $2, $3, $4, 'standard', 'draft', $5) RETURNING *`
-      : `INSERT INTO parcels (reference, order_id, type, status, notes)
-         VALUES ($1, $2, 'standard', 'draft', $3) RETURNING *`;
+    const parcel = await createAutoPreparedParcel(client, {
+      reference,
+      externalCode: external_code,
+      sealCode: seal_code,
+      orderId: order.id,
+      notes: `Auto-cr\u00e9\u00e9 sur scan QR \u2014 ${unassigned.length} article(s)`,
+    });
 
-    const insertParams = external_code
-      ? [reference, external_code, seal_code, order.id, `Auto-créé sur scan QR — ${unassigned.length} article(s)`]
-      : [reference, order.id, `Auto-créé sur scan QR — ${unassigned.length} article(s)`];
-
-    const { rows: [parcel] } = await client.query(insertQ, insertParams);
-
-    // Assigner tous les articles non-assignés
+    // Assign all unassigned items
     for (const item of unassigned) {
       await assignParcelItem(client, {
         parcelId: parcel.id,
@@ -287,10 +287,10 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
     }
 
     const totalWeight = unassigned.reduce((s, i) => s + ((i.weight_kg || 0.5) * i.quantity), 0);
-    await client.query(
-      'UPDATE parcels SET weight_kg = $1 WHERE id = $2',
-      [Math.round(totalWeight * 100) / 100, parcel.id]
-    );
+    await setParcelWeight(client, {
+      parcelId: parcel.id,
+      weightKg: Math.round(totalWeight * 100) / 100,
+    });
 
     // Log scan + commentaire
     // R7 FIX — scan_code NOT NULL : code synthétique pour scans hub automatiques
@@ -485,16 +485,10 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
     });
 
     // Update parcel with transport info
-    await db.query(`
-      UPDATE parcels SET
-        shipped_at = NOW(),
-        notes = COALESCE(notes, '') || $1,
-        updated_at = NOW()
-      WHERE id = $2
-    `, [
-      `\n[SHIPPED] ${new Date().toISOString()} | transport: ${transport || '-'} | batch: ${batch_id || '-'}`,
-      parcel.id
-    ]);
+    await appendParcelShipmentInfo(db, {
+      parcelId: parcel.id,
+      note: `\n[SHIPPED] ${new Date().toISOString()} | transport: ${transport || '-'} | batch: ${batch_id || '-'}`,
+    });
 
     // Log
     await db.query(`

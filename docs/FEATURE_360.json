@@ -43,15 +43,15 @@
   },
   "summary": {
     "features": 30,
-    "healthy": 14,
-    "attention": 16,
+    "healthy": 15,
+    "attention": 15,
     "blocked": 0,
-    "businessDependencies": 168,
+    "businessDependencies": 169,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 44,
+    "debtItemsTotal": 43,
     "gateHealthy": 17,
     "gateBlocked": 0
   },
@@ -3910,12 +3910,6 @@
             "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "parcels",
-            "mode": "RW",
-            "lifecycleOwner": "logistics",
-            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -3929,6 +3923,10 @@
           },
           {
             "table": "parcel_items",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "parcels",
             "lifecycleOwner": "logistics"
           },
           {
@@ -3976,12 +3974,6 @@
             "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "parcels",
-            "mode": "RW",
-            "lifecycleOwner": "logistics",
-            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -3995,6 +3987,10 @@
           },
           {
             "table": "parcel_items",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "parcels",
             "lifecycleOwner": "logistics"
           },
           {
@@ -4033,6 +4029,13 @@
         },
         {
           "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -4079,14 +4082,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "logistics"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -4117,14 +4118,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"logistics\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -4978,12 +4973,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "parcels",
-            "mode": "RW",
-            "lifecycleOwner": "logistics",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "partners",
             "mode": "RW",
             "lifecycleOwner": "dashboard",
@@ -5069,6 +5058,10 @@
           },
           {
             "table": "parcel_items",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "parcels",
             "lifecycleOwner": "logistics"
           },
           {
@@ -5158,12 +5151,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "parcels",
-            "mode": "RW",
-            "lifecycleOwner": "logistics",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "partners",
             "mode": "RW",
             "lifecycleOwner": "dashboard",
@@ -5249,6 +5236,10 @@
           },
           {
             "table": "parcel_items",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "parcels",
             "lifecycleOwner": "logistics"
           },
           {
@@ -10628,7 +10619,7 @@
             ]
           },
           "services": {
-            "count": 15,
+            "count": 16,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -10653,6 +10644,11 @@
               {
                 "declared": "services/parcel-item-mutation-service.js",
                 "resolvedPath": "services/parcel-item-mutation-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/parcel-mutation-service.js",
+                "resolvedPath": "services/parcel-mutation-service.js",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -10708,7 +10704,7 @@
             ]
           },
           "tests": {
-            "count": 35,
+            "count": 36,
             "files": [
               {
                 "declared": "tests/integration/test-harness/seed-helpers.js",
@@ -10788,6 +10784,11 @@
               {
                 "declared": "tests/unit/parcel-label.test.js",
                 "resolvedPath": "tests/unit/parcel-label.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/parcel-mutation-service.test.js",
+                "resolvedPath": "tests/unit/parcel-mutation-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -10908,7 +10909,7 @@
             ]
           }
         },
-        "totalFiles": 81,
+        "totalFiles": 83,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11267,6 +11268,11 @@
             "status": "resolved"
           },
           {
+            "fn": "appendParcelShipmentInfo",
+            "file": "services/parcel-mutation-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "assignParcelItem",
             "file": "services/parcel-item-mutation-service.js",
             "status": "resolved"
@@ -11282,8 +11288,28 @@
             "status": "resolved"
           },
           {
+            "fn": "createAutoPreparedParcel",
+            "file": "services/parcel-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "createHubParcel",
+            "file": "services/parcel-mutation-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "detachUserFromScans",
             "file": "services/scan-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "markBackorderReminderSent",
+            "file": "services/parcel-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "markCustomsCleared",
+            "file": "services/parcel-mutation-service.js",
             "status": "resolved"
           },
           {
@@ -11299,6 +11325,11 @@
           {
             "fn": "removeParcelItem",
             "file": "services/parcel-item-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setParcelWeight",
+            "file": "services/parcel-mutation-service.js",
             "status": "resolved"
           },
           {
@@ -11400,6 +11431,13 @@
         },
         {
           "consumer": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "customs",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -13789,12 +13827,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "parcels",
-            "mode": "RW",
-            "lifecycleOwner": "logistics",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "paypal_events_processed",
             "mode": "RW",
             "lifecycleOwner": "payments",
@@ -13814,6 +13846,10 @@
           },
           {
             "table": "parcel_items",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "parcels",
             "lifecycleOwner": "logistics"
           },
           {
@@ -13877,12 +13913,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "parcels",
-            "mode": "RW",
-            "lifecycleOwner": "logistics",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "paypal_events_processed",
             "mode": "RW",
             "lifecycleOwner": "payments",
@@ -13902,6 +13932,10 @@
           },
           {
             "table": "parcel_items",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "parcels",
             "lifecycleOwner": "logistics"
           },
           {

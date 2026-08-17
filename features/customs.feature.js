@@ -103,7 +103,7 @@ module.exports = {
       'order_items: R',
       'orders: RW',
       'parcel_items: R',
-      'parcels: RW',
+      'parcels: R',  // W-via logistics/parcel-mutation-service - LOT8
       'products: R',
       // transaction_documents retiré (2026-07-07) : délégué à
       // services/documents/customs-invoice.js — customs ne lit/écrit jamais

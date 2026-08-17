@@ -6,10 +6,11 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/order-status-machine.js, utils/logger.js, utils/rules.js
+ * @depends       db, services/notification-service.js, services/order-status-machine.js, services/parcel-mutation-service.js, utils/logger.js, utils/rules.js
  * @used-by       bootstrap/crons.js
  * @db-read       orders, parcels, users
- * @db-write      orders, parcels
+ * @db-write      orders
+ * @db-write-via:parcel-mutation-service parcels
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  payment
@@ -39,6 +40,7 @@ const log = require('../utils/logger').child({ module: 'cash-reminder-service' }
 const { getRuleNumber }         = require('../utils/rules');
 const { transitionOrderStatus } = require('./order-status-machine');
 const { notifyText }            = require('./notification-service');
+const { markBackorderReminderSent } = require('./parcel-mutation-service');
 
 // ──────────────────────────────────────────────────────────────────────────────
 // H+12 — rappel paiement cash · H+36 — annulation automatique
@@ -190,11 +192,7 @@ async function processBackorderReminders() {
         sentCount++;
       }
 
-      await db.query(
-        `UPDATE parcels SET backorder_reminder_sent = TRUE, updated_at = NOW()
-         WHERE id = $1`,
-        [bo.sub_order_id]
-      );
+      await markBackorderReminderSent(db, bo.sub_order_id);
     }
 
     log.info({ sent_count: sentCount, expired_backorders_count: expiredBackorders.length }, 'Backorder reminders processed');
