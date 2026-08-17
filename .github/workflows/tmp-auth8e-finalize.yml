@@ -1,0 +1,235 @@
+name: Temporary AUTH-8e finalizer
+
+on:
+  push:
+    branches: [auth/8e-bearer-boundary]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      JWT_SECRET: contract-introspection-only-secret-2026-08-not-runtime
+      QR_SECRET: contract-introspection-qr-secret-2026-08-not-runtime
+      DATABASE_URL: postgresql://contract:contract@127.0.0.1:5432/contract
+      FRONTEND_URL: http://localhost:3000
+      INTERNAL_API_KEY: contract-introspection-api-key
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_RP_NAME: Komerce
+      WEBAUTHN_ORIGINS: http://localhost:3000
+      META_WA_APP_SECRET: contract-introspection-meta-secret
+      META_WA_VERIFY_TOKEN: contract-introspection-meta-verify
+      STRIPE_SECRET_KEY: sk_test_contract_introspection_only
+      STRIPE_WEBHOOK_SECRET: whsec_contract_introspection_only
+      PAYPAL_CLIENT_ID: contract-client-id
+      PAYPAL_CLIENT_SECRET: contract-client-secret
+      PAYPAL_WEBHOOK_ID: contract-webhook-id
+      PAYPAL_ENV: sandbox
+      TWILIO_ACCOUNT_SID: AC00000000000000000000000000000000
+      TWILIO_AUTH_TOKEN: contract-token
+      TWILIO_WHATSAPP_FROM: whatsapp:+14155238886
+      AT_API_KEY: contract-key
+      AT_USERNAME: sandbox
+      CLOUDINARY_CLOUD_NAME: contract
+      CLOUDINARY_API_KEY: contract
+      CLOUDINARY_API_SECRET: contract
+      KOMERCE_DISABLE_CRONS: 'true'
+      KOMERCE_SKIP_STARTUP_MIGRATIONS: 'true'
+      KOMERCE_SKIP_BOOT_ENSURE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Remove dangerous phone token route and align canonical ownership
+        shell: bash
+        run: |
+          rm .github/workflows/tmp-auth8e-audit.yml
+          rm .github/workflows/tmp-auth8e-finalize.yml
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          def read(path): return Path(path).read_text(encoding='utf-8')
+          def write(path, text): Path(path).write_text(text, encoding='utf-8')
+          def must_replace(path, old, new, count=1):
+              text = read(path)
+              actual = text.count(old)
+              if actual != count:
+                  raise SystemExit(f'{path}: expected {count} occurrence(s), found {actual}: {old[:80]!r}')
+              write(path, text.replace(old, new))
+          def remove_between(path, start, end):
+              text = read(path)
+              i = text.find(start)
+              j = text.find(end, i + len(start))
+              if i < 0 or j < 0:
+                  raise SystemExit(f'{path}: markers not found')
+              write(path, text[:i] + end + text[j + len(end):])
+
+          # 1) Supprimer entièrement la délégation publique phone -> JWT.
+          remove_between(
+              'routes/auth.js',
+              '// ─── POST /api/auth/orders-by-phone',
+              '// ─── POST /api/auth/logout'
+          )
+          must_replace('routes/auth.js', 'const _JWT_SECRET = JWT_SECRET;\n', '')
+
+          # 2) Supprimer le validator devenu mort.
+          must_replace(
+              'validators/index.js',
+              "  ordersByPhone: {\n    body: Joi.object({ phone: phone.required() }),\n  },\n",
+              ''
+          )
+
+          # 3) Source contractuelle / feature-first.
+          p = 'features/auth-identity.feature.js'
+          t = read(p)
+          t = t.replace('authedRoutesDetected: 7,\n    totalRoutes: 20,', 'authedRoutesDetected: 7,\n    totalRoutes: 19,')
+          old_note = 'note: "7/20 routes protégées (tableau de bord, refresh, etc.). 13 routes publiques par design : OTP (cooldown 5 min/phone + plafond journalier DB, test-reset gaté par isOtpTestMode() → 404 en prod), magic-link (token signé), guest-checkout (flux boutique public), orders-by-phone (client lookup public), admin-reset gaté applicativement (ADMIN_RESET_KEY ≥ 32 chars obligatoire + ALLOW_ADMIN_RESET=true requis en prod — désactivé par défaut).",'
+          new_note = 'note: "7/19 routes protégées. 12 routes publiques par design : OTP (cooldown 5 min/phone + plafond journalier DB, test-reset gaté par isOtpTestMode() → 404 en prod), magic-link (token mono-usage), guest-checkout (route historique 410), login/register/logout et admin-reset gaté applicativement. AUTH-8e supprime orders-by-phone : un numéro seul ne délivre plus aucun JWT.",'
+          if old_note not in t: raise SystemExit('auth-identity security.note source changed')
+          t = t.replace(old_note, new_note)
+          t = t.replace("      'POST /api/auth/orders-by-phone',\n", '')
+          write(p, t)
+
+          # 4) Invariant public-by-design : retirer l'exception qui vient de disparaître.
+          p = 'tests/invariants/auth-identity.mutating-routes-guarded.test.js'
+          t = read(p)
+          t = t.replace('signed, guest-checkout = flux boutique public, orders-by-phone =\n *      lookup client public, admin-reset gaté applicativement par', 'signed, guest-checkout = flux boutique public, admin-reset gaté applicativement par')
+          t = t.replace('7 routes protégées, 13 publiques par conception, sur 20 déclarées.', '7 routes protégées, 12 publiques par conception, sur 19 déclarées.')
+          t = t.replace('mutant + guest-checkout + orders-by-phone + admin-reset + login +\n// register + logout = 13).', 'mutant + guest-checkout + admin-reset + login +\n// register + logout = 12).')
+          t = t.replace("  'POST /api/auth/orders-by-phone',  // client lookup public\n", '')
+          write(p, t)
+
+          # 5) Test route : cette surface ne doit plus exister.
+          p = 'tests/unit/auth-route.test.js'
+          t = read(p)
+          t = t.replace(" *   POST /orders-by-phone : 400 téléphone invalide, rate-limit → 429,\n *                          aucun user → liste vide, succès → token\n", '')
+          start = "describe('POST /api/auth/orders-by-phone', () => {"
+          i = t.find(start)
+          if i < 0: raise SystemExit('auth-route orders-by-phone test block not found')
+          marker = "describe('POST /api/auth/logout', () => {"
+          j = t.find(marker, i)
+          if j < 0: raise SystemExit('auth-route logout marker not found')
+          # conserver le séparateur immédiatement avant logout
+          prefix = t[:i]
+          if prefix.endswith('// ═══════════════════════════════════════════════════════════════════════\n'):
+              pass
+          t = prefix + marker + t[j + len(marker):]
+          write(p, t)
+
+          # 6) Contract generator et Security360 baseline.
+          must_replace(
+              'scripts/contract-generate.js',
+              "  '/api/auth/orders-by-phone': {\n    post: { fields: ['token','name'], source: 'route-read' }\n  },\n",
+              ''
+          )
+          baseline_path = Path('scripts/.security-360-baseline.json')
+          baseline = json.loads(baseline_path.read_text(encoding='utf-8'))
+          route = 'POST /api/auth/orders-by-phone'
+          if route not in baseline.get('flagged', []):
+              raise SystemExit('orders-by-phone absent from Security360 baseline before removal')
+          baseline['flagged'] = [x for x in baseline['flagged'] if x != route]
+          baseline_path.write_text(json.dumps(baseline, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          # 7) Ownership auth transversale : policy de type de token.
+          p = 'features/auth.feature.js'
+          t = read(p)
+          t = t.replace("      'utils/auth-session-policy.js',\n", "      'utils/auth-session-policy.js',\n      'utils/auth-token-policy.js',\n")
+          t = t.replace("      'tests/unit/auth-session-policy.test.js',\n", "      'tests/unit/auth-session-policy.test.js',\n      'tests/unit/auth-token-policy.test.js',\n")
+          t = t.replace("{ fn: 'signAuthToken / resolveSessionTtlSeconds', file: 'utils/auth-session.js, utils/auth-session-policy.js' },", "{ fn: 'signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict', file: 'utils/auth-session.js, utils/auth-session-policy.js, utils/auth-token-policy.js' },")
+          t = t.replace("    'la durée absolue JWT + cookie est plafonnée à 7 jours et chaque preuve OTP/passkey/step-up émet une nouvelle jti (AUTH-8d)',\n", "    'la durée absolue JWT + cookie est plafonnée à 7 jours et chaque preuve OTP/passkey/step-up émet une nouvelle jti (AUTH-8d)',\n    'un JWT scoped ou dépourvu des claims de session canoniques ne peut jamais être élevé en session par les middlewares génériques (AUTH-8e)',\n")
+          write(p, t)
+
+          # 8) Moderniser les harnesses historiques : les faux JWT {id} ne sont plus des sessions.
+          for p in ['tests/unit/auth-guest.test.js', 'tests/unit/require-verified-identity.test.js']:
+              t = read(p)
+              old = "return jwt.sign({ id: 'user-1', jti: 'jti-1', ...payload }, process.env.JWT_SECRET, { algorithm: 'HS256' });"
+              if p.endswith('require-verified-identity.test.js'):
+                  old = "return jwt.sign({ id: 'user-1', jti: 'jti-1', ...payload }, process.env.JWT_SECRET, {\n    algorithm: 'HS256',\n  });"
+                  new = "return jwt.sign({\n    id: 'user-1', jti: 'jti-1', auth_time: 1700000000, amr: ['otp'], token_use: 'session', ...payload,\n  }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });"
+              else:
+                  new = "return jwt.sign({ id: 'user-1', jti: 'jti-1', auth_time: 1700000000, amr: ['otp'], token_use: 'session', ...payload }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });"
+              if old not in t: raise SystemExit(f'{p}: validToken helper changed')
+              t = t.replace(old, new)
+              write(p, t)
+
+          # auth-guest : ancien test "sans jti accepté" -> désormais rejeté avant DB.
+          p = 'tests/unit/auth-guest.test.js'
+          t = read(p)
+          start = "  it('ne vérifie pas la révocation si jti est absent du payload (isTokenRevoked court-circuite)', async () => {"
+          i = t.find(start)
+          if i < 0: raise SystemExit('auth-guest no-jti test not found')
+          j = t.find("  });\n", i) + len("  });\n")
+          new = "  it('refuse un JWT signé sans jti/auth_time/amr avant tout accès DB', async () => {\n    const tokenWithoutJti = jwt.sign({ id: 'user-1' }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });\n    const req = { headers: { authorization: `Bearer ${tokenWithoutJti}` }, body: {} };\n    const res = makeRes();\n    const next = jest.fn();\n\n    await authenticateOrCreateGuest(req, res, next);\n\n    expect(mockQuery).not.toHaveBeenCalled();\n    expect(res.status).toHaveBeenCalledWith(401);\n    expect(next).not.toHaveBeenCalled();\n  });\n"
+          t = t[:i] + new + t[j:]
+          write(p, t)
+
+          # require-verified : même doctrine.
+          p = 'tests/unit/require-verified-identity.test.js'
+          t = read(p)
+          start = "  it('ne vérifie pas la révocation si le token ne contient pas de jti', async () => {"
+          i = t.find(start)
+          if i < 0: raise SystemExit('require-verified no-jti test not found')
+          j = t.find("  });\n", i) + len("  });\n")
+          new = "  it('refuse un JWT signé incomplet avant tout accès DB', async () => {\n    const tokenWithoutJti = jwt.sign({ id: 'user-1' }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });\n    const req = { headers: { authorization: `Bearer ${tokenWithoutJti}` } };\n    const res = makeRes();\n    const next = jest.fn();\n\n    await requireVerifiedIdentityForCheckout(req, res, next);\n\n    expect(mockQuery).not.toHaveBeenCalled();\n    expect(res.status).toHaveBeenCalledWith(401);\n    expect(next).not.toHaveBeenCalled();\n  });\n"
+          t = t[:i] + new + t[j:]
+          write(p, t)
+
+          # soft-auth : canonicaliser le helper + supprimer le cas jti absent accepté.
+          p = 'tests/unit/soft-auth.test.js'
+          t = read(p)
+          old = "return jwt.sign({ id: 'user-001', ...payload }, SECRET, { algorithm: 'HS256', expiresIn: '1h', ...options });"
+          new = "return jwt.sign({ id: 'user-001', jti: 'jti-default', auth_time: 1700000000, amr: ['otp'], token_use: 'session', ...payload }, SECRET, { algorithm: 'HS256', expiresIn: '1h', ...options });"
+          if old not in t: raise SystemExit('soft-auth makeToken helper changed')
+          t = t.replace(old, new)
+          t = t.replace("const token = makeToken({ jti: undefined }); // pas de jti → pas de check révocation", "const token = makeToken({ jti: 'jti-cache' });")
+          t = t.replace("  // Aucun mock DB — si db.query est appelé le test lèvera \"no mock\"\n  db.query.mockResolvedValue({ rows: [] }); // revoked_tokens seulment si jti présent", "  db.query.mockResolvedValueOnce({ rows: [] }); // revoked_tokens")
+          write(p, t)
+          PY
+      - run: npm ci
+      - name: AUTH-8e security regression
+        run: |
+          npx jest tests/unit/auth-token-policy.test.js tests/unit/auth-session.test.js tests/unit/auth-middleware.test.js tests/unit/auth-guest.test.js tests/unit/soft-auth.test.js tests/unit/require-verified-identity.test.js tests/unit/auth-route.test.js tests/invariants/auth-identity.mutating-routes-guarded.test.js --runInBand
+      - name: Security360 and contract
+        run: |
+          npm run security:360
+          npm run contract:generate
+          node scripts/contract-check.js
+      - name: Quality and governance projections
+        run: |
+          npm run quality:gate
+          npm run feature:registry
+          npm run feature:check
+          npm run business-graph:gen
+          npm run gate:findings:gen
+          node scripts/gen-feature-360.js
+          npm run business-graph:check
+          npm run feature:360:check
+          git diff --check
+      - name: Prove dangerous token seam is gone
+        shell: bash
+        run: |
+          set +e
+          git grep -n -I -E '(orders-by-phone|orders_read)' -- routes middleware services utils public features validators tests scripts docs/contract/openapi.json docs/SECURITY_360.json docs/SECURITY_360.md
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo 'AUTH-8e FAIL: legacy phone token seam still referenced' >&2
+            exit 1
+          fi
+          if [ "$status" -gt 1 ]; then exit "$status"; fi
+      - name: Commit final AUTH-8e tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(auth): bound Bearer to canonical sessions"
+          git push origin HEAD:auth/8e-bearer-boundary
