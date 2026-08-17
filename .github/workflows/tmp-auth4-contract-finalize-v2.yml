@@ -105,7 +105,8 @@ jobs:
         run: npx jest tests/unit/auth-passkey.test.js --runInBand
       - run: npm --prefix public/boutique ci
       - name: AUTH-3/AUTH-4 Boutique regression
-        run: npm --prefix public/boutique exec -- jest tests/unit/b-passkey-login.test.js tests/unit/b-identity-passkey.test.js tests/unit/b-passkey-enrollment.test.js --runInBand
+        working-directory: public/boutique
+        run: npx jest tests/unit/b-passkey-login.test.js tests/unit/b-identity-passkey.test.js tests/unit/b-passkey-enrollment.test.js --runInBand
       - name: Refresh governance projections
         run: |
           node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
