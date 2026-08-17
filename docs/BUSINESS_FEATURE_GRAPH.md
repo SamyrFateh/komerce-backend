@@ -183,7 +183,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - dash: 4
 - tests: 39
 - tables owned (lifecycle): 13 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `catalog_media`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_attributes`, `supplier_catalog_imports`
-- tables written: 17
+- tables written: 16
 - interfaces exposed: 31
 - internal APIs: 1
 - dependencies (consumes): 8 — auth-identity, platform-ops, infrastructure, business-rules, economic-engine, logistics, shared-cart, auth
@@ -256,15 +256,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Calculer le prix, le cout et la marge d'un produit ou d'une commande selon une strategie tarifaire versionnee.
 
 - utils: 2
-- services: 25
+- services: 26
 - routes: 12
 - migrations: 18
 - dash: 6
-- tests: 46
-- tables owned (lifecycle): 18 — `price_history`, `exchange_rates`, `order_item_real_cost_allocations`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_components`, `economic_snapshots`, `economic_variables`, `finance_config`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
+- tests: 47
+- tables owned (lifecycle): 18 — `exchange_rates`, `order_item_real_cost_allocations`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_components`, `economic_snapshots`, `economic_variables`, `finance_config`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
 - tables written: 20
 - interfaces exposed: 73
-- internal APIs: 1
+- internal APIs: 2
 - dependencies (consumes): 8 — infrastructure, logistics, catalog, auth, dashboard, orders, wallet, loyalty
 - consumers: 9 — catalog, customs, dashboard, infrastructure, logistics, orders, platform-ops, sourcing, admin-dashboard
 
@@ -616,7 +616,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `pickup_print_tokens` | `logistics` | declared-table-owner | infrastructure, logistics | — |
 | `pickup_reveal_codes` | `logistics` | declared-table-owner | infrastructure, logistics | — |
 | `pickup_verify_attempts` | `logistics` | single-writer | logistics | — |
-| `price_history` | `economic-engine` | declared-table-owner | catalog, economic-engine | — |
+| `price_history` | `economic-engine` | declared-table-owner | economic-engine | — |
 | `pricing_benchmarks` | _ambiguë_ | no-declared-writer | — | economic-engine |
 | `pricing_category_dims` | `economic-engine` | single-writer | economic-engine | — |
 | `pricing_category_taxes` | `economic-engine` | single-writer | economic-engine | — |
@@ -1154,6 +1154,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `setRule` | `utils/rules.js` | business-rules | resolved |
 | `createDraftFromSourcingCandidate` | `services/product-admin-service.js` | catalog | resolved |
 | `recommend` | `services/pricing-engine.js` | economic-engine | resolved |
+| `recordProductPriceChange` | `services/economic-price-audit-service.js` | economic-engine | resolved |
 | `listIncidents` | `services/incident-service.js` | incident-management | resolved |
 | `getIncident` | `services/incident-service.js` | incident-management | resolved |
 | `resolveIncident` | `services/incident-service.js` | incident-management | resolved |
@@ -1213,7 +1214,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | catalog | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
 | catalog | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | catalog | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)`) | ✔ |
-| catalog | economic-engine (`economic-engine (prix produit et valorisation commerciale transport)`) | ✔ |
+| catalog | economic-engine (`economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)`) | ✔ |
 | catalog | logistics (`logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)`) | ✔ |
 | catalog | shared-cart (`shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)`) | ✔ |
 | catalog | auth (`auth`) | ✔ |
@@ -1395,7 +1396,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (14)
+### DETTE / DRIFT ACTIONNABLE (13)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
@@ -1406,7 +1407,6 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcel_items — table "parcel_items" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par dashboard, inventory
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcels — table "parcels" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par customs, dashboard, payments
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ price_history — table "price_history" : lifecycle owner = economic-engine (db.tables "!"), mais aussi écrite par catalog
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ product_variants — table "product_variants" : lifecycle owner = catalog (db.tables "!"), mais aussi écrite par economic-engine
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ products — table "products" : lifecycle owner = catalog (db.tables "!"), mais aussi écrite par economic-engine, sourcing
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ scans — table "scans" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par dashboard, orders
@@ -1473,7 +1473,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 802 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 804 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 158 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1515,8 +1515,8 @@ Meta Graph monté : oui.
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | catalog | auth-identity | interface | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | business-rules | static-code | 7 | **DECLARED_AND_OBSERVED** |
-| catalog | economic-engine | static-code | 6 | **DECLARED_AND_OBSERVED** |
-| catalog | infrastructure | static-code | 36 | **DECLARED_AND_OBSERVED** |
+| catalog | economic-engine | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 34 | **DECLARED_AND_OBSERVED** |
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | orders | static-code | 12 | **OBSERVED_UNDECLARED** |
 | catalog | platform-ops | static-code | 62 | **DECLARED_AND_OBSERVED** |
@@ -1542,9 +1542,8 @@ Meta Graph monté : oui.
 | documents | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | documents | infrastructure | static-code | 21 | **DECLARED_AND_OBSERVED** |
 | economic-engine | auth | static-code | 11 | **DECLARED_AND_OBSERVED** |
-| economic-engine | catalog | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | economic-engine | dashboard | static-code | 8 | **DECLARED_AND_OBSERVED** |
-| economic-engine | infrastructure | static-code | 72 | **DECLARED_AND_OBSERVED** |
+| economic-engine | infrastructure | static-code | 74 | **DECLARED_AND_OBSERVED** |
 | economic-engine | logistics | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | economic-engine | orders | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1707,6 +1706,7 @@ Meta Graph monté : oui.
 - `documents` → `wallet` (déclaré : `wallet`)
 - `documents` → `refunds` (déclaré : `refunds`)
 - `documents` → `auth-identity` (déclaré : `auth-identity`)
+- `economic-engine` → `catalog` (déclaré : `catalog (donnees produit source)`)
 - `economic-engine` → `wallet` (déclaré : `wallet`)
 - `incident-management` → `logistics` (déclaré : `logistics (scan-engine écrit incidents — SQL inline)`)
 - `incident-management` → `payments` (déclaré : `payments (reconciliation-service écrit incidents — SQL inline)`)

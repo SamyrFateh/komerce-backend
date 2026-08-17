@@ -28,6 +28,7 @@ module.exports = {
   perimeter: {
     in: [
       'moteur de pricing et application des regles',
+      'audit des changements de prix produit dans price_history',
       'allocation de cout',
       'strategies tarifaires et matrices admin',
       'gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain ' +
@@ -66,6 +67,7 @@ module.exports = {
       'services/pricing-output.js',
       'services/economic-engine-queries.js',
       'services/apply-pricing-updates.js',
+      'services/economic-price-audit-service.js',
       'services/pricing-strategy-service.js',
       'services/pricing-engine.js',
       'services/pricing-cdr.js',
@@ -126,6 +128,7 @@ module.exports = {
       'tests/unit/admin-pricing-components.test.js',
       'tests/unit/admin-pricing-matrices.test.js',
       'tests/unit/apply-pricing-updates.test.js',
+      'tests/unit/economic-price-audit-service.test.js',
       'tests/unit/cost-allocation-variance.test.js',
       'tests/unit/eco-bridge.test.js',
       'tests/unit/economic-route.test.js',
@@ -326,14 +329,12 @@ module.exports = {
       'DELETE /api/pricing/strategy/competitors/:id',
       'GET /api/pricing/strategy/history',
     ],
-    // O7.3 (provider economic-engine) : formalise recommend() comme unique
-    // capacité exposée cross-feature (ownership confirmé O7.1, boundary
-    // formalisée ici). pricing-engine.js a d'autres exports internes
-    // (computeCDR, computePrices, buildAlerts...), tous restent internes à
-    // economic-engine — seul recommend() a un consumer cross-feature réel.
-    // Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+    // O7.3 (provider economic-engine) : formalise les capacités cross-feature
+    // explicites. Le moteur reste propriétaire de ses tables et les consumers
+    // appellent ces APIs internes au lieu de porter leur SQL.
     internalApi: [
       { fn: 'recommend', file: 'services/pricing-engine.js' },
+      { fn: 'recordProductPriceChange', file: 'services/economic-price-audit-service.js' },
     ],
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
@@ -374,11 +375,12 @@ module.exports = {
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement de formule de prix doit etre valide par le proprietaire de pricing-engine.js',
+  authority: 'backend-core — tout changement de formule de prix ou d audit price_history doit rester derrière les services propriétaires economic-engine',
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee',
+    'aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js',
   ],
 
 };

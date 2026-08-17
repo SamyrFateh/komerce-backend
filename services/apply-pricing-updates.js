@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/pricing-engine.js, services/product-price-audit.js, utils/logger.js
+ * @depends       db, services/pricing-engine.js, services/economic-price-audit-service.js, utils/logger.js
  * @used-by       none
  * @db-read       products
  * @db-write      products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine
- * @version       2026-06
+ * @version       2026-08
  */
 
 'use strict';
@@ -28,7 +28,7 @@
 
 const db = require('../db');
 const pricingEngine = require('./pricing-engine');
-const { recordProductPriceChange } = require('./product-price-audit');
+const { recordProductPriceChange } = require('./economic-price-audit-service');
 const log = require('../utils/logger').child({ module: 'apply-pricing-updates' });
 
 async function computeServerSurvival(product) {

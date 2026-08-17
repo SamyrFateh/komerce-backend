@@ -37,7 +37,7 @@ module.exports = {
     in: [
       'connecteurs fournisseurs (CSV, API, manuel, Noon)',
       'contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait',
-      'publication et audit prix produit',
+      'publication produit et déclenchement de l audit prix via economic-engine',
       'categories boutique admin',
       'catalogue vivant Boutique : grille, cartes produit, ouverture fiche produit',
       'catalogue canonique : produit, medias publics, axes d options descriptifs et unites vendables SKU',
@@ -249,7 +249,6 @@ module.exports = {
       'catalog_media: RW!',          // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 2 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
       'order_items: R',
       'orders: R',
-      'price_history: W',
       'product_skus: RW!',           // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 4 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
       'product_sku_media: RW!',      // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 5 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
       'product_variants: RW!',       // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 3 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
@@ -324,7 +323,7 @@ module.exports = {
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)",
 
-      'economic-engine (prix produit et valorisation commerciale transport)',
+      'economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)',
       'logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',
       'auth',

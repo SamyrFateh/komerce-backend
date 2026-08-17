@@ -13,14 +13,14 @@
 
 jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 jest.mock('../../services/pricing-engine', () => ({ recommend: jest.fn() }));
-jest.mock('../../services/product-price-audit', () => ({ recordProductPriceChange: jest.fn() }));
+jest.mock('../../services/economic-price-audit-service', () => ({ recordProductPriceChange: jest.fn() }));
 jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() })),
 }));
 
 const db = require('../../db');
 const pricingEngine = require('../../services/pricing-engine');
-const { recordProductPriceChange } = require('../../services/product-price-audit');
+const { recordProductPriceChange } = require('../../services/economic-price-audit-service');
 const { applySinglePrice, applyAllPrices, computeServerSurvival } = require('../../services/apply-pricing-updates');
 
 const ADMIN = { id: 'admin-1', role: 'admin' };
