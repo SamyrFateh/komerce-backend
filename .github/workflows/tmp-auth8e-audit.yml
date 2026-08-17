@@ -28,24 +28,29 @@ jobs:
               exit "$status"
             fi
           }
+          list_grep() {
+            local pattern="$1"
+            shift
+            set +e
+            git grep -l -I -E "$pattern" -- "$@"
+            local status=$?
+            set -e
+            if [ "$status" -gt 1 ]; then exit "$status"; fi
+          }
 
-          echo '=== RUNTIME AUTHORIZATION / BEARER / readAuthToken ==='
-          run_grep '(Authorization|authorization|Bearer|bearer|readAuthToken|extractToken)' \
-            . \
-            ':(exclude)docs/**' \
-            ':(exclude)tests/**' \
-            ':(exclude)public/boutique/tests/**' \
-            ':(exclude)*.md' \
+          echo '=== EXACT orders-by-phone / orders_read REFERENCES ==='
+          run_grep '(orders-by-phone|orders_read)' . \
             ':(exclude).github/workflows/tmp-auth8e-audit.yml'
 
-          echo '=== ORDERS_READ TOKEN PRODUCERS / CONSUMERS ==='
-          run_grep '(orders-by-phone|orders_read|scope[^a-zA-Z0-9_]*[:=]|localStorage.*token|sessionStorage.*token)' \
-            . \
-            ':(exclude)node_modules/**' \
-            ':(exclude)public/boutique/node_modules/**' \
+          echo '=== TEST FILES USING INBOUND BEARER ==='
+          list_grep '(Authorization|authorization).{0,30}Bearer|Bearer.{0,30}(Authorization|authorization)' \
+            tests public/boutique/tests public/dashboards || true
+
+          echo '=== RUNTIME INBOUND AUTH HELPERS ==='
+          run_grep '(readAuthToken|extractToken|headers\.authorization|req\.headers\.authorization)' \
+            middleware routes utils server.js bootstrap \
             ':(exclude).github/workflows/tmp-auth8e-audit.yml'
 
-          echo '=== JWT / AUTHENTICATE CALL SITES ==='
-          run_grep '(authenticate|requireAdmin|requireRole|jwt\.sign|jwt\.verify)' \
-            routes middleware services utils public bootstrap server.js \
-            ':(exclude)public/boutique/tests/**'
+          echo '=== OPERATIONAL SCRIPTS SENDING KOMERCE BEARER ==='
+          run_grep '(authorization|Authorization).{0,50}Bearer|Bearer.{0,50}(token|TOKEN)' scripts \
+            ':(exclude)scripts/audit-security-major.js'
