@@ -52,6 +52,8 @@ jobs:
         run: python scripts/tmp-auth7-prepatch.py
       - name: Apply AUTH-7 patch and self-clean helpers
         run: python scripts/tmp-auth7-apply.py
+      - name: Update legacy Passkey test harnesses and self-clean helper
+        run: python scripts/tmp-auth7-testpatch.py
       - run: npm ci
       - name: Backend AUTH-2 baseline
         run: npx jest tests/unit/auth-passkey.test.js --runInBand
