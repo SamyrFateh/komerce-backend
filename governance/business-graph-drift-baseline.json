@@ -10,7 +10,7 @@
     "EXPOSED-ROUTE-OWNER-MISMATCH::KNOWN_DEBT": 0,
     "EXPOSED-ROUTE-UNRESOLVED::ACTIONABLE_DRIFT": 0,
     "LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER::KNOWN_DEBT": 0,
-    "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT": 3,
+    "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT": 2,
     "WRITER-NOT-OWNER::ACTIONABLE_DRIFT": 1,
     "WRITER-NOT-OWNER::KNOWN_DEBT": 25
   },
@@ -22,5 +22,6 @@
   "_comment_composition_root_20260817": "13 paires déjà qualifiées par O6 comme COMPOSITION_ROOT_WIRING / application-wiring-not-consumption / exceptionRequired=false sortent du compteur de dette et restent visibles en EXPECTED_TOPOLOGY. Baseline resserrée 39→26, jamais relevée.",
   "_comment_admin_dashboard_20260817": "10 dépendances d’interface admin-dashboard→provider sont observées dans le graphe et désormais déclarées dans le manifest canonique de projection. Baseline resserrée 26→16, jamais relevée.",
   "_comment_test_only_contract_truth_20260817": "6 dépendances test-only O6 NON_RUNTIME_TEST restent visibles en EXPECTED_TOPOLOGY ; 6 vrais contrats runtime sont déclarés. OBSERVED-UNDECLARED ACTIONABLE resserré 16→4, jamais relevé.",
-  "_comment_decision_signals_infra_20260817": "decision-signals déclare désormais explicitement infrastructure comme dépendance technique prouvée par db.js / utils/logger.js. Baseline OBSERVED-UNDECLARED resserrée 4→3, jamais relevée."
+  "_comment_decision_signals_infra_20260817": "decision-signals déclare désormais explicitement infrastructure comme dépendance technique prouvée par db.js / utils/logger.js. Baseline OBSERVED-UNDECLARED resserrée 4→3, jamais relevée.",
+  "_comment_recommendations_orders_boundary_20260817": "recommendations ne dépend plus des internes b-cart.js/cart-product-summary.js : cart-public-api.js, possédé par orders-client, est la frontière publique stable. Ancienne exception O6 supprimée ; baseline resserrée 3→2, jamais relevée."
 }

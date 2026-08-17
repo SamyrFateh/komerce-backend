@@ -18,8 +18,7 @@ import { bus } from './b-bus.js';
 import { state, dom, modalZone } from './b-store.js';
 import { sanitize } from './b-utils.js';
 import { isDesktop } from './b-scroll-owner.js';
-import { quickAdd, quickRemove, openCartWithHighlight } from './b-cart.js';
-import { getProductCartSummary } from './cart-product-summary.js';
+import { quickAdd, quickRemove, openCartWithHighlight, getProductCartSummary } from './cart-public-api.js';
 import { renderProductCard, renderAddControl } from './render/render-product-card.js';
 
 const _delegatedRoots = new WeakSet();

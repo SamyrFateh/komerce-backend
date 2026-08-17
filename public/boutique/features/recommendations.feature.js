@@ -61,7 +61,8 @@ module.exports = {
       'modal-product-polish.css (géométrie stable + / stepper et rythme du rail modal)',
     ],
     consumes: [
-      'boutique — b-modal-suggestions.js, b-pdp-curation-suggestions.js importent b-bus.js, b-cart.js, b-scroll-owner.js, b-store.js, b-utils.js',
+      'platform-ops — b-modal-suggestions.js et b-pdp-curation-suggestions.js consomment bus, store, scroll-owner et utilitaires UI',
+      'orders — b-modal-suggestions.js consomme uniquement cart-public-api.js pour ajout/retrait, résumé et ouverture du panier',
     ],
   },
 

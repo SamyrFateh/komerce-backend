@@ -396,7 +396,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 27
 - internal APIs: 3
 - dependencies (consumes): 17 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds
-- consumers: 13 — auth, dashboard, documents, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, refunds, shared-cart, unsold-resolution, admin-dashboard
+- consumers: 14 — auth, dashboard, documents, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, admin-dashboard
 
 ### payments _(business-feature)_
 
@@ -467,7 +467,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 0
 - interfaces exposed: 1
 - internal APIs: 0
-- dependencies (consumes): 5 — catalog, platform-ops, infrastructure, auth, logistics
+- dependencies (consumes): 6 — catalog, platform-ops, infrastructure, auth, logistics, orders
 - consumers: 3 — dashboard, infrastructure, shared-cart
 
 ### refunds _(business-transversal)_
@@ -1343,6 +1343,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | recommendations | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | recommendations | auth (`auth`) | ✔ |
 | recommendations | logistics (`logistics`) | ✔ |
+| recommendations | orders (`orders (frontière frontend orders-client/cart-public-api.js consommée par b-modal-suggestions.js ; aucune importation directe des internes panier)`) | ✔ |
 | refunds | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | refunds | orders (`orders (commande source)`) | ✔ |
 | refunds | shared-cart (`shared-cart (panier source)`) | ✔ |
@@ -1392,13 +1393,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (29)
+### DETTE / DRIFT ACTIONNABLE (28)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> shared-cart — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "orders" vers "shared-cart"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ recommendations -> orders — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "recommendations" vers "orders"
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ alerts — table "alerts" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ cart_shares — table "cart_shares" a 2 écrivain(s) déclaré(s) (orders, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ catalog_media — table "catalog_media" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
@@ -1484,7 +1484,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 798 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 152 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 154 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1652,7 +1652,7 @@ Meta Graph monté : oui.
 | purchasing | orders | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | recommendations | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| recommendations | orders | static-code | 2 | **OBSERVED_UNDECLARED** |
+| recommendations | orders | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | refunds | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | refunds | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1702,7 +1702,6 @@ Meta Graph monté : oui.
 - `platform-ops` → `payments` (canaux: static-code)
 - `platform-ops` → `recommendations` (canaux: static-code)
 - `platform-ops` → `shared-cart` (canaux: static-code)
-- `recommendations` → `orders` (canaux: static-code)
 - `refunds` → `payments` (canaux: static-code)
 
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
@@ -1773,11 +1772,11 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | NON_RUNTIME_TEST | 6 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
-| CROSS_FEATURE_DIRECT_IMPORT | 3 | boundary-remediation-required |
+| CROSS_FEATURE_DIRECT_IMPORT | 2 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **22** | |
+| **TOTAL** | **21** | |
 
 ### Projection dependencies
 
@@ -1832,7 +1831,6 @@ require() direct d'un fichier d'une autre business-feature — couture à casser
 
 - `catalog` → `orders` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
 - `orders` → `shared-cart` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
-- `recommendations` → `orders` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
 
 ### Business feature interfaces
 
@@ -1856,7 +1854,6 @@ Ledger `governance/feature-dependency-exceptions.json` — uniquement les paires
 - `orders` → `shared-cart` — **accepted-dependency** — Dépendance frontend résiduelle hors checkout : le slice orders-client possède le renderer canonique du panier (b-cart.js) et le shell de suivi / Mon Komerce (b-tracking.js). b-cart compose encore la surface de liste active via group-side-cart ; b-tracking compose encore l'onglet Mes listes via group-api, group-list-labels et l'activation de group-side-cart. Le checkout canonique est désormais découplé de shared-cart et n'est explicitement pas couvert par cette exception. La couture UI restante sera inversée ou extraite dans le lot de dette frontend dédié.
 - `platform-ops` → `auth-identity` — **accepted-dependency** — Le client API transversal expose des appels vers les endpoints d'authentification et le shell monte la surface identité. Il s'agit d'un adaptateur technique et de composition, sans ownership de la logique d'identité.
 - `platform-ops` → `catalog` — **accepted-dependency** — Le shell monte les modules de découverte produit et le client API transversal appelle les endpoints catalogue. La couture est un wiring et un adaptateur d'interface ; platform-ops ne possède ni produit, ni prix, ni stock.
-- `recommendations` → `orders` — **accepted-dependency** — Une recommandation permet explicitement d'ajouter le produit suggéré au panier personnel et de construire son résumé de ligne. La recommandation ne possède ni le panier ni son cycle de persistance.
 - `shared-cart` → `catalog` — **accepted-dependency** — Le modal panier partagé consomme en lecture seule les données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié.
 
 ### Runtime cycles

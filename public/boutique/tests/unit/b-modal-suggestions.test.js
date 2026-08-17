@@ -6,10 +6,29 @@
  * @test-runner jest
  * @test-requires none
  */
-jest.mock('../../js/b-cart.js', () => ({
+jest.mock('../../js/cart-public-api.js', () => ({
   quickAdd: jest.fn(),
   quickRemove: jest.fn(),
   openCartWithHighlight: jest.fn(),
+  getProductCartSummary: jest.fn((cart, productId) => {
+    const lines = (cart || []).filter((item) => String(item.product?.id ?? item.product_id ?? item.id) === String(productId));
+    const totalQty = lines.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+    const lineCount = lines.length;
+    const hasVariantLines = lines.some((item) => {
+      const combo = item && item.variant_combo;
+      return Boolean((combo && typeof combo === 'object' && Object.keys(combo).length) || item?.variant_label || item?.sku_id || item?.skuId || item?.product_sku_id || item?.productSkuId || item?.sku || item?.reference);
+    });
+    return {
+      productId: String(productId),
+      lines,
+      line: lineCount === 1 ? lines[0] : null,
+      lineCount,
+      totalQty,
+      hasVariantLines,
+      isAmbiguous: lineCount > 1,
+      canQuickAdjust: lineCount === 1,
+    };
+  }),
 }));
 
 jest.mock('../../js/b-scroll-owner.js', () => ({
@@ -49,7 +68,7 @@ jest.mock('../../js/view-models/product-card-view-model.js', () => ({
 
 const { state, dom } = require('../../js/b-store.js');
 const { bus } = require('../../js/b-bus.js');
-const { quickAdd, quickRemove, openCartWithHighlight } = require('../../js/b-cart.js');
+const { quickAdd, quickRemove, openCartWithHighlight } = require('../../js/cart-public-api.js');
 const { isDesktop } = require('../../js/b-scroll-owner.js');
 const { renderSuggestions } = require('../../js/b-modal-suggestions.js');
 

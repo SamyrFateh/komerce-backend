@@ -46,12 +46,12 @@
     "healthy": 7,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 163,
-    "directCrossFeatureImports": 3,
+    "businessDependencies": 164,
+    "directCrossFeatureImports": 2,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
     "ontologyGaps": 0,
-    "debtItemsTotal": 110,
+    "debtItemsTotal": 109,
     "gateHealthy": 14,
     "gateBlocked": 0
   },
@@ -12877,7 +12877,7 @@
         "totalFiles": 52,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
-          "count": 12,
+          "count": 14,
           "files": [
             {
               "declared": "../css/cart.css",
@@ -12936,6 +12936,13 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../js/cart-public-api.js",
+              "resolvedPath": "public/boutique/js/cart-public-api.js",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../tests/unit/b-cart-core.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-cart-core.test.js",
               "category": "tests",
@@ -12959,6 +12966,13 @@
             {
               "declared": "../tests/unit/b-tracking.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-tracking.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/cart-public-api-boundary.test.js",
+              "resolvedPath": "public/boutique/tests/unit/cart-public-api-boundary.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -13446,6 +13460,13 @@
         },
         {
           "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -15932,6 +15953,13 @@
           ]
         },
         {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "platform-ops",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -15967,7 +15995,7 @@
       },
       "boundaryHealth": {
         "status": "ATTENTION",
-        "directCrossFeatureImports": 1,
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 2,
@@ -15994,7 +16022,7 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 3,
+        "debtCount": 2,
         "debtItems": [
           {
             "type": "DECLARED_NOT_OBSERVED",
@@ -16005,11 +16033,6 @@
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
             "evidence": "contract.consumes déclare \"logistics\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
