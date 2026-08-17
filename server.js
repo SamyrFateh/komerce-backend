@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        http_requests, env_vars, raw_webhooks, static_assets
  * @outputs       mounted_api, boutique_static, crons, server_lifecycle
- * @depends       bootstrap/env.js, bootstrap/security.js, bootstrap/api-routes.js, bootstrap/html-routes.js, bootstrap/crons.js, bootstrap/feature-wiring.js, routes/shared-cart.js
+ * @depends       bootstrap/env.js, bootstrap/security.js, bootstrap/api-routes.js, bootstrap/html-routes.js, bootstrap/crons.js, bootstrap/feature-wiring.js, routes/shared-cart.js, middleware/csrf-origin.js
  * @db-write      none
  * @db-read      none
  * @used-by       railway-runtime
@@ -51,6 +51,7 @@ const { fixAdminHash, fixMissingSchema } = require('./scripts/fix-schema');
 const { runAllSeeds }                     = require('./scripts/seed');
 const { errorHandler } = require('./middleware/error-handler');
 const { requestIdMiddleware } = require('./middleware/request-id');
+const { csrfOriginGuard } = require('./middleware/csrf-origin');
 
 const app = express();
 
@@ -90,6 +91,9 @@ app.use('/api/payments/paypal/webhook', express.raw({ type: 'application/json' }
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
+// AUTH-8b — SameSite=Lax reste compatible WhatsApp ; les mutations portées
+// par le cookie de session doivent en plus venir d'une Origin autorisée.
+app.use(csrfOriginGuard);
 app.use(requestIdMiddleware);
 
 // ── Rate limiting ────────────────────────────────────────────────────────────

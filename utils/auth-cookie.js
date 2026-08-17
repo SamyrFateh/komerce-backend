@@ -9,7 +9,7 @@
  *   Les 4 middlewares de lecture hardcodaient le nom.
  *   → Incohérence de SameSite, pas de __Host-, duplication de logique.
  *
- * Politique actuelle (à durcir en AUTH-8b/c/d) :
+ * Politique actuelle (AUTH-8b ; durcissements complémentaires en AUTH-8c/d) :
  *   - sameSite par défaut = 'Lax'  (compatible liens WhatsApp & magic-link, cf. GOV-07)
  *   - httpOnly = true (toujours — JAMAIS exposé au JS)
  *   - secure = true en production

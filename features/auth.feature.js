@@ -41,6 +41,7 @@ module.exports = {
   files: {
     middleware: [
       'middleware/auth.js',
+      'middleware/csrf-origin.js',
       'middleware/auth-guest.js',
       'middleware/soft-auth.js',
       'middleware/require-verified-identity.js',
@@ -66,6 +67,7 @@ module.exports = {
       tests: [
       'tests/unit/auth-guest.test.js',
       'tests/unit/auth-middleware.test.js',
+      'tests/unit/csrf-origin.test.js',
       'tests/unit/auth-route.test.js',
       'tests/unit/otp-route.test.js',
       'tests/unit/require-verified-identity.test.js',
@@ -126,6 +128,7 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'toute route mutante passe par un middleware d\'auth declare — jamais d\'acces direct sans garde',
+    'toute mutation portée par le cookie de session exige une Origin explicitement autorisée (AUTH-8b)',
   ],
 
 };

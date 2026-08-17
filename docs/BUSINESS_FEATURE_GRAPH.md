@@ -110,10 +110,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Fournir les gardes transverses d'authentification et de vérification d'identité (middlewares JWT/session/rôles) consommées par toutes les autres features.
 
-- middleware: 6
+- middleware: 7
 - utils: 1
 - migrations: 2
-- tests: 8
+- tests: 9
 - tables owned (lifecycle): 0
 - tables written: 1
 - interfaces exposed: 0
@@ -1379,7 +1379,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> orders — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "orders"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> payments — dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "payments"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "auth" vers "auth-identity"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 14 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth" vers "notifications"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> auth-passkey — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
@@ -1495,7 +1495,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 784 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 786 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 152 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1518,7 +1518,7 @@ Meta Graph monté : oui.
 | admin-dashboard | payments | interface | 6 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | sourcing | interface | 3 | **DECLARED_AND_OBSERVED** |
 | auth | auth-identity | static-code | 3 | **OBSERVED_UNDECLARED** |
-| auth | infrastructure | static-code | 13 | **OBSERVED_UNDECLARED** |
+| auth | infrastructure | static-code | 14 | **OBSERVED_UNDECLARED** |
 | auth | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | auth-identity | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | auth-identity | auth-passkey | static-code | 7 | **OBSERVED_UNDECLARED** |
@@ -1571,7 +1571,7 @@ Meta Graph monté : oui.
 | economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | economic-engine | orders | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | incident-management | infrastructure | static-code | 3 | **OBSERVED_UNDECLARED** |
-| infrastructure | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| infrastructure | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | infrastructure | auth-identity | static-code | 3 | **OBSERVED_UNDECLARED** |
 | infrastructure | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | business-rules | static-code | 3 | **OBSERVED_UNDECLARED** |
@@ -1903,7 +1903,7 @@ Usage de db.js / middleware / logger / utils / validators d'un transversal techn
 - `auth-identity` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `auth-identity` → `platform-ops` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
 - `auth-passkey` → `platform-ops` — business-file-import, RUNTIME_AND_TEST
-- `auth` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `auth` → `infrastructure` — import-mixed, RUNTIME_AND_TEST
 - `catalog` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `catalog` → `platform-ops` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
 - `customs` → `infrastructure` — technical-primitive, RUNTIME_ONLY

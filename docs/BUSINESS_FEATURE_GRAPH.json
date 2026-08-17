@@ -700,6 +700,13 @@
       {
         "feature": "auth",
         "category": "middleware",
+        "declared": "middleware/csrf-origin.js",
+        "resolvedPath": "middleware/csrf-origin.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth",
+        "category": "middleware",
         "declared": "middleware/auth-guest.js",
         "resolvedPath": "middleware/auth-guest.js",
         "status": "resolved-in-technical-graph"
@@ -765,6 +772,13 @@
         "category": "tests",
         "declared": "tests/unit/auth-middleware.test.js",
         "resolvedPath": "tests/unit/auth-middleware.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth",
+        "category": "tests",
+        "declared": "tests/unit/csrf-origin.test.js",
+        "resolvedPath": "tests/unit/csrf-origin.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -16180,6 +16194,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "middleware/csrf-origin.js",
+                "targetFile": "bootstrap/security.js"
+              },
+              {
                 "sourceFileId": "middleware/auth-guest.js",
                 "targetFile": "db.js"
               },
@@ -18576,6 +18594,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "server.js",
+                "targetFile": "middleware/csrf-origin.js"
+              },
               {
                 "sourceFileId": "server.js",
                 "targetFile": "middleware/verify-authkey-webhook.js"
@@ -23570,7 +23592,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 784
+        "filesObserved": 786
       },
       "boutique": {
         "filesObserved": 152,
@@ -23790,7 +23812,7 @@
         "channels": [
           "static-code"
         ],
-        "couplingObserved": "technical-primitive",
+        "couplingObserved": "import-mixed",
         "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
@@ -24817,7 +24839,7 @@
       "PROJECTION|RUNTIME_ONLY|projection|business-transversal|interface": 2,
       "PROJECTION|RUNTIME_ONLY|projection|piloting-capability|interface": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 2,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|technical-primitive": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|import-mixed": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|import-mixed": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
@@ -26759,7 +26781,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez \"auth\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 14 preuve(s)) sans contract.consumes déclaré chez \"auth\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
