@@ -75,12 +75,15 @@ function isBoutiqueRelevant(file) {
 
 // Lot 3 — governance / feature-first : cartes, baselines/ontologie, logique des
 // gates, capabilities, workflows GitHub Actions actifs et projections canoniques
-// dérivées. Une PR qui ne touche que ces fichiers doit rejouer feature-guard +
-// business-graph --check + feature-360 --check (mode check, jamais --write),
-// sinon le domaine gouvernance n'est pas enforced (Required verdict passe à vide).
+// dérivées. Tout fichier backend reconnu par Lot 1 réveille également la
+// gouvernance : un nouveau routes/services/middleware/utils/test ne doit jamais
+// pouvoir entrer sans que le registre feature et Feature 360 vérifient son
+// ownership. Régression découverte sur AUTH-8a : utils/auth-cookie.js était
+// backend=true mais governance=false, donc l'orphelin n'a été vu qu'à la PR suivante.
 function isGovernanceFile(file) {
   const f = norm(file);
-  return /^features\/.+\.feature\.js$/i.test(f)
+  return isBackendFile(f)
+    || /^features\/.+\.feature\.js$/i.test(f)
     || /^governance\/.+/i.test(f)
     || /^scripts\/.+\.(?:js|cjs|mjs)$/i.test(f)
     || /^capabilities\/.+\.(?:js|cjs|mjs)$/i.test(f)
