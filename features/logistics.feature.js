@@ -72,6 +72,7 @@ module.exports = {
       'services/parcel-operations.js',
       'services/parcel-security.js',
       'services/scan-operations.js',
+      'services/scan-write-service.js',
       'services/scan-engine.js',
       'services/auto-parcel.js',
       'services/pickup-secret-service.js',
@@ -131,6 +132,7 @@ module.exports = {
       'tests/unit/pickup-secret.test.js',
       'tests/unit/pickup-secret-service.test.js',
       'tests/unit/scan-operations.test.js',
+      'tests/unit/scan-write-service.test.js',
       'tests/unit/scan-engine.test.js',
       'tests/unit/parcel-operations.test.js',
       'tests/unit/parcel-guards.test.js',
@@ -293,6 +295,9 @@ module.exports = {
     // l'appelant, pas un contournement caché. Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
     internalApi: [
       { fn: 'transitionParcelStatus', file: 'services/parcel-operations.js' },
+      { fn: 'recordHubPreparationScan', file: 'services/scan-write-service.js' },
+      { fn: 'recordQrCollectionScan', file: 'services/scan-write-service.js' },
+      { fn: 'detachUserFromScans', file: 'services/scan-write-service.js' },
     ],
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',

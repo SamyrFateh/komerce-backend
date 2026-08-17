@@ -215,7 +215,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - dash: 83
 - tests: 31
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
-- tables written: 22
+- tables written: 21
 - interfaces exposed: 65
 - internal APIs: 0
 - dependencies (consumes): 14 — orders, infrastructure, payments, logistics, inventory, economic-engine, wallet, auth, customs, documents, recommendations, purchasing, business-rules, decision-signals
@@ -340,15 +340,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 2
 - docs: 4
 - utils: 3
-- services: 13
+- services: 14
 - routes: 18
 - boutique: 1
 - dash: 2
-- tests: 33
+- tests: 34
 - tables owned (lifecycle): 11 — `parcels`, `relais`, `parcel_items`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `carriers`, `parcel_events`, `pickup_verify_attempts`, `shipments`
 - tables written: 14
 - interfaces exposed: 70
-- internal APIs: 1
+- internal APIs: 4
 - dependencies (consumes): 14 — infrastructure, business-rules, orders, customs, auth, auth-identity, catalog, economic-engine, notifications, payments, refunds, wallet, purchasing, loyalty
 - consumers: 13 — catalog, customs, dashboard, economic-engine, incident-management, infrastructure, orders, payments, platform-ops, purchasing, recommendations, admin-dashboard, decision-signals
 
@@ -392,7 +392,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - boutique: 3
 - tests: 29
 - tables owned (lifecycle): 9 — `order_items`, `orders`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `disputes`
-- tables written: 11
+- tables written: 10
 - interfaces exposed: 27
 - internal APIs: 5
 - dependencies (consumes): 18 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds, shared-cart
@@ -640,7 +640,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `revoked_tokens` | `auth-identity` | declared-table-owner | auth-identity, infrastructure | auth |
 | `risk_provisions` | `economic-engine` | single-writer | economic-engine | — |
 | `scan_events` | `logistics` | declared-table-owner | dashboard, logistics | incident-management, notifications, payments, platform-ops |
-| `scans` | `logistics` | declared-table-owner | dashboard, logistics, orders, platform-ops | — |
+| `scans` | `logistics` | declared-table-owner | logistics, platform-ops | dashboard |
 | `schema_migrations` | `infrastructure` | single-writer | infrastructure | — |
 | `shared_cart_events` | `shared-cart` | single-writer | shared-cart | — |
 | `shared_cart_items` | `shared-cart` | single-writer | shared-cart | — |
@@ -1178,6 +1178,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `—` | `validators/index.js` | infrastructure | resolved |
 | `—` | `bootstrap/*` | infrastructure | resolved |
 | `transitionParcelStatus` | `services/parcel-operations.js` | logistics | resolved |
+| `recordHubPreparationScan` | `services/scan-write-service.js` | logistics | resolved |
+| `recordQrCollectionScan` | `services/scan-write-service.js` | logistics | resolved |
+| `detachUserFromScans` | `services/scan-write-service.js` | logistics | resolved |
 | `setNotificationOutcomeListener` | `services/notifications/internals.js` | notifications | resolved |
 | `notifyOrder*` | `services/notifications/order.js` | notifications | resolved |
 | `notifyParcel*` | `services/notifications/parcel.js` | notifications | resolved |
@@ -1407,7 +1410,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (8)
+### DETTE / DRIFT ACTIONNABLE (7)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
@@ -1417,7 +1420,6 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcel_items — table "parcel_items" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par dashboard, inventory
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcels — table "parcels" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par customs, dashboard, payments
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ scans — table "scans" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par dashboard, orders
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ users — table "users" : lifecycle owner = auth-identity (db.tables "!"), mais aussi écrite par auth, dashboard, loyalty
 
 ### TOPOLOGIE ATTENDUE — hors dette (33)
@@ -1479,7 +1481,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 812 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 814 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 158 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1539,7 +1541,7 @@ Meta Graph monté : oui.
 | dashboard | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | infrastructure | static-code | 46 | **DECLARED_AND_OBSERVED** |
-| dashboard | logistics | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| dashboard | logistics | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | dashboard | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | dashboard | purchasing | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | decision-signals | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1609,7 +1611,7 @@ Meta Graph monté : oui.
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 54 | **DECLARED_AND_OBSERVED** |
-| orders | logistics | static-code, interface | 17 | **DECLARED_AND_OBSERVED** |
+| orders | logistics | static-code, interface | 18 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 8 | **DECLARED_AND_OBSERVED** |

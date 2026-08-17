@@ -6335,6 +6335,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/scan-write-service.js",
+        "resolvedPath": "services/scan-write-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/scan-engine.js",
         "resolvedPath": "services/scan-engine.js",
         "status": "resolved-in-technical-graph"
@@ -6680,6 +6687,13 @@
         "category": "tests",
         "declared": "tests/unit/scan-operations.test.js",
         "resolvedPath": "tests/unit/scan-operations.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/scan-write-service.test.js",
+        "resolvedPath": "tests/unit/scan-write-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13290,6 +13304,24 @@
         "status": "resolved"
       },
       {
+        "feature": "logistics",
+        "fn": "recordHubPreparationScan",
+        "file": "services/scan-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "recordQrCollectionScan",
+        "file": "services/scan-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "detachUserFromScans",
+        "file": "services/scan-write-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "notifications",
         "fn": "setNotificationOutcomeListener",
         "file": "services/notifications/internals.js",
@@ -18411,8 +18443,16 @@
                 "targetFile": "services/pickup-secret-service.js"
               },
               {
+                "sourceFileId": "routes/admin/users.js",
+                "targetFile": "services/scan-write-service.js"
+              },
+              {
                 "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "utils/parcelSync.js"
+              },
+              {
+                "sourceFileId": "routes/hub-dashboard.js",
+                "targetFile": "services/scan-write-service.js"
               },
               {
                 "sourceFileId": "routes/hub-dashboard.js",
@@ -21304,6 +21344,10 @@
               {
                 "sourceFileId": "utils/orderParcelLinkRules.js",
                 "targetFile": "utils/parcels.js"
+              },
+              {
+                "sourceFileId": "services/qr-collection-core.js",
+                "targetFile": "services/scan-write-service.js"
               },
               {
                 "sourceFileId": "services/qr-collection-core.js",
@@ -24264,7 +24308,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 812
+        "filesObserved": 814
       },
       "boutique": {
         "filesObserved": 158,
@@ -25675,21 +25719,9 @@
     "scans": {
       "writers": [
         {
-          "feature": "dashboard",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
           "feature": "logistics",
           "mode": "RW",
           "declaredOwner": true,
-          "technical": false
-        },
-        {
-          "feature": "orders",
-          "mode": "W",
-          "declaredOwner": false,
           "technical": false
         },
         {
@@ -25699,7 +25731,9 @@
           "technical": true
         }
       ],
-      "readers": [],
+      "readers": [
+        "dashboard"
+      ],
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
     },
@@ -26619,11 +26653,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "scans",
-        "msg": "table \"scans\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, orders"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "users",
         "msg": "table \"users\" : lifecycle owner = auth-identity (db.tables \"!\"), mais aussi écrite par auth, dashboard, loyalty"
       }
@@ -26658,11 +26687,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "parcels",
         "msg": "table \"parcels\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par customs, dashboard, payments"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "scans",
-        "msg": "table \"scans\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26880,11 +26904,11 @@
       }
     ],
     "summary": {
-      "signals": 8,
-      "debt": 8,
+      "signals": 7,
+      "debt": 7,
       "expectedTopology": 33,
       "generatorLimitations": 8,
-      "classifiedCandidates": 49
+      "classifiedCandidates": 48
     }
   }
 }

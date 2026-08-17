@@ -9,7 +9,8 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       order_items, orders, parcel_items, parcels, products
- * @db-write      order_comments, order_incidents, parcel_items, parcels, scans
+ * @db-write      order_comments, order_incidents, parcel_items, parcels
+ * @db-write-via:scan-write-service scans
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  dashboard, admin-dashboard
@@ -45,6 +46,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
 const { transitionOrderStatus } = require('../services/order-status-machine');
+const { recordHubPreparationScan } = require('../services/scan-write-service');
 const log = require('../utils/logger').child({ module: 'hub-dashboard' });
 const hubQueries = require('../services/hub-dashboard-queries');
 
@@ -117,10 +119,12 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
     // Log scan
     // R7 FIX — scan_code NOT NULL : générer un code synthétique pour les scans hub automatiques
     const scanCodePrep = `HUB-PREP-${order.id.slice(0, 8).toUpperCase()}`;
-    await db.query(`
-      INSERT INTO scans (order_id, step, scanned_by, notes, scan_code)
-      VALUES ($1, 'preparation', $2, $3, $4)
-    `, [order.id, req.user.id, `Préparation démarrée par ${req.user.full_name || 'hub'}`, scanCodePrep]);
+    await recordHubPreparationScan(db, {
+      orderId: order.id,
+      scannedBy: req.user.id,
+      notes: `Pr?paration d?marr?e par ${req.user.full_name || 'hub'}`,
+      scanCode: scanCodePrep,
+    });
 
     // Log comment
     await db.query(`
@@ -287,10 +291,12 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
     try {
       await client.query('SAVEPOINT sp_scans_auto_prepare');
       const scanCodeAuto = `HUB-AUTO-${order.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
-      await client.query(`
-        INSERT INTO scans (order_id, step, scanned_by, notes, scan_code)
-        VALUES ($1, 'preparation', $2, $3, $4)
-      `, [order.id, req.user.id, `Auto-prepare: colis ${reference} créé, ${unassigned.length} article(s) assigné(s)`, scanCodeAuto]);
+      await recordHubPreparationScan(client, {
+        orderId: order.id,
+        scannedBy: req.user.id,
+        notes: `Auto-prepare: colis ${reference} cr??, ${unassigned.length} article(s) assign?(s)`,
+        scanCode: scanCodeAuto,
+      });
       await client.query('RELEASE SAVEPOINT sp_scans_auto_prepare');
     } catch(e) {
       // scans table peut varier — sans SAVEPOINT, cette erreur aborte le

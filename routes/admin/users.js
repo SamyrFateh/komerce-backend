@@ -9,7 +9,8 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, users
- * @db-write      basket_items, baskets, incidents, order_status_history, recipients, scan_events, scans, sms_log, users, wallet_transactions, wallets
+ * @db-write      basket_items, baskets, incidents, order_status_history, recipients, scan_events, sms_log, users, wallet_transactions, wallets
+ * @db-write-via:scan-write-service scans
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  dashboard, admin-dashboard
@@ -22,6 +23,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
+const { detachUserFromScans } = require('../../services/scan-write-service');
 const log = require('../../utils/logger').child({ module: 'admin/users' });
 
 const guard = [authenticate, requireRole(['admin'])];
@@ -197,13 +199,16 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
         'DELETE FROM refresh_tokens WHERE user_id = $1::uuid',
         'DELETE FROM user_addresses WHERE user_id = $1::uuid',
         'UPDATE order_status_history SET changed_by = NULL WHERE changed_by = $1::uuid',
-        'UPDATE scans SET scanned_by = NULL WHERE scanned_by = $1::uuid',
+        () => detachUserFromScans(db, id),
         'UPDATE scan_events SET scanned_by = NULL WHERE scanned_by = $1::uuid',
         'UPDATE incidents SET detected_by = NULL WHERE detected_by = $1::uuid',
         'UPDATE incidents SET resolved_by = NULL WHERE resolved_by = $1::uuid',
       ];
       for (const q of cleanupQueries) {
-        try { await db.query(q, [id]); } catch (_) { /* table may not exist */ }
+        try {
+          if (typeof q === 'function') await q();
+          else await db.query(q, [id]);
+        } catch (_) { /* table may not exist */ }
       }
       await db.query('DELETE FROM users WHERE id = $1::uuid', [id]);
       log.info(`🗑️ Admin hard-deleted user ${user.email} by ${req.user.email}`);
