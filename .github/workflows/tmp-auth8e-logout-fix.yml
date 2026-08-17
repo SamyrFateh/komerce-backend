@@ -27,11 +27,7 @@ jobs:
           if old_import not in text:
               raise SystemExit('auth-cookie import pattern not found')
           text = text.replace(old_import, new_import, 1)
-          old = """    const token =
-      req.cookies?.[COOKIE_NAME] ||
-      (req.headers.authorization?.startsWith('Bearer ')
-        ? req.headers.authorization.split(' ')[1]
-        : null);"""
+          old = "    const token =\n      req.cookies?.[COOKIE_NAME] ||\n      (req.headers.authorization?.startsWith('Bearer ')\n        ? req.headers.authorization.split(' ')[1]\n        : null);"
           new = "    const token = readAuthToken(req);"
           if old not in text:
               raise SystemExit('logout token reader pattern not found')
