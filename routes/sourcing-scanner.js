@@ -6,15 +6,16 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*, services/suppliers/catalog-import-orchestrator.js, services/catalog-promotion.js
+ * @depends       db.js, middleware/auth.js, services/*, services/suppliers/catalog-import-orchestrator.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       product_skus, sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
- * @db-write      catalog_media, product_sku_media, product_skus, product_variants, products, sourcing_candidate_events, sourcing_candidates
+ * @db-write      catalog_media, product_sku_media, product_skus, product_variants, sourcing_candidate_events, sourcing_candidates
+ * @db-write-via:catalog-candidate-product-service products
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports
  * @db-txn        import-product : transaction dédiée (db.getClient/BEGIN..COMMIT), promotion catalogue incluse ; reste des routes : query_direct
  * @doctrine      PDC-8 Lot 6, DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  sourcing, catalog
- * @version       2026-07 (PDC-8 Lot 6 — import-product transactionnel + promotion catalogue câblée)
+ * @version       2026-08 (WRITER-NOT-OWNER : création products déléguée au lifecycle owner catalog)
  */
 
 /**
@@ -62,6 +63,7 @@ const scanner = require('../services/supplier-catalog-scanner');
 const pricingEngine = require('../services/pricing-engine');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const catalogEnrichment = require('../services/catalog-enrichment');
+const { createDraftProductFromSourcingCandidate } = require('../services/catalog-candidate-product-service');
 const { promoteCatalog } = require('../services/catalog-promotion');
 const { authenticate } = require('../middleware/auth');
 
@@ -516,34 +518,13 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
       return res.status(400).json({ error: 'Pas de prix calculé. Re-scannez le candidat avant import.' });
     }
 
-    const weightKg = c.estimated_weight_kg || null;
-
-    // DOCTRINE_CATALOGUE §7 — la donnée source ne se perd JAMAIS : elle est
-    // écrite ici, à l'entrée du catalogue (retraduction + litiges fournisseur).
-    // La locale des connecteurs actuels est l'anglais (Dubaï) ; les futurs
-    // connecteurs porteront leur locale dans NormalizedSupplierProduct.
-    const prodRes = await client.query(
-      `INSERT INTO products (
-         name, category,
-         cost_kmf,
-         price_kmf,
-         weight_kg,
-         is_active, lifecycle_status,
-         name_source, description_source, source_locale, content_source
-       ) VALUES ($1, $2, $3, $4, $5, FALSE, 'candidate', $6, $7, $8, 'connector_raw')
-       RETURNING id`,
-      [
-        c.product_name,
-        c.komerce_category || 'autre',
-        c.purchase_price_kmf || 0,
-        initialPrice,
-        weightKg,
-        c.product_name,
-        c.description || null,
-        'en',
-      ]
-    );
-    const productId = prodRes.rows[0].id;
+    // WRITER-NOT-OWNER : sourcing orchestre la promotion, mais la création de
+    // la ligne products appartient au lifecycle owner catalog. Le même client
+    // transactionnel est injecté : l'atomicité PDC-8 reste inchangée.
+    const productId = await createDraftProductFromSourcingCandidate(client, {
+      candidate: c,
+      initialPrice,
+    });
 
     // PDC-8 Lot 6 — promotion du normalized_source_contract V2 (media, axes,
     // SKU, couture SKU↔media) dans la même transaction. Un contrat V1
