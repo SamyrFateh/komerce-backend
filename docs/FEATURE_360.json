@@ -46,7 +46,7 @@
     "healthy": 15,
     "attention": 15,
     "blocked": 0,
-    "businessDependencies": 174,
+    "businessDependencies": 175,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -3209,12 +3209,6 @@
         ],
         "writesTables": [
           {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "boutique_categories",
             "mode": "RW",
             "lifecycleOwner": "catalog",
@@ -3372,12 +3366,6 @@
           }
         ],
         "writesTables": [
-          {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
           {
             "table": "boutique_categories",
             "mode": "RW",
@@ -3555,6 +3543,13 @@
         },
         {
           "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -9311,13 +9306,8 @@
             ]
           },
           "utils": {
-            "count": 5,
+            "count": 4,
             "files": [
-              {
-                "declared": "utils/alerts.js",
-                "resolvedPath": "utils/alerts.js",
-                "status": "resolved-in-technical-graph"
-              },
               {
                 "declared": "utils/logger.js",
                 "resolvedPath": "utils/logger.js",
@@ -9351,7 +9341,7 @@
             ]
           }
         },
-        "totalFiles": 279,
+        "totalFiles": 278,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11049,12 +11039,6 @@
         ],
         "writesTables": [
           {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "carriers",
             "mode": "RW",
             "lifecycleOwner": "logistics",
@@ -11218,12 +11202,6 @@
           }
         ],
         "writesTables": [
-          {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
           {
             "table": "carriers",
             "mode": "RW",
@@ -12219,8 +12197,13 @@
             ]
           },
           "utils": {
-            "count": 1,
+            "count": 2,
             "files": [
+              {
+                "declared": "utils/alerts.js",
+                "resolvedPath": "utils/alerts.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "utils/email.js",
                 "resolvedPath": "utils/email.js",
@@ -12229,7 +12212,7 @@
             ]
           }
         },
-        "totalFiles": 41,
+        "totalFiles": 42,
         "boutiqueManifest": "notifications-client",
         "boutiqueFiles": {
           "count": 3,
@@ -12393,6 +12376,11 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "createAlert",
+            "file": "utils/alerts.js",
+            "status": "resolved"
+          },
+          {
             "fn": "emitOrderMilestone / emitExceptional / resolveOrderMilestones",
             "file": "services/client-notification-service.js",
             "status": "resolved"
@@ -12472,6 +12460,13 @@
         },
         {
           "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -13069,12 +13064,6 @@
         ],
         "writesTables": [
           {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "customs_history",
             "mode": "W",
             "lifecycleOwner": "orders",
@@ -13200,12 +13189,6 @@
           }
         ],
         "writesTables": [
-          {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
           {
             "table": "customs_history",
             "mode": "W",
@@ -13887,12 +13870,6 @@
         ],
         "writesTables": [
           {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "cash_collections",
             "mode": "RW",
             "lifecycleOwner": "payments",
@@ -13970,12 +13947,6 @@
           }
         ],
         "writesTables": [
-          {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
           {
             "table": "cash_collections",
             "mode": "RW",
@@ -15401,12 +15372,6 @@
         ],
         "writesTables": [
           {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "orders",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -15462,12 +15427,6 @@
           }
         ],
         "writesTables": [
-          {
-            "table": "alerts",
-            "mode": "W",
-            "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
           {
             "table": "orders",
             "mode": "RW",

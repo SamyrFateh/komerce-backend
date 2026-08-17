@@ -6,10 +6,11 @@
  * @criticality   high
  * @inputs        product_id, admin_user, reject_reason, override_fields
  * @outputs       queue_page, approved_product, rejected_product, overridden_product
- * @depends       db.js, services/catalog-overrides.js, services/product-publication-guard.js
+ * @depends       db.js, services/catalog-overrides.js, services/product-publication-guard.js, utils/alerts.js
  * @used-by       routes/admin/catalog-approval.js
  * @db-read       products
- * @db-write      alerts, products
+ * @db-write      products
+ * @db-write-via:alerts-persistence-boundary alerts
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md §5, §6
  * @impact-areas  catalog, admin-dashboard
@@ -41,6 +42,7 @@
  */
 
 const db = require('../db');
+const { createAlert } = require('../utils/alerts');
 const { upsertOverrides } = require('./catalog-overrides');
 const { validatePublicationUpdate } = require('./product-publication-guard');
 const log = require('../utils/logger').child({ module: 'catalog-approval' });
@@ -172,15 +174,14 @@ async function rejectProduct(q = db, productId, { reason } = {}, adminUser) {
   );
 
   try {
-    await q.query(
-      `INSERT INTO alerts (type, entity_type, entity_id, severity, title, description)
-       VALUES ('catalog_approval_reject', 'product', $1, 'low', $2, $3)`,
-      [
-        productId,
-        `Produit rejeté en approbation: ${reason}`,
-        `Raison: ${reason} — décidé par ${adminUser?.id || 'admin'}`,
-      ]
-    );
+    await createAlert(q, {
+      type: 'catalog_approval_reject',
+      entityType: 'product',
+      entityId: productId,
+      severity: 'low',
+      title: `Produit rejet\u00e9 en approbation: ${reason}`,
+      description: `Raison: ${reason} \u2014 d\u00e9cid\u00e9 par ${adminUser?.id || 'admin'}`,
+    });
   } catch (err) {
     log.warn({ err }, '[catalog-approval] trace rejet ignorée:');
   }

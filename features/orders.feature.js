@@ -145,7 +145,6 @@ module.exports = {
   // services/purchasing-cancel-service.js, propriétaire du lifecycle PO.
   db: {
     tables: [
-      'alerts: W',
       'customs_history: W',
       'disputes: W',
       'order_comments: W',

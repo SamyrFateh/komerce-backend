@@ -130,9 +130,12 @@ describe('rejectProduct', () => {
     const alertCall = calls.find(c => c.sql.includes('INSERT INTO alerts'));
     expect(alertCall).toBeDefined();
     expect(alertCall.sql).toContain('type, entity_type, entity_id, severity, title, description');
-    expect(alertCall.params[0]).toBe(PRODUCT_ID);
-    expect(alertCall.params[1]).toContain('photo non conforme');
-    expect(alertCall.params[2]).toContain('photo non conforme');
+    expect(alertCall.params[0]).toBe('catalog_approval_reject');
+    expect(alertCall.params[1]).toBe('product');
+    expect(alertCall.params[2]).toBe(PRODUCT_ID);
+    expect(alertCall.params[3]).toBe('low');
+    expect(alertCall.params[4]).toContain('photo non conforme');
+    expect(alertCall.params[5]).toContain('photo non conforme');
   });
 });
 

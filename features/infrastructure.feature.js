@@ -55,7 +55,6 @@ module.exports = {
       'middleware/validate.js',
     ],
     utils: [
-      'utils/alerts.js',
       'utils/logger.js',
       'utils/phone.js',
       'utils/rates.js',

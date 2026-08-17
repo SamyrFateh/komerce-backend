@@ -89,7 +89,6 @@ module.exports = {
   // y écrit également (outils admin de correction).
   db: {
     tables: [
-      'alerts: W',              // trigger/repair + purchasing-cancel-service (PO engagée lors d'une annulation)
       'order_items: R',
       'orders: RW',
       'product_suppliers: RW',

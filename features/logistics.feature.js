@@ -172,7 +172,6 @@ module.exports = {
   // (nom de table construit par variable) a échappé au scan.
   db: {
     tables: [
-      'alerts: W',
       'business_rules: R',
       'carriers: RW',
       'incidents: R',  // W-via incident-management/incident-write-service - LOT9
