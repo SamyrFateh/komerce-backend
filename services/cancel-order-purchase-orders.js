@@ -8,9 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       services/purchasing-cancel-service.js
  * @used-by       services/order-status-machine.js
- * @db-read       none
- * @db-write      none
- * @db-txn        caller_managed
+ * @db-txn        not_required
  * @doctrine      writer_not_owner_campaign_2026_08
  * @impact-areas  orders, purchasing, cancellation
  * @version       2026-08
