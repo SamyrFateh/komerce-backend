@@ -162,6 +162,17 @@ module.exports = {
              'du lot : ne pas les déplacer sans démontrer que leur service principal n\'est plus ' +
              'l\'entrée catalogue — non démontré, donc non déplacés).',
         risk: 'aucun — la frontière catalog/sourcing fine est explicitement hors périmètre O1.' },
+      { gap: 'WRITER-NOT-OWNER (campagne 2026-08) — sourcing_candidates et sourcing_candidate_events ' +
+             'restent flagués par le scanner alors que le partage avec catalog (catalog-import-orchestrator.js) ' +
+             'est un design intentionnel documenté ci-dessus (séquence CATALOG importe → SOURCING qualifie → ' +
+             'CATALOG publie), même motif que refunds (FEATURE_DOCTRINE.md, business-transversal, Signal 5). ' +
+             'Non corrigé par la campagne 2026-08 : upsert imbriqué (CASE WHEN sur data_sources, tracking des ' +
+             'overrides manuels) trop couplé au pipeline d import pour une extraction sûre en un lot. Arbitrage ' +
+             'en attente : formaliser ce pattern comme exception documentée (comme refunds) plutôt que de le ' +
+             'laisser en warning WNO brut, ou extraire le SQL vers un service owner sourcing si jugé faisable.',
+        risk: 'aucun impact runtime — la baseline WNO ratchet-check couvre déjà ces deux writers. ' +
+              'Risque si laissé sans arbitrage : le scanner continue de traiter un pattern métier légitime ' +
+              'comme une dette technique, brouillant le signal pour les vrais WNO accidentels.' },
     ],
   },
 

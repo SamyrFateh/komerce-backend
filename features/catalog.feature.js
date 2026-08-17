@@ -314,6 +314,15 @@ module.exports = {
     internalApi: [
 
       { fn: 'createDraftFromSourcingCandidate', file: 'services/product-admin-service.js' },
+      // WRITER-NOT-OWNER remediation (2026-08) : ces 4 fonctions portent le
+      // SQL products/product_variants pour le compte d'economic-engine
+      // (moteur pricing + moteur margin/rail sourcing-mutations.js), qui
+      // reste décisionnaire métier mais ne fait plus de SQL direct sur des
+      // tables owner catalog.
+      { fn: 'applyPrice', file: 'services/product-admin-service.js' },
+      { fn: 'updateSourcingFields', file: 'services/product-admin-service.js' },
+      { fn: 'bulkAssignSourcingRail', file: 'services/product-admin-service.js' },
+      { fn: 'replaceVariantsForSourcing', file: 'services/product-admin-service.js' },
 
     ],
 
@@ -347,6 +356,11 @@ module.exports = {
       {
         gap: 'b-modal-core.js lance encore le fetch variantes legacy et modal-view-model.js reste necessaire pour des classes structurelles historiques.',
         risk: 'un guard de repaint transitoire protege PDC-4/PDC-5 ; PDC-6 doit supprimer le fetch legacy, l alias bootstrap mobile et les derniers owners structurels devenus inutiles.',
+      },
+      {
+        gap: 'WRITER-NOT-OWNER (campagne 2026-08) — table `products` : dernier writer surnuméraire restant après remédiation partielle (economic-engine corrigé, cf. product-admin-service.js::applyPrice/updateSourcingFields/bulkAssignSourcingRail/replaceVariantsForSourcing). ' +
+             'sourcing écrit encore products directement dans services/suppliers/catalog-import-orchestrator.js (INSERT à la création produit depuis un candidat qualifié). Non corrigé : upsert imbriqué dans le pipeline d import, risque métier réel à extraire sans relire tout le flux. Arbitrage en attente (2026-08-17) : soit extraire le SQL vers un service owner catalog appelé par sourcing, soit documenter formellement ce writer comme pattern séquencé (CATALOG importe → SOURCING qualifie → CATALOG publie), au même titre que sourcing_candidates/sourcing_candidate_events (voir features/sourcing.feature.js) et refunds (FEATURE_DOCTRINE.md Signal 5).',
+        risk: 'aucun impact runtime actuel — la baseline WNO ratchet-check couvre déjà ce writer (13→11, non resserrée). Risque si laissé sans arbitrage : ambiguïté persistante entre dette réelle et pattern transversal légitime.',
       },
     ],
   },
