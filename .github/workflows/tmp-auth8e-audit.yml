@@ -1,0 +1,36 @@
+name: Temporary AUTH-8e Bearer audit
+
+on:
+  push:
+    branches: [auth/8e-bearer-boundary]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Runtime Authorization and Bearer consumers
+        run: |
+          echo '=== RUNTIME AUTHORIZATION / BEARER / readAuthToken ==='
+          rg -n --hidden \
+            -g '!node_modules/**' \
+            -g '!public/boutique/node_modules/**' \
+            -g '!.git/**' \
+            -g '!docs/**' \
+            -g '!tests/**' \
+            -g '!public/boutique/tests/**' \
+            -g '!*.md' \
+            '(Authorization|authorization|Bearer|bearer|readAuthToken|extractToken)' . || true
+          echo '=== JWT / AUTHENTICATE CALL SITES ==='
+          rg -n --hidden \
+            -g '!node_modules/**' \
+            -g '!public/boutique/node_modules/**' \
+            -g '!.git/**' \
+            -g '!docs/**' \
+            -g '!tests/**' \
+            -g '!public/boutique/tests/**' \
+            -g '!*.md' \
+            '(authenticate|requireAdmin|requireRole|jwt\.sign|jwt\.verify)' routes middleware services utils public bootstrap server.js || true
