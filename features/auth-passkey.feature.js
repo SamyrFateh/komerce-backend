@@ -97,8 +97,9 @@ module.exports = {
       'POST /api/auth/passkey/login/verify',
     ],
     consumes: [
-      'auth-identity (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, ' +
-        'AUTH-8 — même politique de session que le login OTP)',
+      'auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, ' +
+        'politique de session canonique AUTH-8)',
+      'auth-identity (users — identité utilisateur canonique lue sans mutation)',
       'infrastructure (db.js, utils/logger.js)',
     ],
   },
