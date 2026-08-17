@@ -748,6 +748,20 @@
       },
       {
         "feature": "auth",
+        "category": "utils",
+        "declared": "utils/auth-session.js",
+        "resolvedPath": "utils/auth-session.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth",
+        "category": "utils",
+        "declared": "utils/auth-session-policy.js",
+        "resolvedPath": "utils/auth-session-policy.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth",
         "category": "migrations",
         "declared": "migrations/072_jwt_revocation.sql",
         "resolvedPath": "migrations/072_jwt_revocation.sql",
@@ -765,6 +779,20 @@
         "category": "tests",
         "declared": "tests/unit/auth-cookie.test.js",
         "resolvedPath": "tests/unit/auth-cookie.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth",
+        "category": "tests",
+        "declared": "tests/unit/auth-session.test.js",
+        "resolvedPath": "tests/unit/auth-session.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth",
+        "category": "tests",
+        "declared": "tests/unit/auth-session-policy.test.js",
+        "resolvedPath": "tests/unit/auth-session-policy.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -959,13 +987,6 @@
       {
         "feature": "auth-passkey",
         "category": "services",
-        "declared": "utils/auth-session.js",
-        "resolvedPath": "utils/auth-session.js",
-        "status": "resolved-on-disk-no-header"
-      },
-      {
-        "feature": "auth-passkey",
-        "category": "services",
         "declared": "middleware/require-recent-auth.js",
         "resolvedPath": "middleware/require-recent-auth.js",
         "status": "resolved-on-disk-no-header"
@@ -1010,13 +1031,6 @@
         "category": "tests",
         "declared": "tests/unit/auth-passkey-step-up.test.js",
         "resolvedPath": "tests/unit/auth-passkey-step-up.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "auth-passkey",
-        "category": "tests",
-        "declared": "tests/unit/auth-session.test.js",
-        "resolvedPath": "tests/unit/auth-session.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12913,6 +12927,18 @@
         "status": "resolved"
       },
       {
+        "feature": "auth",
+        "fn": "signAuthToken / resolveSessionTtlSeconds",
+        "file": "utils/auth-session.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth",
+        "fn": "signAuthToken / resolveSessionTtlSeconds",
+        "file": "utils/auth-session-policy.js",
+        "status": "resolved"
+      },
+      {
         "feature": "auth-identity",
         "fn": "makeIntlPhoneInput",
         "file": "public/boutique/js/b-phone.js",
@@ -13205,7 +13231,7 @@
       {
         "from": "auth-passkey",
         "to": "auth",
-        "raw": "auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, politique de session canonique AUTH-8)",
+        "raw": "auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, utils/auth-session.js — signAuthToken, politique de session canonique AUTH-8)",
         "resolved": true
       },
       {
@@ -16285,6 +16311,10 @@
                 "targetFile": "utils/auth-cookie.js"
               },
               {
+                "sourceFileId": "routes/client-auth.js",
+                "targetFile": "utils/auth-session.js"
+              },
+              {
                 "sourceFileId": "routes/auth.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -16293,8 +16323,16 @@
                 "targetFile": "utils/auth-cookie.js"
               },
               {
+                "sourceFileId": "routes/auth.js",
+                "targetFile": "utils/auth-session.js"
+              },
+              {
                 "sourceFileId": "routes/otp.js",
                 "targetFile": "utils/auth-cookie.js"
+              },
+              {
+                "sourceFileId": "routes/otp.js",
+                "targetFile": "utils/auth-session.js"
               }
             ]
           }
@@ -16309,20 +16347,8 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "routes/client-auth.js",
-                "targetFile": "utils/auth-session.js"
-              },
-              {
                 "sourceFileId": "routes/auth.js",
                 "targetFile": "middleware/require-recent-auth.js"
-              },
-              {
-                "sourceFileId": "routes/auth.js",
-                "targetFile": "utils/auth-session.js"
-              },
-              {
-                "sourceFileId": "routes/otp.js",
-                "targetFile": "utils/auth-session.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-identity.js",
@@ -16545,6 +16571,10 @@
               {
                 "sourceFileId": "routes/auth-passkey.js",
                 "targetFile": "utils/auth-cookie.js"
+              },
+              {
+                "sourceFileId": "routes/auth-passkey.js",
+                "targetFile": "utils/auth-session.js"
               }
             ]
           }
@@ -23599,7 +23629,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 787
+        "filesObserved": 789
       },
       "boutique": {
         "filesObserved": 152,
@@ -26798,7 +26828,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> auth-passkey",
-        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"auth-passkey\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"auth-passkey\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

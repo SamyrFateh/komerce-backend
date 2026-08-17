@@ -111,13 +111,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Fournir les gardes transverses d'authentification et de vérification d'identité (middlewares JWT/session/rôles) consommées par toutes les autres features.
 
 - middleware: 7
-- utils: 1
+- utils: 3
 - migrations: 2
-- tests: 10
+- tests: 12
 - tables owned (lifecycle): 0
 - tables written: 1
 - interfaces exposed: 0
-- internal APIs: 3
+- internal APIs: 5
 - dependencies (consumes): 3 — notification, operations, orders
 - consumers: 22 — auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, recommendations, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
 
@@ -142,10 +142,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→7).
 
-- services: 4
+- services: 3
 - routes: 1
 - migrations: 2
-- tests: 5
+- tests: 4
 - tables owned (lifecycle): 2 — `webauthn_credentials`, `webauthn_challenges`
 - tables written: 2
 - interfaces exposed: 8
@@ -1143,6 +1143,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/auth.js` | auth | resolved |
 | `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/require-verified-identity.js` | auth | resolved |
 | `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/soft-auth.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds` | `utils/auth-session.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds` | `utils/auth-session-policy.js` | auth | resolved |
 | `makeIntlPhoneInput` | `public/boutique/js/b-phone.js` | auth-identity | resolved |
 | `getActiveAuthorizationForUpdate` | `services/pickup-authorization-service.js` | auth-identity | resolved |
 | `hasActiveAuthorization` | `services/pickup-authorization-service.js` | auth-identity | resolved |
@@ -1196,7 +1198,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | auth-identity | notifications (`notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)`) | ✔ |
 | auth-identity | wallet (`wallet (projection boutique account : b-komerce.js lit uniquement le solde canonique via GET /api/wallet)`) | ✔ |
 | auth-identity | documents (`documents (projection boutique account : b-komerce.js liste et télécharge les factures et remboursements privés)`) | ✔ |
-| auth-passkey | auth (`auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, politique de session canonique AUTH-8)`) | ✔ |
+| auth-passkey | auth (`auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, utils/auth-session.js — signAuthToken, politique de session canonique AUTH-8)`) | ✔ |
 | auth-passkey | auth-identity (`auth-identity (users — identité utilisateur canonique lue sans mutation)`) | ✔ |
 | auth-passkey | infrastructure (`infrastructure (db.js, utils/logger.js)`) | ✔ |
 | business-rules | auth (`auth (garde de route admin)`) | ✔ |
@@ -1381,7 +1383,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "auth" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 14 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> auth-passkey — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "auth-passkey"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> auth-passkey — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> platform-ops — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "platform-ops"
@@ -1495,7 +1497,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 787 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 789 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 152 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1520,15 +1522,15 @@ Meta Graph monté : oui.
 | auth | auth-identity | static-code | 3 | **OBSERVED_UNDECLARED** |
 | auth | infrastructure | static-code | 14 | **OBSERVED_UNDECLARED** |
 | auth | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
-| auth-identity | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| auth-identity | auth-passkey | static-code | 7 | **OBSERVED_UNDECLARED** |
+| auth-identity | auth | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| auth-identity | auth-passkey | static-code | 4 | **OBSERVED_UNDECLARED** |
 | auth-identity | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
 | auth-identity | infrastructure | static-code | 16 | **OBSERVED_UNDECLARED** |
 | auth-identity | logistics | static-code | 2 | **OBSERVED_UNDECLARED** |
 | auth-identity | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | auth-identity | platform-ops | static-code | 7 | **OBSERVED_UNDECLARED** |
 | auth-identity | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
-| auth-passkey | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | platform-ops | static-code | 2 | **OBSERVED_UNDECLARED** |
