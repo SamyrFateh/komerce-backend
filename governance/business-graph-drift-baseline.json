@@ -11,7 +11,6 @@
     "EXPOSED-ROUTE-UNRESOLVED::ACTIONABLE_DRIFT": 0,
     "LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER::KNOWN_DEBT": 0,
     "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT": 1,
-    "WRITER-NOT-OWNER::ACTIONABLE_DRIFT": 1,
     "WRITER-NOT-OWNER::KNOWN_DEBT": 14
   },
   "_comment_wno_lot0_20260817": "LOT0 post-#763 certifie par PR #764 : WRITER-NOT-OWNER ACTIONABLE_DRIFT passe de 1 a 0 (cle retiree de la baseline conformement a la doctrine du ratchet) et KNOWN_DEBT passe de 25 a 14. Aucun budget de dette augmente ; toute reapparition ACTIONABLE_DRIFT redeviendra une nouvelle cle et echouera.",
