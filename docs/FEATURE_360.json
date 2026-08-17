@@ -46,7 +46,7 @@
     "healthy": 7,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 162,
+    "businessDependencies": 163,
     "directCrossFeatureImports": 3,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
@@ -5713,6 +5713,13 @@
           ]
         },
         {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5740,15 +5747,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",
@@ -9695,6 +9697,13 @@
         },
         {
           "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "decision-signals",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
