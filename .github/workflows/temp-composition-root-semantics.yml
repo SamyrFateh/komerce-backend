@@ -44,16 +44,22 @@ jobs:
           const debt = m.drifts.debt || [];
           const expected = m.drifts.expectedTopology || [];
           const observedDebt = debt.filter(x => x.type === 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY');
-          const infraDebt = observedDebt.filter(x => String(x.ref).startsWith('infrastructure -> '));
-          const infraExpected = expected.filter(x => x.type === 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY' && String(x.ref).startsWith('infrastructure -> '));
-          console.log({ summary: m.drifts.summary, observedDebt: observedDebt.length, infraDebt: infraDebt.length, infraExpected: infraExpected.length });
+          const wiringPairs = (m.o6 && m.o6.pairClassifications || []).filter(p =>
+            p.family === 'COMPOSITION_ROOT_WIRING' &&
+            p.policy === 'application-wiring-not-consumption' &&
+            p.exceptionRequired === false
+          );
+          const wiringRefs = new Set(wiringPairs.map(p => `${p.from} -> ${p.to}`));
+          const wiringDebt = observedDebt.filter(x => wiringRefs.has(String(x.ref)));
+          const wiringExpected = expected.filter(x => x.type === 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY' && wiringRefs.has(String(x.ref)));
+          console.log({ summary: m.drifts.summary, observedDebt: observedDebt.length, wiringPairs: wiringPairs.length, wiringDebt: wiringDebt.length, wiringExpected: wiringExpected.length });
           if (m.drifts.summary.signals !== 85) throw new Error(`raw signal count changed: ${m.drifts.summary.signals}`);
-          if (m.drifts.summary.debt !== 56) throw new Error(`expected debt=56, got ${m.drifts.summary.debt}`);
-          if (m.drifts.summary.expectedTopology !== 21) throw new Error(`expected expectedTopology=21, got ${m.drifts.summary.expectedTopology}`);
+          if (m.drifts.summary.debt !== 52) throw new Error(`expected debt=52, got ${m.drifts.summary.debt}`);
+          if (m.drifts.summary.expectedTopology !== 25) throw new Error(`expected expectedTopology=25, got ${m.drifts.summary.expectedTopology}`);
           if (m.drifts.summary.generatorLimitations !== 8) throw new Error(`expected tool-limit=8, got ${m.drifts.summary.generatorLimitations}`);
-          if (observedDebt.length !== 30) throw new Error(`expected observed debt=30, got ${observedDebt.length}`);
-          if (infraDebt.length !== 0) throw new Error(`composition-root debt remains: ${JSON.stringify(infraDebt)}`);
-          if (infraExpected.length !== 9) throw new Error(`expected 9 composition-root expected-topology signals, got ${infraExpected.length}`);
+          if (observedDebt.length !== 26) throw new Error(`expected observed debt=26, got ${observedDebt.length}`);
+          if (wiringDebt.length !== 0) throw new Error(`composition wiring still counted as debt: ${JSON.stringify(wiringDebt)}`);
+          if (wiringExpected.length !== 13) throw new Error(`expected 13 wiring signals reclassified, got ${wiringExpected.length}`);
           NODE
           git diff --check
       - name: Commit final tree
