@@ -77,7 +77,24 @@ module.exports = {
     '../admin/js/views/TransitaireView.js',
     '../admin/portal-pilotage.js',
   ]},
-  contract: { exposes: [], consumes: ['sourcing'] },
+  contract: {
+    exposes: [],
+    // Projection/UI shell : ces providers sont consommés via leurs interfaces
+    // HTTP par les vues admin. Le dashboard ne possède pas leurs mutations.
+    consumes: [
+      'catalog',
+      'customs',
+      'dashboard',
+      'decision-signals',
+      'documents',
+      'economic-engine',
+      'inventory',
+      'logistics',
+      'orders',
+      'payments',
+      'sourcing',
+    ],
+  },
   authority: 'dashboards',
   invariants: ['tout fichier admin/**/*.js doit etre declare ici'],
 };

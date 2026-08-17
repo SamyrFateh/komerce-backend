@@ -46,7 +46,7 @@
     "healthy": 7,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 151,
+    "businessDependencies": 161,
     "directCrossFeatureImports": 3,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
@@ -328,6 +328,76 @@
         }
       },
       "businessDependencies": [
+        {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "decision-signals",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "inventory",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
         {
           "provider": "sourcing",
           "disposition": "DECLARED_AND_OBSERVED",
@@ -3476,6 +3546,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -3534,9 +3611,7 @@
         }
       ],
       "projections": {
-        "projectedBy": [
-          "admin-dashboard"
-        ]
+        "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
@@ -4049,6 +4124,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -4071,9 +4153,7 @@
         }
       ],
       "projections": {
-        "projectedBy": [
-          "admin-dashboard"
-        ]
+        "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
@@ -5366,6 +5446,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5381,9 +5468,7 @@
         }
       ],
       "projections": {
-        "projectedBy": [
-          "admin-dashboard"
-        ]
+        "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
@@ -5630,6 +5715,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5638,9 +5730,7 @@
         }
       ],
       "projections": {
-        "projectedBy": [
-          "admin-dashboard"
-        ]
+        "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 1,
@@ -6105,6 +6195,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -6156,9 +6253,7 @@
         }
       ],
       "projections": {
-        "projectedBy": [
-          "admin-dashboard"
-        ]
+        "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 1,
@@ -7427,6 +7522,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -7477,9 +7579,7 @@
         }
       ],
       "projections": {
-        "projectedBy": [
-          "admin-dashboard"
-        ]
+        "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
@@ -10070,6 +10170,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -10078,9 +10185,7 @@
         }
       ],
       "projections": {
-        "projectedBy": [
-          "admin-dashboard"
-        ]
+        "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
@@ -11308,6 +11413,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -11374,9 +11486,7 @@
         }
       ],
       "projections": {
-        "projectedBy": [
-          "admin-dashboard"
-        ]
+        "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
@@ -13267,6 +13377,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13332,9 +13449,7 @@
         }
       ],
       "projections": {
-        "projectedBy": [
-          "admin-dashboard"
-        ]
+        "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
@@ -14055,6 +14170,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
           "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -14085,9 +14207,7 @@
         }
       ],
       "projections": {
-        "projectedBy": [
-          "admin-dashboard"
-        ]
+        "projectedBy": []
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
