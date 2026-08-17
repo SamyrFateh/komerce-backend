@@ -73,6 +73,15 @@ function isBoutiqueRelevant(file) {
     || isBoutiquePackageFile(file);
 }
 
+function isBusinessManifestSource(file) {
+  const f = norm(file);
+  return /^features\/.+\.feature\.js$/i.test(f)
+    || /^public\/boutique\/features\/.+\.feature\.js$/i.test(f)
+    || /^public\/dashboards\/features\/.+\.feature\.js$/i.test(f)
+    || /^public\/features\/.+\.feature\.js$/i.test(f)
+    || /^docs\/doctrine\/(?:FEATURE_DOCTRINE|APP_FEATURE_REGISTRY)\.md$/i.test(f);
+}
+
 // Lot 3 — governance / feature-first : cartes, baselines/ontologie, logique des
 // gates, capabilities, workflows GitHub Actions actifs et projections canoniques
 // dérivées. Tout fichier backend reconnu par Lot 1 réveille également la
@@ -80,10 +89,15 @@ function isBoutiqueRelevant(file) {
 // pouvoir entrer sans que le registre feature et Feature 360 vérifient son
 // ownership. Régression découverte sur AUTH-8a : utils/auth-cookie.js était
 // backend=true mais governance=false, donc l'orphelin n'a été vu qu'à la PR suivante.
+//
+// AUTH-3 a révélé le même défaut sur les sources de vérité multi-scope du
+// Business Graph : les manifests Boutique/Dash et les doctrines de registre
+// étaient chargés par le générateur mais ne réveillaient pas Governance. Toute
+// source déclarative consommée par Business Graph doit donc être classée ici.
 function isGovernanceFile(file) {
   const f = norm(file);
   return isBackendFile(f)
-    || /^features\/.+\.feature\.js$/i.test(f)
+    || isBusinessManifestSource(f)
     || /^governance\/.+/i.test(f)
     || /^scripts\/.+\.(?:js|cjs|mjs)$/i.test(f)
     || /^capabilities\/.+\.(?:js|cjs|mjs)$/i.test(f)
@@ -191,6 +205,7 @@ module.exports = {
   isBoutiqueUnitTest,
   isBoutiquePackageFile,
   isBoutiqueRelevant,
+  isBusinessManifestSource,
   isGovernanceFile,
   classify,
   diffFiles,
