@@ -4,21 +4,16 @@
  * @domain        auth-passkey
  * @layer         route
  * @criticality   high
- * @inputs        webauthn_registration_response, webauthn_authentication_response, phone
- * @outputs       webauthn_options, kmrc_jwt_cookie, credential_state
- * @depends       services/webauthn-service.js, utils/auth-cookie.js, middleware/auth.js
+ * @inputs        webauthn_registration_response, webauthn_authentication_response, credential_management_id, phone
+ * @outputs       webauthn_options, kmrc_jwt_cookie, credential_state, safe_credential_metadata
+ * @depends       services/webauthn-service.js, services/webauthn-management-service.js, utils/auth-cookie.js, middleware/auth.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       webauthn_credentials, webauthn_challenges, users (via webauthn-service)
- * @db-write      webauthn_credentials, webauthn_challenges (via webauthn-service)
- * @db-txn        challenge_single_use, ceremony_separation, no_client_trusted_origin
- * @doctrine      no_homemade_crypto, session_via_auth8_helper
- * @impact-areas  auth
+ * @db-read       webauthn_credentials, webauthn_challenges, users (via services)
+ * @db-write      webauthn_credentials, webauthn_challenges (via services)
+ * @db-txn        challenge_single_use, ceremony_separation, no_client_trusted_origin, revoke_only_own_credential
+ * @doctrine      no_homemade_crypto, session_via_auth8_helper, auth6_authenticator_management
+ * @impact-areas  auth, account-security
  * @version       2026-08
- *
- * AUTH-2 — périmètre SERVEUR uniquement (voir PLAN_ATTAQUE_AUTH-2.md).
- * PAS l'UI front, PAS la proposition post-OTP (AUTH-3), PAS le login-passkey
- * nominal comme parcours par défaut (AUTH-4). Ce lot ajoute la capacité,
- * ne remplace aucun parcours OTP existant.
  */
 
 'use strict';
@@ -32,10 +27,12 @@ const db = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { setAuthCookie } = require('../utils/auth-cookie');
 const webauthn = require('../services/webauthn-service');
+const management = require('../services/webauthn-management-service');
 const log = require('../utils/logger').child({ module: 'auth-passkey' });
 
 const _JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function _issueSession(res, user) {
   const token = jwt.sign(
@@ -46,10 +43,43 @@ function _issueSession(res, user) {
   setAuthCookie(res, token);
 }
 
-// ── 2b — Enregistrement ──────────────────────────────────────────────────
-// Contexte requis : utilisateur déjà authentifié (K1 minimum, cf. AUTH-1 §7).
-// On n'enregistre une passkey que pour un compte dont le contrôle est déjà
-// prouvé — jamais en anonyme.
+// ── AUTH-6 — Gestion des authentificateurs ───────────────────────────────
+// L'UI reçoit uniquement un identifiant de gestion opaque + métadonnées sûres.
+// credential_id/public_key/sign_count ne sortent jamais de cette frontière.
+
+router.get('/credentials', authenticate, async (req, res) => {
+  try {
+    const credentials = await management.listCredentials(req.user.id);
+    res.json({ credentials });
+  } catch (err) {
+    log.error('[credentials] erreur:', err.message);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+router.delete('/credentials/:id', authenticate, async (req, res) => {
+  try {
+    const managementId = String(req.params.id || '');
+    if (!UUID_RE.test(managementId)) {
+      return res.status(400).json({ error: 'Identifiant de passkey invalide' });
+    }
+
+    const result = await management.revokeCredential({
+      userId: req.user.id,
+      credentialManagementId: managementId,
+    });
+    if (!result.revoked) {
+      return res.status(404).json({ error: 'Passkey introuvable' });
+    }
+    res.json({ revoked: true, id: result.id });
+  } catch (err) {
+    log.error('[credentials/revoke] erreur:', err.message);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// ── AUTH-2/3 — Enregistrement ────────────────────────────────────────────
+// Contexte requis : utilisateur déjà authentifié (K1 minimum).
 
 router.post('/register/options', authenticate, async (req, res) => {
   try {
@@ -85,9 +115,8 @@ router.post('/register/verify', authenticate, async (req, res) => {
   }
 });
 
-// ── 2c — Connexion ───────────────────────────────────────────────────────
-// Public par nature (c'est un mécanisme de login). `phone` optionnel :
-// fourni → username-first (allowCredentials restreint) ; absent → discoverable.
+// ── AUTH-2/4 — Connexion ─────────────────────────────────────────────────
+// Public par nature. `phone` optionnel : fourni → username-first ; absent → discoverable.
 
 router.post('/login/options', async (req, res) => {
   try {
@@ -113,7 +142,6 @@ router.post('/login/verify', async (req, res) => {
       return res.status(401).json({ error: 'Authentification refusée', reason: result.error });
     }
 
-    // Session émise via le helper AUTH-8 — mêmes garanties que le login OTP.
     const { rows } = await db.query(
       'SELECT id, full_name, email, phone, role, currency_pref, relais_id FROM users WHERE id = $1',
       [result.userId]
@@ -124,9 +152,6 @@ router.post('/login/verify', async (req, res) => {
 
     const user = rows[0];
     _issueSession(res, user);
-    // AUTH-4 : renvoyer l'identité hydratée immédiatement. Le client n'a pas
-    // à refaire un tour réseau pour connaître le téléphone/relais du compte,
-    // et aucun champ secret n'est exposé.
     res.json({
       verified: true,
       user: {
