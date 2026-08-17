@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       customs_shipment_parcels, customs_shipments
- * @db-write      customs_shipment_parcels, customs_shipments, order_item_real_cost_allocations, orders, parcels
+ * @db-write      customs_shipment_parcels, customs_shipments, orders, parcels
  * @db-write-via:customs-invoice transaction_documents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

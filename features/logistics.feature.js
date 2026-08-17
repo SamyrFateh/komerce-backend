@@ -180,20 +180,20 @@ module.exports = {
       // W-via ci-dessous, qui ne s'applique qu'aux tables aussi lues).
       'orders: RW',
       'parcel_events: RW',
-      'parcel_items: RW',
-      'parcels: RW',
-      'pickup_print_tokens: RW',
-      'pickup_reveal_codes: RW',
+      'parcel_items: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'parcels: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'pickup_print_tokens: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'pickup_reveal_codes: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'pickup_verify_attempts: RW',
       'product_suppliers: R',
       'product_variants: R',          // W-via:order-status-machine (service orders)
       'products: R',          // W-via:product-admin-service (adjustStock — parcel-operations.js)
       'purchase_orders: R',
       'recipients: R',
-      'relais: RW',
+      'relais: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
 
-      'scan_events: RW',
-      'scans: RW',
+      'scan_events: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'scans: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'shipments: RW',
       // sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports :
       // retirées d'ici (Lot O1.3, 2026-07-12) — n'étaient lues/écrites que par

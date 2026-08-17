@@ -210,19 +210,19 @@ module.exports = {
       'customs_categories: R',
       'customs_shipment_parcels: R',
       'customs_shipments: R',
-      'economic_snapshots: RW',
+      'economic_snapshots: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'economic_variables: RW',
       'exchange_rates: RW',
       'fabrics: R',
       'finance_config: RW',
       'garment_models: R',
       'order_item_cost_imputations: R',
-      'order_item_real_cost_allocations: RW',
+      'order_item_real_cost_allocations: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — seul écrivain réel (via services/cost-allocation/*.js)
       'order_items: R',
       'orders: R',
       'parcel_items: R',
       'parcels: R',
-      'price_history: W',
+      'price_history: W!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'pricing_benchmarks: R',
       'pricing_category_dims: RW',
       'pricing_category_taxes: RW',

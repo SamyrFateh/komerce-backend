@@ -94,7 +94,12 @@ module.exports = {
       'customs_effective_rates: R',
       'customs_shipment_parcels: RW',
       'customs_shipments: RW',
-      'order_item_real_cost_allocations: W',
+      // 'order_item_real_cost_allocations' retiré (campagne WRITER-NOT-OWNER,
+      // 2026-08) : aucune écriture SQL réelle trouvée dans les fichiers
+      // customs — customs-shipment-service.js délègue le calcul à
+      // services/cost-allocation/*.js (economic-engine), qui écrit seul la
+      // table. Déclaration fautive, recopiée de l'en-tête JSDoc obsolète de
+      // routes/admin-customs-shipments.js (corrigé en même temps).
       'order_items: R',
       'orders: RW',
       'parcel_items: R',

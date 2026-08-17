@@ -58,7 +58,7 @@ module.exports = {
   // de la doctrine — transversal).
   db: {
     tables: [
-      'incidents: RW',
+      'incidents: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'orders: R',
       'parcels: R',
       'scan_events: R',

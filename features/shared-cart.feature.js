@@ -153,7 +153,7 @@ module.exports = {
     tables: [
       'basket_items: RW',
       'baskets: RW',
-      'cart_shares: RW',
+      'cart_shares: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'order_items: R',            // lecture pour le statut "réclamé" dérivé (migration 123)
       'orders: R',                 // lecture user_id de la commande réclamante — nom acheteur, créateur uniquement
       'products: R',

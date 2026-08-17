@@ -43,24 +43,24 @@
   },
   "summary": {
     "features": 30,
-    "healthy": 7,
-    "attention": 23,
+    "healthy": 14,
+    "attention": 16,
     "blocked": 0,
     "businessDependencies": 165,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
-    "ambiguousOwnershipSignals": 63,
+    "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 108,
-    "gateHealthy": 14,
+    "debtItemsTotal": 45,
+    "gateHealthy": 17,
     "gateBlocked": 0
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 53,
-    "attributedFindings": 53,
+    "totalFindings": 20,
+    "attributedFindings": 20,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -644,14 +644,14 @@
           {
             "table": "users",
             "mode": "RW",
-            "lifecycleOwner": "loyalty",
+            "lifecycleOwner": "auth-identity",
             "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
           {
             "table": "revoked_tokens",
-            "lifecycleOwner": null
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -661,14 +661,14 @@
           {
             "table": "users",
             "mode": "RW",
-            "lifecycleOwner": "loyalty",
+            "lifecycleOwner": "auth-identity",
             "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
           {
             "table": "revoked_tokens",
-            "lifecycleOwner": null
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -1123,8 +1123,16 @@
             "resolution": "single-writer"
           },
           {
+            "table": "revoked_tokens",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "user_pickup_authorizations",
             "resolution": "single-writer"
+          },
+          {
+            "table": "users",
+            "resolution": "declared-table-owner"
           }
         ],
         "writesTables": [
@@ -1137,8 +1145,8 @@
           {
             "table": "revoked_tokens",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "owner"
           },
           {
             "table": "user_pickup_authorizations",
@@ -1149,8 +1157,8 @@
           {
             "table": "users",
             "mode": "RW",
-            "lifecycleOwner": "loyalty",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
@@ -1168,19 +1176,19 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           }
         ]
       },
@@ -1191,8 +1199,16 @@
             "resolution": "single-writer"
           },
           {
+            "table": "revoked_tokens",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "user_pickup_authorizations",
             "resolution": "single-writer"
+          },
+          {
+            "table": "users",
+            "resolution": "declared-table-owner"
           }
         ],
         "writesTables": [
@@ -1205,8 +1221,8 @@
           {
             "table": "revoked_tokens",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "owner"
           },
           {
             "table": "user_pickup_authorizations",
@@ -1217,8 +1233,8 @@
           {
             "table": "users",
             "mode": "RW",
-            "lifecycleOwner": "loyalty",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
@@ -1236,19 +1252,19 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           }
         ]
       },
@@ -1408,48 +1424,23 @@
         "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 1
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 5,
+        "warnCount": 2,
         "gatesReporting": [
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-identity.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-komerce-nav-identity.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-phone.js — 2 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -1469,14 +1460,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table revoked_tokens — écrite par auth-identity (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -1709,7 +1694,7 @@
         "readsTables": [
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -1741,7 +1726,7 @@
         "readsTables": [
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -1820,28 +1805,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 3,
+        "warnCount": 1,
         "gatesReporting": [
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-passkey-enrollment.js — 4 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-passkey-step-up.js — 2 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -1965,7 +1933,7 @@
         "readsTables": [
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -1997,7 +1965,7 @@
         "readsTables": [
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -3183,6 +3151,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "catalog_media",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_attributes",
             "resolution": "single-writer"
           },
@@ -3195,6 +3167,22 @@
             "resolution": "single-writer"
           },
           {
+            "table": "product_sku_media",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "product_skus",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "product_variants",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "products",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "supplier_catalog_imports",
             "resolution": "single-writer"
           }
@@ -3203,8 +3191,8 @@
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "boutique_categories",
@@ -3233,14 +3221,14 @@
           {
             "table": "catalog_media",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "price_history",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "product_attributes",
@@ -3263,38 +3251,38 @@
           {
             "table": "product_sku_media",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "product_skus",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "product_variants",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "products",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "sourcing_candidate_events",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "sourcing_candidates",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "supplier_catalog_imports",
@@ -3318,7 +3306,7 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           }
         ]
       },
@@ -3341,6 +3329,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "catalog_media",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "product_attributes",
             "resolution": "single-writer"
           },
@@ -3353,6 +3345,22 @@
             "resolution": "single-writer"
           },
           {
+            "table": "product_sku_media",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "product_skus",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "product_variants",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "products",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "supplier_catalog_imports",
             "resolution": "single-writer"
           }
@@ -3361,8 +3369,8 @@
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "boutique_categories",
@@ -3391,14 +3399,14 @@
           {
             "table": "catalog_media",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "price_history",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "product_attributes",
@@ -3421,38 +3429,38 @@
           {
             "table": "product_sku_media",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "product_skus",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "product_variants",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "products",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "sourcing_candidate_events",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "sourcing_candidates",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "supplier_catalog_imports",
@@ -3476,7 +3484,7 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           }
         ]
       },
@@ -3635,88 +3643,23 @@
         "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 9
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 9,
+        "warnCount": 1,
         "gatesReporting": [
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-desktop-product.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-pager.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-product-open-contract.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-subcat.js — 2 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -3728,53 +3671,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 10,
+        "debtCount": 1,
         "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table alerts — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table catalog_media — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table price_history — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table product_sku_media — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table product_skus — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table product_variants — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table products — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table sourcing_candidate_events — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table sourcing_candidates — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
           {
             "type": "DIRECT_CROSS_FEATURE_IMPORT",
             "severity": "high",
@@ -3984,21 +3882,15 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "order_item_real_cost_allocations",
-            "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
-          {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcels",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
+            "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
           }
         ],
@@ -4013,11 +3905,11 @@
           },
           {
             "table": "parcel_items",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           }
         ]
       },
@@ -4056,21 +3948,15 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "order_item_real_cost_allocations",
-            "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
-          {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcels",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
+            "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
           }
         ],
@@ -4085,11 +3971,11 @@
           },
           {
             "table": "parcel_items",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           }
         ]
       },
@@ -4179,14 +4065,14 @@
         ]
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 2
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
@@ -4207,18 +4093,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 3,
+        "debtCount": 1,
         "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table order_item_real_cost_allocations — écrite par customs (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table orders — écrite par customs (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
@@ -5032,8 +4908,8 @@
           {
             "table": "incidents",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "incident-management",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "invoices",
@@ -5074,19 +4950,19 @@
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcel_items",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
+            "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcels",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
+            "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -5098,8 +4974,8 @@
           {
             "table": "products",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "recipients",
@@ -5110,20 +4986,20 @@
           {
             "table": "relais",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "scan_events",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "scans",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "sms_log",
@@ -5134,7 +5010,7 @@
           {
             "table": "users",
             "mode": "W",
-            "lifecycleOwner": "loyalty",
+            "lifecycleOwner": "auth-identity",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -5177,7 +5053,7 @@
           },
           {
             "table": "order_item_real_cost_allocations",
-            "lifecycleOwner": null
+            "lifecycleOwner": "economic-engine"
           },
           {
             "table": "signals",
@@ -5216,8 +5092,8 @@
           {
             "table": "incidents",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "incident-management",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "invoices",
@@ -5258,19 +5134,19 @@
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcel_items",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
+            "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcels",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
+            "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -5282,8 +5158,8 @@
           {
             "table": "products",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "recipients",
@@ -5294,20 +5170,20 @@
           {
             "table": "relais",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "scan_events",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "scans",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "sms_log",
@@ -5318,7 +5194,7 @@
           {
             "table": "users",
             "mode": "W",
-            "lifecycleOwner": "loyalty",
+            "lifecycleOwner": "auth-identity",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -5361,7 +5237,7 @@
           },
           {
             "table": "order_item_real_cost_allocations",
-            "lifecycleOwner": null
+            "lifecycleOwner": "economic-engine"
           },
           {
             "table": "signals",
@@ -5497,14 +5373,14 @@
         ]
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 6
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "HEALTHY",
@@ -5514,38 +5390,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 10,
+        "debtCount": 4,
         "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table incidents — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table orders — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table products — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table relais — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table scan_events — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table scans — écrite par dashboard (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
@@ -6067,19 +5913,19 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcel_items",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "recipients",
@@ -6091,11 +5937,11 @@
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           },
           {
             "table": "wallet_transactions",
@@ -6147,19 +5993,19 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcel_items",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "recipients",
@@ -6171,11 +6017,11 @@
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           },
           {
             "table": "wallet_transactions",
@@ -6979,6 +6825,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "economic_snapshots",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "economic_variables",
             "resolution": "single-writer"
           },
@@ -6989,6 +6839,14 @@
           {
             "table": "finance_config",
             "resolution": "single-writer"
+          },
+          {
+            "table": "order_item_real_cost_allocations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "price_history",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "pricing_category_dims",
@@ -7053,8 +6911,8 @@
           {
             "table": "economic_snapshots",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
           },
           {
             "table": "economic_variables",
@@ -7077,14 +6935,14 @@
           {
             "table": "order_item_real_cost_allocations",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
           },
           {
             "table": "price_history",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
           },
           {
             "table": "pricing_category_dims",
@@ -7125,14 +6983,14 @@
           {
             "table": "product_variants",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "products",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "risk_provisions",
@@ -7176,15 +7034,15 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcel_items",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "pricing_benchmarks",
@@ -7200,7 +7058,7 @@
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "store_credits",
@@ -7208,7 +7066,7 @@
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -7235,6 +7093,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "economic_snapshots",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "economic_variables",
             "resolution": "single-writer"
           },
@@ -7245,6 +7107,14 @@
           {
             "table": "finance_config",
             "resolution": "single-writer"
+          },
+          {
+            "table": "order_item_real_cost_allocations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "price_history",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "pricing_category_dims",
@@ -7309,8 +7179,8 @@
           {
             "table": "economic_snapshots",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
           },
           {
             "table": "economic_variables",
@@ -7333,14 +7203,14 @@
           {
             "table": "order_item_real_cost_allocations",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
           },
           {
             "table": "price_history",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
           },
           {
             "table": "pricing_category_dims",
@@ -7381,14 +7251,14 @@
           {
             "table": "product_variants",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "products",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "risk_provisions",
@@ -7432,15 +7302,15 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcel_items",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "pricing_benchmarks",
@@ -7456,7 +7326,7 @@
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "store_credits",
@@ -7464,7 +7334,7 @@
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -7609,14 +7479,14 @@
         ]
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 5
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
@@ -7637,33 +7507,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 6,
+        "debtCount": 1,
         "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table economic_snapshots — écrite par economic-engine (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table order_item_real_cost_allocations — écrite par economic-engine (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table price_history — écrite par economic-engine (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table product_variants — écrite par economic-engine (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table products — écrite par economic-engine (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
@@ -7736,52 +7581,62 @@
         }
       },
       "ownership": {
-        "ownsTables": [],
+        "ownsTables": [
+          {
+            "table": "incidents",
+            "resolution": "declared-table-owner"
+          }
+        ],
         "writesTables": [
           {
             "table": "incidents",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "incident-management",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "scan_events",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           }
         ]
       },
       "data": {
-        "ownsTables": [],
+        "ownsTables": [
+          {
+            "table": "incidents",
+            "resolution": "declared-table-owner"
+          }
+        ],
         "writesTables": [
           {
             "table": "incidents",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "incident-management",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "scan_events",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           }
         ]
       },
@@ -7857,7 +7712,7 @@
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 1,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 1
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "HEALTHY",
@@ -7867,13 +7722,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 6,
+        "debtCount": 5,
         "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table incidents — écrite par incident-management (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
           {
             "type": "CONSUMES_REFERENCE_UNRESOLVED",
             "severity": "low",
@@ -9419,26 +9269,26 @@
           {
             "table": "economic_snapshots",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "pickup_print_tokens",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "pickup_reveal_codes",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "revoked_tokens",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "schema_migrations",
@@ -9460,26 +9310,26 @@
           {
             "table": "economic_snapshots",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "pickup_print_tokens",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "pickup_reveal_codes",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "revoked_tokens",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "schema_migrations",
@@ -9894,7 +9744,7 @@
         "unresolvedInternalApis": 11,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 4
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "HEALTHY",
@@ -9904,28 +9754,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 15,
+        "debtCount": 11,
         "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table economic_snapshots — écrite par infrastructure (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table pickup_print_tokens — écrite par infrastructure (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table pickup_reveal_codes — écrite par infrastructure (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table revoked_tokens — écrite par infrastructure (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
           {
             "type": "UNRESOLVED_INTERNAL_API",
             "severity": "medium",
@@ -10097,13 +9927,13 @@
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcel_items",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
+            "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
           }
         ],
@@ -10114,11 +9944,11 @@
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           }
         ]
       },
@@ -10139,13 +9969,13 @@
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcel_items",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
+            "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
           }
         ],
@@ -10156,11 +9986,11 @@
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           }
         ]
       },
@@ -10235,14 +10065,14 @@
         ]
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 1
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
@@ -10263,13 +10093,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 2,
+        "debtCount": 1,
         "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table orders — écrite par inventory (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
@@ -11057,8 +10882,36 @@
             "resolution": "single-writer"
           },
           {
+            "table": "parcel_items",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "parcels",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "pickup_print_tokens",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "pickup_reveal_codes",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "pickup_verify_attempts",
             "resolution": "single-writer"
+          },
+          {
+            "table": "relais",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "scan_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "scans",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "shipments",
@@ -11069,8 +10922,8 @@
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "carriers",
@@ -11081,8 +10934,8 @@
           {
             "table": "incidents",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "incident-management",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "order_items",
@@ -11093,8 +10946,8 @@
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcel_events",
@@ -11105,26 +10958,26 @@
           {
             "table": "parcel_items",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "parcels",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "pickup_print_tokens",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "pickup_reveal_codes",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "pickup_verify_attempts",
@@ -11135,20 +10988,20 @@
           {
             "table": "relais",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "scan_events",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "scans",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "shipments",
@@ -11172,15 +11025,15 @@
           },
           {
             "table": "product_variants",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "purchase_orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "recipients",
@@ -11188,7 +11041,7 @@
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -11203,8 +11056,36 @@
             "resolution": "single-writer"
           },
           {
+            "table": "parcel_items",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "parcels",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "pickup_print_tokens",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "pickup_reveal_codes",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "pickup_verify_attempts",
             "resolution": "single-writer"
+          },
+          {
+            "table": "relais",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "scan_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "scans",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "shipments",
@@ -11215,8 +11096,8 @@
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "carriers",
@@ -11227,8 +11108,8 @@
           {
             "table": "incidents",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "incident-management",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "order_items",
@@ -11239,8 +11120,8 @@
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcel_events",
@@ -11251,26 +11132,26 @@
           {
             "table": "parcel_items",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "parcels",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
-            "ownershipStatus": "writer-not-owner"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "pickup_print_tokens",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "pickup_reveal_codes",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "pickup_verify_attempts",
@@ -11281,20 +11162,20 @@
           {
             "table": "relais",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "scan_events",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "scans",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
           },
           {
             "table": "shipments",
@@ -11318,15 +11199,15 @@
           },
           {
             "table": "product_variants",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "purchase_orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "recipients",
@@ -11334,7 +11215,7 @@
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -11525,14 +11406,14 @@
         ]
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 8
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
@@ -11553,48 +11434,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 11,
+        "debtCount": 3,
         "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table alerts — écrite par logistics (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table incidents — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table orders — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table pickup_print_tokens — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table pickup_reveal_codes — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table relais — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table scan_events — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table scans — écrite par logistics (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
@@ -11707,10 +11548,6 @@
           {
             "table": "loyalty_tiers",
             "resolution": "single-writer"
-          },
-          {
-            "table": "users",
-            "resolution": "multi-writer-resolved-by-classification-signal"
           }
         ],
         "writesTables": [
@@ -11729,8 +11566,8 @@
           {
             "table": "users",
             "mode": "RW",
-            "lifecycleOwner": "loyalty",
-            "ownershipStatus": "owner"
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -11740,7 +11577,7 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "v_loyalty_summary",
@@ -11757,10 +11594,6 @@
           {
             "table": "loyalty_tiers",
             "resolution": "single-writer"
-          },
-          {
-            "table": "users",
-            "resolution": "multi-writer-resolved-by-classification-signal"
           }
         ],
         "writesTables": [
@@ -11779,8 +11612,8 @@
           {
             "table": "users",
             "mode": "RW",
-            "lifecycleOwner": "loyalty",
-            "ownershipStatus": "owner"
+            "lifecycleOwner": "auth-identity",
+            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -11790,7 +11623,7 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "v_loyalty_summary",
@@ -12216,16 +12049,24 @@
       "ownership": {
         "ownsTables": [
           {
+            "table": "alerts",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "client_notifications",
             "resolution": "single-writer"
+          },
+          {
+            "table": "notification_log",
+            "resolution": "declared-table-owner"
           }
         ],
         "writesTables": [
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "owner"
           },
           {
             "table": "client_notifications",
@@ -12236,24 +12077,24 @@
           {
             "table": "incidents",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "incident-management",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "notification_log",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "recipients",
@@ -12261,31 +12102,39 @@
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "scan_events",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
       "data": {
         "ownsTables": [
           {
+            "table": "alerts",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "client_notifications",
             "resolution": "single-writer"
+          },
+          {
+            "table": "notification_log",
+            "resolution": "declared-table-owner"
           }
         ],
         "writesTables": [
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "owner"
           },
           {
             "table": "client_notifications",
@@ -12296,24 +12145,24 @@
           {
             "table": "incidents",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "incident-management",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "notification_log",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "recipients",
@@ -12321,15 +12170,15 @@
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "scan_events",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -12488,44 +12337,18 @@
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 1,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 3
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-notifications.js — 1 export(s) non consommé(s) :"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 4,
+        "debtCount": 1,
         "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table alerts — écrite par notifications (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table incidents — écrite par notifications (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table notification_log — écrite par notifications (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
           {
             "type": "CONSUMES_REFERENCE_UNRESOLVED",
             "severity": "low",
@@ -13000,11 +12823,15 @@
           },
           {
             "table": "order_items",
-            "resolution": "multi-writer-resolved-by-classification-signal"
+            "resolution": "declared-table-owner"
           },
           {
             "table": "order_status_history",
             "resolution": "multi-writer-resolved-by-classification-signal"
+          },
+          {
+            "table": "orders",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "recipients",
@@ -13019,14 +12846,14 @@
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "cart_shares",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "shared-cart",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "customs_history",
@@ -13067,14 +12894,14 @@
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
           },
           {
             "table": "purchase_orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "recipients",
@@ -13085,8 +12912,8 @@
           {
             "table": "scans",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "sms_log",
@@ -13098,19 +12925,19 @@
         "readsTables": [
           {
             "table": "parcel_items",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "product_variants",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "refunds",
@@ -13118,11 +12945,11 @@
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -13146,11 +12973,15 @@
           },
           {
             "table": "order_items",
-            "resolution": "multi-writer-resolved-by-classification-signal"
+            "resolution": "declared-table-owner"
           },
           {
             "table": "order_status_history",
             "resolution": "multi-writer-resolved-by-classification-signal"
+          },
+          {
+            "table": "orders",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "recipients",
@@ -13165,14 +12996,14 @@
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "cart_shares",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "shared-cart",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "customs_history",
@@ -13213,14 +13044,14 @@
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
           },
           {
             "table": "purchase_orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "recipients",
@@ -13231,8 +13062,8 @@
           {
             "table": "scans",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "sms_log",
@@ -13244,19 +13075,19 @@
         "readsTables": [
           {
             "table": "parcel_items",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "product_variants",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "refunds",
@@ -13264,11 +13095,11 @@
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -13515,126 +13346,25 @@
         ]
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 5
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 9,
-        "gatesReporting": [
-          "check:body-classes",
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "↳ Référencé en CSS : css/cart.css:2188, css/cart.css:2199 … — sélecteur legacy ou JS manquant"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ 0 erreur, 6 avertissement(s) — exit 0"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-cart.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-checkout-render.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-checkout.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-mini-cart.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-tracking.js — 1 export(s) non consommé(s) :"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 7,
+        "debtCount": 2,
         "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table alerts — écrite par orders (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table cart_shares — écrite par orders (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table orders — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table purchase_orders — écrite par orders (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table scans — écrite par orders (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
@@ -13959,8 +13689,8 @@
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "cash_collections",
@@ -13977,19 +13707,19 @@
           {
             "table": "incidents",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "incident-management",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcels",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
+            "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -14012,15 +13742,15 @@
           },
           {
             "table": "parcel_items",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "scan_events",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -14047,8 +13777,8 @@
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "cash_collections",
@@ -14065,19 +13795,19 @@
           {
             "table": "incidents",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "incident-management",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcels",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
+            "lifecycleOwner": "logistics",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -14100,15 +13830,15 @@
           },
           {
             "table": "parcel_items",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "scan_events",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -14265,14 +13995,14 @@
         "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 3
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
@@ -14293,24 +14023,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 3,
-        "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table alerts — écrite par payments (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table incidents — écrite par payments (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table orders — écrite par payments (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -14857,14 +14571,6 @@
             "resolution": "single-writer"
           },
           {
-            "table": "parcel_items",
-            "resolution": "multi-writer-resolved-by-classification-signal"
-          },
-          {
-            "table": "parcels",
-            "resolution": "multi-writer-resolved-by-classification-signal"
-          },
-          {
             "table": "store_credits",
             "resolution": "single-writer"
           }
@@ -14885,32 +14591,32 @@
           {
             "table": "notification_log",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcel_items",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
-            "ownershipStatus": "owner"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcels",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
-            "ownershipStatus": "owner"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "scans",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "store_credits",
@@ -14922,7 +14628,7 @@
         "readsTables": [
           {
             "table": "incidents",
-            "lifecycleOwner": null
+            "lifecycleOwner": "incident-management"
           },
           {
             "table": "invoices",
@@ -14934,19 +14640,19 @@
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "scan_events",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -14961,14 +14667,6 @@
             "resolution": "single-writer"
           },
           {
-            "table": "parcel_items",
-            "resolution": "multi-writer-resolved-by-classification-signal"
-          },
-          {
-            "table": "parcels",
-            "resolution": "multi-writer-resolved-by-classification-signal"
-          },
-          {
             "table": "store_credits",
             "resolution": "single-writer"
           }
@@ -14989,32 +14687,32 @@
           {
             "table": "notification_log",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcel_items",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
-            "ownershipStatus": "owner"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "parcels",
             "mode": "RW",
-            "lifecycleOwner": "platform-ops",
-            "ownershipStatus": "owner"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "scans",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "store_credits",
@@ -15026,7 +14724,7 @@
         "readsTables": [
           {
             "table": "incidents",
-            "lifecycleOwner": null
+            "lifecycleOwner": "incident-management"
           },
           {
             "table": "invoices",
@@ -15038,19 +14736,19 @@
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "scan_events",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -15242,22 +14940,21 @@
         "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 3
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 12,
+        "warnCount": 7,
         "gatesReporting": [
-          "check:body-classes",
-          "check:imports"
+          "check:body-classes"
         ],
         "findings": [
           {
@@ -15266,7 +14963,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "ck-is-me                     0     0     0     ✔      ⚠ warning"
+            "message": "↳ Référencé en CSS : css\\cart.css:2188, css\\cart.css:2199 … — sélecteur legacy ou JS manquant"
           },
           {
             "gate": "check:body-classes",
@@ -15274,7 +14971,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "k-order-body--recap          0     1     0     ·      ⚠ warning"
+            "message": "⚠ 0 erreur, 6 avertissement(s) — exit 0"
           },
           {
             "gate": "check:body-classes",
@@ -15282,15 +14979,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "k-view-komerce               0     1     0     ·      ⚠ warning"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-order-body--recap' retirée mais jamais ajoutée dans le JS ou HTML inline"
+            "message": "⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline"
           },
           {
             "gate": "check:body-classes",
@@ -15323,60 +15012,12 @@
             "verdict": "warn",
             "file": null,
             "message": "⚠ [B-3] CSS utilise body.ck-is-me mais aucun JS ne gère cette classe"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-boutique-wow-style.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-nav.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-scroll-owner.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-utils.js — 2 export(s) non consommé(s) :"
           }
         ]
       },
       "architecturalDebt": {
-        "debtCount": 3,
-        "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table notification_log — écrite par platform-ops (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table orders — écrite par platform-ops (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table scans — écrite par platform-ops (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -15532,6 +15173,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "purchase_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "suppliers",
             "resolution": "single-writer"
           }
@@ -15540,14 +15185,14 @@
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "product_suppliers",
@@ -15558,8 +15203,8 @@
           {
             "table": "purchase_orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
           },
           {
             "table": "suppliers",
@@ -15575,11 +15220,11 @@
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           }
         ]
       },
@@ -15590,6 +15235,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "purchase_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "suppliers",
             "resolution": "single-writer"
           }
@@ -15598,14 +15247,14 @@
           {
             "table": "alerts",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "notifications",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "product_suppliers",
@@ -15616,8 +15265,8 @@
           {
             "table": "purchase_orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
           },
           {
             "table": "suppliers",
@@ -15633,11 +15282,11 @@
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "relais",
-            "lifecycleOwner": null
+            "lifecycleOwner": "logistics"
           }
         ]
       },
@@ -15744,14 +15393,14 @@
         "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 3
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
@@ -15772,24 +15421,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 3,
-        "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table alerts — écrite par purchasing (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table orders — écrite par purchasing (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table purchase_orders — écrite par purchasing (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -15899,15 +15532,15 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           }
         ]
       },
@@ -15921,15 +15554,15 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "parcels",
-            "lifecycleOwner": "platform-ops"
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           }
         ]
       },
@@ -16141,7 +15774,7 @@
         "readsTables": [
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "wallets",
@@ -16167,7 +15800,7 @@
         "readsTables": [
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "wallets",
@@ -16791,6 +16424,10 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "cart_shares",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "shared_cart_events",
             "resolution": "single-writer"
           },
@@ -16823,8 +16460,8 @@
           {
             "table": "cart_shares",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "shared-cart",
+            "ownershipStatus": "owner"
           },
           {
             "table": "shared_cart_events",
@@ -16858,15 +16495,15 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -16881,6 +16518,10 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "cart_shares",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "shared_cart_events",
             "resolution": "single-writer"
           },
@@ -16913,8 +16554,8 @@
           {
             "table": "cart_shares",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "shared-cart",
+            "ownershipStatus": "owner"
           },
           {
             "table": "shared_cart_events",
@@ -16948,15 +16589,15 @@
           },
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -17067,22 +16708,21 @@
         "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 1
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 4,
+        "warnCount": 1,
         "gatesReporting": [
-          "check:breakpoints",
-          "check:imports"
+          "check:breakpoints"
         ],
         "findings": [
           {
@@ -17092,42 +16732,12 @@
             "verdict": "warn",
             "file": null,
             "message": "Total : 2 violations dans 2 fichiers."
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-cart.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal.js — 7 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-share-cart.js — 4 export(s) non consommé(s) :"
           }
         ]
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table cart_shares — écrite par shared-cart (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -17226,52 +16836,53 @@
         }
       },
       "ownership": {
-        "ownsTables": [],
+        "ownsTables": [
+          {
+            "table": "sourcing_candidate_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_candidates",
+            "resolution": "declared-table-owner"
+          }
+        ],
         "writesTables": [
-          {
-            "table": "catalog_media",
-            "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
-          {
-            "table": "product_sku_media",
-            "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
-          {
-            "table": "product_skus",
-            "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
-          {
-            "table": "product_variants",
-            "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
           {
             "table": "products",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "sourcing_candidate_events",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
           },
           {
             "table": "sourcing_candidates",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
+          {
+            "table": "catalog_media",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "product_sku_media",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "product_skus",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "product_variants",
+            "lifecycleOwner": "catalog"
+          },
           {
             "table": "supplier_catalog_imports",
             "lifecycleOwner": "catalog"
@@ -17279,52 +16890,53 @@
         ]
       },
       "data": {
-        "ownsTables": [],
+        "ownsTables": [
+          {
+            "table": "sourcing_candidate_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_candidates",
+            "resolution": "declared-table-owner"
+          }
+        ],
         "writesTables": [
-          {
-            "table": "catalog_media",
-            "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
-          {
-            "table": "product_sku_media",
-            "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
-          {
-            "table": "product_skus",
-            "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
-          {
-            "table": "product_variants",
-            "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
-          },
           {
             "table": "products",
             "mode": "W",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "sourcing_candidate_events",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
           },
           {
             "table": "sourcing_candidates",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
+          {
+            "table": "catalog_media",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "product_sku_media",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "product_skus",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "product_variants",
+            "lifecycleOwner": "catalog"
+          },
           {
             "table": "supplier_catalog_imports",
             "lifecycleOwner": "catalog"
@@ -17394,14 +17006,14 @@
         "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 7
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
         "status": "ATTENTION",
@@ -17422,44 +17034,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 7,
-        "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table catalog_media — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table product_sku_media — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table product_skus — écrite par sourcing (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table product_variants — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table products — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table sourcing_candidate_events — écrite par sourcing (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table sourcing_candidates — écrite par sourcing (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -17552,11 +17128,11 @@
         "readsTables": [
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "v_unsold_pipeline",
@@ -17582,11 +17158,11 @@
         "readsTables": [
           {
             "table": "orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "orders"
           },
           {
             "table": "products",
-            "lifecycleOwner": null
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "v_unsold_pipeline",
@@ -17836,8 +17412,8 @@
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "wallet_consumptions",
@@ -17867,7 +17443,7 @@
         "readsTables": [
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -17894,8 +17470,8 @@
           {
             "table": "orders",
             "mode": "RW",
-            "lifecycleOwner": null,
-            "ownershipStatus": "ambiguous"
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "wallet_consumptions",
@@ -17925,7 +17501,7 @@
         "readsTables": [
           {
             "table": "users",
-            "lifecycleOwner": "loyalty"
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -18028,50 +17604,25 @@
         "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 1
+        "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 2,
-        "gatesReporting": [
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-wallet.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant."
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
-            "severity": "medium",
-            "evidence": "table orders — écrite par wallet (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",

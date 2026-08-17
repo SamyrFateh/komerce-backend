@@ -364,13 +364,30 @@ function resolveOnDisk(repoRelPath) {
 // ─────────────────────────────────────────────────────────────────────────
 // 3. Résolution des tables : table -> { writers, readers, lifecycleOwner }
 // ─────────────────────────────────────────────────────────────────────────
+// Marqueur d'ownership par table (gouvernance WRITER-NOT-OWNER, campagne
+// 2026-08) : `classification.signals.ownsTables` est un booléen PAR FEATURE
+// — il ne peut pas exprimer "je possède la table A mais pas la table B",
+// donc dès qu'une table partagée est écrite par deux features qui possèdent
+// chacune LEURS propres tables (ex. alerts écrite par notifications ET
+// orders ET purchasing, tous ownsTables:true pour d'autres tables), la
+// résolution reste structurellement ambiguë quel que soit le contenu réel
+// du code. On introduit donc un marqueur PAR ENTRÉE db.tables, écrit à la
+// main après vérification du code réel (grep INSERT/UPDATE/DELETE, cf.
+// scripts/gen-data-ownership.js) :
+//   'table: W!'   -> ce feature est le lifecycle owner déclaré de la table
+//   'table: RW~'  -> écriture technique sans décision métier (cron de
+//                    purge, simulateur de démo, migration de démarrage —
+//                    aucune autorité métier), ne compte jamais comme
+//                    "extra writer" concurrent d'un owner déjà résolu
+// Le booléen ownsTables + l'ancienne résolution restent le fallback pour
+// toute table qui n'a pas encore reçu de marqueur explicite.
 function parseDbTables(manifest) {
   const out = [];
   const tables = (manifest.db && manifest.db.tables) || [];
   for (const t of tables) {
-    const m = String(t).match(/^([a-zA-Z0-9_.]+)\s*:\s*(RW|R|W)\s*$/);
+    const m = String(t).match(/^([a-zA-Z0-9_.]+)\s*:\s*(RW|R|W)(!|~)?\s*$/);
     if (!m) { out.push({ raw: t, unparsed: true }); continue; }
-    out.push({ table: m[1], mode: m[2] });
+    out.push({ table: m[1], mode: m[2], declaredOwner: m[3] === '!', technical: m[3] === '~' });
   }
   return out;
 }
@@ -778,20 +795,26 @@ function build() {
       }
       const rec = (tableIndex[entry.table] = tableIndex[entry.table] || { writers: [], readers: [] });
       if (entry.mode === 'R') rec.readers.push(m.name);
-      else rec.writers.push({ feature: m.name, mode: entry.mode });
+      else rec.writers.push({ feature: m.name, mode: entry.mode, declaredOwner: !!entry.declaredOwner, technical: !!entry.technical });
     }
   }
 
   const tableOwnership = {};
   for (const [table, rec] of Object.entries(tableIndex)) {
     const writerNames = rec.writers.map(w => w.feature);
+    const declaredOwners = rec.writers.filter(w => w.declaredOwner).map(w => w.feature);
+    const technicalWriters = new Set(rec.writers.filter(w => w.technical).map(w => w.feature));
     let lifecycleOwner = null, resolution;
-    if (writerNames.length === 1) {
+    if (declaredOwners.length === 1) {
+      lifecycleOwner = declaredOwners[0];
+      resolution = 'declared-table-owner';
+    } else if (declaredOwners.length > 1) {
+      resolution = 'conflicting-declared-owner';
+    } else if (writerNames.length === 1) {
       lifecycleOwner = writerNames[0];
       resolution = 'single-writer';
     } else if (writerNames.length > 1) {
       const owningCandidates = writerNames.filter(fn => {
-        const node = featureNodeByName.get(fn);
         const m = manifests.find(mm => mm.name === fn);
         return m && m.classification && m.classification.signals && m.classification.signals.ownsTables === true;
       });
@@ -810,17 +833,33 @@ function build() {
       lifecycleOwner, resolution,
     };
 
-    if (resolution === 'ambiguous-multi-writer') {
+    if (resolution === 'conflicting-declared-owner') {
+      warns.push({
+        type: 'WRITER-NOT-OWNER', ref: table,
+        msg: `table "${table}" a ${declaredOwners.length} owners déclarés en conflit (${declaredOwners.join(', ')}) via le marqueur "!" — déclaration fautive à corriger, un seul owner autorisé`,
+      });
+    } else if (resolution === 'ambiguous-multi-writer') {
       warns.push({
         type: 'WRITER-NOT-OWNER', ref: table,
         msg: `table "${table}" a ${writerNames.length} écrivain(s) déclaré(s) (${writerNames.join(', ')}) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur`,
       });
-    } else if (resolution === 'multi-writer-resolved-by-classification-signal' && writerNames.length > 1) {
-      const others = writerNames.filter(w => w !== lifecycleOwner);
-      warns.push({
-        type: 'WRITER-NOT-OWNER', ref: table,
-        msg: `table "${table}" : lifecycle owner = ${lifecycleOwner} (classification.signals.ownsTables), mais aussi écrite par ${others.join(', ')}`,
-      });
+    } else if (
+      (resolution === 'multi-writer-resolved-by-classification-signal' || resolution === 'declared-table-owner')
+      && writerNames.length > 1
+    ) {
+      // Un écrivain marqué technical (~) n'exprime aucune décision métier
+      // (cron de purge, simulateur de démo, migration de démarrage) : il ne
+      // compte jamais comme concurrent de l'owner déjà résolu, et ne doit
+      // plus être émis comme warning à la source une fois la preuve établie
+      // (cf. governance/data-ownership.json, arbitrage 2026-07-29).
+      const others = writerNames.filter(w => w !== lifecycleOwner && !technicalWriters.has(w));
+      if (others.length > 0) {
+        const ownerLabel = resolution === 'declared-table-owner' ? 'db.tables "!"' : 'classification.signals.ownsTables';
+        warns.push({
+          type: 'WRITER-NOT-OWNER', ref: table,
+          msg: `table "${table}" : lifecycle owner = ${lifecycleOwner} (${ownerLabel}), mais aussi écrite par ${others.join(', ')}`,
+        });
+      }
     }
   }
 

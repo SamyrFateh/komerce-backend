@@ -381,11 +381,11 @@ module.exports = {
       // business_rules_history — retiré : propriété business-rules (arbitrage B)
       // charges — retiré : propriété economic-engine (arbitrage B)
 
-      'economic_snapshots: W',   // technical-writer : bootstrap/crons.js planifie le snapshot, economic-engine le calcule et le possède
+      'economic_snapshots: W~',   // technical-writer : bootstrap/crons.js planifie le snapshot, economic-engine le calcule et le possède
       // finance_config — retiré : propriété economic-engine (arbitrage B). Écriture runtime constatée : services/pricing-rates.js, routes/admin-finance-config.js, routes/admin-costing.js — toutes economic-engine
-      'pickup_print_tokens: W',   // technical-writer : purge planifiée (bootstrap/crons.js). Propriétaire : logistics
-      'pickup_reveal_codes: W',   // technical-writer : purge planifiée (bootstrap/crons.js). Propriétaire : logistics
-      'revoked_tokens: W',   // technical-writer : purge planifiée. Propriétaire : auth-identity (arbitrage A)
+      'pickup_print_tokens: W~',   // technical-writer : purge planifiée (bootstrap/crons.js). Propriétaire : logistics
+      'pickup_reveal_codes: W~',   // technical-writer : purge planifiée (bootstrap/crons.js). Propriétaire : logistics
+      'revoked_tokens: W~',   // technical-writer : purge planifiée. Propriétaire : auth-identity (arbitrage A)
       // schema_migrations : écrit par scripts/run-migrations.js (runner CI/deploy).
       // Ce fichier est hors des SCAN_ROOTS du générateur de graphe (scripts/ non
       // scanné), donc invérifiable par header — c'est un angle mort de l'outil,

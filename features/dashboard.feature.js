@@ -74,24 +74,24 @@ module.exports = {
       'customs_effective_rates: R',
       'customs_shipments: R',
       'exchange_rates: R',
-      'incidents: RW',
+      'incidents: RW',  // écrit via routes/admin/system.js (reset/seed, technique) ET routes/admin/users.js (nullification detected_by/resolved_by à la suppression utilisateur, réel) — mixte, pas de marqueur ~
       'invoices: RW',
       'loyalty_rewards: RW',
       'order_comments: RW',
       'order_incidents: RW',
       'order_item_cost_imputations: R',
       'order_item_real_cost_allocations: R',
-      'order_items: RW',
+      'order_items: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — écriture limitée à routes/admin/system.js (POST /reset, POST /seed-test, dev/staging uniquement, bloqué en prod sauf ALLOW_SEED=true) ; propriétaire réel : orders
       'order_status_history: RW',
-      'orders: RW',
-      'parcel_items: RW',
-      'parcels: RW',
+      'orders: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — idem, routes/admin/system.js uniquement (reset/seed-test) ; propriétaire réel : orders
+      'parcel_items: RW',  // écrit aussi via routes/hub-dashboard.js (opérations hub réelles), pas seulement routes/admin/system.js (reset/seed) — mixte, pas de marqueur ~
+      'parcels: RW',       // idem parcel_items — routes/hub-dashboard.js écrit en opération réelle
       'partners: RW',
-      'products: RW',
+      'products: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — idem, routes/admin/system.js uniquement (reset/seed-test) ; propriétaire réel : catalog
       'recipients: RW',
       'relais: RW',
       'scan_events: RW',
-      'scans: RW',
+      'scans: RW',  // écrit via routes/admin/users.js (nullification scanned_by, réel) et routes/hub-dashboard.js (scan hub réel) — aucune part technique, pas de marqueur ~
       'signals: R',
       'sms_log: RW',
       'suppliers_stats: R',
