@@ -570,6 +570,15 @@
         "governed": true
       },
       {
+        "id": "boutique-manifest:auth-passkey",
+        "name": "auth-passkey",
+        "file": "boutique:features/auth-passkey.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "auth-passkey",
+        "sliceKind": "frontend-slice",
+        "governed": true
+      },
+      {
         "id": "boutique-manifest:boutique",
         "name": "boutique",
         "file": "boutique:features/boutique.feature.js",
@@ -13943,6 +13952,11 @@
         "sliceKind": "frontend-slice"
       },
       {
+        "canonicalFeature": "auth-passkey",
+        "boutiqueManifest": "auth-passkey",
+        "sliceKind": "frontend-slice"
+      },
+      {
         "canonicalFeature": "catalog",
         "boutiqueManifest": "catalog",
         "sliceKind": "frontend-slice"
@@ -14076,6 +14090,22 @@
         "category": "tests",
         "declared": "../tests/unit/b-phone.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-phone.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth-passkey",
+        "category": "js",
+        "declared": "../js/b-passkey-enrollment.js",
+        "resolvedPath": "public/boutique/js/b-passkey-enrollment.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth-passkey",
+        "category": "tests",
+        "declared": "../tests/unit/b-passkey-enrollment.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-passkey-enrollment.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -21522,6 +21552,22 @@
       },
       {
         "from": "platform-ops",
+        "to": "auth-passkey",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/b-passkey-enrollment.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "platform-ops",
         "to": "business-rules",
         "channels": [
           {
@@ -23295,7 +23341,7 @@
         "filesObserved": 777
       },
       "boutique": {
-        "filesObserved": 142,
+        "filesObserved": 144,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -23327,7 +23373,7 @@
     ],
     "familySummary": {
       "PROJECTION": 10,
-      "COMPOSITION_ROOT_WIRING": 15,
+      "COMPOSITION_ROOT_WIRING": 16,
       "NON_RUNTIME_TEST": 8,
       "TECHNICAL_PRIMITIVE": 31,
       "BUSINESS_TRANSVERSAL_SERVICE": 2,
@@ -24132,6 +24178,21 @@
       },
       {
         "from": "platform-ops",
+        "to": "auth-passkey",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "platform-ops",
         "to": "catalog",
         "family": "BUSINESS_FEATURE_INTERFACE",
         "evidenceRole": "RUNTIME_AND_TEST",
@@ -24511,9 +24572,9 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|mixed": 2,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 3,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 2,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
@@ -26195,8 +26256,8 @@
         "note": "pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)"
       },
       "boutique": {
-        "manifestsDiscovered": 14,
-        "manifestsConnected": 14,
+        "manifestsDiscovered": 15,
+        "manifestsConnected": 15,
         "technicalNodesTotal": 80,
         "technicalNodesOwned": 80,
         "technicalOrphans": 0
@@ -26205,6 +26266,7 @@
     "canonical": {
       "crossRepoFeatures": [
         "auth-identity",
+        "auth-passkey",
         "catalog",
         "notifications",
         "orders",
@@ -26217,7 +26279,6 @@
       "singleRepoFeatures": [
         "admin-dashboard",
         "auth",
-        "auth-passkey",
         "business-rules",
         "customs",
         "dashboard",
@@ -26652,6 +26713,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> auth-identity",
         "msg": "dépendance cross-feature observée (canal: interface+static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-identity\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "platform-ops -> auth-passkey",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-passkey\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

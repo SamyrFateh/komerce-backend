@@ -9,7 +9,7 @@
 | Family | N |
 |---|---|
 | PROJECTION | 10 |
-| COMPOSITION_ROOT_WIRING | 15 |
+| COMPOSITION_ROOT_WIRING | 16 |
 | NON_RUNTIME_TEST | 8 |
 | TECHNICAL_PRIMITIVE | 31 |
 | BUSINESS_TRANSVERSAL_SERVICE | 2 |
@@ -17,7 +17,7 @@
 | BUSINESS_FEATURE_INTERFACE | 5 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **75** |
+| **TOTAL** | **76** |
 
 ## The 94 pairs (from → to)
 
@@ -75,6 +75,7 @@
 | orders → shared-cart | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_AND_TEST | business-feature | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import | `` |
 | payments → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-foundation | interface+static-code | mixed | technical-dependency-policy | — | `` |
 | platform-ops → auth-identity | BUSINESS_FEATURE_INTERFACE | RUNTIME_AND_TEST | technical-transversal | business-feature | interface+static-code | interface | business-dependency-declare-candidate | runtime-cycle | `` |
+| platform-ops → auth-passkey | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | platform-ops → catalog | BUSINESS_FEATURE_INTERFACE | RUNTIME_AND_TEST | technical-transversal | business-feature | interface+static-code | interface | business-dependency-declare-candidate | runtime-cycle | `` |
 | platform-ops → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | technical-transversal | technical-foundation | interface+static-code | mixed | technical-dependency-policy | — | `` |
 | platform-ops → notifications | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-transversal | static-code | business-file-import | application-wiring-not-consumption | — | `` |
