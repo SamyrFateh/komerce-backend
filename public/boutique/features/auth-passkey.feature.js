@@ -20,18 +20,19 @@ module.exports = {
   canonicalFeature: 'auth-passkey',
   sliceKind: 'frontend-slice',
 
-  service: 'Enrôlement volontaire d’une passkey après une authentification OTP réussie, sans modifier le parcours OTP nominal.',
+  service: 'Enrôlement volontaire après OTP (AUTH-3) et connexion Passkey nominale discoverable avec fallback WhatsApp (AUTH-4).',
 
   perimeter: {
     in: [
       'proposition post-OTP AUTH-3',
       'appel WebAuthn navigator.credentials.create',
+      'login Passkey nominal AUTH-4 sans saisie de numéro',
+      'appel WebAuthn navigator.credentials.get',
       'conversion JSON/WebAuthn côté navigateur',
-      'appel des endpoints register/options et register/verify AUTH-2',
+      'appel des endpoints register/options, register/verify, login/options et login/verify AUTH-2',
     ],
     out: [
-      'login passkey nominal (AUTH-4)',
-      'recovery (AUTH-5)',
+      'recovery et ré-enrôlement (AUTH-5)',
       'gestion/révocation des authentificateurs (AUTH-6)',
       'step-up (AUTH-7)',
     ],
@@ -40,9 +41,11 @@ module.exports = {
   files: {
     js: [
       '../js/b-passkey-enrollment.js',
+      '../js/b-passkey-login.js',
     ],
     tests: [
       '../tests/unit/b-passkey-enrollment.test.js',
+      '../tests/unit/b-passkey-login.test.js',
     ],
   },
 
@@ -52,21 +55,25 @@ module.exports = {
     exposes: [],
     internalApi: [
       'setupPasskeyEnrollment / offerPasskeyEnrollment (b-passkey-enrollment.js)',
+      'openPasskeyLogin (b-passkey-login.js)',
     ],
     consumes: [
-      'auth — b-identity.js émet komerce:identity-authenticated après vérification OTP',
+      'auth — b-identity.js émet komerce:identity-authenticated et délègue le login nominal à auth-passkey',
     ],
   },
 
-  authority: 'boutique — expérience d’enrôlement passkey AUTH-3 uniquement.',
+  authority: 'boutique — expérience d’enrôlement et de connexion passkey AUTH-3/AUTH-4.',
 
   invariants: [
-    'aucune proposition passkey avant une authentification OTP réussie',
+    'aucune proposition d enrôlement passkey avant une authentification OTP réussie',
     'l enrôlement est volontaire et offre toujours Plus tard',
+    'le login passkey est proposé avant OTP quand WebAuthn est disponible',
+    'le login discoverable ne demande pas de numéro au client',
+    'WhatsApp reste un fallback explicite et non le parcours nominal quand une passkey est utilisable',
     'aucun JWT challenge credential clé privée ou donnée biométrique n est stocké dans localStorage ou sessionStorage',
-    'le challenge et les paramètres RP viennent exclusivement de POST /api/auth/passkey/register/options',
-    'navigator.credentials.create est appelé avec les options serveur et la réponse est vérifiée par POST /api/auth/passkey/register/verify',
-    'une annulation WebAuthn ne casse jamais la session OTP déjà obtenue',
-    'un navigateur sans WebAuthn conserve exactement le parcours OTP existant',
+    'les challenges et paramètres RP viennent exclusivement du serveur AUTH-2',
+    'navigator.credentials.create/get est vérifié côté serveur avant toute confiance',
+    'une annulation WebAuthn ne crée ni ne détruit une session',
+    'un navigateur sans WebAuthn conserve le parcours OTP existant',
   ],
 };
