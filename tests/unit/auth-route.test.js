@@ -40,7 +40,11 @@ process.env.JWT_SECRET = 'test-secret-stable-32-characters-minimum';
 jest.mock('../../db', () => ({ query: jest.fn() }));
 
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req, _res, next) => { req.user = req.user || { id: 'user-1' }; next(); },
+  authenticate: (req, _res, next) => {
+    req.user = req.user || { id: 'user-1' };
+    req.auth = req.auth || { authTime: Math.floor(Date.now() / 1000), amr: ['passkey'] };
+    next();
+  },
 }));
 
 jest.mock('../../middleware/validate', () => ({
