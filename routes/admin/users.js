@@ -9,7 +9,8 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, users
- * @db-write      basket_items, baskets, incidents, order_status_history, recipients, scan_events, sms_log, users, wallet_transactions, wallets
+ * @db-write      basket_items, baskets, order_status_history, recipients, scan_events, sms_log, users, wallet_transactions, wallets
+ * @db-write-via:incident-write-service incidents
  * @db-write-via:scan-write-service scans
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -24,6 +25,7 @@ const router  = express.Router();
 const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { detachUserFromScans } = require('../../services/scan-write-service');
+const { detachUserFromIncidents } = require('../../services/incident-write-service');
 const log = require('../../utils/logger').child({ module: 'admin/users' });
 
 const guard = [authenticate, requireRole(['admin'])];
@@ -201,8 +203,7 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
         'UPDATE order_status_history SET changed_by = NULL WHERE changed_by = $1::uuid',
         () => detachUserFromScans(db, id),
         'UPDATE scan_events SET scanned_by = NULL WHERE scanned_by = $1::uuid',
-        'UPDATE incidents SET detected_by = NULL WHERE detected_by = $1::uuid',
-        'UPDATE incidents SET resolved_by = NULL WHERE resolved_by = $1::uuid',
+        () => detachUserFromIncidents(db, id),
       ];
       for (const q of cleanupQueries) {
         try {

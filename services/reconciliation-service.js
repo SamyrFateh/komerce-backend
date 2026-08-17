@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js, utils/parcels.js
+ * @depends       db, services/incident-write-service.js, utils/logger.js, utils/parcels.js
  * @used-by       none
  * @db-read       incidents, order_items, orders, parcel_items, parcels, scan_events
- * @db-write      incidents
+ * @db-write-via:incident-write-service incidents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown
@@ -47,6 +47,7 @@
  */
 
 const pool = require('../db');
+const { createReconciliationIncident } = require('./incident-write-service');
 // ── CANONIQUE: source de vérité unique pour le calcul agrégé colis → commande ──
 const { computeOrderStatus } = require('../utils/parcels');
 const log = require('../utils/logger').child({ module: 'reconciliation-service' });
@@ -404,36 +405,6 @@ function getExpectedStatuses(eventType) {
     pickup_failed: ['available']
   };
   return map[eventType] || null;
-}
-
-async function createReconciliationIncident(client, orderId, parcelId, orderItemId, issue) {
-  // Éviter les doublons — ne pas recréer si un incident ouvert identique existe
-  const { rows: existing } = await client.query(`
-    SELECT id FROM incidents 
-    WHERE order_id = $1 
-      AND COALESCE(parcel_id::text, '') = COALESCE($2::text, '')
-      AND incident_type = 'reconciliation_error'
-      AND status IN ('open', 'investigating')
-      AND details->>'type' = $3
-    LIMIT 1
-  `, [orderId, parcelId, issue.type]);
-
-  if (existing.length > 0) return existing[0];
-
-  const { rows: [incident] } = await client.query(`
-    INSERT INTO incidents (
-      parcel_id, order_id, order_item_id,
-      incident_type, severity, title, description, details,
-      detected_source
-    ) VALUES ($1,$2,$3,'reconciliation_error',$4,$5,$6,$7,'reconciliation')
-    RETURNING *
-  `, [
-    parcelId, orderId, orderItemId,
-    issue.severity, issue.message, issue.message,
-    JSON.stringify({ ...issue.details, type: issue.type })
-  ]);
-
-  return incident;
 }
 
 module.exports = {

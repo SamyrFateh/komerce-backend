@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/incident-write-service.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       incidents, invoices, order_items, orders, parcel_items, parcels, products, relais, scan_events, users
- * @db-write      incidents
+ * @db-write-via:incident-write-service incidents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  operations
@@ -23,6 +23,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { resolveOpsIncident } = require('../services/incident-write-service');
 const { authenticate, requireRole } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'ops-api' });
 
@@ -366,11 +367,13 @@ router.post('/alerts/:id/acknowledge', async (req, res, next) => {
     
     if (alertId.startsWith('weight-')) {
       const incidentId = alertId.replace('weight-', '');
-      await pool.query(
-        `UPDATE incidents SET status = 'resolved', resolved_at = NOW(), 
-         resolution = $1 WHERE id = $2`,
-        [JSON.stringify({ type: 'acknowledged', note: 'Acquitté via Control Tower' }), incidentId]
-      );
+      await resolveOpsIncident(pool, {
+        incidentId,
+        resolution: JSON.stringify({
+          type: 'acknowledged',
+          note: 'Acquitte via Control Tower',
+        }),
+      });
     }
     
     res.json({ success: true, message: 'Alerte acquittée' });

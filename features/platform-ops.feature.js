@@ -173,6 +173,7 @@ module.exports = {
       'GET /health/version',
     ],
     consumes: [
+      'incident-management (incident persistence via incident-write-service)',
       'purchasing (client API transversal appelle le référentiel fournisseurs /api/purchasing/suppliers)',
       'catalog (shell/client API transversal monte et appelle les surfaces catalogue sans en posséder l’état)',
       'auth-identity (client API transversal et shell identité consomment les endpoints auth)',
@@ -216,16 +217,8 @@ module.exports = {
               'par logistics. Les FAIL DUPLICATE_ROUTE_OWNER et PARAM_NAME_MISMATCH liés ' +
               'devraient disparaître au prochain run du gate ; à vérifier empiriquement.',
       },
-      { gap: 'SPLIT (2026-07-12, Lot O2) — services/incident-service.js et la table incidents ' +
-             'ont été scindés vers features/incident-management.feature.js (voir §A4 de ' +
-             'BUSINESS_FEATURE_ONTOLOGY_O2 : table propriétaire riche, lifecycle engageant, ' +
-             '4 consommateurs symétriques — Signal 4 transversal). routes/ops-api.js reste dans ' +
-             'platform-ops et continue d\'écrire directement dans incidents par SQL inline ' +
-             '(1 mutation sur ~15 endpoints, @db-write-via:legacy) au lieu de passer par ' +
-             'incident-service.js — dette de câblage documentée dans incident-management.feature.js, ' +
-             'refacto runtime explicitement refusé pour ce lot.',
-        risk: 'faible — la lecture est documentée ici (incidents: R), l\'écriture legacy est ' +
-              'assumée et trackée côté incident-management.feature.js.',
+      { gap: 'RESOLU LOT9 - routes/ops-api.js ne modifie plus incidents directement ; la mutation d acquittement passe par incident-management/incident-write-service.',
+        risk: 'nul - platform-ops conserve incidents en lecture uniquement.',
       },
       { gap: 'CONSERVÉ (2026-07-12, Lot O2) — modules / fabrics / garment_models. Le service ' +
              'réel doit être rechallengé contre catalog / product configuration. platform-ops ' +

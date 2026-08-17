@@ -4234,9 +4234,23 @@
       },
       {
         "feature": "incident-management",
+        "category": "services",
+        "declared": "services/incident-write-service.js",
+        "resolvedPath": "services/incident-write-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "incident-management",
         "category": "tests",
         "declared": "tests/unit/incident-service.test.js",
         "resolvedPath": "tests/unit/incident-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "incident-management",
+        "category": "tests",
+        "declared": "tests/unit/incident-write-service.test.js",
+        "resolvedPath": "tests/unit/incident-write-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13260,6 +13274,48 @@
         "status": "resolved"
       },
       {
+        "feature": "incident-management",
+        "fn": "createScanIncident",
+        "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
+        "fn": "createReconciliationIncident",
+        "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
+        "fn": "createAlertEngineIncidentIfNew",
+        "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
+        "fn": "acknowledgeAlertEngineIncident",
+        "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
+        "fn": "resolveOpsIncident",
+        "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
+        "fn": "detachUserFromIncidents",
+        "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
+        "fn": "seedIncident",
+        "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "infrastructure",
         "fn": null,
         "file": "middleware/error-handler.js",
@@ -13725,6 +13781,12 @@
       },
       {
         "from": "dashboard",
+        "to": "incident-management",
+        "raw": "incident-management (incident persistence via incident-write-service)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
         "to": "orders",
         "raw": "orders (lecture commandes)",
         "resolved": true
@@ -14043,6 +14105,12 @@
       },
       {
         "from": "logistics",
+        "to": "incident-management",
+        "raw": "incident-management (incident persistence via incident-write-service)",
+        "resolved": true
+      },
+      {
+        "from": "logistics",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
@@ -14153,6 +14221,12 @@
         "from": "loyalty",
         "to": "wallet",
         "raw": "wallet (aucune écriture — v_loyalty_summary et le calcul de palier ne lisent pas les tables wallet)",
+        "resolved": true
+      },
+      {
+        "from": "notifications",
+        "to": "incident-management",
+        "raw": "incident-management (incident persistence via incident-write-service)",
         "resolved": true
       },
       {
@@ -14289,6 +14363,12 @@
       },
       {
         "from": "payments",
+        "to": "incident-management",
+        "raw": "incident-management (incident persistence via incident-write-service)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
@@ -14351,6 +14431,12 @@
         "from": "payments",
         "to": "purchasing",
         "raw": "purchasing (declenche verification/reapprovisionnement apres encaissement — services/purchasing-trigger-service.js triggerPurchasing, O7.3 provider purchasing)",
+        "resolved": true
+      },
+      {
+        "from": "platform-ops",
+        "to": "incident-management",
+        "raw": "incident-management (incident persistence via incident-write-service)",
         "resolved": true
       },
       {
@@ -18349,6 +18435,26 @@
       },
       {
         "from": "dashboard",
+        "to": "incident-management",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin/system.js",
+                "targetFile": "services/incident-write-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin/users.js",
+                "targetFile": "services/incident-write-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
         "to": "infrastructure",
         "channels": [
           {
@@ -20241,6 +20347,22 @@
       },
       {
         "from": "logistics",
+        "to": "incident-management",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/scan-engine.js",
+                "targetFile": "services/incident-write-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "logistics",
         "to": "infrastructure",
         "channels": [
           {
@@ -20837,6 +20959,22 @@
               {
                 "sourceFileId": "routes/client-notifications.js",
                 "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "notifications",
+        "to": "incident-management",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/alert-engine.js",
+                "targetFile": "services/incident-write-service.js"
               }
             ]
           }
@@ -22076,6 +22214,22 @@
       },
       {
         "from": "payments",
+        "to": "incident-management",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/reconciliation-service.js",
+                "targetFile": "services/incident-write-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "payments",
         "to": "infrastructure",
         "channels": [
           {
@@ -22764,6 +22918,22 @@
               {
                 "sourceFileId": "routes/modules.js",
                 "targetFile": "services/pricing-engine.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "platform-ops",
+        "to": "incident-management",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/ops-api.js",
+                "targetFile": "services/incident-write-service.js"
               }
             ]
           }
@@ -24440,7 +24610,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 818
+        "filesObserved": 820
       },
       "boutique": {
         "filesObserved": 158,
@@ -25610,37 +25780,17 @@
     "incidents": {
       "writers": [
         {
-          "feature": "dashboard",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
           "feature": "incident-management",
           "mode": "RW",
           "declaredOwner": true,
           "technical": false
-        },
-        {
-          "feature": "logistics",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "notifications",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "payments",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
         }
       ],
       "readers": [
+        "dashboard",
+        "logistics",
+        "notifications",
+        "payments",
         "platform-ops"
       ],
       "lifecycleOwner": "incident-management",
@@ -26725,11 +26875,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "incidents",
-        "msg": "table \"incidents\" : lifecycle owner = incident-management (db.tables \"!\"), mais aussi écrite par dashboard, logistics, notifications, payments"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "orders",
         "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet"
       },
@@ -26749,11 +26894,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "alerts",
         "msg": "table \"alerts\" : lifecycle owner = notifications (db.tables \"!\"), mais aussi écrite par catalog, logistics, orders, payments, purchasing"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "incidents",
-        "msg": "table \"incidents\" : lifecycle owner = incident-management (db.tables \"!\"), mais aussi écrite par dashboard, logistics, notifications, payments"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26971,11 +27111,11 @@
       }
     ],
     "summary": {
-      "signals": 5,
-      "debt": 5,
+      "signals": 4,
+      "debt": 4,
       "expectedTopology": 32,
       "generatorLimitations": 8,
-      "classifiedCandidates": 45
+      "classifiedCandidates": 44
     }
   }
 }

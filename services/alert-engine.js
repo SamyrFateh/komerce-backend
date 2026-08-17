@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db
+ * @depends       db, services/incident-write-service.js
  * @used-by       routes/alerts.js
  * @db-read       incidents, orders, parcels, scan_events
- * @db-write      incidents
+ * @db-write-via:incident-write-service incidents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  notification
@@ -34,6 +34,10 @@
 'use strict';
 
 const db = require('../db');
+const {
+  createAlertEngineIncidentIfNew,
+  acknowledgeAlertEngineIncident,
+} = require('./incident-write-service');
 
 const DEFAULTS = {
   STUCK_DAYS: 7,           // Colis sans scan depuis 7 jours
@@ -216,27 +220,16 @@ const AlertEngine = {
    * pour le même colis + même type
    */
   async _createAlertIfNew(type, parcelId, orderId, severity, description, metadata) {
-    // Check for existing open incident of same type for same parcel
-    const { rows: existing } = await db.query(`
-      SELECT id FROM incidents
-      WHERE parcel_id = $1 AND type = $2 AND status IN ('open', 'investigating')
-      LIMIT 1
-    `, [parcelId, type]);
-
-    if (existing.length > 0) return null; // Already tracked
-
-    const { rows: [incident] } = await db.query(`
-      INSERT INTO incidents (parcel_id, order_id, type, severity, description, metadata, detected_by)
-      VALUES ($1, $2, $3, $4, $5, $6, 'alert_engine')
-      RETURNING *
-    `, [parcelId, orderId, type, severity, description, JSON.stringify(metadata || {})]);
-
-    return incident;
+    return createAlertEngineIncidentIfNew(db, {
+      type,
+      parcelId,
+      orderId,
+      severity,
+      description,
+      metadata,
+    });
   },
 
-  /**
-   * Retourne les alertes actives avec infos colis
-   */
   async getActiveAlerts(filters) {
     const conditions = ["i.status IN ('open', 'investigating')"];
     const params = [];
@@ -272,16 +265,11 @@ const AlertEngine = {
    * Acquitte une alerte
    */
   async acknowledgeAlert(alertId, acknowledgedBy) {
-    const { rows: [updated] } = await db.query(`
-      UPDATE incidents 
-      SET status = 'investigating', 
-          resolved_by = $2,
-          updated_at = NOW()
-      WHERE id = $1 AND status = 'open'
-      RETURNING *
-    `, [alertId, acknowledgedBy || 'admin']);
-
-    return updated;
+    return acknowledgeAlertEngineIncident(
+      db,
+      alertId,
+      acknowledgedBy
+    );
   }
 };
 

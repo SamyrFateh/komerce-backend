@@ -125,7 +125,7 @@ module.exports = {
     tables: [
       'alerts: W!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — écrivains additionnels : catalog, logistics, orders, payments, purchasing (cf. debt.knownGaps)
       'client_notifications: RW',
-      'incidents: RW',
+      'incidents: R',  // W-via incident-management/incident-write-service - LOT9
       'notification_log: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'orders: R',
       'parcels: R',
@@ -163,6 +163,7 @@ module.exports = {
       { fn: 'emitOrderMilestone / emitExceptional / resolveOrderMilestones', file: 'services/client-notification-service.js' },
     ],
     consumes: [
+      'incident-management (incident persistence via incident-write-service)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)",

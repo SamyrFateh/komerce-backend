@@ -127,7 +127,7 @@ module.exports = {
       'alerts: W',
       'cash_collections: RW',
       'cash_deposits: RW',
-      'incidents: RW',
+      'incidents: R',  // W-via incident-management/incident-write-service - LOT9
       'order_items: R',
       // order_status_history : W-via:order-status-machine (appendOrderHistoryNote — payment-paypal.js)
       'orders: RW',
@@ -178,6 +178,7 @@ module.exports = {
       { fn: 'markRefunded', file: 'services/payment-service.js' },
     ],
     consumes: [
+      'incident-management (incident persistence via incident-write-service)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "platform-ops (FF-C1 2026-07-29 — monitoring et exploitation technique ; preuve: routes/payments.js -> services/monitoring.js)",
 
