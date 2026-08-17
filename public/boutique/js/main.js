@@ -29,6 +29,7 @@ import { setupProductDetailModal } from './b-modal-product-detail-bootstrap.js';
 import { greetIfKnown } from './b-greeting.js';
 import { setupClientNotifications } from './b-notifications.js';
 import { setupKomerceNavIdentity } from './b-komerce-nav-identity.js';
+import { setupPasskeyEnrollment } from './b-passkey-enrollment.js';
 
 function setupBoutiqueRuntime() {
   setupSharePhoneGuard();
@@ -43,6 +44,7 @@ function setupBoutiqueRuntime() {
   setupProductOpenContract();
   setupCartProductOpenStyle();
   setupKomerceNavIdentity();
+  setupPasskeyEnrollment();
   // FIX GREETING — appelé après le boot, best-effort (silencieux si non connecté)
   greetIfKnown();
   setupClientNotifications();
