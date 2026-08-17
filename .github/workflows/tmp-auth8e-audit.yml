@@ -28,29 +28,22 @@ jobs:
               exit "$status"
             fi
           }
-          list_grep() {
-            local pattern="$1"
-            shift
-            set +e
-            git grep -l -I -E "$pattern" -- "$@"
-            local status=$?
-            set -e
-            if [ "$status" -gt 1 ]; then exit "$status"; fi
-          }
+
+          echo '=== ALL RUNTIME JWT PRODUCERS / VERIFIERS ==='
+          run_grep '(jwt\.sign|jwt\.verify|jsonwebtoken)' \
+            routes middleware services utils bootstrap server.js \
+            ':(exclude).github/workflows/tmp-auth8e-audit.yml'
+
+          echo '=== TOKEN-TYPE-LIKE CLAIMS ==='
+          run_grep '(scope|purpose|token_use|type:.*token|type.*magic|magic.*token)' \
+            routes middleware services utils \
+            ':(exclude).github/workflows/tmp-auth8e-audit.yml'
 
           echo '=== EXACT orders-by-phone / orders_read REFERENCES ==='
           run_grep '(orders-by-phone|orders_read)' . \
             ':(exclude).github/workflows/tmp-auth8e-audit.yml'
 
-          echo '=== TEST FILES USING INBOUND BEARER ==='
-          list_grep '(Authorization|authorization).{0,30}Bearer|Bearer.{0,30}(Authorization|authorization)' \
-            tests public/boutique/tests public/dashboards || true
-
           echo '=== RUNTIME INBOUND AUTH HELPERS ==='
           run_grep '(readAuthToken|extractToken|headers\.authorization|req\.headers\.authorization)' \
             middleware routes utils server.js bootstrap \
             ':(exclude).github/workflows/tmp-auth8e-audit.yml'
-
-          echo '=== OPERATIONAL SCRIPTS SENDING KOMERCE BEARER ==='
-          run_grep '(authorization|Authorization).{0,50}Bearer|Bearer.{0,50}(token|TOKEN)' scripts \
-            ':(exclude)scripts/audit-security-major.js'
