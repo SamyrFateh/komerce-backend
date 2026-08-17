@@ -6,54 +6,25 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js, utils/user-cache.js
+ * @depends       db, utils/logger.js, utils/user-cache.js, utils/auth-token-policy.js
  * @db-write      none
- * @db-read      revoked_tokens, users
+ * @db-read       revoked_tokens, users
  * @used-by       none
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      canonical_session_claims_only
  * @impact-areas  auth
- * @version       2026-06
+ * @version       2026-08
  */
 
 'use strict';
-
-/**
- * KOMERCE — Middleware requireVerifiedIdentityForCheckout
- *
- * Utilisé sur les endpoints "engageants" du checkout :
- *   - POST /api/orders          (commande cash ou Stripe)
- *   - POST /api/payments/stripe/intent
- *
- * Doctrine DOCTRINE_IDENTITE_LEGERE_KOMERCE §15 :
- *   "Les endpoints engageants doivent s'appuyer sur l'utilisateur courant
- *    au lieu de redemander nom / téléphone dans le payload."
- *
- * Règle :
- *   - JWT valide présent → charge req.user et continue.
- *   - JWT absent ou invalide → 401 { code: 'identity_required' }.
- *
- * Ce middleware NE crée PAS de guest automatiquement.
- * Il exige une identité déjà vérifiée par OTP (JWT httpOnly kmrc_jwt).
- *
- * Compatibilité :
- *   authenticateOrCreateGuest reste sur shared-cart et les routes non-engageantes.
- *   Ce middleware s'applique seulement aux endpoints listés ci-dessus.
- *   Ne pas modifier authenticateOrCreateGuest dans cette PR.
- *
- * TODO (Lot 4 post-PR) :
- *   Retirer authenticateOrCreateGuest de routes/orders/create.js une fois
- *   que tous les clients (web, mobile, éventuels appels directs) passent
- *   systématiquement par le flow OTP front.
- */
 
 const jwt  = require('jsonwebtoken');
 const db   = require('../db');
 const log  = require('../utils/logger').child({ module: 'require-verified-identity' });
 const userCache = require('../utils/user-cache');
+const { sessionClaimsVerdict } = require('../utils/auth-token-policy');
 
 const _JWT_SECRET = process.env.JWT_SECRET;
 
-// AUTH-8a — lecture centralisée du cookie d'auth (utils/auth-cookie.js)
 const { readAuthToken } = require('../utils/auth-cookie');
 function extractToken(req) { return readAuthToken(req); }
 
@@ -65,15 +36,7 @@ async function isTokenRevoked(jti) {
   );
   return rows.length > 0;
 }
-/**
- * requireVerifiedIdentityForCheckout
- *
- * Vérifie la présence d'un JWT valide. Si absent ou invalide, retourne :
- *   HTTP 401 { error: 'Identité non vérifiée', code: 'identity_required' }
- *
- * Le front (b-identity.js / requireIdentity) est en charge d'obtenir ce JWT
- * via le flow OTP avant d'appeler l'endpoint engageant.
- */
+
 async function requireVerifiedIdentityForCheckout(req, res, next) {
   const token = extractToken(req);
 
@@ -86,8 +49,15 @@ async function requireVerifiedIdentityForCheckout(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, _JWT_SECRET, { algorithms: ['HS256'] });
+    const sessionVerdict = sessionClaimsVerdict(decoded);
+    if (!sessionVerdict.ok) {
+      log.warn({ reason: sessionVerdict.reason }, '[require-verified-identity] JWT signé refusé : pas une session');
+      return res.status(401).json({
+        error: 'Identité non vérifiée — confirmez votre WhatsApp pour continuer.',
+        code: 'identity_required',
+      });
+    }
 
-    // N4 — une identité vérifiée avec un JWT révoqué n'est plus valide.
     if (await isTokenRevoked(decoded.jti)) {
       return res.status(401).json({
         error: 'Session expirée — confirmez à nouveau votre WhatsApp.',
@@ -135,5 +105,3 @@ async function requireVerifiedIdentityForCheckout(req, res, next) {
 }
 
 module.exports = { requireVerifiedIdentityForCheckout };
-
-
