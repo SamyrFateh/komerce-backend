@@ -1,0 +1,27 @@
+name: Temporary debt signal audit
+
+on:
+  push:
+    branches:
+      - governance/debt-signal-truth
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Consumers of drifts.warn
+        shell: bash
+        run: |
+          set -o pipefail
+          git grep -n -E 'drifts\.warn|WARN / DEBT|avertissement\(s\) / dette' -- '*.js' '*.mjs' '*.md' ':!docs/BUSINESS_FEATURE_GRAPH.md' || test $? -eq 1
+      - name: Semantic counts
+        shell: bash
+        run: |
+          node -e "const m=require('./docs/BUSINESS_FEATURE_GRAPH.json'); const s=require('./governance/business-graph-warning-semantics.js'); const c={}; for (const w of m.drifts.warn){const k=s.classify(w,{ROOT:process.cwd()}).category;c[k]=(c[k]||0)+1;} console.log(JSON.stringify({total:m.drifts.warn.length,byCategory:c},null,2));"
