@@ -69,6 +69,7 @@ module.exports = {
       'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js',
       'tests/unit/purchasing.test.js',                              // triggerPurchasing (purchasing-trigger-service)
       'tests/unit/purchasing-receive-service.test.js',
+      'tests/unit/purchasing-cancel-service.test.js',
       'tests/unit/purchasing-route.test.js',                        // couche HTTP routes/purchasing.js
       'tests/unit/purchasing-trigger-service.test.js',
       'tests/unit/receive-purchase-order.test.js',
