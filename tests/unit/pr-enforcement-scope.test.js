@@ -12,11 +12,12 @@ const {
   isBoutiqueUnitTest,
   isBoutiquePackageFile,
   isBoutiqueRelevant,
+  isGovernanceFile,
   classify,
   diffFiles,
 } = require('../../scripts/pr-enforcement-scope');
 
-describe('PR enforcement scope — backend + migrations + Boutique', () => {
+describe('PR enforcement scope — backend + migrations + Boutique + governance', () => {
   test('normalise les chemins Windows', () => {
     expect(norm('services\\orders.js')).toBe('services/orders.js');
   });
@@ -105,31 +106,64 @@ describe('PR enforcement scope — backend + migrations + Boutique', () => {
     expect(result.backend).toBe(false);
     expect(result.migrations).toBe(false);
     expect(result.boutique).toBe(false);
+    expect(result.governance).toBe(false);
     expect(result.schemaDump).toBe(false);
   });
 
-  test('un changement backend déclenche uniquement le backend', () => {
+  test('un changement backend déclenche backend ET gouvernance', () => {
     const result = classify([
       'docs/README.md',
       'services/orders.js',
       'tests/unit/orders.test.js',
     ]);
     expect(result.backend).toBe(true);
+    expect(result.governance).toBe(true);
     expect(result.migrations).toBe(false);
     expect(result.boutique).toBe(false);
     expect(result.backendFiles).toEqual([
       'services/orders.js',
       'tests/unit/orders.test.js',
     ]);
+    expect(result.governanceFiles).toEqual([
+      'services/orders.js',
+      'tests/unit/orders.test.js',
+    ]);
   });
 
-  test('une modification de test integration/e2e backend réveille le backend', () => {
+  test('régression AUTH-8a : utils/auth-cookie.js réveille toujours la gouvernance', () => {
+    const result = classify(['utils/auth-cookie.js']);
+    expect(result.backend).toBe(true);
+    expect(result.governance).toBe(true);
+    expect(result.backendFiles).toEqual(['utils/auth-cookie.js']);
+    expect(result.governanceFiles).toEqual(['utils/auth-cookie.js']);
+  });
+
+  test.each([
+    'routes/auth.js',
+    'services/webauthn-service.js',
+    'middleware/auth.js',
+    'utils/auth-cookie.js',
+    'validators/order.js',
+    'core/domain.js',
+    'bootstrap/api-routes.js',
+    'db/query.js',
+    'tests/unit/auth.test.js',
+    'package.json',
+    'package-lock.json',
+    'server.js',
+  ])('tout fichier backend %s est aussi governance-relevant', file => {
+    expect(isBackendFile(file)).toBe(true);
+    expect(isGovernanceFile(file)).toBe(true);
+  });
+
+  test('une modification de test integration/e2e backend réveille backend et gouvernance', () => {
     const result = classify([
       'tests/integration/orders.test.js',
       'tests/e2e-api/wallet.e2e.test.js',
       'tests/fixtures/catalog/golden.js',
     ]);
     expect(result.backend).toBe(true);
+    expect(result.governance).toBe(true);
     expect(result.backendFiles).toEqual([
       'tests/e2e-api/wallet.e2e.test.js',
       'tests/fixtures/catalog/golden.js',
@@ -182,6 +216,8 @@ describe('PR enforcement scope — backend + migrations + Boutique', () => {
     expect(result.boutiqueJs).toBe(false);
     expect(result.boutiqueHtml).toBe(false);
     expect(result.boutiqueUnit).toBe(false);
+    expect(result.backend).toBe(false);
+    expect(result.governance).toBe(false);
     expect(result.boutiqueTestFiles).toEqual([]);
   });
 
@@ -205,5 +241,6 @@ describe('PR enforcement scope — backend + migrations + Boutique', () => {
     const result = classify(['services/z.js', 'services/a.js', 'services/z.js']);
     expect(result.changedFiles).toEqual(['services/a.js', 'services/z.js']);
     expect(result.backendFiles).toEqual(['services/a.js', 'services/z.js']);
+    expect(result.governanceFiles).toEqual(['services/a.js', 'services/z.js']);
   });
 });
