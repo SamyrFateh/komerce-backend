@@ -61,6 +61,7 @@ jobs:
           node scripts/contract-check.js
       - name: Quality and governance projections
         run: |
+          rm .github/workflows/tmp-auth8e-finalize.yml
           npm run quality:gate
           npm run feature:registry
           npm run feature:check
@@ -91,6 +92,7 @@ jobs:
       - name: Commit certified AUTH-8e tree
         shell: bash
         run: |
+          git checkout HEAD -- .github/workflows/tmp-auth8e-finalize.yml
           rm scripts/tmp-auth8e-finalize.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
