@@ -1,12 +1,12 @@
 # Security 360 — couverture des gardes (hybride runtime + statique)
 
-> 2026-08-16T19:03:11.450Z — 475 endpoints
+> 2026-08-17T04:16:10.078Z — 482 endpoints
 
 | Niveau | Compte |
 |---|---|
-| 🟢 PROTECTED | 429 |
+| 🟢 PROTECTED | 435 |
 | ⚪ PUBLIC (légitime) | 5 |
-| 🟠 UNPROTECTED | 39 |
+| 🟠 UNPROTECTED | 40 |
 | 🔴 ADMIN_NO_GUARD | 0 |
 | ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 2 |
 
@@ -16,10 +16,11 @@
 - 🟠 `POST /api/auth/guest-checkout` — UNPROTECTED
 - 🟠 `GET /api/auth/magic-link/validate` — UNPROTECTED
 - 🟠 `POST /api/auth/magic-link` — UNPROTECTED
-- 🟠 `POST /api/auth/orders-by-phone` — UNPROTECTED
 - 🟠 `POST /api/auth/otp/request` — UNPROTECTED
 - 🟠 `POST /api/auth/otp/test-reset` — UNPROTECTED
 - 🟠 `POST /api/auth/otp/verify` — UNPROTECTED
+- 🟠 `POST /api/auth/passkey/login/options` — UNPROTECTED
+- 🟠 `POST /api/auth/passkey/login/verify` — UNPROTECTED
 - 🟠 `GET /api/boutique/suggestions` — UNPROTECTED
 - 🟠 `GET /api/categories` — UNPROTECTED
 - 🟠 `GET /api/client/magic-link/validate` — UNPROTECTED

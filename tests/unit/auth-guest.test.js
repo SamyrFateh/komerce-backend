@@ -62,7 +62,7 @@ function makeRes() {
 }
 
 function validToken(payload = {}) {
-  return jwt.sign({ id: 'user-1', jti: 'jti-1', ...payload }, process.env.JWT_SECRET, { algorithm: 'HS256' });
+  return jwt.sign({ id: 'user-1', jti: 'jti-1', auth_time: 1700000000, amr: ['otp'], token_use: 'session', ...payload }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });
 }
 
 beforeEach(() => {
@@ -101,18 +101,17 @@ describe('authenticateOrCreateGuest — révocation (jti)', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('ne vérifie pas la révocation si jti est absent du payload (isTokenRevoked court-circuite)', async () => {
-    const tokenWithoutJti = jwt.sign({ id: 'user-1' }, process.env.JWT_SECRET, { algorithm: 'HS256' });
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
-
+  it('refuse un JWT signé sans jti/auth_time/amr avant tout accès DB', async () => {
+    const tokenWithoutJti = jwt.sign({ id: 'user-1' }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });
     const req = { headers: { authorization: `Bearer ${tokenWithoutJti}` }, body: {} };
     const res = makeRes();
     const next = jest.fn();
 
     await authenticateOrCreateGuest(req, res, next);
 
-    expect(mockQuery).not.toHaveBeenCalled(); // pas de requête revoked_tokens
-    expect(next).toHaveBeenCalledTimes(1);
+    expect(mockQuery).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
   });
 });
 

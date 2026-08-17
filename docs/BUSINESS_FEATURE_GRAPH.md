@@ -111,13 +111,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Fournir les gardes transverses d'authentification et de vérification d'identité (middlewares JWT/session/rôles) consommées par toutes les autres features.
 
 - middleware: 7
-- utils: 3
+- utils: 4
 - migrations: 2
-- tests: 12
+- tests: 13
 - tables owned (lifecycle): 0
 - tables written: 1
 - interfaces exposed: 0
-- internal APIs: 5
+- internal APIs: 6
 - dependencies (consumes): 3 — notification, operations, orders
 - consumers: 22 — auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, recommendations, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
 
@@ -133,7 +133,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tests: 6
 - tables owned (lifecycle): 2 — `otp_codes`, `user_pickup_authorizations`
 - tables written: 4
-- interfaces exposed: 23
+- interfaces exposed: 22
 - internal APIs: 3
 - dependencies (consumes): 4 — auth, notifications, wallet, documents
 - consumers: 7 — auth-passkey, documents, logistics, loyalty, orders, shared-cart, wallet
@@ -688,7 +688,6 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/auth/me` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `PUT /api/auth/me` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `GET /api/auth/orders` | auth-identity | `routes/client-auth.js` (resolved-owned) |
-| `POST /api/auth/orders-by-phone` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `POST /api/auth/register` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `GET /api/client/invoices` | auth-identity | `routes/client-auth.js` (resolved-owned) |
 | `POST /api/client/magic-link` | auth-identity | `routes/client-auth.js` (resolved-owned) |
@@ -1143,8 +1142,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/auth.js` | auth | resolved |
 | `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/require-verified-identity.js` | auth | resolved |
 | `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/soft-auth.js` | auth | resolved |
-| `signAuthToken / resolveSessionTtlSeconds` | `utils/auth-session.js` | auth | resolved |
-| `signAuthToken / resolveSessionTtlSeconds` | `utils/auth-session-policy.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-session.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-session-policy.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-token-policy.js` | auth | resolved |
 | `makeIntlPhoneInput` | `public/boutique/js/b-phone.js` | auth-identity | resolved |
 | `getActiveAuthorizationForUpdate` | `services/pickup-authorization-service.js` | auth-identity | resolved |
 | `hasActiveAuthorization` | `services/pickup-authorization-service.js` | auth-identity | resolved |
@@ -1497,7 +1497,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 789 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 791 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 152 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_

@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-08-16T19:03:11.450Z",
+  "generatedAt": "2026-08-17T04:16:10.078Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 475,
-    "protected": 429,
+    "total": 482,
+    "protected": 435,
     "public": 5,
-    "unprotected": 39,
+    "unprotected": 40,
     "admin_no_guard": 0,
     "unknown": 2
   },
@@ -35,12 +35,6 @@
       "roles": []
     },
     {
-      "key": "POST /api/auth/orders-by-phone",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
       "key": "POST /api/auth/otp/request",
       "level": "UNPROTECTED",
       "severity": "medium",
@@ -54,6 +48,18 @@
     },
     {
       "key": "POST /api/auth/otp/verify",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/passkey/login/options",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/passkey/login/verify",
       "level": "UNPROTECTED",
       "severity": "medium",
       "roles": []
@@ -1492,11 +1498,6 @@
       "roles": []
     },
     {
-      "key": "POST /api/auth/orders-by-phone",
-      "level": "UNPROTECTED",
-      "roles": []
-    },
-    {
       "key": "GET /api/auth/orders",
       "level": "PROTECTED",
       "roles": []
@@ -1514,6 +1515,46 @@
     {
       "key": "POST /api/auth/otp/verify",
       "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/auth/passkey/credentials/{id}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/passkey/credentials",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/passkey/login/options",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/passkey/login/verify",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/passkey/register/options",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/passkey/register/verify",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/passkey/step-up/options",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/passkey/step-up/verify",
+      "level": "PROTECTED",
       "roles": []
     },
     {

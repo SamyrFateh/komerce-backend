@@ -45,7 +45,6 @@ if (!JWT_SECRET) {
   log.error('FATAL: JWT_SECRET manquant — démarrage impossible');
   process.exit(1); // N7: pas de fallback autorisé, même en dev
 }
-const _JWT_SECRET = JWT_SECRET;
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 
 // AUTH-8a — cookie d'auth centralisé (utils/auth-cookie.js)
@@ -241,37 +240,6 @@ router.post('/auto-register', requireInternalKey, validate(auth.autoRegister), a
     );
     setAuthCookie(res, generateToken(user));
     res.status(201).json({ user: userResponse(user), created: true });
-  } catch(err) { next(err); }
-});
-
-// ─── POST /api/auth/orders-by-phone ───────────────────────────────────────────────
-
-const _phoneLookupAttempts = new Map();
-
-function checkPhoneLookupRateLimit(req, res, next) {
-  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-  const now = Date.now();
-  const WIN = 15 * 60 * 1000; const MAX = 5;
-  let entry = _phoneLookupAttempts.get(ip);
-  if (!entry || now > entry.resetAt) entry = { count: 0, resetAt: now + WIN };
-  entry.count++; _phoneLookupAttempts.set(ip, entry);
-  if (entry.count > MAX) return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' });
-  next();
-}
-
-router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersByPhone), async (req, res, next) => {
-  try {
-    const { phone } = req.body;
-    if (!phone || typeof phone !== 'string' || phone.trim().length < 6)
-      return res.status(400).json({ error: 'Numéro de téléphone invalide' });
-    const cleanPhone = phone.trim();
-    const { rows } = await db.query(
-      `SELECT id, full_name, phone FROM users WHERE phone = $1 LIMIT 1`, [cleanPhone]
-    );
-    if (!rows.length) return res.json({ orders: [], name: null });
-    const user = rows[0];
-    const token = jwt.sign({ id: user.id, role: user.role, scope: 'orders_read' }, _JWT_SECRET, { expiresIn: '2h' });
-    res.json({ token, name: user.full_name });
   } catch(err) { next(err); }
 });
 

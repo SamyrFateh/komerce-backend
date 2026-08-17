@@ -117,13 +117,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - toute mutation portée par le cookie de session exige une Origin explicitement autorisée (AUTH-8b)
 - staging/production utilisent exclusivement un cookie de session __Host- Secure, Path=/ et sans Domain (AUTH-8c)
 - la durée absolue JWT + cookie est plafonnée à 7 jours et chaque preuve OTP/passkey/step-up émet une nouvelle jti (AUTH-8d)
+- un JWT scoped ou dépourvu des claims de session canoniques ne peut jamais être élevé en session par les middlewares génériques (AUTH-8e)
 
 **Owns** : _aucune_
 **Writes (not owner)** : `users` (writer-not-owner)
 
 **Exposes** : 2 internal API(s), 0 HTTP interface(s)
   - `requireAuth / requireVerifiedIdentity / softAuth` (middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js) — undeclared-in-graph
-  - `signAuthToken / resolveSessionTtlSeconds` (utils/auth-session.js, utils/auth-session-policy.js) — undeclared-in-graph
+  - `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` (utils/auth-session.js, utils/auth-session-policy.js, utils/auth-token-policy.js) — undeclared-in-graph
 
 **Consumes** : _aucune_
 **Consumed by** : auth-identity (DECLARED_AND_OBSERVED), auth-passkey (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
@@ -141,13 +142,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "operations" — ne correspond à aucun nom de feature connu
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "orders" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `UNRESOLVED_INTERNAL_API` (medium) — requireAuth / requireVerifiedIdentity / softAuth (middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js) — statut: undeclared-in-graph
-- `UNRESOLVED_INTERNAL_API` (medium) — signAuthToken / resolveSessionTtlSeconds (utils/auth-session.js, utils/auth-session-policy.js) — statut: undeclared-in-graph
+- `UNRESOLVED_INTERNAL_API` (medium) — signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict (utils/auth-session.js, utils/auth-session-policy.js, utils/auth-token-policy.js) — statut: undeclared-in-graph
 
-**Implementation** : 24 fichier(s) déclaré(s)
+**Implementation** : 26 fichier(s) déclaré(s)
   - middleware : 7
   - migrations : 2
-  - tests : 12
-  - utils : 3
+  - tests : 13
+  - utils : 4
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth"]_
 
@@ -175,7 +176,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Owns** : `otp_codes`, `user_pickup_authorizations`
 **Writes (not owner)** : `revoked_tokens` (ambiguous), `users` (writer-not-owner)
 
-**Exposes** : 3 internal API(s), 23 HTTP interface(s)
+**Exposes** : 3 internal API(s), 22 HTTP interface(s)
   - `getActiveAuthorizationForUpdate` (services/pickup-authorization-service.js) — resolved
   - `hasActiveAuthorization` (services/pickup-authorization-service.js) — resolved
   - `makeIntlPhoneInput` (public/boutique/js/b-phone.js) — resolved

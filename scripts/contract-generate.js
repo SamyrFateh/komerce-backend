@@ -1104,9 +1104,6 @@ const KNOWN_RESPONSES = {
   '/api/auth/auto-register': {
     post: { fields: ['user','created'], source: 'route-read' }
   },
-  '/api/auth/orders-by-phone': {
-    post: { fields: ['token','name'], source: 'route-read' }
-  },
   '/api/auth/logout': {
     post: { fields: ['message'], source: 'route-read' }
   },

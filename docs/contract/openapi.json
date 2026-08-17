@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 17,
-    "total_routes": 433,
+    "total_routes": 432,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -416,39 +416,6 @@
           },
           "503": {
             "description": "Endpoint désactivé — INTERNAL_API_KEY non configuré"
-          }
-        }
-      }
-    },
-    "/api/auth/orders-by-phone": {
-      "post": {
-        "summary": "POST /api/auth/orders-by-phone",
-        "x-route-file": "routes/auth.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "token": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "name": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
           }
         }
       }
