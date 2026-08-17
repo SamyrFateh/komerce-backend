@@ -6,7 +6,7 @@
  * @test-requires none
  */
 
-const { AUTH_COOKIE_NAME, cookieOptions } = require('../../utils/auth-cookie');
+const { getAuthCookieName, cookieOptions } = require('../../utils/auth-cookie');
 const { csrfOriginGuard } = require('../../middleware/csrf-origin');
 
 function makeReq({ method = 'POST', cookie = false, origin, authorization } = {}) {
@@ -16,28 +16,29 @@ function makeReq({ method = 'POST', cookie = false, origin, authorization } = {}
   return {
     method,
     headers,
-    cookies: cookie ? { [AUTH_COOKIE_NAME]: 'jwt-value' } : {},
+    cookies: cookie ? { [getAuthCookieName()]: 'jwt-value' } : {},
     get(name) { return headers[String(name).toLowerCase()]; },
   };
 }
 
 function makeRes() {
-  const res = {
+  return {
     statusCode: 200,
     body: null,
     status(code) { this.statusCode = code; return this; },
     json(body) { this.body = body; return this; },
   };
-  return res;
 }
 
-describe('AUTH-8b cookie + CSRF origin policy', () => {
+describe('AUTH-8b/c cookie + CSRF origin policy', () => {
   const oldNodeEnv = process.env.NODE_ENV;
+  const oldKomerceEnv = process.env.KOMERCE_ENV;
   const oldFrontendUrl = process.env.FRONTEND_URL;
   const oldAllowedOrigins = process.env.ALLOWED_ORIGINS;
 
   afterEach(() => {
     if (oldNodeEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = oldNodeEnv;
+    if (oldKomerceEnv === undefined) delete process.env.KOMERCE_ENV; else process.env.KOMERCE_ENV = oldKomerceEnv;
     if (oldFrontendUrl === undefined) delete process.env.FRONTEND_URL; else process.env.FRONTEND_URL = oldFrontendUrl;
     if (oldAllowedOrigins === undefined) delete process.env.ALLOWED_ORIGINS; else process.env.ALLOWED_ORIGINS = oldAllowedOrigins;
   });
@@ -68,7 +69,8 @@ describe('AUTH-8b cookie + CSRF origin policy', () => {
     expect(res.body.code).toBe('csrf_origin_required');
   });
 
-  it('refuse une mutation avec cookie depuis une Origin étrangère', () => {
+  it('refuse une mutation __Host- depuis une Origin étrangère', () => {
+    process.env.KOMERCE_ENV = 'production';
     process.env.NODE_ENV = 'production';
     const next = jest.fn();
     const res = makeRes();
@@ -78,7 +80,8 @@ describe('AUTH-8b cookie + CSRF origin policy', () => {
     expect(res.body.code).toBe('csrf_origin_invalid');
   });
 
-  it('accepte une mutation cookie depuis komerce.co', () => {
+  it('accepte une mutation __Host- depuis komerce.co', () => {
+    process.env.KOMERCE_ENV = 'production';
     process.env.NODE_ENV = 'production';
     const next = jest.fn();
     csrfOriginGuard(
@@ -89,7 +92,8 @@ describe('AUTH-8b cookie + CSRF origin policy', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('accepte une Origin explicitement configurée pour le frontend', () => {
+  it('accepte une Origin explicitement configurée pour le frontend staging', () => {
+    process.env.KOMERCE_ENV = 'staging';
     process.env.NODE_ENV = 'production';
     process.env.FRONTEND_URL = 'https://staging.komerce.example';
     const next = jest.fn();
