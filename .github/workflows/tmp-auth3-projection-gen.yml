@@ -1,0 +1,41 @@
+name: Temporary AUTH-3 projection generation
+
+on:
+  push:
+    branches:
+      - auth/3-passkey-enrollment
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Generate Business Graph
+        run: node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+      - name: Generate gate findings
+        run: node scripts/gen-gate-findings.js
+      - name: Generate Feature 360
+        run: node scripts/gen-feature-360.js
+      - name: Diff sanity
+        run: git diff --check
+      - name: Upload canonical projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth3-canonical-projections
+          path: |
+            docs/BUSINESS_FEATURE_GRAPH.json
+            docs/BUSINESS_FEATURE_GRAPH.md
+            docs/O6_INVENTORY.md
+            docs/GATE_FINDINGS.json
+            docs/FEATURE_360.json
+            docs/FEATURE_360.md
+          if-no-files-found: error
+          retention-days: 1
