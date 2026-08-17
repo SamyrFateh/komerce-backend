@@ -46,12 +46,12 @@
     "healthy": 14,
     "attention": 16,
     "blocked": 0,
-    "businessDependencies": 166,
+    "businessDependencies": 167,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 45,
+    "debtItemsTotal": 44,
     "gateHealthy": 17,
     "gateBlocked": 0
   },
@@ -2555,7 +2555,7 @@
             ]
           },
           "services": {
-            "count": 27,
+            "count": 28,
             "files": [
               {
                 "declared": "services/catalog-approval.js",
@@ -2586,6 +2586,11 @@
                 "declared": "services/catalog-product-detail.js",
                 "resolvedPath": "services/catalog-product-detail.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-product-mutation-service.js",
+                "resolvedPath": "services/catalog-product-mutation-service.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/catalog-promotion.js",
@@ -2695,7 +2700,7 @@
             ]
           },
           "tests": {
-            "count": 40,
+            "count": 41,
             "files": [
               {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
@@ -2760,6 +2765,11 @@
               {
                 "declared": "tests/unit/catalog-product-detail.test.js",
                 "resolvedPath": "tests/unit/catalog-product-detail.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-product-mutation-service.test.js",
+                "resolvedPath": "tests/unit/catalog-product-mutation-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -2910,7 +2920,7 @@
             ]
           }
         },
-        "totalFiles": 138,
+        "totalFiles": 140,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 32,
@@ -3473,6 +3483,16 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "applyPrice",
+            "file": "services/catalog-product-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "bulkAssignSourcingRail",
+            "file": "services/catalog-product-mutation-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "createDraftFromSourcingCandidate",
             "file": "services/product-admin-service.js",
             "status": "resolved"
@@ -3480,6 +3500,16 @@
           {
             "fn": "createDraftProductFromSourcingCandidate",
             "file": "services/catalog-candidate-product-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "replaceVariantsForSourcing",
+            "file": "services/catalog-product-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "updateSourcingFields",
+            "file": "services/catalog-product-mutation-service.js",
             "status": "resolved"
           }
         ],
@@ -3559,6 +3589,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "interface"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -6980,18 +7017,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "product_variants",
-            "mode": "RW",
-            "lifecycleOwner": "catalog",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "products",
-            "mode": "RW",
-            "lifecycleOwner": "catalog",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "risk_provisions",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
@@ -7046,6 +7071,14 @@
           {
             "table": "pricing_benchmarks",
             "lifecycleOwner": null
+          },
+          {
+            "table": "product_variants",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "recipients",
@@ -7248,18 +7281,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "product_variants",
-            "mode": "RW",
-            "lifecycleOwner": "catalog",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "products",
-            "mode": "RW",
-            "lifecycleOwner": "catalog",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "risk_provisions",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
@@ -7316,6 +7337,14 @@
             "lifecycleOwner": null
           },
           {
+            "table": "product_variants",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          },
+          {
             "table": "recipients",
             "lifecycleOwner": "orders"
           },
@@ -7357,6 +7386,13 @@
       "businessDependencies": [
         {
           "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -7470,9 +7506,8 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 2,
+        "declaredNotObserved": 1,
         "declaredNotObservedEvidence": [
-          "catalog",
           "wallet"
         ]
       },
@@ -7505,13 +7540,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 2,
+        "debtCount": 1,
         "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"catalog\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
