@@ -40,6 +40,7 @@ import {
   isValidLocalLength,
   makeIntlPhoneInput,
 } from './b-phone.js';
+import { openPasskeyLogin } from './b-passkey-login.js';
 
 // FIX BUG-L3 : styles dans identity.css — no-op.
 function ensureStyles() {}
@@ -479,7 +480,9 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
         // désormais en arrière-plan, sans bloquer la fermeture.
         closeOverlay(ov);
         resolve(user || data.user || { phone: phoneValue });
-        window.dispatchEvent(new CustomEvent('komerce:identity-authenticated'));
+        window.dispatchEvent(new CustomEvent('komerce:identity-authenticated', {
+          detail: { method: 'otp', user: user || data.user || { phone: phoneValue } },
+        }));
         if (window.K?.auth?.restore) {
           Promise.resolve().then(() => window.K.auth.restore()).catch(() => {});
         }
@@ -611,6 +614,25 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
 export async function requireIdentity(options = {}) {
   const existing = await restoreIdentity();
   if (existing) return existing;
+
+  // AUTH-4 — la Passkey est le chemin nominal pour un utilisateur revenant.
+  // Le téléphone/OTP n'est demandé qu'après choix explicite du fallback.
+  const passkey = await openPasskeyLogin({
+    reason: options.reason,
+    returnFocusTo: options.returnFocusTo || null,
+  });
+
+  if (passkey?.outcome === 'authenticated' && passkey.user) {
+    const user = normalizeUser(passkey.user);
+    if (user) state.user = user;
+    const authenticatedUser = user || passkey.user;
+    window.dispatchEvent(new CustomEvent('komerce:identity-authenticated', {
+      detail: { method: 'passkey', user: authenticatedUser },
+    }));
+    return authenticatedUser;
+  }
+
+  if (passkey?.outcome === 'cancelled') return null;
   return openIdentityModal(options);
 }
 

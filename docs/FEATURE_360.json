@@ -44,14 +44,14 @@
   "summary": {
     "features": 30,
     "healthy": 6,
-    "attention": 24,
-    "blocked": 0,
+    "attention": 23,
+    "blocked": 1,
     "businessDependencies": 113,
-    "directCrossFeatureImports": 4,
+    "directCrossFeatureImports": 5,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
     "ontologyGaps": 0,
-    "debtItemsTotal": 121,
+    "debtItemsTotal": 122,
     "gateHealthy": 14,
     "gateBlocked": 0
   },
@@ -59,8 +59,8 @@
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 52,
-    "attributedFindings": 52,
+    "totalFindings": 53,
+    "attributedFindings": 53,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -1238,8 +1238,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
-        "directCrossFeatureImports": 0,
+        "status": "BLOCKED",
+        "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -1307,12 +1307,17 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 1,
+        "debtCount": 2,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table revoked_tokens — écrite par auth-identity (W), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "DIRECT_CROSS_FEATURE_IMPORT",
+            "severity": "high",
+            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -1401,7 +1406,7 @@
         "totalFiles": 4,
         "boutiqueManifest": "auth-passkey",
         "boutiqueFiles": {
-          "count": 2,
+          "count": 4,
           "files": [
             {
               "declared": "../js/b-passkey-enrollment.js",
@@ -1411,8 +1416,22 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../js/b-passkey-login.js",
+              "resolvedPath": "public/boutique/js/b-passkey-login.js",
+              "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../tests/unit/b-passkey-enrollment.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-passkey-enrollment.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-passkey-login.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-passkey-login.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -1539,7 +1558,7 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 2,
+        "warnCount": 3,
         "gatesReporting": [
           "check:imports",
           "gate:feature-classification-check"
@@ -1551,7 +1570,15 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "⚠ js/b-passkey-enrollment.js — 6 export(s) non consommé(s) :"
+            "message": "⚠ js/b-passkey-enrollment.js — 4 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-passkey-login.js — 3 export(s) non consommé(s) :"
           },
           {
             "gate": "gate:feature-classification-check",

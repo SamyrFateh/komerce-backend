@@ -14103,9 +14103,25 @@
       },
       {
         "boutiqueManifest": "auth-passkey",
+        "category": "js",
+        "declared": "../js/b-passkey-login.js",
+        "resolvedPath": "public/boutique/js/b-passkey-login.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth-passkey",
         "category": "tests",
         "declared": "../tests/unit/b-passkey-enrollment.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-passkey-enrollment.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth-passkey",
+        "category": "tests",
+        "declared": "../tests/unit/b-passkey-login.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-passkey-login.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16123,6 +16139,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "auth-identity",
+        "to": "auth-passkey",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/b-identity.js",
+                "targetFile": "public/boutique/js/b-passkey-login.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "auth-identity",
@@ -23341,7 +23373,7 @@
         "filesObserved": 777
       },
       "boutique": {
-        "filesObserved": 144,
+        "filesObserved": 146,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -23377,7 +23409,7 @@
       "NON_RUNTIME_TEST": 8,
       "TECHNICAL_PRIMITIVE": 31,
       "BUSINESS_TRANSVERSAL_SERVICE": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT": 4,
+      "CROSS_FEATURE_DIRECT_IMPORT": 5,
       "BUSINESS_FEATURE_INTERFACE": 5,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -23577,6 +23609,23 @@
         "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
+      },
+      {
+        "from": "auth-identity",
+        "to": "auth-passkey",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
       },
       {
         "from": "auth-identity",
@@ -24555,6 +24604,7 @@
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|technical-primitive": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
@@ -24577,7 +24627,6 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1
@@ -24675,7 +24724,9 @@
     "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
-    "missingExceptions": [],
+    "missingExceptions": [
+      "auth-identity->auth-passkey"
+    ],
     "emptyRationaleExceptions": [],
     "unexplainedRuntimeCycles": [],
     "ontologyGapCoverage": {
@@ -26518,6 +26569,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth -> notifications",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth\" vers \"notifications\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "auth-identity -> auth-passkey",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"auth-passkey\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

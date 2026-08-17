@@ -6,21 +6,21 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 
 - Features : **30**
 - Healthy : **6**
-- Attention : **24**
-- Blocked : **0**
+- Attention : **23**
+- Blocked : **1**
 - Business dependencies : **113**
-- Direct cross-feature imports : **4**
+- Direct cross-feature imports : **5**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **63**
 - Ontology gaps : **0**
-- Debt items (total) : **121**
+- Debt items (total) : **122**
 - Gate health — healthy : **14** · blocked : **0**
 
 ## Gate findings — intégrité de projection
 
 - Source : `docs/GATE_FINDINGS.json` (version GF-2.1)
 - Sources de gates : **18** (0 en échec)
-- Findings : **52** total, **52** attribué(s), **0** sans attribution exploitable
+- Findings : **53** total, **53** attribué(s), **0** sans attribution exploitable
 - Fichiers non projetables : **0**
 - Fichiers multi-projetés : **0**
 
@@ -30,7 +30,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 |---|---|---|---|---|---|---|---|
 | admin-dashboard | projection | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | sourcing | _aucune_ | 0 |
 | auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, shared-cart, sourcing, unsold-resolution, wallet | 4 |
-| auth-identity | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | otp_codes, user_pickup_authorizations | auth, documents, notifications, wallet | catalog, logistics, orders, platform-ops, shared-cart, wallet | 1 |
+| auth-identity | business-feature | 🔴 BLOCKED | 🟡 ATTENTION | otp_codes, user_pickup_authorizations | auth, documents, notifications, wallet | catalog, logistics, orders, platform-ops, shared-cart, wallet | 2 |
 | auth-passkey | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | webauthn_challenges, webauthn_credentials | auth, infrastructure | _aucune_ | 1 |
 | business-rules | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | business_rules, business_rules_history | auth, infrastructure | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops | 0 |
 | catalog | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, product_attributes, product_content_profile, product_content_sections, supplier_catalog_imports | auth, auth-identity, business-rules, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, platform-ops, recommendations, sourcing | 10 |
@@ -182,7 +182,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Technical context** : 2 primitive dependencies, 1 test-only, 0 composition-root
 
-**Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Boundary health** : 🔴 BLOCKED — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 1, ontology gaps: 0
 **Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 5
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-identity.js — 1 export(s) non consommé(s) :
@@ -191,8 +191,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
   - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
 
-**Architectural debt** (1) :
+**Architectural debt** (2) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table revoked_tokens — écrite par auth-identity (W), aucun lifecycle owner résolu (multi-writer non classifié)
+- `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
 **Implementation** : 16 fichier(s) déclaré(s), boutique: 5 fichier(s)
   - boutique : 3
@@ -244,14 +245,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 2
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-enrollment.js — 6 export(s) non consommé(s) :
+**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 3
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-enrollment.js — 4 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-login.js — 3 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
 
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth-identity" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 4 fichier(s) déclaré(s), boutique: 2 fichier(s)
+**Implementation** : 4 fichier(s) déclaré(s), boutique: 4 fichier(s)
   - migrations : 1
   - routes : 1
   - services : 1
