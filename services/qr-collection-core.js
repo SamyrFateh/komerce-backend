@@ -7,10 +7,11 @@
  * @inputs        client, token, orderId, user
  * @outputs       { ok:true, order, scanRow } | { ok:false, response:{status,body} }
  *                { ok:true, order, token, expiresAt, rotated } | { ok:false, response:{status,body} }
- * @depends       db.js (via client fourni par l'appelant), services/order-status-machine.js, utils/parcelSync.js
+ * @depends       db.js (via client fourni par l'appelant), services/order-status-machine.js, services/scan-write-service.js, utils/parcelSync.js
  * @used-by       services/verify-qr-collection.js, services/scan-operations.js, routes/orders/qr.js
  * @db-read       orders, recipients, relais, users
- * @db-write      orders, scans
+ * @db-write      orders
+ * @db-write-via:scan-write-service scans
  * @db-txn        caller_transaction_required
  * @doctrine      qr_pickup_single_validation (P5-L5)
  * @impact-areas  orders
@@ -20,6 +21,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { recordQrCollectionScan } = require('./scan-write-service');
 const log = require('../utils/logger').child({ module: 'qr-collection-core' });
 
 /**
@@ -149,13 +151,12 @@ async function resolveQrCollection({ client, token, orderId, user }) {
     [order.id]
   );
 
-  const { rows: [scanRow] } = await client.query(
-    `INSERT INTO scans
-       (order_id, step, scanned_by, location, scan_code, notes)
-     VALUES ($1, 'collected', $2, $3, $4, 'Retrait client via QR Code — token validé')
-     RETURNING id`,
-    [order.id, user.id, order.relais_name || '', `QR-${String(token).slice(0, 8)}`]
-  );
+  const scanRow = await recordQrCollectionScan(client, {
+    orderId: order.id,
+    scannedBy: user.id,
+    location: order.relais_name || '',
+    scanCode: `QR-${String(token).slice(0, 8)}`,
+  });
 
   const { safeSyncScanToParcels } = require('../utils/parcelSync');
   await safeSyncScanToParcels({

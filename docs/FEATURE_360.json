@@ -5020,12 +5020,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "scans",
-            "mode": "RW",
-            "lifecycleOwner": "logistics",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "sms_log",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -5078,6 +5072,10 @@
           {
             "table": "order_item_real_cost_allocations",
             "lifecycleOwner": "economic-engine"
+          },
+          {
+            "table": "scans",
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "signals",
@@ -5204,12 +5202,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "scans",
-            "mode": "RW",
-            "lifecycleOwner": "logistics",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "sms_log",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -5262,6 +5254,10 @@
           {
             "table": "order_item_real_cost_allocations",
             "lifecycleOwner": "economic-engine"
+          },
+          {
+            "table": "scans",
+            "lifecycleOwner": "logistics"
           },
           {
             "table": "signals",
@@ -10637,7 +10633,7 @@
             ]
           },
           "services": {
-            "count": 13,
+            "count": 14,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -10700,6 +10696,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/scan-write-service.js",
+                "resolvedPath": "services/scan-write-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/transport-rails.js",
                 "resolvedPath": "services/transport-rails.js",
                 "status": "resolved-in-technical-graph"
@@ -10707,7 +10708,7 @@
             ]
           },
           "tests": {
-            "count": 33,
+            "count": 34,
             "files": [
               {
                 "declared": "tests/integration/test-harness/seed-helpers.js",
@@ -10850,6 +10851,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/scan-write-service.test.js",
+                "resolvedPath": "tests/unit/scan-write-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/scans.test.js",
                 "resolvedPath": "tests/unit/scans.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10897,7 +10903,7 @@
             ]
           }
         },
-        "totalFiles": 77,
+        "totalFiles": 79,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11250,6 +11256,21 @@
       },
       "interfaces": {
         "internalApis": [
+          {
+            "fn": "detachUserFromScans",
+            "file": "services/scan-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "recordHubPreparationScan",
+            "file": "services/scan-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "recordQrCollectionScan",
+            "file": "services/scan-write-service.js",
+            "status": "resolved"
+          },
           {
             "fn": "transitionParcelStatus",
             "file": "services/parcel-operations.js",
@@ -12937,12 +12958,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "scans",
-            "mode": "W",
-            "lifecycleOwner": "logistics",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "sms_log",
             "mode": "W",
             "lifecycleOwner": "orders",
@@ -13073,12 +13088,6 @@
             "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
-          },
-          {
-            "table": "scans",
-            "mode": "W",
-            "lifecycleOwner": "logistics",
-            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "sms_log",

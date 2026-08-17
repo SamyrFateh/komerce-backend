@@ -478,7 +478,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - auth-guard.js protège toutes les routes admin ; aucune route admin sans vérification de token
 
 **Owns** : `order_incidents`, `partners`
-**Writes (not owner)** : `basket_items` (writer-not-owner), `baskets` (writer-not-owner), `incidents` (writer-not-owner), `invoices` (writer-not-owner), `loyalty_rewards` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `parcel_items` (writer-not-owner), `parcels` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `scans` (writer-not-owner), `sms_log` (writer-not-owner), `users` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
+**Writes (not owner)** : `basket_items` (writer-not-owner), `baskets` (writer-not-owner), `incidents` (writer-not-owner), `invoices` (writer-not-owner), `loyalty_rewards` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `parcel_items` (writer-not-owner), `parcels` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `sms_log` (writer-not-owner), `users` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
 
 **Exposes** : 0 internal API(s), 65 HTTP interface(s)
 
@@ -917,7 +917,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Owns** : `carriers`, `parcel_events`, `parcel_items`, `parcels`, `pickup_print_tokens`, `pickup_reveal_codes`, `pickup_verify_attempts`, `relais`, `scan_events`, `scans`, `shipments`
 **Writes (not owner)** : `alerts` (writer-not-owner), `incidents` (writer-not-owner), `orders` (writer-not-owner)
 
-**Exposes** : 1 internal API(s), 70 HTTP interface(s)
+**Exposes** : 4 internal API(s), 70 HTTP interface(s)
+  - `detachUserFromScans` (services/scan-write-service.js) — resolved
+  - `recordHubPreparationScan` (services/scan-write-service.js) — resolved
+  - `recordQrCollectionScan` (services/scan-write-service.js) — resolved
   - `transitionParcelStatus` (services/parcel-operations.js) — resolved
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED)
@@ -937,15 +940,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "economic-engine" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 77 fichier(s) déclaré(s)
+**Implementation** : 79 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 4
   - middleware : 1
   - migrations : 2
   - routes : 18
-  - services : 13
-  - tests : 33
+  - services : 14
+  - tests : 34
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_
@@ -1099,7 +1102,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - annulation libere les achats fournisseurs lies dans la meme transaction via purchasing
 
 **Owns** : `customs_history`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_items`, `order_status_history`, `orders`, `recipients`, `sms_log`
-**Writes (not owner)** : `alerts` (writer-not-owner), `scans` (writer-not-owner)
+**Writes (not owner)** : `alerts` (writer-not-owner)
 
 **Exposes** : 5 internal API(s), 27 HTTP interface(s)
   - `checkoutCart` (public/boutique/js/b-checkout.js) — resolved

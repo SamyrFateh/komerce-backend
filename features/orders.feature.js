@@ -160,7 +160,6 @@ module.exports = {
       'recipients: RW',
       'refunds: R',
       'relais: R',
-      'scans: W',
       'sms_log: W',
       'users: R',
     ],

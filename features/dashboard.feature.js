@@ -91,7 +91,7 @@ module.exports = {
       'recipients: RW',
       'relais: RW',
       'scan_events: RW',
-      'scans: RW',  // écrit via routes/admin/users.js (nullification scanned_by, réel) et routes/hub-dashboard.js (scan hub réel) — aucune part technique, pas de marqueur ~
+      'scans: R',  // mutations via logistics/scan-write-service ? LOT6 WNO
       'signals: R',
       'sms_log: RW',
       'suppliers_stats: R',
