@@ -33,6 +33,7 @@ module.exports = {
       'cycle de vie du candidat : raw_imported → normalized → scanned → imported_to_catalog / rejected / watchlist',
       'transformation candidat → produit (déclenchement, pas la fiche catalogue elle-même)',
       'journal d\'événements candidat (audit, correction manuelle, scan, décision)',
+      'persistence lifecycle des sourcing_candidates issus des imports catalog via frontière owner dédiée',
     ],
     out: [
       'connecteurs fournisseur eux-mêmes et normalisation NormalizedSupplierProduct (feature catalog, ' +
@@ -76,42 +77,41 @@ module.exports = {
       'migrations/088_sourcing_standalone_fixes.sql',
       'migrations/102_sourcing_candidates_raw_payload.sql',
     ],
+    services: [
+      'services/sourcing-candidate-import-service.js',
+    ],
     routes: [
       'routes/sourcing-scanner.js',
     ],
     tests: [
       'tests/unit/sourcing-scanner.test.js',
+      'tests/unit/sourcing-candidate-import-service.test.js',
     ],
   },
 
-  // ── Dépôts ───────────────────────────────────────────────────────────────
+  // ── Dépôts ────────────────────────────────────────────────────────────────
   repos: {
-    backend: 'routes/sourcing-scanner.js (aucun service dédié : la logique de scan reste dans ' +
-             'services/supplier-catalog-scanner.js, propriété de catalog, consommée ici en lecture/scan)',
+    backend: 'routes/sourcing-scanner.js + services/sourcing-candidate-import-service.js ; ' +
+             'le service owner persiste le lifecycle sourcing_candidates pour les imports déclenchés par catalog.',
   },
 
   // ── Tables DB ────────────────────────────────────────────────────────────
-  // sourcing_candidates et sourcing_candidate_events sont des tables PARTAGÉES
-  // avec catalog par conception, pas une anomalie : catalog (catalog-import-
-  // orchestrator.js) crée la ligne candidate à l'import ; sourcing la fait
-  // vivre (scan, décision, rejet, watchlist) jusqu'à sa sortie (import produit
-  // ou rejet). Séquence cible : CATALOG importe → SOURCING qualifie → CATALOG
-  // publie. Exception documentée, même motif que `refunds` dans FEATURE_DOCTRINE.md.
+  // sourcing est le lifecycle owner unique de sourcing_candidates*.
+  // catalog peut déclencher leur création/ré-import/archivage, mais passe par
+  // services/sourcing-candidate-import-service.js : aucun SQL cross-owner.
+  // Inversement, sourcing déclenche la création d'un produit catalog via
+  // services/catalog-candidate-product-service.js sans écrire products.
   db: {
     tables: [
-      'sourcing_candidates: RW!',        // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — partagé avec catalog (W à la création, import)
-      'sourcing_candidate_events: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — partagé avec catalog (W à la création)
+      'sourcing_candidates: RW!',        // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'sourcing_candidate_events: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'supplier_catalog_imports: R',    // W-via:catalog-import-orchestrator (feature catalog)
-      'products: W',                    // création produit candidate à l'import (import-product)
       // PDC-8 Lot 6 — import-product ouvre une transaction dédiée (db.getClient)
-      // qui inclut désormais l'appel à catalog-promotion.js (feature catalog).
-      // Ces tables sont écrites PAR catalog-promotion.js, DANS la transaction de
-      // cette route, pas par sourcing-scanner.js lui-même (writer réel documenté
-      // en commentaire, même convention que supplier_catalog_imports ci-dessus).
-      'catalog_media: R',        // W-via:catalog-promotion (feature catalog) — campagne WRITER-NOT-OWNER 2026-08 : sourcing-scanner.js appelle promoteCatalog() (services/catalog-promotion.js, propriété catalog), n'exécute aucun SQL direct sur cette table — corrigé de W à R pour suivre la même convention que supplier_catalog_imports ci-dessus
-      'product_variants: R',     // W-via:catalog-promotion (feature catalog) — idem
-      'product_skus: R',         // W-via:catalog-promotion (feature catalog) — idem, R pour la réconciliation
-      'product_sku_media: R',    // W-via:catalog-promotion (feature catalog) — idem
+      // qui inclut les appels catalog owner dans la même transaction.
+      'catalog_media: R',        // W-via:catalog-promotion (feature catalog)
+      'product_variants: R',     // W-via:catalog-promotion (feature catalog)
+      'product_skus: R',         // W-via:catalog-promotion (feature catalog), R pour la réconciliation
+      'product_sku_media: R',    // W-via:catalog-promotion (feature catalog)
     ],
   },
 
@@ -136,13 +136,16 @@ module.exports = {
       'POST /api/admin/sourcing/candidates/:id/reject',
       'POST /api/admin/sourcing/candidates/:id/watchlist',
     ],
+    internalApi: [
+      { fn: 'upsertCandidateFromCatalogImport', file: 'services/sourcing-candidate-import-service.js' },
+      { fn: 'archiveMissingCandidatesFromCatalogImport', file: 'services/sourcing-candidate-import-service.js' },
+    ],
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, ' +
-        'supplier-catalog-scanner pour le scan pricing lui-même, et depuis PDC-8 Lot 6 : ' +
-        'catalog-promotion.js — appelé dans la transaction de POST .../import-product pour ' +
-        'promouvoir normalized_source_contract V2 vers catalog_media/product_variants/' +
-        'product_skus/product_sku_media)',
+        'supplier-catalog-scanner pour le scan pricing, catalog-candidate-product-service pour créer le brouillon products, ' +
+        'et catalog-promotion.js pour promouvoir normalized_source_contract V2 vers catalog_media/product_variants/' +
+        'product_skus/product_sku_media dans la transaction de POST .../import-product)',
       'economic-engine (pricing-engine.loadGlobalConfig — config de scan)',
       'auth',
     ],
@@ -158,10 +161,10 @@ module.exports = {
         risk: 'aucun impact runtime — documentaire uniquement. À rescoper si un futur lot ' +
               'scinde formellement les migrations par feature.' },
       { gap: 'ONTOLOGY_GAP — supplier-catalog-scanner.js et catalog-import-orchestrator.js ' +
-             'restent dans catalog malgré leur rôle dans le pipeline sourcing (consigne explicite ' +
-             'du lot : ne pas les déplacer sans démontrer que leur service principal n\'est plus ' +
-             'l\'entrée catalogue — non démontré, donc non déplacés).',
-        risk: 'aucun — la frontière catalog/sourcing fine est explicitement hors périmètre O1.' },
+             'restent dans catalog malgré leur rôle dans le pipeline sourcing : leur service principal ' +
+             'reste l entrée catalogue. La persistence candidate est désormais explicitement déléguée ' +
+             'au lifecycle owner sourcing via sourcing-candidate-import-service.',
+        risk: 'aucun — frontière runtime explicite ; aucun SQL sourcing_candidates* ne reste dans catalog-import-orchestrator.' },
     ],
   },
 

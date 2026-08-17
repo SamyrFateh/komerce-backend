@@ -173,7 +173,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - ci: 3
 - utils: 1
-- services: 26
+- services: 27
 - schemas: 4
 - migrations: 11
 - config: 1
@@ -181,12 +181,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 5
 - boutique: 38
 - dash: 4
-- tests: 39
+- tests: 40
 - tables owned (lifecycle): 13 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `catalog_media`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_attributes`, `supplier_catalog_imports`
-- tables written: 16
+- tables written: 14
 - interfaces exposed: 31
-- internal APIs: 1
-- dependencies (consumes): 8 — auth-identity, platform-ops, infrastructure, business-rules, economic-engine, logistics, shared-cart, auth
+- internal APIs: 2
+- dependencies (consumes): 9 — auth-identity, platform-ops, infrastructure, business-rules, economic-engine, sourcing, logistics, shared-cart, auth
 - consumers: 11 — economic-engine, infrastructure, inventory, logistics, orders, platform-ops, recommendations, shared-cart, sourcing, unsold-resolution, admin-dashboard
 
 ### customs _(business-feature)_
@@ -506,14 +506,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Identifier, qualifier et arbitrer des opportunités fournisseur ou produit (scan pricing, décision garder/watchlist/rejeter) avant leur entrée dans le catalogue.
 
 - migrations: 4
+- services: 1
 - routes: 1
-- tests: 1
-- tables owned (lifecycle): 2 — `sourcing_candidate_events`, `sourcing_candidates`
-- tables written: 3
+- tests: 2
+- tables owned (lifecycle): 2 — `sourcing_candidates`, `sourcing_candidate_events`
+- tables written: 2
 - interfaces exposed: 11
-- internal APIs: 0
+- internal APIs: 2
 - dependencies (consumes): 4 — infrastructure, catalog, economic-engine, auth
-- consumers: 1 — admin-dashboard
+- consumers: 2 — catalog, admin-dashboard
 
 ### unsold-resolution _(business-feature)_
 
@@ -631,7 +632,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `product_skus` | `catalog` | declared-table-owner | catalog | sourcing |
 | `product_suppliers` | `purchasing` | single-writer | purchasing | logistics |
 | `product_variants` | `catalog` | declared-table-owner | catalog, economic-engine | logistics, orders, sourcing |
-| `products` | `catalog` | declared-table-owner | catalog, dashboard, economic-engine, sourcing | auth-identity, customs, documents, inventory, logistics, orders, platform-ops, purchasing, recommendations, shared-cart, unsold-resolution |
+| `products` | `catalog` | declared-table-owner | catalog, dashboard, economic-engine | auth-identity, customs, documents, inventory, logistics, orders, platform-ops, purchasing, recommendations, shared-cart, unsold-resolution |
 | `purchase_orders` | `purchasing` | declared-table-owner | purchasing | logistics |
 | `recipients` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | documents, economic-engine, logistics, notifications |
 | `refunds` | `refunds` | single-writer | refunds | documents, economic-engine, orders |
@@ -648,8 +649,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `shipments` | `logistics` | single-writer | logistics | — |
 | `signals` | `decision-signals` | single-writer | decision-signals | dashboard |
 | `sms_log` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
-| `sourcing_candidate_events` | `sourcing` | declared-table-owner | catalog, sourcing | — |
-| `sourcing_candidates` | `sourcing` | declared-table-owner | catalog, sourcing | — |
+| `sourcing_candidate_events` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_candidates` | `sourcing` | declared-table-owner | sourcing | catalog |
 | `store_credits` | `platform-ops` | single-writer | platform-ops | economic-engine |
 | `stripe_events_processed` | `payments` | single-writer | payments | — |
 | `supplier_catalog_imports` | `catalog` | single-writer | catalog | sourcing |
@@ -1153,6 +1154,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `getAllRules` | `utils/rules.js` | business-rules | resolved |
 | `setRule` | `utils/rules.js` | business-rules | resolved |
 | `createDraftFromSourcingCandidate` | `services/product-admin-service.js` | catalog | resolved |
+| `createDraftProductFromSourcingCandidate` | `services/catalog-candidate-product-service.js` | catalog | resolved |
 | `recommend` | `services/pricing-engine.js` | economic-engine | resolved |
 | `recordProductPriceChange` | `services/economic-price-audit-service.js` | economic-engine | resolved |
 | `listIncidents` | `services/incident-service.js` | incident-management | resolved |
@@ -1188,6 +1190,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `repairOrderedWithoutPurchaseOrders` | `services/repair-ordered-without-purchase-orders.js` | purchasing | resolved |
 | `syncPurchaseOrdersOnOrderCancel` | `services/purchasing-cancel-service.js` | purchasing | resolved |
 | `processRefund(orderOrCartId, reason)` | `null` | refunds | documented-signature-no-file |
+| `upsertCandidateFromCatalogImport` | `services/sourcing-candidate-import-service.js` | sourcing | resolved |
+| `archiveMissingCandidatesFromCatalogImport` | `services/sourcing-candidate-import-service.js` | sourcing | resolved |
 
 ## Cross-feature dependencies
 
@@ -1215,6 +1219,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | catalog | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | catalog | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)`) | ✔ |
 | catalog | economic-engine (`economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)`) | ✔ |
+| catalog | sourcing (`sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)`) | ✔ |
 | catalog | logistics (`logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)`) | ✔ |
 | catalog | shared-cart (`shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)`) | ✔ |
 | catalog | auth (`auth`) | ✔ |
@@ -1361,7 +1366,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | shared-cart | auth (`auth`) | ✔ |
 | shared-cart | auth-identity (`auth-identity (projection boutique : b-share-cart.js consomme identité et téléphone)`) | ✔ |
 | sourcing | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
-| sourcing | catalog (`catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, supplier-catalog-scanner pour le scan pricing lui-même, et depuis PDC-8 Lot 6 : catalog-promotion.js — appelé dans la transaction de POST .../import-product pour promouvoir normalized_source_contract V2 vers catalog_media/product_variants/product_skus/product_sku_media)`) | ✔ |
+| sourcing | catalog (`catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, supplier-catalog-scanner pour le scan pricing, catalog-candidate-product-service pour créer le brouillon products, et catalog-promotion.js pour promouvoir normalized_source_contract V2 vers catalog_media/product_variants/product_skus/product_sku_media dans la transaction de POST .../import-product)`) | ✔ |
 | sourcing | economic-engine (`economic-engine (pricing-engine.loadGlobalConfig — config de scan)`) | ✔ |
 | sourcing | auth (`auth`) | ✔ |
 | unsold-resolution | orders (`orders (commande source de l'invendu)`) | ✔ |
@@ -1396,7 +1401,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (13)
+### DETTE / DRIFT ACTIONNABLE (11)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
@@ -1408,10 +1413,8 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcel_items — table "parcel_items" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par dashboard, inventory
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcels — table "parcels" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par customs, dashboard, payments
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ product_variants — table "product_variants" : lifecycle owner = catalog (db.tables "!"), mais aussi écrite par economic-engine
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ products — table "products" : lifecycle owner = catalog (db.tables "!"), mais aussi écrite par economic-engine, sourcing
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ products — table "products" : lifecycle owner = catalog (db.tables "!"), mais aussi écrite par economic-engine
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ scans — table "scans" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par dashboard, orders
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidate_events — table "sourcing_candidate_events" : lifecycle owner = sourcing (db.tables "!"), mais aussi écrite par catalog
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidates — table "sourcing_candidates" : lifecycle owner = sourcing (db.tables "!"), mais aussi écrite par catalog
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ users — table "users" : lifecycle owner = auth-identity (db.tables "!"), mais aussi écrite par auth, dashboard, loyalty
 
 ### TOPOLOGIE ATTENDUE — hors dette (33)
@@ -1473,7 +1476,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 804 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 808 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 158 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1521,6 +1524,7 @@ Meta Graph monté : oui.
 | catalog | orders | static-code | 12 | **OBSERVED_UNDECLARED** |
 | catalog | platform-ops | static-code | 62 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 11 | **DECLARED_AND_OBSERVED** |
+| catalog | sourcing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | customs | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1658,7 +1662,7 @@ Meta Graph monté : oui.
 | shared-cart | platform-ops | static-code | 52 | **DECLARED_AND_OBSERVED** |
 | shared-cart | recommendations | static-code, interface | 4 | **DECLARED_AND_OBSERVED** |
 | sourcing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| sourcing | catalog | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| sourcing | catalog | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | sourcing | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | sourcing | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |

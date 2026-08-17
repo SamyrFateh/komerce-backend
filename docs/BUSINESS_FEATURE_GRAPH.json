@@ -1148,6 +1148,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/catalog-candidate-product-service.js",
+        "resolvedPath": "services/catalog-candidate-product-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/catalog-promotion.js",
         "resolvedPath": "services/catalog-promotion.js",
         "status": "resolved-in-technical-graph"
@@ -1836,6 +1843,13 @@
         "category": "tests",
         "declared": "tests/unit/noon-connector.test.js",
         "resolvedPath": "tests/unit/noon-connector.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-candidate-product-service.test.js",
+        "resolvedPath": "tests/unit/catalog-candidate-product-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8602,6 +8616,13 @@
       },
       {
         "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-candidate-import-service.js",
+        "resolvedPath": "services/sourcing-candidate-import-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "sourcing",
         "category": "routes",
         "declared": "routes/sourcing-scanner.js",
         "resolvedPath": "routes/sourcing-scanner.js",
@@ -8612,6 +8633,13 @@
         "category": "tests",
         "declared": "tests/unit/sourcing-scanner.test.js",
         "resolvedPath": "tests/unit/sourcing-scanner.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-candidate-import-service.test.js",
+        "resolvedPath": "tests/unit/sourcing-candidate-import-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13090,6 +13118,12 @@
         "status": "resolved"
       },
       {
+        "feature": "catalog",
+        "fn": "createDraftProductFromSourcingCandidate",
+        "file": "services/catalog-candidate-product-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "economic-engine",
         "fn": "recommend",
         "file": "services/pricing-engine.js",
@@ -13298,6 +13332,18 @@
         "fn": "processRefund(orderOrCartId, reason)",
         "file": null,
         "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "upsertCandidateFromCatalogImport",
+        "file": "services/sourcing-candidate-import-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "archiveMissingCandidatesFromCatalogImport",
+        "file": "services/sourcing-candidate-import-service.js",
+        "status": "resolved"
       }
     ],
     "consumesFeature": [
@@ -13431,6 +13477,12 @@
         "from": "catalog",
         "to": "economic-engine",
         "raw": "economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
+        "to": "sourcing",
+        "raw": "sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)",
         "resolved": true
       },
       {
@@ -14312,7 +14364,7 @@
       {
         "from": "sourcing",
         "to": "catalog",
-        "raw": "catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, supplier-catalog-scanner pour le scan pricing lui-même, et depuis PDC-8 Lot 6 : catalog-promotion.js — appelé dans la transaction de POST .../import-product pour promouvoir normalized_source_contract V2 vers catalog_media/product_variants/product_skus/product_sku_media)",
+        "raw": "catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, supplier-catalog-scanner pour le scan pricing, catalog-candidate-product-service pour créer le brouillon products, et catalog-promotion.js pour promouvoir normalized_source_contract V2 vers catalog_media/product_variants/product_skus/product_sku_media dans la transaction de POST .../import-product)",
         "resolved": true
       },
       {
@@ -17817,6 +17869,22 @@
                 "endpoint": "/api/shares",
                 "routeFile": "routes/shares.js",
                 "consumerFileId": "public/boutique/js/b-favs.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "catalog",
+        "to": "sourcing",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
+                "targetFile": "services/sourcing-candidate-import-service.js"
               }
             ]
           }
@@ -23729,6 +23797,10 @@
               },
               {
                 "sourceFileId": "routes/sourcing-scanner.js",
+                "targetFile": "services/catalog-candidate-product-service.js"
+              },
+              {
+                "sourceFileId": "routes/sourcing-scanner.js",
                 "targetFile": "services/catalog-promotion.js"
               },
               {
@@ -24096,7 +24168,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 804
+        "filesObserved": 808
       },
       "boutique": {
         "filesObserved": 158,
@@ -24807,12 +24879,6 @@
           "mode": "RW",
           "declaredOwner": false,
           "technical": false
-        },
-        {
-          "feature": "sourcing",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
         }
       ],
       "readers": [
@@ -25147,41 +25213,18 @@
       "lifecycleOwner": "catalog",
       "resolution": "single-writer"
     },
-    "sourcing_candidate_events": {
-      "writers": [
-        {
-          "feature": "catalog",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "sourcing",
-          "mode": "RW",
-          "declaredOwner": true,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "sourcing",
-      "resolution": "declared-table-owner"
-    },
     "sourcing_candidates": {
       "writers": [
         {
-          "feature": "catalog",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
           "feature": "sourcing",
           "mode": "RW",
           "declaredOwner": true,
           "technical": false
         }
       ],
-      "readers": [],
+      "readers": [
+        "catalog"
+      ],
       "lifecycleOwner": "sourcing",
       "resolution": "declared-table-owner"
     },
@@ -26305,6 +26348,19 @@
       "lifecycleOwner": "shared-cart",
       "resolution": "single-writer"
     },
+    "sourcing_candidate_events": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
     "unsold_items": {
       "writers": [
         {
@@ -26493,22 +26549,12 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "products",
-        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine, sourcing"
+        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "scans",
         "msg": "table \"scans\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, orders"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "sourcing_candidate_events",
-        "msg": "table \"sourcing_candidate_events\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "sourcing_candidates",
-        "msg": "table \"sourcing_candidates\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26560,22 +26606,12 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "products",
-        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine, sourcing"
+        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "scans",
         "msg": "table \"scans\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, orders"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "sourcing_candidate_events",
-        "msg": "table \"sourcing_candidate_events\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "sourcing_candidates",
-        "msg": "table \"sourcing_candidates\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26793,11 +26829,11 @@
       }
     ],
     "summary": {
-      "signals": 13,
-      "debt": 13,
+      "signals": 11,
+      "debt": 11,
       "expectedTopology": 33,
       "generatorLimitations": 8,
-      "classifiedCandidates": 54
+      "classifiedCandidates": 52
     }
   }
 }
