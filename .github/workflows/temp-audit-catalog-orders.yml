@@ -1,4 +1,4 @@
-name: Temporary audit catalog orders seam
+name: Temporary final catalog orders boundary
 
 on:
   push:
@@ -6,38 +6,131 @@ on:
       - governance/catalog-orders-boundary
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  audit:
+  finalize:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Verify manifest ownership of favorite consumers
+        with:
+          ref: governance/catalog-orders-boundary
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install Boutique test dependencies
+        run: npm --prefix public/boutique ci
+      - name: Apply final boundary refactor
+        run: node scripts/temp-final-catalog-orders-boundary.js
+      - name: Remove temporary tooling before proof
         run: |
-          echo '=== manifest references ==='
-          git grep -nE "b-modal-core\.js|boutique\.js|b-catalog\.js|b-subcat\.js|render-product-card\.js|b-modal-buybox-shared\.js" -- public/boutique/features features capabilities || true
-          echo '=== graph file owner references ==='
+          rm scripts/temp-final-catalog-orders-boundary.js
+          rm scripts/temp-audit-catalog-orders-symbols.js
+          rm .github/workflows/temp-audit-catalog-orders.yml
+      - name: Run focused ownership and cart boundary tests
+        run: |
+          npm --prefix public/boutique test -- --runInBand \
+            tests/unit/catalog-favorites.test.js \
+            tests/unit/b-cart-core.test.js \
+            tests/unit/b-cart.test.js \
+            tests/unit/b-catalog.test.js \
+            tests/unit/b-subcat.test.js \
+            tests/unit/render-product-card.test.js \
+            tests/unit/b-favs.test.js \
+            tests/unit/b-modal-buybox-shared.test.js \
+            tests/unit/cart-public-api-boundary.test.js
+      - name: Run full Boutique unit suite
+        run: npm --prefix public/boutique test -- --runInBand
+      - name: Refresh governance projections
+        run: |
+          npm run business-graph:gen
+          npm run feature:360:gen
+      - name: Prove zero cross-feature dependency debt
+        run: |
           node - <<'NODE'
+          const fs = require('fs');
           const graph = require('./docs/BUSINESS_FEATURE_GRAPH.json');
-          const targets = new Set([
-            'public/boutique/js/b-modal-core.js',
-            'public/boutique/js/boutique.js',
+          const debt = graph.drifts.debt || [];
+          const deps = debt.filter(x => x.type === 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY');
+          if (debt.length !== 26) throw new Error(`expected 26 total governed debts, got ${debt.length}`);
+          if (deps.length !== 0) throw new Error(`expected zero dependency debt, got ${deps.length}: ${deps.map(x => x.ref).join(', ')}`);
+          if ((graph.drifts.warn || []).length !== debt.length) throw new Error('warning stream polluted');
+
+          const exceptions = JSON.parse(fs.readFileSync('governance/feature-dependency-exceptions.json','utf8')).exceptions;
+          if (exceptions.some(e => e.from === 'catalog' && e.to === 'orders')) throw new Error('stale catalog->orders exception remains');
+
+          const catalogFiles = [
             'public/boutique/js/b-catalog.js',
             'public/boutique/js/b-subcat.js',
             'public/boutique/js/render/render-product-card.js',
+            'public/boutique/js/b-modal-desktop-product.js',
+            'public/boutique/js/b-favs.js',
             'public/boutique/js/b-modal-buybox-shared.js',
-          ]);
-          const seen = new Set();
-          function walk(v, path='$') {
-            if (!v || typeof v !== 'object' || seen.has(v)) return;
-            seen.add(v);
-            const txt = JSON.stringify(v);
-            if ([...targets].some(t => txt.includes(t)) && txt.length < 5000) {
-              console.log('\n' + path + '\n' + JSON.stringify(v, null, 2));
+          ];
+          const forbidden = [
+            "from './b-cart.js'",
+            "from './b-cart-core.js'",
+            "from './cart-product-summary.js'",
+            "from '../b-cart.js'",
+            "from '../b-cart-core.js'",
+            "from '../cart-product-summary.js'",
+          ];
+          for (const file of catalogFiles) {
+            const src = fs.readFileSync(file,'utf8');
+            for (const marker of forbidden) {
+              if (src.includes(marker)) throw new Error(`${file} still imports orders internal: ${marker}`);
             }
-            if (Array.isArray(v)) v.forEach((x,i)=>walk(x,`${path}[${i}]`));
-            else Object.entries(v).forEach(([k,x])=>walk(x,`${path}.${k}`));
           }
-          walk(graph);
+
+          const favorites = fs.readFileSync('public/boutique/js/catalog-favorites.js','utf8');
+          for (const name of ['isFav','saveFavs','toggleFav']) {
+            if (!favorites.includes(`function ${name}`)) throw new Error(`catalog-favorites missing ${name}`);
+          }
+          for (const file of ['public/boutique/js/b-cart.js','public/boutique/js/b-cart-core.js']) {
+            const src = fs.readFileSync(file,'utf8');
+            for (const name of ['isFav','saveFavs','toggleFav']) {
+              if (new RegExp(`(?:export\\s+)?function\\s+${name}\\b`).test(src)) throw new Error(`${file} still defines ${name}`);
+            }
+          }
+
+          const api = fs.readFileSync('public/boutique/js/cart-public-api.js','utf8');
+          for (const name of ['addToCart','quickAdd','quickRemove','openCartWithHighlight','markAllCartButtons','pruneObsoleteCart','getProductCartSummary']) {
+            if (!api.includes(name)) throw new Error(`cart public API missing ${name}`);
+          }
+          console.log('ZERO_CROSS_FEATURE_DEPENDENCY_DEBT_PROVED');
           NODE
+          npm run business-graph:ratchet-check
+          npm run feature:check
+          npm run feature:360:check
+          git diff --check
+      - name: Commit final tree
+        run: |
+          git checkout HEAD -- .github/workflows/temp-audit-catalog-orders.yml scripts/temp-final-catalog-orders-boundary.js scripts/temp-audit-catalog-orders-symbols.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            public/boutique/js/catalog-favorites.js \
+            public/boutique/js/b-cart-core.js public/boutique/js/b-cart.js public/boutique/js/cart-public-api.js \
+            public/boutique/js/b-catalog.js public/boutique/js/b-subcat.js public/boutique/js/render/render-product-card.js \
+            public/boutique/js/b-modal-desktop-product.js public/boutique/js/b-favs.js public/boutique/js/b-modal-buybox-shared.js \
+            public/boutique/js/b-modal-core.js public/boutique/js/boutique.js \
+            public/boutique/tests/unit/catalog-favorites.test.js public/boutique/tests/unit/b-cart-core.test.js \
+            public/boutique/tests/unit/b-cart.test.js public/boutique/tests/unit/b-catalog.test.js public/boutique/tests/unit/b-subcat.test.js \
+            public/boutique/tests/unit/render-product-card.test.js public/boutique/tests/unit/b-favs.test.js \
+            public/boutique/tests/unit/b-modal-buybox-shared.test.js \
+            public/boutique/tests/unit/b-modal-core.test.js public/boutique/tests/unit/b-modal-core-active-flows.test.js \
+            public/boutique/tests/unit/b-modal-core-actions-composition.test.js public/boutique/tests/unit/b-modal-core-desktop-click.test.js \
+            public/boutique/tests/unit/b-modal-core-pdc6-baseline.test.js public/boutique/tests/unit/b-modal-core-pdc6-coverage.test.js \
+            public/boutique/features/catalog.feature.js public/boutique/features/orders-client.feature.js \
+            features/catalog.feature.js governance/feature-dependency-exceptions.json governance/business-graph-drift-baseline.json \
+            docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md \
+            docs/FEATURE_360.json docs/FEATURE_360.md docs/GATE_FINDINGS.json
+          if git diff --cached --quiet; then
+            echo 'No final changes to commit.'
+          else
+            git commit -m 'refactor(boutique): close final catalog orders seam'
+            git push origin HEAD:governance/catalog-orders-boundary
+          fi
