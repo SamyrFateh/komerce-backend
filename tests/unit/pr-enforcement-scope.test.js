@@ -12,6 +12,7 @@ const {
   isBoutiqueUnitTest,
   isBoutiquePackageFile,
   isBoutiqueRelevant,
+  isBusinessManifestSource,
   isGovernanceFile,
   classify,
   diffFiles,
@@ -154,6 +155,29 @@ describe('PR enforcement scope — backend + migrations + Boutique + governance'
   ])('tout fichier backend %s est aussi governance-relevant', file => {
     expect(isBackendFile(file)).toBe(true);
     expect(isGovernanceFile(file)).toBe(true);
+  });
+
+  test.each([
+    'features/auth-passkey.feature.js',
+    'public/boutique/features/auth-passkey.feature.js',
+    'public/dashboards/features/admin-dashboard.feature.js',
+    'public/features/platform.feature.js',
+    'docs/doctrine/FEATURE_DOCTRINE.md',
+    'docs/doctrine/APP_FEATURE_REGISTRY.md',
+  ])('source Business Graph %s réveille toujours la gouvernance', file => {
+    expect(isBusinessManifestSource(file)).toBe(true);
+    expect(isGovernanceFile(file)).toBe(true);
+    const result = classify([file]);
+    expect(result.governance).toBe(true);
+    expect(result.governanceFiles).toEqual([file]);
+  });
+
+  test('régression AUTH-3 : un manifest Boutique ne peut plus passer avec Governance skipped', () => {
+    const result = classify(['public/boutique/features/auth-passkey.feature.js']);
+    expect(result.backend).toBe(false);
+    expect(result.boutique).toBe(false);
+    expect(result.governance).toBe(true);
+    expect(result.governanceFiles).toEqual(['public/boutique/features/auth-passkey.feature.js']);
   });
 
   test('une modification de test integration/e2e backend réveille backend et gouvernance', () => {
