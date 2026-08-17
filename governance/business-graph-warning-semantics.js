@@ -208,6 +208,18 @@ function classifyObservedUndeclared(w, ctx) {
   if (!disposition) return null;
 
   if (
+    disposition.family === 'NON_RUNTIME_TEST' &&
+    disposition.evidenceRole === 'TEST_ONLY' &&
+    disposition.policy === 'non-runtime-evidence' &&
+    disposition.exceptionRequired === false
+  ) {
+    return {
+      category: 'EXPECTED_TOPOLOGY',
+      reason: 'O6 classe cette paire NON_RUNTIME_TEST : la seule preuve vient des tests et ne constitue pas une dépendance runtime à déclarer',
+    };
+  }
+
+  if (
     disposition.family === 'COMPOSITION_ROOT_WIRING' &&
     disposition.policy === 'application-wiring-not-consumption' &&
     disposition.exceptionRequired === false

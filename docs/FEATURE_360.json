@@ -46,7 +46,7 @@
     "healthy": 7,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 161,
+    "businessDependencies": 162,
     "directCrossFeatureImports": 3,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
@@ -763,6 +763,13 @@
           ]
         },
         {
+          "consumer": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -1335,7 +1342,7 @@
         },
         {
           "consumer": "catalog",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "interface"
           ]
@@ -1357,10 +1364,10 @@
         },
         {
           "consumer": "platform-ops",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface",
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -3495,7 +3502,7 @@
         },
         {
           "provider": "auth-identity",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "interface"
           ]
@@ -3582,10 +3589,10 @@
         },
         {
           "consumer": "platform-ops",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface",
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -6186,6 +6193,13 @@
       },
       "businessDependencies": [
         {
+          "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -6256,15 +6270,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "auth",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -15029,10 +15038,10 @@
         },
         {
           "provider": "auth-identity",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface",
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -15044,10 +15053,10 @@
         },
         {
           "provider": "catalog",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface",
-            "static-code"
+            "static-code",
+            "interface"
           ]
         },
         {
@@ -15083,10 +15092,10 @@
         },
         {
           "provider": "purchasing",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface",
-            "static-code"
+            "static-code",
+            "interface"
           ]
         }
       ],
@@ -15678,10 +15687,10 @@
         },
         {
           "consumer": "platform-ops",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface",
-            "static-code"
+            "static-code",
+            "interface"
           ]
         }
       ],
@@ -15931,10 +15940,10 @@
         },
         {
           "consumer": "shared-cart",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface",
-            "static-code"
+            "static-code",
+            "interface"
           ]
         }
       ],
@@ -16975,10 +16984,10 @@
         },
         {
           "provider": "recommendations",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "interface",
-            "static-code"
+            "static-code",
+            "interface"
           ]
         }
       ],
