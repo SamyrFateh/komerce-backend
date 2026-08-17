@@ -24451,36 +24451,48 @@
       "writers": [
         {
           "feature": "auth-identity",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "infrastructure",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
         }
       ],
       "readers": [
         "auth"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "auth-identity",
+      "resolution": "declared-table-owner"
     },
     "users": {
       "writers": [
         {
           "feature": "auth",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "auth-identity",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "dashboard",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "loyalty",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -24496,18 +24508,22 @@
         "shared-cart",
         "wallet"
       ],
-      "lifecycleOwner": "loyalty",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": "auth-identity",
+      "resolution": "declared-table-owner"
     },
     "invoices": {
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "documents",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -24522,7 +24538,9 @@
       "writers": [
         {
           "feature": "loyalty",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -24535,15 +24553,21 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": true
         },
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "orders",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [
@@ -24560,45 +24584,63 @@
         "shared-cart"
       ],
       "lifecycleOwner": "orders",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "resolution": "declared-table-owner"
     },
     "orders": {
       "writers": [
         {
           "feature": "customs",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": true
         },
         {
           "feature": "inventory",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "orders",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "payments",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "platform-ops",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": true
         },
         {
           "feature": "purchasing",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "wallet",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -24614,14 +24656,16 @@
         "shared-cart",
         "unsold-resolution"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "orders",
+      "resolution": "declared-table-owner"
     },
     "otp_codes": {
       "writers": [
         {
           "feature": "auth-identity",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24632,23 +24676,33 @@
       "writers": [
         {
           "feature": "customs",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "payments",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "platform-ops",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": true
         }
       ],
       "readers": [
@@ -24661,26 +24715,34 @@
         "orders",
         "recommendations"
       ],
-      "lifecycleOwner": "platform-ops",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
     },
     "products": {
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": true
         },
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "sourcing",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -24696,18 +24758,22 @@
         "shared-cart",
         "unsold-resolution"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
     },
     "relais": {
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [
@@ -24719,14 +24785,16 @@
         "platform-ops",
         "purchasing"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
     },
     "user_pickup_authorizations": {
       "writers": [
         {
           "feature": "auth-identity",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24737,7 +24805,9 @@
       "writers": [
         {
           "feature": "auth-passkey",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24748,7 +24818,9 @@
       "writers": [
         {
           "feature": "auth-passkey",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24759,7 +24831,9 @@
       "writers": [
         {
           "feature": "business-rules",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -24774,7 +24848,9 @@
       "writers": [
         {
           "feature": "business-rules",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -24787,38 +24863,52 @@
       "writers": [
         {
           "feature": "catalog",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "logistics",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "notifications",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "orders",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "payments",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "purchasing",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "notifications",
+      "resolution": "declared-table-owner"
     },
     "boutique_categories": {
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24829,7 +24919,9 @@
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24848,7 +24940,9 @@
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24867,7 +24961,9 @@
       "writers": [
         {
           "feature": "catalog",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24878,89 +24974,96 @@
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
-        },
-        {
-          "feature": "sourcing",
-          "mode": "W"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
-      "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "readers": [
+        "sourcing"
+      ],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
     },
     "price_history": {
       "writers": [
         {
           "feature": "catalog",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "economic-engine",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
     },
     "product_skus": {
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
-        },
-        {
-          "feature": "sourcing",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
-      "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "readers": [
+        "sourcing"
+      ],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
     },
     "product_sku_media": {
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
-        },
-        {
-          "feature": "sourcing",
-          "mode": "W"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
-      "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "readers": [
+        "sourcing"
+      ],
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
     },
     "product_variants": {
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "economic-engine",
-          "mode": "RW"
-        },
-        {
-          "feature": "sourcing",
-          "mode": "W"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
         "logistics",
-        "orders"
+        "orders",
+        "sourcing"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "catalog",
+      "resolution": "declared-table-owner"
     },
     "product_content_profile": {
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24971,7 +25074,9 @@
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24982,7 +25087,9 @@
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -24993,37 +25100,47 @@
       "writers": [
         {
           "feature": "catalog",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "sourcing",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
     },
     "sourcing_candidates": {
       "writers": [
         {
           "feature": "catalog",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "sourcing",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
     },
     "supplier_catalog_imports": {
       "writers": [
         {
           "feature": "catalog",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25036,7 +25153,9 @@
       "writers": [
         {
           "feature": "customs",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25058,7 +25177,9 @@
       "writers": [
         {
           "feature": "customs",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25072,7 +25193,9 @@
       "writers": [
         {
           "feature": "customs",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25083,40 +25206,31 @@
       "lifecycleOwner": "customs",
       "resolution": "single-writer"
     },
-    "order_item_real_cost_allocations": {
-      "writers": [
-        {
-          "feature": "customs",
-          "mode": "W"
-        },
-        {
-          "feature": "economic-engine",
-          "mode": "RW"
-        }
-      ],
-      "readers": [
-        "dashboard"
-      ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
-    },
     "parcel_items": {
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "inventory",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "platform-ops",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": true
         }
       ],
       "readers": [
@@ -25126,18 +25240,22 @@
         "orders",
         "payments"
       ],
-      "lifecycleOwner": "platform-ops",
-      "resolution": "multi-writer-resolved-by-classification-signal"
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
     },
     "basket_items": {
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "shared-cart",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25148,11 +25266,15 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "shared-cart",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25163,7 +25285,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25176,40 +25300,54 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "incident-management",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "notifications",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "payments",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
         "platform-ops"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "incident-management",
+      "resolution": "declared-table-owner"
     },
     "loyalty_rewards": {
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "loyalty",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25220,11 +25358,15 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "orders",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25235,7 +25377,9 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25246,7 +25390,9 @@
       "writers": [
         {
           "feature": "orders",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25256,15 +25402,34 @@
       "lifecycleOwner": "orders",
       "resolution": "single-writer"
     },
+    "order_item_real_cost_allocations": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "dashboard"
+      ],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
     "order_status_history": {
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "orders",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25275,7 +25440,9 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25286,11 +25453,15 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "orders",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25306,11 +25477,15 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [
@@ -25319,37 +25494,47 @@
         "payments",
         "platform-ops"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
     },
     "scans": {
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "orders",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "platform-ops",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": true
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
     },
     "signals": {
       "writers": [
         {
           "feature": "decision-signals",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25362,11 +25547,15 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "orders",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25385,11 +25574,15 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "wallet",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25402,11 +25595,15 @@
       "writers": [
         {
           "feature": "dashboard",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "wallet",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25420,7 +25617,9 @@
       "writers": [
         {
           "feature": "refunds",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25435,7 +25634,9 @@
       "writers": [
         {
           "feature": "documents",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25446,7 +25647,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25457,7 +25660,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25468,7 +25673,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25479,7 +25686,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25490,7 +25699,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25501,22 +25712,28 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "infrastructure",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
     },
     "economic_variables": {
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25527,7 +25744,9 @@
       "writers": [
         {
           "feature": "platform-ops",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25540,7 +25759,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25553,7 +25774,9 @@
       "writers": [
         {
           "feature": "platform-ops",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25574,7 +25797,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25585,7 +25810,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25596,7 +25823,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25607,7 +25836,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25618,7 +25849,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25629,7 +25862,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25640,7 +25875,9 @@
       "writers": [
         {
           "feature": "economic-engine",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25651,7 +25888,9 @@
       "writers": [
         {
           "feature": "platform-ops",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25664,37 +25903,47 @@
       "writers": [
         {
           "feature": "infrastructure",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
         },
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
     },
     "pickup_reveal_codes": {
       "writers": [
         {
           "feature": "infrastructure",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
         },
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
     },
     "schema_migrations": {
       "writers": [
         {
           "feature": "infrastructure",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25705,7 +25954,9 @@
       "writers": [
         {
           "feature": "inventory",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25716,7 +25967,9 @@
       "writers": [
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25727,7 +25980,9 @@
       "writers": [
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25738,7 +25993,9 @@
       "writers": [
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25749,7 +26006,9 @@
       "writers": [
         {
           "feature": "purchasing",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [
@@ -25762,24 +26021,30 @@
       "writers": [
         {
           "feature": "orders",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "purchasing",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [
         "logistics"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
     },
     "shipments": {
       "writers": [
         {
           "feature": "logistics",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25798,7 +26063,9 @@
       "writers": [
         {
           "feature": "notifications",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25809,37 +26076,47 @@
       "writers": [
         {
           "feature": "notifications",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         },
         {
           "feature": "platform-ops",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": true
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "notifications",
+      "resolution": "declared-table-owner"
     },
     "cart_shares": {
       "writers": [
         {
           "feature": "orders",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         },
         {
           "feature": "shared-cart",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "shared-cart",
+      "resolution": "declared-table-owner"
     },
     "customs_history": {
       "writers": [
         {
           "feature": "orders",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25850,7 +26127,9 @@
       "writers": [
         {
           "feature": "orders",
-          "mode": "W"
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25861,7 +26140,9 @@
       "writers": [
         {
           "feature": "payments",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25872,7 +26153,9 @@
       "writers": [
         {
           "feature": "payments",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25883,7 +26166,9 @@
       "writers": [
         {
           "feature": "payments",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25894,7 +26179,9 @@
       "writers": [
         {
           "feature": "payments",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25905,7 +26192,9 @@
       "writers": [
         {
           "feature": "purchasing",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25916,7 +26205,9 @@
       "writers": [
         {
           "feature": "shared-cart",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25927,7 +26218,9 @@
       "writers": [
         {
           "feature": "shared-cart",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25938,7 +26231,9 @@
       "writers": [
         {
           "feature": "shared-cart",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25949,7 +26244,9 @@
       "writers": [
         {
           "feature": "shared-cart",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25960,7 +26257,9 @@
       "writers": [
         {
           "feature": "unsold-resolution",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25979,7 +26278,9 @@
       "writers": [
         {
           "feature": "wallet",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -25990,7 +26291,9 @@
       "writers": [
         {
           "feature": "wallet",
-          "mode": "RW"
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
         }
       ],
       "readers": [],
@@ -26103,132 +26406,77 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "alerts",
-        "msg": "table \"alerts\" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"alerts\" : lifecycle owner = notifications (db.tables \"!\"), mais aussi écrite par catalog, logistics, orders, payments, purchasing"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "cart_shares",
-        "msg": "table \"cart_shares\" a 2 écrivain(s) déclaré(s) (orders, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "catalog_media",
-        "msg": "table \"catalog_media\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "economic_snapshots",
-        "msg": "table \"economic_snapshots\" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"cart_shares\" : lifecycle owner = shared-cart (db.tables \"!\"), mais aussi écrite par orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "incidents",
-        "msg": "table \"incidents\" a 5 écrivain(s) déclaré(s) (dashboard, incident-management, logistics, notifications, payments) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "notification_log",
-        "msg": "table \"notification_log\" a 2 écrivain(s) déclaré(s) (notifications, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "order_item_real_cost_allocations",
-        "msg": "table \"order_item_real_cost_allocations\" a 2 écrivain(s) déclaré(s) (customs, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"incidents\" : lifecycle owner = incident-management (db.tables \"!\"), mais aussi écrite par dashboard, logistics, notifications, payments"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_items",
-        "msg": "table \"order_items\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics"
+        "msg": "table \"order_items\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par logistics"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "orders",
-        "msg": "table \"orders\" a 9 écrivain(s) déclaré(s) (customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, wallet) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "parcel_items",
-        "msg": "table \"parcel_items\" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, inventory, logistics"
+        "msg": "table \"parcel_items\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, inventory"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "parcels",
-        "msg": "table \"parcels\" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par customs, dashboard, logistics, payments"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "pickup_print_tokens",
-        "msg": "table \"pickup_print_tokens\" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "pickup_reveal_codes",
-        "msg": "table \"pickup_reveal_codes\" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"parcels\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par customs, dashboard, payments"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "price_history",
-        "msg": "table \"price_history\" a 2 écrivain(s) déclaré(s) (catalog, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "product_sku_media",
-        "msg": "table \"product_sku_media\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "product_skus",
-        "msg": "table \"product_skus\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"price_history\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "product_variants",
-        "msg": "table \"product_variants\" a 3 écrivain(s) déclaré(s) (catalog, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"product_variants\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "products",
-        "msg": "table \"products\" a 4 écrivain(s) déclaré(s) (catalog, dashboard, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine, sourcing"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "purchase_orders",
-        "msg": "table \"purchase_orders\" a 2 écrivain(s) déclaré(s) (orders, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "relais",
-        "msg": "table \"relais\" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "revoked_tokens",
-        "msg": "table \"revoked_tokens\" a 2 écrivain(s) déclaré(s) (auth-identity, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "scan_events",
-        "msg": "table \"scan_events\" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"purchase_orders\" : lifecycle owner = purchasing (db.tables \"!\"), mais aussi écrite par orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "scans",
-        "msg": "table \"scans\" a 4 écrivain(s) déclaré(s) (dashboard, logistics, orders, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"scans\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "sourcing_candidate_events",
-        "msg": "table \"sourcing_candidate_events\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"sourcing_candidate_events\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "sourcing_candidates",
-        "msg": "table \"sourcing_candidates\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"sourcing_candidates\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "users",
-        "msg": "table \"users\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard"
+        "msg": "table \"users\" : lifecycle owner = auth-identity (db.tables \"!\"), mais aussi écrite par auth, dashboard, loyalty"
       }
     ],
     "debt": [
@@ -26240,132 +26488,77 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "alerts",
-        "msg": "table \"alerts\" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"alerts\" : lifecycle owner = notifications (db.tables \"!\"), mais aussi écrite par catalog, logistics, orders, payments, purchasing"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "cart_shares",
-        "msg": "table \"cart_shares\" a 2 écrivain(s) déclaré(s) (orders, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "catalog_media",
-        "msg": "table \"catalog_media\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "economic_snapshots",
-        "msg": "table \"economic_snapshots\" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"cart_shares\" : lifecycle owner = shared-cart (db.tables \"!\"), mais aussi écrite par orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "incidents",
-        "msg": "table \"incidents\" a 5 écrivain(s) déclaré(s) (dashboard, incident-management, logistics, notifications, payments) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "notification_log",
-        "msg": "table \"notification_log\" a 2 écrivain(s) déclaré(s) (notifications, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "order_item_real_cost_allocations",
-        "msg": "table \"order_item_real_cost_allocations\" a 2 écrivain(s) déclaré(s) (customs, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"incidents\" : lifecycle owner = incident-management (db.tables \"!\"), mais aussi écrite par dashboard, logistics, notifications, payments"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "order_items",
-        "msg": "table \"order_items\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics"
+        "msg": "table \"order_items\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par logistics"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "orders",
-        "msg": "table \"orders\" a 9 écrivain(s) déclaré(s) (customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, wallet) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "parcel_items",
-        "msg": "table \"parcel_items\" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, inventory, logistics"
+        "msg": "table \"parcel_items\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, inventory"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "parcels",
-        "msg": "table \"parcels\" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par customs, dashboard, logistics, payments"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "pickup_print_tokens",
-        "msg": "table \"pickup_print_tokens\" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "pickup_reveal_codes",
-        "msg": "table \"pickup_reveal_codes\" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"parcels\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par customs, dashboard, payments"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "price_history",
-        "msg": "table \"price_history\" a 2 écrivain(s) déclaré(s) (catalog, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "product_sku_media",
-        "msg": "table \"product_sku_media\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "product_skus",
-        "msg": "table \"product_skus\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"price_history\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "product_variants",
-        "msg": "table \"product_variants\" a 3 écrivain(s) déclaré(s) (catalog, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"product_variants\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "products",
-        "msg": "table \"products\" a 4 écrivain(s) déclaré(s) (catalog, dashboard, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine, sourcing"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "purchase_orders",
-        "msg": "table \"purchase_orders\" a 2 écrivain(s) déclaré(s) (orders, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "relais",
-        "msg": "table \"relais\" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "revoked_tokens",
-        "msg": "table \"revoked_tokens\" a 2 écrivain(s) déclaré(s) (auth-identity, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "scan_events",
-        "msg": "table \"scan_events\" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"purchase_orders\" : lifecycle owner = purchasing (db.tables \"!\"), mais aussi écrite par orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "scans",
-        "msg": "table \"scans\" a 4 écrivain(s) déclaré(s) (dashboard, logistics, orders, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"scans\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "sourcing_candidate_events",
-        "msg": "table \"sourcing_candidate_events\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"sourcing_candidate_events\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "sourcing_candidates",
-        "msg": "table \"sourcing_candidates\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"sourcing_candidates\" : lifecycle owner = sourcing (db.tables \"!\"), mais aussi écrite par catalog"
       },
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "users",
-        "msg": "table \"users\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard"
+        "msg": "table \"users\" : lifecycle owner = auth-identity (db.tables \"!\"), mais aussi écrite par auth, dashboard, loyalty"
       }
     ],
     "expectedTopology": [
@@ -26511,6 +26704,16 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
+        "ref": "relais",
+        "msg": "table \"relais\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "scan_events",
+        "msg": "table \"scan_events\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
         "ref": "sms_log",
         "msg": "table \"sms_log\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
       },
@@ -26568,11 +26771,11 @@
       }
     ],
     "summary": {
-      "signals": 27,
-      "debt": 27,
-      "expectedTopology": 31,
+      "signals": 16,
+      "debt": 16,
+      "expectedTopology": 33,
       "generatorLimitations": 8,
-      "classifiedCandidates": 66
+      "classifiedCandidates": 57
     }
   }
 }
