@@ -1,5 +1,11 @@
 'use strict';
 
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
 const jwt = require('jsonwebtoken');
 const { signAuthToken } = require('../../utils/auth-session');
 
