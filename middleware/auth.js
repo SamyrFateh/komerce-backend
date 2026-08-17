@@ -81,6 +81,12 @@ async function authenticate(req, res, next) {
     }
 
     req.user = user;
+    req.auth = {
+      authTime: Number.isFinite(Number(decoded.auth_time)) ? Number(decoded.auth_time) : null,
+      amr: Array.isArray(decoded.amr) ? decoded.amr.map(String) : [],
+      jti: decoded.jti || null,
+      exp: decoded.exp || null,
+    };
 
     next();
 

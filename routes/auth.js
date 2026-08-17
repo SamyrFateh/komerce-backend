@@ -29,11 +29,12 @@
  */
 
 const express      = require('express');
-const { randomBytes, randomUUID } = require('crypto');
+const { randomBytes } = require('crypto');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const db       = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { requireRecentAuth } = require('../middleware/require-recent-auth');
 const { validate } = require('../middleware/validate');
 const { auth } = require('../validators');
 const log = require('../utils/logger').child({ module: 'auth' });
@@ -49,10 +50,10 @@ const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 
 // AUTH-8a — cookie d'auth centralisé (utils/auth-cookie.js)
 const { setAuthCookie, clearAuthCookie } = require('../utils/auth-cookie');
+const { signAuthToken } = require('../utils/auth-session');
 
 function generateToken(user) {
-  // N4 — jti unique pour permettre la révocation individuelle (migration 072)
-  return jwt.sign({ id: user.id, role: user.role, jti: randomUUID() }, _JWT_SECRET, { expiresIn: JWT_EXPIRES });
+  return signAuthToken(user, { method: 'password', expiresIn: JWT_EXPIRES });
 }
 
 function userResponse(user) {
@@ -178,7 +179,7 @@ router.get('/me/pickup-authorization', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.put('/me/pickup-authorization', authenticate, validate(auth.pickupAuthorization), async (req, res, next) => {
+router.put('/me/pickup-authorization', authenticate, requireRecentAuth, validate(auth.pickupAuthorization), async (req, res, next) => {
   try {
     const result = await setMyAuthorization({
       userId:      req.user.id,
@@ -189,7 +190,7 @@ router.put('/me/pickup-authorization', authenticate, validate(auth.pickupAuthori
   } catch (err) { next(err); }
 });
 
-router.delete('/me/pickup-authorization', authenticate, async (req, res, next) => {
+router.delete('/me/pickup-authorization', authenticate, requireRecentAuth, async (req, res, next) => {
   try {
     const result = await deleteMyAuthorization(req.user.id);
     res.status(result.status).json(result.body);

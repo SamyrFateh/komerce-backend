@@ -1344,13 +1344,12 @@
         "kind": "business-feature",
         "status": "production"
       },
-      "service": "Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→6).",
+      "service": "Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→7).",
       "perimeter": {
         "in": [
           "génération des options WebAuthn (register/login), vérification cryptographique via @simplewebauthn/server, stockage/rotation des credentials et des challenges éphémères"
         ],
         "out": [
-          "step-up des opérations sensibles (AUTH-7)",
           "durcissement final de session/cookie/CSRF (AUTH-8b→e)",
           "toute logique OTP/magic-link/guest-checkout — reste dans auth-identity"
         ]
@@ -1366,16 +1365,24 @@
         "une credential revoked_at non nul est inutilisable au login, sans exception",
         "la gestion AUTH-6 ne retourne jamais credential_id, public_key ni sign_count au navigateur",
         "une révocation est toujours scellée par id de gestion ET user_id authentifié",
+        "un challenge step_up est distinct de login/register et lié au user_id de la session",
+        "une passkey d un autre compte ne peut jamais satisfaire un step-up",
+        "les mutations de sécurité exigent auth_time récent avec amr otp ou passkey",
         "sign_count : régression rejetée pour les credentials non sauvegardées (backup_state=false) ; tolérée et tracée pour les passkeys synchronisées (backup_state=true)"
       ],
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "migrations/133_webauthn_credentials.sql",
                 "resolvedPath": "migrations/133_webauthn_credentials.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/134_webauthn_step_up.sql",
+                "resolvedPath": "migrations/134_webauthn_step_up.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -1391,8 +1398,13 @@
             ]
           },
           "services": {
-            "count": 2,
+            "count": 4,
             "files": [
+              {
+                "declared": "middleware/require-recent-auth.js",
+                "resolvedPath": "middleware/require-recent-auth.js",
+                "status": "resolved-on-disk-no-header"
+              },
               {
                 "declared": "services/webauthn-management-service.js",
                 "resolvedPath": "services/webauthn-management-service.js",
@@ -1402,11 +1414,16 @@
                 "declared": "services/webauthn-service.js",
                 "resolvedPath": "services/webauthn-service.js",
                 "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "utils/auth-session.js",
+                "resolvedPath": "utils/auth-session.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           },
           "tests": {
-            "count": 2,
+            "count": 5,
             "files": [
               {
                 "declared": "tests/unit/auth-passkey-management.test.js",
@@ -1414,17 +1431,32 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/auth-passkey-step-up.test.js",
+                "resolvedPath": "tests/unit/auth-passkey-step-up.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/auth-passkey.test.js",
                 "resolvedPath": "tests/unit/auth-passkey.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-session.test.js",
+                "resolvedPath": "tests/unit/auth-session.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/require-recent-auth.test.js",
+                "resolvedPath": "tests/unit/require-recent-auth.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 6,
+        "totalFiles": 12,
         "boutiqueManifest": "auth-passkey",
         "boutiqueFiles": {
-          "count": 8,
+          "count": 10,
           "files": [
             {
               "declared": "../js/b-passkey-enrollment.js",
@@ -1443,6 +1475,13 @@
             {
               "declared": "../js/b-passkey-security.js",
               "resolvedPath": "public/boutique/js/b-passkey-security.js",
+              "category": "js",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../js/b-passkey-step-up.js",
+              "resolvedPath": "public/boutique/js/b-passkey-step-up.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
@@ -1478,6 +1517,13 @@
             {
               "declared": "../tests/unit/b-passkey-security.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-passkey-security.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-passkey-step-up.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-passkey-step-up.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -1552,7 +1598,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 6
+          "count": 8
         }
       },
       "businessDependencies": [
@@ -1634,7 +1680,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "⚠ js/b-passkey-login.js — 3 export(s) non consommé(s) :"
+            "message": "⚠ js/b-passkey-step-up.js — 2 export(s) non consommé(s) :"
           },
           {
             "gate": "gate:feature-classification-check",

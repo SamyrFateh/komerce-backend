@@ -20,7 +20,7 @@ module.exports = {
   canonicalFeature: 'auth-passkey',
   sliceKind: 'frontend-slice',
 
-  service: 'Enrôlement (AUTH-3), login nominal (AUTH-4), recovery OTP (AUTH-5) et gestion/révocation des passkeys dans Mon Komerce (AUTH-6).',
+  service: 'Enrôlement (AUTH-3), login nominal (AUTH-4), recovery OTP (AUTH-5) et gestion/révocation des passkeys dans Mon Komerce (AUTH-6) et step-up Passkey des mutations sensibles (AUTH-7).',
 
   perimeter: {
     in: [
@@ -32,7 +32,6 @@ module.exports = {
       'appel des endpoints register/options, register/verify, login/options et login/verify AUTH-2',
     ],
     out: [
-      'step-up (AUTH-7)',
     ],
   },
 
@@ -41,6 +40,7 @@ module.exports = {
       '../js/b-passkey-enrollment.js',
       '../js/b-passkey-login.js',
       '../js/b-passkey-security.js',
+      '../js/b-passkey-step-up.js',
     ],
     tests: [
       '../tests/unit/b-passkey-enrollment.test.js',
@@ -48,6 +48,7 @@ module.exports = {
       '../tests/unit/b-passkey-recovery.test.js',
       '../tests/unit/b-identity-recovery.test.js',
       '../tests/unit/b-passkey-security.test.js',
+      '../tests/unit/b-passkey-step-up.test.js',
     ],
   },
 
@@ -59,6 +60,7 @@ module.exports = {
       'setupPasskeyEnrollment / offerPasskeyEnrollment (b-passkey-enrollment.js)',
       'openPasskeyLogin (b-passkey-login.js)',
       'loadPasskeySecurity (b-passkey-security.js)',
+      'performPasskeyStepUp / withStepUpRetry (b-passkey-step-up.js)',
     ],
     consumes: [
       'auth — b-identity.js émet komerce:identity-authenticated et délègue le login nominal à auth-passkey',
@@ -78,6 +80,8 @@ module.exports = {
     'le recovery ne révoque jamais automatiquement les autres credentials',
     'Mon Komerce affiche uniquement des métadonnées sûres de passkeys et exige confirmation avant révocation',
     'la révocation UI utilise uniquement l identifiant de gestion opaque fourni par le serveur',
+    'un 428 step_up_required déclenche au plus un challenge Passkey puis un seul retry',
+    'sans Passkey disponible le client exige une reconnexion WhatsApp fraîche au lieu de contourner le step-up',
     'aucun JWT challenge credential clé privée ou donnée biométrique n est stocké dans localStorage ou sessionStorage',
     'les challenges et paramètres RP viennent exclusivement du serveur AUTH-2',
     'navigator.credentials.create/get est vérifié côté serveur avant toute confiance',

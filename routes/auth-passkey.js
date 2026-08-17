@@ -19,28 +19,20 @@
 'use strict';
 
 const express = require('express');
-const { randomUUID } = require('crypto');
-const jwt = require('jsonwebtoken');
-
 const router = express.Router();
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { requireRecentAuth } = require('../middleware/require-recent-auth');
 const { setAuthCookie } = require('../utils/auth-cookie');
+const { signAuthToken } = require('../utils/auth-session');
 const webauthn = require('../services/webauthn-service');
 const management = require('../services/webauthn-management-service');
 const log = require('../utils/logger').child({ module: 'auth-passkey' });
 
-const _JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function _issueSession(res, user) {
-  const token = jwt.sign(
-    { id: user.id, role: user.role, jti: randomUUID() },
-    _JWT_SECRET,
-    { expiresIn: JWT_EXPIRES }
-  );
-  setAuthCookie(res, token);
+function _issueSession(res, user, method = 'passkey') {
+  setAuthCookie(res, signAuthToken(user, { method }));
 }
 
 // ── AUTH-6 — Gestion des authentificateurs ───────────────────────────────
@@ -57,7 +49,7 @@ router.get('/credentials', authenticate, async (req, res) => {
   }
 });
 
-router.delete('/credentials/:id', authenticate, async (req, res) => {
+router.delete('/credentials/:id', authenticate, requireRecentAuth, async (req, res) => {
   try {
     const managementId = String(req.params.id || '');
     if (!UUID_RE.test(managementId)) {
@@ -78,10 +70,36 @@ router.delete('/credentials/:id', authenticate, async (req, res) => {
   }
 });
 
+
+// ── AUTH-7 — Step-up du même compte ─────────────────────────────────────
+router.post('/step-up/options', authenticate, async (req, res) => {
+  try {
+    const result = await webauthn.getStepUpOptions({ userId: req.user.id });
+    if (!result.available) return res.status(409).json({ error: 'Aucune passkey active', code: 'passkey_step_up_unavailable' });
+    res.json(result.options);
+  } catch (err) {
+    log.error('[step-up/options] erreur:', err.message);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+router.post('/step-up/verify', authenticate, async (req, res) => {
+  try {
+    if (!req.body || typeof req.body !== 'object' || !req.body.id) return res.status(400).json({ error: 'Réponse WebAuthn invalide' });
+    const result = await webauthn.verifyStepUp({ userId: req.user.id, response: req.body });
+    if (!result.verified) return res.status(401).json({ error: 'Confirmation refusée', reason: result.error });
+    _issueSession(res, req.user, 'passkey');
+    res.json({ verified: true });
+  } catch (err) {
+    log.error('[step-up/verify] erreur:', err.message);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // ── AUTH-2/3 — Enregistrement ────────────────────────────────────────────
 // Contexte requis : utilisateur déjà authentifié (K1 minimum).
 
-router.post('/register/options', authenticate, async (req, res) => {
+router.post('/register/options', authenticate, requireRecentAuth, async (req, res) => {
   try {
     const options = await webauthn.getRegistrationOptions(req.user);
     res.json(options);
@@ -91,7 +109,7 @@ router.post('/register/options', authenticate, async (req, res) => {
   }
 });
 
-router.post('/register/verify', authenticate, async (req, res) => {
+router.post('/register/verify', authenticate, requireRecentAuth, async (req, res) => {
   try {
     const response = req.body;
     if (!response || typeof response !== 'object' || !response.id) {

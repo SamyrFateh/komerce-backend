@@ -15,6 +15,7 @@
 'use strict';
 
 import { apiGet, apiDelete } from './b-utils.js';
+import { withStepUpRetry } from './b-passkey-step-up.js';
 
 function fmtWhen(iso) {
   if (!iso) return 'Jamais utilisée';
@@ -83,7 +84,7 @@ function renderCredentials(container, credentials) {
       revoke.disabled = true;
       revoke.textContent = 'Révocation…';
       try {
-        await apiDelete(`/api/auth/passkey/credentials/${encodeURIComponent(credential.id)}`);
+        await withStepUpRetry(() => apiDelete(`/api/auth/passkey/credentials/${encodeURIComponent(credential.id)}`));
         row.remove();
         if (!list.children.length) renderEmpty(container);
       } catch (_) {

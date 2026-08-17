@@ -70,6 +70,7 @@ describe('routes AUTH-6', () => {
   const request = require('supertest');
   let app;
   let currentUser;
+  let currentAuth;
   let mockManagement;
 
   beforeEach(() => {
@@ -77,6 +78,7 @@ describe('routes AUTH-6', () => {
     jest.clearAllMocks();
     process.env.JWT_SECRET = 'test_secret_min_32_chars_aaaaaaaaaaaaaaaa';
     currentUser = null;
+    currentAuth = null;
     mockManagement = {
       listCredentials: jest.fn(),
       revokeCredential: jest.fn(),
@@ -84,7 +86,7 @@ describe('routes AUTH-6', () => {
 
     app = express();
     app.use(express.json());
-    app.use((req, _res, next) => { req.user = currentUser; next(); });
+    app.use((req, _res, next) => { req.user = currentUser; req.auth = currentAuth; next(); });
 
     jest.isolateModules(() => {
       jest.doMock('../../middleware/auth', () => ({
@@ -111,8 +113,18 @@ describe('routes AUTH-6', () => {
     expect(mockManagement.listCredentials).toHaveBeenCalledWith('user-A');
   });
 
+  it('DELETE avec session mais sans preuve récente → 428 sans toucher au service', async () => {
+    currentUser = { id: 'user-A', role: 'client' };
+    const id = '11111111-1111-4111-8111-111111111111';
+    const res = await request(app).delete(`/api/auth/passkey/credentials/${id}`);
+    expect(res.status).toBe(428);
+    expect(res.body.code).toBe('step_up_required');
+    expect(mockManagement.revokeCredential).not.toHaveBeenCalled();
+  });
+
   it('DELETE rejette un ID de gestion malformé avant le service', async () => {
     currentUser = { id: 'user-A', role: 'client' };
+    currentAuth = { authTime: Math.floor(Date.now() / 1000), amr: ['otp'] };
     const res = await request(app).delete('/api/auth/passkey/credentials/not-a-uuid');
     expect(res.status).toBe(400);
     expect(mockManagement.revokeCredential).not.toHaveBeenCalled();
@@ -120,6 +132,7 @@ describe('routes AUTH-6', () => {
 
   it('DELETE scelle la révocation au user authentifié', async () => {
     currentUser = { id: 'user-A', role: 'client' };
+    currentAuth = { authTime: Math.floor(Date.now() / 1000), amr: ['otp'] };
     const id = '11111111-1111-4111-8111-111111111111';
     mockManagement.revokeCredential.mockResolvedValue({ revoked: true, id });
     const res = await request(app).delete(`/api/auth/passkey/credentials/${id}`);
@@ -132,6 +145,7 @@ describe('routes AUTH-6', () => {
 
   it('DELETE répond 404 sans révéler un credential étranger', async () => {
     currentUser = { id: 'user-A', role: 'client' };
+    currentAuth = { authTime: Math.floor(Date.now() / 1000), amr: ['otp'] };
     const id = '22222222-2222-4222-8222-222222222222';
     mockManagement.revokeCredential.mockResolvedValue({ revoked: false, error: 'credential_not_found' });
     const res = await request(app).delete(`/api/auth/passkey/credentials/${id}`);

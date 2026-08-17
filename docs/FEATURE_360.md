@@ -209,13 +209,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Kind** : business-feature  ·  **Status** : production
 
-**Service** : Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→6).
+**Service** : Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→7).
 
 **Perimeter** :
 - _in_ :
   - génération des options WebAuthn (register/login), vérification cryptographique via @simplewebauthn/server, stockage/rotation des credentials et des challenges éphémères
 - _out_ :
-  - step-up des opérations sensibles (AUTH-7)
   - durcissement final de session/cookie/CSRF (AUTH-8b→e)
   - toute logique OTP/magic-link/guest-checkout — reste dans auth-identity
 
@@ -231,11 +230,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - une credential revoked_at non nul est inutilisable au login, sans exception
 - la gestion AUTH-6 ne retourne jamais credential_id, public_key ni sign_count au navigateur
 - une révocation est toujours scellée par id de gestion ET user_id authentifié
+- un challenge step_up est distinct de login/register et lié au user_id de la session
+- une passkey d un autre compte ne peut jamais satisfaire un step-up
+- les mutations de sécurité exigent auth_time récent avec amr otp ou passkey
 - sign_count : régression rejetée pour les credentials non sauvegardées (backup_state=false) ; tolérée et tracée pour les passkeys synchronisées (backup_state=true)
 
 **Owns** : `webauthn_challenges`, `webauthn_credentials`
 
-**Exposes** : 0 internal API(s), 6 HTTP interface(s)
+**Exposes** : 0 internal API(s), 8 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED)
 **Consumed by** : _aucune_
@@ -248,16 +250,16 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
 **Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 3
   - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-enrollment.js — 4 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-login.js — 3 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-step-up.js — 2 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 6 fichier(s) déclaré(s), boutique: 8 fichier(s)
-  - migrations : 1
+**Implementation** : 12 fichier(s) déclaré(s), boutique: 10 fichier(s)
+  - migrations : 2
   - routes : 1
-  - services : 2
-  - tests : 2
+  - services : 4
+  - tests : 5
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth-passkey"]_
 

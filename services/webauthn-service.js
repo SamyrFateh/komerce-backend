@@ -317,6 +317,60 @@ async function verifyLogin({ response }) {
   return { verified: true, userId: stored.user_id };
 }
 
+
+// ── Step-up AUTH-7 ───────────────────────────────────────────────────────
+async function getStepUpOptions({ userId }) {
+  const creds = await _findActiveCredentialsByUser(userId);
+  if (!creds.length) return { available: false, reason: 'no_active_credential' };
+  const options = await generateAuthenticationOptions({
+    rpID: _rpID(),
+    userVerification: 'required',
+    allowCredentials: creds.map((c) => ({ id: c.credential_id, transports: c.transports || undefined })),
+  });
+  await _storeChallenge({ userId, challenge: options.challenge, ceremonyType: 'step_up' });
+  return { available: true, options };
+}
+
+async function verifyStepUp({ userId, response }) {
+  if (!response?.id) return { verified: false, error: 'malformed_response' };
+  const expectedChallenge = _clientDataChallenge(response);
+  const consumed = await _consumeChallenge({ challenge: expectedChallenge, ceremonyType: 'step_up' });
+  if (!consumed.ok) return { verified: false, error: consumed.reason };
+  if (consumed.userId !== userId) return { verified: false, error: 'user_mismatch' };
+
+  const stored = await _findCredentialByCredentialId(response.id);
+  if (!stored) return { verified: false, error: 'unknown_credential' };
+  if (stored.user_id !== userId) return { verified: false, error: 'user_mismatch' };
+  if (stored.revoked_at) return { verified: false, error: 'credential_revoked' };
+
+  let result;
+  try {
+    result = await verifyAuthenticationResponse({
+      response,
+      expectedChallenge,
+      expectedOrigin: _expectedOrigin(),
+      expectedRPID: _rpID(),
+      requireUserVerification: true,
+      credential: {
+        id: stored.credential_id,
+        publicKey: isoBase64URL.toBuffer(stored.public_key),
+        counter: Number(stored.sign_count),
+        transports: stored.transports || undefined,
+      },
+    });
+  } catch (err) {
+    log.warn('[verifyStepUp] verification échouée:', err.message);
+    return { verified: false, error: 'verification_failed' };
+  }
+  if (!result.verified) return { verified: false, error: 'not_verified' };
+  const newCounter = result.authenticationInfo.newCounter;
+  if (!stored.backup_state && Number(stored.sign_count) > 0 && newCounter <= Number(stored.sign_count)) {
+    return { verified: false, error: 'sign_count_regression' };
+  }
+  await db.query('UPDATE webauthn_credentials SET sign_count = $1, last_used_at = NOW() WHERE id = $2', [newCounter, stored.id]);
+  return { verified: true, userId };
+}
+
 // ── Helpers internes : extraction du challenge depuis clientDataJSON ──────
 // On ne fait jamais confiance à un champ "challenge" que le client aurait pu
 // nous renvoyer à part — on le relit depuis clientDataJSON, la même donnée
@@ -334,6 +388,8 @@ module.exports = {
   verifyRegistration,
   getLoginOptions,
   verifyLogin,
+  getStepUpOptions,
+  verifyStepUp,
   // exporté pour tests
   _consumeChallenge,
   _clientDataChallenge,
