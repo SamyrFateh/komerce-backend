@@ -91,15 +91,12 @@ function loadKnownFeatureNames(ROOT) {
 // ── Règles par famille ───────────────────────────────────────────────────
 
 function classifyWriterNotOwner(w) {
-  // Cas spécifique repéré en Phase E : la table "users" déclare
-  // classification.signals.ownsTables -> loyalty, ce qui est structurellement
-  // improbable pour la table d'identité centrale (auth-identity gère
-  // OTP/login/register/profil — cf. features/auth-identity.feature.js). Les
-  // écrivains additionnels (auth, auth-identity, dashboard, infrastructure)
-  // sont attendus ; c'est la déclaration d'OWNER elle-même qui semble fautive.
-  if (w.ref === 'users') {
-    return { category: 'ACTIONABLE_DRIFT', reason: 'lifecycle owner déclaré = "loyalty", structurellement improbable pour la table d\'identité centrale — vérifier si "auth-identity" n\'est pas le owner réellement voulu (classification.signals.ownsTables à corriger, pas juste un écrivain de plus à tolérer)' };
-  }
+  // Ancien cas "users -> owner déclaré loyalty" (Phase E) : corrigé à la
+  // racine (campagne WRITER-NOT-OWNER, 2026-08) via un marqueur de owner
+  // explicite sur auth-identity.feature.js (db.tables "users: RW!"), plutôt
+  // que toléré ici en aval — cf. governance/data-ownership.json (arbitrage
+  // 2026-07-29). La règle spécifique n'est plus nécessaire : le générateur
+  // résout désormais "users" vers auth-identity directement.
   // Forme A : "lifecycle owner = X ... mais aussi écrite par Y[, Z...]"
   const mOwner = w.msg.match(/lifecycle owner = ([a-z0-9-]+).*mais aussi écrite par (.+)$/);
   if (mOwner) {

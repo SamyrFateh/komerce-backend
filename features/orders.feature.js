@@ -155,9 +155,9 @@ module.exports = {
       'disputes: W',
       'order_comments: W',
       'order_item_cost_imputations: RW',
-      'order_items: RW',
+      'order_items: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'order_status_history: RW',
-      'orders: RW',
+      'orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'parcel_items: R',
       'parcels: R',
       'product_variants: R',  // W-via:product-admin-service (adjustStock variantes)

@@ -123,10 +123,10 @@ module.exports = {
   // (nom de table construit par variable) a échappé au scan.
   db: {
     tables: [
-      'alerts: W',
+      'alerts: W!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — écrivains additionnels : catalog, logistics, orders, payments, purchasing (cf. debt.knownGaps)
       'client_notifications: RW',
       'incidents: RW',
-      'notification_log: RW',
+      'notification_log: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'orders: R',
       'parcels: R',
       'recipients: R',

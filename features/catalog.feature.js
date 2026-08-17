@@ -246,17 +246,17 @@ module.exports = {
       'catalog_field_overrides: RW',
       'catalog_glossary: R',
       'catalog_enrichment_runs: W',
-      'catalog_media: RW',           // PDC-8 Lot 2 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
+      'catalog_media: RW!',          // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 2 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
       'order_items: R',
       'orders: R',
       'price_history: W',
-      'product_skus: RW',            // PDC-8 Lot 4 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
-      'product_sku_media: RW',       // PDC-8 Lot 5 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
-      'product_variants: RW',        // PDC-8 Lot 3 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
+      'product_skus: RW!',           // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 4 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
+      'product_sku_media: RW!',      // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 5 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
+      'product_variants: RW!',       // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — PDC-8 Lot 3 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
       'product_content_profile: RW', // Lot Content (migration 111) : écrivain réel = catalog-promotion.js
       'product_content_sections: RW',// Lot Content (migration 111) : écrivain réel = catalog-promotion.js
       'product_attributes: RW',      // Lot Content (migration 111) : écrivain réel = catalog-promotion.js
-      'products: RW',
+      'products: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'sourcing_candidate_events: W',
       'sourcing_candidates: RW',
       'supplier_catalog_imports: W',

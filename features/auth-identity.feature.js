@@ -118,8 +118,8 @@ module.exports = {
       'parcels: R',
       'products: R',
       'relais: R',
-      'revoked_tokens: W',
-      'users: RW',   // OWNER (arbitrage A, 2026-07-29) — seule feature autorisée à muter, via l'API interne ci-dessous
+      'revoked_tokens: W!',  // OWNER (arbitrage A, 2026-07-29 — campagne WRITER-NOT-OWNER, 2026-08)
+      'users: RW!',   // OWNER (arbitrage A, 2026-07-29) — seule feature autorisée à muter, via l'API interne ci-dessous
       'user_pickup_authorizations: RW',   // OWNER (Lot 5) — autorisation nominative de retrait exceptionnel
     ],
   },

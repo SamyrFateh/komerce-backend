@@ -92,7 +92,7 @@ module.exports = {
       'orders: RW',
       'product_suppliers: RW',
       'products: R',
-      'purchase_orders: RW',
+      'purchase_orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'relais: R',
       'suppliers: RW',
     ],

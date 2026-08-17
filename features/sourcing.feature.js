@@ -99,8 +99,8 @@ module.exports = {
   // publie. Exception documentée, même motif que `refunds` dans FEATURE_DOCTRINE.md.
   db: {
     tables: [
-      'sourcing_candidates: RW',        // partagé avec catalog (W à la création, import)
-      'sourcing_candidate_events: RW',  // partagé avec catalog (W à la création)
+      'sourcing_candidates: RW!',        // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — partagé avec catalog (W à la création, import)
+      'sourcing_candidate_events: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — partagé avec catalog (W à la création)
       'supplier_catalog_imports: R',    // W-via:catalog-import-orchestrator (feature catalog)
       'products: W',                    // création produit candidate à l'import (import-product)
       // PDC-8 Lot 6 — import-product ouvre une transaction dédiée (db.getClient)
@@ -108,10 +108,10 @@ module.exports = {
       // Ces tables sont écrites PAR catalog-promotion.js, DANS la transaction de
       // cette route, pas par sourcing-scanner.js lui-même (writer réel documenté
       // en commentaire, même convention que supplier_catalog_imports ci-dessus).
-      'catalog_media: W',        // via:catalog-promotion (feature catalog)
-      'product_variants: W',     // via:catalog-promotion (feature catalog)
-      'product_skus: RW',        // via:catalog-promotion (feature catalog) — R pour la réconciliation
-      'product_sku_media: W',    // via:catalog-promotion (feature catalog)
+      'catalog_media: R',        // W-via:catalog-promotion (feature catalog) — campagne WRITER-NOT-OWNER 2026-08 : sourcing-scanner.js appelle promoteCatalog() (services/catalog-promotion.js, propriété catalog), n'exécute aucun SQL direct sur cette table — corrigé de W à R pour suivre la même convention que supplier_catalog_imports ci-dessus
+      'product_variants: R',     // W-via:catalog-promotion (feature catalog) — idem
+      'product_skus: R',         // W-via:catalog-promotion (feature catalog) — idem, R pour la réconciliation
+      'product_sku_media: R',    // W-via:catalog-promotion (feature catalog) — idem
     ],
   },
 

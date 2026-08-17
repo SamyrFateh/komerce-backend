@@ -114,15 +114,15 @@ module.exports = {
       // debt.knownGaps) ; documenté ici en lecture, pas en propriété d'écriture.
       'incidents: R',
       'invoices: R',
-      'notification_log: W',
+      'notification_log: W~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — services/simulator/state-advancer.js uniquement, "chaos_event" ; propriétaire réel : notifications
       'order_items: R',
-      'orders: RW',
-      'parcel_items: RW',
-      'parcels: RW',
+      'orders: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — écriture directe limitée à services/simulator/state-advancer.js (payment_status en chaos ; les transitions de statut réelles passent par transitionOrderStatus(), déjà déclaré via contract.consumes) ; propriétaire réel : orders
+      'parcel_items: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — services/simulator/state-advancer.js uniquement ; propriétaire réel : logistics
+      'parcels: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — services/simulator/state-advancer.js uniquement ; propriétaire réel : logistics
       'products: R',
       'relais: R',
       'scan_events: R',
-      'scans: RW',
+      'scans: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — services/simulator/state-advancer.js uniquement ; propriétaire réel : logistics
       'store_credits: W',
       'users: R',
     ],
