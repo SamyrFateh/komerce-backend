@@ -42,9 +42,11 @@ module.exports = {
   files: {
     services: [
       'services/incident-service.js',
+      'services/incident-write-service.js',
     ],
     tests: [
       'tests/unit/incident-service.test.js',
+      'tests/unit/incident-write-service.test.js',
     ],
   },
 
@@ -69,7 +71,7 @@ module.exports = {
     status: 'NOT_APPLICABLE',
     authedRoutesDetected: 0,
     totalRoutes: 0,
-    note: "Aucune route propre. services/incident-service.js expose un internalApi mais n'est require() par aucun fichier de production actuel — voir debt.knownGaps. Les écritures runtime actuelles sur la table incidents (logistics, payments, notifications, dashboard/ops-api legacy) passent par SQL inline, pas par ce service.",
+    note: "Aucune route propre. Les mutations cross-feature passent desormais par services/incident-write-service.js, boundary owner incident-management (LOT9).",
   },
   contract: {
     exposes: [], // aucune route propre — consommé via internalApi
@@ -83,6 +85,13 @@ module.exports = {
       { fn: 'resolveIncident', file: 'services/incident-service.js' },
       { fn: 'escalateIncident', file: 'services/incident-service.js' },
       { fn: 'getIncidentDashboard', file: 'services/incident-service.js' },
+      { fn: 'createScanIncident', file: 'services/incident-write-service.js' },
+      { fn: 'createReconciliationIncident', file: 'services/incident-write-service.js' },
+      { fn: 'createAlertEngineIncidentIfNew', file: 'services/incident-write-service.js' },
+      { fn: 'acknowledgeAlertEngineIncident', file: 'services/incident-write-service.js' },
+      { fn: 'resolveOpsIncident', file: 'services/incident-write-service.js' },
+      { fn: 'detachUserFromIncidents', file: 'services/incident-write-service.js' },
+      { fn: 'seedIncident', file: 'services/incident-write-service.js' },
     ],
 
     // CURRENT RUNTIME WRITERS / PRODUCERS — écrivent réellement dans la table
@@ -108,13 +117,8 @@ module.exports = {
   // ── Dette assumée / documentée ────────────────────────────────────────────
   debt: {
     knownGaps: [
-      { gap: "routes/ops-api.js écrit incidents directement par SQL inline au lieu de " +
-             "passer par incident-service.js. Le service existe, est testé, mais n'est " +
-             "require() par aucun fichier de production. Dette de câblage à résoudre. " +
-             "Le fichier ops-api.js reste dans platform-ops (écriture documentée " +
-             '@db-write-via:legacy) — refacto de câblage explicitement refusé pour ce lot ' +
-             '(runtime, comportementalement neutre, hors O2).',
-        risk: 'moyen — duplication logique entre ops-api inline SQL et incident-service.js exports',
+      { gap: "RESOLU LOT9 - les mutations incidents de scan-engine, reconciliation-service, alert-engine, admin et ops-api passent par services/incident-write-service.js.",
+        risk: 'nul - boundary owner explicite, executants DB et transactions appelantes preserves.',
       },
     ],
   },

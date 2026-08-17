@@ -46,7 +46,7 @@
     "healthy": 15,
     "attention": 15,
     "blocked": 0,
-    "businessDependencies": 169,
+    "businessDependencies": 174,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -4925,12 +4925,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "incidents",
-            "mode": "RW",
-            "lifecycleOwner": "incident-management",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "invoices",
             "mode": "RW",
             "lifecycleOwner": "documents",
@@ -5047,6 +5041,10 @@
           {
             "table": "exchange_rates",
             "lifecycleOwner": "economic-engine"
+          },
+          {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
           },
           {
             "table": "order_item_cost_imputations",
@@ -5103,12 +5101,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "incidents",
-            "mode": "RW",
-            "lifecycleOwner": "incident-management",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "invoices",
             "mode": "RW",
             "lifecycleOwner": "documents",
@@ -5225,6 +5217,10 @@
           {
             "table": "exchange_rates",
             "lifecycleOwner": "economic-engine"
+          },
+          {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
           },
           {
             "table": "order_item_cost_imputations",
@@ -5300,6 +5296,13 @@
         },
         {
           "provider": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -7569,27 +7572,37 @@
       "implementation": {
         "byCategory": {
           "services": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "services/incident-service.js",
                 "resolvedPath": "services/incident-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/incident-write-service.js",
+                "resolvedPath": "services/incident-write-service.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           },
           "tests": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "tests/unit/incident-service.test.js",
                 "resolvedPath": "tests/unit/incident-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/incident-write-service.test.js",
+                "resolvedPath": "tests/unit/incident-write-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 2,
+        "totalFiles": 4,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -7659,6 +7672,31 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "acknowledgeAlertEngineIncident",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "createAlertEngineIncidentIfNew",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "createReconciliationIncident",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "createScanIncident",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "detachUserFromIncidents",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "escalateIncident",
             "file": "services/incident-service.js",
             "status": "resolved"
@@ -7682,6 +7720,16 @@
             "fn": "resolveIncident",
             "file": "services/incident-service.js",
             "status": "resolved"
+          },
+          {
+            "fn": "resolveOpsIncident",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "seedIncident",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
           }
         ],
         "httpInterfaces": {
@@ -7697,7 +7745,43 @@
           ]
         }
       ],
-      "consumedBy": [],
+      "consumedBy": [
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "projections": {
         "projectedBy": []
       },
@@ -10977,12 +11061,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "incidents",
-            "mode": "RW",
-            "lifecycleOwner": "incident-management",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "orders",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -11053,6 +11131,10 @@
           {
             "table": "business_rules",
             "lifecycleOwner": "business-rules"
+          },
+          {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
           },
           {
             "table": "invoices",
@@ -11149,12 +11231,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "incidents",
-            "mode": "RW",
-            "lifecycleOwner": "incident-management",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "orders",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -11225,6 +11301,10 @@
           {
             "table": "business_rules",
             "lifecycleOwner": "business-rules"
+          },
+          {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
           },
           {
             "table": "invoices",
@@ -11366,6 +11446,13 @@
         },
         {
           "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -12200,12 +12287,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "incidents",
-            "mode": "RW",
-            "lifecycleOwner": "incident-management",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "notification_log",
             "mode": "RW",
             "lifecycleOwner": "notifications",
@@ -12213,6 +12294,10 @@
           }
         ],
         "readsTables": [
+          {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
           {
             "table": "orders",
             "lifecycleOwner": "orders"
@@ -12268,12 +12353,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "incidents",
-            "mode": "RW",
-            "lifecycleOwner": "incident-management",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "notification_log",
             "mode": "RW",
             "lifecycleOwner": "notifications",
@@ -12281,6 +12360,10 @@
           }
         ],
         "readsTables": [
+          {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
           {
             "table": "orders",
             "lifecycleOwner": "orders"
@@ -12352,6 +12435,13 @@
       "businessDependencies": [
         {
           "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -13815,12 +13905,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "incidents",
-            "mode": "RW",
-            "lifecycleOwner": "incident-management",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "orders",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -13840,6 +13924,10 @@
           }
         ],
         "readsTables": [
+          {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
           {
             "table": "order_items",
             "lifecycleOwner": "orders"
@@ -13901,12 +13989,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "incidents",
-            "mode": "RW",
-            "lifecycleOwner": "incident-management",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "orders",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -13926,6 +14008,10 @@
           }
         ],
         "readsTables": [
+          {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
           {
             "table": "order_items",
             "lifecycleOwner": "orders"
@@ -13982,6 +14068,13 @@
         },
         {
           "provider": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -14897,6 +14990,13 @@
         },
         {
           "provider": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

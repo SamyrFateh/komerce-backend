@@ -175,7 +175,7 @@ module.exports = {
       'alerts: W',
       'business_rules: R',
       'carriers: RW',
-      'incidents: RW',
+      'incidents: R',  // W-via incident-management/incident-write-service - LOT9
       'invoices: R',
       'order_items: R',  // W-via:order-item-availability-service (orders owner boundary)
       // order_status_history retiré (Sprint A, 2026-07-07) : les 4 anciennes
@@ -315,6 +315,7 @@ module.exports = {
       { fn: 'markBackorderReminderSent', file: 'services/parcel-mutation-service.js' },
     ],
     consumes: [
+      'incident-management (incident persistence via incident-write-service)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: utils/parcels.js -> utils/rules.js ; services/parcel-operations.js -> utils/rules.js)",
 'orders (commande rattachee au colis)',

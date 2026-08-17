@@ -6,10 +6,11 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/order-status-machine.js, utils/logger.js
+ * @depends       db, services/incident-write-service.js, services/notification-service.js, services/order-status-machine.js, utils/logger.js
  * @used-by       routes/parcel-api-v2/scans.js
  * @db-read       incidents, order_items, orders, parcel_items, parcels, products, relais, scan_events
- * @db-write      incidents, order_items, parcel_items, parcels, scan_events
+ * @db-write      order_items, parcel_items, parcels, scan_events
+ * @db-write-via:incident-write-service incidents
  * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -35,6 +36,7 @@
  *   - Jamais de suppression, toujours correction append-only
  */
 const pool = require('../db');
+const { createScanIncident: createIncident } = require('./incident-write-service');
 const log = require('../utils/logger').child({ module: 'scan-engine' });
 log.info('[SCAN-ENGINE] version 5ed2bac loaded');
 
@@ -791,25 +793,6 @@ function buildQtySnapshot(items) {
 }
 
 /** Crée un incident dans la transaction courante */
-async function createIncident(client, params) {
-  const { rows: [incident] } = await client.query(`
-    INSERT INTO incidents (
-      parcel_id, order_id, order_item_id, scan_event_id,
-      incident_type, severity, title, description, details,
-      client_impact, detected_by, detected_source
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-    RETURNING *
-  `, [
-    params.parcel_id || null, params.order_id || null,
-    params.order_item_id || null, params.scan_event_id || null,
-    params.incident_type, params.severity || 'medium',
-    params.title, params.description || null,
-    JSON.stringify(params.details || {}),
-    params.client_impact || 'none',
-    params.detected_by || null, params.detected_source || 'system'
-  ]);
-  return incident;
-}
 
 // ════════════════════════════════════════════════════════════════
 // CORRECTION D'ÉVÉNEMENT (append-only)

@@ -74,7 +74,7 @@ module.exports = {
       'customs_effective_rates: R',
       'customs_shipments: R',
       'exchange_rates: R',
-      'incidents: RW',  // écrit via routes/admin/system.js (reset/seed, technique) ET routes/admin/users.js (nullification detected_by/resolved_by à la suppression utilisateur, réel) — mixte, pas de marqueur ~
+      'incidents: R',  // W-via incident-management/incident-write-service - LOT9
       'invoices: RW',
       'loyalty_rewards: RW',
       'order_comments: RW',
@@ -185,7 +185,8 @@ module.exports = {
       'POST /api/relay/orders/:id/escalate',
       'POST /api/relay/orders/:id/incident',
     ],
-    consumes: ['orders (lecture commandes)',
+    consumes: [
+      'incident-management (incident persistence via incident-write-service)','orders (lecture commandes)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'payments (lecture paiements)',
       'logistics (lecture colis)',

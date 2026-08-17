@@ -9,7 +9,8 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       order_items, orders, partners, products, relais, users
- * @db-write      basket_items, baskets, incidents, invoices, order_items, order_status_history, orders, parcel_items, parcels, partners, products, relais, scan_events, sms_log, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
+ * @db-write      basket_items, baskets, invoices, order_items, order_status_history, orders, parcel_items, parcels, partners, products, relais, scan_events, sms_log, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
+ * @db-write-via:incident-write-service incidents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  dashboard, admin-dashboard
@@ -23,6 +24,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../../db');
 const { appendOrderHistoryNote } = require('../../services/order-status-machine');
+const { seedIncident } = require('../../services/incident-write-service');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { validate } = require('../../middleware/validate');
 const { admin } = require('../../validators');
@@ -591,28 +593,15 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
         const detectedBy = ['relay_agent', 'customer'].includes(def.detected_source) ? (relaisAgentOf[s.rid] || HUB).id : HUB.id;
         try {
           await client.query('SAVEPOINT sp_inc');
-          await client.query(
-            `INSERT INTO incidents (
-               id, parcel_id, order_id, incident_type, severity,
-               status, title, description, details,
-               client_impact, client_notified, detected_by,
-               detected_source, resolution, resolved_at, resolved_by
-             ) VALUES (
-               $1::uuid, $2::uuid, $3::uuid, $4, $5,
-               $6, $7, $8, $9::jsonb,
-               $10, $11, $12::uuid,
-               $13, $14::jsonb, $15, $16
-             )`,
-            [
-              crypto.randomUUID(), parcelId, orderId, incType, def.severity,
-              def.status, def.title, def.description, JSON.stringify(def.details),
-              def.client_impact, false, detectedBy,
-              def.detected_source,
-              def.resolved ? JSON.stringify(def.resolution) : null,
-              def.resolved ? daysAgo(Math.max(s.age - 5, 1)) : null,
-              def.resolved ? detectedBy : null,
-            ]
-          );
+          await seedIncident(client, [
+            crypto.randomUUID(), parcelId, orderId, incType, def.severity,
+            def.status, def.title, def.description, JSON.stringify(def.details),
+            def.client_impact, false, detectedBy,
+            def.detected_source,
+            def.resolved ? JSON.stringify(def.resolution) : null,
+            def.resolved ? daysAgo(Math.max(s.age - 5, 1)) : null,
+            def.resolved ? detectedBy : null,
+          ]);
           await client.query('RELEASE SAVEPOINT sp_inc');
           summary.incidents.push({ order: s.ref, type: incType, severity: def.severity, status: def.status });
         } catch (_) {
