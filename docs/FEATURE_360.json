@@ -2639,7 +2639,7 @@
             ]
           },
           "tests": {
-            "count": 38,
+            "count": 39,
             "files": [
               {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
@@ -2762,6 +2762,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/json-connector.test.js",
+                "resolvedPath": "tests/unit/json-connector.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/json-source-pipeline.test.js",
                 "resolvedPath": "tests/unit/json-source-pipeline.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2844,7 +2849,7 @@
             ]
           }
         },
-        "totalFiles": 135,
+        "totalFiles": 136,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 32,
@@ -12400,7 +12405,7 @@
             ]
           },
           "tests": {
-            "count": 27,
+            "count": 28,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
@@ -12528,6 +12533,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/qr-collection-core.test.js",
+                "resolvedPath": "tests/unit/qr-collection-core.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/qr.test.js",
                 "resolvedPath": "tests/unit/qr.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12550,7 +12560,7 @@
             ]
           }
         },
-        "totalFiles": 51,
+        "totalFiles": 52,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 12,
@@ -13449,7 +13459,7 @@
             ]
           },
           "tests": {
-            "count": 18,
+            "count": 19,
             "files": [
               {
                 "declared": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
@@ -13502,6 +13512,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/payment-status-validator.test.js",
+                "resolvedPath": "tests/unit/payment-status-validator.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/payment-stripe.test.js",
                 "resolvedPath": "tests/unit/payment-stripe.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13544,7 +13559,7 @@
             ]
           }
         },
-        "totalFiles": 37,
+        "totalFiles": 38,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 3,
@@ -14215,7 +14230,7 @@
             ]
           },
           "tests": {
-            "count": 19,
+            "count": 20,
             "files": [
               {
                 "declared": "tests/integration/api.test.js",
@@ -14288,6 +14303,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/simulator-cleanup.test.js",
+                "resolvedPath": "tests/unit/simulator-cleanup.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/simulator-engine.test.js",
                 "resolvedPath": "tests/unit/simulator-engine.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -14315,7 +14335,7 @@
             ]
           }
         },
-        "totalFiles": 39,
+        "totalFiles": 40,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
           "count": 21,
@@ -16140,7 +16160,7 @@
             ]
           },
           "tests": {
-            "count": 11,
+            "count": 12,
             "files": [
               {
                 "declared": "tests/unit/baskets.test.js",
@@ -16193,6 +16213,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/shared-cart-saved.test.js",
+                "resolvedPath": "tests/unit/shared-cart-saved.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/shares-route.test.js",
                 "resolvedPath": "tests/unit/shares-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -16200,7 +16225,7 @@
             ]
           }
         },
-        "totalFiles": 53,
+        "totalFiles": 54,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
           "count": 18,

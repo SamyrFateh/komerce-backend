@@ -405,7 +405,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidates — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
-**Implementation** : 135 fichier(s) déclaré(s), boutique: 32 fichier(s)
+**Implementation** : 136 fichier(s) déclaré(s), boutique: 32 fichier(s)
   - boutique : 38
   - ci : 3
   - config : 1
@@ -415,7 +415,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - routes : 5
   - schemas : 4
   - services : 26
-  - tests : 38
+  - tests : 39
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_
@@ -1184,11 +1184,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "purchasing" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
-**Implementation** : 51 fichier(s) déclaré(s), boutique: 12 fichier(s)
+**Implementation** : 52 fichier(s) déclaré(s), boutique: 12 fichier(s)
   - boutique : 3
   - routes : 12
   - services : 8
-  - tests : 27
+  - tests : 28
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="orders"]_
@@ -1241,12 +1241,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table incidents — écrite par payments (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table orders — écrite par payments (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 37 fichier(s) déclaré(s), boutique: 3 fichier(s)
+**Implementation** : 38 fichier(s) déclaré(s), boutique: 3 fichier(s)
   - boutique : 2
   - migrations : 1
   - routes : 4
   - services : 12
-  - tests : 18
+  - tests : 19
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="payments"]_
 
@@ -1341,12 +1341,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table orders — écrite par platform-ops (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table scans — écrite par platform-ops (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 39 fichier(s) déclaré(s), boutique: 21 fichier(s)
+**Implementation** : 40 fichier(s) déclaré(s), boutique: 21 fichier(s)
   - boutique : 6
   - compositionRoots : 3
   - routes : 5
   - services : 6
-  - tests : 19
+  - tests : 20
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="platform-ops"]_
 
@@ -1551,13 +1551,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table cart_shares — écrite par shared-cart (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 53 fichier(s) déclaré(s), boutique: 18 fichier(s)
+**Implementation** : 54 fichier(s) déclaré(s), boutique: 18 fichier(s)
   - boutique : 11
   - dash : 1
   - migrations : 19
   - routes : 4
   - services : 7
-  - tests : 11
+  - tests : 12
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="shared-cart"]_
 

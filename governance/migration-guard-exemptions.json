@@ -1,6 +1,6 @@
 {
-  "_comment": "Exemptions documentées pour feature-guard.js — gaps de migration et fichiers sans préfixe numérique.",
-  "_règle": "Ce fichier ne grandit que pour documenter des situations historiques immuables. Toute nouvelle migration suit la convention NNN_nom.sql. Ne pas ajouter ici pour contourner le gate.",
+  "_comment": "Exemptions documentées pour feature-guard.js — uniquement fichiers historiques sans préfixe numérique.",
+  "_règle": "Ce fichier ne grandit que pour documenter des fichiers historiques immuables. Les gaps numériques intra-feature ne sont pas un signal : Komerce alloue les créneaux de migration repo-wide, pas de façon dense par feature.",
   "no_prefix": {
     "files": [
       "migrations/_superseded/RECONCILIATION_PROD.sql",
@@ -9,37 +9,5 @@
       "migrations/_superseded/2026_cost_benchmarks.sql"
     ],
     "justification": "Fichiers historiques antérieurs à la convention NNN_nom.sql. _superseded/ = archive inactive. AUD-10 = renommage d'audit avec préfixe lettré (pas de conflit d'ordre). deploy-all.sql = script d'orchestration, pas une migration indépendante. Aucun de ces fichiers ne sera réexécuté. 2026_cost_benchmarks.sql = nommé avec une année au lieu d'un numéro séquentiel, archivé en _superseded après renommage en 103_."
-  },
-  "gaps": {
-    "customs_36_91": {
-      "feature": "customs",
-      "from": 36,
-      "to": 91,
-      "justification": "La feature customs a eu peu de migrations entre 036 et 091. Les numéros intermédiaires appartiennent à d'autres features (orders, payments, logistics). C'est un gap inter-feature normal, pas un désordre intra-feature."
-    },
-    "documents_23_74": {
-      "feature": "documents",
-      "from": 23,
-      "to": 74,
-      "justification": "Même raison — feature documents peu active entre 023 et 074. Les slots intermédiaires sont pris par d'autres features."
-    },
-    "infrastructure_18_69": {
-      "feature": "infrastructure",
-      "from": 18,
-      "to": 69,
-      "justification": "Infrastructure a peu de migrations dédiées. Les slots 019→069 appartiennent à d'autres features (economic-engine, orders, catalog). Gap inter-feature normal."
-    },
-    "notifications_24_58": {
-      "feature": "notifications",
-      "from": 24,
-      "to": 58,
-      "justification": "Notifications feature peu active entre 024 et 058. Slots intermédiaires dans d'autres features."
-    },
-    "notifications_58_89": {
-      "feature": "notifications",
-      "from": 58,
-      "to": 89,
-      "justification": "Même raison. Gap inter-feature documenté."
-    }
   }
 }

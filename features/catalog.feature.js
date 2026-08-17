@@ -227,6 +227,7 @@ module.exports = {
       'tests/unit/catalog-overrides.test.js',
       'tests/integration/catalog-import-json.integration.test.js',
       'tests/unit/json-source-pipeline.test.js',
+      'tests/unit/json-connector.test.js',
       'tests/unit/catalog-approval.test.js',
     ],
   },
