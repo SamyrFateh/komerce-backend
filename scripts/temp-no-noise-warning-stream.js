@@ -30,6 +30,39 @@ replaceOnce(
 );
 
 // Permanent regression: warning stream must contain debt only.
-fs.writeFileSync('tests/unit/business-graph-warning-stream.test.js', `'use strict';\n\n/** @test-kind unit @test-runner jest @test-requires none */\nconst graph = require('../../docs/BUSINESS_FEATURE_GRAPH.json');\n\ndescribe('Business Graph warning stream doctrine', () => {\n  test('drifts.warn contient uniquement la dette réelle', () => {\n    expect(graph.drifts.warn).toEqual(graph.drifts.debt);\n    expect(graph.drifts.summary.signals).toBe(graph.drifts.warn.length);\n    expect(graph.drifts.summary.debt).toBe(graph.drifts.debt.length);\n  });\n\n  test('topologies attendues et limites outil ne sont jamais reloggées comme warnings', () => {\n    const warningKeys = new Set((graph.drifts.warn || []).map(x => `${x.type}::${x.ref}`));\n    for (const item of graph.drifts.expectedTopology || []) {\n      expect(warningKeys.has(`${item.type}::${item.ref}`)).toBe(false);\n    }\n    for (const item of graph.drifts.generatorLimitations || []) {\n      expect(warningKeys.has(`${item.type}::${item.ref}`)).toBe(false);\n    }\n  });\n\n  test('le total classifié reste traçable sans polluer le flux warning', () => {\n    const s = graph.drifts.summary;\n    expect(s.classifiedCandidates).toBe(\n      graph.drifts.debt.length + graph.drifts.expectedTopology.length + graph.drifts.generatorLimitations.length\n    );\n  });\n});\n`);
+const warningStreamTest = [
+  "'use strict';",
+  '',
+  '/** @test-kind unit @test-runner jest @test-requires none */',
+  "const graph = require('../../docs/BUSINESS_FEATURE_GRAPH.json');",
+  '',
+  "describe('Business Graph warning stream doctrine', () => {",
+  "  test('drifts.warn contient uniquement la dette réelle', () => {",
+  '    expect(graph.drifts.warn).toEqual(graph.drifts.debt);',
+  '    expect(graph.drifts.summary.signals).toBe(graph.drifts.warn.length);',
+  '    expect(graph.drifts.summary.debt).toBe(graph.drifts.debt.length);',
+  '  });',
+  '',
+  "  test('topologies attendues et limites outil ne sont jamais reloggées comme warnings', () => {",
+  "    const key = x => x.type + '::' + x.ref;",
+  '    const warningKeys = new Set((graph.drifts.warn || []).map(key));',
+  '    for (const item of graph.drifts.expectedTopology || []) {',
+  '      expect(warningKeys.has(key(item))).toBe(false);',
+  '    }',
+  '    for (const item of graph.drifts.generatorLimitations || []) {',
+  '      expect(warningKeys.has(key(item))).toBe(false);',
+  '    }',
+  '  });',
+  '',
+  "  test('le total classifié reste traçable sans polluer le flux warning', () => {",
+  '    const s = graph.drifts.summary;',
+  '    expect(s.classifiedCandidates).toBe(',
+  '      graph.drifts.debt.length + graph.drifts.expectedTopology.length + graph.drifts.generatorLimitations.length',
+  '    );',
+  '  });',
+  '});',
+  '',
+].join('\n');
+fs.writeFileSync('tests/unit/business-graph-warning-stream.test.js', warningStreamTest);
 
 console.log('No-noise warning stream staged.');
