@@ -54,7 +54,6 @@ module.exports = {
     services: [
       'services/webauthn-service.js',
       'services/webauthn-management-service.js',
-      'utils/auth-session.js',
       'middleware/require-recent-auth.js',
     ],
     routes: [
@@ -68,7 +67,6 @@ module.exports = {
       'tests/unit/auth-passkey.test.js',
       'tests/unit/auth-passkey-management.test.js',
       'tests/unit/auth-passkey-step-up.test.js',
-      'tests/unit/auth-session.test.js',
       'tests/unit/require-recent-auth.test.js',
     ],
   },
@@ -107,7 +105,7 @@ module.exports = {
     ],
     consumes: [
       'auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, ' +
-        'politique de session canonique AUTH-8)',
+        'utils/auth-session.js — signAuthToken, politique de session canonique AUTH-8)',
       'auth-identity (users — identité utilisateur canonique lue sans mutation)',
       'infrastructure (db.js, utils/logger.js)',
     ],
