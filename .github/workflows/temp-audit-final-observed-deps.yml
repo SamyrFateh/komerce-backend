@@ -1,0 +1,51 @@
+name: Temporary audit final observed dependencies
+
+on:
+  push:
+    branches:
+      - governance/audit-final-observed-deps
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Print evidence for remaining debt dependencies
+        run: |
+          node - <<'NODE'
+          const graph = require('./docs/BUSINESS_FEATURE_GRAPH.json');
+          const debtRows = (graph.drifts.debt || []).filter(x => x.type === 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY');
+          const refs = new Set(debtRows.map(r => r.ref));
+          console.log(`DEBT_COUNT=${debtRows.length}`);
+          console.log([...refs].sort().join('\n'));
+
+          const matches = [];
+          const seen = new Set();
+          function walk(v, path = '$') {
+            if (!v || typeof v !== 'object') return;
+            if (seen.has(v)) return;
+            seen.add(v);
+            if (!Array.isArray(v) && typeof v.from === 'string' && typeof v.to === 'string') {
+              const ref = `${v.from} -> ${v.to}`;
+              if (refs.has(ref)) matches.push({ ref, path, value: v });
+            }
+            if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
+            else Object.entries(v).forEach(([k, x]) => walk(x, `${path}.${k}`));
+          }
+          walk(graph);
+
+          for (const ref of [...refs].sort()) {
+            console.log(`\n===== ${ref} =====`);
+            const hits = matches.filter(m => m.ref === ref);
+            for (const hit of hits) {
+              console.log(hit.path);
+              console.log(JSON.stringify(hit.value, null, 2));
+            }
+          }
+          NODE
