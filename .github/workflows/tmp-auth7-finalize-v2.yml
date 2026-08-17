@@ -48,6 +48,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Make patch helper tolerant to OTP formatting only
+        run: python scripts/tmp-auth7-prepatch.py
       - name: Apply AUTH-7 patch and self-clean helpers
         run: python scripts/tmp-auth7-apply.py
       - run: npm ci
