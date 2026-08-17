@@ -6321,6 +6321,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/parcel-item-mutation-service.js",
+        "resolvedPath": "services/parcel-item-mutation-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/parcel-security.js",
         "resolvedPath": "services/parcel-security.js",
         "status": "resolved-in-technical-graph"
@@ -6708,6 +6715,13 @@
         "category": "tests",
         "declared": "tests/unit/parcel-operations.test.js",
         "resolvedPath": "tests/unit/parcel-operations.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/parcel-item-mutation-service.test.js",
+        "resolvedPath": "tests/unit/parcel-item-mutation-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13322,6 +13336,36 @@
         "status": "resolved"
       },
       {
+        "feature": "logistics",
+        "fn": "assignWholeOrderItemToParcel",
+        "file": "services/parcel-item-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "assignParcelItem",
+        "file": "services/parcel-item-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "addParcelItem",
+        "file": "services/parcel-item-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "removeParcelItem",
+        "file": "services/parcel-item-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "assignSingleOrderItemToParcel",
+        "file": "services/parcel-item-mutation-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "notifications",
         "fn": "setNotificationOutcomeListener",
         "file": "services/notifications/internals.js",
@@ -13927,6 +13971,12 @@
         "from": "inventory",
         "to": "catalog",
         "raw": "catalog (produit concerne)",
+        "resolved": true
+      },
+      {
+        "from": "inventory",
+        "to": "logistics",
+        "raw": "logistics (mutation parcel_items via parcel-item-mutation-service)",
         "resolved": true
       },
       {
@@ -18456,6 +18506,10 @@
               },
               {
                 "sourceFileId": "routes/hub-dashboard.js",
+                "targetFile": "services/parcel-item-mutation-service.js"
+              },
+              {
+                "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "services/parcel-security.js"
               },
               {
@@ -19947,13 +20001,17 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/inventory-service.js",
+                "targetFile": "services/parcel-item-mutation-service.js"
+              },
+              {
                 "sourceFileId": "tests/integration/parcel-auto-create-cash-payment.test.js",
                 "targetFile": "services/parcel-auto-create-service.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "inventory",
@@ -24308,7 +24366,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 814
+        "filesObserved": 816
       },
       "boutique": {
         "filesObserved": 158,
@@ -24344,7 +24402,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 13,
-      "NON_RUNTIME_TEST": 6,
+      "NON_RUNTIME_TEST": 5,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 1,
@@ -24522,21 +24580,6 @@
       },
       {
         "from": "inventory",
-        "to": "logistics",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "inventory",
         "to": "orders",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
@@ -24658,7 +24701,7 @@
     ],
     "unclassified": [],
     "matrix": {
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 3,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
@@ -25428,18 +25471,6 @@
     "parcel_items": {
       "writers": [
         {
-          "feature": "dashboard",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "inventory",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
           "feature": "logistics",
           "mode": "RW",
           "declaredOwner": true,
@@ -25454,8 +25485,10 @@
       ],
       "readers": [
         "customs",
+        "dashboard",
         "documents",
         "economic-engine",
+        "inventory",
         "orders",
         "payments"
       ],
@@ -26643,11 +26676,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "parcel_items",
-        "msg": "table \"parcel_items\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, inventory"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "parcels",
         "msg": "table \"parcels\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par customs, dashboard, payments"
       },
@@ -26677,11 +26705,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "orders",
         "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "parcel_items",
-        "msg": "table \"parcel_items\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, inventory"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26754,11 +26777,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> unsold-resolution",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"unsold-resolution\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "inventory -> logistics",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"logistics\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26904,11 +26922,11 @@
       }
     ],
     "summary": {
-      "signals": 7,
-      "debt": 7,
-      "expectedTopology": 33,
+      "signals": 6,
+      "debt": 6,
+      "expectedTopology": 32,
       "generatorLimitations": 8,
-      "classifiedCandidates": 48
+      "classifiedCandidates": 46
     }
   }
 }

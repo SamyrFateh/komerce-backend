@@ -70,6 +70,7 @@ module.exports = {
       'utils/pickup-receipt-html.js',],
     services: [
       'services/parcel-operations.js',
+      'services/parcel-item-mutation-service.js',
       'services/parcel-security.js',
       'services/scan-operations.js',
       'services/scan-write-service.js',
@@ -135,6 +136,7 @@ module.exports = {
       'tests/unit/scan-write-service.test.js',
       'tests/unit/scan-engine.test.js',
       'tests/unit/parcel-operations.test.js',
+      'tests/unit/parcel-item-mutation-service.test.js',
       'tests/unit/parcel-guards.test.js',
       'tests/unit/parcel-auto-create-service.test.js',
       'tests/unit/hub-operations.test.js',
@@ -298,6 +300,11 @@ module.exports = {
       { fn: 'recordHubPreparationScan', file: 'services/scan-write-service.js' },
       { fn: 'recordQrCollectionScan', file: 'services/scan-write-service.js' },
       { fn: 'detachUserFromScans', file: 'services/scan-write-service.js' },
+      { fn: 'assignWholeOrderItemToParcel', file: 'services/parcel-item-mutation-service.js' },
+      { fn: 'assignParcelItem', file: 'services/parcel-item-mutation-service.js' },
+      { fn: 'addParcelItem', file: 'services/parcel-item-mutation-service.js' },
+      { fn: 'removeParcelItem', file: 'services/parcel-item-mutation-service.js' },
+      { fn: 'assignSingleOrderItemToParcel', file: 'services/parcel-item-mutation-service.js' },
     ],
     consumes: [
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',

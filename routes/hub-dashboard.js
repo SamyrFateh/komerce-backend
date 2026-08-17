@@ -9,7 +9,8 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       order_items, orders, parcel_items, parcels, products
- * @db-write      order_comments, order_incidents, parcel_items, parcels
+ * @db-write      order_comments, order_incidents, parcels
+ * @db-write-via:parcel-item-mutation-service parcel_items
  * @db-write-via:scan-write-service scans
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -47,6 +48,12 @@ const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const { recordHubPreparationScan } = require('../services/scan-write-service');
+const {
+  assignWholeOrderItemToParcel,
+  assignParcelItem,
+  addParcelItem,
+  removeParcelItem,
+} = require('../services/parcel-item-mutation-service');
 const log = require('../utils/logger').child({ module: 'hub-dashboard' });
 const hubQueries = require('../services/hub-dashboard-queries');
 
@@ -122,7 +129,7 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
     await recordHubPreparationScan(db, {
       orderId: order.id,
       scannedBy: req.user.id,
-      notes: `Pr?paration d?marr?e par ${req.user.full_name || 'hub'}`,
+      notes: `Pr\u00e9paration d\u00e9marr\u00e9e par ${req.user.full_name || 'hub'}`,
       scanCode: scanCodePrep,
     });
 
@@ -169,12 +176,11 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
     // Auto-assign items if provided
     if (item_ids && item_ids.length) {
       for (const itemId of item_ids) {
-        await db.query(`
-          INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
-          SELECT $1, oi.id, oi.product_id, oi.quantity
-          FROM order_items oi WHERE oi.id = $2 AND oi.order_id = $3
-          ON CONFLICT DO NOTHING
-        `, [parcel.id, itemId, order.id]).catch(() => {});
+        await assignWholeOrderItemToParcel(db, {
+          parcelId: parcel.id,
+          orderItemId: itemId,
+          orderId: order.id,
+        }).catch(() => {});
       }
     }
 
@@ -272,14 +278,14 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
 
     // Assigner tous les articles non-assignés
     for (const item of unassigned) {
-      await client.query(`
-        INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT DO NOTHING
-      `, [parcel.id, item.id, item.product_id, item.quantity]);
+      await assignParcelItem(client, {
+        parcelId: parcel.id,
+        orderItemId: item.id,
+        productId: item.product_id,
+        quantity: item.quantity,
+      });
     }
 
-    // Poids estimé total
     const totalWeight = unassigned.reduce((s, i) => s + ((i.weight_kg || 0.5) * i.quantity), 0);
     await client.query(
       'UPDATE parcels SET weight_kg = $1 WHERE id = $2',
@@ -294,7 +300,7 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
       await recordHubPreparationScan(client, {
         orderId: order.id,
         scannedBy: req.user.id,
-        notes: `Auto-prepare: colis ${reference} cr??, ${unassigned.length} article(s) assign?(s)`,
+        notes: `Auto-prepare: colis ${reference} cr\u00e9\u00e9, ${unassigned.length} article(s) assign\u00e9(s)`,
         scanCode: scanCodeAuto,
       });
       await client.query('RELEASE SAVEPOINT sp_scans_auto_prepare');
@@ -351,14 +357,17 @@ router.post('/parcels/:id/add-item', ...hubAuth, async (req, res, next) => {
 
     const qty = quantity || item.quantity;
 
-    const { rows: [pi] } = await db.query(`
-      INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT DO NOTHING
-      RETURNING *
-    `, [parcel.id, order_item_id, item.product_id, qty]);
+    const pi = await addParcelItem(db, {
+      parcelId: parcel.id,
+      orderItemId: order_item_id,
+      productId: item.product_id,
+      quantity: qty,
+    });
 
-    res.json({ message: 'Article ajouté', item: pi || { already_assigned: true } });
+    res.json({
+      message: 'Article ajout\u00e9',
+      item: pi || { already_assigned: true }
+    });
   } catch(e) { next(e); }
 });
 
@@ -368,13 +377,21 @@ router.post('/parcels/:id/remove-item', ...hubAuth, async (req, res, next) => {
     const { order_item_id } = req.body;
     if (!order_item_id) return res.status(400).json({ error: 'order_item_id requis' });
 
-    const { rows } = await db.query(
-      'DELETE FROM parcel_items WHERE parcel_id = $1 AND order_item_id = $2 RETURNING *',
-      [req.params.id, order_item_id]
-    );
+    const deleted = await removeParcelItem(db, {
+      parcelId: req.params.id,
+      orderItemId: order_item_id,
+    });
 
-    if (!rows.length) return res.status(404).json({ error: 'Article non trouvé dans ce colis' });
-    res.json({ message: 'Article retiré', deleted: rows[0] });
+    if (!deleted) {
+      return res.status(404).json({
+        error: 'Article non trouv\u00e9 dans ce colis'
+      });
+    }
+
+    res.json({
+      message: 'Article retir\u00e9',
+      deleted
+    });
   } catch(e) { next(e); }
 });
 

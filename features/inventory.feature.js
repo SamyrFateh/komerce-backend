@@ -72,7 +72,7 @@ module.exports = {
       'inventory_items: RW',
       'order_items: R',
       'orders: RW',
-      'parcel_items: RW',
+      'parcel_items: R',  // W-via logistics/parcel-item-mutation-service - LOT7
       'parcels: R',
       'products: R',
     ],
@@ -99,6 +99,7 @@ module.exports = {
       'GET /api/hub/inventory/stats',
     ],
     consumes: ['catalog (produit concerne)',
+      'logistics (mutation parcel_items via parcel-item-mutation-service)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'auth',
     ],

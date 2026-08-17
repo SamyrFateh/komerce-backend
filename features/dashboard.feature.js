@@ -84,7 +84,7 @@ module.exports = {
       'order_items: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — écriture limitée à routes/admin/system.js (POST /reset, POST /seed-test, dev/staging uniquement, bloqué en prod sauf ALLOW_SEED=true) ; propriétaire réel : orders
       'order_status_history: RW',
       'orders: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — idem, routes/admin/system.js uniquement (reset/seed-test) ; propriétaire réel : orders
-      'parcel_items: RW',  // écrit aussi via routes/hub-dashboard.js (opérations hub réelles), pas seulement routes/admin/system.js (reset/seed) — mixte, pas de marqueur ~
+      'parcel_items: R',  // W-via logistics/parcel-item-mutation-service - LOT7
       'parcels: RW',       // idem parcel_items — routes/hub-dashboard.js écrit en opération réelle
       'partners: RW',
       'products: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — idem, routes/admin/system.js uniquement (reset/seed-test) ; propriétaire réel : catalog
