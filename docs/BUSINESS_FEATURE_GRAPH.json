@@ -2037,6 +2037,13 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/unit/json-connector.test.js",
+        "resolvedPath": "tests/unit/json-connector.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/catalog-approval.test.js",
         "resolvedPath": "tests/unit/catalog-approval.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7329,6 +7336,13 @@
       {
         "feature": "orders",
         "category": "tests",
+        "declared": "tests/unit/qr-collection-core.test.js",
+        "resolvedPath": "tests/unit/qr-collection-core.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
         "declared": "tests/unit/verify-qr-collection.test.js",
         "resolvedPath": "tests/unit/verify-qr-collection.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7569,6 +7583,13 @@
         "category": "tests",
         "declared": "tests/unit/payment-service.test.js",
         "resolvedPath": "tests/unit/payment-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/payment-status-validator.test.js",
+        "resolvedPath": "tests/unit/payment-status-validator.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7898,6 +7919,13 @@
         "category": "tests",
         "declared": "tests/unit/monitoring.test.js",
         "resolvedPath": "tests/unit/monitoring.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "tests",
+        "declared": "tests/unit/simulator-cleanup.test.js",
+        "resolvedPath": "tests/unit/simulator-cleanup.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8353,6 +8381,13 @@
         "category": "tests",
         "declared": "tests/unit/shared-cart-creator-route.test.js",
         "resolvedPath": "tests/unit/shared-cart-creator-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "tests",
+        "declared": "tests/unit/shared-cart-saved.test.js",
+        "resolvedPath": "tests/unit/shared-cart-saved.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -20799,6 +20834,10 @@
                 "targetFile": "utils/parcels.js"
               },
               {
+                "sourceFileId": "tests/unit/qr-collection-core.test.js",
+                "targetFile": "utils/parcelSync.js"
+              },
+              {
                 "sourceFileId": "tests/unit/orders-create-route.test.js",
                 "targetFile": "services/routing.js"
               }
@@ -22125,6 +22164,10 @@
               {
                 "sourceFileId": "tests/unit/validators.test.js",
                 "targetFile": "validators/index.js"
+              },
+              {
+                "sourceFileId": "tests/unit/simulator-cleanup.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/state-advancer.test.js",
@@ -23661,7 +23704,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 793
+        "filesObserved": 798
       },
       "boutique": {
         "filesObserved": 152,
@@ -26811,7 +26854,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 27 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 28 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27328,7 +27371,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 27 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 28 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

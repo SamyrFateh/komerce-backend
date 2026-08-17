@@ -87,6 +87,7 @@ module.exports = {
       'tests/unit/baskets.test.js',
       'tests/unit/shared-cart-creation.test.js',
       'tests/unit/shared-cart-creator-route.test.js',
+      'tests/unit/shared-cart-saved.test.js',
       'tests/unit/shared-cart-engine.test.js',
       'tests/unit/shared-cart-internals.test.js',
       'tests/unit/shared-cart-library.test.js',

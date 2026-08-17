@@ -77,6 +77,7 @@ module.exports = {
       'tests/unit/payment-cash-confirm.test.js',
       'tests/unit/payment-paypal.test.js',
       'tests/unit/payment-service.test.js',
+      'tests/unit/payment-status-validator.test.js',
       'tests/unit/payment-stripe.test.js',
       'tests/unit/payments-webhook.test.js',
       'tests/unit/paypal-client.test.js',

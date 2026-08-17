@@ -110,6 +110,7 @@ module.exports = {
       'tests/unit/orders-parcels-route.test.js',
       'tests/unit/parcels.test.js',
       'tests/unit/qr.test.js',
+      'tests/unit/qr-collection-core.test.js',
       'tests/unit/verify-qr-collection.test.js',
       'tests/integration/admin-order-refund-payment-service.test.js',
       'tests/unit/cash-operations.test.js',

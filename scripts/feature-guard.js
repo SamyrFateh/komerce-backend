@@ -297,30 +297,24 @@ function checkSlice(slice, allMigSlots) {
     allMigSlots.add(slot);
   }
 
-  // ── 4. Migrations séquentielles (staging+) ───────────────────────────────
-  if (['staging', 'production'].includes(status)) {
-    const nums = (slice.files.migrations || [])
-      .map(migrationNum)
-      .filter(n => n !== null)
-      .filter((n, i, a) => a.indexOf(n) === i)
-      .sort((a, b) => a - b);
-    for (let i = 1; i < nums.length; i++) {
-      const gap = nums[i] - nums[i - 1];
-      if (gap > 20) {
-        const isExempted = MIGRATION_GUARD_EXEMPTIONS.gaps.some(
-          e => e.feature === slice.name && e.from === nums[i - 1] && e.to === nums[i]
-        );
-        if (!isExempted) {
-          warnings.push(`Gap important entre migrations ${nums[i - 1]} et ${nums[i]} — vérifier l'ordre`);
-        }
-      }
-    }
-  }
+  // ── 4. Migrations — convention de créneaux repo-wide ───────────────────
+  // Komerce ne numérote PAS les migrations de façon dense par feature. Une
+  // feature peut légitimement passer de 086 à 131 parce que les créneaux
+  // intermédiaires appartiennent à d'autres features. La collision exacte de
+  // créneau est déjà vérifiée ci-dessus ; l'ordre/hash/applicabilité sont
+  // couverts par les gates migration/schema dédiées. Un "gap > 20" n'est
+  // donc ni une dette ni un warning exploitable et ne doit pas être émis ici.
 
   // ── 5. Couverture tests structurelle (staging+) ──────────────────────────
   if (['staging', 'production'].includes(status)) {
     const tests = new Set(slice.files.tests || []);
+    // Un composition root peut être dupliqué dans files.routes uniquement pour
+    // rattacher des endpoints inline au graphe, tout en restant déclaré comme
+    // config. Dans ce cas ce n'est pas un routeur autonome à couvrir par un
+    // test homonyme (ex. server.js).
+    const routeAliasesForGraph = new Set(slice.files.config || []);
     for (const rel of [...(slice.files.services || []), ...(slice.files.routes || [])]) {
+      if (routeAliasesForGraph.has(rel)) continue;
       // Nom de base sans TOUTE extension (pas seulement le ".js" final) et
       // séparateurs "_"/"-" unifiés : évite les faux positifs sur les fichiers
       // à extension composée (ex. "catalog-enrichment.prompt.js",

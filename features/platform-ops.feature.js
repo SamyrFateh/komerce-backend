@@ -84,6 +84,7 @@ module.exports = {
       'tests/unit/journal.test.js',
       'tests/unit/modules.test.js',
       'tests/unit/monitoring.test.js',
+      'tests/unit/simulator-cleanup.test.js',
       'tests/unit/ops-api.test.js',
       'tests/unit/scenarios.test.js',
       'tests/unit/simulator-engine.test.js',
