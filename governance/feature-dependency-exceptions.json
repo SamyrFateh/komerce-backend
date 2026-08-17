@@ -27,17 +27,6 @@
       "reviewTrigger": "Revoir si le panier commence à écrire dans l'état catalogue, si la construction de ligne devient une règle métier autonome ou si une API de commande frontend stable remplace ces primitives."
     },
     {
-      "from": "recommendations",
-      "to": "orders",
-      "decision": "accepted-dependency",
-      "rationale": "Une recommandation permet explicitement d'ajouter le produit suggéré au panier personnel et de construire son résumé de ligne. La recommandation ne possède ni le panier ni son cycle de persistance.",
-      "scope": [
-        "public/boutique/js/b-modal-suggestions.js -> public/boutique/js/b-cart.js",
-        "public/boutique/js/b-modal-suggestions.js -> public/boutique/js/cart-product-summary.js"
-      ],
-      "reviewTrigger": "Revoir si recommendations acquiert des mutations de commande autres que l'ajout explicite au panier ou si plusieurs canaux reproduisent le même adaptateur."
-    },
-    {
       "from": "auth-identity",
       "to": "platform-ops",
       "decision": "accepted-dependency",

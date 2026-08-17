@@ -46,6 +46,7 @@ module.exports = {
       '../js/b-cart-stepper-guard.js',
       '../js/b-cart.js',
       '../js/cart-product-summary.js',
+      '../js/cart-public-api.js',
       '../js/b-mini-cart.js',
       '../js/b-tracking.js',
     ],
@@ -56,6 +57,7 @@ module.exports = {
       '../tests/unit/b-tracking.test.js',
       '../tests/unit/b-cart-core.test.js',
       '../tests/unit/b-cart.test.js',
+      '../tests/unit/cart-public-api-boundary.test.js',
       '../tests/unit/b-mini-cart.test.js',
     ],
   },
@@ -66,6 +68,7 @@ module.exports = {
     internalApi: [
       'b-cart-core.js / cartQty / cartTotal / saveCart / updateCartBadge',
       'b-cart.js / addToCart / setQty / openCart / closeCart / renderCart',
+      'cart-public-api.js / quickAdd / quickRemove / openCartWithHighlight / getProductCartSummary — frontière publique stable pour consommateurs cross-feature',
       'b-tracking.js / buildTimeline / renderOrdersHistory / renderOrderDetail',
     ],
     consumes: [

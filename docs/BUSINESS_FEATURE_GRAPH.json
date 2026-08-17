@@ -14160,6 +14160,12 @@
         "resolved": true
       },
       {
+        "from": "recommendations",
+        "to": "orders",
+        "raw": "orders (frontière frontend orders-client/cart-public-api.js consommée par b-modal-suggestions.js ; aucune importation directe des internes panier)",
+        "resolved": true
+      },
+      {
         "from": "refunds",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
@@ -15424,6 +15430,14 @@
       {
         "boutiqueManifest": "orders-client",
         "category": "boutique",
+        "declared": "../js/cart-public-api.js",
+        "resolvedPath": "public/boutique/js/cart-public-api.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "orders-client",
+        "category": "boutique",
         "declared": "../js/b-mini-cart.js",
         "resolvedPath": "public/boutique/js/b-mini-cart.js",
         "exists": true,
@@ -15466,6 +15480,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-cart.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-cart.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "orders-client",
+        "category": "tests",
+        "declared": "../tests/unit/cart-public-api-boundary.test.js",
+        "resolvedPath": "public/boutique/tests/unit/cart-public-api-boundary.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -22945,16 +22967,12 @@
             "evidence": [
               {
                 "sourceFileId": "public/boutique/js/b-modal-suggestions.js",
-                "targetFile": "public/boutique/js/b-cart.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-modal-suggestions.js",
-                "targetFile": "public/boutique/js/cart-product-summary.js"
+                "targetFile": "public/boutique/js/cart-public-api.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "recommendations",
@@ -23977,7 +23995,7 @@
         "filesObserved": 798
       },
       "boutique": {
-        "filesObserved": 152,
+        "filesObserved": 154,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -24013,7 +24031,7 @@
       "NON_RUNTIME_TEST": 6,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
-      "CROSS_FEATURE_DIRECT_IMPORT": 3,
+      "CROSS_FEATURE_DIRECT_IMPORT": 2,
       "BUSINESS_FEATURE_INTERFACE": 0,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -24324,23 +24342,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "recommendations",
-        "to": "orders",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
-      },
-      {
         "from": "refunds",
         "to": "payments",
         "family": "NON_RUNTIME_TEST",
@@ -24368,7 +24369,6 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1
     },
     "runtimeCycles": [],
@@ -24384,12 +24384,6 @@
         "to": "orders",
         "decision": "accepted-dependency",
         "rationale": "Les surfaces catalogue déclenchent les opérations du panier personnel — ajout, quantité et résumé de ligne — à partir d'un produit sélectionné. La dépendance va du canal de découverte vers l'intention d'achat ; le panier ne modifie aucun état du catalogue."
-      },
-      {
-        "from": "recommendations",
-        "to": "orders",
-        "decision": "accepted-dependency",
-        "rationale": "Une recommandation permet explicitement d'ajouter le produit suggéré au panier personnel et de construire son résumé de ligne. La recommandation ne possède ni le panier ni son cycle de persistance."
       },
       {
         "from": "auth-identity",
@@ -26101,11 +26095,6 @@
         "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
       },
       {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "recommendations -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"orders\""
-      },
-      {
         "type": "WRITER-NOT-OWNER",
         "ref": "alerts",
         "msg": "table \"alerts\" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
@@ -26246,11 +26235,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> shared-cart",
         "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "recommendations -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"orders\""
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26583,11 +26567,11 @@
       }
     ],
     "summary": {
-      "signals": 29,
-      "debt": 29,
+      "signals": 28,
+      "debt": 28,
       "expectedTopology": 31,
       "generatorLimitations": 8,
-      "classifiedCandidates": 68
+      "classifiedCandidates": 67
     }
   }
 }
