@@ -402,12 +402,13 @@
       },
       "authority": "backend-core — tout changement de middleware d'authentification doit etre valide par le proprietaire de middleware/auth.js",
       "invariants": [
-        "toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde"
+        "toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde",
+        "toute mutation portée par le cookie de session exige une Origin explicitement autorisée (AUTH-8b)"
       ],
       "implementation": {
         "byCategory": {
           "middleware": {
-            "count": 6,
+            "count": 7,
             "files": [
               {
                 "declared": "middleware/auth-guest.js",
@@ -418,6 +419,11 @@
                 "declared": "middleware/auth.js",
                 "resolvedPath": "middleware/auth.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "middleware/csrf-origin.js",
+                "resolvedPath": "middleware/csrf-origin.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "middleware/require-verified-identity.js",
@@ -457,7 +463,7 @@
             ]
           },
           "tests": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "tests/unit/auth-guest.test.js",
@@ -472,6 +478,11 @@
               {
                 "declared": "tests/unit/auth-route.test.js",
                 "resolvedPath": "tests/unit/auth-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/csrf-origin.test.js",
+                "resolvedPath": "tests/unit/csrf-origin.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -512,7 +523,7 @@
             ]
           }
         },
-        "totalFiles": 17,
+        "totalFiles": 19,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
