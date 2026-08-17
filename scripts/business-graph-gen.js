@@ -37,6 +37,17 @@ function toPosixPath(value) {
   return String(value).replace(/\\/g, '/');
 }
 
+// Lot déterminisme (2026-08) : fs.readdirSync() n'a pas d'ordre portable
+// garanti entre filesystems/OS (ext4, APFS, NTFS peuvent renvoyer les
+// entrées d'un même répertoire dans des ordres différents). Toute lecture
+// de répertoire dont la sortie influence un artefact sérialisé DOIT passer
+// par cette primitive plutôt que par fs.readdirSync() directement — voir
+// tests/unit/business-graph-determinism.test.js.
+// slice() avant sort() : ne mute jamais le tableau renvoyé par fs.readdirSync.
+function stableReadDir(dir) {
+  return fs.readdirSync(dir).slice().sort();
+}
+
 const args = process.argv.slice(2);
 const CHECK = args.includes('--check');
 function argVal(f) { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : null; }
@@ -172,7 +183,7 @@ function loadJSON(f, label, errors) {
 function loadFeatureManifests() {
   const out = [];
   if (!fs.existsSync(FEATURES_DIR)) return out;
-  for (const f of fs.readdirSync(FEATURES_DIR)) {
+  for (const f of stableReadDir(FEATURES_DIR)) {
     if (!f.endsWith('.feature.js') || f.startsWith('_')) continue;
     const full = path.join(FEATURES_DIR, f);
     try {
@@ -206,7 +217,7 @@ function loadDashFeatureManifests(warns) {
 
   const canonicalNames = new Set();
   if (fs.existsSync(DASH_CANONICAL_FEATURES_DIR)) {
-    for (const f of fs.readdirSync(DASH_CANONICAL_FEATURES_DIR)) {
+    for (const f of stableReadDir(DASH_CANONICAL_FEATURES_DIR)) {
       if (!f.endsWith('.feature.js') || f.startsWith('_')) continue;
       const full = path.join(DASH_CANONICAL_FEATURES_DIR, f);
       let m;
@@ -221,7 +232,7 @@ function loadDashFeatureManifests(warns) {
   }
 
   if (fs.existsSync(DASH_COPY_FEATURES_DIR)) {
-    for (const f of fs.readdirSync(DASH_COPY_FEATURES_DIR)) {
+    for (const f of stableReadDir(DASH_COPY_FEATURES_DIR)) {
       if (!f.endsWith('.feature.js') || f.startsWith('_')) continue;
       const full = path.join(DASH_COPY_FEATURES_DIR, f);
       const name = f.replace(/\.feature\.js$/, '');
@@ -259,7 +270,12 @@ function loadDashFeatureManifests(warns) {
       out.push(m);
     }
   }
-  return out;
+  // Lot déterminisme (2026-08) : les entrées de `out` sont déjà dans un ordre
+  // déterministe (stableReadDir), mais ce n'est pas un ordre alphabétique
+  // GLOBAL par nom (groupe canonique puis groupe copie, concaténés) — tri
+  // final pour un artefact byte-for-byte stable, cohérent avec
+  // loadFeatureManifests/loadBoutiqueFeatureManifests.
+  return out.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
 // Charge les manifests du SCOPE `boutique` (Lot O4 — voir model.scopeTopology
@@ -276,7 +292,7 @@ function loadDashFeatureManifests(warns) {
 function loadBoutiqueFeatureManifests() {
   const out = [];
   if (!BOUTIQUE_ROOT_MOUNTED || !fs.existsSync(BOUTIQUE_FEATURES_DIR)) return out;
-  for (const f of fs.readdirSync(BOUTIQUE_FEATURES_DIR)) {
+  for (const f of stableReadDir(BOUTIQUE_FEATURES_DIR)) {
     if (!f.endsWith('.feature.js') || f.startsWith('_')) continue;
     const full = path.join(BOUTIQUE_FEATURES_DIR, f);
     const name = f.replace(/\.feature\.js$/, '');
@@ -304,7 +320,7 @@ const CAPABILITIES_DIR = path.join(ROOT, 'capabilities');
 function loadCapabilityManifests() {
   const out = [];
   if (!fs.existsSync(CAPABILITIES_DIR)) return out;
-  for (const f of fs.readdirSync(CAPABILITIES_DIR)) {
+  for (const f of stableReadDir(CAPABILITIES_DIR)) {
     if (!f.endsWith('.capability.js') || f.startsWith('_')) continue;
     const full = path.join(CAPABILITIES_DIR, f);
     try {
@@ -317,7 +333,8 @@ function loadCapabilityManifests() {
       out.push({ name: f.replace(/\.capability\.js$/, ''), __file: toPosixPath(path.relative(ROOT, full)), __broken: e.message, __isCapability: true });
     }
   }
-  return out;
+  // Lot déterminisme (2026-08) : tri final par nom, cf. loadDashFeatureManifests.
+  return out.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -381,16 +398,12 @@ function resolveOnDisk(repoRelPath) {
 //                    "extra writer" concurrent d'un owner déjà résolu
 // Le booléen ownsTables + l'ancienne résolution restent le fallback pour
 // toute table qui n'a pas encore reçu de marqueur explicite.
-function parseDbTables(manifest) {
-  const out = [];
-  const tables = (manifest.db && manifest.db.tables) || [];
-  for (const t of tables) {
-    const m = String(t).match(/^([a-zA-Z0-9_.]+)\s*:\s*(RW|R|W)(!|~)?\s*$/);
-    if (!m) { out.push({ raw: t, unparsed: true }); continue; }
-    out.push({ table: m[1], mode: m[2], declaredOwner: m[3] === '!', technical: m[3] === '~' });
-  }
-  return out;
-}
+//
+// Lot déterminisme + gouvernance ~ (2026-08) : extrait vers
+// scripts/lib/table-ownership.js pour être testable en isolation (fonction
+// pure, aucun accès disque) — voir tests/unit/table-ownership.test.js.
+// Ce fichier reste la seule source de la logique ; pas de duplication.
+const { parseDbTables, resolveTableOwnership } = require('./lib/table-ownership');
 
 // ─────────────────────────────────────────────────────────────────────────
 // 4. Résolution contract.consumes -> nom de feature
@@ -785,83 +798,11 @@ function build() {
   }
 
   // ── 5.4 Tables : writers / readers / lifecycle owner ─────────────────────
-  const tableIndex = {}; // table -> { writers:[{feature,mode}], readers:[feature] }
-  for (const m of manifests) {
-    if (m.__broken) continue;
-    for (const entry of parseDbTables(m)) {
-      if (entry.unparsed) {
-        warns.push({ type: 'DB-TABLES-ENTRY-UNPARSED', ref: m.name, msg: `entrée db.tables illisible : "${entry.raw}"` });
-        continue;
-      }
-      const rec = (tableIndex[entry.table] = tableIndex[entry.table] || { writers: [], readers: [] });
-      if (entry.mode === 'R') rec.readers.push(m.name);
-      else rec.writers.push({ feature: m.name, mode: entry.mode, declaredOwner: !!entry.declaredOwner, technical: !!entry.technical });
-    }
-  }
-
-  const tableOwnership = {};
-  for (const [table, rec] of Object.entries(tableIndex)) {
-    const writerNames = rec.writers.map(w => w.feature);
-    const declaredOwners = rec.writers.filter(w => w.declaredOwner).map(w => w.feature);
-    const technicalWriters = new Set(rec.writers.filter(w => w.technical).map(w => w.feature));
-    let lifecycleOwner = null, resolution;
-    if (declaredOwners.length === 1) {
-      lifecycleOwner = declaredOwners[0];
-      resolution = 'declared-table-owner';
-    } else if (declaredOwners.length > 1) {
-      resolution = 'conflicting-declared-owner';
-    } else if (writerNames.length === 1) {
-      lifecycleOwner = writerNames[0];
-      resolution = 'single-writer';
-    } else if (writerNames.length > 1) {
-      const owningCandidates = writerNames.filter(fn => {
-        const m = manifests.find(mm => mm.name === fn);
-        return m && m.classification && m.classification.signals && m.classification.signals.ownsTables === true;
-      });
-      if (owningCandidates.length === 1) {
-        lifecycleOwner = owningCandidates[0];
-        resolution = 'multi-writer-resolved-by-classification-signal';
-      } else {
-        resolution = 'ambiguous-multi-writer';
-      }
-    } else {
-      resolution = 'no-declared-writer';
-    }
-
-    tableOwnership[table] = {
-      writers: rec.writers, readers: rec.readers.sort(),
-      lifecycleOwner, resolution,
-    };
-
-    if (resolution === 'conflicting-declared-owner') {
-      warns.push({
-        type: 'WRITER-NOT-OWNER', ref: table,
-        msg: `table "${table}" a ${declaredOwners.length} owners déclarés en conflit (${declaredOwners.join(', ')}) via le marqueur "!" — déclaration fautive à corriger, un seul owner autorisé`,
-      });
-    } else if (resolution === 'ambiguous-multi-writer') {
-      warns.push({
-        type: 'WRITER-NOT-OWNER', ref: table,
-        msg: `table "${table}" a ${writerNames.length} écrivain(s) déclaré(s) (${writerNames.join(', ')}) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur`,
-      });
-    } else if (
-      (resolution === 'multi-writer-resolved-by-classification-signal' || resolution === 'declared-table-owner')
-      && writerNames.length > 1
-    ) {
-      // Un écrivain marqué technical (~) n'exprime aucune décision métier
-      // (cron de purge, simulateur de démo, migration de démarrage) : il ne
-      // compte jamais comme concurrent de l'owner déjà résolu, et ne doit
-      // plus être émis comme warning à la source une fois la preuve établie
-      // (cf. governance/data-ownership.json, arbitrage 2026-07-29).
-      const others = writerNames.filter(w => w !== lifecycleOwner && !technicalWriters.has(w));
-      if (others.length > 0) {
-        const ownerLabel = resolution === 'declared-table-owner' ? 'db.tables "!"' : 'classification.signals.ownsTables';
-        warns.push({
-          type: 'WRITER-NOT-OWNER', ref: table,
-          msg: `table "${table}" : lifecycle owner = ${lifecycleOwner} (${ownerLabel}), mais aussi écrite par ${others.join(', ')}`,
-        });
-      }
-    }
-  }
+  // Logique déplacée vers scripts/lib/table-ownership.js (fonction pure,
+  // testée en isolation — voir tests/unit/table-ownership.test.js pour le
+  // comportement des marqueurs "!" / "~"). Aucun changement de sortie.
+  const { tableOwnership, warns: tableOwnershipWarns } = resolveTableOwnership(manifests);
+  for (const w of tableOwnershipWarns) warns.push(w);
 
   // ── 5.5 Interfaces : exposes / internalApi / consumes ────────────────────
   const exposesEdges = [];
@@ -1673,6 +1614,14 @@ function stableStringify(obj) {
   return JSON.stringify(obj, null, 2) + '\n';
 }
 
+// Lot déterminisme (2026-08) : la génération/écriture/process.exit() ne doit
+// s'exécuter que lorsqu'on lance ce fichier directement (node scripts/
+// business-graph-gen.js), jamais lors d'un require() — même pattern que
+// parseDbTables/resolveTableOwnership déjà extraits en module testable.
+// require('../../scripts/business-graph-gen.js') dans
+// tests/unit/business-graph-determinism.test.js ne doit ni lire le disque
+// réel ni appeler process.exit().
+function runMain() {
 const { model, fatal, sourceErrors } = build();
 if (fatal) {
   console.error(`${C.red}${C.bld}✖ Impossible de générer le Business Feature Graph :${C.r}`);
@@ -1727,3 +1676,10 @@ fs.writeFileSync(OUT_MD, mdOut);
 fs.writeFileSync(OUT_O6_INVENTORY, o6InventoryOut);
 console.log(`${C.grn}${C.bld}✔ Business Feature Graph généré${C.r} — ${model.nodes.features.length} feature(s), ${model.drifts.error.length} error(s), ${model.drifts.debt.length} debt/drift, ${model.drifts.expectedTopology.length} expected, ${model.drifts.generatorLimitations.length} tool-limit`);
 console.log(`  docs/BUSINESS_FEATURE_GRAPH.json + docs/BUSINESS_FEATURE_GRAPH.md + docs/O6_INVENTORY.md`);
+}
+
+if (require.main === module) {
+  runMain();
+}
+
+module.exports = { stableReadDir, parseDbTables, resolveTableOwnership, runMain };
