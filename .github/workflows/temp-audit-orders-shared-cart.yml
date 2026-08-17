@@ -1,0 +1,27 @@
+name: Temporary audit orders shared-cart seam
+
+on:
+  push:
+    branches:
+      - governance/orders-shared-cart-boundary
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print direct shared-cart imports and used symbols
+        run: |
+          echo '=== b-cart group references ==='
+          grep -nE "group/|SharedList|sharedList|shared-cart" public/boutique/js/b-cart.js || true
+          echo '=== b-tracking group references ==='
+          grep -nE "group/|SharedCart|sharedCart|sharedList" public/boutique/js/b-tracking.js || true
+          echo '=== group-side-cart exports ==='
+          grep -nE '^export (async )?function|^export const|^export \{' public/boutique/js/group/group-side-cart.js || true
+          echo '=== group-api exports ==='
+          grep -nE '^export (async )?function|^export const|^export \{' public/boutique/js/group/group-api.js || true
+          echo '=== group-list-labels exports ==='
+          grep -nE '^export (async )?function|^export const|^export \{' public/boutique/js/group/group-list-labels.js || true
