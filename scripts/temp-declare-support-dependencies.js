@@ -2,8 +2,11 @@
 const fs = require('fs');
 const path = require('path');
 
+// decision-signals is intentionally NOT included: Business Graph observes it,
+// but APP_FEATURE_REGISTRY has no canonical manifest for that feature name.
+// We keep that seam visible as debt instead of inventing a declaration target.
 const INFRA = [
-  'auth-identity','catalog','customs','dashboard','decision-signals','documents','economic-engine',
+  'auth-identity','catalog','customs','dashboard','documents','economic-engine',
   'incident-management','inventory','logistics','loyalty','notifications','orders','payments','platform-ops',
   'purchasing','recommendations','refunds','shared-cart','sourcing','unsold-resolution','wallet',
 ];
@@ -47,8 +50,8 @@ for (const feature of OPS) {
 
 const baselinePath = 'governance/business-graph-drift-baseline.json';
 const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
-baseline.baseline['OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT'] = 38;
-baseline._comment_support_deps_20260817 = 'Déclaration de 29 dépendances transversales réellement observées : 22 vers infrastructure et 7 vers platform-ops. Aucun runtime modifié ; baseline uniquement resserrée de 67 à 38 après preuve générée.';
+baseline.baseline['OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT'] = 39;
+baseline._comment_support_deps_20260817 = 'Déclaration de 28 dépendances transversales réellement observées : 21 vers infrastructure et 7 vers platform-ops. decision-signals→infrastructure reste volontairement visible : le registre canonique ne fournit aucun manifest decision-signals où déclarer ce contrat. Aucun runtime modifié ; baseline uniquement resserrée de 67 à 39 après preuve générée.';
 fs.writeFileSync(baselinePath, JSON.stringify(baseline, null, 2) + '\n');
 
-console.log(`Staged ${INFRA.length + OPS.length} support dependency declarations across ${featureFileByName.size} discovered feature manifests.`);
+console.log(`Staged ${INFRA.length + OPS.length} support dependency declarations across ${featureFileByName.size} discovered root feature manifests.`);
