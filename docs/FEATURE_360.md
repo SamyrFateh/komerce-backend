@@ -8,7 +8,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **14**
 - Attention : **16**
 - Blocked : **0**
-- Business dependencies : **165**
+- Business dependencies : **166**
 - Direct cross-feature imports : **1**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
@@ -33,7 +33,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | auth-identity | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | otp_codes, revoked_tokens, user_pickup_authorizations, users | auth, auth-passkey, documents, infrastructure, notifications, platform-ops, wallet | auth, auth-passkey, catalog, logistics, orders, platform-ops, shared-cart, wallet | 0 |
 | auth-passkey | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | webauthn_challenges, webauthn_credentials | auth, auth-identity, infrastructure, platform-ops | auth-identity | 0 |
 | business-rules | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | business_rules, business_rules_history | auth, infrastructure | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops | 0 |
-| catalog | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products, supplier_catalog_imports | auth, auth-identity, business-rules, economic-engine, infrastructure, logistics, platform-ops, shared-cart | admin-dashboard, infrastructure, logistics, orders, platform-ops, recommendations, shared-cart, sourcing | 1 |
+| catalog | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products, supplier_catalog_imports | auth, auth-identity, business-rules, economic-engine, infrastructure, logistics, platform-ops, shared-cart, sourcing | admin-dashboard, infrastructure, logistics, orders, platform-ops, recommendations, shared-cart, sourcing | 1 |
 | customs | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_categories, customs_shipment_parcels, customs_shipments | auth, documents, economic-engine, infrastructure | admin-dashboard, dashboard, infrastructure, orders | 1 |
 | dashboard | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | order_incidents, partners | auth, business-rules, customs, decision-signals, documents, economic-engine, infrastructure, logistics, orders, purchasing | admin-dashboard, economic-engine, infrastructure | 4 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | auth, business-rules, infrastructure, logistics | admin-dashboard, dashboard | 0 |
@@ -54,7 +54,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | recommendations | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, orders, platform-ops | infrastructure, shared-cart | 2 |
 | refunds | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | refunds | documents, infrastructure, orders, wallet | logistics, orders, payments | 1 |
 | shared-cart | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | basket_items, baskets, cart_shares, shared_cart_events, shared_cart_items, shared_cart_saved_access, shared_carts | auth, auth-identity, catalog, infrastructure, notifications, orders, platform-ops, recommendations | catalog, infrastructure, orders | 0 |
-| sourcing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | sourcing_candidate_events, sourcing_candidates | auth, catalog, economic-engine, infrastructure | admin-dashboard | 0 |
+| sourcing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | sourcing_candidate_events, sourcing_candidates | auth, catalog, economic-engine, infrastructure | admin-dashboard, catalog | 0 |
 | unsold-resolution | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | unsold_items | auth, infrastructure | _aucune_ | 2 |
 | wallet | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets | auth, auth-identity, documents, infrastructure, payments, platform-ops | auth-identity, infrastructure, orders, refunds | 0 |
 | wallet-loyalty | deprecated | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
@@ -361,12 +361,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux
 
 **Owns** : `boutique_categories`, `boutique_subcategories`, `catalog_enrichment_runs`, `catalog_field_overrides`, `catalog_media`, `product_attributes`, `product_content_profile`, `product_content_sections`, `product_sku_media`, `product_skus`, `product_variants`, `products`, `supplier_catalog_imports`
-**Writes (not owner)** : `alerts` (writer-not-owner), `sourcing_candidate_events` (writer-not-owner), `sourcing_candidates` (writer-not-owner)
+**Writes (not owner)** : `alerts` (writer-not-owner)
 
-**Exposes** : 1 internal API(s), 31 HTTP interface(s)
+**Exposes** : 2 internal API(s), 31 HTTP interface(s)
   - `createDraftFromSourcingCandidate` (services/product-admin-service.js) — resolved
+  - `createDraftProductFromSourcingCandidate` (services/catalog-candidate-product-service.js) — resolved
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
 **Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
@@ -381,7 +382,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
-**Implementation** : 136 fichier(s) déclaré(s), boutique: 32 fichier(s)
+**Implementation** : 138 fichier(s) déclaré(s), boutique: 32 fichier(s)
   - boutique : 38
   - ci : 3
   - config : 1
@@ -390,8 +391,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - migrations : 11
   - routes : 5
   - schemas : 4
-  - services : 26
-  - tests : 39
+  - services : 27
+  - tests : 40
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_
@@ -1490,6 +1491,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - cycle de vie du candidat : raw_imported → normalized → scanned → imported_to_catalog / rejected / watchlist
   - transformation candidat → produit (déclenchement, pas la fiche catalogue elle-même)
   - journal d'événements candidat (audit, correction manuelle, scan, décision)
+  - persistence lifecycle des sourcing_candidates issus des imports catalog via frontière owner dédiée
 - _out_ :
   - connecteurs fournisseur eux-mêmes et normalisation NormalizedSupplierProduct (feature catalog, services/suppliers/connectors/* + services/supplier-catalog-scanner.js restent dans catalog — leur service principal reste l'entrée catalogue, pas la qualification)
   - orchestration d'import idempotent supplier_catalog_imports (feature catalog, services/suppliers/catalog-import-orchestrator.js)
@@ -1507,12 +1509,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - le payload fournisseur brut est conservé intégralement (raw_payload) pour rejouabilité
 
 **Owns** : `sourcing_candidate_events`, `sourcing_candidates`
-**Writes (not owner)** : `products` (writer-not-owner)
 
-**Exposes** : 0 internal API(s), 11 HTTP interface(s)
+**Exposes** : 2 internal API(s), 11 HTTP interface(s)
+  - `archiveMissingCandidatesFromCatalogImport` (services/sourcing-candidate-import-service.js) — resolved
+  - `upsertCandidateFromCatalogImport` (services/sourcing-candidate-import-service.js) — resolved
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED)
-**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1525,10 +1528,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 6 fichier(s) déclaré(s)
+**Implementation** : 8 fichier(s) déclaré(s)
   - migrations : 4
   - routes : 1
-  - tests : 1
+  - services : 1
+  - tests : 2
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="sourcing"]_
 
