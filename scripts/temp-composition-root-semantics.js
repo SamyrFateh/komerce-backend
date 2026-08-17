@@ -32,7 +32,20 @@ replaceOnce(
   `      const semantic = warningSemantics.partition(warn, { ROOT, pairClassifications: o6Dispositions.classifications });`
 );
 
-// 3) Unit regressions: conservative by default; only the exact O6 disposition
+// 3) Ratchet: reuse the generated graph's O6 disposition instead of
+// reclassifying the same raw warning with less context.
+replaceOnce(
+  'scripts/business-graph-ratchet-check.js',
+  `const rawSignals = graph.drifts.warn || [];\nconst partition = semantics.partition(rawSignals, { ROOT });`,
+  `const rawSignals = graph.drifts.warn || [];\nconst semanticCtx = { ROOT, pairClassifications: (graph.o6 && graph.o6.pairClassifications) || [] };\nconst partition = semantics.partition(rawSignals, semanticCtx);`
+);
+replaceOnce(
+  'scripts/business-graph-ratchet-check.js',
+  `  const { category } = semantics.classify(w, { ROOT });`,
+  `  const { category } = semantics.classify(w, semanticCtx);`
+);
+
+// 4) Unit regressions: conservative by default; only the exact O6 disposition
 // is reclassified.
 {
   const p = 'tests/unit/business-graph-warning-semantics.test.js';
@@ -44,14 +57,14 @@ replaceOnce(
   fs.writeFileSync(p, src);
 }
 
-// 4) Ratchet only tightens after the proven semantic correction.
+// 5) Ratchet only tightens after the proven semantic correction.
 {
   const p = 'governance/business-graph-drift-baseline.json';
   const baseline = JSON.parse(fs.readFileSync(p, 'utf8'));
   const key = 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT';
   if (baseline.baseline[key] !== 39) throw new Error(`unexpected starting baseline ${key}=${baseline.baseline[key]}`);
-  baseline.baseline[key] = 30;
-  baseline._comment_composition_root_20260817 = '9 paires infrastructure→feature déjà qualifiées par O6 comme COMPOSITION_ROOT_WIRING / application-wiring-not-consumption / exceptionRequired=false sortent du compteur de dette et restent visibles en EXPECTED_TOPOLOGY. Baseline resserrée 39→30, jamais relevée.';
+  baseline.baseline[key] = 26;
+  baseline._comment_composition_root_20260817 = '13 paires déjà qualifiées par O6 comme COMPOSITION_ROOT_WIRING / application-wiring-not-consumption / exceptionRequired=false sortent du compteur de dette et restent visibles en EXPECTED_TOPOLOGY. Baseline resserrée 39→26, jamais relevée.';
   fs.writeFileSync(p, JSON.stringify(baseline, null, 2) + '\n');
 }
 
