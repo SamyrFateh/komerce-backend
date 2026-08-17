@@ -11,11 +11,14 @@
  *   - development/test : cookie `kmrc_jwt` pour rester utilisable en HTTP local.
  *   - si KOMERCE_ENV est absent, NODE_ENV=production conserve un comportement
  *     sécurisé et active aussi le préfixe __Host- (compatibilité fail-closed).
+ *   - AUTH-8d : durée cookie alignée sur la durée JWT, plafonnée à 7 jours.
  *
  * Le runtime sécurisé ne lit PAS l'ancien cookie `kmrc_jwt` : le passage à
  * __Host- invalide volontairement les anciennes sessions une fois, plutôt que
  * de maintenir une fenêtre de compatibilité qui annulerait le durcissement.
  */
+
+const { resolveSessionTtlMs } = require('./auth-session-policy');
 
 const LEGACY_COOKIE_NAME = 'kmrc_jwt';
 const HOST_COOKIE_NAME = '__Host-kmrc_jwt';
@@ -37,17 +40,6 @@ function getAuthCookieName() {
   return _useHostCookie() ? HOST_COOKIE_NAME : LEGACY_COOKIE_NAME;
 }
 
-function _parseMaxAge() {
-  const raw = process.env.JWT_EXPIRES || '30d';
-  const match = raw.match(/(\d+)(d|h|m)/);
-  if (!match) return 30 * 24 * 60 * 60 * 1000;
-  const val = parseInt(match[1], 10);
-  if (match[2] === 'd') return val * 24 * 60 * 60 * 1000;
-  if (match[2] === 'h') return val * 60 * 60 * 1000;
-  if (match[2] === 'm') return val * 60 * 1000;
-  return 30 * 24 * 60 * 60 * 1000;
-}
-
 /**
  * @param {'Strict'|'Lax'} [sameSite='Lax']
  */
@@ -56,7 +48,7 @@ function cookieOptions(sameSite = 'Lax') {
     httpOnly: true,
     secure: _isSecureRuntime(),
     sameSite,
-    maxAge: _parseMaxAge(),
+    maxAge: resolveSessionTtlMs(),
     path: '/',
     // IMPORTANT __Host- : ne jamais ajouter Domain ici.
   };
