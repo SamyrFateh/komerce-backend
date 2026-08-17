@@ -21,6 +21,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Install Boutique test dependencies
+        run: npm --prefix public/boutique ci
       - name: Apply boundary refactor
         run: node scripts/temp-recommendations-orders-boundary.js
       - name: Remove temporary tooling before proof
@@ -29,11 +31,11 @@ jobs:
           rm .github/workflows/temp-recommendations-orders-boundary.yml
       - name: Run targeted Boutique tests
         run: |
-          npx jest --config public/boutique/jest.config.js --runInBand \
-            public/boutique/tests/unit/b-modal-suggestions.test.js \
-            public/boutique/tests/unit/modal-mobile-suggestion-actions.test.js \
-            public/boutique/tests/unit/cart-product-summary.test.js \
-            public/boutique/tests/unit/cart-public-api-boundary.test.js
+          npm --prefix public/boutique test -- --runInBand \
+            tests/unit/b-modal-suggestions.test.js \
+            tests/unit/modal-mobile-suggestion-actions.test.js \
+            tests/unit/cart-product-summary.test.js \
+            tests/unit/cart-public-api-boundary.test.js
       - name: Refresh governance projections
         run: |
           npm run business-graph:gen
