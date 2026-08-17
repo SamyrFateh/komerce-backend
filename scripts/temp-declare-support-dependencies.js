@@ -31,13 +31,26 @@ function addConsume(feature, target, text) {
   if (contractPos < 0) throw new Error(`contract block missing: ${feature} (${p})`);
   const consumesPos = src.indexOf('consumes: [', contractPos);
   if (consumesPos < 0) throw new Error(`contract.consumes missing: ${feature} (${p})`);
-  const blockEnd = src.indexOf('\n    ],', consumesPos);
-  if (blockEnd < 0) throw new Error(`contract.consumes end missing: ${feature} (${p})`);
+
+  const lineEnd = src.indexOf('\n', consumesPos);
+  const firstLine = src.slice(consumesPos, lineEnd < 0 ? src.length : lineEnd);
+  const multilineEnd = src.indexOf('\n    ],', consumesPos);
+  const blockEnd = multilineEnd >= 0 ? multilineEnd : (lineEnd < 0 ? src.length : lineEnd);
   const block = src.slice(consumesPos, blockEnd);
   const re = new RegExp(`['\"]${target}(?:\\s|\\(|['\"])`);
   if (re.test(block)) return;
-  const openEnd = src.indexOf('\n', consumesPos) + 1;
-  src = src.slice(0, openEnd) + `      '${target} (${text})',\n` + src.slice(openEnd);
+
+  const entry = `${target} (${text})`;
+  if (firstLine.includes('],')) {
+    // Compact form: consumes: ['a', 'b'],
+    const close = src.indexOf(']', consumesPos);
+    if (close < 0 || (lineEnd >= 0 && close > lineEnd)) throw new Error(`inline consumes close missing: ${feature} (${p})`);
+    src = src.slice(0, close) + `, '${entry}'` + src.slice(close);
+  } else {
+    // Multiline form.
+    const openEnd = src.indexOf('\n', consumesPos) + 1;
+    src = src.slice(0, openEnd) + `      '${entry}',\n` + src.slice(openEnd);
+  }
   fs.writeFileSync(p, src);
 }
 
