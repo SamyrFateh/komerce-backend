@@ -59,16 +59,8 @@ function normalizePurpose(raw) {
   return ALLOWED_PURPOSES.has(purpose) ? purpose : null;
 }
 
-function jwtCookieOptions() {
-  const isProd = process.env.NODE_ENV === 'production';
-  return {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: 'lax',
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-    path: '/',
-  };
-}
+// AUTH-8a — cookie d'auth centralisé (utils/auth-cookie.js)
+const { setAuthCookie, clearAuthCookie } = require('../utils/auth-cookie');
 
 function buildUserPayload(user, phone) {
   return {
@@ -138,7 +130,7 @@ async function issueVerifiedSession(res, phone, name) {
   }
 
   const token = signKomerceJwt(user, phone);
-  res.cookie('kmrc_jwt', token, jwtCookieOptions());
+  setAuthCookie(res, token);
 
   return { user, created };
 }
@@ -436,7 +428,7 @@ router.post('/test-reset', async (req, res, next) => {
   }
 
   // 1) Efface la session courante (cookie httpOnly)
-  res.clearCookie('kmrc_jwt', { httpOnly: true, path: '/' });
+  clearAuthCookie(res);
 
   // 2) Purge optionnelle du user de test + ses OTP
   let purged = null;
@@ -463,7 +455,8 @@ router.post('/test-reset', async (req, res, next) => {
     next(err);
   }
 
-  return res.json({ ok: true, success: true, cleared: 'kmrc_jwt', purged });
+  const { AUTH_COOKIE_NAME } = require('../utils/auth-cookie');
+  return res.json({ ok: true, success: true, cleared: AUTH_COOKIE_NAME, purged });
 });
 
 module.exports = router;

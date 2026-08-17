@@ -256,12 +256,19 @@ describe('authenticateOrCreateGuest — erreur inattendue', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('500 générique + log.error pour une erreur inattendue hors du bloc de vérification token (ex: req.headers absent)', async () => {
-    const req = { body: {} }; // pas de req.headers du tout → extractToken() plante
+  it('500 générique + log.error pour une erreur inattendue hors du bloc de vérification token (ex: req totalement absent)', async () => {
+    // AUTH-8a a centralisé l'extraction du token dans utils/auth-cookie.js
+    // (readAuthToken), qui est défensive : `req.headers && ...` ne plante
+    // plus si req.headers est absent — un objet requête sans headers tombe
+    // désormais proprement sur le refus 401 identity_required (CAS 2), ce
+    // qui est le comportement voulu. Pour exercer le vrai filet de
+    // sécurité "erreur inattendue → 500", il faut un cas encore plus
+    // dégénéré : req lui-même absent (ce que readAuthToken ne peut pas
+    // protéger, par construction — `req.cookies` sur undefined lève).
     const res = makeRes();
     const next = jest.fn();
 
-    await authenticateOrCreateGuest(req, res, next);
+    await authenticateOrCreateGuest(undefined, res, next);
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: 'Erreur serveur lors de l\'authentification' });

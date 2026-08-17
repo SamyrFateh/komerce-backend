@@ -53,12 +53,9 @@ const userCache = require('../utils/user-cache');
 
 const _JWT_SECRET = process.env.JWT_SECRET;
 
-function extractToken(req) {
-  if (req.cookies && req.cookies.kmrc_jwt) return req.cookies.kmrc_jwt;
-  const header = req.headers.authorization;
-  if (header && header.startsWith('Bearer ')) return header.split(' ')[1];
-  return null;
-}
+// AUTH-8a — lecture centralisée du cookie d'auth (utils/auth-cookie.js)
+const { readAuthToken } = require('../utils/auth-cookie');
+function extractToken(req) { return readAuthToken(req); }
 
 async function isTokenRevoked(jti) {
   if (!jti) return false;

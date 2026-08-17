@@ -47,24 +47,8 @@ if (!JWT_SECRET) {
 const _JWT_SECRET = JWT_SECRET;
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 
-const COOKIE_NAME = 'kmrc_jwt';
-
-function cookieOptions() {
-  const isProd = process.env.NODE_ENV === 'production';
-  const expiresStr = process.env.JWT_EXPIRES || '30d';
-  const match = expiresStr.match(/(\d+)(d|h|m)/);
-  let maxAge = 30 * 24 * 60 * 60 * 1000;
-  if (match) {
-    const val = parseInt(match[1]);
-    if (match[2] === 'd') maxAge = val * 24 * 60 * 60 * 1000;
-    if (match[2] === 'h') maxAge = val * 60 * 60 * 1000;
-    if (match[2] === 'm') maxAge = val * 60 * 1000;
-  }
-  return { httpOnly: true, secure: isProd, sameSite: 'Strict', maxAge, path: '/' };
-}
-
-function setAuthCookie(res, token) { res.cookie(COOKIE_NAME, token, cookieOptions()); }
-function clearAuthCookie(res) { res.clearCookie(COOKIE_NAME, { httpOnly: true, path: '/' }); }
+// AUTH-8a — cookie d'auth centralisé (utils/auth-cookie.js)
+const { setAuthCookie, clearAuthCookie } = require('../utils/auth-cookie');
 
 function generateToken(user) {
   // N4 — jti unique pour permettre la révocation individuelle (migration 072)

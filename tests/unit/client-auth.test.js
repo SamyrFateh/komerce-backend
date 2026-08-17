@@ -55,7 +55,14 @@ beforeEach(() => {
     const router = require('../../routes/client-auth');
     app.use('/api/auth', router);
   });
+
+  app.use((err, _req, res, _next) => {
+    res.status(err.status || err.statusCode || 500).json({
+      error: err.message,
+    });
+  });
 });
+
 
 describe('POST /magic-link', () => {
   it('telephone manquant → 400', async () => {

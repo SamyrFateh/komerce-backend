@@ -36,12 +36,9 @@ const _JWT_SECRET = process.env.JWT_SECRET;
 function getCachedUser(userId) { return userCache.get(userId); }
 function setCachedUser(userId, user) { userCache.set(userId, user); }
 
-function extractToken(req) {
-  if (req.cookies && req.cookies.kmrc_jwt) return req.cookies.kmrc_jwt;
-  const header = req.headers.authorization;
-  if (header && header.startsWith('Bearer ')) return header.split(' ')[1];
-  return null;
-}
+// AUTH-8a — lecture centralisée du cookie d'auth (utils/auth-cookie.js)
+const { readAuthToken } = require('../utils/auth-cookie');
+function extractToken(req) { return readAuthToken(req); }
 
 async function authenticate(req, res, next) {
   try {
