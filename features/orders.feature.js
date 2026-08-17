@@ -244,6 +244,7 @@ module.exports = {
       'documents',
       'notifications (projection idempotente du retrait disponible)',
       'refunds',
+      'shared-cart (projection frontend orders-client uniquement : consommation via shared-cart-surface-api.js / shared-cart-library-api.js ; aucun import direct des internes group/*)',
     ],
   },
 

@@ -68,18 +68,6 @@
         "public/boutique/js/komerce-api.js -> /api/products*|/api/categories*"
       ],
       "reviewTrigger": "Scinder le client API si des règles catalogue sont introduites dans platform-ops ou si plusieurs consommateurs nécessitent un contrat frontend autonome."
-    },
-    {
-      "from": "orders",
-      "to": "shared-cart",
-      "decision": "accepted-dependency",
-      "rationale": "Dépendance frontend résiduelle hors checkout : le slice orders-client possède le renderer canonique du panier (b-cart.js) et le shell de suivi / Mon Komerce (b-tracking.js). b-cart compose encore la surface de liste active via group-side-cart ; b-tracking compose encore l'onglet Mes listes via group-api, group-list-labels et l'activation de group-side-cart. Le checkout canonique est désormais découplé de shared-cart et n'est explicitement pas couvert par cette exception. La couture UI restante sera inversée ou extraite dans le lot de dette frontend dédié.",
-      "scope": [
-        "public/boutique/js/b-cart.js -> public/boutique/js/group/group-side-cart.js",
-        "public/boutique/js/b-tracking.js -> public/boutique/js/group/group-api.js|group-list-labels.js",
-        "public/boutique/js/b-tracking.js -> public/boutique/js/group/group-side-cart.js (dynamic import)"
-      ],
-      "reviewTrigger": "Supprimer cette exception lorsque la projection de liste dans le panier sera inversée via un port/adapter shared-cart -> orders et lorsque l'onglet Mes listes ne fera plus importer shared-cart par b-tracking.js."
     }
   ]
 }
