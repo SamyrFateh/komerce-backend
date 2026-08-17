@@ -51,7 +51,7 @@
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
     "ontologyGaps": 0,
-    "debtItemsTotal": 121,
+    "debtItemsTotal": 122,
     "gateHealthy": 14,
     "gateBlocked": 0
   },
@@ -394,17 +394,18 @@
       "service": "Fournir les gardes transverses d'authentification et de vérification d'identité (middlewares JWT/session/rôles) consommées par toutes les autres features.",
       "perimeter": {
         "in": [
-          "middlewares de garde transverses : authentification JWT/session, vérification de rôle, identité vérifiée, révocation de token"
+          "middlewares de garde transverses : authentification JWT/session, vérification de rôle, identité vérifiée, révocation de token, émission et durée canonique de session"
         ],
         "out": [
           "logique metier propre a chaque feature consommatrice — auth ne sait rien des commandes, paniers ou paiements"
         ]
       },
-      "authority": "backend-core — tout changement de middleware d'authentification doit etre valide par le proprietaire de middleware/auth.js",
+      "authority": "backend-core — tout changement de middleware d'authentification ou de politique de session doit etre valide par le proprietaire de auth",
       "invariants": [
         "toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde",
         "toute mutation portée par le cookie de session exige une Origin explicitement autorisée (AUTH-8b)",
-        "staging/production utilisent exclusivement un cookie de session __Host- Secure, Path=/ et sans Domain (AUTH-8c)"
+        "staging/production utilisent exclusivement un cookie de session __Host- Secure, Path=/ et sans Domain (AUTH-8c)",
+        "la durée absolue JWT + cookie est plafonnée à 7 jours et chaque preuve OTP/passkey/step-up émet une nouvelle jti (AUTH-8d)"
       ],
       "implementation": {
         "byCategory": {
@@ -464,7 +465,7 @@
             ]
           },
           "tests": {
-            "count": 10,
+            "count": 12,
             "files": [
               {
                 "declared": "tests/unit/auth-cookie.test.js",
@@ -484,6 +485,16 @@
               {
                 "declared": "tests/unit/auth-route.test.js",
                 "resolvedPath": "tests/unit/auth-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-session-policy.test.js",
+                "resolvedPath": "tests/unit/auth-session-policy.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-session.test.js",
+                "resolvedPath": "tests/unit/auth-session.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -519,17 +530,27 @@
             ]
           },
           "utils": {
-            "count": 1,
+            "count": 3,
             "files": [
               {
                 "declared": "utils/auth-cookie.js",
                 "resolvedPath": "utils/auth-cookie.js",
                 "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "utils/auth-session-policy.js",
+                "resolvedPath": "utils/auth-session-policy.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "utils/auth-session.js",
+                "resolvedPath": "utils/auth-session.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           }
         },
-        "totalFiles": 20,
+        "totalFiles": 24,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -575,6 +596,11 @@
           {
             "fn": "requireAuth / requireVerifiedIdentity / softAuth",
             "file": "middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js",
+            "status": "undeclared-in-graph"
+          },
+          {
+            "fn": "signAuthToken / resolveSessionTtlSeconds",
+            "file": "utils/auth-session.js, utils/auth-session-policy.js",
             "status": "undeclared-in-graph"
           }
         ],
@@ -769,7 +795,7 @@
         "manifestPresent": true,
         "registryPresent": true,
         "orphanFiles": 0,
-        "unresolvedInternalApis": 1,
+        "unresolvedInternalApis": 2,
         "declaredOnlyDependencyCount": 2,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
@@ -782,7 +808,7 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 4,
+        "debtCount": 5,
         "debtItems": [
           {
             "type": "CONSUMES_REFERENCE_UNRESOLVED",
@@ -803,6 +829,11 @@
             "type": "UNRESOLVED_INTERNAL_API",
             "severity": "medium",
             "evidence": "requireAuth / requireVerifiedIdentity / softAuth (middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js) — statut: undeclared-in-graph"
+          },
+          {
+            "type": "UNRESOLVED_INTERNAL_API",
+            "severity": "medium",
+            "evidence": "signAuthToken / resolveSessionTtlSeconds (utils/auth-session.js, utils/auth-session-policy.js) — statut: undeclared-in-graph"
           }
         ]
       },
@@ -1415,7 +1446,7 @@
             ]
           },
           "services": {
-            "count": 4,
+            "count": 3,
             "files": [
               {
                 "declared": "middleware/require-recent-auth.js",
@@ -1431,16 +1462,11 @@
                 "declared": "services/webauthn-service.js",
                 "resolvedPath": "services/webauthn-service.js",
                 "status": "resolved-on-disk-no-header"
-              },
-              {
-                "declared": "utils/auth-session.js",
-                "resolvedPath": "utils/auth-session.js",
-                "status": "resolved-on-disk-no-header"
               }
             ]
           },
           "tests": {
-            "count": 5,
+            "count": 4,
             "files": [
               {
                 "declared": "tests/unit/auth-passkey-management.test.js",
@@ -1458,11 +1484,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/auth-session.test.js",
-                "resolvedPath": "tests/unit/auth-session.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/require-recent-auth.test.js",
                 "resolvedPath": "tests/unit/require-recent-auth.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1470,7 +1491,7 @@
             ]
           }
         },
-        "totalFiles": 12,
+        "totalFiles": 10,
         "boutiqueManifest": "auth-passkey",
         "boutiqueFiles": {
           "count": 10,

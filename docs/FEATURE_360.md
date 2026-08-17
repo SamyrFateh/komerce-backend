@@ -13,7 +13,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **63**
 - Ontology gaps : **0**
-- Debt items (total) : **121**
+- Debt items (total) : **122**
 - Gate health — healthy : **14** · blocked : **0**
 
 ## Gate findings — intégrité de projection
@@ -29,7 +29,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | Feature | Kind | Boundary | Governance | Owns | Consumes | Consumed by | Debt |
 |---|---|---|---|---|---|---|---|
 | admin-dashboard | projection | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | sourcing | _aucune_ | 0 |
-| auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, shared-cart, sourcing, unsold-resolution, wallet | 4 |
+| auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, economic-engine, infrastructure, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, shared-cart, sourcing, unsold-resolution, wallet | 5 |
 | auth-identity | business-feature | 🔴 BLOCKED | 🟡 ATTENTION | otp_codes, user_pickup_authorizations | auth, documents, notifications, wallet | auth-passkey, catalog, logistics, orders, platform-ops, shared-cart, wallet | 2 |
 | auth-passkey | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | webauthn_challenges, webauthn_credentials | auth, auth-identity, infrastructure | _aucune_ | 0 |
 | business-rules | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | business_rules, business_rules_history | auth, infrastructure | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops | 0 |
@@ -106,22 +106,24 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Perimeter** :
 - _in_ :
-  - middlewares de garde transverses : authentification JWT/session, vérification de rôle, identité vérifiée, révocation de token
+  - middlewares de garde transverses : authentification JWT/session, vérification de rôle, identité vérifiée, révocation de token, émission et durée canonique de session
 - _out_ :
   - logique metier propre a chaque feature consommatrice — auth ne sait rien des commandes, paniers ou paiements
 
-**Authority** : backend-core — tout changement de middleware d'authentification doit etre valide par le proprietaire de middleware/auth.js
+**Authority** : backend-core — tout changement de middleware d'authentification ou de politique de session doit etre valide par le proprietaire de auth
 
 **Invariants** :
 - toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde
 - toute mutation portée par le cookie de session exige une Origin explicitement autorisée (AUTH-8b)
 - staging/production utilisent exclusivement un cookie de session __Host- Secure, Path=/ et sans Domain (AUTH-8c)
+- la durée absolue JWT + cookie est plafonnée à 7 jours et chaque preuve OTP/passkey/step-up émet une nouvelle jti (AUTH-8d)
 
 **Owns** : _aucune_
 **Writes (not owner)** : `users` (writer-not-owner)
 
-**Exposes** : 1 internal API(s), 0 HTTP interface(s)
+**Exposes** : 2 internal API(s), 0 HTTP interface(s)
   - `requireAuth / requireVerifiedIdentity / softAuth` (middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js) — undeclared-in-graph
+  - `signAuthToken / resolveSessionTtlSeconds` (utils/auth-session.js, utils/auth-session-policy.js) — undeclared-in-graph
 
 **Consumes** : _aucune_
 **Consumed by** : auth-identity (DECLARED_AND_OBSERVED), auth-passkey (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
@@ -131,20 +133,21 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Technical context** : 1 primitive dependencies, 2 test-only, 0 composition-root
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 1, declared-only deps: 2, ambiguous ownership: 0, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 2, declared-only deps: 2, ambiguous ownership: 0, ontology gaps: 0
 **Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
-**Architectural debt** (4) :
+**Architectural debt** (5) :
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "notification" — ne correspond à aucun nom de feature connu
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "operations" — ne correspond à aucun nom de feature connu
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "orders" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `UNRESOLVED_INTERNAL_API` (medium) — requireAuth / requireVerifiedIdentity / softAuth (middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js) — statut: undeclared-in-graph
+- `UNRESOLVED_INTERNAL_API` (medium) — signAuthToken / resolveSessionTtlSeconds (utils/auth-session.js, utils/auth-session-policy.js) — statut: undeclared-in-graph
 
-**Implementation** : 20 fichier(s) déclaré(s)
+**Implementation** : 24 fichier(s) déclaré(s)
   - middleware : 7
   - migrations : 2
-  - tests : 10
-  - utils : 1
+  - tests : 12
+  - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth"]_
 
@@ -257,11 +260,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 12 fichier(s) déclaré(s), boutique: 10 fichier(s)
+**Implementation** : 10 fichier(s) déclaré(s), boutique: 10 fichier(s)
   - migrations : 2
   - routes : 1
-  - services : 4
-  - tests : 5
+  - services : 3
+  - tests : 4
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth-passkey"]_
 
