@@ -23,9 +23,11 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply admin dashboard consumes
-        run: node scripts/temp-admin-dashboard-consumes.js
+        run: |
+          node scripts/temp-admin-dashboard-consumes.js
+          node scripts/temp-sync-admin-dashboard-copy.js
       - name: Remove temporary tooling before canonical generation
-        run: rm .github/workflows/temp-admin-dashboard-consumes.yml scripts/temp-admin-dashboard-consumes.js
+        run: rm .github/workflows/temp-admin-dashboard-consumes.yml scripts/temp-admin-dashboard-consumes.js scripts/temp-sync-admin-dashboard-copy.js
       - name: Refresh canonical governance projections
         run: |
           npm run business-graph:gen
