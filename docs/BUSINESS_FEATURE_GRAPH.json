@@ -7987,6 +7987,13 @@
       {
         "feature": "purchasing",
         "category": "services",
+        "declared": "services/purchasing-cancel-service.js",
+        "resolvedPath": "services/purchasing-cancel-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
         "declared": "services/receive-purchase-order.js",
         "resolvedPath": "services/receive-purchase-order.js",
         "status": "resolved-in-technical-graph"
@@ -8038,6 +8045,13 @@
         "category": "tests",
         "declared": "tests/unit/purchasing-receive-service.test.js",
         "resolvedPath": "tests/unit/purchasing-receive-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchasing-cancel-service.test.js",
+        "resolvedPath": "tests/unit/purchasing-cancel-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13254,6 +13268,12 @@
         "status": "resolved"
       },
       {
+        "feature": "purchasing",
+        "fn": "syncPurchaseOrdersOnOrderCancel",
+        "file": "services/purchasing-cancel-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "refunds",
         "fn": "processRefund(orderOrCartId, reason)",
         "file": null,
@@ -13936,7 +13956,7 @@
       {
         "from": "orders",
         "to": "purchasing",
-        "raw": "purchasing (lecture — engagement fournisseur déclenché par une commande ; scindée d'orders au Lot O1.4)",
+        "raw": "purchasing (engagement fournisseur + sync annulation via syncPurchaseOrdersOnOrderCancel ; aucun SQL direct orders -> purchase_orders)",
         "resolved": true
       },
       {
@@ -14128,7 +14148,7 @@
       {
         "from": "purchasing",
         "to": "orders",
-        "raw": "orders (lecture : order_items, orders — le besoin d'achat naît d'une commande client)",
+        "raw": "orders (lecture : order_items, orders — le besoin d'achat et l'intention d'annulation naissent d'une commande client)",
         "resolved": true
       },
       {
@@ -20924,18 +20944,6 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "services/cancel-order-purchase-orders.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/cancel-order-purchase-orders.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
-                "sourceFileId": "services/cancel-order-purchase-orders.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
                 "sourceFileId": "services/order-payment-confirmation.js",
                 "targetFile": "utils/logger.js"
               },
@@ -21489,6 +21497,22 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/b-mini-cart.test.js",
                 "targetFile": "public/boutique/js/b-bus.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "orders",
+        "to": "purchasing",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/cancel-order-purchase-orders.js",
+                "targetFile": "services/purchasing-cancel-service.js"
               }
             ]
           }
@@ -22846,6 +22870,18 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/purchasing-cancel-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-cancel-service.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-cancel-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "services/receive-purchase-order.js",
                 "targetFile": "db.js"
               },
@@ -24056,7 +24092,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 800
+        "filesObserved": 802
       },
       "boutique": {
         "filesObserved": 158,
@@ -26050,12 +26086,6 @@
     "purchase_orders": {
       "writers": [
         {
-          "feature": "orders",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
           "feature": "purchasing",
           "mode": "RW",
           "declaredOwner": true,
@@ -26474,11 +26504,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "purchase_orders",
-        "msg": "table \"purchase_orders\" : lifecycle owner = purchasing (db.tables \"!\"), mais aussi écrite par orders"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "scans",
         "msg": "table \"scans\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, orders"
       },
@@ -26548,11 +26573,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "products",
         "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine, sourcing"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "purchase_orders",
-        "msg": "table \"purchase_orders\" : lifecycle owner = purchasing (db.tables \"!\"), mais aussi écrite par orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26785,11 +26805,11 @@
       }
     ],
     "summary": {
-      "signals": 15,
-      "debt": 15,
+      "signals": 14,
+      "debt": 14,
       "expectedTopology": 33,
       "generatorLimitations": 8,
-      "classifiedCandidates": 56
+      "classifiedCandidates": 55
     }
   }
 }

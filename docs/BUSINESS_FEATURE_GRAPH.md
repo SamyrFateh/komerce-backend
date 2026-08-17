@@ -392,7 +392,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - boutique: 3
 - tests: 28
 - tables owned (lifecycle): 9 — `order_items`, `orders`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `disputes`
-- tables written: 12
+- tables written: 11
 - interfaces exposed: 27
 - internal APIs: 3
 - dependencies (consumes): 18 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds, shared-cart
@@ -446,13 +446,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
 
-- services: 6
+- services: 7
 - routes: 1
-- tests: 9
+- tests: 10
 - tables owned (lifecycle): 3 — `product_suppliers`, `purchase_orders`, `suppliers`
 - tables written: 5
 - interfaces exposed: 10
-- internal APIs: 2
+- internal APIs: 3
 - dependencies (consumes): 5 — infrastructure, orders, auth, notifications, logistics
 - consumers: 5 — dashboard, logistics, orders, payments, platform-ops
 
@@ -632,7 +632,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `product_suppliers` | `purchasing` | single-writer | purchasing | logistics |
 | `product_variants` | `catalog` | declared-table-owner | catalog, economic-engine | logistics, orders, sourcing |
 | `products` | `catalog` | declared-table-owner | catalog, dashboard, economic-engine, sourcing | auth-identity, customs, documents, inventory, logistics, orders, platform-ops, purchasing, recommendations, shared-cart, unsold-resolution |
-| `purchase_orders` | `purchasing` | declared-table-owner | orders, purchasing | logistics |
+| `purchase_orders` | `purchasing` | declared-table-owner | purchasing | logistics |
 | `recipients` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | documents, economic-engine, logistics, notifications |
 | `refunds` | `refunds` | single-writer | refunds | documents, economic-engine, orders |
 | `relais` | `logistics` | declared-table-owner | dashboard, logistics | auth-identity, documents, economic-engine, notifications, orders, platform-ops, purchasing |
@@ -1185,6 +1185,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `markRefunded` | `services/payment-service.js` | payments | resolved |
 | `triggerPurchasing` | `services/purchasing-trigger-service.js` | purchasing | resolved |
 | `repairOrderedWithoutPurchaseOrders` | `services/repair-ordered-without-purchase-orders.js` | purchasing | resolved |
+| `syncPurchaseOrdersOnOrderCancel` | `services/purchasing-cancel-service.js` | purchasing | resolved |
 | `processRefund(orderOrCartId, reason)` | `null` | refunds | documented-signature-no-file |
 
 ## Cross-feature dependencies
@@ -1303,7 +1304,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | orders | economic-engine (`economic-engine (cout figure a la commande)`) | ✔ |
 | orders | logistics (`logistics (rattachement colis)`) | ✔ |
 | orders | catalog (`catalog (lecture produit)`) | ✔ |
-| orders | purchasing (`purchasing (lecture — engagement fournisseur déclenché par une commande ; scindée d'orders au Lot O1.4)`) | ✔ |
+| orders | purchasing (`purchasing (engagement fournisseur + sync annulation via syncPurchaseOrdersOnOrderCancel ; aucun SQL direct orders -> purchase_orders)`) | ✔ |
 | orders | loyalty (`loyalty (remise palier au checkout + recalcul apres commande — services/loyalty-service.js getLoyaltyDiscount/recalculateLoyalty, O7.3 provider loyalty)`) | ✔ |
 | orders | payments (`payments (marque un remboursement — services/payment-service.js markRefunded, O7.3 provider payments)`) | ✔ |
 | orders | auth (`auth`) | ✔ |
@@ -1335,7 +1336,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | platform-ops | logistics (`logistics (simulateur declenche une transition colis via transitionParcelStatus — services/parcel-operations.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
 | platform-ops | orders (`orders (simulateur declenche une transition commande via transitionOrderStatus — services/order-status-machine.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
 | purchasing | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
-| purchasing | orders (`orders (lecture : order_items, orders — le besoin d'achat naît d'une commande client)`) | ✔ |
+| purchasing | orders (`orders (lecture : order_items, orders — le besoin d'achat et l'intention d'annulation naissent d'une commande client)`) | ✔ |
 | purchasing | auth (`auth (garde admin)`) | ✔ |
 | purchasing | notifications (`notifications (notification fournisseur WhatsApp, via services/notification-service.js)`) | ✔ |
 | purchasing | logistics (`logistics (declenche scan preparation + notification client apres reception hub complete — services/scan-operations.js triggerScan3, O7.2 Cycle C)`) | ✔ |
@@ -1394,7 +1395,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (15)
+### DETTE / DRIFT ACTIONNABLE (14)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
@@ -1408,7 +1409,6 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ price_history — table "price_history" : lifecycle owner = economic-engine (db.tables "!"), mais aussi écrite par catalog
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ product_variants — table "product_variants" : lifecycle owner = catalog (db.tables "!"), mais aussi écrite par economic-engine
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ products — table "products" : lifecycle owner = catalog (db.tables "!"), mais aussi écrite par economic-engine, sourcing
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ purchase_orders — table "purchase_orders" : lifecycle owner = purchasing (db.tables "!"), mais aussi écrite par orders
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ scans — table "scans" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par dashboard, orders
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidate_events — table "sourcing_candidate_events" : lifecycle owner = sourcing (db.tables "!"), mais aussi écrite par catalog
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidates — table "sourcing_candidates" : lifecycle owner = sourcing (db.tables "!"), mais aussi écrite par catalog
@@ -1473,7 +1473,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 800 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 802 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 158 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1601,12 +1601,13 @@ Meta Graph monté : oui.
 | orders | customs | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| orders | infrastructure | static-code, interface | 57 | **DECLARED_AND_OBSERVED** |
+| orders | infrastructure | static-code, interface | 54 | **DECLARED_AND_OBSERVED** |
 | orders | logistics | static-code, interface | 17 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 8 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 37 | **DECLARED_AND_OBSERVED** |
+| orders | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | orders | wallet | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
@@ -1636,7 +1637,7 @@ Meta Graph monté : oui.
 | platform-ops | recommendations | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | shared-cart | static-code | 6 | **OBSERVED_UNDECLARED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 20 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 23 | **DECLARED_AND_OBSERVED** |
 | purchasing | logistics | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code | 4 | **DECLARED_AND_OBSERVED** |
@@ -1717,7 +1718,6 @@ Meta Graph monté : oui.
 - `logistics` → `wallet` (déclaré : `wallet`)
 - `loyalty` → `auth-identity` (déclaré : `auth-identity (identification du client)`)
 - `loyalty` → `wallet` (déclaré : `wallet (aucune écriture — v_loyalty_summary et le calcul de palier ne lisent pas les tables wallet)`)
-- `orders` → `purchasing` (déclaré : `purchasing (lecture — engagement fournisseur déclenché par une commande ; scindée d'orders au Lot O1.4)`)
 - `orders` → `dashboard` (déclaré : `dashboard`)
 - `recommendations` → `auth` (déclaré : `auth`)
 - `recommendations` → `logistics` (déclaré : `logistics`)
