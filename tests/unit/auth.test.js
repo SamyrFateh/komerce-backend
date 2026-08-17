@@ -40,9 +40,17 @@ jest.mock('../../utils/user-cache', () => ({
 const { makeReq, makeRes, makeNext } = require('../helpers/backendTestKit');
 const { authenticate, requireRole, requireAdmin, invalidateUserCache } = require('../../middleware/auth');
 
-function validToken(payload = {}) {
-  return jwt.sign({ id: 'user-1', jti: 'jti-1', ...payload }, process.env.JWT_SECRET, {
+function validToken(payload = {}, options = {}) {
+  return jwt.sign({
+    id: 'user-1',
+    jti: 'jti-1',
+    auth_time: Math.floor(Date.now() / 1000),
+    amr: ['otp'],
+    token_use: 'session',
+    ...payload,
+  }, process.env.JWT_SECRET, {
     algorithm: 'HS256',
+    expiresIn: options.expiresIn ?? '1h',
   });
 }
 
@@ -124,7 +132,7 @@ describe('authenticate', () => {
   });
 
   it('401 TokenExpiredError', async () => {
-    const expired = jwt.sign({ id: 'user-1' }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: -10 });
+    const expired = validToken({}, { expiresIn: -10 });
     const req = makeReq({ cookies: { kmrc_jwt: expired } });
     const res = makeRes();
     const next = makeNext();
