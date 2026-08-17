@@ -6,9 +6,9 @@
  * @test-requires none
  */
 
-const apiGet = jest.fn();
-const apiDelete = jest.fn();
-jest.mock('../../js/b-utils.js', () => ({ apiGet, apiDelete }));
+const mockApiGet = jest.fn();
+const mockApiDelete = jest.fn();
+jest.mock('../../js/b-utils.js', () => ({ apiGet: mockApiGet, apiDelete: mockApiDelete }));
 
 const { loadPasskeySecurity } = require('../../js/b-passkey-security.js');
 
@@ -24,7 +24,7 @@ beforeEach(() => {
 
 describe('AUTH-6 — moyens de connexion', () => {
   it('affiche label + dernière utilisation à partir de métadonnées sûres', async () => {
-    apiGet.mockResolvedValue({ credentials: [{
+    mockApiGet.mockResolvedValue({ credentials: [{
       id: '11111111-1111-4111-8111-111111111111',
       device_label: 'Passkey iPhone',
       created_at: '2026-08-01T10:00:00Z',
@@ -35,7 +35,7 @@ describe('AUTH-6 — moyens de connexion', () => {
     const container = document.getElementById('security');
     await loadPasskeySecurity(container);
 
-    expect(apiGet).toHaveBeenCalledWith('/api/auth/passkey/credentials');
+    expect(mockApiGet).toHaveBeenCalledWith('/api/auth/passkey/credentials');
     expect(container.textContent).toContain('Passkey iPhone');
     expect(container.textContent).toContain('Dernière utilisation');
     expect(container.textContent).toContain('Synchronisée');
@@ -46,11 +46,11 @@ describe('AUTH-6 — moyens de connexion', () => {
 
   it('révoque par ID de gestion opaque puis retire la ligne', async () => {
     const id = '11111111-1111-4111-8111-111111111111';
-    apiGet.mockResolvedValue({ credentials: [{
+    mockApiGet.mockResolvedValue({ credentials: [{
       id, device_label: 'Chrome Windows', created_at: '2026-08-01T10:00:00Z',
       last_used_at: null, backup_eligible: false, backup_state: false,
     }] });
-    apiDelete.mockResolvedValue({ revoked: true, id });
+    mockApiDelete.mockResolvedValue({ revoked: true, id });
     const container = document.getElementById('security');
     await loadPasskeySecurity(container);
 
@@ -58,14 +58,14 @@ describe('AUTH-6 — moyens de connexion', () => {
     await flush();
 
     expect(window.confirm).toHaveBeenCalled();
-    expect(apiDelete).toHaveBeenCalledWith(`/api/auth/passkey/credentials/${id}`);
+    expect(mockApiDelete).toHaveBeenCalledWith(`/api/auth/passkey/credentials/${id}`);
     expect(container.querySelector('[data-credential-id]')).toBeNull();
     expect(container.textContent).toContain('Aucune passkey active');
   });
 
   it('n’envoie aucune révocation si l’utilisateur annule la confirmation', async () => {
     window.confirm.mockReturnValue(false);
-    apiGet.mockResolvedValue({ credentials: [{
+    mockApiGet.mockResolvedValue({ credentials: [{
       id: '11111111-1111-4111-8111-111111111111',
       device_label: 'iPhone', created_at: '2026-08-01T10:00:00Z',
       last_used_at: null, backup_eligible: false, backup_state: false,
@@ -74,6 +74,6 @@ describe('AUTH-6 — moyens de connexion', () => {
     await loadPasskeySecurity(container);
     container.querySelector('button').click();
     await flush();
-    expect(apiDelete).not.toHaveBeenCalled();
+    expect(mockApiDelete).not.toHaveBeenCalled();
   });
 });
