@@ -26,6 +26,8 @@ const pool = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { sendMagicLink } = require('../services/notification-service');
 const log = require('../utils/logger').child({ module: 'client-auth' });
+// AUTH-8a — cookie d'auth centralisé (utils/auth-cookie.js)
+const { setAuthCookie } = require('../utils/auth-cookie');
 
 function maskPhone(phone) {
   if (!phone) return null;
@@ -141,16 +143,11 @@ router.get('/magic-link/validate', async (req, res, next) => {
       { expiresIn: '30d' }
     );
 
-    res.cookie('kmrc_jwt', jwtToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      // GOV-07 : 'lax' requis (pas 'Strict') — cette route est appelée lors d'une
-      // navigation top-level cross-site (lien magic link depuis un email).
-      // 'Strict' supprimerait le cookie sur ce parcours et casserait le flow de connexion.
-      // Pas de surface CSRF : ce GET n'a pas d'effet de bord d'écriture.
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    });
+    // GOV-07 : Lax requis (pas Strict) — cette route est appelée lors d'une
+    // navigation top-level cross-site (lien magic link depuis un email).
+    // Strict supprimerait le cookie sur ce parcours et casserait le flow.
+    // Pas de surface CSRF : ce GET n'a pas d'effet de bord d'écriture.
+    setAuthCookie(res, jwtToken, 'Lax');
 
     log.info('[magic-link] Login success', { userId: user.id, phone: maskPhone(user.phone) });
     res.redirect('/mon-compte');
