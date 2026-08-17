@@ -16,12 +16,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Consumers of drifts.warn
+      - name: Semantic counts by category and ratchet key
         shell: bash
         run: |
-          set -o pipefail
-          git grep -n -E 'drifts\.warn|WARN / DEBT|avertissement\(s\) / dette' -- '*.js' '*.mjs' '*.md' ':!docs/BUSINESS_FEATURE_GRAPH.md' || test $? -eq 1
-      - name: Semantic counts
-        shell: bash
-        run: |
-          node -e "const m=require('./docs/BUSINESS_FEATURE_GRAPH.json'); const s=require('./governance/business-graph-warning-semantics.js'); const c={}; for (const w of m.drifts.warn){const k=s.classify(w,{ROOT:process.cwd()}).category;c[k]=(c[k]||0)+1;} console.log(JSON.stringify({total:m.drifts.warn.length,byCategory:c},null,2));"
+          node - <<'NODE'
+          const m = require('./docs/BUSINESS_FEATURE_GRAPH.json');
+          const s = require('./governance/business-graph-warning-semantics.js');
+          const byCategory = {};
+          const byKey = {};
+          for (const w of m.drifts.warn) {
+            const category = s.classify(w, { ROOT: process.cwd() }).category;
+            byCategory[category] = (byCategory[category] || 0) + 1;
+            const key = `${w.type}::${category}`;
+            byKey[key] = (byKey[key] || 0) + 1;
+          }
+          console.log(JSON.stringify({ total: m.drifts.warn.length, byCategory, byKey }, null, 2));
+          NODE
+      - name: Current ratchet result
+        run: node scripts/business-graph-ratchet-check.js
