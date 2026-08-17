@@ -80,8 +80,12 @@ if ((graph.drifts.error || []).length > 0) {
   process.exit(1);
 }
 
-// ── 2. Compte par clé "TYPE::CATEGORY" (Lot O4-2 point 2) ─────────────────
-const warns = graph.drifts.warn || [];
+// ── 2. Compte uniquement la dette réelle par clé "TYPE::CATEGORY" ─────────
+// EXPECTED_TOPOLOGY et GENERATOR_LIMITATION restent visibles dans le graphe
+// mais ne consomment jamais un budget de dette.
+const rawSignals = graph.drifts.warn || [];
+const partition = semantics.partition(rawSignals, { ROOT });
+const warns = partition.debt;
 const countByKey = {};   // "TYPE::CATEGORY" -> count
 const typeOf = {};       // "TYPE::CATEGORY" -> TYPE (pour affichage groupé)
 const categoryOf = {};   // "TYPE::CATEGORY" -> CATEGORY
@@ -138,7 +142,7 @@ for (const type of Object.keys(rowsByType).sort()) {
 
 const totalCurrent = warns.length;
 const totalBase    = Object.values(baseline).reduce((a, b) => a + b, 0);
-console.log(`\n${C.dim}Total warnings : ${totalCurrent} (baseline totale ${totalBase} — indicatif seulement, le ratchet raisonne par clé type::catégorie, jamais sur ce total)${C.r}`);
+console.log(`\n${C.dim}Dette/drift ratchetté : ${totalCurrent} (baseline totale ${totalBase}). Hors dette : ${partition.expectedTopology.length} topologie(s) attendue(s), ${partition.generatorLimitations.length} limite(s) générateur.${C.r}`);
 
 if (hasFailure) {
   console.log(`\n${C.red}${C.bld}✖ business-graph:ratchet-check ÉCHEC — nouveau drift au-dessus de la baseline type::catégorie.${C.r}`);

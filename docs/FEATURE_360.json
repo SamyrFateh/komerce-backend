@@ -46,12 +46,12 @@
     "healthy": 7,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 116,
+    "businessDependencies": 119,
     "directCrossFeatureImports": 4,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
     "ontologyGaps": 0,
-    "debtItemsTotal": 121,
+    "debtItemsTotal": 119,
     "gateHealthy": 14,
     "gateBlocked": 0
   },
@@ -619,7 +619,29 @@
           "count": 0
         }
       },
-      "businessDependencies": [],
+      "businessDependencies": [
+        {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "consumedBy": [
         {
           "consumer": "auth-identity",
@@ -773,23 +795,10 @@
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
-        "testOnlyRelations": 2,
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "auth-identity",
-            "family": "NON_RUNTIME_TEST"
-          },
-          {
-            "to": "infrastructure",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "to": "notifications",
-            "family": "NON_RUNTIME_TEST"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "ATTENTION",
@@ -807,7 +816,7 @@
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 2,
-        "declaredOnlyDependencyCount": 2,
+        "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
       },
@@ -819,18 +828,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 5,
+        "debtCount": 3,
         "debtItems": [
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"notification\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"operations\" — ne correspond à aucun nom de feature connu"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
@@ -1236,6 +1235,13 @@
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
         {
           "consumer": "auth-passkey",
           "disposition": "DECLARED_AND_OBSERVED",
@@ -9480,6 +9486,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "auth-passkey",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -12057,6 +12070,13 @@
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
         {
           "consumer": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",

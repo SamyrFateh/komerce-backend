@@ -10,14 +10,14 @@
 |---|---|
 | PROJECTION | 10 |
 | COMPOSITION_ROOT_WIRING | 16 |
-| NON_RUNTIME_TEST | 8 |
-| TECHNICAL_PRIMITIVE | 31 |
+| NON_RUNTIME_TEST | 6 |
+| TECHNICAL_PRIMITIVE | 30 |
 | BUSINESS_TRANSVERSAL_SERVICE | 2 |
 | CROSS_FEATURE_DIRECT_IMPORT | 4 |
 | BUSINESS_FEATURE_INTERFACE | 5 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **76** |
+| **TOTAL** | **73** |
 
 ## The 94 pairs (from → to)
 
@@ -33,9 +33,6 @@
 | admin-dashboard → logistics | PROJECTION | RUNTIME_ONLY | projection | business-feature | interface | interface | projection-dependency-policy | — | `` |
 | admin-dashboard → orders | PROJECTION | RUNTIME_ONLY | projection | business-feature | interface | interface | projection-dependency-policy | — | `` |
 | admin-dashboard → payments | PROJECTION | RUNTIME_ONLY | projection | business-feature | interface | interface | projection-dependency-policy | — | `` |
-| auth → auth-identity | NON_RUNTIME_TEST | TEST_ONLY | technical-transversal | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
-| auth → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | technical-transversal | technical-foundation | static-code | import-mixed | technical-dependency-policy | — | `` |
-| auth → notifications | NON_RUNTIME_TEST | TEST_ONLY | technical-transversal | business-transversal | static-code | business-file-import | non-runtime-evidence | — | `` |
 | auth-identity → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-foundation | static-code | technical-primitive | technical-dependency-policy | — | `` |
 | auth-identity → logistics | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | auth-identity → platform-ops | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-transversal | static-code | business-file-import | technical-dependency-policy | runtime-cycle | `` |
