@@ -243,7 +243,6 @@ module.exports = {
 
   db: {
     tables: [
-      'alerts: W',
       'boutique_categories: RW',
       'boutique_subcategories: RW',
       'catalog_exclusions: R',
@@ -326,6 +325,7 @@ module.exports = {
     ],
 
     consumes: [
+      'notifications (alert persistence via utils/alerts.js)',
       'auth-identity (projection boutique b-greeting consomme /api/auth/me pour personnaliser la surface catalogue)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',

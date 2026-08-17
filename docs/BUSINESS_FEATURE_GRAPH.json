@@ -4291,13 +4291,6 @@
       {
         "feature": "infrastructure",
         "category": "utils",
-        "declared": "utils/alerts.js",
-        "resolvedPath": "utils/alerts.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "utils",
         "declared": "utils/logger.js",
         "resolvedPath": "utils/logger.js",
         "status": "resolved-in-technical-graph"
@@ -7044,6 +7037,13 @@
         "category": "utils",
         "declared": "utils/email.js",
         "resolvedPath": "utils/email.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "notifications",
+        "category": "utils",
+        "declared": "utils/alerts.js",
+        "resolvedPath": "utils/alerts.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -13479,6 +13479,12 @@
       },
       {
         "feature": "notifications",
+        "fn": "createAlert",
+        "file": "utils/alerts.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "notifications",
         "fn": "notifyOrder*",
         "file": "services/notifications/order.js",
         "status": "resolved"
@@ -13693,6 +13699,12 @@
         "from": "business-rules",
         "to": "infrastructure",
         "raw": "infrastructure (journalisation, acces base)",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
+        "to": "notifications",
+        "raw": "notifications (alert persistence via utils/alerts.js)",
         "resolved": true
       },
       {
@@ -17182,10 +17194,6 @@
               },
               {
                 "sourceFileId": "services/pickup-authorization-service.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
-                "sourceFileId": "services/pickup-authorization-service.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -17272,6 +17280,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/pickup-authorization-service.js",
+                "targetFile": "utils/alerts.js"
+              },
               {
                 "sourceFileId": "routes/client-auth.js",
                 "targetFile": "services/notification-service.js"
@@ -17612,10 +17624,6 @@
               },
               {
                 "sourceFileId": "services/product-publication-guard.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
-                "sourceFileId": "services/product-publication-guard.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -17769,6 +17777,26 @@
               {
                 "sourceFileId": "tests/integration/catalog-import-json.integration.test.js",
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "catalog",
+        "to": "notifications",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/product-publication-guard.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/catalog-approval.js",
+                "targetFile": "utils/alerts.js"
               }
             ]
           }
@@ -20381,10 +20409,6 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "utils/parcelSync.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
                 "sourceFileId": "utils/parcels.js",
                 "targetFile": "utils/reference.js"
               },
@@ -20435,10 +20459,6 @@
               {
                 "sourceFileId": "services/pickup-secret-service.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/pickup-secret-service.js",
-                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/pickup-secret-service.js",
@@ -20701,6 +20721,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "utils/parcelSync.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
                 "sourceFileId": "services/parcel-operations.js",
                 "targetFile": "services/notification-service.js"
               },
@@ -20711,6 +20735,10 @@
               {
                 "sourceFileId": "services/scan-engine.js",
                 "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-service.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/pickup-secret-service.js",
@@ -21411,10 +21439,6 @@
               },
               {
                 "sourceFileId": "services/admin-order-refund.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
-                "sourceFileId": "services/admin-order-refund.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -21424,10 +21448,6 @@
               {
                 "sourceFileId": "services/order-payment-confirmation.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/order-payment-confirmation.js",
-                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "routes/admin/orders.js",
@@ -21737,6 +21757,14 @@
               {
                 "sourceFileId": "services/order-status-machine.js",
                 "targetFile": "services/client-notification-service.js"
+              },
+              {
+                "sourceFileId": "services/admin-order-refund.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/order-payment-confirmation.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "routes/orders/status.js",
@@ -22253,23 +22281,11 @@
               },
               {
                 "sourceFileId": "services/payment-paypal.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
-                "sourceFileId": "services/payment-paypal.js",
                 "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/payment-cash-confirm.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
-                "sourceFileId": "services/payment-cash-confirm.js",
                 "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/payment-stripe.js",
-                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/payment-stripe.js",
@@ -22286,10 +22302,6 @@
               {
                 "sourceFileId": "services/confirm-pickup-cash-payment.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/confirm-pickup-cash-payment.js",
-                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/confirm-pickup-cash-payment.js",
@@ -22298,10 +22310,6 @@
               {
                 "sourceFileId": "services/payment-paypal-events.js",
                 "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/cash-operations.js",
-                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/cash-operations.js",
@@ -22527,7 +22535,15 @@
               },
               {
                 "sourceFileId": "services/payment-paypal.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/payment-paypal.js",
                 "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "services/payment-cash-confirm.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/payment-cash-confirm.js",
@@ -22535,7 +22551,19 @@
               },
               {
                 "sourceFileId": "services/payment-stripe.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/payment-stripe.js",
                 "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "services/confirm-pickup-cash-payment.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/cash-operations.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "routes/cash.js",
@@ -23369,10 +23397,6 @@
               },
               {
                 "sourceFileId": "services/purchasing-trigger-service.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
-                "sourceFileId": "services/purchasing-trigger-service.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -23386,10 +23410,6 @@
               {
                 "sourceFileId": "services/purchasing-cancel-service.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/purchasing-cancel-service.js",
-                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/purchasing-cancel-service.js",
@@ -23410,10 +23430,6 @@
               {
                 "sourceFileId": "services/repair-ordered-without-purchase-orders.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/repair-ordered-without-purchase-orders.js",
-                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/purchasing-admin-service.js",
@@ -23490,6 +23506,18 @@
               {
                 "sourceFileId": "services/purchasing-trigger-service.js",
                 "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-trigger-service.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-cancel-service.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/repair-ordered-without-purchase-orders.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "tests/unit/purchasing-trigger-service.test.js",
@@ -25397,49 +25425,6 @@
       "lifecycleOwner": "business-rules",
       "resolution": "single-writer"
     },
-    "alerts": {
-      "writers": [
-        {
-          "feature": "catalog",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "logistics",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "notifications",
-          "mode": "W",
-          "declaredOwner": true,
-          "technical": false
-        },
-        {
-          "feature": "orders",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "payments",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "purchasing",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "notifications",
-      "resolution": "declared-table-owner"
-    },
     "boutique_categories": {
       "writers": [
         {
@@ -26517,6 +26502,19 @@
       "lifecycleOwner": null,
       "resolution": "no-declared-writer"
     },
+    "alerts": {
+      "writers": [
+        {
+          "feature": "notifications",
+          "mode": "W",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "notifications",
+      "resolution": "declared-table-owner"
+    },
     "client_notifications": {
       "writers": [
         {
@@ -26870,11 +26868,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "alerts",
-        "msg": "table \"alerts\" : lifecycle owner = notifications (db.tables \"!\"), mais aussi écrite par catalog, logistics, orders, payments, purchasing"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "orders",
         "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet"
       },
@@ -26889,11 +26882,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> orders",
         "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "alerts",
-        "msg": "table \"alerts\" : lifecycle owner = notifications (db.tables \"!\"), mais aussi écrite par catalog, logistics, orders, payments, purchasing"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -27111,11 +27099,11 @@
       }
     ],
     "summary": {
-      "signals": 4,
-      "debt": 4,
+      "signals": 3,
+      "debt": 3,
       "expectedTopology": 32,
       "generatorLimitations": 8,
-      "classifiedCandidates": 44
+      "classifiedCandidates": 43
     }
   }
 }

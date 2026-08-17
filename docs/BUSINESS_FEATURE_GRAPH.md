@@ -183,10 +183,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - dash: 4
 - tests: 41
 - tables owned (lifecycle): 13 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `catalog_media`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_attributes`, `supplier_catalog_imports`
-- tables written: 14
+- tables written: 13
 - interfaces exposed: 31
 - internal APIs: 6
-- dependencies (consumes): 9 — auth-identity, platform-ops, infrastructure, business-rules, economic-engine, sourcing, logistics, shared-cart, auth
+- dependencies (consumes): 10 — notifications, auth-identity, platform-ops, infrastructure, business-rules, economic-engine, sourcing, logistics, shared-cart, auth
 - consumers: 11 — economic-engine, infrastructure, inventory, logistics, orders, platform-ops, recommendations, shared-cart, sourcing, unsold-resolution, admin-dashboard
 
 ### customs _(business-feature)_
@@ -286,7 +286,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Infrastructure transversale consommée par toutes les features : middleware non-auth (error-handler, rate-limit, request-id, upload, validate), utilitaires partagés (logger, phone, rates, reference, rules), barrel de validation Joi, et bootstrap applicatif (Express, routes, crons, env, sécurité, migrations startup).
 
 - middleware: 5
-- utils: 5
+- utils: 4
 - validators: 1
 - bootstrap: 9
 - migrations: 6
@@ -346,7 +346,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - dash: 2
 - tests: 36
 - tables owned (lifecycle): 11 — `parcels`, `relais`, `parcel_items`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `carriers`, `parcel_events`, `pickup_verify_attempts`, `shipments`
-- tables written: 13
+- tables written: 12
 - interfaces exposed: 70
 - internal APIs: 15
 - dependencies (consumes): 15 — incident-management, infrastructure, business-rules, orders, customs, auth, auth-identity, catalog, economic-engine, notifications, payments, refunds, wallet, purchasing, loyalty
@@ -372,15 +372,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - tests: 18
 - migrations: 6
-- utils: 1
+- utils: 2
 - services: 12
 - routes: 4
 - tables owned (lifecycle): 3 — `alerts`, `client_notifications`, `notification_log`
 - tables written: 3
 - interfaces exposed: 6
-- internal APIs: 7
+- internal APIs: 8
 - dependencies (consumes): 5 — incident-management, platform-ops, infrastructure, auth, toutes les features emettrices
-- consumers: 10 — auth, auth-identity, incident-management, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart
+- consumers: 11 — auth, auth-identity, catalog, incident-management, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart
 
 ### orders _(business-feature)_
 
@@ -392,7 +392,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - boutique: 3
 - tests: 29
 - tables owned (lifecycle): 9 — `order_items`, `orders`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `disputes`
-- tables written: 10
+- tables written: 9
 - interfaces exposed: 27
 - internal APIs: 5
 - dependencies (consumes): 18 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds, shared-cart
@@ -408,7 +408,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - boutique: 2
 - tests: 19
 - tables owned (lifecycle): 4 — `cash_collections`, `cash_deposits`, `paypal_events_processed`, `stripe_events_processed`
-- tables written: 6
+- tables written: 5
 - interfaces exposed: 18
 - internal APIs: 2
 - dependencies (consumes): 12 — incident-management, infrastructure, platform-ops, auth, refunds, documents, notifications, business-rules, orders, logistics, loyalty, purchasing
@@ -450,7 +450,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 1
 - tests: 10
 - tables owned (lifecycle): 3 — `product_suppliers`, `purchase_orders`, `suppliers`
-- tables written: 5
+- tables written: 4
 - interfaces exposed: 10
 - internal APIs: 3
 - dependencies (consumes): 5 — infrastructure, orders, auth, notifications, logistics
@@ -561,7 +561,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 | Table | Lifecycle owner | Résolution | Writers | Readers |
 |---|---|---|---|---|
-| `alerts` | `notifications` | declared-table-owner | catalog, logistics, notifications, orders, payments, purchasing | — |
+| `alerts` | `notifications` | declared-table-owner | notifications | — |
 | `basket_items` | `shared-cart` | multi-writer-resolved-by-classification-signal | dashboard, shared-cart | — |
 | `baskets` | `shared-cart` | multi-writer-resolved-by-classification-signal | dashboard, shared-cart | — |
 | `boutique_categories` | `catalog` | single-writer | catalog | — |
@@ -1200,6 +1200,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `markCustomsCleared` | `services/parcel-mutation-service.js` | logistics | resolved |
 | `markBackorderReminderSent` | `services/parcel-mutation-service.js` | logistics | resolved |
 | `setNotificationOutcomeListener` | `services/notifications/internals.js` | notifications | resolved |
+| `createAlert` | `utils/alerts.js` | notifications | resolved |
 | `notifyOrder*` | `services/notifications/order.js` | notifications | resolved |
 | `notifyParcel*` | `services/notifications/parcel.js` | notifications | resolved |
 | `sendOtpMessage / sendMagicLink` | `services/notifications/otp-auth.js` | notifications | resolved |
@@ -1241,6 +1242,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | auth-passkey | platform-ops (`platform-ops (utils/logger.js — journalisation structurée des événements WebAuthn)`) | ✔ |
 | business-rules | auth (`auth (garde de route admin)`) | ✔ |
 | business-rules | infrastructure (`infrastructure (journalisation, acces base)`) | ✔ |
+| catalog | notifications (`notifications (alert persistence via utils/alerts.js)`) | ✔ |
 | catalog | auth-identity (`auth-identity (projection boutique b-greeting consomme /api/auth/me pour personnaliser la surface catalogue)`) | ✔ |
 | catalog | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
 | catalog | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
@@ -1434,12 +1436,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (4)
+### DETTE / DRIFT ACTIONNABLE (3)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ alerts — table "alerts" : lifecycle owner = notifications (db.tables "!"), mais aussi écrite par catalog, logistics, orders, payments, purchasing
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ users — table "users" : lifecycle owner = auth-identity (db.tables "!"), mais aussi écrite par auth, dashboard, loyalty
 
@@ -1529,9 +1530,9 @@ Meta Graph monté : oui.
 | auth-identity | auth | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | auth-identity | auth-passkey | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | auth-identity | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
-| auth-identity | infrastructure | static-code | 16 | **DECLARED_AND_OBSERVED** |
+| auth-identity | infrastructure | static-code | 15 | **DECLARED_AND_OBSERVED** |
 | auth-identity | logistics | static-code | 2 | **OBSERVED_UNDECLARED** |
-| auth-identity | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| auth-identity | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | auth-identity | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | auth-identity | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1544,8 +1545,9 @@ Meta Graph monté : oui.
 | catalog | auth-identity | interface | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | business-rules | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | catalog | economic-engine | static-code | 7 | **DECLARED_AND_OBSERVED** |
-| catalog | infrastructure | static-code | 34 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 33 | **DECLARED_AND_OBSERVED** |
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | orders | static-code | 12 | **OBSERVED_UNDECLARED** |
 | catalog | platform-ops | static-code | 62 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 11 | **DECLARED_AND_OBSERVED** |
@@ -1613,9 +1615,9 @@ Meta Graph monté : oui.
 | logistics | business-rules | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| logistics | infrastructure | static-code | 74 | **DECLARED_AND_OBSERVED** |
+| logistics | infrastructure | static-code | 72 | **DECLARED_AND_OBSERVED** |
 | logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| logistics | notifications | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| logistics | notifications | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | logistics | orders | static-code | 16 | **DECLARED_AND_OBSERVED** |
 | logistics | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1634,10 +1636,10 @@ Meta Graph monté : oui.
 | orders | customs | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| orders | infrastructure | static-code, interface | 54 | **DECLARED_AND_OBSERVED** |
+| orders | infrastructure | static-code, interface | 52 | **DECLARED_AND_OBSERVED** |
 | orders | logistics | static-code, interface | 18 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| orders | notifications | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| orders | notifications | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 8 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 37 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1648,10 +1650,10 @@ Meta Graph monté : oui.
 | payments | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | payments | documents | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | payments | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| payments | infrastructure | static-code, interface | 45 | **DECLARED_AND_OBSERVED** |
+| payments | infrastructure | static-code, interface | 40 | **DECLARED_AND_OBSERVED** |
 | payments | logistics | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | payments | loyalty | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| payments | notifications | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| payments | notifications | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | payments | orders | static-code | 15 | **DECLARED_AND_OBSERVED** |
 | payments | platform-ops | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | payments | purchasing | static-code | 5 | **DECLARED_AND_OBSERVED** |
@@ -1672,9 +1674,9 @@ Meta Graph monté : oui.
 | platform-ops | recommendations | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | shared-cart | static-code | 6 | **OBSERVED_UNDECLARED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 23 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 20 | **DECLARED_AND_OBSERVED** |
 | purchasing | logistics | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| purchasing | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| purchasing | notifications | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | recommendations | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |

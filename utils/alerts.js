@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          alerts-persistence-boundary
- * @domain        infrastructure
+ * @domain        notification
  * @layer         util
  * @criticality   high
  * @inputs        db_or_client, alert_fields
@@ -18,7 +18,7 @@
  * @db-read       none
  * @db-write      alerts
  * @db-txn        compatible_with_caller
- * @doctrine      writer_helper_is_not_lifecycle_owner
+ * @doctrine      lifecycle_owner_persistence_boundary
  * @impact-areas  operations, payment, logistics, catalog, refunds, purchasing
  * @version       2026-07-14
  */

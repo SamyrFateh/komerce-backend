@@ -78,6 +78,7 @@ module.exports = {
     ],
     utils: [
       'utils/email.js',
+      'utils/alerts.js',
     ],
     services: [
       'services/whatsapp-meta.js',
@@ -123,7 +124,7 @@ module.exports = {
   // (nom de table construit par variable) a échappé au scan.
   db: {
     tables: [
-      'alerts: W!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08) — écrivains additionnels : catalog, logistics, orders, payments, purchasing (cf. debt.knownGaps)
+      'alerts: W!',  // OWNER - persistence via utils/alerts.js
       'client_notifications: RW',
       'incidents: R',  // W-via incident-management/incident-write-service - LOT9
       'notification_log: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
@@ -155,6 +156,7 @@ module.exports = {
     ],
     internalApi: [
       { fn: 'setNotificationOutcomeListener', file: 'services/notifications/internals.js' },
+      { fn: 'createAlert', file: 'utils/alerts.js' },
       { fn: 'notifyOrder*',   file: 'services/notifications/order.js' },
       { fn: 'notifyParcel*',  file: 'services/notifications/parcel.js' },
       { fn: 'sendOtpMessage / sendMagicLink', file: 'services/notifications/otp-auth.js' },
