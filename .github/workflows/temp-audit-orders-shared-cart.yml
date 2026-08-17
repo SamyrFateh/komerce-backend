@@ -1,4 +1,4 @@
-name: Temporary audit orders shared-cart seam
+name: Temporary orders shared-cart public boundary
 
 on:
   push:
@@ -6,22 +6,89 @@ on:
       - governance/orders-shared-cart-boundary
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  audit:
+  finalize:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Print direct shared-cart imports and used symbols
+        with:
+          ref: governance/orders-shared-cart-boundary
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install Boutique test dependencies
+        run: npm --prefix public/boutique ci
+      - name: Apply public-boundary refactor
+        run: node scripts/temp-orders-shared-cart-boundary.js
+      - name: Remove temporary tooling before proof
         run: |
-          echo '=== b-cart group references ==='
-          grep -nE "group/|SharedList|sharedList|shared-cart" public/boutique/js/b-cart.js || true
-          echo '=== b-tracking group references ==='
-          grep -nE "group/|SharedCart|sharedCart|sharedList" public/boutique/js/b-tracking.js || true
-          echo '=== group-side-cart exports ==='
-          grep -nE '^export (async )?function|^export const|^export \{' public/boutique/js/group/group-side-cart.js || true
-          echo '=== group-api exports ==='
-          grep -nE '^export (async )?function|^export const|^export \{' public/boutique/js/group/group-api.js || true
-          echo '=== group-list-labels exports ==='
-          grep -nE '^export (async )?function|^export const|^export \{' public/boutique/js/group/group-list-labels.js || true
+          rm scripts/temp-orders-shared-cart-boundary.js
+          rm .github/workflows/temp-audit-orders-shared-cart.yml
+      - name: Run targeted Boutique tests
+        run: |
+          npm --prefix public/boutique test -- --runInBand \
+            tests/unit/b-cart.test.js \
+            tests/unit/b-tracking.test.js \
+            tests/unit/group-side-cart.test.js \
+            tests/unit/shared-cart-surface-api.test.js \
+            tests/unit/shared-cart-library-api.test.js
+      - name: Refresh governance projections
+        run: |
+          npm run business-graph:gen
+          npm run feature:360:gen
+      - name: Prove final seam truth and gates
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const g = require('./docs/BUSINESS_FEATURE_GRAPH.json');
+          const debt = g.drifts.debt || [];
+          const deps = debt.filter(x => x.type === 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY');
+          if (debt.length !== 27) throw new Error(`expected 27 total debt, got ${debt.length}`);
+          if (deps.length !== 1) throw new Error(`expected 1 dependency debt, got ${deps.length}`);
+          if (deps[0].ref !== 'catalog -> orders') throw new Error(`unexpected final dependency seam: ${deps.map(x => x.ref).join(', ')}`);
+          if (deps.some(x => x.ref === 'orders -> shared-cart')) throw new Error('orders shared-cart seam still present');
+          if ((g.drifts.warn || []).length !== debt.length) throw new Error('warning stream polluted');
+
+          const ex = JSON.parse(fs.readFileSync('governance/feature-dependency-exceptions.json','utf8')).exceptions;
+          if (ex.some(e => e.from === 'orders' && e.to === 'shared-cart')) throw new Error('stale orders/shared-cart exception remains');
+
+          const cart = fs.readFileSync('public/boutique/js/b-cart.js','utf8');
+          const tracking = fs.readFileSync('public/boutique/js/b-tracking.js','utf8');
+          if (!cart.includes("from './group/shared-cart-surface-api.js'")) throw new Error('b-cart does not use surface public API');
+          if (cart.includes("from './group/group-side-cart.js'")) throw new Error('b-cart still imports group-side-cart directly');
+          if (!tracking.includes("from './group/shared-cart-library-api.js'")) throw new Error('tracking does not use library public API');
+          if (!tracking.includes("import('./group/shared-cart-surface-api.js')")) throw new Error('tracking does not use surface public API');
+          for (const forbidden of ["from './group/group-api.js'", "from './group/group-list-labels.js'", "import('./group/group-side-cart.js')"]) {
+            if (tracking.includes(forbidden)) throw new Error('tracking still imports shared-cart internals: ' + forbidden);
+          }
+          console.log('ORDERS_SHARED_CART_BOUNDARY_CLOSED');
+          NODE
+          npm run business-graph:ratchet-check
+          npm run feature:check
+          npm run feature:360:check
+          git diff --check
+      - name: Commit final tree
+        run: |
+          git checkout HEAD -- .github/workflows/temp-audit-orders-shared-cart.yml scripts/temp-orders-shared-cart-boundary.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/boutique/js/b-cart.js public/boutique/js/b-tracking.js \
+            public/boutique/js/group/shared-cart-surface-api.js public/boutique/js/group/shared-cart-library-api.js \
+            public/boutique/tests/unit/b-tracking.test.js \
+            public/boutique/tests/unit/shared-cart-surface-api.test.js public/boutique/tests/unit/shared-cart-library-api.test.js \
+            public/boutique/features/shared-cart.feature.js public/boutique/features/orders-client.feature.js \
+            features/orders.feature.js governance/feature-dependency-exceptions.json \
+            governance/business-graph-drift-baseline.json \
+            docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md \
+            docs/FEATURE_360.json docs/FEATURE_360.md docs/GATE_FINDINGS.json
+          if git diff --cached --quiet; then
+            echo 'No final changes to commit.'
+          else
+            git commit -m 'refactor(boutique): expose shared-cart public boundaries'
+            git push origin HEAD:governance/orders-shared-cart-boundary
+          fi
