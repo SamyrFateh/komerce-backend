@@ -9316,32 +9316,32 @@
         "entry": "POST /api/auth/passkey/register/options",
         "method": "POST",
         "path": "/api/auth/passkey/register/options",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/auth-passkey.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "auth-passkey",
         "entry": "POST /api/auth/passkey/register/verify",
         "method": "POST",
         "path": "/api/auth/passkey/register/verify",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/auth-passkey.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "auth-passkey",
         "entry": "POST /api/auth/passkey/login/options",
         "method": "POST",
         "path": "/api/auth/passkey/login/options",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/auth-passkey.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "auth-passkey",
         "entry": "POST /api/auth/passkey/login/verify",
         "method": "POST",
         "path": "/api/auth/passkey/login/verify",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/auth-passkey.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "business-rules",
@@ -26474,26 +26474,6 @@
         "type": "EXPOSE-ENTRY-UNPARSED",
         "ref": "orders / GET/POST /api/orders",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "auth-passkey / POST /api/auth/passkey/login/options",
-        "msg": "\"POST /api/auth/passkey/login/options\" déclaré par auth-passkey mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "auth-passkey / POST /api/auth/passkey/login/verify",
-        "msg": "\"POST /api/auth/passkey/login/verify\" déclaré par auth-passkey mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "auth-passkey / POST /api/auth/passkey/register/options",
-        "msg": "\"POST /api/auth/passkey/register/options\" déclaré par auth-passkey mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "auth-passkey / POST /api/auth/passkey/register/verify",
-        "msg": "\"POST /api/auth/passkey/register/verify\" déclaré par auth-passkey mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
       },
       {
         "type": "EXPOSED-ROUTE-UNRESOLVED",
