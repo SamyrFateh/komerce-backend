@@ -103,7 +103,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 0
 - interfaces exposed: 0
 - internal APIs: 0
-- dependencies (consumes): 1 — sourcing
+- dependencies (consumes): 11 — catalog, customs, dashboard, decision-signals, documents, economic-engine, inventory, logistics, orders, payments, sourcing
 - consumers: 0
 
 ### auth _(technical-transversal)_
@@ -187,7 +187,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 31
 - internal APIs: 1
 - dependencies (consumes): 7 — platform-ops, infrastructure, business-rules, economic-engine, logistics, shared-cart, auth
-- consumers: 9 — economic-engine, infrastructure, inventory, logistics, orders, recommendations, shared-cart, sourcing, unsold-resolution
+- consumers: 10 — economic-engine, infrastructure, inventory, logistics, orders, recommendations, shared-cart, sourcing, unsold-resolution, admin-dashboard
 
 ### customs _(business-feature)_
 
@@ -203,7 +203,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 20
 - internal APIs: 0
 - dependencies (consumes): 5 — logistics, infrastructure, documents, auth, economic-engine
-- consumers: 5 — dashboard, documents, infrastructure, logistics, orders
+- consumers: 6 — dashboard, documents, infrastructure, logistics, orders, admin-dashboard
 
 ### dashboard _(business-transversal)_
 
@@ -219,7 +219,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 65
 - internal APIs: 0
 - dependencies (consumes): 14 — orders, infrastructure, payments, logistics, inventory, economic-engine, wallet, auth, customs, documents, recommendations, purchasing, business-rules, decision-signals
-- consumers: 4 — economic-engine, incident-management, infrastructure, orders
+- consumers: 5 — economic-engine, incident-management, infrastructure, orders, admin-dashboard
 
 ### decision-signals _(piloting-capability)_
 
@@ -233,7 +233,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 3 — auth, logistics, business-rules
-- consumers: 1 — dashboard
+- consumers: 2 — dashboard, admin-dashboard
 
 ### documents _(business-transversal)_
 
@@ -249,7 +249,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 9
 - internal APIs: 0
 - dependencies (consumes): 6 — infrastructure, orders, customs, wallet, refunds, auth-identity
-- consumers: 7 — auth-identity, customs, dashboard, orders, payments, refunds, wallet
+- consumers: 8 — auth-identity, customs, dashboard, orders, payments, refunds, wallet, admin-dashboard
 
 ### economic-engine _(business-feature)_
 
@@ -266,7 +266,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 73
 - internal APIs: 1
 - dependencies (consumes): 8 — infrastructure, logistics, catalog, auth, dashboard, orders, wallet, loyalty
-- consumers: 8 — catalog, customs, dashboard, infrastructure, logistics, orders, platform-ops, sourcing
+- consumers: 9 — catalog, customs, dashboard, infrastructure, logistics, orders, platform-ops, sourcing, admin-dashboard
 
 ### incident-management _(business-transversal)_
 
@@ -318,7 +318,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 8
 - internal APIs: 0
 - dependencies (consumes): 3 — catalog, infrastructure, auth
-- consumers: 2 — dashboard, infrastructure
+- consumers: 3 — dashboard, infrastructure, admin-dashboard
 
 ### legacy-control-tower _(deprecated)_
 
@@ -350,7 +350,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 70
 - internal APIs: 1
 - dependencies (consumes): 14 — infrastructure, business-rules, orders, customs, auth, auth-identity, catalog, economic-engine, notifications, payments, refunds, wallet, purchasing, loyalty
-- consumers: 12 — catalog, customs, dashboard, economic-engine, incident-management, infrastructure, orders, payments, platform-ops, purchasing, recommendations, decision-signals
+- consumers: 13 — catalog, customs, dashboard, economic-engine, incident-management, infrastructure, orders, payments, platform-ops, purchasing, recommendations, admin-dashboard, decision-signals
 
 ### loyalty _(business-feature)_
 
@@ -396,7 +396,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 27
 - internal APIs: 3
 - dependencies (consumes): 17 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds
-- consumers: 12 — auth, dashboard, documents, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, refunds, shared-cart, unsold-resolution
+- consumers: 13 — auth, dashboard, documents, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, refunds, shared-cart, unsold-resolution, admin-dashboard
 
 ### payments _(business-feature)_
 
@@ -412,7 +412,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 18
 - internal APIs: 2
 - dependencies (consumes): 11 — infrastructure, platform-ops, auth, refunds, documents, notifications, business-rules, orders, logistics, loyalty, purchasing
-- consumers: 6 — dashboard, incident-management, infrastructure, logistics, orders, wallet
+- consumers: 7 — dashboard, incident-management, infrastructure, logistics, orders, wallet, admin-dashboard
 
 ### platform _(frontend-transversal)_
 
@@ -1364,6 +1364,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | wallet | documents (`documents (FF-C1 2026-07-29 — émission ou lecture documentaire ; preuve: services/wallet-service.js -> services/documents/wallet-receipt.js ; routes/wallet.js -> services/documents/wallet-receipt.js)`) | ✔ |
 | wallet | auth-identity (`auth-identity (identification du client)`) | ✔ |
 | wallet | payments (`payments (finalise le paiement — payment-service.js markPaid, transactionnel, quand le debit wallet couvre integralement la commande ; invariant D-02, payment-service reste seul proprietaire de payment_status — O7.2 Cycle D)`) | ✔ |
+| admin-dashboard | catalog (`catalog`) | ✔ |
+| admin-dashboard | customs (`customs`) | ✔ |
+| admin-dashboard | dashboard (`dashboard`) | ✔ |
+| admin-dashboard | decision-signals (`decision-signals`) | ✔ |
+| admin-dashboard | documents (`documents`) | ✔ |
+| admin-dashboard | economic-engine (`economic-engine`) | ✔ |
+| admin-dashboard | inventory (`inventory`) | ✔ |
+| admin-dashboard | logistics (`logistics`) | ✔ |
+| admin-dashboard | orders (`orders`) | ✔ |
+| admin-dashboard | payments (`payments`) | ✔ |
 | admin-dashboard | sourcing (`sourcing`) | ✔ |
 | decision-signals | auth (`auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/signals.js -> middleware/auth.js)`) | ✔ |
 | decision-signals | logistics (`logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/radar-queries.js -> utils/parcels.js)`) | ✔ |
@@ -1375,20 +1385,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (52)
+### DETTE / DRIFT ACTIONNABLE (42)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> catalog — dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "catalog"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> customs — dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "customs"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> dashboard — dépendance cross-feature observée (canal: interface, 14 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "dashboard"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> decision-signals — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "decision-signals"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> documents — dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "documents"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> economic-engine — dépendance cross-feature observée (canal: interface, 22 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "economic-engine"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> inventory — dépendance cross-feature observée (canal: interface, 5 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "inventory"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> logistics — dépendance cross-feature observée (canal: interface, 7 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "logistics"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> orders — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "orders"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> payments — dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "payments"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> auth-identity — dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
@@ -1494,16 +1494,16 @@ Meta Graph monté : oui.
 
 | Consumer | Provider | Canaux | Preuves | Statut |
 |---|---|---|---|---|
-| admin-dashboard | catalog | interface | 2 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | customs | interface | 4 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | dashboard | interface | 14 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | decision-signals | interface | 3 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | documents | interface | 1 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | economic-engine | interface | 22 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | inventory | interface | 5 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | logistics | interface | 7 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | orders | interface | 3 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | payments | interface | 6 | **OBSERVED_UNDECLARED** |
+| admin-dashboard | catalog | interface | 2 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | customs | interface | 4 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | dashboard | interface | 14 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | decision-signals | interface | 3 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | economic-engine | interface | 22 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | inventory | interface | 5 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | logistics | interface | 7 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | orders | interface | 3 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | payments | interface | 6 | **DECLARED_AND_OBSERVED** |
 | admin-dashboard | sourcing | interface | 3 | **DECLARED_AND_OBSERVED** |
 | auth | auth-identity | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | auth | infrastructure | static-code | 14 | **DECLARED_AND_OBSERVED** |
@@ -1682,16 +1682,6 @@ Meta Graph monté : oui.
 
 ### Observed undeclared dependencies
 
-- `admin-dashboard` → `catalog` (canaux: interface)
-- `admin-dashboard` → `customs` (canaux: interface)
-- `admin-dashboard` → `dashboard` (canaux: interface)
-- `admin-dashboard` → `decision-signals` (canaux: interface)
-- `admin-dashboard` → `documents` (canaux: interface)
-- `admin-dashboard` → `economic-engine` (canaux: interface)
-- `admin-dashboard` → `inventory` (canaux: interface)
-- `admin-dashboard` → `logistics` (canaux: interface)
-- `admin-dashboard` → `orders` (canaux: interface)
-- `admin-dashboard` → `payments` (canaux: interface)
 - `auth-identity` → `logistics` (canaux: static-code)
 - `catalog` → `auth-identity` (canaux: interface)
 - `catalog` → `orders` (canaux: static-code)
@@ -1785,7 +1775,7 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 
 | Family | N | Policy |
 |---|---|---|
-| PROJECTION | 10 | projection-dependency-policy |
+| PROJECTION | 0 | projection-dependency-policy |
 | COMPOSITION_ROOT_WIRING | 13 | application-wiring-not-consumption |
 | NON_RUNTIME_TEST | 6 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 2 | technical-dependency-policy |
@@ -1794,22 +1784,13 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | BUSINESS_FEATURE_INTERFACE | 5 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **39** | |
+| **TOTAL** | **29** | |
 
 ### Projection dependencies
 
 Vues Dash → endpoint backend. Jamais dans un `contract.consumes` backend.
 
-- `admin-dashboard` → `catalog` — interface, RUNTIME_ONLY
-- `admin-dashboard` → `customs` — interface, RUNTIME_ONLY
-- `admin-dashboard` → `dashboard` — interface, RUNTIME_ONLY
-- `admin-dashboard` → `decision-signals` — interface, RUNTIME_ONLY
-- `admin-dashboard` → `documents` — interface, RUNTIME_ONLY
-- `admin-dashboard` → `economic-engine` — interface, RUNTIME_ONLY
-- `admin-dashboard` → `inventory` — interface, RUNTIME_ONLY
-- `admin-dashboard` → `logistics` — interface, RUNTIME_ONLY
-- `admin-dashboard` → `orders` — interface, RUNTIME_ONLY
-- `admin-dashboard` → `payments` — interface, RUNTIME_ONLY
+- _none_
 
 ### Composition root wiring
 

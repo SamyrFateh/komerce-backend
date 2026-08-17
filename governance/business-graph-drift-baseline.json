@@ -10,7 +10,7 @@
     "EXPOSED-ROUTE-OWNER-MISMATCH::KNOWN_DEBT": 0,
     "EXPOSED-ROUTE-UNRESOLVED::ACTIONABLE_DRIFT": 0,
     "LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER::KNOWN_DEBT": 0,
-    "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT": 26,
+    "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT": 16,
     "WRITER-NOT-OWNER::ACTIONABLE_DRIFT": 1,
     "WRITER-NOT-OWNER::KNOWN_DEBT": 25
   },
@@ -19,5 +19,6 @@
   "_comment_debt_truth_20260817": "Debt signal truth: seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT sont ratchettées. EXPECTED_TOPOLOGY et GENERATOR_LIMITATION restent visibles dans Business Graph mais sont hors dette et hors baseline. Baseline resserrée après correction auth, jamais augmentée.",
   "_comment_invalid_consumes_20260817": "Canonicalisation des 8 consumes invalides : notification→notifications, payment→payments, products→catalog, operations→platform-ops ; doublons orders supprimés. Baseline uniquement resserrée, jamais augmentée.",
   "_comment_support_deps_20260817": "Déclaration de 28 dépendances transversales réellement observées : 21 vers infrastructure et 7 vers platform-ops. decision-signals→infrastructure reste volontairement visible : le registre canonique ne fournit aucun manifest decision-signals où déclarer ce contrat. Aucun runtime modifié ; baseline uniquement resserrée de 67 à 39 après preuve générée.",
-  "_comment_composition_root_20260817": "13 paires déjà qualifiées par O6 comme COMPOSITION_ROOT_WIRING / application-wiring-not-consumption / exceptionRequired=false sortent du compteur de dette et restent visibles en EXPECTED_TOPOLOGY. Baseline resserrée 39→26, jamais relevée."
+  "_comment_composition_root_20260817": "13 paires déjà qualifiées par O6 comme COMPOSITION_ROOT_WIRING / application-wiring-not-consumption / exceptionRequired=false sortent du compteur de dette et restent visibles en EXPECTED_TOPOLOGY. Baseline resserrée 39→26, jamais relevée.",
+  "_comment_admin_dashboard_20260817": "10 dépendances d’interface admin-dashboard→provider sont observées dans le graphe et désormais déclarées dans le manifest canonique de projection. Baseline resserrée 26→16, jamais relevée."
 }

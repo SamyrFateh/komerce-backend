@@ -14287,6 +14287,66 @@
       },
       {
         "from": "admin-dashboard",
+        "to": "catalog",
+        "raw": "catalog",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "customs",
+        "raw": "customs",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "dashboard",
+        "raw": "dashboard",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "decision-signals",
+        "raw": "decision-signals",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "documents",
+        "raw": "documents",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "economic-engine",
+        "raw": "economic-engine",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "inventory",
+        "raw": "inventory",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "logistics",
+        "raw": "logistics",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "orders",
+        "raw": "orders",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "payments",
+        "raw": "payments",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
         "to": "sourcing",
         "raw": "sourcing",
         "resolved": true
@@ -15960,7 +16020,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "admin-dashboard",
@@ -15992,7 +16052,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "admin-dashboard",
@@ -16074,7 +16134,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "admin-dashboard",
@@ -16101,7 +16161,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "admin-dashboard",
@@ -16118,7 +16178,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "admin-dashboard",
@@ -16240,7 +16300,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "admin-dashboard",
@@ -16277,7 +16337,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "admin-dashboard",
@@ -16324,7 +16384,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "admin-dashboard",
@@ -16351,7 +16411,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "admin-dashboard",
@@ -16393,7 +16453,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "admin-dashboard",
@@ -23906,7 +23966,7 @@
       "server.js"
     ],
     "familySummary": {
-      "PROJECTION": 10,
+      "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 13,
       "NON_RUNTIME_TEST": 6,
       "TECHNICAL_PRIMITIVE": 2,
@@ -23917,156 +23977,6 @@
       "UNCLASSIFIED": 0
     },
     "pairClassifications": [
-      {
-        "from": "admin-dashboard",
-        "to": "catalog",
-        "family": "PROJECTION",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "projection",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "admin-dashboard",
-        "to": "customs",
-        "family": "PROJECTION",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "projection",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "admin-dashboard",
-        "to": "dashboard",
-        "family": "PROJECTION",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "projection",
-        "providerKind": "business-transversal",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "admin-dashboard",
-        "to": "decision-signals",
-        "family": "PROJECTION",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "projection",
-        "providerKind": "piloting-capability",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "admin-dashboard",
-        "to": "documents",
-        "family": "PROJECTION",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "projection",
-        "providerKind": "business-transversal",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "admin-dashboard",
-        "to": "economic-engine",
-        "family": "PROJECTION",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "projection",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "admin-dashboard",
-        "to": "inventory",
-        "family": "PROJECTION",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "projection",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "admin-dashboard",
-        "to": "logistics",
-        "family": "PROJECTION",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "projection",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "admin-dashboard",
-        "to": "orders",
-        "family": "PROJECTION",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "projection",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "admin-dashboard",
-        "to": "payments",
-        "family": "PROJECTION",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "projection",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "projection-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
       {
         "from": "auth-identity",
         "to": "logistics",
@@ -24515,9 +24425,6 @@
     ],
     "unclassified": [],
     "matrix": {
-      "PROJECTION|RUNTIME_ONLY|projection|business-feature|interface": 7,
-      "PROJECTION|RUNTIME_ONLY|projection|business-transversal|interface": 2,
-      "PROJECTION|RUNTIME_ONLY|projection|piloting-capability|interface": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 2,
@@ -26308,56 +26215,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> catalog",
-        "msg": "dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"catalog\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> customs",
-        "msg": "dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"customs\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> dashboard",
-        "msg": "dépendance cross-feature observée (canal: interface, 14 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"dashboard\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> decision-signals",
-        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"decision-signals\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> documents",
-        "msg": "dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"documents\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> economic-engine",
-        "msg": "dépendance cross-feature observée (canal: interface, 22 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"economic-engine\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> inventory",
-        "msg": "dépendance cross-feature observée (canal: interface, 5 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"inventory\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> logistics",
-        "msg": "dépendance cross-feature observée (canal: interface, 7 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"logistics\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> orders",
-        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> payments",
-        "msg": "dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"payments\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> logistics",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
       },
@@ -26683,56 +26540,6 @@
       }
     ],
     "debt": [
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> catalog",
-        "msg": "dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"catalog\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> customs",
-        "msg": "dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"customs\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> dashboard",
-        "msg": "dépendance cross-feature observée (canal: interface, 14 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"dashboard\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> decision-signals",
-        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"decision-signals\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> documents",
-        "msg": "dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"documents\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> economic-engine",
-        "msg": "dépendance cross-feature observée (canal: interface, 22 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"economic-engine\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> inventory",
-        "msg": "dépendance cross-feature observée (canal: interface, 5 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"inventory\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> logistics",
-        "msg": "dépendance cross-feature observée (canal: interface, 7 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"logistics\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> orders",
-        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> payments",
-        "msg": "dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"payments\""
-      },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> logistics",
@@ -27114,8 +26921,8 @@
       }
     ],
     "summary": {
-      "signals": 85,
-      "debt": 52,
+      "signals": 75,
+      "debt": 42,
       "expectedTopology": 25,
       "generatorLimitations": 8
     }
