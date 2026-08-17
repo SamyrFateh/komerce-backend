@@ -6,10 +6,11 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db
+ * @depends       db, services/parcel-item-mutation-service.js
  * @used-by       bootstrap/crons.js, routes/inventory-api.js
  * @db-read       inventory_items, order_items, orders, parcel_items, parcels, products
- * @db-write      inventory_items, orders, parcel_items
+ * @db-write      inventory_items, orders
+ * @db-write-via:parcel-item-mutation-service parcel_items
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  inventory
@@ -30,6 +31,9 @@
  * ═══════════════════════════════════════════════════════════════
  */
 const db = require('../db');
+const {
+  assignSingleOrderItemToParcel,
+} = require('./parcel-item-mutation-service');
 
 const BUFFER_DEFAULT_HOURS = 12;
 
@@ -137,12 +141,10 @@ async function scanIntoParcel(inventoryItemId, parcelId) {
   `, [inventoryItemId, parcelId]);
 
   // Also add to parcel_items if not already there
-  await db.query(`
-    INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
-    SELECT $1, $2, oi.product_id, 1
-    FROM order_items oi WHERE oi.id = $3
-    ON CONFLICT DO NOTHING
-  `, [parcelId, item.order_item_id, item.order_item_id]);
+  await assignSingleOrderItemToParcel(db, {
+    parcelId,
+    orderItemId: item.order_item_id,
+  });
 
   // Update order completion
   await updateOrderCompletion(item.order_id);

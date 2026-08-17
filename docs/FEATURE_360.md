@@ -8,7 +8,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **14**
 - Attention : **16**
 - Blocked : **0**
-- Business dependencies : **167**
+- Business dependencies : **168**
 - Direct cross-feature imports : **1**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
@@ -41,9 +41,9 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | economic-engine | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_components, economic_snapshots, economic_variables, exchange_rates, finance_config, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_matrices_audit, pricing_strategies, pricing_strategy_history, risk_provisions | auth, catalog, dashboard, infrastructure, logistics, loyalty, orders | admin-dashboard, catalog, customs, dashboard, infrastructure, orders, platform-ops, sourcing | 1 |
 | incident-management | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | incidents | infrastructure | _aucune_ | 5 |
 | infrastructure | technical-foundation | 🟢 HEALTHY | 🟡 ATTENTION | schema_migrations | auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notifications, orders, payments, platform-ops, recommendations, shared-cart, wallet | auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, sourcing, unsold-resolution, wallet | 11 |
-| inventory | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | inventory_items | auth, infrastructure | admin-dashboard, infrastructure | 1 |
+| inventory | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | inventory_items | auth, infrastructure, logistics | admin-dashboard, infrastructure | 1 |
 | legacy-control-tower | deprecated | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
-| logistics | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | carriers, parcel_events, parcel_items, parcels, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, relais, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, infrastructure, loyalty, notifications, orders, payments, purchasing, refunds | admin-dashboard, catalog, dashboard, decision-signals, economic-engine, infrastructure, orders, payments, platform-ops, purchasing | 3 |
+| logistics | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | carriers, parcel_events, parcel_items, parcels, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, relais, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, infrastructure, loyalty, notifications, orders, payments, purchasing, refunds | admin-dashboard, catalog, dashboard, decision-signals, economic-engine, infrastructure, inventory, orders, payments, platform-ops, purchasing | 3 |
 | loyalty | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers | auth, infrastructure, notifications | economic-engine, logistics, orders, payments | 2 |
 | notifications | business-transversal | 🟢 HEALTHY | 🟡 ATTENTION | alerts, client_notifications, notification_log | auth, infrastructure, platform-ops | auth, auth-identity, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart | 1 |
 | orders | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_history, disputes, order_comments, order_item_cost_imputations, order_items, order_status_history, orders, recipients, sms_log | auth, auth-identity, business-rules, catalog, customs, documents, economic-engine, infrastructure, logistics, loyalty, notifications, payments, platform-ops, purchasing, refunds, shared-cart, wallet | admin-dashboard, dashboard, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, recommendations, refunds, shared-cart | 1 |
@@ -478,7 +478,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - auth-guard.js protège toutes les routes admin ; aucune route admin sans vérification de token
 
 **Owns** : `order_incidents`, `partners`
-**Writes (not owner)** : `basket_items` (writer-not-owner), `baskets` (writer-not-owner), `incidents` (writer-not-owner), `invoices` (writer-not-owner), `loyalty_rewards` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `parcel_items` (writer-not-owner), `parcels` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `sms_log` (writer-not-owner), `users` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
+**Writes (not owner)** : `basket_items` (writer-not-owner), `baskets` (writer-not-owner), `incidents` (writer-not-owner), `invoices` (writer-not-owner), `loyalty_rewards` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `parcels` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `sms_log` (writer-not-owner), `users` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
 
 **Exposes** : 0 internal API(s), 65 HTTP interface(s)
 
@@ -816,16 +816,16 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 
 **Owns** : `inventory_items`
-**Writes (not owner)** : `orders` (writer-not-owner), `parcel_items` (writer-not-owner)
+**Writes (not owner)** : `orders` (writer-not-owner)
 
 **Exposes** : 0 internal API(s), 8 HTTP interface(s)
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED)
 **Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 3 test-only, 0 composition-root
+**Technical context** : 0 primitive dependencies, 2 test-only, 0 composition-root
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
@@ -917,14 +917,19 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Owns** : `carriers`, `parcel_events`, `parcel_items`, `parcels`, `pickup_print_tokens`, `pickup_reveal_codes`, `pickup_verify_attempts`, `relais`, `scan_events`, `scans`, `shipments`
 **Writes (not owner)** : `alerts` (writer-not-owner), `incidents` (writer-not-owner), `orders` (writer-not-owner)
 
-**Exposes** : 4 internal API(s), 70 HTTP interface(s)
+**Exposes** : 9 internal API(s), 70 HTTP interface(s)
+  - `addParcelItem` (services/parcel-item-mutation-service.js) — resolved
+  - `assignParcelItem` (services/parcel-item-mutation-service.js) — resolved
+  - `assignSingleOrderItemToParcel` (services/parcel-item-mutation-service.js) — resolved
+  - `assignWholeOrderItemToParcel` (services/parcel-item-mutation-service.js) — resolved
   - `detachUserFromScans` (services/scan-write-service.js) — resolved
   - `recordHubPreparationScan` (services/scan-write-service.js) — resolved
   - `recordQrCollectionScan` (services/scan-write-service.js) — resolved
+  - `removeParcelItem` (services/parcel-item-mutation-service.js) — resolved
   - `transitionParcelStatus` (services/parcel-operations.js) — resolved
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED)
-**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -940,15 +945,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "economic-engine" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 79 fichier(s) déclaré(s)
+**Implementation** : 81 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 4
   - middleware : 1
   - migrations : 2
   - routes : 18
-  - services : 14
-  - tests : 34
+  - services : 15
+  - tests : 35
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_

@@ -10,14 +10,14 @@
 |---|---|
 | PROJECTION | 0 |
 | COMPOSITION_ROOT_WIRING | 13 |
-| NON_RUNTIME_TEST | 6 |
+| NON_RUNTIME_TEST | 5 |
 | TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
 | CROSS_FEATURE_DIRECT_IMPORT | 1 |
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **20** |
+| **TOTAL** | **19** |
 
 ## The 94 pairs (from → to)
 
@@ -34,7 +34,6 @@
 | infrastructure → purchasing | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → sourcing | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → unsold-resolution | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
-| inventory → logistics | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | inventory → orders | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | inventory → payments | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | platform-ops → auth-passkey | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
