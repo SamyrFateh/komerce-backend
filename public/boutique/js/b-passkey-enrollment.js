@@ -157,7 +157,8 @@ function closePrompt(overlay, background, focusOrigin) {
   }, 150);
 }
 
-function mountPrompt() {
+function mountPrompt({ purpose = 'enrollment' } = {}) {
+  const recovery = purpose === 'recovery';
   const focusOrigin = document.activeElement;
   const overlay = document.createElement('div');
   overlay.className = 'k-id-overlay k-passkey-enroll-overlay';
@@ -170,8 +171,8 @@ function mountPrompt() {
       <div class="k-id-handle" aria-hidden="true"></div>
       <div class="k-id-head">
         <div>
-          <span class="k-id-title" id="k-passkey-title">Sécuriser cet appareil</span>
-          <span class="k-id-sub" id="k-passkey-sub">Connectez-vous ensuite avec la sécurité de votre téléphone ou ordinateur, sans code WhatsApp.</span>
+          <span class="k-id-title" id="k-passkey-title">${recovery ? 'Créer une nouvelle passkey' : 'Sécuriser cet appareil'}</span>
+          <span class="k-id-sub" id="k-passkey-sub">${recovery ? 'Votre compte est récupéré. Créez une nouvelle passkey pour vos prochaines connexions.' : 'Connectez-vous ensuite avec la sécurité de votre téléphone ou ordinateur, sans code WhatsApp.'}</span>
         </div>
         <button class="k-id-close" type="button" aria-label="Fermer">✕</button>
       </div>
@@ -292,19 +293,20 @@ function mountPrompt() {
   return overlay;
 }
 
-export async function offerPasskeyEnrollment() {
+export async function offerPasskeyEnrollment({ purpose = 'enrollment' } = {}) {
   if (!isPasskeySupported()) return false;
-  if (storageGet(OFFER_SEEN_KEY) === '1') return false;
+  const recovery = purpose === 'recovery';
+  if (!recovery && storageGet(OFFER_SEEN_KEY) === '1') return false;
   if (document.querySelector(OVERLAY_SELECTOR)) return false;
 
   // Marque seulement l'offre UX, jamais une preuve d'authentification.
   // sessionStorage ne contient ni JWT, ni challenge, ni credential.
   storageSet(OFFER_SEEN_KEY, '1');
-  mountPrompt();
+  mountPrompt({ purpose });
   return true;
 }
 
-function queuePostOtpOffer(attempt = 0) {
+function queuePostOtpOffer(attempt = 0, context = {}) {
   if (offerQueued) return;
   offerQueued = true;
 
@@ -312,11 +314,11 @@ function queuePostOtpOffer(attempt = 0) {
     const blockingDialog = document.querySelector('[aria-modal="true"]');
     if (blockingDialog && attempt < 40) {
       offerQueued = false;
-      window.setTimeout(() => queuePostOtpOffer(attempt + 1), 250);
+      window.setTimeout(() => queuePostOtpOffer(attempt + 1, context), 250);
       return;
     }
     offerQueued = false;
-    if (!blockingDialog) offerPasskeyEnrollment().catch(() => {});
+    if (!blockingDialog) offerPasskeyEnrollment(context).catch(() => {});
   };
 
   window.setTimeout(run, attempt === 0 ? 250 : 0);
@@ -330,6 +332,7 @@ export function setupPasskeyEnrollment() {
     // L'absence de method reste assimilée à OTP pour compatibilité avec
     // d'éventuels émetteurs historiques le temps de leur migration.
     if (event?.detail?.method && event.detail.method !== 'otp') return;
-    queuePostOtpOffer(0);
+    const purpose = event?.detail?.purpose === 'recovery' ? 'recovery' : 'enrollment';
+    queuePostOtpOffer(0, { purpose });
   });
 }
