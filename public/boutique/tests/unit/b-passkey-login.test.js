@@ -18,8 +18,9 @@ function response(ok, body, status = ok ? 200 : 400) {
 }
 
 async function flush() {
-  await Promise.resolve();
-  await Promise.resolve();
+  // fetch() -> response.json() -> fetchJson() -> caller .then()/await :
+  // vider toute la chaîne de microtasks sans dépendre d'un timer réel.
+  for (let i = 0; i < 8; i += 1) await Promise.resolve();
 }
 
 function installWebAuthn({ parse = null, get = null } = {}) {
