@@ -1,5 +1,6 @@
 name: Temporary AUTH-8e Bearer audit
 
+# Certification trigger only; this helper is removed by the finalizer.
 on:
   push:
     branches: [auth/8e-bearer-boundary]
