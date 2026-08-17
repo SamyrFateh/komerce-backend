@@ -1,0 +1,190 @@
+name: Temporary AUTH-6 finalizer
+
+on:
+  push:
+    branches: [auth/6-authenticator-management]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      JWT_SECRET: contract-introspection-only-secret-2026-08-not-runtime
+      QR_SECRET: contract-introspection-qr-secret-2026-08-not-runtime
+      DATABASE_URL: postgresql://contract:contract@127.0.0.1:5432/contract
+      FRONTEND_URL: http://localhost:3000
+      INTERNAL_API_KEY: contract-introspection-api-key
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_RP_NAME: Komerce
+      WEBAUTHN_ORIGINS: http://localhost:3000
+      META_WA_APP_SECRET: contract-introspection-meta-secret
+      META_WA_VERIFY_TOKEN: contract-introspection-meta-verify
+      STRIPE_SECRET_KEY: sk_test_contract_introspection_only
+      STRIPE_WEBHOOK_SECRET: whsec_contract_introspection_only
+      PAYPAL_CLIENT_ID: contract-client-id
+      PAYPAL_CLIENT_SECRET: contract-client-secret
+      PAYPAL_WEBHOOK_ID: contract-webhook-id
+      PAYPAL_ENV: sandbox
+      TWILIO_ACCOUNT_SID: AC00000000000000000000000000000000
+      TWILIO_AUTH_TOKEN: contract-token
+      TWILIO_WHATSAPP_FROM: whatsapp:+14155238886
+      AT_API_KEY: contract-key
+      AT_USERNAME: sandbox
+      CLOUDINARY_CLOUD_NAME: contract
+      CLOUDINARY_API_KEY: contract
+      CLOUDINARY_API_SECRET: contract
+      KOMERCE_DISABLE_CRONS: 'true'
+      KOMERCE_SKIP_STARTUP_MIGRATIONS: 'true'
+      KOMERCE_SKIP_BOOT_ENSURE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wire AUTH-6 UI, manifests and API contract source
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def rep(path, old, new, expected=1, label='replace'):
+              p = Path(path); text = p.read_text(encoding='utf-8'); n = text.count(old)
+              if n != expected: raise SystemExit(f'{label}: expected {expected}, got {n}')
+              p.write_text(text.replace(old, new, expected), encoding='utf-8')
+
+          # Mon Komerce: add a dedicated "Moyens de connexion" subsection to the
+          # existing Retrait & sécurité block; dynamic values stay in textContent.
+          rep('public/boutique/js/b-komerce.js',
+              "import { bus } from './b-bus.js';\n",
+              "import { bus } from './b-bus.js';\nimport { loadPasskeySecurity } from './b-passkey-security.js';\n",
+              label='b-komerce import')
+          rep('public/boutique/js/b-komerce.js',
+              "      '<div class=\"k-kmc-sec-doctrine\">' +\n",
+              "      '<div class=\"k-kmc-auth-block\" id=\"k-kmc-passkeys-block\">' +\n        '<h4 class=\"k-kmc-auth-title\">Moyens de connexion</h4>' +\n        '<p class=\"k-kmc-field-hint\">Vos passkeys permettent de vous connecter sans code WhatsApp. Révoquez uniquement un appareil que vous ne souhaitez plus autoriser.</p>' +\n        '<div id=\"k-kmc-passkeys-content\"></div>' +\n      '</div>' +\n      '<div class=\"k-kmc-sec-doctrine\">' +\n",
+              label='security passkey section')
+          rep('public/boutique/js/b-komerce.js',
+              "  _loadAuthSection(block.querySelector('#k-kmc-auth-content'));\n",
+              "  loadPasskeySecurity(block.querySelector('#k-kmc-passkeys-content'));\n  _loadAuthSection(block.querySelector('#k-kmc-auth-content'));\n",
+              label='load passkey security')
+
+          # Backend canonical feature card.
+          p = Path('features/auth-passkey.feature.js'); text = p.read_text(encoding='utf-8')
+          text = text.replace("status:   'staging',   // passe à production après AUTH-3/4 (adoption UI + login nominal)", "status:   'production',   // AUTH-3/4 nominal livré ; AUTH-6 ajoute la gestion explicite")
+          text = text.replace(
+              "  service: 'Enregistrer et vérifier des passkeys WebAuthn L3 (authentificateur cryptographique, ' +\n           'K2 de la doctrine auth) pour un utilisateur déjà identifié — capacité serveur ' +\n           'uniquement à ce stade (AUTH-2). L\\'UI et le login-passkey nominal viennent en AUTH-3/4.',",
+              "  service: 'Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres ' +\n           'et révocation explicite des authentificateurs du compte (AUTH-2→6).',")
+          text = text.replace(
+              "      'UI/bouton \"Sécuriser Komerce\" (AUTH-3)',\n      'login-passkey comme parcours nominal / step-up (AUTH-4/5)',\n      'recovery et gestion multi-appareils (AUTH-6/7)',\n      'toute logique OTP/magic-link/guest-checkout — reste dans auth-identity',",
+              "      'step-up des opérations sensibles (AUTH-7)',\n      'durcissement final de session/cookie/CSRF (AUTH-8b→e)',\n      'toute logique OTP/magic-link/guest-checkout — reste dans auth-identity',")
+          text = text.replace(
+              "      'services/webauthn-service.js',\n",
+              "      'services/webauthn-service.js',\n      'services/webauthn-management-service.js',\n")
+          text = text.replace(
+              "      'tests/unit/auth-passkey.test.js',\n",
+              "      'tests/unit/auth-passkey.test.js',\n      'tests/unit/auth-passkey-management.test.js',\n")
+          text = text.replace("    authedRoutesDetected: 2,\n    totalRoutes: 4,", "    authedRoutesDetected: 4,\n    totalRoutes: 6,")
+          text = text.replace(
+              "          'publics par nature (c\\'est le mécanisme de login) ; leur sécurité vient de la ' +\n          'vérification cryptographique, pas d\\'un middleware d\\'auth.',",
+              "          'publics par nature (c\\'est le mécanisme de login). GET /credentials et ' +\n          'DELETE /credentials/:id exigent authenticate et ne retournent que des métadonnées sûres.',")
+          text = text.replace(
+              "      'POST /api/auth/passkey/login/verify',\n",
+              "      'POST /api/auth/passkey/login/verify',\n      'GET /api/auth/passkey/credentials',\n      'DELETE /api/auth/passkey/credentials/{id}',\n")
+          text = text.replace(
+              "    'une credential revoked_at non nul est inutilisable au login, sans exception',\n",
+              "    'une credential revoked_at non nul est inutilisable au login, sans exception',\n    'la gestion AUTH-6 ne retourne jamais credential_id, public_key ni sign_count au navigateur',\n    'une révocation est toujours scellée par id de gestion ET user_id authentifié',\n")
+          p.write_text(text, encoding='utf-8')
+
+          # Boutique canonical feature slice.
+          p = Path('public/boutique/features/auth-passkey.feature.js'); text = p.read_text(encoding='utf-8')
+          text = text.replace("status: 'staging',", "status: 'production',")
+          text = text.replace(
+              "  service: 'Enrôlement après OTP (AUTH-3), login Passkey nominal (AUTH-4) et recovery téléphone → OTP → nouvelle Passkey (AUTH-5).',",
+              "  service: 'Enrôlement (AUTH-3), login nominal (AUTH-4), recovery OTP (AUTH-5) et gestion/révocation des passkeys dans Mon Komerce (AUTH-6).',")
+          text = text.replace("      'gestion/révocation des authentificateurs (AUTH-6)',\n", "")
+          text = text.replace(
+              "      '../js/b-passkey-login.js',\n",
+              "      '../js/b-passkey-login.js',\n      '../js/b-passkey-security.js',\n")
+          text = text.replace(
+              "      '../tests/unit/b-identity-recovery.test.js',\n",
+              "      '../tests/unit/b-identity-recovery.test.js',\n      '../tests/unit/b-passkey-security.test.js',\n")
+          text = text.replace(
+              "      'openPasskeyLogin (b-passkey-login.js)',\n",
+              "      'openPasskeyLogin (b-passkey-login.js)',\n      'loadPasskeySecurity (b-passkey-security.js)',\n")
+          text = text.replace(
+              "    'le recovery ne révoque jamais automatiquement les autres credentials',\n",
+              "    'le recovery ne révoque jamais automatiquement les autres credentials',\n    'Mon Komerce affiche uniquement des métadonnées sûres de passkeys et exige confirmation avant révocation',\n    'la révocation UI utilise uniquement l identifiant de gestion opaque fourni par le serveur',\n")
+          p.write_text(text, encoding='utf-8')
+
+          # Contract generator: add AUTH-6 management endpoints to the same canonical
+          # source that already owns AUTH-2/AUTH-4 WebAuthn surfaces.
+          p = Path('scripts/contract-generate.js'); text = p.read_text(encoding='utf-8')
+          marker = "  { prefix: '/api/auth/passkey/login/verify',     method: 'post', schema: null },\n"
+          if text.count(marker) != 1: raise SystemExit('contract route marker mismatch')
+          text = text.replace(marker, marker +
+              "  { prefix: '/api/auth/passkey/credentials',          method: 'get',    schema: null },\n" +
+              "  { prefix: '/api/auth/passkey/credentials',          method: 'delete', schema: null },\n", 1)
+          known = "  '/api/auth/passkey/login/verify':     { post: { fields: ['verified','user'], source: 'route-read' } },\n"
+          if text.count(known) != 1: raise SystemExit('contract known response marker mismatch')
+          text = text.replace(known, known +
+              "  '/api/auth/passkey/credentials': { get: { fields: ['credentials'], source: 'route-read' } },\n" +
+              "  '/api/auth/passkey/credentials/{id}': { delete: { fields: ['revoked','id'], source: 'route-read' } },\n", 1)
+          ov = "  'POST /api/auth/passkey/login/verify': { '400': { description: 'Réponse WebAuthn invalide' }, '401': { description: 'Passkey inconnue, révoquée ou refusée' }, '500': { description: 'Erreur serveur WebAuthn' } },\n"
+          if text.count(ov) != 1: raise SystemExit('contract response override marker mismatch')
+          text = text.replace(ov, ov +
+              "  'GET /api/auth/passkey/credentials': { '401': { description: 'Session requise' }, '500': { description: 'Erreur serveur' } },\n" +
+              "  'DELETE /api/auth/passkey/credentials/{id}': { '400': { description: 'Identifiant de passkey invalide' }, '401': { description: 'Session requise' }, '404': { description: 'Passkey introuvable pour ce compte' }, '500': { description: 'Erreur serveur' } },\n", 1)
+          p.write_text(text, encoding='utf-8')
+          PY
+      - name: Remove temporary helper from intended final tree
+        run: rm .github/workflows/tmp-auth6-finalize.yml
+      - run: npm ci
+      - name: AUTH-2/6 backend regression
+        run: npx jest tests/unit/auth-passkey.test.js tests/unit/auth-passkey-management.test.js --runInBand
+      - run: npm --prefix public/boutique ci
+      - name: AUTH-3→6 Boutique regression
+        working-directory: public/boutique
+        run: npx jest tests/unit/b-passkey-enrollment.test.js tests/unit/b-passkey-login.test.js tests/unit/b-passkey-recovery.test.js tests/unit/b-identity-passkey.test.js tests/unit/b-identity-recovery.test.js tests/unit/b-passkey-security.test.js --runInBand
+      - name: Generate and verify API contract
+        run: |
+          node scripts/contract-generate.js
+          node scripts/contract-check.js
+          node - <<'NODE'
+          const spec = require('./docs/contract/openapi.json');
+          const list = spec.paths?.['/api/auth/passkey/credentials']?.get;
+          const revoke = spec.paths?.['/api/auth/passkey/credentials/{id}']?.delete;
+          if (!list || !revoke) throw new Error('AUTH-6 endpoints absent from OpenAPI');
+          for (const op of [list, revoke]) {
+            const st = op.responses?.['200']?.content?.['application/json']?.schema?.['x-contract-status'];
+            if (!st || st === 'UNKNOWN') throw new Error(`AUTH-6 response uncovered: ${st}`);
+          }
+          NODE
+      - name: Refresh governance projections
+        run: |
+          node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+          node scripts/gen-gate-findings.js
+          node scripts/gen-feature-360.js
+      - name: Verify final tree
+        run: |
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+          node scripts/contract-check.js
+          git diff --check
+      - name: Commit final AUTH-6 tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add routes/auth-passkey.js services/webauthn-management-service.js tests/unit/auth-passkey-management.test.js
+          git add public/boutique/js/b-komerce.js public/boutique/js/b-passkey-security.js public/boutique/features/auth-passkey.feature.js public/boutique/tests/unit/b-passkey-security.test.js
+          git add features/auth-passkey.feature.js scripts/contract-generate.js docs/contract/openapi.json docs/contract/DEBT.md
+          git add docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/GATE_FINDINGS.json docs/FEATURE_360.json docs/FEATURE_360.md
+          git add -u .github/workflows/tmp-auth6-finalize.yml
+          git commit -m "feat(auth): add Passkey authenticator management"
+          git push origin HEAD:auth/6-authenticator-management
