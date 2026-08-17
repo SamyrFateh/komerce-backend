@@ -35,6 +35,7 @@ import { apiGet, apiPut, apiDelete, apiDownload } from './b-utils.js';
 import { getCurrentIdentity, requireIdentity } from './b-identity.js';
 import { bus } from './b-bus.js';
 import { loadPasskeySecurity } from './b-passkey-security.js';
+import { withStepUpRetry } from './b-passkey-step-up.js';
 
 // ── État interne ───────────────────────────────────────────────────────────────
 
@@ -465,7 +466,7 @@ function _renderAuthActive(container, data) {
     if (!window.confirm('Supprimer cette autorisation de retrait exceptionnel ?')) return;
     btn.disabled = true;
     try {
-      await apiDelete('/api/auth/me/pickup-authorization');
+      await withStepUpRetry(() => apiDelete('/api/auth/me/pickup-authorization'));
       _renderAuthForm(container, null);
     } catch (_) {
       btn.disabled = false;
@@ -527,9 +528,9 @@ function _renderAuthForm(container, prefill) {
     status.textContent = '';
 
     try {
-      const result = await apiPut('/api/auth/me/pickup-authorization', {
+      const result = await withStepUpRetry(() => apiPut('/api/auth/me/pickup-authorization', {
         given_names: givenNames, family_name: familyName,
-      });
+      }));
       _renderAuthActive(container, result);
     } catch (_) {
       status.textContent = '\u26a0\ufe0f \u00c9chec \u2014 r\u00e9essayez';

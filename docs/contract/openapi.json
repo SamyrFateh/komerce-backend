@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 17,
-    "total_routes": 431,
+    "total_routes": 433,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -11579,6 +11579,102 @@
           },
           "500": {
             "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/auth/passkey/step-up/options": {
+      "post": {
+        "summary": "POST /api/auth/passkey/step-up/options",
+        "x-route-file": "routes/auth-passkey.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "challenge": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "timeout": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "rpId": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "allowCredentials": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "userVerification": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "extensions": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session requise"
+          },
+          "409": {
+            "description": "Aucune passkey active"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          },
+          "500": {
+            "description": "Erreur serveur WebAuthn"
+          }
+        }
+      }
+    },
+    "/api/auth/passkey/step-up/verify": {
+      "post": {
+        "summary": "POST /api/auth/passkey/step-up/verify",
+        "x-route-file": "routes/auth-passkey.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "verified": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Réponse WebAuthn invalide"
+          },
+          "401": {
+            "description": "Session ou confirmation invalide"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          },
+          "500": {
+            "description": "Erreur serveur WebAuthn"
           }
         }
       }

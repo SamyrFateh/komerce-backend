@@ -248,6 +248,7 @@ describe('services/webauthn-service', () => {
 describe('routes/auth-passkey', () => {
   let app;
   let currentUser;
+  let currentAuth;
   const express = require('express');
   const request = require('supertest');
 
@@ -255,13 +256,14 @@ describe('routes/auth-passkey', () => {
     jest.resetModules();
     jest.clearAllMocks();
     currentUser = null;
+    currentAuth = null;
     process.env.WEBAUTHN_RP_ID = 'komerce.shop';
     process.env.WEBAUTHN_ORIGINS = 'https://komerce.shop';
     process.env.JWT_SECRET = 'test_secret_min_32_chars_aaaaaaaaaaaaaaaa';
 
     app = express();
     app.use(express.json());
-    app.use((req, res, next) => { req.user = currentUser; next(); });
+    app.use((req, res, next) => { req.user = currentUser; req.auth = currentAuth; next(); });
 
     jest.isolateModules(() => {
       jest.doMock('../../middleware/auth', () => ({
@@ -285,8 +287,16 @@ describe('routes/auth-passkey', () => {
     expect(res.status).toBe(401);
   });
 
-  it('register/verify avec réponse malformée (authentifié) → 400', async () => {
+  it('register/options avec session mais sans preuve récente → 428 step_up_required', async () => {
     currentUser = { id: 'user-A', role: 'client' };
+    const res = await request(app).post('/api/auth/passkey/register/options').send({});
+    expect(res.status).toBe(428);
+    expect(res.body.code).toBe('step_up_required');
+  });
+
+  it('register/verify avec réponse malformée après preuve OTP récente → 400', async () => {
+    currentUser = { id: 'user-A', role: 'client' };
+    currentAuth = { authTime: Math.floor(Date.now() / 1000), amr: ['otp'] };
     const res = await request(app).post('/api/auth/passkey/register/verify').send({});
     expect(res.status).toBe(400);
   });

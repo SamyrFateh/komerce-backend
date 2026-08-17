@@ -20,7 +20,6 @@
 
 const express = require('express');
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
 const { authenticate } = require('../middleware/auth');
@@ -28,6 +27,7 @@ const { sendMagicLink } = require('../services/notification-service');
 const log = require('../utils/logger').child({ module: 'client-auth' });
 // AUTH-8a — cookie d'auth centralisé (utils/auth-cookie.js)
 const { setAuthCookie } = require('../utils/auth-cookie');
+const { signAuthToken } = require('../utils/auth-session');
 
 function maskPhone(phone) {
   if (!phone) return null;
@@ -137,11 +137,7 @@ router.get('/magic-link/validate', async (req, res, next) => {
     );
 
     // Create JWT session (30 days)
-    const jwtToken = jwt.sign(
-      { id: user.id, role: user.role, fullName: user.full_name, jti: crypto.randomUUID() },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
-    );
+    const jwtToken = signAuthToken(user, { method: 'magic_link', phone: user.phone, fullName: user.full_name, expiresIn: process.env.JWT_EXPIRES || '30d' });
 
     // GOV-07 : Lax requis (pas Strict) — cette route est appelée lors d'une
     // navigation top-level cross-site (lien magic link depuis un email).

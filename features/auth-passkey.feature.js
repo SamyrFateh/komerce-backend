@@ -35,7 +35,7 @@ module.exports = {
 
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres ' +
-           'et révocation explicite des authentificateurs du compte (AUTH-2→6).',
+           'et révocation explicite des authentificateurs du compte (AUTH-2→7).',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
@@ -44,7 +44,6 @@ module.exports = {
         '@simplewebauthn/server, stockage/rotation des credentials et des challenges éphémères',
     ],
     out: [
-      'step-up des opérations sensibles (AUTH-7)',
       'durcissement final de session/cookie/CSRF (AUTH-8b→e)',
       'toute logique OTP/magic-link/guest-checkout — reste dans auth-identity',
     ],
@@ -55,16 +54,22 @@ module.exports = {
     services: [
       'services/webauthn-service.js',
       'services/webauthn-management-service.js',
+      'utils/auth-session.js',
+      'middleware/require-recent-auth.js',
     ],
     routes: [
       'routes/auth-passkey.js',
     ],
     migrations: [
       'migrations/133_webauthn_credentials.sql',
+      'migrations/134_webauthn_step_up.sql',
     ],
     tests: [
       'tests/unit/auth-passkey.test.js',
       'tests/unit/auth-passkey-management.test.js',
+      'tests/unit/auth-passkey-step-up.test.js',
+      'tests/unit/auth-session.test.js',
+      'tests/unit/require-recent-auth.test.js',
     ],
   },
 
@@ -82,8 +87,8 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 4,
-    totalRoutes: 6,
+    authedRoutesDetected: 6,
+    totalRoutes: 8,
     note: 'register/options et register/verify exigent authenticate (K1 minimum — on ne pose ' +
           'une passkey que sur un compte déjà prouvé). login/options et login/verify sont ' +
           'publics par nature (c\'est le mécanisme de login). GET /credentials et ' +
@@ -97,6 +102,8 @@ module.exports = {
       'POST /api/auth/passkey/login/verify',
       'GET /api/auth/passkey/credentials',
       'DELETE /api/auth/passkey/credentials/{id}',
+      'POST /api/auth/passkey/step-up/options',
+      'POST /api/auth/passkey/step-up/verify',
     ],
     consumes: [
       'auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, ' +
@@ -145,6 +152,9 @@ module.exports = {
     'une credential revoked_at non nul est inutilisable au login, sans exception',
     'la gestion AUTH-6 ne retourne jamais credential_id, public_key ni sign_count au navigateur',
     'une révocation est toujours scellée par id de gestion ET user_id authentifié',
+    'un challenge step_up est distinct de login/register et lié au user_id de la session',
+    'une passkey d un autre compte ne peut jamais satisfaire un step-up',
+    'les mutations de sécurité exigent auth_time récent avec amr otp ou passkey',
     'sign_count : régression rejetée pour les credentials non sauvegardées (backup_state=false) ; ' +
       'tolérée et tracée pour les passkeys synchronisées (backup_state=true)',
   ],

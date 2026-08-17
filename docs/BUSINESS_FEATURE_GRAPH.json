@@ -109,7 +109,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2026-08",
-        "service": "Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→6).",
+        "service": "Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→7).",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -937,6 +937,20 @@
       },
       {
         "feature": "auth-passkey",
+        "category": "services",
+        "declared": "utils/auth-session.js",
+        "resolvedPath": "utils/auth-session.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "services",
+        "declared": "middleware/require-recent-auth.js",
+        "resolvedPath": "middleware/require-recent-auth.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth-passkey",
         "category": "routes",
         "declared": "routes/auth-passkey.js",
         "resolvedPath": "routes/auth-passkey.js",
@@ -951,6 +965,13 @@
       },
       {
         "feature": "auth-passkey",
+        "category": "migrations",
+        "declared": "migrations/134_webauthn_step_up.sql",
+        "resolvedPath": "migrations/134_webauthn_step_up.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
         "category": "tests",
         "declared": "tests/unit/auth-passkey.test.js",
         "resolvedPath": "tests/unit/auth-passkey.test.js",
@@ -961,6 +982,27 @@
         "category": "tests",
         "declared": "tests/unit/auth-passkey-management.test.js",
         "resolvedPath": "tests/unit/auth-passkey-management.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
+        "declared": "tests/unit/auth-passkey-step-up.test.js",
+        "resolvedPath": "tests/unit/auth-passkey-step-up.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
+        "declared": "tests/unit/auth-session.test.js",
+        "resolvedPath": "tests/unit/auth-session.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
+        "declared": "tests/unit/require-recent-auth.test.js",
+        "resolvedPath": "tests/unit/require-recent-auth.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9374,6 +9416,22 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "auth-passkey",
+        "entry": "POST /api/auth/passkey/step-up/options",
+        "method": "POST",
+        "path": "/api/auth/passkey/step-up/options",
+        "routeFile": "routes/auth-passkey.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "auth-passkey",
+        "entry": "POST /api/auth/passkey/step-up/verify",
+        "method": "POST",
+        "path": "/api/auth/passkey/step-up/verify",
+        "routeFile": "routes/auth-passkey.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "business-rules",
         "entry": "GET /api/admin/rules",
         "method": "GET",
@@ -14149,6 +14207,14 @@
       },
       {
         "boutiqueManifest": "auth-passkey",
+        "category": "js",
+        "declared": "../js/b-passkey-step-up.js",
+        "resolvedPath": "public/boutique/js/b-passkey-step-up.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth-passkey",
         "category": "tests",
         "declared": "../tests/unit/b-passkey-enrollment.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-passkey-enrollment.test.js",
@@ -14184,6 +14250,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-passkey-security.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-passkey-security.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth-passkey",
+        "category": "tests",
+        "declared": "../tests/unit/b-passkey-step-up.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-passkey-step-up.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16210,12 +16284,32 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "routes/client-auth.js",
+                "targetFile": "utils/auth-session.js"
+              },
+              {
+                "sourceFileId": "routes/auth.js",
+                "targetFile": "middleware/require-recent-auth.js"
+              },
+              {
+                "sourceFileId": "routes/auth.js",
+                "targetFile": "utils/auth-session.js"
+              },
+              {
+                "sourceFileId": "routes/otp.js",
+                "targetFile": "utils/auth-session.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/b-identity.js",
                 "targetFile": "public/boutique/js/b-passkey-login.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-komerce.js",
                 "targetFile": "public/boutique/js/b-passkey-security.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-komerce.js",
+                "targetFile": "public/boutique/js/b-passkey-step-up.js"
               }
             ]
           }
@@ -23476,10 +23570,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 779
+        "filesObserved": 784
       },
       "boutique": {
-        "filesObserved": 150,
+        "filesObserved": 152,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -23726,7 +23820,7 @@
         "channels": [
           "static-code"
         ],
-        "couplingObserved": "business-file-import",
+        "couplingObserved": "import-mixed",
         "policy": "boundary-remediation-required",
         "exceptionRequired": true,
         "exceptionReasons": [
@@ -24725,7 +24819,7 @@
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|technical-primitive": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 3,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|import-mixed": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 6,
@@ -24748,6 +24842,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 2,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1
@@ -26674,7 +26769,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> auth-passkey",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"auth-passkey\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"auth-passkey\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

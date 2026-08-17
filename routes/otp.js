@@ -21,7 +21,6 @@
 const express = require('express');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 const pool = require('../db');
@@ -61,6 +60,7 @@ function normalizePurpose(raw) {
 
 // AUTH-8a — cookie d'auth centralisé (utils/auth-cookie.js)
 const { setAuthCookie, clearAuthCookie } = require('../utils/auth-cookie');
+const { signAuthToken } = require('../utils/auth-session');
 
 function buildUserPayload(user, phone) {
   return {
@@ -102,17 +102,7 @@ async function createLightweightUser(phone, name) {
 }
 
 function signKomerceJwt(user, phone) {
-  return jwt.sign(
-    {
-      id: user.id,
-      role: user.role || 'client',
-      phone,
-      fullName: user.full_name,
-      jti: crypto.randomUUID(),
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES || '30d' }
-  );
+  return signAuthToken(user, { method: 'otp', phone, fullName: user.full_name });
 }
 
 // ════════════════════════════════════════════════════════════════════
