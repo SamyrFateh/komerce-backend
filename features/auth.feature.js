@@ -47,6 +47,10 @@ module.exports = {
       'middleware/verify-authkey-webhook.js',
       'utils/user-cache.js',
     ],
+    utils: [
+      // AUTH-8a — source unique de vérité du cookie/session JWT Komerce.
+      'utils/auth-cookie.js',
+    ],
     services: [
     ],
     routes: [
