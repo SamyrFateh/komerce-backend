@@ -2,7 +2,7 @@
  * @feature       auth-passkey
  * @type          transversal
  * @domain        auth-passkey
- * @status        staging
+ * @status        production
  * @owner         backend-core
  * @since         2026-08
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
@@ -66,6 +66,8 @@ module.exports = {
     tests: [
       'tests/unit/auth-passkey.test.js',
       'tests/unit/auth-passkey-management.test.js',
+      'tests/unit/webauthn-service.test.js',
+      'tests/unit/webauthn-management-service.test.js',
       'tests/unit/auth-passkey-step-up.test.js',
       'tests/unit/require-recent-auth.test.js',
     ],
@@ -107,7 +109,8 @@ module.exports = {
       'auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, ' +
         'utils/auth-session.js — signAuthToken, politique de session canonique AUTH-8)',
       'auth-identity (users — identité utilisateur canonique lue sans mutation)',
-      'infrastructure (db.js, utils/logger.js)',
+      'infrastructure (db.js — accès aux tables WebAuthn et users en lecture)',
+      'platform-ops (utils/logger.js — journalisation structurée des événements WebAuthn)',
     ],
   },
 

@@ -44,14 +44,14 @@
   "summary": {
     "features": 30,
     "healthy": 7,
-    "attention": 22,
-    "blocked": 1,
-    "businessDependencies": 114,
-    "directCrossFeatureImports": 5,
+    "attention": 23,
+    "blocked": 0,
+    "businessDependencies": 116,
+    "directCrossFeatureImports": 4,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
     "ontologyGaps": 0,
-    "debtItemsTotal": 122,
+    "debtItemsTotal": 121,
     "gateHealthy": 14,
     "gateBlocked": 0
   },
@@ -1207,6 +1207,13 @@
           ]
         },
         {
+          "provider": "auth-passkey",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -1304,8 +1311,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
-        "directCrossFeatureImports": 1,
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -1373,17 +1380,12 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 2,
+        "debtCount": 1,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table revoked_tokens — écrite par auth-identity (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -1477,7 +1479,7 @@
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 6,
             "files": [
               {
                 "declared": "tests/unit/auth-passkey-management.test.js",
@@ -1498,11 +1500,21 @@
                 "declared": "tests/unit/require-recent-auth.test.js",
                 "resolvedPath": "tests/unit/require-recent-auth.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/webauthn-management-service.test.js",
+                "resolvedPath": "tests/unit/webauthn-management-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/webauthn-service.test.js",
+                "resolvedPath": "tests/unit/webauthn-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 10,
+        "totalFiles": 12,
         "boutiqueManifest": "auth-passkey",
         "boutiqueFiles": {
           "count": 10,
@@ -1671,22 +1683,32 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
-      "consumedBy": [],
+      "consumedBy": [
+        {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "projections": {
         "projectedBy": []
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
-        "details": [
-          {
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
+        "details": []
       },
       "boundaryHealth": {
         "status": "HEALTHY",
@@ -14701,6 +14723,13 @@
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "auth-passkey",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
         {
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",

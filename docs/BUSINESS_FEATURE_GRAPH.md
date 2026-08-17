@@ -135,7 +135,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 4
 - interfaces exposed: 22
 - internal APIs: 3
-- dependencies (consumes): 4 — auth, notifications, wallet, documents
+- dependencies (consumes): 5 — auth, auth-passkey, notifications, wallet, documents
 - consumers: 7 — auth-passkey, documents, logistics, loyalty, orders, shared-cart, wallet
 
 ### auth-passkey _(business-feature)_
@@ -145,13 +145,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 3
 - routes: 1
 - migrations: 2
-- tests: 4
+- tests: 6
 - tables owned (lifecycle): 2 — `webauthn_credentials`, `webauthn_challenges`
 - tables written: 2
 - interfaces exposed: 8
 - internal APIs: 0
-- dependencies (consumes): 3 — auth, auth-identity, infrastructure
-- consumers: 0
+- dependencies (consumes): 4 — auth, auth-identity, infrastructure, platform-ops
+- consumers: 1 — auth-identity
 
 ### business-rules _(business-transversal)_
 
@@ -440,7 +440,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 33
 - internal APIs: 0
 - dependencies (consumes): 5 — business-rules, auth, economic-engine, logistics, orders
-- consumers: 1 — payments
+- consumers: 2 — auth-passkey, payments
 
 ### purchasing _(business-feature)_
 
@@ -1195,12 +1195,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | auth | operations (`operations`) | ✖ |
 | auth | orders (`orders`) | ✔ |
 | auth-identity | auth (`auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)`) | ✔ |
+| auth-identity | auth-passkey (`auth-passkey (middleware/require-recent-auth.js — preuve récente exigée par les mutations de sécurité du profil)`) | ✔ |
 | auth-identity | notifications (`notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)`) | ✔ |
 | auth-identity | wallet (`wallet (projection boutique account : b-komerce.js lit uniquement le solde canonique via GET /api/wallet)`) | ✔ |
 | auth-identity | documents (`documents (projection boutique account : b-komerce.js liste et télécharge les factures et remboursements privés)`) | ✔ |
 | auth-passkey | auth (`auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, utils/auth-session.js — signAuthToken, politique de session canonique AUTH-8)`) | ✔ |
 | auth-passkey | auth-identity (`auth-identity (users — identité utilisateur canonique lue sans mutation)`) | ✔ |
-| auth-passkey | infrastructure (`infrastructure (db.js, utils/logger.js)`) | ✔ |
+| auth-passkey | infrastructure (`infrastructure (db.js — accès aux tables WebAuthn et users en lecture)`) | ✔ |
+| auth-passkey | platform-ops (`platform-ops (utils/logger.js — journalisation structurée des événements WebAuthn)`) | ✔ |
 | business-rules | auth (`auth (garde de route admin)`) | ✔ |
 | business-rules | infrastructure (`infrastructure (journalisation, acces base)`) | ✔ |
 | catalog | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)`) | ✔ |
@@ -1346,7 +1348,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### WARN / DEBT (134)
+### WARN / DEBT (132)
 
 Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
 
@@ -1383,11 +1385,9 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "auth" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 14 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> auth-passkey — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> platform-ops — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "platform-ops"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-passkey -> platform-ops — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-passkey" vers "platform-ops"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> auth-identity — dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
@@ -1497,7 +1497,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 791 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 793 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 152 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1523,7 +1523,7 @@ Meta Graph monté : oui.
 | auth | infrastructure | static-code | 14 | **OBSERVED_UNDECLARED** |
 | auth | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | auth-identity | auth | static-code | 8 | **DECLARED_AND_OBSERVED** |
-| auth-identity | auth-passkey | static-code | 4 | **OBSERVED_UNDECLARED** |
+| auth-identity | auth-passkey | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | auth-identity | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
 | auth-identity | infrastructure | static-code | 16 | **OBSERVED_UNDECLARED** |
 | auth-identity | logistics | static-code | 2 | **OBSERVED_UNDECLARED** |
@@ -1533,7 +1533,7 @@ Meta Graph monté : oui.
 | auth-passkey | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| auth-passkey | platform-ops | static-code | 2 | **OBSERVED_UNDECLARED** |
+| auth-passkey | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | business-rules | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | business-rules | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1709,11 +1709,9 @@ Meta Graph monté : oui.
 - `auth` → `auth-identity` (canaux: static-code)
 - `auth` → `infrastructure` (canaux: static-code)
 - `auth` → `notifications` (canaux: static-code)
-- `auth-identity` → `auth-passkey` (canaux: static-code)
 - `auth-identity` → `infrastructure` (canaux: static-code)
 - `auth-identity` → `logistics` (canaux: static-code)
 - `auth-identity` → `platform-ops` (canaux: static-code)
-- `auth-passkey` → `platform-ops` (canaux: static-code)
 - `catalog` → `auth-identity` (canaux: interface)
 - `catalog` → `infrastructure` (canaux: static-code)
 - `catalog` → `orders` (canaux: static-code)
@@ -1841,13 +1839,13 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | PROJECTION | 10 | projection-dependency-policy |
 | COMPOSITION_ROOT_WIRING | 16 | application-wiring-not-consumption |
 | NON_RUNTIME_TEST | 8 | non-runtime-evidence |
-| TECHNICAL_PRIMITIVE | 32 | technical-dependency-policy |
+| TECHNICAL_PRIMITIVE | 31 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 2 | business-dependency-declare-candidate |
-| CROSS_FEATURE_DIRECT_IMPORT | 5 | boundary-remediation-required |
+| CROSS_FEATURE_DIRECT_IMPORT | 4 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 5 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **78** | |
+| **TOTAL** | **76** | |
 
 ### Projection dependencies
 
@@ -1904,7 +1902,6 @@ Usage de db.js / middleware / logger / utils / validators d'un transversal techn
 
 - `auth-identity` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `auth-identity` → `platform-ops` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
-- `auth-passkey` → `platform-ops` — business-file-import, RUNTIME_AND_TEST
 - `auth` → `infrastructure` — import-mixed, RUNTIME_AND_TEST
 - `catalog` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `catalog` → `platform-ops` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
@@ -1946,7 +1943,6 @@ Consommation réelle d'un service transversal métier — candidat `contract.con
 
 require() direct d'un fichier d'une autre business-feature — couture à casser AVANT déclaration.
 
-- `auth-identity` → `auth-passkey` — import-mixed, RUNTIME_ONLY _(exception: direct-import)_
 - `catalog` → `orders` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
 - `orders` → `shared-cart` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
 - `recommendations` → `orders` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
