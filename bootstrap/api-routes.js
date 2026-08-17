@@ -103,6 +103,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const notificationApiRouter = require('../routes/notification-api');
   const clientNotificationsRouter = require('../routes/client-notifications');
   const otpRouter = require('../routes/otp');
+  const authPasskeyRouter = require('../routes/auth-passkey');
   const clientTrackingRouter = require('../routes/client-tracking');
   const simulatorRouter = require('../routes/simulator');
   const pickupRouter    = require('../routes/pickup-secret');
@@ -152,6 +153,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
 
   app.use('/api/tracking', trackingRouter);
   app.use('/api/auth/otp', otpRouter);
+  app.use('/api/auth/passkey', authPasskeyRouter); // AUTH-2 — feature auth-passkey
   app.use('/api/client/tracking', clientTrackingRouter);
   app.use('/api/simulator', simulatorRouter);
   // FIX: alias /api/admin/simulator → frontend appelait le mauvais préfixe → 404 sur /status
