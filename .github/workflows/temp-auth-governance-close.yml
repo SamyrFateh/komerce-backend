@@ -37,6 +37,9 @@ jobs:
       - name: Registry bijection
         run: node scripts/registry-doc-check.js --strict
 
+      - name: Remove temporary tooling before canonical generation
+        run: rm .github/workflows/temp-auth-governance-close.yml scripts/temp-auth-governance-close.js
+
       - name: Refresh canonical projections
         run: |
           npm run business-graph:gen
@@ -50,15 +53,11 @@ jobs:
           node scripts/feature-guard.js --feature auth-passkey --strict
           git diff --check
 
-      - name: Commit generated closure
+      - name: Commit final AUTH governance closure
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          if git diff --cached --quiet; then
-            echo "No generated changes to commit"
-            exit 0
-          fi
           git commit -m "fix(governance): close passkey registry gaps"
           git push origin HEAD:auth/close-passkey-governance
