@@ -46,4 +46,34 @@ describe('Business Graph warning semantics — vérité de la dette', () => {
       'INVALID_DECLARATION', 'ACTIONABLE_DRIFT', 'KNOWN_DEBT',
     ]);
   });
+
+  it('classe le wiring du composition root comme topologie attendue quand O6 le prouve', () => {
+    const warning = { type: 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY', ref: 'infrastructure -> auth-passkey', msg: 'observée sans consumes' };
+    const pairClassifications = [{
+      from: 'infrastructure', to: 'auth-passkey', family: 'COMPOSITION_ROOT_WIRING',
+      policy: 'application-wiring-not-consumption', exceptionRequired: false,
+    }];
+    const p = semantics.partition([warning], { ROOT, pairClassifications });
+    expect(p.debt).toHaveLength(0);
+    expect(p.expectedTopology).toEqual([warning]);
+    expect(p.classified[0].semantic.category).toBe('EXPECTED_TOPOLOGY');
+  });
+
+  it('garde OBSERVED-UNDECLARED en dette sans disposition O6 correspondante', () => {
+    const warning = { type: 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY', ref: 'orders -> shared-cart', msg: 'observée sans consumes' };
+    const p = semantics.partition([warning], { ROOT, pairClassifications: [] });
+    expect(p.debt).toEqual([warning]);
+    expect(p.classified[0].semantic.category).toBe('ACTIONABLE_DRIFT');
+  });
+
+  it('ne blanchit pas une paire O6 qui exige une exception ou une autre policy', () => {
+    const warning = { type: 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY', ref: 'infrastructure -> auth-passkey', msg: 'observée sans consumes' };
+    const pairClassifications = [{
+      from: 'infrastructure', to: 'auth-passkey', family: 'COMPOSITION_ROOT_WIRING',
+      policy: 'application-wiring-not-consumption', exceptionRequired: true,
+    }];
+    const p = semantics.partition([warning], { ROOT, pairClassifications });
+    expect(p.debt).toEqual([warning]);
+    expect(p.classified[0].semantic.category).toBe('ACTIONABLE_DRIFT');
+  });
 });

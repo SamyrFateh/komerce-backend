@@ -1190,7 +1190,7 @@ function build() {
     },
     drifts: (() => {
       const warn = warns.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref)));
-      const semantic = warningSemantics.partition(warn, { ROOT });
+      const semantic = warningSemantics.partition(warn, { ROOT, pairClassifications: o6Dispositions.classifications });
       return {
         error: errors.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
         warn, // flux brut conservé pour compatibilité : tous les signaux non-error
