@@ -1,40 +1,46 @@
 'use strict';
 
 /**
- * AUTH-8a — Source unique de vérité du cookie d'authentification Komerce.
+ * AUTH-8 — Source unique de vérité du cookie d'authentification Komerce.
  *
- * Pourquoi ce module existe :
- *   Avant AUTH-8, le même cookie « kmrc_jwt » était émis avec des options
- *   différentes dans auth.js (Strict), otp.js (lax) et client-auth.js (lax inline).
- *   Les 4 middlewares de lecture hardcodaient le nom.
- *   → Incohérence de SameSite, pas de __Host-, duplication de logique.
+ * Politique :
+ *   - SameSite=Lax : compatible avec les navigations entrantes WhatsApp/email ;
+ *     les mutations cookie sont protégées séparément par AUTH-8b (Origin).
+ *   - httpOnly=true : le JWT n'est jamais exposé au JavaScript.
+ *   - staging/production : cookie `__Host-kmrc_jwt`, Secure, Path=/, sans Domain.
+ *   - development/test : cookie `kmrc_jwt` pour rester utilisable en HTTP local.
+ *   - si KOMERCE_ENV est absent, NODE_ENV=production conserve un comportement
+ *     sécurisé et active aussi le préfixe __Host- (compatibilité fail-closed).
  *
- * Politique actuelle (AUTH-8b ; durcissements complémentaires en AUTH-8c/d) :
- *   - sameSite par défaut = 'Lax'  (compatible liens WhatsApp & magic-link, cf. GOV-07)
- *   - httpOnly = true (toujours — JAMAIS exposé au JS)
- *   - secure = true en production
- *   - __Host- : pas encore activé (AUTH-8c, nécessite HTTPS partout)
- *
- * Usage :
- *   const { setAuthCookie, clearAuthCookie, readAuthToken } = require('../utils/auth-cookie');
- *   setAuthCookie(res, token);            // politique par défaut (Lax)
- *   setAuthCookie(res, token, 'Strict');  // forcer Strict si le parcours le permet
- *   clearAuthCookie(res);
- *   const token = readAuthToken(req);     // cookie OU Bearer
+ * Le runtime sécurisé ne lit PAS l'ancien cookie `kmrc_jwt` : le passage à
+ * __Host- invalide volontairement les anciennes sessions une fois, plutôt que
+ * de maintenir une fenêtre de compatibilité qui annulerait le durcissement.
  */
 
-const COOKIE_NAME = 'kmrc_jwt';
+const LEGACY_COOKIE_NAME = 'kmrc_jwt';
+const HOST_COOKIE_NAME = '__Host-kmrc_jwt';
+const SECURE_KOMERCE_ENVS = new Set(['staging', 'production']);
 
-// --- Options ----------------------------------------------------------------
+// --- Runtime / options -------------------------------------------------------
 
-function _isProd() {
+function _useHostCookie() {
+  const komerceEnv = String(process.env.KOMERCE_ENV || '').trim().toLowerCase();
+  if (komerceEnv) return SECURE_KOMERCE_ENVS.has(komerceEnv);
   return process.env.NODE_ENV === 'production';
+}
+
+function _isSecureRuntime() {
+  return _useHostCookie() || process.env.NODE_ENV === 'production';
+}
+
+function getAuthCookieName() {
+  return _useHostCookie() ? HOST_COOKIE_NAME : LEGACY_COOKIE_NAME;
 }
 
 function _parseMaxAge() {
   const raw = process.env.JWT_EXPIRES || '30d';
   const match = raw.match(/(\d+)(d|h|m)/);
-  if (!match) return 30 * 24 * 60 * 60 * 1000;        // fallback 30j
+  if (!match) return 30 * 24 * 60 * 60 * 1000;
   const val = parseInt(match[1], 10);
   if (match[2] === 'd') return val * 24 * 60 * 60 * 1000;
   if (match[2] === 'h') return val * 60 * 60 * 1000;
@@ -43,50 +49,73 @@ function _parseMaxAge() {
 }
 
 /**
- * Construit les options du cookie.
- * @param {'Strict'|'Lax'} [sameSite='Lax'] — Lax par défaut (compatible cross-site
- *   top-level navigation : liens WhatsApp, magic-links email). Passer 'Strict'
- *   uniquement sur les parcours dont on sait qu'ils ne viennent pas d'une
- *   navigation cross-site entrante.
+ * @param {'Strict'|'Lax'} [sameSite='Lax']
  */
 function cookieOptions(sameSite = 'Lax') {
   return {
     httpOnly: true,
-    secure:   _isProd(),
+    secure: _isSecureRuntime(),
     sameSite,
-    maxAge:   _parseMaxAge(),
-    path:     '/',
+    maxAge: _parseMaxAge(),
+    path: '/',
+    // IMPORTANT __Host- : ne jamais ajouter Domain ici.
   };
 }
 
-// --- Émission / suppression / lecture ----------------------------------------
+function _clearOptions() {
+  return {
+    httpOnly: true,
+    secure: _isSecureRuntime(),
+    path: '/',
+  };
+}
+
+// --- Émission / suppression / lecture ---------------------------------------
 
 function setAuthCookie(res, token, sameSite) {
-  res.cookie(COOKIE_NAME, token, cookieOptions(sameSite));
+  res.cookie(getAuthCookieName(), token, cookieOptions(sameSite));
 }
 
 function clearAuthCookie(res) {
-  // Les options de clear doivent correspondre à celles de set (hors maxAge).
-  res.clearCookie(COOKIE_NAME, { httpOnly: true, secure: _isProd(), path: '/' });
+  const activeName = getAuthCookieName();
+  res.clearCookie(activeName, _clearOptions());
+
+  // Lors du déploiement AUTH-8c, purge explicite de l'ancien cookie. Il n'est
+  // jamais lu en runtime __Host-, mais le supprimer évite de laisser un artefact
+  // ambigu dans le navigateur jusqu'à son expiration naturelle.
+  if (activeName === HOST_COOKIE_NAME) {
+    res.clearCookie(LEGACY_COOKIE_NAME, {
+      httpOnly: true,
+      secure: true,
+      path: '/',
+    });
+  }
 }
 
 /**
- * Extrait le token JWT de la requête :
- *   1) cookie httpOnly (prioritaire, sûr)
- *   2) header Authorization: Bearer (pour clients API légitimes)
- * Retourne null si rien trouvé.
+ * Extrait le JWT :
+ *   1) cookie httpOnly actif pour CE runtime ;
+ *   2) Bearer (surface auditée séparément en AUTH-8e).
+ *
+ * Un runtime __Host- ne retombe jamais sur `kmrc_jwt`.
  */
 function readAuthToken(req) {
-  if (req.cookies && req.cookies[COOKIE_NAME]) return req.cookies[COOKIE_NAME];
+  const cookieName = getAuthCookieName();
+  if (req.cookies && req.cookies[cookieName]) return req.cookies[cookieName];
+
   const header = req.headers && req.headers.authorization;
-  if (header && header.startsWith('Bearer ')) return header.split(' ')[1];
+  if (header && header.startsWith('Bearer ')) return header.slice('Bearer '.length);
   return null;
 }
 
-// --- Exports -----------------------------------------------------------------
-
 module.exports = {
-  AUTH_COOKIE_NAME: COOKIE_NAME,
+  // Compatibilité de code pour les consommateurs historiques : ce nom désigne
+  // explicitement le cookie local/legacy. Le code runtime doit appeler
+  // getAuthCookieName().
+  AUTH_COOKIE_NAME: LEGACY_COOKIE_NAME,
+  LEGACY_AUTH_COOKIE_NAME: LEGACY_COOKIE_NAME,
+  HOST_AUTH_COOKIE_NAME: HOST_COOKIE_NAME,
+  getAuthCookieName,
   cookieOptions,
   setAuthCookie,
   clearAuthCookie,

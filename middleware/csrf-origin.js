@@ -17,16 +17,16 @@
 'use strict';
 
 const { isAllowedOrigin } = require('../bootstrap/security');
-const { AUTH_COOKIE_NAME } = require('../utils/auth-cookie');
+const { getAuthCookieName } = require('../utils/auth-cookie');
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /**
- * AUTH-8b — défense CSRF explicite pour la session navigateur.
+ * AUTH-8b/c — défense CSRF explicite pour la session navigateur.
  *
  * SameSite=Lax reste volontairement compatible avec les navigations entrantes
- * depuis WhatsApp / email. En contrepartie, toute mutation qui transporte le
- * cookie de session Komerce doit provenir d'une Origin explicitement autorisée.
+ * depuis WhatsApp / email. Toute mutation qui transporte le cookie de session
+ * ACTIF pour ce runtime doit provenir d'une Origin explicitement autorisée.
  *
  * Le guard ne s'applique pas aux appels sans cookie d'authentification :
  * - webhooks / server-to-server n'ont pas de surface CSRF navigateur ;
@@ -36,7 +36,8 @@ function csrfOriginGuard(req, res, next) {
   const method = String(req.method || 'GET').toUpperCase();
   if (SAFE_METHODS.has(method)) return next();
 
-  const hasAuthCookie = Boolean(req.cookies && req.cookies[AUTH_COOKIE_NAME]);
+  const activeCookieName = getAuthCookieName();
+  const hasAuthCookie = Boolean(req.cookies && req.cookies[activeCookieName]);
   if (!hasAuthCookie) return next();
 
   const origin = typeof req.get === 'function'
