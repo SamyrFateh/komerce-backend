@@ -64,6 +64,7 @@ module.exports = {
       'services/admin-order-refund.js',
       'services/cancel-order-purchase-orders.js',
       'services/order-payment-confirmation.js',
+      'services/order-item-availability-service.js',
     ],
     routes: [
       'routes/admin/orders.js',
@@ -103,6 +104,7 @@ module.exports = {
       'tests/unit/order-api-v2.test.js',
       'tests/unit/order-cost-snapshot.test.js',
       'tests/unit/order-payment-confirmation.test.js',
+      'tests/unit/order-item-availability-service.test.js',
       'tests/unit/order-service.test.js',
       'tests/unit/orderParcelLinkRules.test.js',
       'tests/unit/orders-parcels-route.test.js',
@@ -213,6 +215,8 @@ module.exports = {
     // non exposé cross-feature. Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
     internalApi: [
       { fn: 'transitionOrderStatus', file: 'services/order-status-machine.js' },
+      { fn: 'updateOrderItemAvailabilityDetails', file: 'services/order-item-availability-service.js' },
+      { fn: 'setOrderItemAvailabilityStatus', file: 'services/order-item-availability-service.js' },
       // Projection frontend orders : points d'entrée consommés notamment
       // par shared-cart ; payment reste une capacité traversée.
       { fn: 'checkoutCart', file: 'public/boutique/js/b-checkout.js' },

@@ -346,7 +346,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - dash: 2
 - tests: 33
 - tables owned (lifecycle): 11 — `parcels`, `relais`, `parcel_items`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `carriers`, `parcel_events`, `pickup_verify_attempts`, `shipments`
-- tables written: 15
+- tables written: 14
 - interfaces exposed: 70
 - internal APIs: 1
 - dependencies (consumes): 14 — infrastructure, business-rules, orders, customs, auth, auth-identity, catalog, economic-engine, notifications, payments, refunds, wallet, purchasing, loyalty
@@ -387,14 +387,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.
 
 - utils: 1
-- services: 8
+- services: 9
 - routes: 12
 - boutique: 3
-- tests: 28
+- tests: 29
 - tables owned (lifecycle): 9 — `order_items`, `orders`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `disputes`
 - tables written: 11
 - interfaces exposed: 27
-- internal APIs: 3
+- internal APIs: 5
 - dependencies (consumes): 18 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds, shared-cart
 - consumers: 14 — auth, dashboard, documents, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, admin-dashboard
 
@@ -605,7 +605,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `order_incidents` | `dashboard` | single-writer | dashboard | — |
 | `order_item_cost_imputations` | `orders` | single-writer | orders | dashboard, economic-engine |
 | `order_item_real_cost_allocations` | `economic-engine` | declared-table-owner | economic-engine | dashboard |
-| `order_items` | `orders` | declared-table-owner | dashboard, logistics, orders | auth-identity, catalog, customs, documents, economic-engine, inventory, payments, platform-ops, purchasing, recommendations, shared-cart |
+| `order_items` | `orders` | declared-table-owner | dashboard, orders | auth-identity, catalog, customs, documents, economic-engine, inventory, logistics, payments, platform-ops, purchasing, recommendations, shared-cart |
 | `order_status_history` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
 | `orders` | `orders` | declared-table-owner | customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, wallet | auth-identity, catalog, documents, economic-engine, incident-management, loyalty, notifications, recommendations, refunds, shared-cart, unsold-resolution |
 | `otp_codes` | `auth-identity` | single-writer | auth-identity | — |
@@ -1186,6 +1186,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `notifyText` | `services/notifications/misc.js` | notifications | resolved |
 | `emitOrderMilestone / emitExceptional / resolveOrderMilestones` | `services/client-notification-service.js` | notifications | resolved |
 | `transitionOrderStatus` | `services/order-status-machine.js` | orders | resolved |
+| `updateOrderItemAvailabilityDetails` | `services/order-item-availability-service.js` | orders | resolved |
+| `setOrderItemAvailabilityStatus` | `services/order-item-availability-service.js` | orders | resolved |
 | `checkoutCart` | `public/boutique/js/b-checkout.js` | orders | resolved |
 | `makeInput` | `public/boutique/js/b-checkout.js` | orders | resolved |
 | `markPaid` | `services/payment-service.js` | payments | resolved |
@@ -1405,14 +1407,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (9)
+### DETTE / DRIFT ACTIONNABLE (8)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ alerts — table "alerts" : lifecycle owner = notifications (db.tables "!"), mais aussi écrite par catalog, logistics, orders, payments, purchasing
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ incidents — table "incidents" : lifecycle owner = incident-management (db.tables "!"), mais aussi écrite par dashboard, logistics, notifications, payments
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_items — table "order_items" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par logistics
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcel_items — table "parcel_items" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par dashboard, inventory
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcels — table "parcels" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par customs, dashboard, payments
@@ -1478,7 +1479,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 810 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 812 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 158 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1590,7 +1591,7 @@ Meta Graph monté : oui.
 | logistics | infrastructure | static-code | 74 | **DECLARED_AND_OBSERVED** |
 | logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | notifications | static-code | 9 | **DECLARED_AND_OBSERVED** |
-| logistics | orders | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| logistics | orders | static-code | 16 | **DECLARED_AND_OBSERVED** |
 | logistics | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | refunds | static-code | 1 | **DECLARED_AND_OBSERVED** |

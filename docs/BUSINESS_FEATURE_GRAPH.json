@@ -7167,6 +7167,13 @@
       },
       {
         "feature": "orders",
+        "category": "services",
+        "declared": "services/order-item-availability-service.js",
+        "resolvedPath": "services/order-item-availability-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
         "category": "routes",
         "declared": "routes/admin/orders.js",
         "resolvedPath": "routes/admin/orders.js",
@@ -7338,6 +7345,13 @@
         "category": "tests",
         "declared": "tests/unit/order-payment-confirmation.test.js",
         "resolvedPath": "tests/unit/order-payment-confirmation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-item-availability-service.test.js",
+        "resolvedPath": "tests/unit/order-item-availability-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13321,6 +13335,18 @@
         "feature": "orders",
         "fn": "transitionOrderStatus",
         "file": "services/order-status-machine.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "updateOrderItemAvailabilityDetails",
+        "file": "services/order-item-availability-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setOrderItemAvailabilityStatus",
+        "file": "services/order-item-availability-service.js",
         "status": "resolved"
       },
       {
@@ -20441,6 +20467,10 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
+                "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "services/order-item-availability-service.js"
+              },
+              {
                 "sourceFileId": "services/scan-operations.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -24234,7 +24264,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 810
+        "filesObserved": 812
       },
       "boutique": {
         "filesObserved": 158,
@@ -24766,12 +24796,6 @@
           "technical": true
         },
         {
-          "feature": "logistics",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
           "feature": "orders",
           "mode": "RW",
           "declaredOwner": true,
@@ -24785,6 +24809,7 @@
         "documents",
         "economic-engine",
         "inventory",
+        "logistics",
         "payments",
         "platform-ops",
         "purchasing",
@@ -26579,11 +26604,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "order_items",
-        "msg": "table \"order_items\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par logistics"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "orders",
         "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet"
       },
@@ -26623,11 +26643,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "incidents",
         "msg": "table \"incidents\" : lifecycle owner = incident-management (db.tables \"!\"), mais aussi écrite par dashboard, logistics, notifications, payments"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "order_items",
-        "msg": "table \"order_items\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par logistics"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26865,11 +26880,11 @@
       }
     ],
     "summary": {
-      "signals": 9,
-      "debt": 9,
+      "signals": 8,
+      "debt": 8,
       "expectedTopology": 33,
       "generatorLimitations": 8,
-      "classifiedCandidates": 50
+      "classifiedCandidates": 49
     }
   }
 }
