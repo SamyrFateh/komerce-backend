@@ -24,10 +24,13 @@ jobs:
       - name: Install Boutique test dependencies
         run: npm --prefix public/boutique ci
       - name: Apply boundary refactor
-        run: node scripts/temp-recommendations-orders-boundary.js
+        run: |
+          node scripts/temp-recommendations-orders-boundary.js
+          node scripts/temp-fix-cart-summary-mock.js
       - name: Remove temporary tooling before proof
         run: |
           rm scripts/temp-recommendations-orders-boundary.js
+          rm scripts/temp-fix-cart-summary-mock.js
           rm .github/workflows/temp-recommendations-orders-boundary.yml
       - name: Run targeted Boutique tests
         run: |
@@ -64,7 +67,7 @@ jobs:
           git diff --check
       - name: Commit final tree
         run: |
-          git checkout HEAD -- .github/workflows/temp-recommendations-orders-boundary.yml scripts/temp-recommendations-orders-boundary.js
+          git checkout HEAD -- .github/workflows/temp-recommendations-orders-boundary.yml scripts/temp-recommendations-orders-boundary.js scripts/temp-fix-cart-summary-mock.js
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add public/boutique/js/cart-public-api.js public/boutique/js/b-modal-suggestions.js \
