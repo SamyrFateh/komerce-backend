@@ -1,0 +1,133 @@
+name: Temporary AUTH-5 finalizer v2
+
+on:
+  push:
+    branches: [auth/5-passkey-recovery]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Implement AUTH-5 recovery state machine
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_exact(path, old, new, expected=1, label='replace'):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f'{label}: expected {expected} match(es), got {count}')
+              p.write_text(text.replace(old, new, expected), encoding='utf-8')
+
+          replace_exact('public/boutique/js/b-passkey-login.js',
+              "    let requestOptions = null;\n    let busy = false;\n    let settled = false;\n",
+              "    let requestOptions = null;\n    let busy = false;\n    let settled = false;\n    let recoverySuggested = false;\n",
+              label='login recovery state')
+          replace_exact('public/boutique/js/b-passkey-login.js',
+              "    whatsapp.addEventListener('click', () => finish({ outcome: 'fallback' }));",
+              "    whatsapp.addEventListener('click', () => finish(\n      recoverySuggested\n        ? { outcome: 'recovery', reason: 'passkey_unusable' }\n        : { outcome: 'fallback' }\n    ));",
+              label='recovery CTA outcome')
+          replace_exact('public/boutique/js/b-passkey-login.js',
+              "        } else if (err?.status === 401) {\n          error.textContent = 'Cette passkey n’est plus utilisable. Utilisez WhatsApp pour récupérer votre compte.';\n        } else {",
+              "        } else if (err?.status === 401) {\n          recoverySuggested = true;\n          error.textContent = 'Cette passkey n’est plus utilisable. Utilisez WhatsApp pour récupérer votre compte.';\n          whatsapp.textContent = 'Récupérer avec WhatsApp';\n        } else {",
+              label='rejected credential recovery')
+
+          replace_exact('public/boutique/js/b-identity.js',
+              "export function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre WhatsApp', phone = '', returnFocusTo = null } = {}) {",
+              "export function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre WhatsApp', phone = '', returnFocusTo = null, purpose = 'authentication' } = {}) {",
+              label='identity purpose')
+          replace_exact('public/boutique/js/b-identity.js',
+              "          detail: { method: 'otp', user: user || data.user || { phone: phoneValue } },",
+              "          detail: { method: 'otp', purpose, user: user || data.user || { phone: phoneValue } },",
+              label='OTP purpose event')
+          replace_exact('public/boutique/js/b-identity.js',
+              "        returnFocusTo: overlayLifecycles.get(ov)?.focusOrigin || null,\n      });\n      resolve(newUser);",
+              "        returnFocusTo: overlayLifecycles.get(ov)?.focusOrigin || null,\n        purpose,\n      });\n      resolve(newUser);",
+              expected=2,
+              label='preserve recovery purpose on identity switch')
+          replace_exact('public/boutique/js/b-identity.js',
+              "  if (passkey?.outcome === 'cancelled') return null;\n  return openIdentityModal(options);",
+              "  if (passkey?.outcome === 'cancelled') return null;\n  if (passkey?.outcome === 'recovery') {\n    return openIdentityModal({\n      ...options,\n      purpose: 'recovery',\n      title: options.title || 'Récupérer votre compte',\n    });\n  }\n  return openIdentityModal(options);",
+              label='requireIdentity recovery')
+
+          replace_exact('public/boutique/js/b-passkey-enrollment.js',
+              "function mountPrompt() {\n  const focusOrigin = document.activeElement;",
+              "function mountPrompt({ purpose = 'enrollment' } = {}) {\n  const recovery = purpose === 'recovery';\n  const focusOrigin = document.activeElement;",
+              label='enrollment purpose')
+          replace_exact('public/boutique/js/b-passkey-enrollment.js',
+              "          <span class=\"k-id-title\" id=\"k-passkey-title\">Sécuriser cet appareil</span>\n          <span class=\"k-id-sub\" id=\"k-passkey-sub\">Connectez-vous ensuite avec la sécurité de votre téléphone ou ordinateur, sans code WhatsApp.</span>",
+              "          <span class=\"k-id-title\" id=\"k-passkey-title\">${recovery ? 'Créer une nouvelle passkey' : 'Sécuriser cet appareil'}</span>\n          <span class=\"k-id-sub\" id=\"k-passkey-sub\">${recovery ? 'Votre compte est récupéré. Créez une nouvelle passkey pour vos prochaines connexions.' : 'Connectez-vous ensuite avec la sécurité de votre téléphone ou ordinateur, sans code WhatsApp.'}</span>",
+              label='recovery enrollment copy')
+          replace_exact('public/boutique/js/b-passkey-enrollment.js',
+              "export async function offerPasskeyEnrollment() {\n  if (!isPasskeySupported()) return false;\n  if (storageGet(OFFER_SEEN_KEY) === '1') return false;\n  if (document.querySelector(OVERLAY_SELECTOR)) return false;\n\n  // Marque seulement l'offre UX, jamais une preuve d'authentification.\n  // sessionStorage ne contient ni JWT, ni challenge, ni credential.\n  storageSet(OFFER_SEEN_KEY, '1');\n  mountPrompt();\n  return true;\n}\n\nfunction queuePostOtpOffer(attempt = 0) {",
+              "export async function offerPasskeyEnrollment({ purpose = 'enrollment' } = {}) {\n  if (!isPasskeySupported()) return false;\n  const recovery = purpose === 'recovery';\n  if (!recovery && storageGet(OFFER_SEEN_KEY) === '1') return false;\n  if (document.querySelector(OVERLAY_SELECTOR)) return false;\n\n  // Marque seulement l'offre UX, jamais une preuve d'authentification.\n  // sessionStorage ne contient ni JWT, ni challenge, ni credential.\n  storageSet(OFFER_SEEN_KEY, '1');\n  mountPrompt({ purpose });\n  return true;\n}\n\nfunction queuePostOtpOffer(attempt = 0, context = {}) {",
+              label='recovery enrollment bypass')
+          replace_exact('public/boutique/js/b-passkey-enrollment.js',
+              "      window.setTimeout(() => queuePostOtpOffer(attempt + 1), 250);",
+              "      window.setTimeout(() => queuePostOtpOffer(attempt + 1, context), 250);",
+              label='queue context recursion')
+          replace_exact('public/boutique/js/b-passkey-enrollment.js',
+              "    if (!blockingDialog) offerPasskeyEnrollment().catch(() => {});",
+              "    if (!blockingDialog) offerPasskeyEnrollment(context).catch(() => {});",
+              label='queue context offer')
+          replace_exact('public/boutique/js/b-passkey-enrollment.js',
+              "    if (event?.detail?.method && event.detail.method !== 'otp') return;\n    queuePostOtpOffer(0);",
+              "    if (event?.detail?.method && event.detail.method !== 'otp') return;\n    const purpose = event?.detail?.purpose === 'recovery' ? 'recovery' : 'enrollment';\n    queuePostOtpOffer(0, { purpose });",
+              label='recovery event propagation')
+
+          replace_exact('public/boutique/features/auth-passkey.feature.js',
+              "  service: 'Enrôlement volontaire après OTP (AUTH-3) et connexion Passkey nominale discoverable avec fallback WhatsApp (AUTH-4).',",
+              "  service: 'Enrôlement après OTP (AUTH-3), login Passkey nominal (AUTH-4) et recovery téléphone → OTP → nouvelle Passkey (AUTH-5).',",
+              label='manifest service')
+          replace_exact('public/boutique/features/auth-passkey.feature.js',
+              "      'recovery et ré-enrôlement (AUTH-5)',\n      'gestion/révocation des authentificateurs (AUTH-6)',",
+              "      'gestion/révocation des authentificateurs (AUTH-6)',",
+              label='manifest perimeter')
+          replace_exact('public/boutique/features/auth-passkey.feature.js',
+              "      '../tests/unit/b-passkey-login.test.js',\n",
+              "      '../tests/unit/b-passkey-login.test.js',\n      '../tests/unit/b-passkey-recovery.test.js',\n      '../tests/unit/b-identity-recovery.test.js',\n",
+              label='manifest tests')
+          replace_exact('public/boutique/features/auth-passkey.feature.js',
+              "    'WhatsApp reste un fallback explicite et non le parcours nominal quand une passkey est utilisable',\n",
+              "    'WhatsApp reste un fallback explicite et non le parcours nominal quand une passkey est utilisable',\n    'une passkey inutilisable déclenche un état recovery explicite et exige OTP avant ré-enrôlement',\n    'le recovery OTP peut reproposer une nouvelle passkey même si l offre UX normale a déjà été vue',\n    'le recovery ne révoque jamais automatiquement les autres credentials',\n",
+              label='manifest recovery invariants')
+          PY
+      - name: Remove temporary helper from intended final tree
+        run: rm .github/workflows/tmp-auth5-finalize-v2.yml
+      - run: npm --prefix public/boutique ci
+      - name: AUTH-3/4/5 targeted regression
+        working-directory: public/boutique
+        run: npx jest tests/unit/b-passkey-enrollment.test.js tests/unit/b-passkey-login.test.js tests/unit/b-identity-passkey.test.js tests/unit/b-passkey-recovery.test.js tests/unit/b-identity-recovery.test.js --runInBand
+      - name: Refresh governance projections
+        run: |
+          node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+          node scripts/gen-gate-findings.js
+          node scripts/gen-feature-360.js
+      - name: Verify final tree
+        run: |
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+          git diff --check
+      - name: Commit final AUTH-5 tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/js/b-passkey-login.js public/boutique/js/b-identity.js public/boutique/js/b-passkey-enrollment.js public/boutique/features/auth-passkey.feature.js
+          git add docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/GATE_FINDINGS.json docs/FEATURE_360.json docs/FEATURE_360.md
+          git add -u .github/workflows/tmp-auth5-finalize-v2.yml
+          git commit -m "feat(auth): add OTP-backed Passkey recovery"
+          git push origin HEAD:auth/5-passkey-recovery
