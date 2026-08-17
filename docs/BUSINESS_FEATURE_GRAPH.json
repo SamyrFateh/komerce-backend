@@ -1155,6 +1155,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/catalog-product-mutation-service.js",
+        "resolvedPath": "services/catalog-product-mutation-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/catalog-promotion.js",
         "resolvedPath": "services/catalog-promotion.js",
         "status": "resolved-in-technical-graph"
@@ -1850,6 +1857,13 @@
         "category": "tests",
         "declared": "tests/unit/catalog-candidate-product-service.test.js",
         "resolvedPath": "tests/unit/catalog-candidate-product-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-product-mutation-service.test.js",
+        "resolvedPath": "tests/unit/catalog-product-mutation-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13124,6 +13138,30 @@
         "status": "resolved"
       },
       {
+        "feature": "catalog",
+        "fn": "applyPrice",
+        "file": "services/catalog-product-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "catalog",
+        "fn": "updateSourcingFields",
+        "file": "services/catalog-product-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "catalog",
+        "fn": "bulkAssignSourcingRail",
+        "file": "services/catalog-product-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "catalog",
+        "fn": "replaceVariantsForSourcing",
+        "file": "services/catalog-product-mutation-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "economic-engine",
         "fn": "recommend",
         "file": "services/pricing-engine.js",
@@ -18693,6 +18731,34 @@
       },
       {
         "from": "economic-engine",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/pricing-apply.js",
+                "targetFile": "services/catalog-product-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/apply-pricing-updates.js",
+                "targetFile": "services/catalog-product-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/pricing-strategy-service.js",
+                "targetFile": "services/catalog-product-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-mutations.js",
+                "targetFile": "services/catalog-product-mutation-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "economic-engine",
         "to": "dashboard",
         "channels": [
           {
@@ -24168,7 +24234,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 808
+        "filesObserved": 810
       },
       "boutique": {
         "filesObserved": 158,
@@ -24873,18 +24939,13 @@
           "mode": "RW",
           "declaredOwner": false,
           "technical": true
-        },
-        {
-          "feature": "economic-engine",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
         }
       ],
       "readers": [
         "auth-identity",
         "customs",
         "documents",
+        "economic-engine",
         "inventory",
         "logistics",
         "orders",
@@ -25158,15 +25219,10 @@
           "mode": "RW",
           "declaredOwner": true,
           "technical": false
-        },
-        {
-          "feature": "economic-engine",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
         }
       ],
       "readers": [
+        "economic-engine",
         "logistics",
         "orders",
         "sourcing"
@@ -26543,16 +26599,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "product_variants",
-        "msg": "table \"product_variants\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "products",
-        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "scans",
         "msg": "table \"scans\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par dashboard, orders"
       },
@@ -26597,16 +26643,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "parcels",
         "msg": "table \"parcels\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par customs, dashboard, payments"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "product_variants",
-        "msg": "table \"product_variants\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "products",
-        "msg": "table \"products\" : lifecycle owner = catalog (db.tables \"!\"), mais aussi écrite par economic-engine"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26829,11 +26865,11 @@
       }
     ],
     "summary": {
-      "signals": 11,
-      "debt": 11,
+      "signals": 9,
+      "debt": 9,
       "expectedTopology": 33,
       "generatorLimitations": 8,
-      "classifiedCandidates": 52
+      "classifiedCandidates": 50
     }
   }
 }

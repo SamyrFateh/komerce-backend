@@ -75,6 +75,7 @@ module.exports = {
       'services/product-admin-service.js',
       'services/product-price-audit.js',
       'services/catalog-candidate-product-service.js',
+      'services/catalog-product-mutation-service.js',
       'services/catalog-promotion.js',
       'services/catalog-promotion/axes.js',
       'services/catalog-promotion/sku.js',
@@ -201,6 +202,7 @@ module.exports = {
       'tests/unit/manual-connector-source-v2.test.js',
       'tests/unit/noon-connector.test.js',
       'tests/unit/catalog-candidate-product-service.test.js',
+      'tests/unit/catalog-product-mutation-service.test.js',
       'tests/unit/catalog-promotion.test.js',
       'tests/unit/catalog-promotion-axes.test.js',
       'tests/unit/catalog-promotion-sku.test.js',
@@ -316,6 +318,10 @@ module.exports = {
 
       { fn: 'createDraftFromSourcingCandidate', file: 'services/product-admin-service.js' },
       { fn: 'createDraftProductFromSourcingCandidate', file: 'services/catalog-candidate-product-service.js' },
+      { fn: 'applyPrice', file: 'services/catalog-product-mutation-service.js' },
+      { fn: 'updateSourcingFields', file: 'services/catalog-product-mutation-service.js' },
+      { fn: 'bulkAssignSourcingRail', file: 'services/catalog-product-mutation-service.js' },
+      { fn: 'replaceVariantsForSourcing', file: 'services/catalog-product-mutation-service.js' },
 
     ],
 

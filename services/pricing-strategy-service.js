@@ -6,10 +6,11 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db
+ * @depends       db, services/catalog-product-mutation-service.js
  * @used-by       routes/pricing-strategy.js
  * @db-read       charges, competitor_prices, customs_categories, finance_config, order_items, orders, pricing_components, pricing_strategies, products, risk_provisions, users
- * @db-write      competitor_prices, price_history, pricing_strategies, pricing_strategy_history, products
+ * @db-write      competitor_prices, price_history, pricing_strategies, pricing_strategy_history
+ * @db-write-via:catalog-product-mutation-service products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine
@@ -36,6 +37,7 @@
  */
 
 const db = require('../db');
+const catalogProductMutationService = require('./catalog-product-mutation-service');
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
@@ -379,10 +381,7 @@ async function applyStrategy(dbPool, body, userId) {
     if (product_id) {
       const { rows: [p] } = await client.query('SELECT price_kmf FROM products WHERE id = $1', [product_id]);
       oldPriceKmf = p ? Number(p.price_kmf) : null;
-      await client.query(
-        'UPDATE products SET price_kmf = $1, updated_at = NOW() WHERE id = $2',
-        [final_price_kmf, product_id]
-      );
+      await catalogProductMutationService.applyPrice(client, product_id, final_price_kmf);
       try {
         await client.query('SAVEPOINT sp_price_history');
         await client.query(

@@ -6,10 +6,11 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/pricing-engine.js, services/economic-price-audit-service.js, utils/logger.js
+ * @depends       db, services/pricing-engine.js, services/economic-price-audit-service.js, services/catalog-product-mutation-service.js, utils/logger.js
  * @used-by       none
  * @db-read       products
- * @db-write      products
+ * @db-write-via:catalog-product-mutation-service products
+ * @db-write-via:economic-price-audit-service price_history
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine
@@ -27,6 +28,7 @@
  */
 
 const db = require('../db');
+const catalogProductMutationService = require('./catalog-product-mutation-service');
 const pricingEngine = require('./pricing-engine');
 const { recordProductPriceChange } = require('./economic-price-audit-service');
 const log = require('../utils/logger').child({ module: 'apply-pricing-updates' });
@@ -89,11 +91,7 @@ async function applySinglePrice({ productId, priceKmf, source = 'manual', scenar
     }
 
     const oldPrice = Number(product.price_kmf || 0);
-    const { rows: [updated] } = await client.query(
-      `UPDATE products SET price_kmf = $1, updated_at = NOW()
-        WHERE id = $2 RETURNING id, name, price_kmf`,
-      [newPrice, product.id]
-    );
+    const updated = await catalogProductMutationService.applyPrice(client, product.id, newPrice);
 
     const audit = await recordProductPriceChange(client, {
       productId: product.id,
@@ -179,11 +177,7 @@ async function applyAllPrices({ items, source = 'batch', user }) {
       }
 
       const oldPrice = Number(product.price_kmf || 0);
-      const { rows: [updated] } = await client.query(
-        `UPDATE products SET price_kmf = $1, updated_at = NOW()
-          WHERE id = $2 RETURNING id, name, price_kmf`,
-        [newPrice, productId]
-      );
+      const updated = await catalogProductMutationService.applyPrice(client, productId, newPrice);
 
       const audit = await recordProductPriceChange(client, {
         productId,
