@@ -55,6 +55,11 @@ module.exports = {
       'services/shared-cart-lifecycle.js',       // closeCart, cancelSharedCart
       'services/shared-cart-library.js',         // getSharedCartLibrary, saveSharedCartForUser (Amendement V2 §D)
       'services/shared-cart-queries.js',
+      // Frontière publique cross-feature pour cart_shares (campagne
+      // gouvernance WRITER-NOT-OWNER, 2026-08) — appelée par orders au lieu
+      // d'un SQL direct dans cette table. Voir features/orders.feature.js
+      // contract.consumes.
+      'services/cart-share-service.js',
     ],
     routes: [
       'routes/shared-cart.js',
@@ -96,6 +101,7 @@ module.exports = {
       'tests/unit/shares-route.test.js',
       'tests/unit/shared-cart-lifecycle.test.js',
       'tests/unit/shared-cart-queries.test.js',
+      'tests/unit/cart-share-service.test.js',
       // NOTE (2026-08) : ces fichiers de test existent encore dans le repo
       // mais testent l'ancien domaine V4.1 (contributed_kmf, estimations,
       // awaiting_choice...) et n'ont pas encore été réécrits contre le code

@@ -392,7 +392,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - boutique: 3
 - tests: 28
 - tables owned (lifecycle): 9 — `order_items`, `orders`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `disputes`
-- tables written: 13
+- tables written: 12
 - interfaces exposed: 27
 - internal APIs: 3
 - dependencies (consumes): 18 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds, shared-cart
@@ -488,10 +488,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Permettre à un créateur de publier une liste immuable par lien public ; chaque acheteur sélectionne une ou plusieurs lignes disponibles, passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel.
 
-- services: 7
+- services: 8
 - routes: 4
 - migrations: 19
-- tests: 12
+- tests: 13
 - boutique: 11
 - dash: 1
 - tables owned (lifecycle): 7 — `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
@@ -568,7 +568,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `business_rules` | `business-rules` | single-writer | business-rules | dashboard, economic-engine, logistics |
 | `business_rules_history` | `business-rules` | single-writer | business-rules | dashboard |
 | `carriers` | `logistics` | single-writer | logistics | — |
-| `cart_shares` | `shared-cart` | declared-table-owner | orders, shared-cart | — |
+| `cart_shares` | `shared-cart` | declared-table-owner | shared-cart | — |
 | `cash_collections` | `payments` | single-writer | payments | — |
 | `cash_deposits` | `payments` | single-writer | payments | — |
 | `catalog_enrichment_runs` | `catalog` | single-writer | catalog | — |
@@ -1313,7 +1313,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | orders | documents (`documents`) | ✔ |
 | orders | notifications (`notifications (projection idempotente du retrait disponible)`) | ✔ |
 | orders | refunds (`refunds`) | ✔ |
-| orders | shared-cart (`shared-cart (projection frontend orders-client uniquement : consommation via shared-cart-surface-api.js / shared-cart-library-api.js ; aucun import direct des internes group/*)`) | ✔ |
+| orders | shared-cart (`shared-cart (projection frontend orders-client uniquement : consommation via shared-cart-surface-api.js / shared-cart-library-api.js ; aucun import direct des internes group/* ; côté backend, appelle services/cart-share-service.js markShareConvertedToOrder pour lier une commande à un lien de partage — campagne WRITER-NOT-OWNER 2026-08, plus de SQL direct sur cart_shares)`) | ✔ |
 | payments | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | payments | platform-ops (`platform-ops (FF-C1 2026-07-29 — monitoring et exploitation technique ; preuve: routes/payments.js -> services/monitoring.js)`) | ✔ |
 | payments | auth (`auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/cash.js -> middleware/auth.js ; routes/payments.js -> middleware/auth.js ; routes/pickup-pay-cash.js -> middleware/auth.js ; +2)`) | ✔ |
@@ -1394,13 +1394,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (16)
+### DETTE / DRIFT ACTIONNABLE (15)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ alerts — table "alerts" : lifecycle owner = notifications (db.tables "!"), mais aussi écrite par catalog, logistics, orders, payments, purchasing
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ cart_shares — table "cart_shares" : lifecycle owner = shared-cart (db.tables "!"), mais aussi écrite par orders
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ incidents — table "incidents" : lifecycle owner = incident-management (db.tables "!"), mais aussi écrite par dashboard, logistics, notifications, payments
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_items — table "order_items" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par logistics
 - **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet
@@ -1474,7 +1473,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 798 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 800 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 158 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1609,7 +1608,7 @@ Meta Graph monté : oui.
 | orders | payments | static-code, interface | 8 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 37 | **DECLARED_AND_OBSERVED** |
 | orders | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| orders | shared-cart | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| orders | shared-cart | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | orders | wallet | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | payments | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | payments | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1653,7 +1652,7 @@ Meta Graph monté : oui.
 | shared-cart | auth | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | shared-cart | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | shared-cart | catalog | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| shared-cart | infrastructure | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| shared-cart | infrastructure | static-code | 18 | **DECLARED_AND_OBSERVED** |
 | shared-cart | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | shared-cart | orders | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | shared-cart | platform-ops | static-code | 52 | **DECLARED_AND_OBSERVED** |

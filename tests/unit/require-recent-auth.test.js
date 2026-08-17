@@ -1,5 +1,11 @@
 'use strict';
 
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
 const {
   DEFAULT_MAX_AGE_SECONDS,
   recentAuthStatus,

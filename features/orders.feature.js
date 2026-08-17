@@ -150,7 +150,6 @@ module.exports = {
   db: {
     tables: [
       'alerts: W',
-      'cart_shares: W',
       'customs_history: W',
       'disputes: W',
       'order_comments: W',
@@ -244,7 +243,7 @@ module.exports = {
       'documents',
       'notifications (projection idempotente du retrait disponible)',
       'refunds',
-      'shared-cart (projection frontend orders-client uniquement : consommation via shared-cart-surface-api.js / shared-cart-library-api.js ; aucun import direct des internes group/*)',
+      'shared-cart (projection frontend orders-client uniquement : consommation via shared-cart-surface-api.js / shared-cart-library-api.js ; aucun import direct des internes group/* ; côté backend, appelle services/cart-share-service.js markShareConvertedToOrder pour lier une commande à un lien de partage — campagne WRITER-NOT-OWNER 2026-08, plus de SQL direct sur cart_shares)',
     ],
   },
 

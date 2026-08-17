@@ -12850,12 +12850,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "cart_shares",
-            "mode": "W",
-            "lifecycleOwner": "shared-cart",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "customs_history",
             "mode": "W",
             "lifecycleOwner": "orders",
@@ -12997,12 +12991,6 @@
             "table": "alerts",
             "mode": "W",
             "lifecycleOwner": "notifications",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
-            "table": "cart_shares",
-            "mode": "W",
-            "lifecycleOwner": "shared-cart",
             "ownershipStatus": "writer-not-owner"
           },
           {
@@ -16174,8 +16162,13 @@
             ]
           },
           "services": {
-            "count": 7,
+            "count": 8,
             "files": [
+              {
+                "declared": "services/cart-share-service.js",
+                "resolvedPath": "services/cart-share-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
               {
                 "declared": "services/shared-cart-creation.js",
                 "resolvedPath": "services/shared-cart-creation.js",
@@ -16214,11 +16207,16 @@
             ]
           },
           "tests": {
-            "count": 12,
+            "count": 13,
             "files": [
               {
                 "declared": "tests/unit/baskets.test.js",
                 "resolvedPath": "tests/unit/baskets.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cart-share-service.test.js",
+                "resolvedPath": "tests/unit/cart-share-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -16279,7 +16277,7 @@
             ]
           }
         },
-        "totalFiles": 54,
+        "totalFiles": 56,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
           "count": 18,

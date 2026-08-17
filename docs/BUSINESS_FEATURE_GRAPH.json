@@ -8203,6 +8203,13 @@
       },
       {
         "feature": "shared-cart",
+        "category": "services",
+        "declared": "services/cart-share-service.js",
+        "resolvedPath": "services/cart-share-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "shared-cart",
         "category": "routes",
         "declared": "routes/shared-cart.js",
         "resolvedPath": "routes/shared-cart.js",
@@ -8444,6 +8451,13 @@
         "category": "tests",
         "declared": "tests/unit/shared-cart-queries.test.js",
         "resolvedPath": "tests/unit/shared-cart-queries.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "tests",
+        "declared": "tests/unit/cart-share-service.test.js",
+        "resolvedPath": "tests/unit/cart-share-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13982,7 +13996,7 @@
       {
         "from": "orders",
         "to": "shared-cart",
-        "raw": "shared-cart (projection frontend orders-client uniquement : consommation via shared-cart-surface-api.js / shared-cart-library-api.js ; aucun import direct des internes group/*)",
+        "raw": "shared-cart (projection frontend orders-client uniquement : consommation via shared-cart-surface-api.js / shared-cart-library-api.js ; aucun import direct des internes group/* ; côté backend, appelle services/cart-share-service.js markShareConvertedToOrder pour lier une commande à un lien de partage — campagne WRITER-NOT-OWNER 2026-08, plus de SQL direct sur cart_shares)",
         "resolved": true
       },
       {
@@ -21525,6 +21539,10 @@
                 "targetFile": "public/boutique/js/group/shared-cart-library-api.js"
               },
               {
+                "sourceFileId": "routes/orders/create.js",
+                "targetFile": "services/cart-share-service.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/b-cart.js",
                 "targetFile": "public/boutique/js/group/shared-cart-surface-api.js"
               },
@@ -23256,6 +23274,14 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/cart-share-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/cart-share-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/shared-cart.js",
                 "targetFile": "utils/logger.js"
               },
@@ -23293,6 +23319,10 @@
               },
               {
                 "sourceFileId": "tests/unit/shared-cart-lifecycle.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/cart-share-service.test.js",
                 "targetFile": "db.js"
               }
             ]
@@ -24026,7 +24056,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 798
+        "filesObserved": 800
       },
       "boutique": {
         "filesObserved": 158,
@@ -26091,25 +26121,6 @@
       "lifecycleOwner": "notifications",
       "resolution": "declared-table-owner"
     },
-    "cart_shares": {
-      "writers": [
-        {
-          "feature": "orders",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "shared-cart",
-          "mode": "RW",
-          "declaredOwner": true,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "shared-cart",
-      "resolution": "declared-table-owner"
-    },
     "customs_history": {
       "writers": [
         {
@@ -26200,6 +26211,19 @@
       "readers": [],
       "lifecycleOwner": "purchasing",
       "resolution": "single-writer"
+    },
+    "cart_shares": {
+      "writers": [
+        {
+          "feature": "shared-cart",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "shared-cart",
+      "resolution": "declared-table-owner"
     },
     "shared_cart_events": {
       "writers": [
@@ -26410,11 +26434,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "cart_shares",
-        "msg": "table \"cart_shares\" : lifecycle owner = shared-cart (db.tables \"!\"), mais aussi écrite par orders"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "incidents",
         "msg": "table \"incidents\" : lifecycle owner = incident-management (db.tables \"!\"), mais aussi écrite par dashboard, logistics, notifications, payments"
       },
@@ -26489,11 +26508,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "alerts",
         "msg": "table \"alerts\" : lifecycle owner = notifications (db.tables \"!\"), mais aussi écrite par catalog, logistics, orders, payments, purchasing"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "cart_shares",
-        "msg": "table \"cart_shares\" : lifecycle owner = shared-cart (db.tables \"!\"), mais aussi écrite par orders"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26771,11 +26785,11 @@
       }
     ],
     "summary": {
-      "signals": 16,
-      "debt": 16,
+      "signals": 15,
+      "debt": 15,
       "expectedTopology": 33,
       "generatorLimitations": 8,
-      "classifiedCandidates": 57
+      "classifiedCandidates": 56
     }
   }
 }

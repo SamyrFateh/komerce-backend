@@ -6,10 +6,12 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*, services/product-admin-service.js
+ * @depends       db.js, middleware/auth.js, services/*, services/product-admin-service.js, services/cart-share-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, product_skus, product_variants, products, recipients, relais, shared_cart_items, shared_carts
- * @db-write      cart_shares, order_items, order_status_history, orders, recipients
+ * @db-write      order_items, order_status_history, orders, recipients
+ * @doctrine-note cart_shares n'est plus écrit ici directement (campagne WRITER-NOT-OWNER
+ *                2026-08) — voir services/cart-share-service.js markShareConvertedToOrder
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  orders, checkout, shared-cart
@@ -737,15 +739,13 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     }
 
     // ── Lier le partage à la commande si share_token présent (fire-and-forget) ──
+    // Campagne WRITER-NOT-OWNER (2026-08) : plus de SQL direct sur cart_shares
+    // (table propriétaire de shared-cart) — passe par la frontière publique
+    // du domaine shared-cart. Voir services/cart-share-service.js.
     if (share_token) {
-      db.query(
-        `UPDATE cart_shares
-         SET converted_order_id = $1,
-             converted_at       = NOW()
-         WHERE share_token = $2
-           AND converted_order_id IS NULL`,
-        [order.id, share_token]
-      ).catch(e => log.error({ err: e }, '[SHARES] linkShareToOrder error:'));
+      require('../../services/cart-share-service')
+        .markShareConvertedToOrder(share_token, order.id)
+        .catch(e => log.error({ err: e }, '[SHARES] linkShareToOrder error:'));
     }
 
     // ── Notifications post-commit (multi-numéros) ──────────────────────────

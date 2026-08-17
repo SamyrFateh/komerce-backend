@@ -1,5 +1,11 @@
 'use strict';
 
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
 const cp = require('child_process');
 const {
   norm,
