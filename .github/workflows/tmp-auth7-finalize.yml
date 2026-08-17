@@ -1,0 +1,380 @@
+name: Temporary AUTH-7 finalizer
+
+on:
+  push:
+    branches: [auth/7-step-up]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      JWT_SECRET: contract-introspection-only-secret-2026-08-not-runtime
+      QR_SECRET: contract-introspection-qr-secret-2026-08-not-runtime
+      DATABASE_URL: postgresql://contract:contract@127.0.0.1:5432/contract
+      FRONTEND_URL: http://localhost:3000
+      INTERNAL_API_KEY: contract-introspection-api-key
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_RP_NAME: Komerce
+      WEBAUTHN_ORIGINS: http://localhost:3000
+      META_WA_APP_SECRET: contract-introspection-meta-secret
+      META_WA_VERIFY_TOKEN: contract-introspection-meta-verify
+      STRIPE_SECRET_KEY: sk_test_contract_introspection_only
+      STRIPE_WEBHOOK_SECRET: whsec_contract_introspection_only
+      PAYPAL_CLIENT_ID: contract-client-id
+      PAYPAL_CLIENT_SECRET: contract-client-secret
+      PAYPAL_WEBHOOK_ID: contract-webhook-id
+      PAYPAL_ENV: sandbox
+      TWILIO_ACCOUNT_SID: AC00000000000000000000000000000000
+      TWILIO_AUTH_TOKEN: contract-token
+      TWILIO_WHATSAPP_FROM: whatsapp:+14155238886
+      AT_API_KEY: contract-key
+      AT_USERNAME: sandbox
+      CLOUDINARY_CLOUD_NAME: contract
+      CLOUDINARY_API_KEY: contract
+      CLOUDINARY_API_SECRET: contract
+      KOMERCE_DISABLE_CRONS: 'true'
+      KOMERCE_SKIP_STARTUP_MIGRATIONS: 'true'
+      KOMERCE_SKIP_BOOT_ENSURE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Implement AUTH-7 proof freshness and step-up boundaries
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def rep(path, old, new, expected=1, label='replace'):
+              p = Path(path); text = p.read_text(encoding='utf-8'); n = text.count(old)
+              if n != expected: raise SystemExit(f'{label}: expected {expected}, got {n}')
+              p.write_text(text.replace(old, new, expected), encoding='utf-8')
+
+          # 1) Every authentication session carries server-issued proof metadata.
+          rep('routes/otp.js',
+              "const jwt = require('jsonwebtoken');\n",
+              "",
+              label='otp remove jwt')
+          rep('routes/otp.js',
+              "const { setAuthCookie, clearAuthCookie } = require('../utils/auth-cookie');\n",
+              "const { setAuthCookie, clearAuthCookie } = require('../utils/auth-cookie');\nconst { signAuthToken } = require('../utils/auth-session');\n",
+              label='otp auth session import')
+          rep('routes/otp.js',
+              "function signKomerceJwt(user, phone) {\n  return jwt.sign(\n    {\n      id: user.id,\n      role: user.role || 'client',\n      phone,\n      fullName: user.full_name,\n      jti: crypto.randomUUID(),\n    },\n    process.env.JWT_SECRET,\n    { expiresIn: process.env.JWT_EXPIRES || '30d' }\n  );\n}",
+              "function signKomerceJwt(user, phone) {\n  return signAuthToken(user, {\n    method: 'otp',\n    phone,\n    fullName: user.full_name,\n  });\n}",
+              label='otp proof claims')
+
+          rep('routes/auth.js',
+              "const { randomBytes, randomUUID } = require('crypto');\n",
+              "const { randomBytes } = require('crypto');\n",
+              label='auth remove randomUUID')
+          rep('routes/auth.js',
+              "const { authenticate } = require('../middleware/auth');\n",
+              "const { authenticate } = require('../middleware/auth');\nconst { requireRecentAuth } = require('../middleware/require-recent-auth');\n",
+              label='auth recent middleware import')
+          rep('routes/auth.js',
+              "const { setAuthCookie, clearAuthCookie } = require('../utils/auth-cookie');\n",
+              "const { setAuthCookie, clearAuthCookie } = require('../utils/auth-cookie');\nconst { signAuthToken } = require('../utils/auth-session');\n",
+              label='auth session helper import')
+          rep('routes/auth.js',
+              "function generateToken(user) {\n  // N4 — jti unique pour permettre la révocation individuelle (migration 072)\n  return jwt.sign({ id: user.id, role: user.role, jti: randomUUID() }, _JWT_SECRET, { expiresIn: JWT_EXPIRES });\n}",
+              "function generateToken(user) {\n  return signAuthToken(user, { method: 'password', expiresIn: JWT_EXPIRES });\n}",
+              label='password proof claims')
+          rep('routes/auth.js',
+              "// La session authentifiée existante suffit (§9 du lot — pas de nouvel OTP).",
+              "// AUTH-7 : lecture libre, mais toute mutation exige une preuve OTP/Passkey récente.",
+              label='pickup doctrine comment')
+          rep('routes/auth.js',
+              "router.put('/me/pickup-authorization', authenticate, validate(auth.pickupAuthorization), async (req, res, next) => {",
+              "router.put('/me/pickup-authorization', authenticate, requireRecentAuth, validate(auth.pickupAuthorization), async (req, res, next) => {",
+              label='pickup put stepup')
+          rep('routes/auth.js',
+              "router.delete('/me/pickup-authorization', authenticate, async (req, res, next) => {",
+              "router.delete('/me/pickup-authorization', authenticate, requireRecentAuth, async (req, res, next) => {",
+              label='pickup delete stepup')
+
+          rep('routes/client-auth.js',
+              "const jwt = require('jsonwebtoken');\n",
+              "",
+              label='magic remove jwt')
+          rep('routes/client-auth.js',
+              "const { setAuthCookie } = require('../utils/auth-cookie');\n",
+              "const { setAuthCookie } = require('../utils/auth-cookie');\nconst { signAuthToken } = require('../utils/auth-session');\n",
+              label='magic session helper import')
+          rep('routes/client-auth.js',
+              "    const jwtToken = jwt.sign(\n      { id: user.id, role: user.role, fullName: user.full_name, jti: crypto.randomUUID() },\n      process.env.JWT_SECRET,\n      { expiresIn: '30d' }\n    );",
+              "    const jwtToken = signAuthToken(user, {\n      method: 'magic_link',\n      phone: user.phone,\n      fullName: user.full_name,\n      expiresIn: process.env.JWT_EXPIRES || '30d',\n    });",
+              label='magic proof claims')
+
+          # 2) authenticate exposes only server-verified JWT proof context.
+          rep('middleware/auth.js',
+              "    req.user = user;\n\n    next();",
+              "    req.user = user;\n    req.auth = {\n      authTime: Number.isFinite(Number(decoded.auth_time)) ? Number(decoded.auth_time) : null,\n      amr: Array.isArray(decoded.amr) ? decoded.amr.map(String) : [],\n      jti: decoded.jti || null,\n      exp: decoded.exp || null,\n    };\n\n    next();",
+              label='auth proof context')
+
+          # 3) Dedicated account-bound WebAuthn step-up ceremony.
+          p = Path('services/webauthn-service.js'); text = p.read_text(encoding='utf-8')
+          marker = "// ── Helpers internes : extraction du challenge depuis clientDataJSON ──────"
+          if text.count(marker) != 1: raise SystemExit('webauthn helper marker mismatch')
+          step = r'''
+// ── Step-up AUTH-7 ───────────────────────────────────────────────────────
+
+async function getStepUpOptions({ userId }) {
+  const creds = await _findActiveCredentialsByUser(userId);
+  if (!creds.length) return { available: false, reason: 'no_active_credential' };
+
+  const options = await generateAuthenticationOptions({
+    rpID: _rpID(),
+    userVerification: 'required',
+    allowCredentials: creds.map((c) => ({
+      id: c.credential_id,
+      transports: c.transports || undefined,
+    })),
+  });
+  await _storeChallenge({ userId, challenge: options.challenge, ceremonyType: 'step_up' });
+  return { available: true, options };
+}
+
+async function verifyStepUp({ userId, response }) {
+  const credentialIdB64 = response?.id;
+  if (!credentialIdB64) return { verified: false, error: 'malformed_response' };
+
+  // Consommer d'abord le challenge AUTH-7 : même un essai avec une credential
+  // étrangère ne peut pas être rejoué avec une autre credential.
+  const consumed = await _consumeChallenge({
+    challenge: _clientDataChallenge(response),
+    ceremonyType: 'step_up',
+  });
+  if (!consumed.ok) return { verified: false, error: consumed.reason };
+  if (consumed.userId !== userId) return { verified: false, error: 'user_mismatch' };
+
+  const stored = await _findCredentialByCredentialId(credentialIdB64);
+  if (!stored) return { verified: false, error: 'unknown_credential' };
+  if (stored.user_id !== userId) return { verified: false, error: 'user_mismatch' };
+  if (stored.revoked_at) return { verified: false, error: 'credential_revoked' };
+
+  let result;
+  try {
+    result = await verifyAuthenticationResponse({
+      response,
+      expectedChallenge: _clientDataChallenge(response),
+      expectedOrigin: _expectedOrigin(),
+      expectedRPID: _rpID(),
+      requireUserVerification: true,
+      credential: {
+        id: stored.credential_id,
+        publicKey: isoBase64URL.toBuffer(stored.public_key),
+        counter: Number(stored.sign_count),
+        transports: stored.transports || undefined,
+      },
+    });
+  } catch (err) {
+    log.warn('[verifyStepUp] verification échouée:', err.message);
+    return { verified: false, error: 'verification_failed' };
+  }
+  if (!result.verified) return { verified: false, error: 'not_verified' };
+
+  const { newCounter } = result.authenticationInfo;
+  if (!stored.backup_state && Number(stored.sign_count) > 0 && newCounter <= Number(stored.sign_count)) {
+    return { verified: false, error: 'sign_count_regression' };
+  }
+
+  await db.query(
+    `UPDATE webauthn_credentials SET sign_count = $1, last_used_at = NOW() WHERE id = $2`,
+    [newCounter, stored.id]
+  );
+  return { verified: true, userId };
+}
+
+'''
+          text = text.replace(marker, step + marker, 1)
+          text = text.replace(
+              "  getLoginOptions,\n  verifyLogin,\n",
+              "  getLoginOptions,\n  verifyLogin,\n  getStepUpOptions,\n  verifyStepUp,\n",
+              1)
+          p.write_text(text, encoding='utf-8')
+
+          # 4) Passkey routes: recent-auth guard on sensitive mutations + step-up endpoints.
+          p = Path('routes/auth-passkey.js'); text = p.read_text(encoding='utf-8')
+          text = text.replace("const { randomUUID } = require('crypto');\nconst jwt = require('jsonwebtoken');\n\n", "")
+          text = text.replace(
+              "const { authenticate } = require('../middleware/auth');\n",
+              "const { authenticate } = require('../middleware/auth');\nconst { requireRecentAuth } = require('../middleware/require-recent-auth');\n")
+          text = text.replace(
+              "const { setAuthCookie } = require('../utils/auth-cookie');\n",
+              "const { setAuthCookie } = require('../utils/auth-cookie');\nconst { signAuthToken } = require('../utils/auth-session');\n")
+          old = "const _JWT_SECRET = process.env.JWT_SECRET;\nconst JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';\n"
+          text = text.replace(old, "")
+          old = "function _issueSession(res, user) {\n  const token = jwt.sign(\n    { id: user.id, role: user.role, jti: randomUUID() },\n    _JWT_SECRET,\n    { expiresIn: JWT_EXPIRES }\n  );\n  setAuthCookie(res, token);\n}\n"
+          new = "function _issueSession(res, user, method = 'passkey') {\n  setAuthCookie(res, signAuthToken(user, { method }));\n}\n"
+          if text.count(old) != 1: raise SystemExit('passkey issue session mismatch')
+          text = text.replace(old, new, 1)
+          text = text.replace("router.delete('/credentials/:id', authenticate, async", "router.delete('/credentials/:id', authenticate, requireRecentAuth, async")
+          text = text.replace("router.post('/register/options', authenticate, async", "router.post('/register/options', authenticate, requireRecentAuth, async")
+          text = text.replace("router.post('/register/verify', authenticate, async", "router.post('/register/verify', authenticate, requireRecentAuth, async")
+          step_routes = r'''
+// ── AUTH-7 — Step-up du même compte ─────────────────────────────────────
+router.post('/step-up/options', authenticate, async (req, res) => {
+  try {
+    const result = await webauthn.getStepUpOptions({ userId: req.user.id });
+    if (!result.available) {
+      return res.status(409).json({
+        error: 'Aucune passkey active pour confirmer cette opération',
+        code: 'passkey_step_up_unavailable',
+      });
+    }
+    res.json(result.options);
+  } catch (err) {
+    log.error('[step-up/options] erreur:', err.message);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+router.post('/step-up/verify', authenticate, async (req, res) => {
+  try {
+    const response = req.body;
+    if (!response || typeof response !== 'object' || !response.id) {
+      return res.status(400).json({ error: 'Réponse WebAuthn invalide' });
+    }
+    const result = await webauthn.verifyStepUp({ userId: req.user.id, response });
+    if (!result.verified) {
+      return res.status(401).json({ error: 'Confirmation refusée', reason: result.error });
+    }
+    // Même compte, nouvelle preuve fraîche : seul auth_time/amr change.
+    _issueSession(res, req.user, 'passkey');
+    res.json({ verified: true });
+  } catch (err) {
+    log.error('[step-up/verify] erreur:', err.message);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+'''
+          marker = "// ── AUTH-2/3 — Enregistrement"
+          if text.count(marker) != 1: raise SystemExit('passkey register marker mismatch')
+          text = text.replace(marker, step_routes + marker, 1)
+          p.write_text(text, encoding='utf-8')
+
+          # 5) UI: sensitive mutations catch exactly 428 and perform one step-up.
+          rep('public/boutique/js/b-passkey-security.js',
+              "import { apiGet, apiDelete } from './b-utils.js';\n",
+              "import { apiGet, apiDelete } from './b-utils.js';\nimport { withStepUpRetry } from './b-passkey-step-up.js';\n",
+              label='security stepup import')
+          rep('public/boutique/js/b-passkey-security.js',
+              "        await apiDelete(`/api/auth/passkey/credentials/${encodeURIComponent(credential.id)}`);",
+              "        await withStepUpRetry(() => apiDelete(`/api/auth/passkey/credentials/${encodeURIComponent(credential.id)}`));",
+              label='revoke stepup retry')
+          rep('public/boutique/js/b-passkey-security.js',
+              "      } catch (_) {\n        revoke.disabled = false;\n        revoke.textContent = 'Réessayer';\n      }",
+              "      } catch (error) {\n        revoke.disabled = false;\n        revoke.textContent = 'Réessayer';\n        if (error?.code === 'step_up_reauth_required') {\n          window.alert('Pour cette opération sensible, reconnectez-vous avec WhatsApp puis réessayez.');\n        }\n      }",
+              label='revoke reauth message')
+
+          rep('public/boutique/js/b-komerce.js',
+              "import { loadPasskeySecurity } from './b-passkey-security.js';\n",
+              "import { loadPasskeySecurity } from './b-passkey-security.js';\nimport { withStepUpRetry } from './b-passkey-step-up.js';\n",
+              label='komerce stepup import')
+          rep('public/boutique/js/b-komerce.js',
+              "      await apiDelete('/api/auth/me/pickup-authorization');",
+              "      await withStepUpRetry(() => apiDelete('/api/auth/me/pickup-authorization'));",
+              label='pickup delete retry')
+          rep('public/boutique/js/b-komerce.js',
+              "      const result = await apiPut('/api/auth/me/pickup-authorization', {\n        given_names: givenNames, family_name: familyName,\n      });",
+              "      const result = await withStepUpRetry(() => apiPut('/api/auth/me/pickup-authorization', {\n        given_names: givenNames, family_name: familyName,\n      }));",
+              label='pickup put retry')
+
+          # 6) Contract generator adds two authenticated step-up surfaces.
+          p = Path('scripts/contract-generate.js'); text = p.read_text(encoding='utf-8')
+          route_marker = "  { prefix: '/api/auth/passkey/login/verify',     method: 'post', schema: null },\n"
+          if text.count(route_marker) != 1: raise SystemExit('contract passkey route marker mismatch')
+          text = text.replace(route_marker, route_marker +
+              "  { prefix: '/api/auth/passkey/step-up/options',   method: 'post', schema: null },\n" +
+              "  { prefix: '/api/auth/passkey/step-up/verify',    method: 'post', schema: null },\n", 1)
+          known = "  '/api/auth/passkey/login/verify':     { post: { fields: ['verified','user'], source: 'route-read' } },\n"
+          if text.count(known) != 1: raise SystemExit('contract passkey known marker mismatch')
+          text = text.replace(known, known +
+              "  '/api/auth/passkey/step-up/options': { post: { fields: ['challenge','timeout','rpId','allowCredentials','userVerification','extensions'], source: 'service-read' } },\n" +
+              "  '/api/auth/passkey/step-up/verify':  { post: { fields: ['verified'], source: 'route-read' } },\n", 1)
+          ov = "  'POST /api/auth/passkey/login/verify': { '400': { description: 'Réponse WebAuthn invalide' }, '401': { description: 'Passkey inconnue, révoquée ou refusée' }, '500': { description: 'Erreur serveur WebAuthn' } },\n"
+          if text.count(ov) != 1: raise SystemExit('contract override marker mismatch')
+          text = text.replace(ov, ov +
+              "  'POST /api/auth/passkey/step-up/options': { '401': { description: 'Session requise' }, '409': { description: 'Aucune passkey active' }, '500': { description: 'Erreur serveur WebAuthn' } },\n" +
+              "  'POST /api/auth/passkey/step-up/verify': { '400': { description: 'Réponse WebAuthn invalide' }, '401': { description: 'Session ou confirmation invalide' }, '500': { description: 'Erreur serveur WebAuthn' } },\n", 1)
+          p.write_text(text, encoding='utf-8')
+
+          # 7) Feature cards: AUTH-7 is now part of auth-passkey authority.
+          p = Path('features/auth-passkey.feature.js'); text = p.read_text(encoding='utf-8')
+          text = text.replace("'et révocation explicite des authentificateurs du compte (AUTH-2→6).'", "'révocation et step-up récent lié au même compte (AUTH-2→7).'")
+          text = text.replace("      'step-up des opérations sensibles (AUTH-7)',\n", "")
+          text = text.replace("      'services/webauthn-management-service.js',\n", "      'services/webauthn-management-service.js',\n      'utils/auth-session.js',\n      'middleware/require-recent-auth.js',\n")
+          text = text.replace("      'migrations/133_webauthn_credentials.sql',\n", "      'migrations/133_webauthn_credentials.sql',\n      'migrations/134_webauthn_step_up.sql',\n")
+          text = text.replace("      'tests/unit/auth-passkey-management.test.js',\n", "      'tests/unit/auth-passkey-management.test.js',\n      'tests/unit/auth-passkey-step-up.test.js',\n      'tests/unit/auth-session.test.js',\n      'tests/unit/require-recent-auth.test.js',\n")
+          text = text.replace("    authedRoutesDetected: 4,\n    totalRoutes: 6,", "    authedRoutesDetected: 6,\n    totalRoutes: 8,")
+          text = text.replace("      'DELETE /api/auth/passkey/credentials/{id}',\n", "      'DELETE /api/auth/passkey/credentials/{id}',\n      'POST /api/auth/passkey/step-up/options',\n      'POST /api/auth/passkey/step-up/verify',\n")
+          text = text.replace("    'une révocation est toujours scellée par id de gestion ET user_id authentifié',\n", "    'une révocation est toujours scellée par id de gestion ET user_id authentifié',\n    'un challenge step_up est distinct de login/register et lié au user_id de la session',\n    'une passkey d un autre compte ne peut jamais satisfaire un step-up',\n    'les mutations de sécurité exigent auth_time récent avec amr otp ou passkey',\n")
+          p.write_text(text, encoding='utf-8')
+
+          p = Path('public/boutique/features/auth-passkey.feature.js'); text = p.read_text(encoding='utf-8')
+          text = text.replace("'et gestion/révocation des passkeys dans Mon Komerce (AUTH-6).'", "'gestion/révocation (AUTH-6) et step-up Passkey des mutations sensibles (AUTH-7).'")
+          text = text.replace("      'step-up (AUTH-7)',\n", "")
+          text = text.replace("      '../js/b-passkey-security.js',\n", "      '../js/b-passkey-security.js',\n      '../js/b-passkey-step-up.js',\n")
+          text = text.replace("      '../tests/unit/b-passkey-security.test.js',\n", "      '../tests/unit/b-passkey-security.test.js',\n      '../tests/unit/b-passkey-step-up.test.js',\n")
+          text = text.replace("      'loadPasskeySecurity (b-passkey-security.js)',\n", "      'loadPasskeySecurity (b-passkey-security.js)',\n      'performPasskeyStepUp / withStepUpRetry (b-passkey-step-up.js)',\n")
+          text = text.replace("    'la révocation UI utilise uniquement l identifiant de gestion opaque fourni par le serveur',\n", "    'la révocation UI utilise uniquement l identifiant de gestion opaque fourni par le serveur',\n    'un 428 step_up_required déclenche au plus un challenge Passkey puis un seul retry',\n    'si aucune passkey n est disponible le client exige une reconnexion WhatsApp fraîche au lieu de contourner le step-up',\n")
+          p.write_text(text, encoding='utf-8')
+          PY
+      - name: Remove temporary helper from intended final tree
+        run: rm .github/workflows/tmp-auth7-finalize.yml
+      - run: npm ci
+      - name: AUTH-2→7 backend regression
+        run: npx jest tests/unit/auth-passkey.test.js tests/unit/auth-passkey-management.test.js tests/unit/auth-passkey-step-up.test.js tests/unit/auth-session.test.js tests/unit/require-recent-auth.test.js --runInBand
+      - run: npm --prefix public/boutique ci
+      - name: AUTH-3→7 Boutique regression
+        working-directory: public/boutique
+        run: npx jest tests/unit/b-passkey-enrollment.test.js tests/unit/b-passkey-login.test.js tests/unit/b-passkey-recovery.test.js tests/unit/b-passkey-security.test.js tests/unit/b-passkey-step-up.test.js tests/unit/b-identity-passkey.test.js tests/unit/b-identity-recovery.test.js --runInBand
+      - name: Generate and verify API contract
+        run: |
+          node scripts/contract-generate.js
+          node scripts/contract-check.js
+          node - <<'NODE'
+          const spec = require('./docs/contract/openapi.json');
+          for (const p of ['/api/auth/passkey/step-up/options','/api/auth/passkey/step-up/verify']) {
+            const op = spec.paths?.[p]?.post;
+            if (!op) throw new Error(`missing ${p}`);
+            const st = op.responses?.['200']?.content?.['application/json']?.schema?.['x-contract-status'];
+            if (!st || st === 'UNKNOWN') throw new Error(`uncovered ${p}: ${st}`);
+          }
+          NODE
+      - name: Refresh governance projections
+        run: |
+          node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+          node scripts/gen-gate-findings.js
+          node scripts/gen-feature-360.js
+      - name: Verify final tree
+        run: |
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+          node scripts/contract-check.js
+          git diff --check
+      - name: Commit final AUTH-7 tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add migrations/134_webauthn_step_up.sql utils/auth-session.js middleware/require-recent-auth.js
+          git add services/webauthn-service.js routes/auth-passkey.js routes/auth.js routes/otp.js routes/client-auth.js middleware/auth.js
+          git add tests/unit/auth-passkey-step-up.test.js tests/unit/auth-session.test.js tests/unit/require-recent-auth.test.js
+          git add public/boutique/js/b-passkey-step-up.js public/boutique/js/b-passkey-security.js public/boutique/js/b-komerce.js public/boutique/tests/unit/b-passkey-step-up.test.js
+          git add features/auth-passkey.feature.js public/boutique/features/auth-passkey.feature.js scripts/contract-generate.js docs/contract/openapi.json docs/contract/DEBT.md
+          git add docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/GATE_FINDINGS.json docs/FEATURE_360.json docs/FEATURE_360.md
+          git add -u .github/workflows/tmp-auth7-finalize.yml
+          git commit -m "feat(auth): require recent proof for sensitive operations"
+          git push origin HEAD:auth/7-step-up
