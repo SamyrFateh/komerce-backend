@@ -11,13 +11,13 @@
 | PROJECTION | 0 |
 | COMPOSITION_ROOT_WIRING | 13 |
 | NON_RUNTIME_TEST | 6 |
-| TECHNICAL_PRIMITIVE | 1 |
+| TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
 | CROSS_FEATURE_DIRECT_IMPORT | 3 |
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **23** |
+| **TOTAL** | **22** |
 
 ## The 94 pairs (from → to)
 
@@ -25,7 +25,6 @@
 |---|---|---|---|---|---|---|---|---|---|
 | auth-identity → logistics | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | catalog → orders | CROSS_FEATURE_DIRECT_IMPORT | RUNTIME_AND_TEST | business-feature | business-feature | static-code | business-file-import | boundary-remediation-required | direct-import | `` |
-| decision-signals → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | piloting-capability | technical-foundation | static-code | technical-primitive | technical-dependency-policy | — | `` |
 | infrastructure → auth-identity | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → auth-passkey | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → business-rules | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-transversal | static-code | import-mixed | application-wiring-not-consumption | — | `` |

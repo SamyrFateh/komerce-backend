@@ -76,6 +76,8 @@ module.exports = {
     consumes: [
       "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/signals.js -> middleware/auth.js)",
 
+      "infrastructure (2026-08-17 — accès DB et logger techniques ; preuve: services/radar-queries.js, services/signal-service.js, routes/signals.js -> db.js / utils/logger.js)",
+
       "logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/radar-queries.js -> utils/parcels.js)",
 
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/radar-queries.js -> utils/rules.js)",
