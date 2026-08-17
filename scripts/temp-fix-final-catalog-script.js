@@ -1,0 +1,10 @@
+'use strict';
+const fs = require('fs');
+const file = 'scripts/temp-final-catalog-orders-boundary.js';
+let src = fs.readFileSync(file, 'utf8');
+const from = String.raw`/\n  \/\* ── TOGGLE FAV ─+[\s\S]*?\n  \/\* ── CATEGORIES ─+\/\n/,`;
+const to = String.raw`/\n  \/\* ── TOGGLE FAV ─+[\s\S]*?\n  \/\* ── CATEGORIES ─+\*\/\n/,`;
+if (!src.includes(from)) throw new Error('final seam regex marker not found');
+src = src.replace(from, to);
+fs.writeFileSync(file, src);
+console.log('final seam regex marker corrected');
