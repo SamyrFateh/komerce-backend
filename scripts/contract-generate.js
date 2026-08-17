@@ -126,6 +126,8 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/auth/passkey/register/verify',  method: 'post', schema: null },
   { prefix: '/api/auth/passkey/login/options',    method: 'post', schema: null },
   { prefix: '/api/auth/passkey/login/verify',     method: 'post', schema: null },
+  { prefix: '/api/auth/passkey/credentials',          method: 'get',    schema: null },
+  { prefix: '/api/auth/passkey/credentials',          method: 'delete', schema: null },
   // PRODUCTS
   { prefix: '/api/products',              method: 'get',    schema: validators.products?.list },
   { prefix: '/api/products/{id}',         method: 'get',    schema: validators.products?.getOne },
@@ -198,6 +200,8 @@ const KNOWN_RESPONSES = {
   '/api/auth/passkey/register/verify':  { post: { fields: ['verified'], source: 'route-read' } },
   '/api/auth/passkey/login/options':    { post: { fields: ['challenge','timeout','rpId','allowCredentials','userVerification','extensions'], source: 'service-read' } },
   '/api/auth/passkey/login/verify':     { post: { fields: ['verified','user'], source: 'route-read' } },
+  '/api/auth/passkey/credentials': { get: { fields: ['credentials'], source: 'route-read' } },
+  '/api/auth/passkey/credentials/{id}': { delete: { fields: ['revoked','id'], source: 'route-read' } },
   // D-06 — admin-customs-shipments : workflow déclaration + analytics
   '/api/admin/customs-shipments/{id}/declare': {
     post: { fields: ['shipment_id', 'status', 'customs_paid_kmf', 'parcels_updated'], source: 'test' },
@@ -1927,6 +1931,8 @@ const RESPONSE_OVERRIDES = {
   'POST /api/auth/passkey/register/verify': { '400': { description: 'Réponse WebAuthn invalide ou refusée' }, '401': { description: 'Session K1 requise' }, '500': { description: 'Erreur serveur WebAuthn' } },
   'POST /api/auth/passkey/login/options': { '500': { description: 'Erreur serveur WebAuthn' } },
   'POST /api/auth/passkey/login/verify': { '400': { description: 'Réponse WebAuthn invalide' }, '401': { description: 'Passkey inconnue, révoquée ou refusée' }, '500': { description: 'Erreur serveur WebAuthn' } },
+  'GET /api/auth/passkey/credentials': { '401': { description: 'Session requise' }, '500': { description: 'Erreur serveur' } },
+  'DELETE /api/auth/passkey/credentials/{id}': { '400': { description: 'Identifiant de passkey invalide' }, '401': { description: 'Session requise' }, '404': { description: 'Passkey introuvable pour ce compte' }, '500': { description: 'Erreur serveur' } },
   'GET /webhook/meta-whatsapp': {
     '403': { description: 'Forbidden — token de vérification Meta invalide ou absent' },
   },

@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 17,
-    "total_routes": 429,
+    "total_routes": 431,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -11489,6 +11489,96 @@
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/auth/passkey/credentials": {
+      "get": {
+        "summary": "GET /api/auth/passkey/credentials",
+        "x-route-file": "routes/auth-passkey.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "credentials": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session requise"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/auth/passkey/credentials/{id}": {
+      "delete": {
+        "summary": "DELETE /api/auth/passkey/credentials/{id}",
+        "x-route-file": "routes/auth-passkey.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "revoked": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identifiant de passkey invalide"
+          },
+          "401": {
+            "description": "Session requise"
+          },
+          "404": {
+            "description": "Passkey introuvable pour ce compte"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          },
+          "500": {
+            "description": "Erreur serveur"
           }
         }
       }

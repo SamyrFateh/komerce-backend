@@ -34,6 +34,7 @@
 import { apiGet, apiPut, apiDelete, apiDownload } from './b-utils.js';
 import { getCurrentIdentity, requireIdentity } from './b-identity.js';
 import { bus } from './b-bus.js';
+import { loadPasskeySecurity } from './b-passkey-security.js';
 
 // ── État interne ───────────────────────────────────────────────────────────────
 
@@ -387,6 +388,11 @@ function renderSecurityBlock(block, me) {
         '<span class="k-kmc-sec-label">WhatsApp du compte</span>' +
         '<span class="k-kmc-sec-value" id="k-kmc-security-phone"></span>' +
       '</div>' +
+      '<div class="k-kmc-auth-block" id="k-kmc-passkeys-block">' +
+        '<h4 class="k-kmc-auth-title">Moyens de connexion</h4>' +
+        '<p class="k-kmc-field-hint">Vos passkeys permettent de vous connecter sans code WhatsApp. Révoquez uniquement un appareil que vous ne souhaitez plus autoriser.</p>' +
+        '<div id="k-kmc-passkeys-content"></div>' +
+      '</div>' +
       '<div class="k-kmc-sec-doctrine">' +
         '<p>Le code de retrait est envoy\u00e9 sur votre WhatsApp lorsque votre commande est pr\u00eate au relais. Vous pouvez le transmettre \u00e0 la personne de votre choix.</p>' +
         '<p>Ce code est personnel et unique \u00e0 chaque commande : ne le partagez qu\u2019avec la personne qui viendra r\u00e9cup\u00e9rer votre colis.</p>' +
@@ -400,6 +406,7 @@ function renderSecurityBlock(block, me) {
   const phoneValue = block.querySelector('#k-kmc-security-phone');
   if (phoneValue) phoneValue.textContent = phone || '\u2014';
 
+  loadPasskeySecurity(block.querySelector('#k-kmc-passkeys-content'));
   _loadAuthSection(block.querySelector('#k-kmc-auth-content'));
 }
 

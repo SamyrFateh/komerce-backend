@@ -207,17 +207,16 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 ## auth-passkey
 
-**Kind** : business-feature  ·  **Status** : staging
+**Kind** : business-feature  ·  **Status** : production
 
-**Service** : Enregistrer et vérifier des passkeys WebAuthn L3 (authentificateur cryptographique, K2 de la doctrine auth) pour un utilisateur déjà identifié — capacité serveur uniquement à ce stade (AUTH-2). L'UI et le login-passkey nominal viennent en AUTH-3/4.
+**Service** : Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→6).
 
 **Perimeter** :
 - _in_ :
   - génération des options WebAuthn (register/login), vérification cryptographique via @simplewebauthn/server, stockage/rotation des credentials et des challenges éphémères
 - _out_ :
-  - UI/bouton "Sécuriser Komerce" (AUTH-3)
-  - login-passkey comme parcours nominal / step-up (AUTH-4/5)
-  - recovery et gestion multi-appareils (AUTH-6/7)
+  - step-up des opérations sensibles (AUTH-7)
+  - durcissement final de session/cookie/CSRF (AUTH-8b→e)
   - toute logique OTP/magic-link/guest-checkout — reste dans auth-identity
 
 **Authority** : backend-core — toute vérification WebAuthn passe exclusivement par @simplewebauthn/server ; aucune ré-implémentation crypto/CBOR locale.
@@ -230,18 +229,20 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - requireUserVerification est vérifié par la lib, pas seulement demandé à l'authenticator
 - credential_id est unique (contrainte DB + vérification applicative avant insert)
 - une credential revoked_at non nul est inutilisable au login, sans exception
+- la gestion AUTH-6 ne retourne jamais credential_id, public_key ni sign_count au navigateur
+- une révocation est toujours scellée par id de gestion ET user_id authentifié
 - sign_count : régression rejetée pour les credentials non sauvegardées (backup_state=false) ; tolérée et tracée pour les passkeys synchronisées (backup_state=true)
 
 **Owns** : `webauthn_challenges`, `webauthn_credentials`
 
-**Exposes** : 0 internal API(s), 4 HTTP interface(s)
+**Exposes** : 0 internal API(s), 6 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED)
 **Consumed by** : _aucune_
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
+**Technical context** : 1 primitive dependencies, 0 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
@@ -252,11 +253,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 4 fichier(s) déclaré(s), boutique: 6 fichier(s)
+**Implementation** : 6 fichier(s) déclaré(s), boutique: 8 fichier(s)
   - migrations : 1
   - routes : 1
-  - services : 1
-  - tests : 1
+  - services : 2
+  - tests : 2
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth-passkey"]_
 

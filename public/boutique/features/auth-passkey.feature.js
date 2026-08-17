@@ -13,14 +13,14 @@ module.exports = {
   name: 'auth-passkey',
   type: 'feature',
   domain: 'auth-passkey',
-  status: 'staging',
+  status: 'production',
   owner: 'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   canonicalFeature: 'auth-passkey',
   sliceKind: 'frontend-slice',
 
-  service: 'Enrôlement après OTP (AUTH-3), login Passkey nominal (AUTH-4) et recovery téléphone → OTP → nouvelle Passkey (AUTH-5).',
+  service: 'Enrôlement (AUTH-3), login nominal (AUTH-4), recovery OTP (AUTH-5) et gestion/révocation des passkeys dans Mon Komerce (AUTH-6).',
 
   perimeter: {
     in: [
@@ -32,7 +32,6 @@ module.exports = {
       'appel des endpoints register/options, register/verify, login/options et login/verify AUTH-2',
     ],
     out: [
-      'gestion/révocation des authentificateurs (AUTH-6)',
       'step-up (AUTH-7)',
     ],
   },
@@ -41,12 +40,14 @@ module.exports = {
     js: [
       '../js/b-passkey-enrollment.js',
       '../js/b-passkey-login.js',
+      '../js/b-passkey-security.js',
     ],
     tests: [
       '../tests/unit/b-passkey-enrollment.test.js',
       '../tests/unit/b-passkey-login.test.js',
       '../tests/unit/b-passkey-recovery.test.js',
       '../tests/unit/b-identity-recovery.test.js',
+      '../tests/unit/b-passkey-security.test.js',
     ],
   },
 
@@ -57,6 +58,7 @@ module.exports = {
     internalApi: [
       'setupPasskeyEnrollment / offerPasskeyEnrollment (b-passkey-enrollment.js)',
       'openPasskeyLogin (b-passkey-login.js)',
+      'loadPasskeySecurity (b-passkey-security.js)',
     ],
     consumes: [
       'auth — b-identity.js émet komerce:identity-authenticated et délègue le login nominal à auth-passkey',
@@ -74,6 +76,8 @@ module.exports = {
     'une passkey inutilisable déclenche un état recovery explicite et exige OTP avant ré-enrôlement',
     'le recovery OTP peut reproposer une nouvelle passkey même si l offre UX normale a déjà été vue',
     'le recovery ne révoque jamais automatiquement les autres credentials',
+    'Mon Komerce affiche uniquement des métadonnées sûres de passkeys et exige confirmation avant révocation',
+    'la révocation UI utilise uniquement l identifiant de gestion opaque fourni par le serveur',
     'aucun JWT challenge credential clé privée ou donnée biométrique n est stocké dans localStorage ou sessionStorage',
     'les challenges et paramètres RP viennent exclusivement du serveur AUTH-2',
     'navigator.credentials.create/get est vérifié côté serveur avant toute confiance',

@@ -140,15 +140,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### auth-passkey _(business-feature)_
 
-> Enregistrer et vérifier des passkeys WebAuthn L3 (authentificateur cryptographique, K2 de la doctrine auth) pour un utilisateur déjà identifié — capacité serveur uniquement à ce stade (AUTH-2). L'UI et le login-passkey nominal viennent en AUTH-3/4.
+> Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres et révocation explicite des authentificateurs du compte (AUTH-2→6).
 
-- services: 1
+- services: 2
 - routes: 1
 - migrations: 1
-- tests: 1
+- tests: 2
 - tables owned (lifecycle): 2 — `webauthn_credentials`, `webauthn_challenges`
 - tables written: 2
-- interfaces exposed: 4
+- interfaces exposed: 6
 - internal APIs: 0
 - dependencies (consumes): 3 — auth, auth-identity, infrastructure
 - consumers: 0
@@ -701,6 +701,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/auth/passkey/register/verify` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
 | `POST /api/auth/passkey/login/options` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
 | `POST /api/auth/passkey/login/verify` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `GET /api/auth/passkey/credentials` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `DELETE /api/auth/passkey/credentials/{id}` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
 | `GET /api/admin/rules` | business-rules | `routes/admin-rules.js` (resolved-owned) |
 | `GET /api/admin/rules/{id}` | business-rules | `routes/admin-rules.js` (resolved-owned) |
 | `PATCH /api/admin/rules/{id}` | business-rules | `routes/admin-rules.js` (resolved-owned) |
@@ -1377,11 +1379,11 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "auth" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> auth-passkey — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "auth-passkey"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> auth-passkey — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> platform-ops — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "platform-ops"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-passkey -> platform-ops — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth-passkey" vers "platform-ops"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-passkey -> platform-ops — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-passkey" vers "platform-ops"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> auth-identity — dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
@@ -1491,8 +1493,8 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 777 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 148 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- backend : 779 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 150 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1517,7 +1519,7 @@ Meta Graph monté : oui.
 | auth | infrastructure | static-code | 13 | **OBSERVED_UNDECLARED** |
 | auth | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | auth-identity | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| auth-identity | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
+| auth-identity | auth-passkey | static-code | 2 | **OBSERVED_UNDECLARED** |
 | auth-identity | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
 | auth-identity | infrastructure | static-code | 16 | **OBSERVED_UNDECLARED** |
 | auth-identity | logistics | static-code | 2 | **OBSERVED_UNDECLARED** |
@@ -1526,8 +1528,8 @@ Meta Graph monté : oui.
 | auth-identity | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| auth-passkey | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| auth-passkey | platform-ops | static-code | 1 | **OBSERVED_UNDECLARED** |
+| auth-passkey | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | platform-ops | static-code | 2 | **OBSERVED_UNDECLARED** |
 | business-rules | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | business-rules | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1834,8 +1836,8 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 |---|---|---|
 | PROJECTION | 10 | projection-dependency-policy |
 | COMPOSITION_ROOT_WIRING | 16 | application-wiring-not-consumption |
-| NON_RUNTIME_TEST | 9 | non-runtime-evidence |
-| TECHNICAL_PRIMITIVE | 31 | technical-dependency-policy |
+| NON_RUNTIME_TEST | 8 | non-runtime-evidence |
+| TECHNICAL_PRIMITIVE | 32 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 2 | business-dependency-declare-candidate |
 | CROSS_FEATURE_DIRECT_IMPORT | 5 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 5 | business-dependency-declare-candidate |
@@ -1884,7 +1886,6 @@ Bootstrap/cron/error-handler qui montent ou déclenchent une feature. Pas une co
 Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
 
 - `auth-identity` → `logistics` — business-file-import, TEST_ONLY
-- `auth-passkey` → `platform-ops` — business-file-import, TEST_ONLY
 - `auth` → `auth-identity` — business-file-import, TEST_ONLY
 - `auth` → `notifications` — business-file-import, TEST_ONLY
 - `inventory` → `logistics` — business-file-import, TEST_ONLY
@@ -1899,6 +1900,7 @@ Usage de db.js / middleware / logger / utils / validators d'un transversal techn
 
 - `auth-identity` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `auth-identity` → `platform-ops` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
+- `auth-passkey` → `platform-ops` — business-file-import, RUNTIME_AND_TEST
 - `auth` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `catalog` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `catalog` → `platform-ops` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_

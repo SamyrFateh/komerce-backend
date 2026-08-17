@@ -17,7 +17,7 @@ module.exports = {
   nature:   'feature',
   type:     'transversal',
   domain:   'auth-passkey',
-  status:   'staging',   // passe à production après AUTH-3/4 (adoption UI + login nominal)
+  status:   'production',   // AUTH-3/4 nominal livré ; AUTH-6 ajoute la gestion explicite
   owner:    'backend-core',
 
   // ── Classification d'ontologie ────────────────────────────────────────────
@@ -34,9 +34,8 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Enregistrer et vérifier des passkeys WebAuthn L3 (authentificateur cryptographique, ' +
-           'K2 de la doctrine auth) pour un utilisateur déjà identifié — capacité serveur ' +
-           'uniquement à ce stade (AUTH-2). L\'UI et le login-passkey nominal viennent en AUTH-3/4.',
+  service: 'Gérer le cycle de vie Passkey Komerce : enrôlement, login nominal, métadonnées sûres ' +
+           'et révocation explicite des authentificateurs du compte (AUTH-2→6).',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
@@ -45,9 +44,8 @@ module.exports = {
         '@simplewebauthn/server, stockage/rotation des credentials et des challenges éphémères',
     ],
     out: [
-      'UI/bouton "Sécuriser Komerce" (AUTH-3)',
-      'login-passkey comme parcours nominal / step-up (AUTH-4/5)',
-      'recovery et gestion multi-appareils (AUTH-6/7)',
+      'step-up des opérations sensibles (AUTH-7)',
+      'durcissement final de session/cookie/CSRF (AUTH-8b→e)',
       'toute logique OTP/magic-link/guest-checkout — reste dans auth-identity',
     ],
   },
@@ -56,6 +54,7 @@ module.exports = {
   files: {
     services: [
       'services/webauthn-service.js',
+      'services/webauthn-management-service.js',
     ],
     routes: [
       'routes/auth-passkey.js',
@@ -65,6 +64,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/auth-passkey.test.js',
+      'tests/unit/auth-passkey-management.test.js',
     ],
   },
 
@@ -82,12 +82,12 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 2,
-    totalRoutes: 4,
+    authedRoutesDetected: 4,
+    totalRoutes: 6,
     note: 'register/options et register/verify exigent authenticate (K1 minimum — on ne pose ' +
           'une passkey que sur un compte déjà prouvé). login/options et login/verify sont ' +
-          'publics par nature (c\'est le mécanisme de login) ; leur sécurité vient de la ' +
-          'vérification cryptographique, pas d\'un middleware d\'auth.',
+          'publics par nature (c\'est le mécanisme de login). GET /credentials et ' +
+          'DELETE /credentials/:id exigent authenticate et ne retournent que des métadonnées sûres.',
   },
   contract: {
     exposes: [
@@ -95,6 +95,8 @@ module.exports = {
       'POST /api/auth/passkey/register/verify',
       'POST /api/auth/passkey/login/options',
       'POST /api/auth/passkey/login/verify',
+      'GET /api/auth/passkey/credentials',
+      'DELETE /api/auth/passkey/credentials/{id}',
     ],
     consumes: [
       'auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, ' +
@@ -141,6 +143,8 @@ module.exports = {
     'requireUserVerification est vérifié par la lib, pas seulement demandé à l\'authenticator',
     'credential_id est unique (contrainte DB + vérification applicative avant insert)',
     'une credential revoked_at non nul est inutilisable au login, sans exception',
+    'la gestion AUTH-6 ne retourne jamais credential_id, public_key ni sign_count au navigateur',
+    'une révocation est toujours scellée par id de gestion ET user_id authentifié',
     'sign_count : régression rejetée pour les credentials non sauvegardées (backup_state=false) ; ' +
       'tolérée et tracée pour les passkeys synchronisées (backup_state=true)',
   ],
