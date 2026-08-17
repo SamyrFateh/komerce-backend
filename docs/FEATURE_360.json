@@ -46,12 +46,12 @@
     "healthy": 7,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 119,
-    "directCrossFeatureImports": 4,
+    "businessDependencies": 123,
+    "directCrossFeatureImports": 3,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
     "ontologyGaps": 0,
-    "debtItemsTotal": 119,
+    "debtItemsTotal": 110,
     "gateHealthy": 14,
     "gateBlocked": 0
   },
@@ -3488,6 +3488,13 @@
         },
         {
           "consumer": "recommendations",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -9456,7 +9463,28 @@
           ]
         },
         {
+          "provider": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "platform-ops",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -9513,7 +9541,7 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
-        "compositionRootRelations": 12,
+        "compositionRootRelations": 9,
         "details": [
           {
             "to": "auth-identity",
@@ -9537,18 +9565,6 @@
           },
           {
             "to": "loyalty",
-            "family": "COMPOSITION_ROOT_WIRING"
-          },
-          {
-            "to": "notifications",
-            "family": "COMPOSITION_ROOT_WIRING"
-          },
-          {
-            "to": "payments",
-            "family": "COMPOSITION_ROOT_WIRING"
-          },
-          {
-            "to": "platform-ops",
             "family": "COMPOSITION_ROOT_WIRING"
           },
           {
@@ -9579,7 +9595,7 @@
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 11,
-        "declaredOnlyDependencyCount": 3,
+        "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 4
       },
@@ -9591,7 +9607,7 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 18,
+        "debtCount": 15,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -9612,21 +9628,6 @@
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table revoked_tokens — écrite par infrastructure (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"notification — bootstrap/api-routes.js monte les routes notification\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"operations — bootstrap/api-routes.js monte les routes operations\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"payment — bootstrap/api-routes.js monte les routes payment\" — ne correspond à aucun nom de feature connu"
           },
           {
             "type": "UNRESOLVED_INTERNAL_API",
@@ -12085,6 +12086,13 @@
           ]
         },
         {
+          "consumer": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -12114,14 +12122,14 @@
         },
         {
           "consumer": "purchasing",
-          "disposition": "BUSINESS_TRANSVERSAL_SERVICE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
           ]
         },
         {
           "consumer": "shared-cart",
-          "disposition": "BUSINESS_TRANSVERSAL_SERVICE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
           ]
@@ -13149,7 +13157,7 @@
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
-        "declaredOnlyDependencyCount": 2,
+        "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 5
       },
@@ -13237,7 +13245,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 10,
+        "debtCount": 8,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -13263,16 +13271,6 @@
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table scans — écrite par orders (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"notification\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"payment\" — ne correspond à aucun nom de feature connu"
           },
           {
             "type": "DECLARED_NOT_OBSERVED",
@@ -13841,6 +13839,13 @@
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
         {
           "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
@@ -14751,6 +14756,13 @@
           ]
         },
         {
+          "consumer": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -15234,7 +15246,7 @@
         },
         {
           "provider": "notifications",
-          "disposition": "BUSINESS_TRANSVERSAL_SERVICE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
           ]
@@ -15306,7 +15318,7 @@
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
-        "declaredOnlyDependencyCount": 1,
+        "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 3
       },
@@ -15329,7 +15341,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 4,
+        "debtCount": 3,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -15345,11 +15357,6 @@
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table purchase_orders — écrite par purchasing (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)\" — ne correspond à aucun nom de feature connu"
           }
         ]
       },
@@ -16529,8 +16536,15 @@
           ]
         },
         {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "notifications",
-          "disposition": "BUSINESS_TRANSVERSAL_SERVICE",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
           ]
@@ -16587,8 +16601,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
-        "directCrossFeatureImports": 1,
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -16600,7 +16614,7 @@
         "registryPresent": true,
         "orphanFiles": 0,
         "unresolvedInternalApis": 0,
-        "declaredOnlyDependencyCount": 2,
+        "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 1
       },
@@ -16648,27 +16662,12 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 4,
+        "debtCount": 1,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table cart_shares — écrite par shared-cart (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"notification (émission uniquement — WhatsApp création de liste)\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "CONSUMES_REFERENCE_UNRESOLVED",
-            "severity": "low",
-            "evidence": "contract.consumes référence \"products (lecture seule)\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
