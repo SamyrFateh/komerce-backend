@@ -84,13 +84,14 @@ if ((graph.drifts.error || []).length > 0) {
 // EXPECTED_TOPOLOGY et GENERATOR_LIMITATION restent visibles dans le graphe
 // mais ne consomment jamais un budget de dette.
 const rawSignals = graph.drifts.warn || [];
-const partition = semantics.partition(rawSignals, { ROOT });
+const semanticCtx = { ROOT, pairClassifications: (graph.o6 && graph.o6.pairClassifications) || [] };
+const partition = semantics.partition(rawSignals, semanticCtx);
 const warns = partition.debt;
 const countByKey = {};   // "TYPE::CATEGORY" -> count
 const typeOf = {};       // "TYPE::CATEGORY" -> TYPE (pour affichage groupé)
 const categoryOf = {};   // "TYPE::CATEGORY" -> CATEGORY
 for (const w of warns) {
-  const { category } = semantics.classify(w, { ROOT });
+  const { category } = semantics.classify(w, semanticCtx);
   const key = `${w.type}::${category}`;
   countByKey[key] = (countByKey[key] || 0) + 1;
   typeOf[key] = w.type;

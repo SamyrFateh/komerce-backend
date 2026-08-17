@@ -197,6 +197,29 @@ function classifyExposedRouteUnresolved(w) {
   return null;
 }
 
+function classifyObservedUndeclared(w, ctx) {
+  const pairClassifications = (ctx && ctx.pairClassifications) || [];
+  const ref = String(w.ref || '');
+  const arrow = ref.indexOf(' -> ');
+  if (arrow < 0) return null;
+  const from = ref.slice(0, arrow).trim();
+  const to = ref.slice(arrow + 4).trim();
+  const disposition = pairClassifications.find(p => p && p.from === from && p.to === to);
+  if (!disposition) return null;
+
+  if (
+    disposition.family === 'COMPOSITION_ROOT_WIRING' &&
+    disposition.policy === 'application-wiring-not-consumption' &&
+    disposition.exceptionRequired === false
+  ) {
+    return {
+      category: 'EXPECTED_TOPOLOGY',
+      reason: 'O6 classe cette paire COMPOSITION_ROOT_WIRING : le composition root monte/câble la feature sans la consommer comme dépendance métier (application-wiring-not-consumption, aucune exception requise)',
+    };
+  }
+  return null;
+}
+
 // ── Point d'entrée ───────────────────────────────────────────────────────
 
 /**
@@ -218,6 +241,9 @@ function classify(w, ctx) {
       break;
     case 'EXPOSED-ROUTE-UNRESOLVED':
       result = classifyExposedRouteUnresolved(w);
+      break;
+    case 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY':
+      result = classifyObservedUndeclared(w, ctx);
       break;
     case 'DASH-MANIFEST-DUPLICATE-COPY':
       result = { category: 'EXPECTED_TOPOLOGY', reason: 'divergence copie/canonique déjà documentée (APP_FEATURE_REGISTRY.md), tolérée explicitement par le générateur (DASH_KNOWN_COPY_DIVERGENCES)' };
