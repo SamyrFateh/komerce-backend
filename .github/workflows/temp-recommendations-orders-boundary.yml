@@ -1,0 +1,80 @@
+name: Temporary recommendations orders boundary
+
+on:
+  push:
+    branches:
+      - governance/recommendations-orders-boundary
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: governance/recommendations-orders-boundary
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Apply boundary refactor
+        run: node scripts/temp-recommendations-orders-boundary.js
+      - name: Remove temporary tooling before proof
+        run: |
+          rm scripts/temp-recommendations-orders-boundary.js
+          rm .github/workflows/temp-recommendations-orders-boundary.yml
+      - name: Run targeted Boutique tests
+        run: |
+          npx jest --config public/boutique/jest.config.js --runInBand \
+            public/boutique/tests/unit/b-modal-suggestions.test.js \
+            public/boutique/tests/unit/modal-mobile-suggestion-actions.test.js \
+            public/boutique/tests/unit/cart-product-summary.test.js \
+            public/boutique/tests/unit/cart-public-api-boundary.test.js
+      - name: Refresh governance projections
+        run: |
+          npm run business-graph:gen
+          npm run feature:360:gen
+      - name: Prove boundary and gates
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const g = require('./docs/BUSINESS_FEATURE_GRAPH.json');
+          const debt = g.drifts.debt || [];
+          const deps = debt.filter(x => x.type === 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY');
+          if (debt.length !== 28) throw new Error(`expected 28 total debt, got ${debt.length}`);
+          if (deps.length !== 2) throw new Error(`expected 2 dependency debt, got ${deps.length}`);
+          if (deps.some(x => x.ref === 'recommendations -> orders')) throw new Error('recommendations orders seam still present');
+          if ((g.drifts.warn || []).length !== debt.length) throw new Error('warning stream polluted');
+          const ex = JSON.parse(fs.readFileSync('governance/feature-dependency-exceptions.json','utf8')).exceptions;
+          if (ex.some(e => e.from === 'recommendations' && e.to === 'orders')) throw new Error('stale recommendations orders exception remains');
+          const src = fs.readFileSync('public/boutique/js/b-modal-suggestions.js','utf8');
+          if (!src.includes("from './cart-public-api.js'")) throw new Error('recommendations does not use public cart API');
+          if (src.includes("from './b-cart.js'") || src.includes("from './cart-product-summary.js'")) throw new Error('recommendations still imports orders internals');
+          console.log('RECOMMENDATIONS_ORDERS_BOUNDARY_CLOSED');
+          NODE
+          npm run business-graph:ratchet-check
+          npm run feature:check
+          npm run feature:360:check
+          git diff --check
+      - name: Commit final tree
+        run: |
+          git checkout HEAD -- .github/workflows/temp-recommendations-orders-boundary.yml scripts/temp-recommendations-orders-boundary.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/boutique/js/cart-public-api.js public/boutique/js/b-modal-suggestions.js \
+            public/boutique/tests/unit/b-modal-suggestions.test.js public/boutique/tests/unit/cart-public-api-boundary.test.js \
+            public/boutique/features/orders-client.feature.js public/boutique/features/recommendations.feature.js \
+            features/recommendations.feature.js governance/feature-dependency-exceptions.json \
+            governance/business-graph-drift-baseline.json \
+            docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md \
+            docs/FEATURE_360.json docs/FEATURE_360.md docs/GATE_FINDINGS.json
+          if git diff --cached --quiet; then
+            echo 'No final changes to commit.'
+          else
+            git commit -m 'refactor(boutique): expose orders cart public boundary'
+            git push origin HEAD:governance/recommendations-orders-boundary
+          fi
