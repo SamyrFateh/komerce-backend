@@ -13,5 +13,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Print precise symbol ownership evidence
-        run: node scripts/temp-audit-catalog-orders-symbols.js
+      - name: Audit favorites ownership and tests
+        run: |
+          echo '=== runtime favorite symbol references ==='
+          git grep -nE '\b(isFav|saveFavs|toggleFav)\b' -- public/boutique/js || true
+          echo '=== test favorite symbol references ==='
+          git grep -nE '\b(isFav|saveFavs|toggleFav)\b' -- public/boutique/tests || true
+          echo '=== b-cart favorite test neighborhoods ==='
+          grep -n -B4 -A25 -E 'toggleFav|favori' public/boutique/tests/unit/b-cart.test.js || true
