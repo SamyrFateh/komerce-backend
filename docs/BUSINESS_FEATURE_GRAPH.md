@@ -75,14 +75,14 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 |---|---|---|---|---|---|
 | backend | 26 | 26 | 289 | 289 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 14 | 14 | 80 | 80 | 0 |
+| boutique | 15 | 15 | 80 | 80 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
 ### Identités canoniques
 
-- **Cross-repo features** (9) : `auth-identity`, `catalog`, `notifications`, `orders`, `payments`, `platform-ops`, `recommendations`, `shared-cart`, `wallet`
-- **Single-repo features** (21) : `admin-dashboard`, `auth`, `auth-passkey`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `logistics`, `loyalty`, `platform`, `purchasing`, `refunds`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
+- **Cross-repo features** (10) : `auth-identity`, `auth-passkey`, `catalog`, `notifications`, `orders`, `payments`, `platform-ops`, `recommendations`, `shared-cart`, `wallet`
+- **Single-repo features** (20) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `logistics`, `loyalty`, `platform`, `purchasing`, `refunds`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
 - **Unmapped local manifests** (0) : —
 
 ### Ontology gaps
@@ -1340,7 +1340,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### WARN / DEBT (135)
+### WARN / DEBT (136)
 
 Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
 
@@ -1420,6 +1420,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> shared-cart — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "orders" vers "shared-cart"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 45 preuve(s)) sans contract.consumes déclaré chez "payments" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> auth-identity — dépendance cross-feature observée (canal: interface+static-code, 6 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "auth-identity"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> auth-passkey — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> catalog — dépendance cross-feature observée (canal: interface+static-code, 20 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "catalog"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> infrastructure — dépendance cross-feature observée (canal: interface+static-code, 27 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "notifications"
@@ -1493,7 +1494,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 777 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 142 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 144 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1639,6 +1640,7 @@ Meta Graph monté : oui.
 | payments | refunds | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | platform-ops | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | platform-ops | auth-identity | static-code, interface | 6 | **OBSERVED_UNDECLARED** |
+| platform-ops | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
 | platform-ops | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | catalog | static-code, interface | 20 | **OBSERVED_UNDECLARED** |
 | platform-ops | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1739,6 +1741,7 @@ Meta Graph monté : oui.
 - `orders` → `shared-cart` (canaux: static-code)
 - `payments` → `infrastructure` (canaux: static-code, interface)
 - `platform-ops` → `auth-identity` (canaux: static-code, interface)
+- `platform-ops` → `auth-passkey` (canaux: static-code)
 - `platform-ops` → `catalog` (canaux: static-code, interface)
 - `platform-ops` → `infrastructure` (canaux: static-code, interface)
 - `platform-ops` → `notifications` (canaux: static-code)
@@ -1828,7 +1831,7 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | Family | N | Policy |
 |---|---|---|
 | PROJECTION | 10 | projection-dependency-policy |
-| COMPOSITION_ROOT_WIRING | 15 | application-wiring-not-consumption |
+| COMPOSITION_ROOT_WIRING | 16 | application-wiring-not-consumption |
 | NON_RUNTIME_TEST | 8 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 31 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 2 | business-dependency-declare-candidate |
@@ -1836,7 +1839,7 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | BUSINESS_FEATURE_INTERFACE | 5 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **75** | |
+| **TOTAL** | **76** | |
 
 ### Projection dependencies
 
@@ -1869,6 +1872,7 @@ Bootstrap/cron/error-handler qui montent ou déclenchent une feature. Pas une co
 - `infrastructure` → `purchasing` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `sourcing` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `unsold-resolution` — business-file-import, RUNTIME_ONLY
+- `platform-ops` → `auth-passkey` — business-file-import, RUNTIME_ONLY
 - `platform-ops` → `notifications` — business-file-import, RUNTIME_ONLY
 - `platform-ops` → `recommendations` — business-file-import, RUNTIME_ONLY
 - `platform-ops` → `shared-cart` — business-file-import, RUNTIME_AND_TEST
