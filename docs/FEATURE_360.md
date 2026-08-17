@@ -8,12 +8,12 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **14**
 - Attention : **16**
 - Blocked : **0**
-- Business dependencies : **165**
+- Business dependencies : **166**
 - Direct cross-feature imports : **1**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
 - Ontology gaps : **0**
-- Debt items (total) : **45**
+- Debt items (total) : **44**
 - Gate health — healthy : **17** · blocked : **0**
 
 ## Gate findings — intégrité de projection
@@ -46,11 +46,11 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | logistics | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | carriers, parcel_events, parcel_items, parcels, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, relais, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, infrastructure, loyalty, notifications, orders, payments, purchasing, refunds | admin-dashboard, catalog, dashboard, decision-signals, economic-engine, infrastructure, orders, payments, platform-ops, purchasing | 3 |
 | loyalty | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers | auth, infrastructure, notifications | economic-engine, logistics, orders, payments | 2 |
 | notifications | business-transversal | 🟢 HEALTHY | 🟡 ATTENTION | alerts, client_notifications, notification_log | auth, infrastructure, platform-ops | auth, auth-identity, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart | 1 |
-| orders | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_history, disputes, order_comments, order_item_cost_imputations, order_items, order_status_history, orders, recipients, sms_log | auth, auth-identity, business-rules, catalog, customs, documents, economic-engine, infrastructure, logistics, loyalty, notifications, payments, platform-ops, refunds, shared-cart, wallet | admin-dashboard, dashboard, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, recommendations, refunds, shared-cart | 2 |
+| orders | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_history, disputes, order_comments, order_item_cost_imputations, order_items, order_status_history, orders, recipients, sms_log | auth, auth-identity, business-rules, catalog, customs, documents, economic-engine, infrastructure, logistics, loyalty, notifications, payments, platform-ops, purchasing, refunds, shared-cart, wallet | admin-dashboard, dashboard, economic-engine, infrastructure, logistics, payments, platform-ops, purchasing, recommendations, refunds, shared-cart | 1 |
 | payments | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | cash_collections, cash_deposits, paypal_events_processed, stripe_events_processed | auth, business-rules, documents, infrastructure, logistics, loyalty, notifications, orders, platform-ops, purchasing, refunds | admin-dashboard, infrastructure, logistics, orders, wallet | 0 |
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | platform-ops | technical-transversal | 🟢 HEALTHY | 🟢 HEALTHY | fabrics, garment_models, store_credits | auth, auth-identity, business-rules, catalog, economic-engine, infrastructure, logistics, orders, purchasing | auth-identity, auth-passkey, catalog, infrastructure, notifications, orders, payments, recommendations, shared-cart, wallet | 0 |
-| purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | product_suppliers, purchase_orders, suppliers | auth, infrastructure, logistics, notifications, orders | dashboard, logistics, payments, platform-ops | 0 |
+| purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | product_suppliers, purchase_orders, suppliers | auth, infrastructure, logistics, notifications, orders | dashboard, logistics, orders, payments, platform-ops | 0 |
 | recommendations | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, orders, platform-ops | infrastructure, shared-cart | 2 |
 | refunds | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | refunds | documents, infrastructure, orders, wallet | logistics, orders, payments | 1 |
 | shared-cart | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | basket_items, baskets, cart_shares, shared_cart_events, shared_cart_items, shared_cart_saved_access, shared_carts | auth, auth-identity, catalog, infrastructure, notifications, orders, platform-ops, recommendations | catalog, infrastructure, orders | 0 |
@@ -1078,7 +1078,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - remboursement (feature refunds, lecture seule sur orders)
   - tarification (feature economic-engine, orders ne fait que la consommer)
   - matérialisation, conservation et téléchargement des factures (feature documents ; orders ne fournit que l’événement confirmé et les données source)
-  - engagement fournisseur : création, confirmation et réception d'un bon de commande (feature purchasing, scindée d'orders au Lot O1.4, 2026-07-12) — orders ne fait que consommer purchasing (lecture) et libérer les bons de commande liés à l'annulation (cancel-order-purchase-orders.js, reste dans orders car appelé exclusivement par order-status-machine.js)
+  - engagement fournisseur : création, confirmation, réception et annulation d'un bon de commande (feature purchasing, scindée d'orders au Lot O1.4, 2026-07-12) — orders déclenche la synchronisation d'annulation via l'API interne purchasing, sans SQL direct sur purchase_orders
 
 **Authority** : backend-core — tout changement de la machine de statut ou du schema order_reference doit etre valide par le proprietaire de order-status-machine.js
 
@@ -1089,30 +1089,29 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - transition de statut uniquement via order-status-machine.js
-- annulation libere les achats fournisseurs lies dans la meme transaction
+- annulation libere les achats fournisseurs lies dans la meme transaction via purchasing
 
 **Owns** : `customs_history`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_items`, `order_status_history`, `orders`, `recipients`, `sms_log`
-**Writes (not owner)** : `alerts` (writer-not-owner), `purchase_orders` (writer-not-owner), `scans` (writer-not-owner)
+**Writes (not owner)** : `alerts` (writer-not-owner), `scans` (writer-not-owner)
 
 **Exposes** : 3 internal API(s), 27 HTTP interface(s)
   - `checkoutCart` (public/boutique/js/b-checkout.js) — resolved
   - `makeInput` (public/boutique/js/b-checkout.js) — resolved
   - `transitionOrderStatus` (services/order-status-machine.js) — resolved
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 **Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
 **Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
 
-**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 2
+**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
 **Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
-**Architectural debt** (2) :
+**Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "dashboard" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
-- `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "purchasing" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
 **Implementation** : 52 fichier(s) déclaré(s), boutique: 14 fichier(s)
   - boutique : 3
@@ -1280,6 +1279,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - déclenchement automatique d'un bon de commande (purchase_order) quand une commande client nécessite un réassort fournisseur
   - notification/confirmation du fournisseur (manuel ou WhatsApp) et suivi du statut du bon de commande
   - réception (partielle ou totale) d'un bon de commande, et rattachement au flux logistique
+  - synchronisation d'annulation : pending/notified suivent l'annulation de la commande ; les POs engagées déclenchent une alerte sans forçage
   - réparation/rattrapage des commandes marquées "ordered" sans (ou avec) bon de commande cohérent (outils admin de correction)
   - gestion des fournisseurs et de leur mapping produit (routes/purchasing.js /suppliers/*)
   - administration transverse des bons de commande, historiquement exposée depuis le dashboard (services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, écrit orders/product_suppliers/purchase_orders/suppliers)
@@ -1289,22 +1289,24 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - mouvement physique du colis une fois reçu (feature logistics, lecture seule sur purchase_orders/product_suppliers)
   - entrée catalogue / import fournisseur en amont (feature catalog — sourcing/catalog-import, hors périmètre purchasing)
 
-**Authority** : backend-core — tout changement du flux d'engagement fournisseur (déclenchement, confirmation, réception) doit être validé par le propriétaire de services/purchasing-trigger-service.js et services/purchasing-receive-service.js
+**Authority** : backend-core — tout changement du flux d'engagement fournisseur (déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing
 
 **Invariants** :
 - [object Object]
 - purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)
 - une réception ne peut être appliquée qu'à un bon de commande existant et cohérent
+- aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js
 
 **Owns** : `product_suppliers`, `purchase_orders`, `suppliers`
 **Writes (not owner)** : `alerts` (writer-not-owner), `orders` (writer-not-owner)
 
-**Exposes** : 2 internal API(s), 10 HTTP interface(s)
+**Exposes** : 3 internal API(s), 10 HTTP interface(s)
   - `repairOrderedWithoutPurchaseOrders` (services/repair-ordered-without-purchase-orders.js) — resolved
+  - `syncPurchaseOrdersOnOrderCancel` (services/purchasing-cancel-service.js) — resolved
   - `triggerPurchasing` (services/purchasing-trigger-service.js) — resolved
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
-**Consumed by** : dashboard (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED)
+**Consumed by** : dashboard (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1317,10 +1319,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 16 fichier(s) déclaré(s)
+**Implementation** : 18 fichier(s) déclaré(s)
   - routes : 1
-  - services : 6
-  - tests : 9
+  - services : 7
+  - tests : 10
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="purchasing"]_
 

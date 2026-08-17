@@ -46,12 +46,12 @@
     "healthy": 14,
     "attention": 16,
     "blocked": 0,
-    "businessDependencies": 165,
+    "businessDependencies": 166,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 45,
+    "debtItemsTotal": 44,
     "gateHealthy": 17,
     "gateBlocked": 0
   },
@@ -12387,7 +12387,7 @@
           "remboursement (feature refunds, lecture seule sur orders)",
           "tarification (feature economic-engine, orders ne fait que la consommer)",
           "matérialisation, conservation et téléchargement des factures (feature documents ; orders ne fournit que l’événement confirmé et les données source)",
-          "engagement fournisseur : création, confirmation et réception d'un bon de commande (feature purchasing, scindée d'orders au Lot O1.4, 2026-07-12) — orders ne fait que consommer purchasing (lecture) et libérer les bons de commande liés à l'annulation (cancel-order-purchase-orders.js, reste dans orders car appelé exclusivement par order-status-machine.js)"
+          "engagement fournisseur : création, confirmation, réception et annulation d'un bon de commande (feature purchasing, scindée d'orders au Lot O1.4, 2026-07-12) — orders déclenche la synchronisation d'annulation via l'API interne purchasing, sans SQL direct sur purchase_orders"
         ]
       },
       "authority": "backend-core — tout changement de la machine de statut ou du schema order_reference doit etre valide par le proprietaire de order-status-machine.js",
@@ -12407,7 +12407,7 @@
           "test": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js"
         },
         "transition de statut uniquement via order-status-machine.js",
-        "annulation libere les achats fournisseurs lies dans la meme transaction"
+        "annulation libere les achats fournisseurs lies dans la meme transaction via purchasing"
       ],
       "implementation": {
         "byCategory": {
@@ -12892,12 +12892,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "purchase_orders",
-            "mode": "RW",
-            "lifecycleOwner": "purchasing",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "recipients",
             "mode": "RW",
             "lifecycleOwner": "orders",
@@ -13034,12 +13028,6 @@
             "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
-          },
-          {
-            "table": "purchase_orders",
-            "mode": "RW",
-            "lifecycleOwner": "purchasing",
-            "ownershipStatus": "writer-not-owner"
           },
           {
             "table": "recipients",
@@ -13211,6 +13199,13 @@
           ]
         },
         {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "refunds",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13327,10 +13322,9 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 2,
+        "declaredNotObserved": 1,
         "declaredNotObservedEvidence": [
-          "dashboard",
-          "purchasing"
+          "dashboard"
         ]
       },
       "governanceHealth": {
@@ -13351,17 +13345,12 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 2,
+        "debtCount": 1,
         "debtItems": [
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
             "evidence": "contract.consumes déclare \"dashboard\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"purchasing\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
           }
         ]
       },
@@ -15029,6 +15018,7 @@
           "déclenchement automatique d'un bon de commande (purchase_order) quand une commande client nécessite un réassort fournisseur",
           "notification/confirmation du fournisseur (manuel ou WhatsApp) et suivi du statut du bon de commande",
           "réception (partielle ou totale) d'un bon de commande, et rattachement au flux logistique",
+          "synchronisation d'annulation : pending/notified suivent l'annulation de la commande ; les POs engagées déclenchent une alerte sans forçage",
           "réparation/rattrapage des commandes marquées \"ordered\" sans (ou avec) bon de commande cohérent (outils admin de correction)",
           "gestion des fournisseurs et de leur mapping produit (routes/purchasing.js /suppliers/*)",
           "administration transverse des bons de commande, historiquement exposée depuis le dashboard (services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, écrit orders/product_suppliers/purchase_orders/suppliers)"
@@ -15040,14 +15030,15 @@
           "entrée catalogue / import fournisseur en amont (feature catalog — sourcing/catalog-import, hors périmètre purchasing)"
         ]
       },
-      "authority": "backend-core — tout changement du flux d'engagement fournisseur (déclenchement, confirmation, réception) doit être validé par le propriétaire de services/purchasing-trigger-service.js et services/purchasing-receive-service.js",
+      "authority": "backend-core — tout changement du flux d'engagement fournisseur (déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing",
       "invariants": [
         {
           "statement": "un besoin d'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)",
           "test": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js"
         },
         "purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)",
-        "une réception ne peut être appliquée qu'à un bon de commande existant et cohérent"
+        "une réception ne peut être appliquée qu'à un bon de commande existant et cohérent",
+        "aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js"
       ],
       "implementation": {
         "byCategory": {
@@ -15062,12 +15053,17 @@
             ]
           },
           "services": {
-            "count": 6,
+            "count": 7,
             "files": [
               {
                 "declared": "services/purchasing-admin-service.js",
                 "resolvedPath": "services/purchasing-admin-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/purchasing-cancel-service.js",
+                "resolvedPath": "services/purchasing-cancel-service.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/purchasing-receive-service.js",
@@ -15097,7 +15093,7 @@
             ]
           },
           "tests": {
-            "count": 9,
+            "count": 10,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
@@ -15107,6 +15103,11 @@
               {
                 "declared": "tests/unit/purchasing-admin-service.test.js",
                 "resolvedPath": "tests/unit/purchasing-admin-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-cancel-service.test.js",
+                "resolvedPath": "tests/unit/purchasing-cancel-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -15147,7 +15148,7 @@
             ]
           }
         },
-        "totalFiles": 16,
+        "totalFiles": 18,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -15286,6 +15287,11 @@
             "status": "resolved"
           },
           {
+            "fn": "syncPurchaseOrdersOnOrderCancel",
+            "file": "services/purchasing-cancel-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "triggerPurchasing",
             "file": "services/purchasing-trigger-service.js",
             "status": "resolved"
@@ -15342,6 +15348,13 @@
         },
         {
           "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
