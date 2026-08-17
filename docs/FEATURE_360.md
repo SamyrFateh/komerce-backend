@@ -1092,7 +1092,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - annulation libere les achats fournisseurs lies dans la meme transaction
 
 **Owns** : `customs_history`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_items`, `order_status_history`, `orders`, `recipients`, `sms_log`
-**Writes (not owner)** : `alerts` (writer-not-owner), `cart_shares` (writer-not-owner), `purchase_orders` (writer-not-owner), `scans` (writer-not-owner)
+**Writes (not owner)** : `alerts` (writer-not-owner), `purchase_orders` (writer-not-owner), `scans` (writer-not-owner)
 
 **Exposes** : 3 internal API(s), 27 HTTP interface(s)
   - `checkoutCart` (public/boutique/js/b-checkout.js) — resolved
@@ -1461,13 +1461,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 54 fichier(s) déclaré(s), boutique: 18 fichier(s)
+**Implementation** : 56 fichier(s) déclaré(s), boutique: 18 fichier(s)
   - boutique : 11
   - dash : 1
   - migrations : 19
   - routes : 4
-  - services : 7
-  - tests : 12
+  - services : 8
+  - tests : 13
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="shared-cart"]_
 
