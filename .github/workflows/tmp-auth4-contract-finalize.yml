@@ -11,6 +11,14 @@ permissions:
 jobs:
   finalize-contract:
     runs-on: ubuntu-24.04
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      JWT_SECRET: contract-introspection-only-secret-2026-08-not-runtime
+      FRONTEND_URL: http://localhost:3000
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_RP_NAME: Komerce
+      WEBAUTHN_ORIGINS: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
         with:
