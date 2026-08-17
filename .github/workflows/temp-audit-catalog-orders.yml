@@ -24,9 +24,12 @@ jobs:
       - name: Install Boutique test dependencies
         run: npm --prefix public/boutique ci
       - name: Apply final boundary refactor
-        run: node scripts/temp-final-catalog-orders-boundary.js
+        run: |
+          node scripts/temp-fix-final-catalog-script.js
+          node scripts/temp-final-catalog-orders-boundary.js
       - name: Remove temporary tooling before proof
         run: |
+          rm scripts/temp-fix-final-catalog-script.js
           rm scripts/temp-final-catalog-orders-boundary.js
           rm scripts/temp-audit-catalog-orders-symbols.js
           rm .github/workflows/temp-audit-catalog-orders.yml
@@ -108,7 +111,7 @@ jobs:
           git diff --check
       - name: Commit final tree
         run: |
-          git checkout HEAD -- .github/workflows/temp-audit-catalog-orders.yml scripts/temp-final-catalog-orders-boundary.js scripts/temp-audit-catalog-orders-symbols.js
+          git checkout HEAD -- .github/workflows/temp-audit-catalog-orders.yml scripts/temp-fix-final-catalog-script.js scripts/temp-final-catalog-orders-boundary.js scripts/temp-audit-catalog-orders-symbols.js
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
