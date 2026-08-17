@@ -122,8 +122,23 @@ router.post('/login/verify', async (req, res) => {
       return res.status(401).json({ error: 'Utilisateur introuvable' });
     }
 
-    _issueSession(res, rows[0]);
-    res.json({ verified: true, user: { id: rows[0].id, full_name: rows[0].full_name, role: rows[0].role } });
+    const user = rows[0];
+    _issueSession(res, user);
+    // AUTH-4 : renvoyer l'identité hydratée immédiatement. Le client n'a pas
+    // à refaire un tour réseau pour connaître le téléphone/relais du compte,
+    // et aucun champ secret n'est exposé.
+    res.json({
+      verified: true,
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        currency_pref: user.currency_pref,
+        relais_id: user.relais_id,
+      },
+    });
   } catch (err) {
     log.error('[login/verify] erreur:', err.message);
     res.status(500).json({ error: 'Erreur serveur' });

@@ -325,5 +325,11 @@ function queuePostOtpOffer(attempt = 0) {
 export function setupPasskeyEnrollment() {
   if (installed || typeof window === 'undefined') return;
   installed = true;
-  window.addEventListener('komerce:identity-authenticated', () => queuePostOtpOffer(0));
+  window.addEventListener('komerce:identity-authenticated', event => {
+    // AUTH-4 : ne jamais reproposer un enrôlement après un login Passkey.
+    // L'absence de method reste assimilée à OTP pour compatibilité avec
+    // d'éventuels émetteurs historiques le temps de leur migration.
+    if (event?.detail?.method && event.detail.method !== 'otp') return;
+    queuePostOtpOffer(0);
+  });
 }

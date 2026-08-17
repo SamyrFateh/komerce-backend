@@ -121,6 +121,11 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/auth/register',          method: 'post',   schema: validators.auth?.register },
   { prefix: '/api/auth/otp/request',       method: 'post',   schema: null }, // pas de validate() Joi sur cette route (validation inline manuelle dans routes/otp.js) — validators.auth.otpRequest n'a jamais existé
   { prefix: '/api/auth/otp/verify',        method: 'post',   schema: null }, // idem
+  // AUTH-2/AUTH-4 — WebAuthn bodies are verified by @simplewebauthn/server, not Joi.
+  { prefix: '/api/auth/passkey/register/options', method: 'post', schema: null },
+  { prefix: '/api/auth/passkey/register/verify',  method: 'post', schema: null },
+  { prefix: '/api/auth/passkey/login/options',    method: 'post', schema: null },
+  { prefix: '/api/auth/passkey/login/verify',     method: 'post', schema: null },
   // PRODUCTS
   { prefix: '/api/products',              method: 'get',    schema: validators.products?.list },
   { prefix: '/api/products/{id}',         method: 'get',    schema: validators.products?.getOne },
@@ -188,6 +193,11 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // AUTH-2/AUTH-4 — WebAuthn option shapes come from services/webauthn-service.js.
+  '/api/auth/passkey/register/options': { post: { fields: ['challenge','rp','user','pubKeyCredParams','timeout','attestation','excludeCredentials','authenticatorSelection','extensions'], source: 'service-read' } },
+  '/api/auth/passkey/register/verify':  { post: { fields: ['verified'], source: 'route-read' } },
+  '/api/auth/passkey/login/options':    { post: { fields: ['challenge','timeout','rpId','allowCredentials','userVerification','extensions'], source: 'service-read' } },
+  '/api/auth/passkey/login/verify':     { post: { fields: ['verified','user'], source: 'route-read' } },
   // D-06 — admin-customs-shipments : workflow déclaration + analytics
   '/api/admin/customs-shipments/{id}/declare': {
     post: { fields: ['shipment_id', 'status', 'customs_paid_kmf', 'parcels_updated'], source: 'test' },
@@ -1779,6 +1789,7 @@ const openapi = {
       '  - x-contract-status: "joi"       → requête haute fidélité (schéma Joi)',
       '  - x-contract-status: "test"      → réponse couverte par un test intégration/unitaire',
       '  - x-contract-status: "route-read" → champs lus directement dans le handler (res.json),',
+      '  - x-contract-status: "service-read" → forme top-level lue dans le service/lib appelée par la route,',
       '                                       pas de test sur le corps HTTP — confiance < "test"',
       '  - x-contract-status: "scan-*"    → champs observés dans le code front',
       '  - x-contract-status: "UNKNOWN"   → non couvert, à compléter',
@@ -1912,6 +1923,10 @@ if (inventory.length < 150) {
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
 // Format : "METHOD /chemin/{param}" → { [code]: { description } }
 const RESPONSE_OVERRIDES = {
+  'POST /api/auth/passkey/register/options': { '401': { description: 'Session K1 requise' }, '500': { description: 'Erreur serveur WebAuthn' } },
+  'POST /api/auth/passkey/register/verify': { '400': { description: 'Réponse WebAuthn invalide ou refusée' }, '401': { description: 'Session K1 requise' }, '500': { description: 'Erreur serveur WebAuthn' } },
+  'POST /api/auth/passkey/login/options': { '500': { description: 'Erreur serveur WebAuthn' } },
+  'POST /api/auth/passkey/login/verify': { '400': { description: 'Réponse WebAuthn invalide' }, '401': { description: 'Passkey inconnue, révoquée ou refusée' }, '500': { description: 'Erreur serveur WebAuthn' } },
   'GET /webhook/meta-whatsapp': {
     '403': { description: 'Forbidden — token de vérification Meta invalide ou absent' },
   },
