@@ -6328,6 +6328,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/parcel-mutation-service.js",
+        "resolvedPath": "services/parcel-mutation-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/parcel-security.js",
         "resolvedPath": "services/parcel-security.js",
         "status": "resolved-in-technical-graph"
@@ -6722,6 +6729,13 @@
         "category": "tests",
         "declared": "tests/unit/parcel-item-mutation-service.test.js",
         "resolvedPath": "tests/unit/parcel-item-mutation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/parcel-mutation-service.test.js",
+        "resolvedPath": "tests/unit/parcel-mutation-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13366,6 +13380,42 @@
         "status": "resolved"
       },
       {
+        "feature": "logistics",
+        "fn": "createHubParcel",
+        "file": "services/parcel-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "createAutoPreparedParcel",
+        "file": "services/parcel-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "setParcelWeight",
+        "file": "services/parcel-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "appendParcelShipmentInfo",
+        "file": "services/parcel-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "markCustomsCleared",
+        "file": "services/parcel-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "markBackorderReminderSent",
+        "file": "services/parcel-mutation-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "notifications",
         "fn": "setNotificationOutcomeListener",
         "file": "services/notifications/internals.js",
@@ -18130,6 +18180,22 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "customs",
+        "to": "logistics",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/customs-shipment-service.js",
+                "targetFile": "services/parcel-mutation-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "dashboard",
         "to": "auth",
         "channels": [
@@ -18507,6 +18573,10 @@
               {
                 "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "services/parcel-item-mutation-service.js"
+              },
+              {
+                "sourceFileId": "routes/hub-dashboard.js",
+                "targetFile": "services/parcel-mutation-service.js"
               },
               {
                 "sourceFileId": "routes/hub-dashboard.js",
@@ -22210,6 +22280,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/cash-reminder-service.js",
+                "targetFile": "services/parcel-mutation-service.js"
+              },
+              {
                 "sourceFileId": "services/payment-paypal.js",
                 "targetFile": "services/pickup-secret-service.js"
               },
@@ -24366,7 +24440,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 816
+        "filesObserved": 818
       },
       "boutique": {
         "filesObserved": 158,
@@ -24995,27 +25069,9 @@
     "parcels": {
       "writers": [
         {
-          "feature": "customs",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "dashboard",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
           "feature": "logistics",
           "mode": "RW",
           "declaredOwner": true,
-          "technical": false
-        },
-        {
-          "feature": "payments",
-          "mode": "RW",
-          "declaredOwner": false,
           "technical": false
         },
         {
@@ -25027,12 +25083,15 @@
       ],
       "readers": [
         "auth-identity",
+        "customs",
+        "dashboard",
         "documents",
         "economic-engine",
         "incident-management",
         "inventory",
         "notifications",
         "orders",
+        "payments",
         "recommendations"
       ],
       "lifecycleOwner": "logistics",
@@ -26676,11 +26735,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "parcels",
-        "msg": "table \"parcels\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par customs, dashboard, payments"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "users",
         "msg": "table \"users\" : lifecycle owner = auth-identity (db.tables \"!\"), mais aussi écrite par auth, dashboard, loyalty"
       }
@@ -26705,11 +26759,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "orders",
         "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "parcels",
-        "msg": "table \"parcels\" : lifecycle owner = logistics (db.tables \"!\"), mais aussi écrite par customs, dashboard, payments"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26922,11 +26971,11 @@
       }
     ],
     "summary": {
-      "signals": 6,
-      "debt": 6,
+      "signals": 5,
+      "debt": 5,
       "expectedTopology": 32,
       "generatorLimitations": 8,
-      "classifiedCandidates": 46
+      "classifiedCandidates": 45
     }
   }
 }

@@ -132,7 +132,7 @@ module.exports = {
       // order_status_history : W-via:order-status-machine (appendOrderHistoryNote — payment-paypal.js)
       'orders: RW',
       'parcel_items: R',
-      'parcels: RW',
+      'parcels: R',  // W-via logistics/parcel-mutation-service - LOT8
       'paypal_events_processed: RW',
       // refunds : W-via:refund-service (recordExternalRefund — payment-paypal.js)
       'scan_events: R',

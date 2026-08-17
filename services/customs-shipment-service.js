@@ -6,10 +6,11 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/cost-allocation/index.js, services/documents/customs-invoice.js
+ * @depends       services/cost-allocation/index.js, services/documents/customs-invoice.js, services/parcel-mutation-service.js
  * @used-by       routes/admin-customs-shipments.js, services/order-status-machine.js
  * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_items, orders, parcels, products
- * @db-write      customs_shipment_parcels, customs_shipments, orders, parcels
+ * @db-write      customs_shipment_parcels, customs_shipments, orders
+ * @db-write-via:parcel-mutation-service parcels
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown
@@ -17,6 +18,8 @@
  */
 
 'use strict';
+
+const { markCustomsCleared } = require('./parcel-mutation-service');
 
 /**
  * customs-shipment-service.js
@@ -645,14 +648,10 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
       await propagateCostDouane(client, parcelIds);
 
       // 6. Poser customs_cleared_at sur les colis
-      await client.query(
-        `UPDATE parcels
-            SET customs_cleared_at = NOW(),
-                customs_notes      = $2
-          WHERE id = ANY($1::uuid[])
-            AND customs_cleared_at IS NULL`,
-        [parcelIds, notes || null]
-      );
+      await markCustomsCleared(client, {
+        parcelIds,
+        notes,
+      });
     }
 
     await client.query('COMMIT');
