@@ -74,6 +74,7 @@ module.exports = {
       'services/product-publication-guard.js',
       'services/product-admin-service.js',
       'services/product-price-audit.js',
+      'services/catalog-candidate-product-service.js',
       'services/catalog-promotion.js',
       'services/catalog-promotion/axes.js',
       'services/catalog-promotion/sku.js',
@@ -199,6 +200,7 @@ module.exports = {
       'tests/unit/manual-connector.test.js',
       'tests/unit/manual-connector-source-v2.test.js',
       'tests/unit/noon-connector.test.js',
+      'tests/unit/catalog-candidate-product-service.test.js',
       'tests/unit/catalog-promotion.test.js',
       'tests/unit/catalog-promotion-axes.test.js',
       'tests/unit/catalog-promotion-sku.test.js',
@@ -256,8 +258,7 @@ module.exports = {
       'product_content_sections: RW',// Lot Content (migration 111) : écrivain réel = catalog-promotion.js
       'product_attributes: RW',      // Lot Content (migration 111) : écrivain réel = catalog-promotion.js
       'products: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
-      'sourcing_candidate_events: W',
-      'sourcing_candidates: RW',
+      'sourcing_candidates: R',      // lifecycle owner = sourcing ; catalog persiste via sourcing-candidate-import-service
       'supplier_catalog_imports: W',
     ],
   },
@@ -314,6 +315,7 @@ module.exports = {
     internalApi: [
 
       { fn: 'createDraftFromSourcingCandidate', file: 'services/product-admin-service.js' },
+      { fn: 'createDraftProductFromSourcingCandidate', file: 'services/catalog-candidate-product-service.js' },
 
     ],
 
@@ -324,6 +326,7 @@ module.exports = {
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)",
 
       'economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)',
+      'sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)',
       'logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',
       'auth',
