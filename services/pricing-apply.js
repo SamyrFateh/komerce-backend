@@ -6,10 +6,11 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/pricing-guards.js
+ * @depends       db, services/pricing-guards.js, services/catalog-product-mutation-service.js
  * @used-by       routes/pricing.js
  * @db-read       products
- * @db-write      price_history, products
+ * @db-write      price_history
+ * @db-write-via:catalog-product-mutation-service products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine
@@ -37,6 +38,7 @@
  */
 
 const db = require('../db');
+const catalogProductMutationService = require('./catalog-product-mutation-service');
 const {
   isPriceInvalid,
   isBatchEmpty,
@@ -78,10 +80,7 @@ async function applyPrice(productId, body, userId) {
   }
 
   const oldPrice = Number(product.price_kmf) || 0;
-  const { rows: [updated] } = await db.query(
-    `UPDATE products SET price_kmf = $1, updated_at = NOW() WHERE id = $2 RETURNING id, name, price_kmf`,
-    [price_kmf, productId]
-  );
+  const updated = await catalogProductMutationService.applyPrice(db, productId, price_kmf);
 
   // Audit price_history (colonnes scenario_* optionnelles — fallback gracieux)
   try {
@@ -133,11 +132,7 @@ async function applyAll(items) {
     const applied = [];
     for (const it of items) {
       if (!it.product_id || isPriceInvalid(it.price_kmf)) continue;
-      const { rows: [updated] } = await client.query(
-        `UPDATE products SET price_kmf = $1, updated_at = NOW()
-          WHERE id = $2 RETURNING id, name, price_kmf`,
-        [it.price_kmf, it.product_id]
-      );
+      const updated = await catalogProductMutationService.applyPrice(client, it.product_id, it.price_kmf);
       if (updated) applied.push(updated);
     }
     await client.query('COMMIT');
