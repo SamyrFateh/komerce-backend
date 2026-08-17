@@ -26101,61 +26101,6 @@
     "error": [],
     "warn": [
       {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "incident-management -> \"ops-api legacy\" (entrée: \"dashboard / ops-api legacy (écrit incidents — SQL inline)\")",
-        "msg": "contract.consumes de incident-management référence \"ops-api legacy\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "notifications -> \"toutes les features emettrices\" (entrée: \"toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement\")",
-        "msg": "contract.consumes de notifications référence \"toutes les features emettrices\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "DASH-MANIFEST-DUPLICATE-COPY",
-        "ref": "admin-dashboard",
-        "msg": "\"public/features/admin-dashboard.feature.js\" est une copie déclarée de \"public/dashboards/features/admin-dashboard.feature.js\" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique"
-      },
-      {
-        "type": "DASH-MANIFEST-DUPLICATE-COPY",
-        "ref": "legacy-control-tower",
-        "msg": "\"public/features/legacy-control-tower.feature.js\" est une copie déclarée de \"public/dashboards/features/legacy-control-tower.feature.js\" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique"
-      },
-      {
-        "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
-        "ref": "scope:backend",
-        "msg": "16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé"
-      },
-      {
-        "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
-        "ref": "scope:boutique",
-        "msg": "1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "logistics / GET/POST /api/parcels",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "orders / GET/POST /api/orders",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "infrastructure / GET /*.html",
-        "msg": "\"GET /*.html\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "infrastructure / GET /webhook/authkey-whatsapp",
-        "msg": "\"GET /webhook/authkey-whatsapp\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> logistics",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
-      },
-      {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> orders",
         "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
@@ -26167,93 +26112,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> auth-identity",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"auth-identity\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> auth-passkey",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"auth-passkey\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> business-rules",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"business-rules\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> decision-signals",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"decision-signals\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> documents",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"documents\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> loyalty",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"loyalty\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> purchasing",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> sourcing",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"sourcing\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> unsold-resolution",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"unsold-resolution\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "inventory -> logistics",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"logistics\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "inventory -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "inventory -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"payments\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> shared-cart",
         "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"shared-cart\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> auth-passkey",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-passkey\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"payments\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> recommendations",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"recommendations\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> shared-cart",
-        "msg": "dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"shared-cart\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26261,24 +26121,9 @@
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"recommendations\" vers \"orders\""
       },
       {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "refunds -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"payments\""
-      },
-      {
         "type": "WRITER-NOT-OWNER",
         "ref": "alerts",
         "msg": "table \"alerts\" a 6 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "basket_items",
-        "msg": "table \"basket_items\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "baskets",
-        "msg": "table \"baskets\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26302,23 +26147,8 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "invoices",
-        "msg": "table \"invoices\" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi écrite par dashboard"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "loyalty_rewards",
-        "msg": "table \"loyalty_rewards\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par dashboard"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "notification_log",
         "msg": "table \"notification_log\" a 2 écrivain(s) déclaré(s) (notifications, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "order_comments",
-        "msg": "table \"order_comments\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26329,11 +26159,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "order_items",
         "msg": "table \"order_items\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "order_status_history",
-        "msg": "table \"order_status_history\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26392,11 +26217,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "recipients",
-        "msg": "table \"recipients\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "relais",
         "msg": "table \"relais\" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
@@ -26417,11 +26237,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "sms_log",
-        "msg": "table \"sms_log\" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "sourcing_candidate_events",
         "msg": "table \"sourcing_candidate_events\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
@@ -26434,16 +26249,6 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "users",
         "msg": "table \"users\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "wallet_transactions",
-        "msg": "table \"wallet_transactions\" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "wallets",
-        "msg": "table \"wallets\" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard"
       }
     ],
     "debt": [
@@ -26798,10 +26603,11 @@
       }
     ],
     "summary": {
-      "signals": 69,
+      "signals": 30,
       "debt": 30,
       "expectedTopology": 31,
-      "generatorLimitations": 8
+      "generatorLimitations": 8,
+      "classifiedCandidates": 69
     }
   }
 }
