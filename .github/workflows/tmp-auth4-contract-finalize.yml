@@ -1,0 +1,152 @@
+name: Temporary AUTH-4 contract finalizer
+
+on:
+  push:
+    branches:
+      - auth/4-passkey-login
+
+permissions:
+  contents: write
+
+jobs:
+  finalize-contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Teach contract generator the AUTH-2 WebAuthn surface
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('scripts/contract-generate.js')
+          text = p.read_text(encoding='utf-8')
+
+          def replace_once(old, new, label):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, got {count}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+              "  { prefix: '/api/auth/otp/verify',        method: 'post',   schema: null }, // idem\n",
+              "  { prefix: '/api/auth/otp/verify',        method: 'post',   schema: null }, // idem\n"
+              "  // AUTH-2/AUTH-4 — WebAuthn payloads are verified by @simplewebauthn/server, not Joi.\n"
+              "  { prefix: '/api/auth/passkey/register/options', method: 'post', schema: null },\n"
+              "  { prefix: '/api/auth/passkey/register/verify',  method: 'post', schema: null },\n"
+              "  { prefix: '/api/auth/passkey/login/options',    method: 'post', schema: null },\n"
+              "  { prefix: '/api/auth/passkey/login/verify',     method: 'post', schema: null },\n",
+              'route schema map passkey'
+          )
+
+          replace_once(
+              "const KNOWN_RESPONSES = {\n",
+              "const KNOWN_RESPONSES = {\n"
+              "  // AUTH-2/AUTH-4 — WebAuthn options come from @simplewebauthn/server via\n"
+              "  // services/webauthn-service.js; verify responses are explicit route JSON.\n"
+              "  '/api/auth/passkey/register/options': {\n"
+              "    post: { fields: ['challenge','rp','user','pubKeyCredParams','timeout','attestation','excludeCredentials','authenticatorSelection','extensions'], source: 'service-read' },\n"
+              "  },\n"
+              "  '/api/auth/passkey/register/verify': {\n"
+              "    post: { fields: ['verified'], source: 'route-read' },\n"
+              "  },\n"
+              "  '/api/auth/passkey/login/options': {\n"
+              "    post: { fields: ['challenge','timeout','rpId','allowCredentials','userVerification','extensions'], source: 'service-read' },\n"
+              "  },\n"
+              "  '/api/auth/passkey/login/verify': {\n"
+              "    post: { fields: ['verified','user'], source: 'route-read' },\n"
+              "  },\n",
+              'known passkey responses'
+          )
+
+          replace_once(
+              "      '  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),',\n",
+              "      '  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),',\n"
+              "      '  - x-contract-status: \"service-read\" → forme top-level lue dans le service/lib appelée par la route,',\n",
+              'contract status documentation'
+          )
+
+          replace_once(
+              "const RESPONSE_OVERRIDES = {\n",
+              "const RESPONSE_OVERRIDES = {\n"
+              "  // AUTH-2/AUTH-4 — erreurs explicites des cérémonies WebAuthn.\n"
+              "  'POST /api/auth/passkey/register/options': {\n"
+              "    '401': { description: 'Session K1 requise pour enrôler une passkey' },\n"
+              "    '500': { description: 'Erreur serveur lors de la préparation WebAuthn' },\n"
+              "  },\n"
+              "  'POST /api/auth/passkey/register/verify': {\n"
+              "    '400': { description: 'Réponse WebAuthn invalide ou enregistrement refusé' },\n"
+              "    '401': { description: 'Session K1 requise pour enrôler une passkey' },\n"
+              "    '500': { description: 'Erreur serveur lors de la vérification WebAuthn' },\n"
+              "  },\n"
+              "  'POST /api/auth/passkey/login/options': {\n"
+              "    '500': { description: 'Erreur serveur lors de la préparation du login WebAuthn' },\n"
+              "  },\n"
+              "  'POST /api/auth/passkey/login/verify': {\n"
+              "    '400': { description: 'Réponse WebAuthn invalide' },\n"
+              "    '401': { description: 'Passkey inconnue, révoquée ou vérification refusée' },\n"
+              "    '500': { description: 'Erreur serveur lors de la vérification WebAuthn' },\n"
+              "  },\n",
+              'passkey response overrides'
+          )
+
+          p.write_text(text, encoding='utf-8')
+          PY
+      - name: Remove temporary helper from intended final tree
+        run: rm .github/workflows/tmp-auth4-contract-finalize.yml
+      - name: Install root dependencies
+        run: npm ci
+      - name: Generate and verify canonical API contract
+        run: |
+          node scripts/contract-generate.js
+          node scripts/contract-check.js
+          node - <<'NODE'
+          const spec = require('./docs/contract/openapi.json');
+          const expected = [
+            '/api/auth/passkey/register/options',
+            '/api/auth/passkey/register/verify',
+            '/api/auth/passkey/login/options',
+            '/api/auth/passkey/login/verify',
+          ];
+          for (const path of expected) {
+            if (!spec.paths?.[path]?.post) throw new Error(`missing ${path}`);
+            const status = spec.paths[path].post.responses?.['200']?.content?.['application/json']?.schema?.['x-contract-status'];
+            if (status === 'UNKNOWN') throw new Error(`UNKNOWN response for ${path}`);
+          }
+          NODE
+      - name: Backend passkey regression
+        run: npx jest tests/unit/auth-passkey.test.js --runInBand
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+      - name: AUTH-3/AUTH-4 Boutique regression
+        working-directory: public/boutique
+        run: npx jest tests/unit/b-passkey-login.test.js tests/unit/b-identity-passkey.test.js tests/unit/b-passkey-enrollment.test.js --runInBand
+      - name: Refresh governance projections after contract closure
+        run: |
+          node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+          node scripts/gen-gate-findings.js
+          node scripts/gen-feature-360.js
+      - name: Verify final tree
+        run: |
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+          node scripts/contract-check.js
+          git diff --check
+      - name: Commit contract closure and canonical projections
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/contract-generate.js docs/contract/openapi.json docs/contract/DEBT.md
+          git add docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/GATE_FINDINGS.json docs/FEATURE_360.json docs/FEATURE_360.md
+          git add -u .github/workflows/tmp-auth4-contract-finalize.yml
+          git commit -m "fix(auth): close Passkey API contract surface"
+          git push origin HEAD:auth/4-passkey-login
