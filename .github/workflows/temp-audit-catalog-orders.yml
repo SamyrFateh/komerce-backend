@@ -13,43 +13,5 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Print graph evidence and cart imports
-        run: |
-          node - <<'NODE'
-          const graph = require('./docs/BUSINESS_FEATURE_GRAPH.json');
-          const seen = new Set();
-          function walk(v, path = '$') {
-            if (!v || typeof v !== 'object') return;
-            if (seen.has(v)) return;
-            seen.add(v);
-            if (!Array.isArray(v) && v.from === 'catalog' && v.to === 'orders') {
-              console.log('\n=== ' + path + ' ===');
-              console.log(JSON.stringify(v, null, 2));
-            }
-            if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
-            else Object.entries(v).forEach(([k, x]) => walk(x, `${path}.${k}`));
-          }
-          walk(graph);
-          NODE
-          echo '=== Catalog runtime files: direct orders imports + symbol use ==='
-          for f in \
-            public/boutique/js/b-catalog.js \
-            public/boutique/js/render/render-product-card.js \
-            public/boutique/js/b-modal-desktop-product.js \
-            public/boutique/js/b-subcat.js \
-            public/boutique/js/b-favs.js \
-            public/boutique/js/b-modal-buybox-shared.js; do
-            echo "--- $f ---"
-            grep -nE "b-cart|cart-product-summary|showToast|cartQty|updateCartBadge|isFav|toggleFav|quickAdd|quickRemove|markAllCartButtons|pruneObsoleteCart|openCartWithHighlight|addToCart|getProductCartSummary|saveFavs" "$f" || true
-          done
-          echo '=== Definitions/usages inside orders cart internals ==='
-          grep -nE "export function (toggleFav|quickAdd|quickRemove|markAllCartButtons|pruneObsoleteCart|openCartWithHighlight|addToCart|renderCartBody)|export function (cartQty|updateCartBadge|isFav|saveFavs)|showToast" \
-            public/boutique/js/b-cart.js public/boutique/js/b-cart-core.js || true
-          echo '=== Catalog-owned files from local manifests ==='
-          node - <<'NODE'
-          for (const p of ['public/boutique/features/catalog.feature.js','public/boutique/features/modal-product.feature.js']) {
-            const m = require('./' + p);
-            console.log('\n' + p + ' => ' + m.name + ' canonical=' + m.canonicalFeature);
-            for (const [kind, xs] of Object.entries(m.files || {})) for (const x of xs || []) console.log(kind + ': ' + x);
-          }
-          NODE
+      - name: Print precise symbol ownership evidence
+        run: node scripts/temp-audit-catalog-orders-symbols.js
