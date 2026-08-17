@@ -32,16 +32,16 @@ jobs:
         run: npx jest tests/unit/auth-session-policy.test.js tests/unit/auth-session.test.js tests/unit/auth-cookie.test.js tests/unit/auth-middleware.test.js --runInBand
       - name: Backend quality and feature gates
         run: |
-          npm run gate:code-quality
-          node scripts/feature-guard.js --strict
+          npm run quality:gate
+          npm run feature:check
       - name: Refresh governance projections
         run: |
-          node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
-          node scripts/gen-gate-findings.js
+          npm run business-graph:gen
+          npm run gate:findings:gen
           node scripts/gen-feature-360.js
-          node scripts/feature-guard.js --strict
-          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
-          node scripts/feature-360-check.js
+          npm run feature:check
+          npm run business-graph:check
+          npm run feature:360:check
       - name: Verify final tree
         run: git diff --check
       - name: Commit final AUTH-8d tree
