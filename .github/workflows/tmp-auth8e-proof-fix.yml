@@ -22,45 +22,40 @@ jobs:
           from pathlib import Path
           p = Path('.github/workflows/tmp-auth8e-finalize.yml')
           text = p.read_text(encoding='utf-8')
-
-          # Corriger aussi l'ancien commentaire d'invariant lors du finalizer.
-          text = text.replace(
-              "t = t.replace('signed, guest-checkout = flux boutique public, orders-by-phone =\\n *      lookup client public, admin-reset gaté applicativement par', 'signed, guest-checkout = flux boutique public, admin-reset gaté applicativement par')",
-              "t = t.replace('signé, guest-checkout = flux boutique public, orders-by-phone =\\n *      lookup client public, admin-reset gaté applicativement par', 'signé, guest-checkout = flux boutique public, admin-reset gaté applicativement par')",
-          )
-
+          text = text.replace("'signed, guest-checkout = flux boutique public, orders-by-phone =", "'signé, guest-checkout = flux boutique public, orders-by-phone =")
+          text = text.replace("'signed, guest-checkout = flux boutique public, admin-reset", "'signé, guest-checkout = flux boutique public, admin-reset")
           start_marker = "      - name: Prove dangerous token seam is gone\n"
           end_marker = "      - name: Commit final AUTH-8e tree\n"
           start = text.find(start_marker)
           end = text.find(end_marker, start + len(start_marker))
           if start < 0 or end < 0:
               raise SystemExit('final proof step markers not found')
-
-          proof = '''      - name: Prove dangerous token seam is gone
-        shell: bash
-        run: |
-          assert_no_match() {
-            local pattern="$1"
-            shift
-            set +e
-            git grep -n -I -E "$pattern" -- "$@"
-            local status=$?
-            set -e
-            if [ "$status" -eq 0 ]; then
-              echo "AUTH-8e FAIL: forbidden runtime/contract seam still referenced: $pattern" >&2
-              exit 1
-            fi
-            if [ "$status" -gt 1 ]; then exit "$status"; fi
-          }
-
-          # Les tests négatifs DOIVENT encore mentionner orders_read pour prouver son rejet.
-          # La preuve de clôture porte donc sur le runtime, les surfaces exposées et les projections.
-          assert_no_match '(orders-by-phone|orders_read)' routes middleware services utils public validators scripts/contract-generate.js scripts/.security-360-baseline.json docs/contract/openapi.json docs/SECURITY_360.json docs/SECURITY_360.md
-          assert_no_match 'POST /api/auth/orders-by-phone' features
-'''
+          lines = [
+              "      - name: Prove dangerous token seam is gone",
+              "        shell: bash",
+              "        run: |",
+              "          assert_no_match() {",
+              "            local pattern=\"$1\"",
+              "            shift",
+              "            set +e",
+              "            git grep -n -I -E \"$pattern\" -- \"$@\"",
+              "            local status=$?",
+              "            set -e",
+              "            if [ \"$status\" -eq 0 ]; then",
+              "              echo \"AUTH-8e FAIL: forbidden runtime/contract seam still referenced: $pattern\" >&2",
+              "              exit 1",
+              "            fi",
+              "            if [ \"$status\" -gt 1 ]; then exit \"$status\"; fi",
+              "          }",
+              "",
+              "          # Les tests négatifs mentionnent orders_read pour prouver son rejet.",
+              "          assert_no_match '(orders-by-phone|orders_read)' routes middleware services utils public validators scripts/contract-generate.js scripts/.security-360-baseline.json docs/contract/openapi.json docs/SECURITY_360.json docs/SECURITY_360.md",
+              "          assert_no_match 'POST /api/auth/orders-by-phone' features",
+              "",
+          ]
+          proof = "\n".join(lines)
           p.write_text(text[:start] + proof + text[end:], encoding='utf-8')
           PY
-
           rm .github/workflows/tmp-auth8e-proof-fix.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
