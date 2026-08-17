@@ -1043,6 +1043,20 @@
       {
         "feature": "auth-passkey",
         "category": "tests",
+        "declared": "tests/unit/webauthn-service.test.js",
+        "resolvedPath": "tests/unit/webauthn-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
+        "declared": "tests/unit/webauthn-management-service.test.js",
+        "resolvedPath": "tests/unit/webauthn-management-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
         "declared": "tests/unit/auth-passkey-step-up.test.js",
         "resolvedPath": "tests/unit/auth-passkey-step-up.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13224,6 +13238,12 @@
       },
       {
         "from": "auth-identity",
+        "to": "auth-passkey",
+        "raw": "auth-passkey (middleware/require-recent-auth.js — preuve récente exigée par les mutations de sécurité du profil)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
         "to": "notifications",
         "raw": "notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)",
         "resolved": true
@@ -13255,7 +13275,13 @@
       {
         "from": "auth-passkey",
         "to": "infrastructure",
-        "raw": "infrastructure (db.js, utils/logger.js)",
+        "raw": "infrastructure (db.js — accès aux tables WebAuthn et users en lecture)",
+        "resolved": true
+      },
+      {
+        "from": "auth-passkey",
+        "to": "platform-ops",
+        "raw": "platform-ops (utils/logger.js — journalisation structurée des événements WebAuthn)",
         "resolved": true
       },
       {
@@ -16377,7 +16403,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth-identity",
@@ -16659,7 +16685,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "business-rules",
@@ -23641,7 +23667,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 791
+        "filesObserved": 793
       },
       "boutique": {
         "filesObserved": 152,
@@ -23678,9 +23704,9 @@
       "PROJECTION": 10,
       "COMPOSITION_ROOT_WIRING": 16,
       "NON_RUNTIME_TEST": 8,
-      "TECHNICAL_PRIMITIVE": 32,
+      "TECHNICAL_PRIMITIVE": 31,
       "BUSINESS_TRANSVERSAL_SERVICE": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT": 5,
+      "CROSS_FEATURE_DIRECT_IMPORT": 4,
       "BUSINESS_FEATURE_INTERFACE": 5,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -23883,23 +23909,6 @@
       },
       {
         "from": "auth-identity",
-        "to": "auth-passkey",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "import-mixed",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
-      },
-      {
-        "from": "auth-identity",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
@@ -23944,21 +23953,6 @@
         "exceptionReasons": [
           "runtime-cycle"
         ]
-      },
-      {
-        "from": "auth-passkey",
-        "to": "platform-ops",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
       },
       {
         "from": "catalog",
@@ -24890,10 +24884,9 @@
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|import-mixed": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|import-mixed": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 6,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
@@ -25011,9 +25004,7 @@
     "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
-    "missingExceptions": [
-      "auth-identity->auth-passkey"
-    ],
+    "missingExceptions": [],
     "emptyRationaleExceptions": [],
     "unexplainedRuntimeCycles": [],
     "ontologyGapCoverage": {
@@ -26839,11 +26830,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> auth-passkey",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"auth-passkey\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
       },
@@ -26856,11 +26842,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> platform-ops",
         "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-passkey -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-passkey\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

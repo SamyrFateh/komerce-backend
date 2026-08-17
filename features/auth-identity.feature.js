@@ -175,6 +175,7 @@ module.exports = {
       // auth-identity est business (arbitrage A), ces dépendances sont donc
       // des consommations métier→support et métier→métier ordinaires.
       'auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)',
+      'auth-passkey (middleware/require-recent-auth.js — preuve récente exigée par les mutations de sécurité du profil)',
       'notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)',
       'wallet (projection boutique account : b-komerce.js lit uniquement le solde canonique via GET /api/wallet)',
       'documents (projection boutique account : b-komerce.js liste et télécharge les factures et remboursements privés)',
