@@ -295,6 +295,7 @@ module.exports = {
       { fn: 'transitionParcelStatus', file: 'services/parcel-operations.js' },
     ],
     consumes: [
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: utils/parcels.js -> utils/rules.js ; services/parcel-operations.js -> utils/rules.js)",
 'orders (commande rattachee au colis)',
       'customs (statut declaration)',

@@ -88,6 +88,7 @@ module.exports = {
       'processRefund(orderOrCartId, reason)',
     ],
     consumes: [
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (commande source)',
       'shared-cart (panier source)',
       'wallet (credit)',

@@ -153,6 +153,7 @@ module.exports = {
       // absent de `exposes` tant que non implémenté, pour ne pas fausser le gate.
     ],
     consumes: [
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders',
       'customs',
       'wallet',

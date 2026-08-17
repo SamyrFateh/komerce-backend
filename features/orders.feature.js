@@ -227,6 +227,8 @@ module.exports = {
       { fn: 'makeInput', file: 'public/boutique/js/b-checkout.js' },
     ],
     consumes: [
+      'platform-ops (monitoring/exploitation transverse observé dans le code)',
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)",
 'wallet (application credit)',
       'economic-engine (cout figure a la commande)',

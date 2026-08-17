@@ -132,6 +132,7 @@ module.exports = {
       'GET /api/admin/customs-shipments/status/pending',
     ],
     consumes: ['logistics (colis a classer)',
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'documents (facture douane generee)',
       'auth',
       'economic-engine',

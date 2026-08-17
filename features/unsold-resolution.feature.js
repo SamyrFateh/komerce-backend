@@ -84,7 +84,7 @@ module.exports = {
       'POST /api/unsold/scan',
       'GET /api/unsold/stats/summary',
     ],
-    consumes: ['orders (commande source de l\'invendu)', 'catalog (produit concerné)', 'auth'],
+    consumes: ['orders (commande source de l\'invendu)', 'catalog (produit concerné)', 'auth', 'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)'],
   },
 
   // ── Dette assumée / documentée ────────────────────────────────────────────

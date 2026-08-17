@@ -336,6 +336,7 @@ module.exports = {
       { fn: 'recommend', file: 'services/pricing-engine.js' },
     ],
     consumes: [
+      'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/transport-pricing.js -> services/transport-rails.js)",
 'catalog (donnees produit source)',
       'auth',
