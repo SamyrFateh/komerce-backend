@@ -1,0 +1,53 @@
+name: Temporary AUTH-8d finalizer
+
+on:
+  push:
+    branches: [auth/8d-session-ttl]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
+      JWT_SECRET: test_secret_min_32_chars_aaaaaaaaaaaaaaaa
+      KOMERCE_DISABLE_CRONS: 'true'
+      KOMERCE_SKIP_STARTUP_MIGRATIONS: 'true'
+      KOMERCE_SKIP_BOOT_ENSURE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Remove temporary helper from intended tree
+        run: rm .github/workflows/tmp-auth8d-finalize.yml
+      - run: npm ci
+      - name: AUTH-8d session regression
+        run: npx jest tests/unit/auth-session-policy.test.js tests/unit/auth-session.test.js tests/unit/auth-cookie.test.js tests/unit/auth-middleware.test.js --runInBand
+      - name: Backend quality and feature gates
+        run: |
+          npm run gate:code-quality
+          node scripts/feature-guard.js --strict
+      - name: Refresh governance projections
+        run: |
+          node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique
+          node scripts/gen-gate-findings.js
+          node scripts/gen-feature-360.js
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+      - name: Verify final tree
+        run: git diff --check
+      - name: Commit final AUTH-8d tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(auth): bound session lifetime to seven days"
+          git push origin HEAD:auth/8d-session-ttl
