@@ -156,6 +156,7 @@ export function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } 
     let requestOptions = null;
     let busy = false;
     let settled = false;
+    let recoverySuggested = false;
 
     function finish(result) {
       if (settled) return;
@@ -170,7 +171,11 @@ export function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } 
       }, 150);
     }
 
-    whatsapp.addEventListener('click', () => finish({ outcome: 'fallback' }));
+    whatsapp.addEventListener('click', () => finish(
+      recoverySuggested
+        ? { outcome: 'recovery', reason: 'passkey_unusable' }
+        : { outcome: 'fallback' }
+    ));
     close.addEventListener('click', () => finish({ outcome: 'cancelled' }));
     overlay.addEventListener('click', event => {
       if (event.target === overlay) finish({ outcome: 'cancelled' });
@@ -241,7 +246,9 @@ export function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } 
         if (err?.name === 'NotAllowedError' || /annul/i.test(String(err?.message || ''))) {
           error.textContent = 'Connexion annulée. Réessayez ou utilisez WhatsApp.';
         } else if (err?.status === 401) {
+          recoverySuggested = true;
           error.textContent = 'Cette passkey n’est plus utilisable. Utilisez WhatsApp pour récupérer votre compte.';
+          whatsapp.textContent = 'Récupérer avec WhatsApp';
         } else {
           error.textContent = 'La passkey n’a pas pu être vérifiée. Réessayez ou utilisez WhatsApp.';
         }

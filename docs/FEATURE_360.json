@@ -43,15 +43,15 @@
   },
   "summary": {
     "features": 30,
-    "healthy": 6,
-    "attention": 23,
+    "healthy": 7,
+    "attention": 22,
     "blocked": 1,
-    "businessDependencies": 113,
+    "businessDependencies": 114,
     "directCrossFeatureImports": 5,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 63,
     "ontologyGaps": 0,
-    "debtItemsTotal": 122,
+    "debtItemsTotal": 121,
     "gateHealthy": 14,
     "gateBlocked": 0
   },
@@ -1171,6 +1171,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "auth-passkey",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "catalog",
           "disposition": "BUSINESS_FEATURE_INTERFACE",
           "channels": [
@@ -1406,7 +1413,7 @@
         "totalFiles": 4,
         "boutiqueManifest": "auth-passkey",
         "boutiqueFiles": {
-          "count": 4,
+          "count": 6,
           "files": [
             {
               "declared": "../js/b-passkey-enrollment.js",
@@ -1423,6 +1430,13 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../tests/unit/b-identity-recovery.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-identity-recovery.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../tests/unit/b-passkey-enrollment.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-passkey-enrollment.test.js",
               "category": "tests",
@@ -1432,6 +1446,13 @@
             {
               "declared": "../tests/unit/b-passkey-login.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-passkey-login.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-passkey-recovery.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-passkey-recovery.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -1518,6 +1539,13 @@
           ]
         },
         {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -1531,19 +1559,22 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 0,
+        "testOnlyRelations": 1,
         "compositionRootRelations": 0,
-        "details": []
+        "details": [
+          {
+            "to": "platform-ops",
+            "family": "NON_RUNTIME_TEST"
+          }
+        ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "auth-identity"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -1591,14 +1622,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"auth-identity\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",

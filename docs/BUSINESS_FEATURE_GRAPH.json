@@ -14126,6 +14126,22 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "auth-passkey",
+        "category": "tests",
+        "declared": "../tests/unit/b-passkey-recovery.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-passkey-recovery.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth-passkey",
+        "category": "tests",
+        "declared": "../tests/unit/b-identity-recovery.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-identity-recovery.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "boutique",
         "category": "dist",
         "declared": "../css/dist/base.css",
@@ -16368,6 +16384,22 @@
       },
       {
         "from": "auth-passkey",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-identity-recovery.test.js",
+                "targetFile": "public/boutique/js/b-identity.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "auth-passkey",
         "to": "infrastructure",
         "channels": [
           {
@@ -16393,6 +16425,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "auth-passkey",
+        "to": "platform-ops",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-identity-recovery.test.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "business-rules",
@@ -23373,7 +23421,7 @@
         "filesObserved": 777
       },
       "boutique": {
-        "filesObserved": 146,
+        "filesObserved": 148,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -23406,7 +23454,7 @@
     "familySummary": {
       "PROJECTION": 10,
       "COMPOSITION_ROOT_WIRING": 16,
-      "NON_RUNTIME_TEST": 8,
+      "NON_RUNTIME_TEST": 9,
       "TECHNICAL_PRIMITIVE": 31,
       "BUSINESS_TRANSVERSAL_SERVICE": 2,
       "CROSS_FEATURE_DIRECT_IMPORT": 5,
@@ -23673,6 +23721,21 @@
         "exceptionReasons": [
           "runtime-cycle"
         ]
+      },
+      {
+        "from": "auth-passkey",
+        "to": "platform-ops",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "catalog",
@@ -24608,6 +24671,7 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|technical-transversal|business-file-import": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
@@ -26569,6 +26633,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> platform-ops",
         "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "auth-passkey -> platform-ops",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth-passkey\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

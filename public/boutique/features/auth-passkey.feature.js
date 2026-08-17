@@ -20,7 +20,7 @@ module.exports = {
   canonicalFeature: 'auth-passkey',
   sliceKind: 'frontend-slice',
 
-  service: 'Enrôlement volontaire après OTP (AUTH-3) et connexion Passkey nominale discoverable avec fallback WhatsApp (AUTH-4).',
+  service: 'Enrôlement après OTP (AUTH-3), login Passkey nominal (AUTH-4) et recovery téléphone → OTP → nouvelle Passkey (AUTH-5).',
 
   perimeter: {
     in: [
@@ -32,7 +32,6 @@ module.exports = {
       'appel des endpoints register/options, register/verify, login/options et login/verify AUTH-2',
     ],
     out: [
-      'recovery et ré-enrôlement (AUTH-5)',
       'gestion/révocation des authentificateurs (AUTH-6)',
       'step-up (AUTH-7)',
     ],
@@ -46,6 +45,8 @@ module.exports = {
     tests: [
       '../tests/unit/b-passkey-enrollment.test.js',
       '../tests/unit/b-passkey-login.test.js',
+      '../tests/unit/b-passkey-recovery.test.js',
+      '../tests/unit/b-identity-recovery.test.js',
     ],
   },
 
@@ -70,6 +71,9 @@ module.exports = {
     'le login passkey est proposé avant OTP quand WebAuthn est disponible',
     'le login discoverable ne demande pas de numéro au client',
     'WhatsApp reste un fallback explicite et non le parcours nominal quand une passkey est utilisable',
+    'une passkey inutilisable déclenche un état recovery explicite et exige OTP avant ré-enrôlement',
+    'le recovery OTP peut reproposer une nouvelle passkey même si l offre UX normale a déjà été vue',
+    'le recovery ne révoque jamais automatiquement les autres credentials',
     'aucun JWT challenge credential clé privée ou donnée biométrique n est stocké dans localStorage ou sessionStorage',
     'les challenges et paramètres RP viennent exclusivement du serveur AUTH-2',
     'navigator.credentials.create/get est vérifié côté serveur avant toute confiance',

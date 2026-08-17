@@ -165,7 +165,7 @@ export async function restoreIdentity() {
 // requireIdentity() appelle directement openIdentityModal(), qui gère
 // le cas « utilisateur reconnu » via le step 'recap'.
 
-export function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre WhatsApp', phone = '', returnFocusTo = null } = {}) {
+export function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre WhatsApp', phone = '', returnFocusTo = null, purpose = 'authentication' } = {}) {
   ensureStyles();
   return new Promise(resolve => {
 
@@ -481,7 +481,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
         closeOverlay(ov);
         resolve(user || data.user || { phone: phoneValue });
         window.dispatchEvent(new CustomEvent('komerce:identity-authenticated', {
-          detail: { method: 'otp', user: user || data.user || { phone: phoneValue } },
+          detail: { method: 'otp', purpose, user: user || data.user || { phone: phoneValue } },
         }));
         if (window.K?.auth?.restore) {
           Promise.resolve().then(() => window.K.auth.restore()).catch(() => {});
@@ -507,6 +507,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
         title: 'Utiliser un autre num\u00e9ro',
         phone: '',
         returnFocusTo: overlayLifecycles.get(ov)?.focusOrigin || null,
+        purpose,
       });
       resolve(newUser);
     });
@@ -518,6 +519,7 @@ export function openIdentityModal({ reason = 'continuer', title = 'Confirmer vot
         title: 'Utiliser un autre num\u00e9ro',
         phone: '',
         returnFocusTo: overlayLifecycles.get(ov)?.focusOrigin || null,
+        purpose,
       });
       resolve(newUser);
     });
@@ -633,6 +635,13 @@ export async function requireIdentity(options = {}) {
   }
 
   if (passkey?.outcome === 'cancelled') return null;
+  if (passkey?.outcome === 'recovery') {
+    return openIdentityModal({
+      ...options,
+      purpose: 'recovery',
+      title: options.title || 'Récupérer votre compte',
+    });
+  }
   return openIdentityModal(options);
 }
 
