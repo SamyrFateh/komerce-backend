@@ -725,6 +725,13 @@
       },
       {
         "feature": "auth",
+        "category": "utils",
+        "declared": "utils/auth-cookie.js",
+        "resolvedPath": "utils/auth-cookie.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth",
         "category": "migrations",
         "declared": "migrations/072_jwt_revocation.sql",
         "resolvedPath": "migrations/072_jwt_revocation.sql",
@@ -13079,8 +13086,14 @@
       },
       {
         "from": "auth-passkey",
+        "to": "auth",
+        "raw": "auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, politique de session canonique AUTH-8)",
+        "resolved": true
+      },
+      {
+        "from": "auth-passkey",
         "to": "auth-identity",
-        "raw": "auth-identity (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, AUTH-8 — même politique de session que le login OTP)",
+        "raw": "auth-identity (users — identité utilisateur canonique lue sans mutation)",
         "resolved": true
       },
       {
@@ -16061,8 +16074,20 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/client-auth.js",
+                "targetFile": "utils/auth-cookie.js"
+              },
+              {
                 "sourceFileId": "routes/auth.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/auth.js",
+                "targetFile": "utils/auth-cookie.js"
+              },
+              {
+                "sourceFileId": "routes/otp.js",
+                "targetFile": "utils/auth-cookie.js"
               }
             ]
           }
@@ -16269,11 +16294,15 @@
               {
                 "sourceFileId": "routes/auth-passkey.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/auth-passkey.js",
+                "targetFile": "utils/auth-cookie.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth-passkey",
@@ -23263,7 +23292,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 776
+        "filesObserved": 777
       },
       "boutique": {
         "filesObserved": 142,
@@ -23300,7 +23329,7 @@
       "PROJECTION": 10,
       "COMPOSITION_ROOT_WIRING": 15,
       "NON_RUNTIME_TEST": 8,
-      "TECHNICAL_PRIMITIVE": 32,
+      "TECHNICAL_PRIMITIVE": 31,
       "BUSINESS_TRANSVERSAL_SERVICE": 2,
       "CROSS_FEATURE_DIRECT_IMPORT": 4,
       "BUSINESS_FEATURE_INTERFACE": 5,
@@ -23549,21 +23578,6 @@
         "exceptionReasons": [
           "runtime-cycle"
         ]
-      },
-      {
-        "from": "auth-passkey",
-        "to": "auth",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
       },
       {
         "from": "catalog",
@@ -24483,7 +24497,6 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 10,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|technical-primitive": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
@@ -26459,11 +26472,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> platform-ops",
         "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-passkey -> auth",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth-passkey\" vers \"auth\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
