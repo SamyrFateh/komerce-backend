@@ -52,7 +52,7 @@ function sessionClaimsVerdict(decoded) {
   if (!Array.isArray(decoded.amr) || decoded.amr.length === 0) {
     return { ok: false, reason: 'amr_missing' };
   }
-  if (!Number.isFinite(Number(decoded.exp))) {
+  if (decoded.exp === undefined || decoded.exp === null || !Number.isFinite(Number(decoded.exp)) || Number(decoded.exp) <= 0) {
     return { ok: false, reason: 'exp_missing' };
   }
 
