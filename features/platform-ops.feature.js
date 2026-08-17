@@ -173,6 +173,9 @@ module.exports = {
       'GET /health/version',
     ],
     consumes: [
+      'purchasing (client API transversal appelle le référentiel fournisseurs /api/purchasing/suppliers)',
+      'catalog (shell/client API transversal monte et appelle les surfaces catalogue sans en posséder l’état)',
+      'auth-identity (client API transversal et shell identité consomment les endpoints auth)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/config.js -> utils/rules.js)",
 

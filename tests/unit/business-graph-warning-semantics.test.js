@@ -76,4 +76,16 @@ describe('Business Graph warning semantics — vérité de la dette', () => {
     expect(p.debt).toEqual([warning]);
     expect(p.classified[0].semantic.category).toBe('ACTIONABLE_DRIFT');
   });
+
+  it('classe une dépendance observée uniquement dans les tests hors dette runtime', () => {
+    const warning = { type: 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY', ref: 'inventory -> payments', msg: 'test-only' };
+    const pairClassifications = [{
+      from: 'inventory', to: 'payments', family: 'NON_RUNTIME_TEST',
+      evidenceRole: 'TEST_ONLY', policy: 'non-runtime-evidence', exceptionRequired: false,
+    }];
+    const p = semantics.partition([warning], { ROOT, pairClassifications });
+    expect(p.debt).toHaveLength(0);
+    expect(p.expectedTopology).toEqual([warning]);
+    expect(p.classified[0].semantic.category).toBe('EXPECTED_TOPOLOGY');
+  });
 });
