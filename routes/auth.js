@@ -49,7 +49,7 @@ const _JWT_SECRET = JWT_SECRET;
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 
 // AUTH-8a — cookie d'auth centralisé (utils/auth-cookie.js)
-const { setAuthCookie, clearAuthCookie } = require('../utils/auth-cookie');
+const { setAuthCookie, clearAuthCookie, readAuthToken } = require('../utils/auth-cookie');
 const { signAuthToken } = require('../utils/auth-session');
 
 function generateToken(user) {
@@ -282,11 +282,7 @@ router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersB
 // le cookie est quand même supprimé (le token expire naturellement sous 30j).
 router.post('/logout', async (req, res) => {
   try {
-    const token =
-      req.cookies?.[COOKIE_NAME] ||
-      (req.headers.authorization?.startsWith('Bearer ')
-        ? req.headers.authorization.split(' ')[1]
-        : null);
+    const token = readAuthToken(req);
     if (token) {
       const decoded = jwt.decode(token);
       if (decoded?.jti && decoded?.exp) {
