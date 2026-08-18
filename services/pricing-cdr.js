@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db
+ * @depends       db, utils/rates.js
  * @used-by       services/pricing-engine.js
  * @db-read       charges, cost_benchmarks, cost_components, customs_categories, finance_config, pricing_components, risk_provisions
  * @db-write      none
@@ -33,6 +33,7 @@
 'use strict';
 
 const db = require('../db');
+const { resolveFxRates } = require('../utils/rates');
 
 const DEFAULT_TARGET_ORDERS_PER_MONTH = 100;
 
@@ -170,9 +171,11 @@ function computeCDR(product, ctx = {}) {
   const fc = cfg.finance;
   const warnings = [];
 
-  const taxAED  = Number(fc.taux_aed_kmf)        || 138;
-  const taxEUR  = Number(fc.taux_change_eur_kmf)  || 492;
-  const fretEUR = Number(fc.fret_eur_per_m3)      || 180;
+  const fx = resolveFxRates(fc);
+  const taxAED  = fx.aed_kmf;
+  const taxEUR  = fx.eur_kmf;
+  const taxUSD  = fx.usd_kmf;
+  const fretEUR = Number(fc.fret_eur_per_m3) || 180;
 
   const categoryKey    = product.category || 'phones';
   const cat            = cfg.categories[categoryKey];
@@ -229,7 +232,7 @@ function computeCDR(product, ctx = {}) {
         amount = v / allocationDivisor; allocationLevel = 'shipment'; break;
       case 'aed': amount = v * taxAED; engagedAmount = amount; break;
       case 'eur': amount = v * taxEUR; engagedAmount = amount; break;
-      case 'usd': amount = v * 0.92 * taxEUR; engagedAmount = amount; break;
+      case 'usd': amount = v * taxUSD; engagedAmount = amount; break;
     }
 
     if (!details._allocations) details._allocations = [];
