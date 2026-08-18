@@ -17,7 +17,7 @@
  *
  * Périmètre couvert :
  *   - renderSubcatRail : no-op mobile / no-op DOM absent, masquage 'all',
- *     rendu header+objets, cache du compteur, échappement HTML, clics
+ *     rendu header+pills, cache du compteur, échappement HTML, clics
  *     (retour catégories / sélection-toggle sous-cat).
  *   - centerRailChip : gardes (chip/#k-cats absents, desktop), scrollTo mobile.
  *   - syncRailActiveState : toggle classe active, centrage par défaut/désactivé,
@@ -109,6 +109,8 @@ describe('home-controller', () => {
     getCategorySectionEmoji.mockReturnValue('');
     getCategoryLabel.mockImplementation((k) => k);
     renderCategoryRailMarkup.mockReturnValue('');
+    // Reproduit les effets de bord du vrai b-catalog.js:setActiveCat, dont
+    // handleCategorySelection a besoin pour ses branches suivantes.
     setActiveCat.mockImplementation((cat, sub = null) => {
       state.activeCat = cat;
       state.activeSubcat = sub;
@@ -155,7 +157,7 @@ describe('home-controller', () => {
       expect(document.documentElement.style.getPropertyValue('--sidebar-top')).toBe('');
     });
 
-    it('rend le header + les objets quand des sous-catégories existent', () => {
+    it('rend le header + les pills quand des sous-catégories existent', () => {
       setViewport(1200);
       mountFixture('<div id="k-subcats-wrap"></div>');
       getCategoryLabel.mockReturnValue('Mode & Vêtements');
@@ -174,8 +176,9 @@ describe('home-controller', () => {
       expect(wrap.dataset.catCount).toBe('42');
       expect(wrap.textContent).toContain('Mode & Vêtements');
       expect(wrap.textContent).toContain('42');
-      expect(wrap.querySelectorAll('.k-subcutout').length).toBe(3);
-      const activeChip = wrap.querySelector('.k-subcutout.active');
+      // "Tout voir" + 2 sous-catégories
+      expect(wrap.querySelectorAll('.k-subchip').length).toBe(3);
+      const activeChip = wrap.querySelector('.k-subchip.active');
       expect(activeChip.textContent).toContain('Chaussures');
     });
 
@@ -186,13 +189,13 @@ describe('home-controller', () => {
       expect(document.getElementById('k-subcats-wrap').textContent).toContain('7');
     });
 
-    it('pas de sous-catégories : seule la ligne titre est rendue (pas de rail objets)', () => {
+    it('pas de sous-catégories : seule la ligne titre est rendue (pas de .k-subcats-rail)', () => {
       setViewport(1200);
       mountFixture('<div id="k-subcats-wrap"></div>');
       getSubcategories.mockReturnValue([]);
       renderSubcatRail('mode');
-      expect(document.querySelector('.k-subcutout-rail')).toBeNull();
-      expect(document.querySelector('.k-subcutout-context')).not.toBeNull();
+      expect(document.querySelector('.k-subcats-rail')).toBeNull();
+      expect(document.querySelector('.k-subcats-context')).not.toBeNull();
     });
 
     it('échappe les valeurs injectées dans le label (anti-XSS)', () => {
@@ -219,7 +222,7 @@ describe('home-controller', () => {
       getSubcategories.mockReturnValue([{ key: 'chaussures', label: 'Chaussures' }]);
       state.activeSubcat = null;
       renderSubcatRail('mode');
-      document.querySelector('.k-subcutout[data-subcat="chaussures"]')
+      document.querySelector('.k-subchip[data-subcat="chaussures"]')
         .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(state.activeSubcat).toBe('chaussures');
       expect(renderGrid).toHaveBeenCalled();
@@ -231,7 +234,7 @@ describe('home-controller', () => {
       getSubcategories.mockReturnValue([{ key: 'chaussures', label: 'Chaussures' }]);
       state.activeSubcat = 'chaussures';
       renderSubcatRail('mode');
-      document.querySelector('.k-subcutout[data-subcat="chaussures"]')
+      document.querySelector('.k-subchip[data-subcat="chaussures"]')
         .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(state.activeSubcat).toBeNull();
     });
@@ -354,4 +357,198 @@ describe('home-controller', () => {
       expect(document.getElementById('k-cats').dataset.bound).toBeUndefined();
     });
   });
-}
+
+  describe('syncDesktopSidebar', () => {
+    it('no-op en mobile', () => {
+      setViewport(500);
+      mountFixture('<div class="k-sidebar-cat" data-cat="mode"></div>');
+      syncDesktopSidebar('mode');
+      expect(document.querySelector('.k-sidebar-cat').classList.contains('is-active')).toBe(false);
+    });
+
+    it('active l\'item correspondant en desktop, désactive les autres', () => {
+      setViewport(1200);
+      mountFixture(`
+        <div class="k-sidebar-cat" data-cat="mode"></div>
+        <div class="k-sidebar-cat" data-cat="maison"></div>
+      `);
+      syncDesktopSidebar('mode');
+      const items = document.querySelectorAll('.k-sidebar-cat');
+      expect(items[0].classList.contains('is-active')).toBe(true);
+      expect(items[1].classList.contains('is-active')).toBe(false);
+    });
+  });
+
+  describe('setupHomeController / sélection de catégorie', () => {
+    function makeDeps() {
+      return {
+        renderGrid: jest.fn(),
+        scrollPagerToCat: jest.fn(() => false),
+        scrollToCategorySection: jest.fn(),
+      };
+    }
+
+    function mountRail(cats) {
+      mountFixture(`<div id="k-cats">${cats.map((c) => `<div class="k-chip" data-cat="${c}"></div>`).join('')}</div>`);
+      getRailCategories.mockReturnValue(cats.map((key) => ({ key, image: '' })));
+      // jsdom n'implémente pas Element.prototype.scrollTo : centerRailChip()
+      // (mobile) y fait un appel réel dès qu'un clic change la catégorie
+      // active. On stub systématiquement ici pour ne pas faire dépendre
+      // chaque test mobile d'un stub manuel — les tests qui veulent espionner
+      // l'appel remplacent déjà catsEl.scrollTo eux-mêmes après mountRail().
+      document.getElementById('k-cats').scrollTo = jest.fn();
+    }
+
+    it('no-op si #k-cats absent', () => {
+      mountFixture('');
+      expect(() => setupHomeController(makeDeps())).not.toThrow();
+    });
+
+    it('ne re-bind pas les listeners si déjà bound', () => {
+      setViewport(1200);
+      mountRail(['all', 'mode']);
+      const deps = makeDeps();
+      setupHomeController(deps);
+      const chip = document.querySelector('.k-chip[data-cat="mode"]');
+      const addSpy = jest.spyOn(chip, 'addEventListener');
+      setupHomeController(deps);
+      expect(addSpy).not.toHaveBeenCalled();
+    });
+
+    it('centre la chip .k-chip.active si présente à l\'issue du setup', () => {
+      setViewport(500);
+      mountRail(['all', 'mode']);
+      document.querySelector('.k-chip[data-cat="mode"]').classList.add('active');
+      const catsEl = document.getElementById('k-cats');
+      catsEl.scrollTo = jest.fn();
+      setupHomeController(makeDeps());
+      expect(catsEl.scrollTo).toHaveBeenCalled();
+    });
+
+    it('flatSubcat actif : le réinitialise, re-render la grille (deps) et relance la sélection via rAF', () => {
+      setViewport(1200);
+      mountRail(['all', 'mode']);
+      state.activeCat = 'all';
+      state.flatSubcat = 'promo';
+      const deps = makeDeps();
+      setupHomeController(deps);
+
+      document.querySelector('.k-chip[data-cat="mode"]')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+      expect(state.flatSubcat).toBeNull();
+      expect(deps.renderGrid).toHaveBeenCalled();
+      // rAF synchrone dans les tests → la sélection relancée aboutit bien à mode
+      expect(setActiveCat).toHaveBeenCalledWith('mode');
+    });
+
+    it("cat === 'all' déjà actif : scroll top uniquement, pas de changement d'état", () => {
+      setViewport(1200);
+      mountRail(['all', 'mode']);
+      state.activeCat = 'all';
+      setupHomeController(makeDeps());
+
+      document.querySelector('.k-chip[data-cat="all"]')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+      expect(scrollPageToTop).toHaveBeenCalledWith('smooth');
+      expect(setActiveCat).not.toHaveBeenCalled();
+    });
+
+    it("bascule all → cat (desktop) : setActiveCat + renderSubcatRail + scroll catalogue", () => {
+      setViewport(1200);
+      mountRail(['all', 'mode']);
+      document.body.insertAdjacentHTML('beforeend', '<div id="k-grid"></div>');
+      state.activeCat = 'all';
+      setupHomeController(makeDeps());
+
+      document.querySelector('.k-chip[data-cat="mode"]')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+      expect(setActiveCat).toHaveBeenCalledWith('mode');
+      expect(state.activeSubcat).toBeNull();
+      expect(scrollPageToElement).toHaveBeenCalled();
+    });
+
+    it('re-clic sur la catégorie déjà active en desktop : pas de changement d\'état, scroll catalogue', () => {
+      setViewport(1200);
+      mountRail(['all', 'mode']);
+      document.body.insertAdjacentHTML('beforeend', '<div id="k-grid"></div>');
+      state.activeCat = 'mode';
+      setupHomeController(makeDeps());
+
+      document.querySelector('.k-chip[data-cat="mode"]')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+      expect(setActiveCat).not.toHaveBeenCalled();
+      expect(scrollPageToElement).toHaveBeenCalled();
+    });
+
+    it('re-clic sur la catégorie déjà active en mobile : reset vers "all"', () => {
+      setViewport(500);
+      mountRail(['all', 'mode']);
+      state.activeCat = 'mode';
+      setupHomeController(makeDeps());
+
+      document.querySelector('.k-chip[data-cat="mode"]')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+      expect(setActiveCat).toHaveBeenCalledWith('all');
+    });
+
+    it('changement direct entre deux catégories non "all"', () => {
+      setViewport(1200);
+      mountRail(['all', 'mode', 'maison']);
+      state.activeCat = 'mode';
+      setupHomeController(makeDeps());
+
+      document.querySelector('.k-chip[data-cat="maison"]')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+      expect(setActiveCat).toHaveBeenCalledWith('maison');
+      expect(state.activeSubcat).toBeNull();
+    });
+
+    it('pager mobile actif et scrollPagerToCat réussit : court-circuite (pas de setActiveCat catalogue)', () => {
+      setViewport(500);
+      mountRail(['all', 'mode']);
+      document.body.insertAdjacentHTML('beforeend', '<div id="k-grid" class="k-grid-cat-pager"></div>');
+      dom.pageScroll = document.createElement('div');
+      dom.pageScroll.classList.add('k-pager-active');
+      state.activeCat = 'all';
+      const deps = makeDeps();
+      deps.scrollPagerToCat = jest.fn(() => true);
+      setupHomeController(deps);
+
+      document.querySelector('.k-chip[data-cat="mode"]')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+      expect(deps.scrollPagerToCat).toHaveBeenCalledWith('mode');
+      // setActiveCatState (b-store réel) a bien posé l'état, sans passer par
+      // b-catalog.js:setActiveCat (mocké) puisque le early-return coupe le flow.
+      expect(state.activeCat).toBe('mode');
+      expect(setActiveCat).not.toHaveBeenCalled();
+    });
+
+    it('pager mobile actif mais scrollPagerToCat échoue : le flow continue (fallback reset "all")', () => {
+      setViewport(500);
+      mountRail(['all', 'mode']);
+      document.body.insertAdjacentHTML('beforeend', '<div id="k-grid" class="k-grid-cat-pager"></div>');
+      dom.pageScroll = document.createElement('div');
+      dom.pageScroll.classList.add('k-pager-active');
+      state.activeCat = 'all';
+      const deps = makeDeps();
+      deps.scrollPagerToCat = jest.fn(() => false);
+      setupHomeController(deps);
+
+      document.querySelector('.k-chip[data-cat="mode"]')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+      expect(deps.scrollPagerToCat).toHaveBeenCalledWith('mode');
+      // setActiveCatState a déjà posé activeCat='mode' avant l'échec du scroll ;
+      // cat === state.activeCat déclenche alors la branche "re-clic mobile"
+      // qui réinitialise vers 'all' via b-catalog.js:setActiveCat (mocké).
+      expect(setActiveCat).toHaveBeenCalledWith('all');
+    });
+  });
+});
