@@ -36,7 +36,7 @@ const BUNDLES = [
   },
   {
     out: 'desktop.css',
-    files: ['boutique-desktop', 'category-cutout-navigation-desktop'],
+    files: ['boutique-desktop', 'side-cart-desktop-polish', 'category-cutout-navigation-desktop'],
   },
 ];
 
