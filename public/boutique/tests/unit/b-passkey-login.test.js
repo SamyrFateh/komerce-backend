@@ -8,10 +8,14 @@
 
 const {
   isPasskeyLoginSupported,
+  hasPasskeyAvailabilityHint,
+  shouldOfferPasskeyLogin,
   parseRequestOptions,
   serializeAuthenticationCredential,
   openPasskeyLogin,
 } = require('../../js/b-passkey-login.js');
+
+const PASSKEY_HINT_KEY = 'komerce_passkey_available_v1';
 
 function response(ok, body, status = ok ? 200 : 400) {
   return { ok, status, json: jest.fn().mockResolvedValue(body) };
@@ -38,8 +42,14 @@ function removeWebAuthn() {
   Object.defineProperty(window.navigator, 'credentials', { configurable: true, value: undefined });
 }
 
+function markPasskeyAvailable() {
+  window.localStorage.setItem(PASSKEY_HINT_KEY, '1');
+}
+
 beforeEach(() => {
   document.body.innerHTML = '';
+  window.localStorage.clear();
+  window.sessionStorage.clear();
   global.fetch = jest.fn();
   removeWebAuthn();
   jest.useFakeTimers();
@@ -78,16 +88,62 @@ describe('AUTH-4 — WebAuthn request helpers', () => {
   });
 });
 
-describe('AUTH-4 — login Passkey nominal', () => {
+describe('AUTH-4 — disponibilité Passkey avant exposition UI', () => {
+  it('ne propose jamais Passkey sur la seule présence de WebAuthn', async () => {
+    installWebAuthn();
+
+    expect(isPasskeyLoginSupported()).toBe(true);
+    expect(hasPasskeyAvailabilityHint()).toBe(false);
+    expect(shouldOfferPasskeyLogin()).toBe(false);
+
+    await expect(openPasskeyLogin({ reason: 'créer cette liste' })).resolves.toEqual({
+      outcome: 'fallback',
+      reason: 'passkey_not_known_on_device',
+    });
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(document.querySelector('.k-passkey-login-overlay')).toBeNull();
+  });
+
+  it('mémorise uniquement un indice UX après un enrôlement réellement réussi', () => {
+    installWebAuthn();
+    expect(hasPasskeyAvailabilityHint()).toBe(false);
+
+    window.dispatchEvent(new CustomEvent('komerce:passkey-enrolled'));
+
+    expect(hasPasskeyAvailabilityHint()).toBe(true);
+    expect(shouldOfferPasskeyLogin()).toBe(true);
+    expect(window.localStorage.getItem(PASSKEY_HINT_KEY)).toBe('1');
+  });
+
+  it('ne monte aucune UI Passkey si le challenge serveur est indisponible', async () => {
+    installWebAuthn();
+    markPasskeyAvailable();
+    global.fetch.mockResolvedValueOnce(response(false, { error: 'Erreur serveur' }, 500));
+
+    await expect(openPasskeyLogin()).resolves.toEqual({
+      outcome: 'fallback',
+      reason: 'passkey_prepare_unavailable',
+    });
+    expect(document.querySelector('.k-passkey-login-overlay')).toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('AUTH-4 — login Passkey nominal quand disponible', () => {
   it('retombe immédiatement sur WhatsApp si WebAuthn est indisponible', async () => {
+    markPasskeyAvailable();
     expect(isPasskeyLoginSupported()).toBe(false);
-    await expect(openPasskeyLogin()).resolves.toEqual({ outcome: 'fallback' });
+    await expect(openPasskeyLogin()).resolves.toEqual({
+      outcome: 'fallback',
+      reason: 'passkey_not_known_on_device',
+    });
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it('demande des options discoverable sans numéro et attend un geste utilisateur', async () => {
+  it('prépare les options discoverable avant de proposer le geste utilisateur', async () => {
     const get = jest.fn();
     installWebAuthn({ get });
+    markPasskeyAvailable();
     global.fetch.mockResolvedValueOnce(response(true, {
       challenge: 'AQID', rpId: 'komerce.co', allowCredentials: [], userVerification: 'required',
     }));
@@ -100,6 +156,7 @@ describe('AUTH-4 — login Passkey nominal', () => {
     expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({});
     expect(get).not.toHaveBeenCalled();
     expect(document.getElementById('k-passkey-login-cta').disabled).toBe(false);
+    expect(document.getElementById('k-passkey-login-title').textContent).toBe('Confirmer votre identité');
 
     document.getElementById('k-passkey-login-whatsapp').click();
     jest.advanceTimersByTime(160);
@@ -115,6 +172,7 @@ describe('AUTH-4 — login Passkey nominal', () => {
     };
     const get = jest.fn().mockResolvedValue({ toJSON: () => credentialJson });
     installWebAuthn({ parse, get });
+    markPasskeyAvailable();
 
     const user = { id: 42, full_name: 'Sam Test', phone: '+33612345678', role: 'client', relais_id: 3 };
     global.fetch
@@ -135,6 +193,7 @@ describe('AUTH-4 — login Passkey nominal', () => {
     expect(global.fetch.mock.calls[1][0]).toBe('/api/auth/passkey/login/verify');
     expect(global.fetch.mock.calls[1][1].credentials).toBe('include');
     expect(JSON.parse(global.fetch.mock.calls[1][1].body).id).toBe('cred-login');
+    expect(hasPasskeyAvailabilityHint()).toBe(true);
     await expect(promise).resolves.toEqual({ outcome: 'authenticated', user });
   });
 
@@ -142,6 +201,7 @@ describe('AUTH-4 — login Passkey nominal', () => {
     const err = Object.assign(new Error('not allowed'), { name: 'NotAllowedError' });
     const get = jest.fn().mockRejectedValue(err);
     installWebAuthn({ get });
+    markPasskeyAvailable();
     global.fetch.mockResolvedValueOnce(response(true, {
       challenge: 'AQID', rpId: 'komerce.co', allowCredentials: [], userVerification: 'required',
     }));
@@ -151,7 +211,7 @@ describe('AUTH-4 — login Passkey nominal', () => {
     document.getElementById('k-passkey-login-cta').click();
     await flush();
 
-    expect(document.getElementById('k-passkey-login-error').textContent).toContain('annulée');
+    expect(document.getElementById('k-passkey-login-error').textContent).toContain('Passkey non utilisée');
     expect(document.getElementById('k-passkey-login-cta').textContent).toBe('Réessayer');
     expect(document.getElementById('k-passkey-login-whatsapp')).not.toBeNull();
     expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -161,11 +221,12 @@ describe('AUTH-4 — login Passkey nominal', () => {
     await expect(promise).resolves.toEqual({ outcome: 'fallback' });
   });
 
-  it('une credential révoquée/refusée dirige vers recovery WhatsApp sans créer de session JS', async () => {
+  it('une credential révoquée/refusée retire l’indice local et dirige vers recovery WhatsApp', async () => {
     const get = jest.fn().mockResolvedValue({
       toJSON: () => ({ id: 'revoked', type: 'public-key', response: {} }),
     });
     installWebAuthn({ get });
+    markPasskeyAvailable();
     global.fetch
       .mockResolvedValueOnce(response(true, { challenge: 'AQID', rpId: 'komerce.co', allowCredentials: [] }))
       .mockResolvedValueOnce(response(false, { error: 'Authentification refusée', reason: 'credential_revoked' }, 401));
@@ -177,6 +238,7 @@ describe('AUTH-4 — login Passkey nominal', () => {
 
     expect(document.getElementById('k-passkey-login-error').textContent).toContain('récupérer votre compte');
     expect(document.getElementById('k-passkey-login-whatsapp').textContent).toBe('Récupérer avec WhatsApp');
+    expect(hasPasskeyAvailabilityHint()).toBe(false);
     expect(window.localStorage.length).toBe(0);
     expect(window.sessionStorage.length).toBe(0);
 
