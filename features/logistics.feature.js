@@ -183,7 +183,7 @@ module.exports = {
       // order-status-machine.appendOrderHistoryNote(). Logistics ne lit
       // jamais cette table — pas de déclaration R/W requise (cf. convention
       // W-via ci-dessous, qui ne s'applique qu'aux tables aussi lues).
-      'orders: RW',
+      'orders: R',  // W-via orders/order-mutation-service ? LOT11
       'parcel_events: RW',
       'parcel_items: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'parcels: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)

@@ -41,6 +41,10 @@
 
 const { confirmPaymentCycle }    = require('./order-payment-confirmation');
 const { markFailed }             = require('./payment-service');
+const {
+  setStripePaymentId,
+  appendOrderNote,
+} = require('./order-mutation-service');
 // O7.2 (Cycle B) : importait auparavant routes/pickup-secret.js (une route,
 // pas une boundary de feature). Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
 const { generateAndStoreSecret, cacheCodeForReveal } = require('./pickup-secret-service');
@@ -95,10 +99,10 @@ async function createStripeIntent(order, stripe, db) {
     description: `Komerce — Commande ${order.reference}`,
   }, { idempotencyKey });
 
-  await db.query(
-    'UPDATE orders SET stripe_payment_id = $1 WHERE id = $2',
-    [intent.id, order.id]
-  );
+  await setStripePaymentId(db, {
+    orderId: order.id,
+    stripePaymentId: intent.id,
+  });
 
   return {
     client_secret:   intent.client_secret,
@@ -186,10 +190,10 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
 
       const incidentNote = '\n[INCIDENT paid_but_stock_blocked] ' +
         insufficientItems.map(i => `${i.product_name}: dispo=${i.available}, besoin=${i.needed}`).join('; ');
-      await client.query(
-        `UPDATE orders SET notes = COALESCE(notes,'') || $1 WHERE id = $2`,
-        [incidentNote, orderId]
-      );
+      await appendOrderNote(client, {
+        orderId,
+        note: incidentNote,
+      });
 
       // SAVEPOINT dédié : createAlert() persiste dans le contrat physique réel
       // et ne devrait normalement jamais échouer pour une raison de schéma,

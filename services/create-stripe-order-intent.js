@@ -28,6 +28,7 @@
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db = require('../db');
+const { setStripePaymentId } = require('./order-mutation-service');
 const log = require('../utils/logger').child({ module: 'create-stripe-order-intent' });
 
 const PRIVILEGED_ROLES = ['admin', 'agent_hub', 'agent_relais'];
@@ -91,13 +92,11 @@ async function createStripeOrderIntent({ orderReference, user }) {
       idempotencyKey: `pi_order_${order.id}`,
     });
 
-    await db.query(
-      `UPDATE orders
-          SET stripe_payment_id = $1
-        WHERE id = $2
-          AND (stripe_payment_id IS NULL OR stripe_payment_id = $1)`,
-      [intent.id, order.id]
-    );
+    await setStripePaymentId(db, {
+      orderId: order.id,
+      stripePaymentId: intent.id,
+      onlyIfEmptyOrSame: true,
+    });
   }
 
   return {

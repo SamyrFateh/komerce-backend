@@ -90,7 +90,7 @@ module.exports = {
   db: {
     tables: [
       'order_items: R',
-      'orders: RW',
+      'orders: R',  // W-via orders/order-mutation-service ? LOT11
       'product_suppliers: RW',
       'products: R',
       'purchase_orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)

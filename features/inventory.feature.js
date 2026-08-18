@@ -71,7 +71,7 @@ module.exports = {
     tables: [
       'inventory_items: RW',
       'order_items: R',
-      'orders: RW',
+      'orders: R',  // W-via orders/order-mutation-service ? LOT11
       'parcel_items: R',  // W-via logistics/parcel-item-mutation-service - LOT7
       'parcels: R',
       'products: R',
@@ -98,7 +98,8 @@ module.exports = {
       'POST /api/hub/inventory/scan-assign',
       'GET /api/hub/inventory/stats',
     ],
-    consumes: ['catalog (produit concerne)',
+    consumes: [
+      'orders (persistence via order-mutation-service ? LOT11)','catalog (produit concerne)',
       'logistics (mutation parcel_items via parcel-item-mutation-service)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'auth',

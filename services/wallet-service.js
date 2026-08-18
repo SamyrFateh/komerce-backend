@@ -6,10 +6,11 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, services/documents/wallet-receipt.js
+ * @depends       db.js, services/documents/wallet-receipt.js, services/order-mutation-service.js
  * @used-by       routes/wallet.js, routes/payments.js, services/order-payment-confirmation.js
  * @db-read       orders, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
- * @db-write      orders, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
+ * @db-write      wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
+ * @db-write-via:order-mutation-service orders
  * @db-txn        credit_debit_idempotent, wallet_ledger_append_only
  * @doctrine      wallet_ledger_trace, credit_debit_idempotent, wallet_non_cadeau_cache
  * @impact-areas  wallet
@@ -37,6 +38,7 @@
 const db = require('../db');
 const walletReceiptService = require('./documents/wallet-receipt');
 const { markPaid } = require('./payment-service');
+const { setWalletApplied } = require('./order-mutation-service');
 const log = require('../utils/logger').child({ module: 'wallet-service' });
 
 const IDEMPOTENCY_SAVEPOINT = 'wallet_idempotency_guard';
@@ -385,10 +387,10 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
 
   // D-02 : séparation des responsabilités — wallet écrit wallet_applied_kmf,
   // payment-service.markPaid() owne payment_status (invariant I-BACK-4).
-  await client.query(
-    `UPDATE orders SET wallet_applied_kmf = $1, updated_at = NOW() WHERE id = $2`,
-    [newApplied, orderId]
-  );
+  await setWalletApplied(client, {
+    orderId,
+    amountKmf: newApplied,
+  });
   if (remainingToPay <= 0) {
     const markPaidResult = await markPaid(orderId, { client });
     if (!markPaidResult.changed) {
@@ -462,10 +464,10 @@ async function removeFromOrder(client, { orderId }) {
     RETURNING *
   `, [walletId, totalReversed, wRes.rows[0].balance_kmf, orderId]);
 
-  await client.query(
-    'UPDATE orders SET wallet_applied_kmf = 0, updated_at = NOW() WHERE id = $1',
-    [orderId]
-  );
+  await setWalletApplied(client, {
+    orderId,
+    amountKmf: 0,
+  });
 
   return { transaction: txRes.rows[0], reversed_kmf: totalReversed };
 }

@@ -41,6 +41,7 @@ const { getRuleNumber }         = require('../utils/rules');
 const { transitionOrderStatus } = require('./order-status-machine');
 const { notifyText }            = require('./notification-service');
 const { markBackorderReminderSent } = require('./parcel-mutation-service');
+const { markCashReminderSent } = require('./order-mutation-service');
 
 // ──────────────────────────────────────────────────────────────────────────────
 // H+12 — rappel paiement cash · H+36 — annulation automatique
@@ -72,10 +73,10 @@ async function processCashRelaisReminders() {
         order.id
       );
     }
-    await db.query(
-      `UPDATE orders SET reminder_h12_sent = TRUE WHERE id = $1`,
-      [order.id]
-    );
+    await markCashReminderSent(db, {
+      orderId: order.id,
+      reminder: 'h12',
+    });
   }
 
   // ── H+36 : annulation via machine à états (CRIT-01) ───────────────────────
@@ -112,10 +113,10 @@ async function processCashRelaisReminders() {
         continue;
       }
 
-      await client.query(
-        `UPDATE orders SET reminder_h36_sent = TRUE WHERE id = $1`,
-        [order.id]
-      );
+      await markCashReminderSent(client, {
+        orderId: order.id,
+        reminder: 'h36',
+      });
 
       await client.query('COMMIT');
 

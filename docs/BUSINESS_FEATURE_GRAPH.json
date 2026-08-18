@@ -7230,6 +7230,20 @@
       },
       {
         "feature": "orders",
+        "category": "services",
+        "declared": "services/order-mutation-service.js",
+        "resolvedPath": "services/order-mutation-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/payment-service.js",
+        "resolvedPath": "services/payment-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
         "category": "routes",
         "declared": "routes/admin/orders.js",
         "resolvedPath": "routes/admin/orders.js",
@@ -7413,6 +7427,20 @@
       {
         "feature": "orders",
         "category": "tests",
+        "declared": "tests/unit/order-mutation-service.test.js",
+        "resolvedPath": "tests/unit/order-mutation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/payment-service.test.js",
+        "resolvedPath": "tests/unit/payment-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
         "declared": "tests/unit/order-service.test.js",
         "resolvedPath": "tests/unit/order-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7535,13 +7563,6 @@
         "declared": "tests/unit/orders-status-route.test.js",
         "resolvedPath": "tests/unit/orders-status-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "payments",
-        "category": "services",
-        "declared": "services/payment-service.js",
-        "resolvedPath": "services/payment-service.js",
-        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "payments",
@@ -7688,13 +7709,6 @@
         "category": "tests",
         "declared": "tests/unit/payment-paypal.test.js",
         "resolvedPath": "tests/unit/payment-paypal.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "payments",
-        "category": "tests",
-        "declared": "tests/unit/payment-service.test.js",
-        "resolvedPath": "tests/unit/payment-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13527,6 +13541,150 @@
       },
       {
         "feature": "orders",
+        "fn": "markPaid",
+        "file": "services/payment-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "markRefunded",
+        "file": "services/payment-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "markFailed",
+        "file": "services/payment-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setInventoryCompletion",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "recomputeCustomsCosts",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "backfillRoutingFields",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setStripePaymentId",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setPaypalOrderId",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setPaypalCaptureMetadata",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setPaypalCaptureId",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "appendOrderNote",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "markCashPaidAt",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "markCashReminderSent",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setWalletApplied",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setSupplierSnapshot",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setComputedStatus",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "writePickupSecret",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setPickupAttemptState",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setPickupAttemptsOnly",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setExceptionalPickupAttemptState",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setCollectedByName",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "recordPickupRegeneration",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "markPickupSecretRevealed",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "finalizePickupCollection",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
         "fn": "updateOrderItemAvailabilityDetails",
         "file": "services/order-item-availability-service.js",
         "status": "resolved"
@@ -13547,18 +13705,6 @@
         "feature": "orders",
         "fn": "makeInput",
         "file": "public/boutique/js/b-checkout.js",
-        "status": "resolved"
-      },
-      {
-        "feature": "payments",
-        "fn": "markPaid",
-        "file": "services/payment-service.js",
-        "status": "resolved"
-      },
-      {
-        "feature": "payments",
-        "fn": "markRefunded",
-        "file": "services/payment-service.js",
         "status": "resolved"
       },
       {
@@ -13759,6 +13905,12 @@
         "from": "catalog",
         "to": "auth",
         "raw": "auth",
+        "resolved": true
+      },
+      {
+        "from": "customs",
+        "to": "orders",
+        "raw": "orders (persistence via order-mutation-service ? LOT11)",
         "resolved": true
       },
       {
@@ -14089,6 +14241,12 @@
         "from": "infrastructure",
         "to": "wallet",
         "raw": "wallet — bootstrap/api-routes.js monte les routes wallet",
+        "resolved": true
+      },
+      {
+        "from": "inventory",
+        "to": "orders",
+        "raw": "orders (persistence via order-mutation-service ? LOT11)",
         "resolved": true
       },
       {
@@ -14695,6 +14853,12 @@
         "from": "unsold-resolution",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "resolved": true
+      },
+      {
+        "from": "wallet",
+        "to": "orders",
+        "raw": "orders (persistence via order-mutation-service ? LOT11)",
         "resolved": true
       },
       {
@@ -18310,6 +18474,22 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "customs",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/customs-shipment-service.js",
+                "targetFile": "services/order-mutation-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "dashboard",
         "to": "auth",
         "channels": [
@@ -20225,13 +20405,17 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/inventory-service.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
                 "targetFile": "routes/orders.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "inventory",
@@ -20802,11 +20986,27 @@
               },
               {
                 "sourceFileId": "services/pickup-secret-service.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-service.js",
                 "targetFile": "services/order-status-machine.js"
               },
               {
                 "sourceFileId": "services/parcel-auto-create-service.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "services/parcel-auto-create-service.js",
+                "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "services/parcelOptimizationService.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/routing.js",
+                "targetFile": "services/order-mutation-service.js"
               },
               {
                 "sourceFileId": "routes/parcels.js",
@@ -20823,6 +21023,10 @@
               {
                 "sourceFileId": "routes/pickup-secret.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "routes/pickup-secret.js",
+                "targetFile": "services/order-mutation-service.js"
               },
               {
                 "sourceFileId": "tests/unit/scan-operations.test.js",
@@ -20852,10 +21056,6 @@
           {
             "channel": "static-code",
             "evidence": [
-              {
-                "sourceFileId": "services/parcel-auto-create-service.js",
-                "targetFile": "services/payment-service.js"
-              },
               {
                 "sourceFileId": "routes/pickup-secret.js",
                 "targetFile": "services/confirm-pickup-cash-payment.js"
@@ -21450,6 +21650,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/payment-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/admin/orders.js",
                 "targetFile": "db.js"
               },
@@ -21811,8 +22015,8 @@
                 "targetFile": "services/payment-status-validator.js"
               },
               {
-                "sourceFileId": "services/admin-order-refund.js",
-                "targetFile": "services/payment-service.js"
+                "sourceFileId": "services/payment-service.js",
+                "targetFile": "services/payment-status-validator.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-checkout.js",
@@ -21821,10 +22025,6 @@
               {
                 "sourceFileId": "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js",
                 "targetFile": "routes/payments.js"
-              },
-              {
-                "sourceFileId": "tests/unit/admin-order-refund.test.js",
-                "targetFile": "services/payment-service.js"
               },
               {
                 "sourceFileId": "tests/unit/cash-operations.test.js",
@@ -22264,10 +22464,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/payment-service.js",
-                "targetFile": "db.js"
-              },
-              {
                 "sourceFileId": "services/cash-reminder-service.js",
                 "targetFile": "db.js"
               },
@@ -22594,8 +22790,20 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
+                "sourceFileId": "services/cash-reminder-service.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
                 "sourceFileId": "services/payment-paypal.js",
                 "targetFile": "services/order-payment-confirmation.js"
+              },
+              {
+                "sourceFileId": "services/payment-paypal.js",
+                "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "services/payment-paypal.js",
+                "targetFile": "services/order-mutation-service.js"
               },
               {
                 "sourceFileId": "services/payment-paypal.js",
@@ -22606,8 +22814,24 @@
                 "targetFile": "services/order-payment-confirmation.js"
               },
               {
+                "sourceFileId": "services/payment-cash-confirm.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
                 "sourceFileId": "services/payment-stripe.js",
                 "targetFile": "services/order-payment-confirmation.js"
+              },
+              {
+                "sourceFileId": "services/payment-stripe.js",
+                "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "services/payment-stripe.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/create-stripe-order-intent.js",
+                "targetFile": "services/order-mutation-service.js"
               },
               {
                 "sourceFileId": "services/confirm-pickup-cash-payment.js",
@@ -23544,6 +23768,10 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
+                "sourceFileId": "services/purchasing-admin-service.js",
+                "targetFile": "services/order-mutation-service.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -24476,7 +24704,7 @@
       },
       {
         "from": "wallet",
-        "to": "payments",
+        "to": "orders",
         "channels": [
           {
             "channel": "static-code",
@@ -24484,6 +24712,10 @@
               {
                 "sourceFileId": "services/wallet-service.js",
                 "targetFile": "services/payment-service.js"
+              },
+              {
+                "sourceFileId": "services/wallet-service.js",
+                "targetFile": "services/order-mutation-service.js"
               }
             ]
           }
@@ -24638,7 +24870,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 820
+        "filesObserved": 822
       },
       "boutique": {
         "filesObserved": 158,
@@ -24674,7 +24906,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 13,
-      "NON_RUNTIME_TEST": 5,
+      "NON_RUNTIME_TEST": 4,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 1,
@@ -24852,21 +25084,6 @@
       },
       {
         "from": "inventory",
-        "to": "orders",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "inventory",
         "to": "payments",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
@@ -24973,7 +25190,7 @@
     ],
     "unclassified": [],
     "matrix": {
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 3,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 2,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
@@ -25181,28 +25398,10 @@
     "orders": {
       "writers": [
         {
-          "feature": "customs",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
           "feature": "dashboard",
           "mode": "RW",
           "declaredOwner": false,
           "technical": true
-        },
-        {
-          "feature": "inventory",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "logistics",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
         },
         {
           "feature": "orders",
@@ -25211,42 +25410,30 @@
           "technical": false
         },
         {
-          "feature": "payments",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
           "feature": "platform-ops",
           "mode": "RW",
           "declaredOwner": false,
           "technical": true
-        },
-        {
-          "feature": "purchasing",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "wallet",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
         }
       ],
       "readers": [
         "auth-identity",
         "catalog",
+        "customs",
         "documents",
         "economic-engine",
         "incident-management",
+        "inventory",
+        "logistics",
         "loyalty",
         "notifications",
+        "payments",
+        "purchasing",
         "recommendations",
         "refunds",
         "shared-cart",
-        "unsold-resolution"
+        "unsold-resolution",
+        "wallet"
       ],
       "lifecycleOwner": "orders",
       "resolution": "declared-table-owner"
@@ -26868,11 +27055,6 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "orders",
-        "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "users",
         "msg": "table \"users\" : lifecycle owner = auth-identity (db.tables \"!\"), mais aussi écrite par auth, dashboard, loyalty"
       }
@@ -26882,11 +27064,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> orders",
         "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "orders",
-        "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par customs, inventory, logistics, payments, purchasing, wallet"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26954,11 +27131,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> unsold-resolution",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"unsold-resolution\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "inventory -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"orders\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27099,11 +27271,11 @@
       }
     ],
     "summary": {
-      "signals": 3,
-      "debt": 3,
-      "expectedTopology": 32,
+      "signals": 2,
+      "debt": 2,
+      "expectedTopology": 31,
       "generatorLimitations": 8,
-      "classifiedCandidates": 43
+      "classifiedCandidates": 41
     }
   }
 }

@@ -40,30 +40,9 @@ describe('order-mutation-service', () => {
     expect(q.query.mock.calls[0][1]).toEqual([['o1', 'o2']]);
   });
 
-  test('payment persistence is guarded by caller-decided source statuses', async () => {
-    const q = executor({ rowCount: 1 });
-    const result = await mutations.transitionPaymentStatus(q, {
-      orderId: 'o1',
-      targetStatus: 'paid',
-      allowedSourceStatuses: ['pending', 'failed'],
-      cashPaidAt: true,
-    });
-    expect(result.rowCount).toBe(1);
-    expect(q.query.mock.calls[0][0]).toContain("payment_status = 'paid'");
-    expect(q.query.mock.calls[0][0]).toContain('cash_paid_at = NOW()');
-    expect(q.query.mock.calls[0][0]).toContain('payment_status IN ($2, $3)');
-    expect(q.query.mock.calls[0][1]).toEqual(['o1', 'pending', 'failed']);
-  });
 
-  test('payment persistence rejects unknown statuses', async () => {
-    const q = executor();
-    await expect(mutations.transitionPaymentStatus(q, {
-      orderId: 'o1',
-      targetStatus: 'partially_paid',
-      allowedSourceStatuses: ['pending'],
-    })).rejects.toThrow('payment target invalide');
-    expect(q.query).not.toHaveBeenCalled();
-  });
+
+
 
   test('stripe idempotency guard is preserved', async () => {
     const q = executor();
@@ -114,8 +93,20 @@ describe('order-mutation-service', () => {
     await mutations.finalizePickupCollection(q, {
       orderId: 'o1', method: 'PICKUP_CODE',
     });
-    expect(q.query.mock.calls[0][0]).toContain('pickup_collected_via = $1');
-    expect(q.query.mock.calls[0][1]).toEqual(['PICKUP_CODE', 'o1']);
+    expect(q.query.mock.calls[0][0]).toContain("pickup_collected_via = 'PICKUP_CODE'");
+    expect(q.query.mock.calls[0][1]).toEqual(['o1']);
+
+    q.query.mockClear();
+
+    await mutations.finalizePickupCollection(q, {
+      orderId: 'o2',
+      method: 'AUTHORIZED_NAME_ID_CHECK',
+    });
+
+    expect(q.query.mock.calls[0][0]).toContain(
+      "pickup_collected_via = 'AUTHORIZED_NAME_ID_CHECK'"
+    );
+    expect(q.query.mock.calls[0][1]).toEqual(['o2']);
 
     await expect(mutations.finalizePickupCollection(q, {
       orderId: 'o1', method: 'ADMIN_BYPASS',

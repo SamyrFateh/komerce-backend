@@ -42,7 +42,6 @@ module.exports = {
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
     services: [
-      'services/payment-service.js',
       'services/payment-status-validator.js',
       'services/cash-reminder-service.js',
       'services/paypal-client.js',
@@ -76,7 +75,6 @@ module.exports = {
       'tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js',
       'tests/unit/payment-cash-confirm.test.js',
       'tests/unit/payment-paypal.test.js',
-      'tests/unit/payment-service.test.js',
       'tests/unit/payment-status-validator.test.js',
       'tests/unit/payment-stripe.test.js',
       'tests/unit/payments-webhook.test.js',
@@ -129,7 +127,7 @@ module.exports = {
       'incidents: R',  // W-via incident-management/incident-write-service - LOT9
       'order_items: R',
       // order_status_history : W-via:order-status-machine (appendOrderHistoryNote — payment-paypal.js)
-      'orders: RW',
+      'orders: R',  // W-via orders/order-mutation-service ? LOT11
       'parcel_items: R',
       'parcels: R',  // W-via logistics/parcel-mutation-service - LOT8
       'paypal_events_processed: RW',
@@ -173,8 +171,6 @@ module.exports = {
     // Les utilitaires du tunnel checkout ne sont plus exposés par payments :
     // la projection frontend checkout appartient désormais à orders.
     internalApi: [
-      { fn: 'markPaid', file: 'services/payment-service.js' },
-      { fn: 'markRefunded', file: 'services/payment-service.js' },
     ],
     consumes: [
       'incident-management (incident persistence via incident-write-service)',
@@ -199,7 +195,7 @@ module.exports = {
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement de webhook ou de logique d\'idempotence doit etre valide par le proprietaire de payment-service.js',
+  authority: 'backend-core — tout changement de webhook ou de logique d\'idempotence doit etre valide par le proprietaire de payment-status-validator.js',
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [

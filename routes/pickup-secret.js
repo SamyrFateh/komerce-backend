@@ -6,10 +6,11 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/*, services/order-mutation-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       order_items, orders, pickup_print_tokens, pickup_reveal_codes, products, relais, users
- * @db-write      orders, pickup_print_tokens, pickup_reveal_codes
+ * @db-write      pickup_print_tokens, pickup_reveal_codes
+ * @db-write-via:order-mutation-service orders
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
@@ -51,6 +52,7 @@ const { validate } = require('../middleware/validate');
 const { pickup } = require('../validators');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const { confirmPickupCashPayment } = require('../services/confirm-pickup-cash-payment');
+const { markPickupSecretRevealed } = require('../services/order-mutation-service');
 const log = require('../utils/logger').child({ module: 'pickup-secret' });
 const { buildReceiptHTML, escapeHTML } = require('../utils/pickup-receipt-html');
 // O7.2 (Cycle B) : generatePickupCode/hashCode/generateAndStoreSecret/
@@ -501,7 +503,7 @@ router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
 
     // 6. Marquer comme révélé + supprimer de la table immédiatement (one-shot)
     await Promise.all([
-      db.query('UPDATE orders SET pickup_secret_revealed_at = NOW() WHERE id = $1', [orderId]),
+      markPickupSecretRevealed(db, orderId),
       db.query('DELETE FROM pickup_reveal_codes WHERE order_id = $1', [orderId]),
     ]);
 

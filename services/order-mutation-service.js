@@ -18,7 +18,6 @@
 
 'use strict';
 
-const PAYMENT_STATUSES = new Set(['pending', 'paid', 'refunded', 'failed']);
 const PICKUP_SECRET_COLUMNS = new Set([
   'pickup_secret_hash',
   'pickup_secret_salt',
@@ -43,6 +42,9 @@ const PICKUP_SECRET_COLUMNS = new Set([
   'stripe_billing_name',
   'stripe_card_last4',
   'stripe_receipt_email',
+  'stripe_payment_intent_id',
+  'pickup_secret_regen_reason',
+  'pickup_secret_regen_count',
 ]);
 
 function requireExecutor(executor) {
@@ -118,37 +120,6 @@ async function backfillRoutingFields(executor) {
      WHERE o.relais_id = r.id
        AND o.destination_island IS NULL
        AND r.island_code IS NOT NULL`,
-  );
-}
-
-async function transitionPaymentStatus(executor, {
-  orderId,
-  targetStatus,
-  allowedSourceStatuses,
-  cashPaidAt = false,
-}) {
-  const q = requireExecutor(executor);
-  if (!PAYMENT_STATUSES.has(targetStatus)) {
-    throw new TypeError(`order-mutation-service: payment target invalide: ${targetStatus}`);
-  }
-  if (!Array.isArray(allowedSourceStatuses) || allowedSourceStatuses.length === 0) {
-    return { rowCount: 0 };
-  }
-  for (const status of allowedSourceStatuses) {
-    if (!PAYMENT_STATUSES.has(status)) {
-      throw new TypeError(`order-mutation-service: payment source invalide: ${status}`);
-    }
-  }
-
-  const params = [orderId, ...allowedSourceStatuses];
-  const placeholders = allowedSourceStatuses.map((_, i) => `$${i + 2}`).join(', ');
-  const cashSql = cashPaidAt ? ', cash_paid_at = NOW()' : '';
-
-  return q.query(
-    `UPDATE orders
-     SET payment_status = '${targetStatus}'${cashSql}, updated_at = NOW()
-     WHERE id = $1 AND payment_status IN (${placeholders})`,
-    params,
   );
 }
 
@@ -312,6 +283,19 @@ async function setPickupAttemptState(executor, { orderId, attempts, blockedUntil
   );
 }
 
+async function setPickupAttemptsOnly(executor, {
+  orderId,
+  attempts,
+}) {
+  return requireExecutor(executor).query(
+    `UPDATE orders
+     SET pickup_secret_attempts = $1,
+         updated_at = NOW()
+     WHERE id = $2`,
+    [attempts, orderId],
+  );
+}
+
 async function setExceptionalPickupAttemptState(executor, { orderId, attempts, blockedUntil = null }) {
   return requireExecutor(executor).query(
     `UPDATE orders
@@ -348,24 +332,50 @@ async function markPickupSecretRevealed(executor, orderId) {
   );
 }
 
-async function finalizePickupCollection(executor, { orderId, method }) {
-  if (!['PICKUP_CODE', 'AUTHORIZED_NAME_ID_CHECK'].includes(method)) {
-    throw new TypeError(`order-mutation-service: pickup collection method invalide: ${method}`);
+async function finalizePickupCollection(executor, {
+  orderId,
+  method,
+}) {
+  const q = requireExecutor(executor);
+
+  if (method === 'PICKUP_CODE') {
+    return q.query(
+      `UPDATE orders
+       SET pickup_collected_via = 'PICKUP_CODE',
+           pickup_secret_hash = NULL,
+           pickup_secret_salt = NULL,
+           pickup_secret_last4 = NULL,
+           pickup_secret_expires_at = NULL,
+           pickup_secret_attempts = 0,
+           pickup_secret_blocked_until = NULL,
+           exceptional_pickup_attempts = 0,
+           exceptional_pickup_blocked_until = NULL,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [orderId],
+    );
   }
-  return requireExecutor(executor).query(
-    `UPDATE orders
-     SET pickup_collected_via = $1,
-         pickup_secret_hash = NULL,
-         pickup_secret_salt = NULL,
-         pickup_secret_last4 = NULL,
-         pickup_secret_expires_at = NULL,
-         pickup_secret_attempts = 0,
-         pickup_secret_blocked_until = NULL,
-         exceptional_pickup_attempts = 0,
-         exceptional_pickup_blocked_until = NULL,
-         updated_at = NOW()
-     WHERE id = $2`,
-    [method, orderId],
+
+  if (method === 'AUTHORIZED_NAME_ID_CHECK') {
+    return q.query(
+      `UPDATE orders
+       SET pickup_collected_via = 'AUTHORIZED_NAME_ID_CHECK',
+           pickup_secret_hash = NULL,
+           pickup_secret_salt = NULL,
+           pickup_secret_last4 = NULL,
+           pickup_secret_expires_at = NULL,
+           pickup_secret_attempts = 0,
+           pickup_secret_blocked_until = NULL,
+           exceptional_pickup_attempts = 0,
+           exceptional_pickup_blocked_until = NULL,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [orderId],
+    );
+  }
+
+  throw new TypeError(
+    `order-mutation-service: pickup collection method invalide: ${method}`
   );
 }
 
@@ -373,7 +383,6 @@ module.exports = {
   setInventoryCompletion,
   recomputeCustomsCosts,
   backfillRoutingFields,
-  transitionPaymentStatus,
   setStripePaymentId,
   setPaypalOrderId,
   setPaypalCaptureMetadata,
@@ -386,6 +395,7 @@ module.exports = {
   setComputedStatus,
   writePickupSecret,
   setPickupAttemptState,
+  setPickupAttemptsOnly,
   setExceptionalPickupAttemptState,
   setCollectedByName,
   recordPickupRegeneration,

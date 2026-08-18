@@ -1,12 +1,12 @@
 /**
  * @komerce-arch
- * @role          payment-status-owner
- * @domain        payment
+ * @role          orders-payment-status-mutation-boundary
+ * @domain        orders
  * @layer         service
  * @criticality   critical
  * @inputs        order_id, options { client, cashPaidAt, guardPending }
  * @outputs       orders.payment_status, payment_timestamps
- * @depends       db.js
+ * @depends       db.js, services/payment-status-validator.js
  * @used-by       services/admin-order-refund.js, services/payment-stripe.js, services/parcel-auto-create-service.js, services/payment-paypal.js
  * @db-read       orders
  * @db-write      orders

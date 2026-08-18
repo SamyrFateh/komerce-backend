@@ -43,15 +43,15 @@
   },
   "summary": {
     "features": 30,
-    "healthy": 15,
-    "attention": 15,
+    "healthy": 14,
+    "attention": 16,
     "blocked": 0,
-    "businessDependencies": 175,
+    "businessDependencies": 177,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 43,
+    "debtItemsTotal": 44,
     "gateHealthy": 17,
     "gateBlocked": 0
   },
@@ -3899,12 +3899,6 @@
             "mode": "RW",
             "lifecycleOwner": "customs",
             "ownershipStatus": "owner"
-          },
-          {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -3914,6 +3908,10 @@
           },
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -3963,12 +3961,6 @@
             "mode": "RW",
             "lifecycleOwner": "customs",
             "ownershipStatus": "owner"
-          },
-          {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -3978,6 +3970,10 @@
           },
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -4031,6 +4027,13 @@
         },
         {
           "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -10013,17 +10016,15 @@
             "mode": "RW",
             "lifecycleOwner": "inventory",
             "ownershipStatus": "owner"
-          },
-          {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -10053,17 +10054,15 @@
             "mode": "RW",
             "lifecycleOwner": "inventory",
             "ownershipStatus": "owner"
-          },
-          {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -10107,6 +10106,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -10130,13 +10136,9 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 2,
+        "testOnlyRelations": 1,
         "compositionRootRelations": 0,
         "details": [
-          {
-            "to": "orders",
-            "family": "NON_RUNTIME_TEST"
-          },
           {
             "to": "payments",
             "family": "NON_RUNTIME_TEST"
@@ -11045,12 +11047,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "parcel_events",
             "mode": "RW",
             "lifecycleOwner": "logistics",
@@ -11126,6 +11122,10 @@
           },
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -11209,12 +11209,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "parcel_events",
             "mode": "RW",
             "lifecycleOwner": "logistics",
@@ -11290,6 +11284,10 @@
           },
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -12707,7 +12705,7 @@
             ]
           },
           "services": {
-            "count": 9,
+            "count": 11,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -12730,6 +12728,11 @@
                 "status": "resolved-on-disk-no-header"
               },
               {
+                "declared": "services/order-mutation-service.js",
+                "resolvedPath": "services/order-mutation-service.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/order-payment-confirmation.js",
                 "resolvedPath": "services/order-payment-confirmation.js",
                 "status": "resolved-in-technical-graph"
@@ -12745,6 +12748,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/payment-service.js",
+                "resolvedPath": "services/payment-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/qr-collection-core.js",
                 "resolvedPath": "services/qr-collection-core.js",
                 "status": "resolved-in-technical-graph"
@@ -12757,7 +12765,7 @@
             ]
           },
           "tests": {
-            "count": 29,
+            "count": 31,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
@@ -12822,6 +12830,11 @@
               {
                 "declared": "tests/unit/order-item-availability-service.test.js",
                 "resolvedPath": "tests/unit/order-item-availability-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-mutation-service.test.js",
+                "resolvedPath": "tests/unit/order-mutation-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12890,6 +12903,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/payment-service.test.js",
+                "resolvedPath": "tests/unit/payment-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/qr-collection-core.test.js",
                 "resolvedPath": "tests/unit/qr-collection-core.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12917,7 +12935,7 @@
             ]
           }
         },
-        "totalFiles": 54,
+        "totalFiles": 58,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 14,
@@ -13278,8 +13296,23 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "appendOrderNote",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "backfillRoutingFields",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "checkoutCart",
             "file": "public/boutique/js/b-checkout.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "finalizePickupCollection",
+            "file": "services/order-mutation-service.js",
             "status": "resolved"
           },
           {
@@ -13288,8 +13321,108 @@
             "status": "resolved"
           },
           {
+            "fn": "markCashPaidAt",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "markCashReminderSent",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "markFailed",
+            "file": "services/payment-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "markPaid",
+            "file": "services/payment-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "markPickupSecretRevealed",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "markRefunded",
+            "file": "services/payment-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "recomputeCustomsCosts",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "recordPickupRegeneration",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setCollectedByName",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setComputedStatus",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setExceptionalPickupAttemptState",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setInventoryCompletion",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "setOrderItemAvailabilityStatus",
             "file": "services/order-item-availability-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setPaypalCaptureId",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setPaypalCaptureMetadata",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setPaypalOrderId",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setPickupAttemptState",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setPickupAttemptsOnly",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setStripePaymentId",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setSupplierSnapshot",
+            "file": "services/order-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setWalletApplied",
+            "file": "services/order-mutation-service.js",
             "status": "resolved"
           },
           {
@@ -13300,6 +13433,11 @@
           {
             "fn": "updateOrderItemAvailabilityDetails",
             "file": "services/order-item-availability-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "writePickupSecret",
+            "file": "services/order-mutation-service.js",
             "status": "resolved"
           }
         ],
@@ -13443,6 +13581,13 @@
           ]
         },
         {
+          "consumer": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13458,6 +13603,13 @@
         },
         {
           "consumer": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "inventory",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -13508,6 +13660,13 @@
         },
         {
           "consumer": "shared-cart",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -13590,7 +13749,7 @@
           "credit wallet (feature wallet-loyalty)"
         ]
       },
-      "authority": "backend-core — tout changement de webhook ou de logique d'idempotence doit etre valide par le proprietaire de payment-service.js",
+      "authority": "backend-core — tout changement de webhook ou de logique d'idempotence doit etre valide par le proprietaire de payment-status-validator.js",
       "invariants": [
         {
           "statement": "idempotence stricte sur tout webhook (Stripe, PayPal)",
@@ -13655,7 +13814,7 @@
             ]
           },
           "services": {
-            "count": 12,
+            "count": 11,
             "files": [
               {
                 "declared": "services/cash-operations.js",
@@ -13693,11 +13852,6 @@
                 "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "services/payment-service.js",
-                "resolvedPath": "services/payment-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
                 "declared": "services/payment-status-validator.js",
                 "resolvedPath": "services/payment-status-validator.js",
                 "status": "resolved-in-technical-graph"
@@ -13720,7 +13874,7 @@
             ]
           },
           "tests": {
-            "count": 19,
+            "count": 18,
             "files": [
               {
                 "declared": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
@@ -13765,11 +13919,6 @@
               {
                 "declared": "tests/unit/payment-paypal.test.js",
                 "resolvedPath": "tests/unit/payment-paypal.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/payment-service.test.js",
-                "resolvedPath": "tests/unit/payment-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -13820,7 +13969,7 @@
             ]
           }
         },
-        "totalFiles": 38,
+        "totalFiles": 36,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 3,
@@ -13882,12 +14031,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "paypal_events_processed",
             "mode": "RW",
             "lifecycleOwner": "payments",
@@ -13907,6 +14050,10 @@
           },
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -13960,12 +14107,6 @@
             "ownershipStatus": "owner"
           },
           {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "paypal_events_processed",
             "mode": "RW",
             "lifecycleOwner": "payments",
@@ -13988,6 +14129,10 @@
             "lifecycleOwner": "orders"
           },
           {
+            "table": "orders",
+            "lifecycleOwner": "orders"
+          },
+          {
             "table": "parcel_items",
             "lifecycleOwner": "logistics"
           },
@@ -14006,18 +14151,7 @@
         ]
       },
       "interfaces": {
-        "internalApis": [
-          {
-            "fn": "markPaid",
-            "file": "services/payment-service.js",
-            "status": "resolved"
-          },
-          {
-            "fn": "markRefunded",
-            "file": "services/payment-service.js",
-            "status": "resolved"
-          }
-        ],
+        "internalApis": [],
         "httpInterfaces": {
           "count": 18
         }
@@ -14137,13 +14271,6 @@
           "channels": [
             "static-code",
             "interface"
-          ]
-        },
-        {
-          "consumer": "wallet",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
           ]
         }
       ],
@@ -15372,12 +15499,6 @@
         ],
         "writesTables": [
           {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "product_suppliers",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
@@ -15399,6 +15520,10 @@
         "readsTables": [
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -15428,12 +15553,6 @@
         ],
         "writesTables": [
           {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "product_suppliers",
             "mode": "RW",
             "lifecycleOwner": "purchasing",
@@ -15455,6 +15574,10 @@
         "readsTables": [
           {
             "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
             "lifecycleOwner": "orders"
           },
           {
@@ -17631,12 +17754,6 @@
         ],
         "writesTables": [
           {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "wallet_consumptions",
             "mode": "RW",
             "lifecycleOwner": "wallet",
@@ -17662,6 +17779,10 @@
           }
         ],
         "readsTables": [
+          {
+            "table": "orders",
+            "lifecycleOwner": "orders"
+          },
           {
             "table": "users",
             "lifecycleOwner": "auth-identity"
@@ -17689,12 +17810,6 @@
         ],
         "writesTables": [
           {
-            "table": "orders",
-            "mode": "RW",
-            "lifecycleOwner": "orders",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "wallet_consumptions",
             "mode": "RW",
             "lifecycleOwner": "wallet",
@@ -17720,6 +17835,10 @@
           }
         ],
         "readsTables": [
+          {
+            "table": "orders",
+            "lifecycleOwner": "orders"
+          },
           {
             "table": "users",
             "lifecycleOwner": "auth-identity"
@@ -17762,7 +17881,7 @@
           ]
         },
         {
-          "provider": "payments",
+          "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -17817,12 +17936,14 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 0,
-        "declaredNotObservedEvidence": []
+        "declaredNotObserved": 1,
+        "declaredNotObservedEvidence": [
+          "payments"
+        ]
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -17842,8 +17963,14 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 0,
-        "debtItems": []
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"payments\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",

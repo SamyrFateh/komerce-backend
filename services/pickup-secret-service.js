@@ -46,6 +46,17 @@
 
 'use strict';
 
+const {
+  setPickupAttemptsOnly,
+  setExceptionalPickupAttemptState,
+  writePickupSecret,
+  setPickupAttemptState,
+  setCollectedByName,
+  recordPickupRegeneration,
+  markPickupSecretRevealed,
+  finalizePickupCollection,
+} = require('./order-mutation-service');
+
 const crypto = require('crypto');
 const db     = require('../db');
 const { transitionOrderStatus }                    = require('./order-status-machine');
@@ -182,16 +193,12 @@ async function generateAndStoreSecret({
     pickup_secret_channel:        channel,
     pickup_secret_emitted_at:     now,
   };
-  const allCols    = Object.assign({}, baseCols, extraUpdates || {});
-  const colNames   = Object.keys(allCols);
-  const setClauses = colNames.map((c, i) => `${c} = $${i + 1}`).join(', ');
-  const values     = colNames.map(c => allCols[c]);
-  values.push(orderId);
+  const allCols = Object.assign({}, baseCols, extraUpdates || {});
 
-  await dbHandle.query(
-    `UPDATE orders SET ${setClauses}, updated_at = NOW() WHERE id = $${values.length}`,
-    values
-  );
+  await writePickupSecret(dbHandle, {
+    orderId,
+    fields: allCols,
+  });
 
   log.info(`[PICKUP-SECRET] ✅ Code généré channel=${channel} order=${orderId} last4=${last4}`);
 
@@ -378,13 +385,11 @@ async function verifyPickupCode({ orderId, code, agentId }) {
     const attempts  = (order.pickup_secret_attempts || 0) + 1;
     const blockUntil = attempts >= 3 ? new Date(now.getTime() + 15 * 60 * 1000) : null;
 
-    await db.query(`
-      UPDATE orders
-      SET pickup_secret_attempts      = $1,
-          pickup_secret_blocked_until = $2,
-          updated_at                  = NOW()
-      WHERE id = $3
-    `, [attempts, blockUntil, orderId]);
+    await setPickupAttemptState(db, {
+      orderId,
+      attempts,
+      blockedUntil: blockUntil,
+    });
 
     log.warn(`[PICKUP-SECRET] Tentative échouée ${attempts}/3 pour ${order.reference} agent=${agentId}`);
 
@@ -397,13 +402,11 @@ async function verifyPickupCode({ orderId, code, agentId }) {
   }
 
   // Succès : reset compteur
-  await db.query(`
-    UPDATE orders
-    SET pickup_secret_attempts      = 0,
-        pickup_secret_blocked_until = NULL,
-        updated_at                  = NOW()
-    WHERE id = $1
-  `, [orderId]);
+  await setPickupAttemptState(db, {
+    orderId,
+    attempts: 0,
+    blockedUntil: null,
+  });
 
   log.info(`[PICKUP-SECRET] ✅ Code vérifié pour ${order.reference}`);
 
@@ -455,12 +458,10 @@ async function collectOrder({ orderId, agentId, role, collectedByName }) {
       return { status: 409, body: { error: transition.error } };
     }
 
-    await client.query(`
-      UPDATE orders
-      SET collected_by_name = $1,
-          updated_at        = NOW()
-      WHERE id = $2
-    `, [collectedByName || null, orderId]);
+    await setCollectedByName(client, {
+      orderId,
+      collectedByName: collectedByName || null,
+    });
 
     log.info(`[PICKUP-SECRET] 📦 Colis remis pour ${order.reference} à "${collectedByName || '(anonyme)'}"`);
 
@@ -513,13 +514,10 @@ async function regenerateCode({ orderId, adminId, reason }) {
   }
 
   // Incrémenter le compteur de régénération séparément (extraUpdates ne supporte pas COALESCE)
-  await db.query(`
-    UPDATE orders
-    SET pickup_secret_regen_count  = COALESCE(pickup_secret_regen_count, 0) + 1,
-        pickup_secret_regen_reason = $1,
-        updated_at                 = NOW()
-    WHERE id = $2
-  `, [reason.trim(), orderId]);
+  await recordPickupRegeneration(db, {
+    orderId,
+    reason: reason.trim(),
+  });
 
   log.info(`[PICKUP-SECRET] 🔄 Régénéré pour ${order.reference} par admin ${adminId} motif="${reason}"`);
 
@@ -668,7 +666,7 @@ async function revealOnce({ orderId, userId }) {
 
   // Marquer révélé + purger le cache (one-shot)
   await Promise.all([
-    db.query('UPDATE orders SET pickup_secret_revealed_at = NOW() WHERE id = $1', [orderId]),
+    markPickupSecretRevealed(db, orderId),
     db.query('DELETE FROM pickup_reveal_codes WHERE order_id = $1', [orderId]),
   ]);
 
@@ -849,37 +847,12 @@ async function _recordCanonicalCollection({
     throw error;
   }
 
-  if (pickupMethod === 'PICKUP_CODE') {
-    await client.query(`
-      UPDATE orders
-      SET pickup_collected_via             = 'PICKUP_CODE',
-          pickup_secret_hash                = NULL,
-          pickup_secret_salt                = NULL,
-          pickup_secret_last4               = NULL,
-          pickup_secret_expires_at          = NULL,
-          pickup_secret_attempts            = 0,
-          pickup_secret_blocked_until       = NULL,
-          exceptional_pickup_attempts       = 0,
-          exceptional_pickup_blocked_until  = NULL,
-          updated_at                        = NOW()
-      WHERE id = $1
-    `, [order.id]);
-  } else {
-    await client.query(`
-      UPDATE orders
-      SET pickup_collected_via             = 'AUTHORIZED_NAME_ID_CHECK',
-          pickup_secret_hash                = NULL,
-          pickup_secret_salt                = NULL,
-          pickup_secret_last4               = NULL,
-          pickup_secret_expires_at          = NULL,
-          pickup_secret_attempts            = 0,
-          pickup_secret_blocked_until       = NULL,
-          exceptional_pickup_attempts       = 0,
-          exceptional_pickup_blocked_until  = NULL,
-          updated_at                        = NOW()
-      WHERE id = $1
-    `, [order.id]);
-  }
+  await finalizePickupCollection(client, {
+    orderId: order.id,
+    method: pickupMethod === 'PICKUP_CODE'
+      ? 'PICKUP_CODE'
+      : 'AUTHORIZED_NAME_ID_CHECK',
+  });
 
   // Le code devient définitivement inutilisable dans la même transaction
   // que la remise physique, quelle que soit la méthode gagnante.
@@ -1057,12 +1030,10 @@ async function _crossRelaisCheck(client, { order, user, ip, userAgent }) {
   if (String(agentRelaisId) !== String(order.relais_id)) {
     const attempts = (order.pickup_secret_attempts || 0) + 1;
 
-    await client.query(`
-      UPDATE orders
-      SET pickup_secret_attempts = $1,
-          updated_at             = NOW()
-      WHERE id = $2
-    `, [attempts, order.id]);
+    await setPickupAttemptsOnly(client, {
+      orderId: order.id,
+      attempts,
+    });
 
     log.warn(`[PICKUP-SECRET] ⛔ Cross-relais refusé — agent ${user.id} (relais ${agentRelaisId}) tentait ${order.reference} (relais ${order.relais_id})`);
 
@@ -1260,13 +1231,11 @@ async function collectByAuthorizedName({
       const blocked  = attempts >= EXCEPTIONAL_PICKUP_MAX_ATTEMPTS;
       const blockUntil = blocked ? new Date(now.getTime() + 30 * 60 * 1000) : null;
 
-      await client.query(`
-        UPDATE orders
-        SET exceptional_pickup_attempts      = $1,
-            exceptional_pickup_blocked_until = $2,
-            updated_at                       = NOW()
-        WHERE id = $3
-      `, [attempts, blockUntil, orderId]);
+      await setExceptionalPickupAttemptState(client, {
+        orderId,
+        attempts,
+        blockedUntil: blockUntil,
+      });
 
       log.warn(`[PICKUP-SECRET] Tentative nominative échouée ${attempts}/${EXCEPTIONAL_PICKUP_MAX_ATTEMPTS} pour ${order.reference} agent=${agentId}`);
 
