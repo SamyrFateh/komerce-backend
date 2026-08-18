@@ -382,7 +382,7 @@
   }
 }
 
-@media (min-width: 900px) and (max-width: 1160px) {
+@media (min-width: 900px) and (max-width: 1200px) {
   html.k-home-premium-v1 .k-shelf-rail,
   .k-shelf-rail {
     display: flex;
