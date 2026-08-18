@@ -94,7 +94,7 @@ describe('encodage WebAuthn navigateur', () => {
   });
 });
 
-describe('AUTH-3 — proposition post-OTP', () => {
+describe('enrôlement Passkey contextuel', () => {
   it('est totalement inerte sur un navigateur sans WebAuthn', async () => {
     expect(isPasskeySupported()).toBe(false);
     await expect(offerPasskeyEnrollment()).resolves.toBe(false);
@@ -115,6 +115,8 @@ describe('AUTH-3 — proposition post-OTP', () => {
     await expect(offerPasskeyEnrollment()).resolves.toBe(true);
     await flush();
 
+    expect(document.getElementById('k-passkey-title').textContent).toContain('prochaine fois');
+    expect(document.getElementById('k-passkey-sub').textContent).toContain('opérations sensibles');
     expect(document.getElementById('k-passkey-enable')).not.toBeNull();
     expect(document.getElementById('k-passkey-later')).not.toBeNull();
     expect(create).not.toHaveBeenCalled();
@@ -156,7 +158,7 @@ describe('AUTH-3 — proposition post-OTP', () => {
     await flush();
     const enable = document.getElementById('k-passkey-enable');
     expect(enable.disabled).toBe(false);
-    expect(enable.textContent).toContain('Créer');
+    expect(enable.textContent).toContain('Activer');
 
     enable.click();
     await flush();
@@ -216,7 +218,7 @@ describe('AUTH-3 — proposition post-OTP', () => {
     expect(create).not.toHaveBeenCalled();
   });
 
-  it('setup écoute uniquement le signal post-OTP et attend la fermeture de la modale courante', async () => {
+  it('setup ignore tout OTP d’identité simple et n’écoute que le succès post-OTP d’une opération sensible', async () => {
     jest.useFakeTimers();
     installWebAuthn();
     global.fetch.mockResolvedValue(response(true, {
@@ -226,12 +228,32 @@ describe('AUTH-3 — proposition post-OTP', () => {
       excludeCredentials: [],
     }));
 
+    setupPasskeyEnrollment();
+
+    // Un OTP de partage/identification ne doit plus rien déclencher.
+    window.dispatchEvent(new CustomEvent('komerce:identity-authenticated', {
+      detail: { method: 'otp', purpose: 'authentication' },
+    }));
+    jest.advanceTimersByTime(300);
+    await Promise.resolve();
+    expect(document.querySelector('.k-passkey-enroll-overlay')).toBeNull();
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    // Même un signal sensible incomplet ou validé par Passkey est ignoré.
+    window.dispatchEvent(new CustomEvent('komerce:sensitive-operation-confirmed', {
+      detail: { method: 'passkey', sensitive: true, completed: true },
+    }));
+    jest.advanceTimersByTime(300);
+    await Promise.resolve();
+    expect(document.querySelector('.k-passkey-enroll-overlay')).toBeNull();
+
     const blocker = document.createElement('div');
     blocker.setAttribute('aria-modal', 'true');
     document.body.appendChild(blocker);
 
-    setupPasskeyEnrollment();
-    window.dispatchEvent(new CustomEvent('komerce:identity-authenticated'));
+    window.dispatchEvent(new CustomEvent('komerce:sensitive-operation-confirmed', {
+      detail: { method: 'otp', sensitive: true, completed: true },
+    }));
     jest.advanceTimersByTime(300);
     await Promise.resolve();
     expect(document.querySelector('.k-passkey-enroll-overlay')).toBeNull();
