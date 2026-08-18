@@ -20,13 +20,13 @@ module.exports = {
   canonicalFeature: 'auth-passkey',
   sliceKind: 'frontend-slice',
 
-  service: 'Enrôlement (AUTH-3), login nominal (AUTH-4), recovery OTP (AUTH-5) et gestion/révocation des passkeys dans Mon Komerce (AUTH-6) et step-up Passkey des mutations sensibles (AUTH-7).',
+  service: 'Enrôlement (AUTH-3), login nominal (AUTH-4) seulement quand la disponibilité locale est connue, recovery OTP (AUTH-5), gestion/révocation des passkeys dans Mon Komerce (AUTH-6) et step-up Passkey des mutations sensibles (AUTH-7).',
 
   perimeter: {
     in: [
       'proposition post-OTP AUTH-3',
       'appel WebAuthn navigator.credentials.create',
-      'login Passkey nominal AUTH-4 sans saisie de numéro',
+      'login Passkey nominal AUTH-4 sans saisie de numéro lorsque ce navigateur a déjà prouvé une passkey Komerce',
       'appel WebAuthn navigator.credentials.get',
       'conversion JSON/WebAuthn côté navigateur',
       'appel des endpoints register/options, register/verify, login/options et login/verify AUTH-2',
@@ -58,7 +58,7 @@ module.exports = {
     exposes: [],
     internalApi: [
       'setupPasskeyEnrollment / offerPasskeyEnrollment (b-passkey-enrollment.js)',
-      'openPasskeyLogin (b-passkey-login.js)',
+      'openPasskeyLogin / shouldOfferPasskeyLogin (b-passkey-login.js)',
       'loadPasskeySecurity (b-passkey-security.js)',
       'performPasskeyStepUp / withStepUpRetry (b-passkey-step-up.js)',
     ],
@@ -72,7 +72,10 @@ module.exports = {
   invariants: [
     'aucune proposition d enrôlement passkey avant une authentification OTP réussie',
     'l enrôlement est volontaire et offre toujours Plus tard',
-    'le login passkey est proposé avant OTP quand WebAuthn est disponible',
+    'la seule présence de WebAuthn sur un navigateur ne suffit jamais à afficher un choix Passkey',
+    'le login passkey est proposé avant OTP uniquement si WebAuthn est disponible et si ce navigateur possède un indice local issu d un enrôlement ou login Passkey réellement réussi',
+    'l indice local de disponibilité Passkey est uniquement un signal UX non secret : il ne prouve jamais une identité et ne contourne aucune vérification serveur',
+    'un refus 401 de la credential par le serveur invalide l indice local afin de ne plus reproposer un chemin devenu inutilisable',
     'le login discoverable ne demande pas de numéro au client',
     'WhatsApp reste un fallback explicite et non le parcours nominal quand une passkey est utilisable',
     'une passkey inutilisable déclenche un état recovery explicite et exige OTP avant ré-enrôlement',

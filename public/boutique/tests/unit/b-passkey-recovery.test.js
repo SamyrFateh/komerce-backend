@@ -9,6 +9,8 @@
 const { openPasskeyLogin } = require('../../js/b-passkey-login.js');
 const { offerPasskeyEnrollment } = require('../../js/b-passkey-enrollment.js');
 
+const PASSKEY_HINT_KEY = 'komerce_passkey_available_v1';
+
 function response(ok, body, status = ok ? 200 : 400) {
   return { ok, status, json: jest.fn().mockResolvedValue(body) };
 }
@@ -50,6 +52,11 @@ describe('AUTH-5 — entrée recovery depuis une Passkey inutilisable', () => {
       toJSON: () => ({ id: 'revoked', type: 'public-key', response: {} }),
     });
     installWebAuthn({ get });
+    // Ce scénario teste une Passkey qui était connue/utilisable sur ce
+    // navigateur avant d'être refusée par le serveur. Sans cet indice UX,
+    // le produit doit désormais aller directement vers WhatsApp et ne monte
+    // volontairement aucune UI Passkey.
+    window.localStorage.setItem(PASSKEY_HINT_KEY, '1');
     global.fetch
       .mockResolvedValueOnce(response(true, {
         challenge: 'AQID', rpId: 'komerce.co', allowCredentials: [], userVerification: 'required',
