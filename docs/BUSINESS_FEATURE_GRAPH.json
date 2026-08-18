@@ -17869,6 +17869,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/supplier-catalog-scanner.js",
+                "targetFile": "utils/rates.js"
+              },
+              {
                 "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
                 "targetFile": "db.js"
               },
@@ -19525,6 +19529,10 @@
               {
                 "sourceFileId": "services/pricing-cdr.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pricing-cdr.js",
+                "targetFile": "utils/rates.js"
               },
               {
                 "sourceFileId": "services/sourcing-analysis.js",
