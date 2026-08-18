@@ -13,6 +13,7 @@ const {
 
 describe('PR enforcement — Golden CDR scope', () => {
   test.each([
+    '.github/workflows/golden-cdr.yml',
     'services/pricing-cdr.js',
     'services/pricing-engine.js',
     'services/pricing-recommend.js',
