@@ -10,7 +10,7 @@
  * @used-by       b-catalog.js, b-catalog-desktop-enhancers.js
  * @doctrine      navigation_sans_friction, categorie_souscategorie_switch_fluide, desktop_mobile_coherence
  * @impact-areas  home-navigation, category-rail, product-discovery, desktop-catalog
- * @version       2026-06
+ * @version       2026-08
  */
 'use strict';
 
@@ -22,7 +22,7 @@
  * - Mount the category rail rendered by render-categories.js.
  * - Orchestrate category selection on the home/catalog experience.
  * - Sync active category state between chips and desktop horizontal navigation.
- * - Own the desktop contextual subcategory rail rendered below the image pills.
+ * - Own the desktop contextual subcategory rail.
  *
  * Must not:
  * - Define category or subcategory data.
@@ -30,20 +30,11 @@
  * - Render product cards.
  * - Own mobile pager internals.
  * - Patch hero/category CSS to compensate pager state bugs.
- *
- * Depends on:
- * - shop-schema.js for category/subcategory metadata.
- * - render-categories.js for category rail markup.
- * - b-catalog.js for renderGrid()/setActiveCat().
- * - b-pager.js indirectly through injected scrollPagerToCat().
- *
- * See:
- * - docs/BOUTIQUE_COMPONENT_OWNERSHIP.md
- * - docs/BOUTIQUE_CATEGORY_NAVIGATION_REDESIGN.md
  */
 
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
+import { getShelfSubcategoryVisual, renderShelfUse } from '../render/category-shelf-visuals.js';
 import { getSubcategories, getRailCategories, getCategorySectionEmoji, getCategoryLabel } from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
 import { scrollPageToTop, scrollPageToElement } from '../b-scroll-owner.js';
@@ -68,36 +59,24 @@ function escapeHtml(value) {
 function scrollToCatalog() {
   const catalog = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
   if (!catalog) return;
-  // Calcule l'offset dynamiquement depuis la hauteur réelle de la barre sticky
-  // (chips .k-hero-cats-sticky + subcats #k-subcats-wrap) pour ne pas masquer
-  // le premier produit ni faire disparaître la barre du champ visuel.
   const stickyBar = document.querySelector('.k-hero-cats-sticky');
   const subcatsWrap = document.getElementById('k-subcats-wrap');
   const barH = (stickyBar ? stickyBar.getBoundingClientRect().height : 0)
              + (subcatsWrap && subcatsWrap.style.display !== 'none'
                 ? subcatsWrap.getBoundingClientRect().height : 0);
-  const offset = -(barH + 12); // 12px d'air sous la barre
+  const offset = -(barH + 12);
   scrollPageToElement(catalog, offset, 'smooth');
 }
 
 /**
- * Surface contextuelle desktop UNIQUE sous les grandes pastilles imagées.
+ * Surface contextuelle desktop UNIQUE sous le rail Komerce Shelf.
  *
- * Doctrine desktop retenue (NAV-DESKTOP — consolidation 1 surface) :
+ * Doctrine :
  * - le rail principal choisit l'univers ;
  * - #k-subcats-wrap porte le contexte de l'univers ;
- * - le niveau 2 utilise désormais des objets visuels légers
- *   (slot image/emoji + petit libellé) plutôt que des pills pleines ;
- * - il reste visible en haut au scroll ;
- * - b-catalog.js ne rend pas de doublon dans la grille.
- *
- * Source unique : shop-schema.js (toutes les sous-cats, modifiables sans code).
- * Owner : home-controller.js (« subcats desktop + active state »).
- * Mobile reste inchangé : early return, aucune participation au pager mobile.
- *
- * Contrat de transition : les classes historiques k-subcats-* / k-subchip
- * restent présentes pour le comportement et les invariants existants ; les
- * classes k-subcutout-* ajoutent uniquement la nouvelle présentation.
+ * - le niveau 2 reprend la même grammaire : objet visuel puis petit libellé ;
+ * - les classes historiques restent présentes pour le comportement et les
+ *   invariants ; k-shelf-* / k-subcutout-* portent uniquement la présentation.
  *
  * @param {string|null} catKey  Univers actif ('all'/null = barre masquée).
  * @param {{count?:number}} [opts]  Compteur produits de l'univers.
@@ -107,6 +86,7 @@ export function renderSubcatRail(catKey, opts = {}) {
 
   const wrap = document.getElementById('k-subcats-wrap');
   if (!wrap) return;
+  wrap.classList.add('k-shelf-subcats');
 
   if (!catKey || catKey === 'all') {
     wrap.style.display = 'none';
@@ -150,16 +130,20 @@ export function renderSubcatRail(catKey, opts = {}) {
   if (subcats.length) {
     const buttons = [
       `<button type="button" class="k-subchip k-subcutout ${activeSubcat ? '' : 'active'}" data-subcat="" aria-label="Voir tous les produits ${escapeHtml(label)}">
-        <span class="k-subcutout-icon k-subcutout-icon--all" aria-hidden="true">✦</span>
+        <span class="k-subcutout-icon k-subcutout-icon--all" aria-hidden="true">${renderShelfUse('cat-all', 'k-shelf-object--subcategory k-shelf-object--all')}</span>
         <span class="k-subchip-label k-subcutout-label">Tout voir</span>
       </button>`,
       ...subcats.map((sub) => {
         const key = escapeHtml(sub.key);
         const lbl = escapeHtml(sub.shortLabel || sub.label || sub.key);
         const icon = escapeHtml(sub.icon || '✨');
+        const visual = getShelfSubcategoryVisual(catKey, sub.key);
+        const object = visual
+          ? renderShelfUse(visual, 'k-shelf-object--subcategory')
+          : `<span class="k-shelf-emoji-fallback">${icon}</span>`;
         const active = activeSubcat === sub.key ? ' active' : '';
-        return `<button type="button" class="k-subchip k-subcutout${active}" data-subcat="${key}">
-          <span class="k-subchip-icon k-subcutout-icon" aria-hidden="true">${icon}</span>
+        return `<button type="button" class="k-subchip k-subcutout${active}" data-subcat="${key}"${visual ? ` data-shelf-visual="${escapeHtml(visual)}"` : ''}>
+          <span class="k-subchip-icon k-subcutout-icon" aria-hidden="true">${object}</span>
           <span class="k-subchip-label k-subcutout-label">${lbl}</span>
         </button>`;
       }),
@@ -214,6 +198,7 @@ export function syncRailActiveState(categoryKey, options = {}) {
 export function renderCategoryRail() {
   const catsEl = getCatsEl();
   if (!catsEl) return null;
+  catsEl.classList.add('k-shelf-rail');
 
   const expectedCategories = getRailCategories();
   const expectedKeys = expectedCategories.map(c => c.key);
@@ -244,7 +229,7 @@ export function syncDesktopSidebar(catKey) {
 }
 
 function handleCategorySelection(cat, deps) {
-  const { renderGrid, scrollPagerToCat, scrollToCategorySection } = deps;
+  const { renderGrid, scrollPagerToCat } = deps;
 
   if (state.flatSubcat) {
     state.flatSubcat = null;
