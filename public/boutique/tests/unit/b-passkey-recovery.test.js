@@ -95,7 +95,7 @@ describe('AUTH-5 — entrée recovery depuis une Passkey inutilisable', () => {
 
     expect(document.getElementById('k-passkey-title').textContent).toContain('nouvelle passkey');
     expect(document.getElementById('k-passkey-sub').textContent).toContain('récupéré');
-    expect(document.getElementById('k-passkey-enable').textContent).toContain('Créer');
+    expect(document.getElementById('k-passkey-enable').textContent).toContain('Activer');
 
     document.getElementById('k-passkey-later').click();
     jest.advanceTimersByTime(160);
