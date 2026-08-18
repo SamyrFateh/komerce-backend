@@ -1,7 +1,8 @@
 {
   "_kind": "golden-cdr",
+  "_lot1b_current_transport_enriched": true,
   "captured_at": "2026-08-18T12:13:00.076Z",
-  "config_fingerprint": "05d6b471d8b870ca",
+  "config_fingerprint": "490c923485992f33",
   "frozen_config": {
     "categories": {
       "ceremonie": {
@@ -1097,7 +1098,23 @@
         "rate_pct": "0.5",
         "updated_at": {}
       }
-    ]
+    ],
+    "transport_policies": {
+      "AIR_KMF_PER_KG_TAXABLE": 2500,
+      "AIR_VOLUMETRIC_DIVISOR": 6000,
+      "EUR_KMF": 495,
+      "SEA_EUR_PER_M3_COST": 180,
+      "SEA_KMF_PER_KG_COMMERCIAL": 65,
+      "SEA_WM_KG_PER_M3": 1000
+    },
+    "transport_policy_sources": {
+      "AIR_KMF_PER_KG_TAXABLE": "business_rules.AIR_KMF_PER_KG_TAXABLE",
+      "AIR_VOLUMETRIC_DIVISOR": "business_rules.AIR_VOLUMETRIC_DIVISOR",
+      "EUR_KMF": "finance_config.taux_change_eur_kmf",
+      "SEA_EUR_PER_M3_COST": "finance_config.fret_eur_per_m3:legacy_fallback",
+      "SEA_KMF_PER_KG_COMMERCIAL": "business_rules.SEA_KMF_PER_KG_COMMERCIAL",
+      "SEA_WM_KG_PER_M3": "business_rules.SEA_WM_KG_PER_M3"
+    }
   },
   "mode": "db",
   "snapshots": [
