@@ -65,13 +65,13 @@ describe('render-categories — renderCategoryRailMarkup', () => {
     const rail = getRailCategories();
     const target = rail[1]; // ex: 'Soldes'
     const html = renderCategoryRailMarkup(target.key);
-    const re = new RegExp(`<button class="k-chip active" data-cat="${target.key}"`);
+    const re = new RegExp(`<button class="k-chip[^"]*\\bactive\\b" data-cat="${target.key}"`);
     expect(html).toMatch(re);
   });
 
   it("aucune catégorie active (clé inconnue) → aucun bouton n'a la classe active", () => {
     const html = renderCategoryRailMarkup('clé-inexistante-xyz');
-    expect(html).not.toMatch(/k-chip active/);
+    expect(html).not.toMatch(/<button class="k-chip[^"]*\bactive\b"/);
   });
 
   it('aria-label reflète le label complet (pas le shortLabel)', () => {

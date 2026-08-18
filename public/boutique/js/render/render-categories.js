@@ -57,7 +57,7 @@ function renderChipPhoto(category) {
 
 export function renderCategoryRailMarkup(activeCategoryKey) {
   return getRailCategories().map((category) => `
-    <button class="k-chip${category.key === activeCategoryKey ? ' active' : ''}" data-cat="${sanitize(category.key)}" aria-label="${sanitize(category.label)}">
+    <button class="k-chip k-cat-cutout${category.key === activeCategoryKey ? ' active' : ''}" data-cat="${sanitize(category.key)}" aria-label="${sanitize(category.label)}">
       ${renderChipPhoto(category)}
       <span class="k-chip-label">${sanitize(category.shortLabel || category.label)}</span>
     </button>
