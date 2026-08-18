@@ -40,7 +40,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
+          fetch-depth: 1
+      # CI FAST-4 : le classifier a besoin des deux arbres, pas de tout l'historique.
+      - name: Fetch PR base commit only
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
       - id: scope
         name: Classify changed files
         env:
@@ -105,7 +110,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
+          fetch-depth: 1
+      - name: Fetch PR base commit only
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
       # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
       - name: Migration immutability
         env:
@@ -130,7 +139,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
+          fetch-depth: 1
+      # Seul le sanitize diff a besoin du commit de base ; CSS/HTML/tests n'en ont pas besoin.
+      - name: Fetch PR base commit for sanitize diff
+        if: needs.changes.outputs.boutique_js == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
