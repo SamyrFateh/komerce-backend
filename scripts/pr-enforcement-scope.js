@@ -51,7 +51,8 @@ function isLiveSchemaFile(file) {
 // le classifier unique pour éviter un second runner checkout/setup/npm-ci.
 function isGoldenCdrFile(file) {
   const f = norm(file);
-  return /^(?:services\/(?:pricing-cdr|pricing-engine|pricing-recommend|transport-pricing|transport-rails)\.js|routes\/(?:admin-pricing-matrices|admin-finance-config|economic)\.js|services\/(?:economic-engine-queries|dashboard-ops-queries)\.js|services\/cost-allocation\/allocate\.js|utils\/(?:eco-bridge|rates|relay-commission)\.js|tools\/golden-cdr\/(?:golden-cdr|witnesses)\.js)$/i.test(f)
+  return f === '.github/workflows/golden-cdr.yml'
+    || /^(?:services\/(?:pricing-cdr|pricing-engine|pricing-recommend|transport-pricing|transport-rails)\.js|routes\/(?:admin-pricing-matrices|admin-finance-config|economic)\.js|services\/(?:economic-engine-queries|dashboard-ops-queries)\.js|services\/cost-allocation\/allocate\.js|utils\/(?:eco-bridge|rates|relay-commission)\.js|tools\/golden-cdr\/(?:golden-cdr|witnesses)\.js)$/i.test(f)
     || /^tools\/golden-cdr\/(?:fixtures|golden)\/.+/i.test(f);
 }
 
