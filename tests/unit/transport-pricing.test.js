@@ -10,12 +10,16 @@ const {
   resolveOrderItemTransportRail,
   computeTaxableWeightKg,
   quoteTransportPriceForItem,
+  quoteTransportForItem,
   quoteTransportPriceForOrder,
+  quoteTransportForOrder,
 } = require('../../services/transport-pricing');
 
 const RATES = {
   SEA_WM_KG_PER_M3: 1000,
+  SEA_EUR_PER_M3_COST: 180,
   SEA_KMF_PER_KG_COMMERCIAL: 65,
+  EUR_KMF: 495,
   AIR_KMF_PER_KG_TAXABLE: 2500,
   AIR_VOLUMETRIC_DIVISOR: 6000,
 };
@@ -143,6 +147,48 @@ describe('quoteTransportPriceForItem', () => {
   });
 });
 
+describe('quoteTransportForItem — coût ≠ prix, même mesure', () => {
+  test('SEA volume-dominant partage la mesure W/M mais valorise deux taux distincts', () => {
+    const quote = quoteTransportForItem({
+      requestedTransportRailCode: null,
+      weightKg: 3,
+      volumeCm3: 250000,
+      quantity: 1,
+      rates: RATES,
+    });
+
+    expect(quote).toMatchObject({
+      transport_rail: 'SEA_STANDARD',
+      chargeable_quantity: 0.25,
+      chargeable_unit: 'm3',
+      taxable_weight_kg: 250,
+      dominant_measure: 'volume',
+      unit_price_kmf_per_kg: 65,
+      cost_rate_key: 'SEA_EUR_PER_M3_COST',
+      cost_rate: 180,
+      cost_currency: 'EUR',
+      fx_key: 'EUR_KMF',
+      fx_rate: 495,
+      price_kmf: 16250,
+      cost_kmf: 22275,
+    });
+  });
+
+  test('coût SEA manquant échoue explicitement, jamais remplacé par le prix commercial', () => {
+    expect(() => quoteTransportForItem({
+      requestedTransportRailCode: null,
+      weightKg: 1,
+      volumeCm3: 1000,
+      quantity: 1,
+      rates: {
+        SEA_WM_KG_PER_M3: 1000,
+        SEA_KMF_PER_KG_COMMERCIAL: 65,
+        EUR_KMF: 495,
+      },
+    })).toThrow(expect.objectContaining({ code: 'TRANSPORT_COST_RATE_MISSING' }));
+  });
+});
+
 describe('quoteTransportPriceForOrder', () => {
   test('agrège le prix transport W/M sur plusieurs lignes', () => {
     const result = quoteTransportPriceForOrder({
@@ -176,5 +222,34 @@ describe('quoteTransportPriceForOrder', () => {
       ],
       rates: RATES,
     })).toThrow(TransportPricingError);
+  });
+});
+
+describe('quoteTransportForOrder — checkout canonique', () => {
+  test('agrège prix et coût depuis la même mesure par ligne', () => {
+    const result = quoteTransportForOrder({
+      items: [
+        { product_id: 'p1', weight_kg: 0.4, volume_cm3: 4000, quantity: 1, requested_transport_rail: null },
+        { product_id: 'p2', weight_kg: 3, volume_cm3: 250000, quantity: 1, requested_transport_rail: 'SEA_STANDARD' },
+      ],
+      rates: RATES,
+    });
+
+    expect(result.transport_price_kmf).toBe(260 + 16250);
+    expect(result.transport_cost_kmf).toBe(356 + 22275);
+    expect(result.breakdown).toHaveLength(2);
+    for (const line of result.breakdown) {
+      expect(line.price_kmf).toBeGreaterThanOrEqual(0);
+      expect(line.cost_kmf).toBeGreaterThanOrEqual(0);
+      expect(line.chargeable_quantity).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  test('panier vide → coût et prix nuls', () => {
+    expect(quoteTransportForOrder({ items: [], rates: RATES })).toEqual({
+      transport_price_kmf: 0,
+      transport_cost_kmf: 0,
+      breakdown: [],
+    });
   });
 });
