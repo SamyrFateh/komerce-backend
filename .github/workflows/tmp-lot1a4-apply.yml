@@ -24,6 +24,8 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Apply asserted runtime patch
         run: node tools/economic-variables/apply-1a4-runtime.js
+      - name: Migrate affected tests to canonical contract
+        run: node tools/economic-variables/apply-1a4-tests.js
       - name: Focused LOT 1A-4 tests
         run: >-
           npx jest
@@ -32,10 +34,14 @@ jobs:
           tests/unit/economic-engine-queries.test.js
           tests/unit/dashboard-ops-queries.test.js
           tests/unit/economic-route.test.js
+          tests/unit/eco-bridge.test.js
+          tests/unit/admin-finance-config.test.js
           --runInBand
+      - name: Golden BEFORE == AFTER
+        run: node tools/golden-cdr/golden-cdr.js verify
       - name: Diff check
         run: git diff --check
-      - name: Commit runtime patch
+      - name: Commit runtime + contract tests
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -44,9 +50,12 @@ jobs:
             services/dashboard-ops-queries.js \
             utils/eco-bridge.js \
             routes/economic.js \
-            routes/admin-finance-config.js
+            routes/admin-finance-config.js \
+            tests/unit/economic-engine-queries.test.js \
+            tests/unit/dashboard-ops-queries.test.js \
+            tests/unit/economic-route.test.js
           if git diff --cached --quiet; then
-            echo "No runtime patch to commit"
+            echo "No runtime/test patch to commit"
             exit 0
           fi
           git commit -m "LOT 1A-4: route economic runtime through finance_config"
