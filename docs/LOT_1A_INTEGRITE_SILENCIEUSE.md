@@ -1,6 +1,6 @@
 # LOT 1A — Intégrité silencieuse
 
-Statut : **OUVERT — 3/4 sous-lots traités**. Migration de structure uniquement.
+Statut : **CLOSED — 4/4 sous-lots prouvés**. Migration de structure uniquement.
 
 Invariant de lot : **Golden CDR `BEFORE == AFTER`**. Aucun déplacement volontaire de prix n'est autorisé ici. Toute correction de vérité économique appartient au LOT 1B et suivra `DELTA TOTAL == DELTA EXPLIQUÉ`.
 
@@ -8,10 +8,10 @@ Invariant de lot : **Golden CDR `BEFORE == AFTER`**. Aucun déplacement volontai
 
 La doctrine fixe quatre chantiers pour LOT 1A :
 
-1. **Éditeurs Taxes/Dimensions fantômes** — `pricing_category_taxes` / `pricing_category_dims` sont éditables mais ne sont pas des sources de vérité runtime.
-2. **FX USD** — canoniser une seule source/clé runtime sans changer la valeur effectivement consommée.
-3. **Commission relais** — désambiguïser les champs concurrents en une règle de priorité unique, sans changer le résultat courant.
-4. **`economic_variables`** — traiter la source legacy uniquement **après** migration de `redistribute`; re-tester aussi Ops car `dashboard-ops-queries.js` la lit.
+1. **Éditeurs Taxes/Dimensions fantômes** — retirer la capacité d'écriture qui ne pilote pas le runtime.
+2. **FX USD** — canoniser une seule règle runtime sans changer la valeur effectivement consommée.
+3. **Commission relais** — désambiguïser les représentations concurrentes en une priorité unique CURRENT.
+4. **`economic_variables`** — migrer `redistribute` et Ops vers `finance_config`, puis rendre le legacy read-only.
 
 LOT 2 UI reste hors séquence.
 
@@ -42,23 +42,23 @@ USD_KMF = 0.92 × EUR_KMF
 
 - CDR et scanner sourcing consomment cette projection.
 - `PricingView` ne porte plus sa propre formule USD ; il consomme la projection compat API.
-- La divergence historique PricingView **492/138** vs DB réelle Golden **495/139** est rendue explicite mais n'est pas corrigée silencieusement.
+- La divergence historique PricingView **492/138** vs DB Golden **495/139** est rendue explicite mais n'est pas corrigée silencieusement.
 
-### Preuves livrées
+### Preuves
 
 - backend FX : **54/54 PASS**;
 - PricingView actif sous son harnais Jest/jsdom : PASS;
 - scanner + CDR dédié : `10 USD` avec EUR=495 → **4554 KMF**;
-- Golden CDR : **13/13 PARITÉ OK**, fingerprint `05d6b471d8b870ca`;
+- Golden CDR : **13/13 PARITÉ OK**;
 - Business Graph officiel + Required verdict verts.
 
-## 1A-3 — Commission relais — canonisation CURRENT
+## 1A-3 — Commission relais ✅
 
-Statut : **implémenté sur PR #802, validation finale en cours**.
+**Merged : PR #802 — commit `3789cce5e65f2195f9a3c26d686534b631ce8345`.**
 
-### Audit prouvé
+### Audit CURRENT
 
-La DB CURRENT contient quatre représentations :
+La DB contenait quatre représentations :
 
 ```text
 finance_config.commission_relais_pct          = 5%
@@ -70,15 +70,13 @@ cost_components.commission_relais_kmf         = 500
 Consommation réelle avant 1A-3 :
 
 - CDR estimé → `cost_components.commission_relais_kmf`;
-- allocation réelle d'un parcel collecté → `finance_config.commission_relais_standard_kmf`;
-- `commission_relais_pct` → éditable mais **aucun consommateur runtime trouvé**;
-- `commission_relais_showroom_kmf` → **aucun consommateur runtime trouvé**;
-- `business_rules.COMMISSION_RELAIS_*` → legacy, aucun lecteur runtime prouvé;
-- copies `economic_variables` → hors scope jusqu'à 1A-4.
+- allocation réelle → `finance_config.commission_relais_standard_kmf`;
+- `%` et `showroom` → aucun consommateur runtime prouvé;
+- `business_rules.COMMISSION_RELAIS_*` → legacy, aucun lecteur runtime prouvé.
 
-### Règle de priorité canonique
+### Règle canonique CURRENT
 
-`utils/relay-commission.js` fixe une seule priorité CURRENT :
+`utils/relay-commission.js` :
 
 ```text
 1. cost_components.commission_relais_kmf          ← autorité OWNED nominale
@@ -86,52 +84,109 @@ Consommation réelle avant 1A-3 :
 3. 500 KMF                                         ← fallback CURRENT ultime
 ```
 
-`commission_relais_pct` et `showroom` sont volontairement exclus : aucun moteur ne doit deviner un contexte showroom. Une future commission scopée exige un contexte relais explicite et des tests dédiés.
+- allocation réelle consomme le composant en priorité et trace sa provenance;
+- anciens éditeurs `%`, `standard`, `showroom` → **410 Gone**;
+- aucune suppression physique avant LOT 11;
+- suite ciblée **39/39 PASS**;
+- Golden CDR **13/13 PARITÉ OK**;
+- Business Graph + Required verdict verts.
 
-### État cible 1A-3
+## 1A-4 — `economic_variables` → `finance_config` ✅
 
-- `allocateParcelRealCosts()` consomme le composant canonique en priorité ;
-- la provenance de la commission réelle est persistée dans `source` et renvoyée au résultat;
-- `finance_config.standard` reste fallback legacy uniquement;
-- les tentatives PUT sur `%`, `standard` ou `showroom` via `admin-finance-config` → **410 Gone**, zéro écriture DB;
-- `commission_relais_pct` reste lisible dans la réponse historique pour compat/forensic mais disparaît du schéma éditable;
-- l'éditeur canonique est le composant `cost_components` key `commission_relais_kmf`;
-- aucune suppression physique des anciennes colonnes avant LOT 11.
+**PR #805 — fermeture canonique avec merge de ce livrable.**
 
-### Preuves déjà obtenues avant push du patch
+### Preflight Railway réel — 2026-08-18
 
-- resolver : composant > standard > 500, zéro accepté comme valeur explicite;
-- Golden snapshot : composant=500, standard=500, showroom=750, pct=5;
-- allocation : composant prioritaire + fallback standard + provenance;
-- ancien éditeur finance : 410, zéro DB write;
-- suite focalisée relais/finance/allocation : **39/39 PASS**;
-- Golden CDR : **13/13 PARITÉ OK** avant push du patch.
+Avant toute migration, le script fail-closed `tools/economic-variables/preflight-1a4.js` a mesuré la DB Railway de référence.
 
-### Gate de fermeture 1A-3
+Correspondances déjà égales :
 
-- helper/pather temporaires retirés;
-- workflow Golden étendu à `services/cost-allocation/allocate.js` + `utils/relay-commission.js`;
-- Business Graph régénéré officiellement;
-- Golden CDR vert sur le head final;
-- PR enforcement / Required verdict verts;
-- squash merge de PR #802.
+```text
+orders_per_month     -> objectif_commandes_mois  : 100 == 100
+ target_basket_avg   -> target_panier_moyen_kmf  : 15000 == 15000
+hub_monthly_cost_aed -> hub_monthly_cost_aed     : 7000 == 7000
+```
 
-## Gates communs LOT 1A
+Valeurs CURRENT capturées pour les colonnes encore absentes de `finance_config` :
 
-Chaque sous-lot doit satisfaire :
+```text
+customs_rate_default_pct = 42
+mix_rail_a                = 60
+mix_rail_b                = 25
+mix_rail_c                = 10
+mix_rail_d                = 5
+margin_rail_a             = 45
+margin_rail_b             = 18
+margin_rail_c             = 35
+margin_rail_d             = 70
+```
 
-1. **Avant = Après économiquement** : `node tools/golden-cdr/golden-cdr.js verify` vert.
+Le preflight a passé **4/4 tests** et a refusé par construction toute divergence sur les correspondances existantes.
+
+### Migration 119
+
+`migrations/119_economic_variables_to_finance_config.sql` :
+
+- ajoute les 9 colonnes typées manquantes dans `finance_config`;
+- sur une DB existante, copie la valeur CURRENT selon la priorité historique exacte `value_used > value_supposed > fallback`;
+- sur un environnement neuf sans table legacy au `releaseCommand`, utilise les mêmes fallbacks CURRENT sans référence SQL statique à une table absente;
+- est idempotente : une valeur canonique déjà renseignée n'est pas écrasée;
+- n'effectue **aucun `INSERT` / `UPDATE` / `DELETE` sur `economic_variables`**.
+
+### Vérité runtime après 1A-4
+
+`services/economic-config.js` devient le pont canonique pour les entrées du modèle :
+
+```text
+redistribute ───────┐
+Ops pilotage ───────┼──> finance_config
+legacy eco-bridge ──┘
+```
+
+- `redistribute()` charge ses paramètres depuis `finance_config` et ne persiste plus ses computed dans le legacy;
+- les computed sont recalculés et projetés en mémoire;
+- Ops lit directement `customs_rate_default_pct` et `hub_monthly_cost_aed` depuis la même SOV;
+- `eco-bridge` conserve son API/cache de compatibilité mais lit `finance_config`;
+- `seedEconomicData()` ne seed/update plus `economic_variables` au runtime;
+- `/variables` conserve les métadonnées legacy pour lecture forensic et superpose les valeurs canoniques/computed fraîches;
+- l'ancien PUT `/variables/:key` write-through uniquement les clés dont le mapping runtime est exact; computed et clés sans mapping prouvé sont fail-closed (`410`);
+- `NULL` et chaîne vide ne peuvent pas être convertis silencieusement en zéro.
+
+### Ratchets permanents
+
+- `tests/unit/economic-variables-readonly-1a4.test.js` interdit tout writer runtime `economic_variables` dans le moteur, Ops, le bridge et la route;
+- `tests/unit/economic-variables-migration-119.test.js` verrouille les 9 colonnes, les fallbacks CURRENT, la priorité de copie et le chemin fresh-env;
+- `tests/unit/economic-config.test.js` verrouille les mappings, projections, validations et write-through canonique;
+- le workflow Golden couvre désormais `services/economic-config.js` et la migration 119 en plus des consommateurs 1A.
+
+### Qualification finale
+
+Le finalizer temporaire — retiré avant revue — a exécuté sur le head 1A-4 :
+
+1. suites permanentes du bridge/config/migration/ratchet/moteur/Ops/route/finance-config : **PASS**;
+2. Golden CDR : **13/13 PARITÉ OK**;
+3. `npm run business-graph:gen` : **PASS**;
+4. `git diff --check` : **PASS**;
+5. seules `docs/BUSINESS_FEATURE_GRAPH.json` et `.md` ont été régénérées par l'outil officiel.
+
+Le Business Graph constate logiquement la disparition des deux anciennes preuves statiques `dashboard → economic-engine` portées par Ops et son test : le dashboard consomme maintenant la SOV économique sans ce détour legacy.
+
+## Gates communs LOT 1A — satisfaits
+
+1. **Avant = Après économiquement** : Golden CDR vert à chaque sous-lot.
 2. Aucun nouveau fallback silencieux.
-3. Une variable = une vérité runtime; priorité/fallback documentés quand une migration transitoire l'exige.
-4. Tests de non-mutation / parité adaptés au chemin modifié.
-5. Aucun chantier de refonte UI : seuls les masques/guards ou branchements de source nécessaires à la suppression d'une fausse vérité sont autorisés.
-6. Pas de suppression physique de legacy avant la séquence de purge LOT 11.
+3. Une variable = une vérité runtime; priorité/fallback explicités lorsqu'une compatibilité transitoire subsiste.
+4. Tests de non-mutation / parité sur chaque chemin modifié.
+5. Aucun chantier de refonte UI dans LOT 1A.
+6. Pas de suppression physique de legacy avant LOT 11.
 
-## Ordre de travail
+## Fermeture
 
 - **1A-1** faux éditeurs Taxes/Dimensions — ✅ PR #800.
 - **1A-2** FX USD — ✅ PR #801.
-- **1A-3** commission relais — validation finale PR #802.
-- **1A-4** `redistribute` → `economic_variables` — dernier, avec re-test Ops.
+- **1A-3** commission relais — ✅ PR #802.
+- **1A-4** `redistribute` / Ops / `economic_variables` — ✅ PR #805.
 
-LOT 1A est fermé uniquement quand les quatre sous-lots sont prouvés et que le Golden CURRENT reste identique.
+**LOT 1A = 4/4 CLOSED.**
+
+Prochaine séquence autorisée : **LOT 1B — corrections économiques explicites**, avec `DELTA TOTAL == DELTA EXPLIQUÉ`. **LOT 2 UI reste interdit tant que la séquence ne l'autorise pas.**
