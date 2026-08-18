@@ -16,6 +16,7 @@ on:
       - 'services/economic-engine-queries.js'
       - 'services/dashboard-ops-queries.js'
       - 'utils/eco-bridge.js'
+      - 'utils/rates.js'
       - 'tools/golden-cdr/golden-cdr.js'
       - 'tools/golden-cdr/witnesses.js'
       - 'tools/golden-cdr/fixtures/**'
