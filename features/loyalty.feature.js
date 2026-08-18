@@ -82,7 +82,7 @@ module.exports = {
       'loyalty_rewards: RW',    // insert + lecture pending (loyalty-service.js) ; voir ONTOLOGY_GAP pour l'écriture admin-loyalty.js
       'loyalty_tiers: RW',      // lecture grille (routes/loyalty.js) + écriture admin (PUT /tiers/:id)
       'orders: R',
-      'users: RW',              // W : big_basket_count, big_basket_last_notified_count (direct) + loyalty_tier_id, orders_count, loyalty_since (via fonction DB recalculate_loyalty)
+      'users: R',   // W-via auth-identity/user-mutation-service ? LOT12 ; loyalty conserve ses regles metier
       'v_loyalty_summary: R',
     ],
   },

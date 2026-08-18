@@ -53,6 +53,8 @@ module.exports = {
   files: {
     services: [
       'services/otp-test-mode.js',
+      // LOT12 ? unique persistence boundary for the users lifecycle.
+      'services/user-mutation-service.js',
       // Lot 5 — autorisation nominative de retrait exceptionnel. Possède
       // user_pickup_authorizations ; expose getActiveAuthorizationForUpdate/
       // hasActiveAuthorization à logistics (jamais de requête directe côté
@@ -91,6 +93,7 @@ module.exports = {
       'tests/integration/otp-no-guest.test.js',
       // tests/unit/authkey-client.test.js retiré (O7.1) — suit services/authkey-client.js vers notifications.
       'tests/unit/otp-test-mode.test.js',
+      'tests/unit/user-mutation-service.test.js',
       'tests/unit/client-auth.test.js',
       'tests/unit/pickup-authorization-service.test.js',
       'tests/unit/name-normalize.test.js',
@@ -119,7 +122,7 @@ module.exports = {
       'products: R',
       'relais: R',
       'revoked_tokens: W!',  // OWNER (arbitrage A, 2026-07-29 — campagne WRITER-NOT-OWNER, 2026-08)
-      'users: RW!',   // OWNER (arbitrage A, 2026-07-29) — seule feature autorisée à muter, via l'API interne ci-dessous
+      'users: RW!',   // OWNER ? LOT12 canonical users lifecycle persistence boundary
       'user_pickup_authorizations: RW',   // OWNER (Lot 5) — autorisation nominative de retrait exceptionnel
     ],
   },
@@ -165,6 +168,16 @@ module.exports = {
     // docs/O7_3_BOUNDARY_ANALYSIS.md, provider payments (analyse de la paire).
     internalApi: [
       { fn: 'makeIntlPhoneInput', file: 'public/boutique/js/b-phone.js' },
+      // LOT12 ? capabilities de mutation users. Aucune API g?n?rique updateUser().
+      { fn: 'createAdminUser', file: 'services/user-mutation-service.js' },
+      { fn: 'setUserRole', file: 'services/user-mutation-service.js' },
+      { fn: 'setUserPasswordHash', file: 'services/user-mutation-service.js' },
+      { fn: 'anonymizeUser', file: 'services/user-mutation-service.js' },
+      { fn: 'deleteUser', file: 'services/user-mutation-service.js' },
+      { fn: 'deleteNonAdminUsers', file: 'services/user-mutation-service.js' },
+      { fn: 'incrementBigBasketCount', file: 'services/user-mutation-service.js' },
+      { fn: 'markBigBasketNotified', file: 'services/user-mutation-service.js' },
+      { fn: 'recalculateUserLoyalty', file: 'services/user-mutation-service.js' },
       // Lot 5 — seule API interne autorisée pour logistics : jamais de
       // requête directe sur user_pickup_authorizations hors de ce fichier.
       { fn: 'getActiveAuthorizationForUpdate', file: 'services/pickup-authorization-service.js' },

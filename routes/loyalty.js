@@ -10,6 +10,7 @@
  * @used-by       bootstrap/api-routes.js
  * @db-read       loyalty_tiers, users, v_loyalty_summary
  * @db-write      loyalty_tiers
+ * @db-write-via:user-mutation-service users
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  loyalty
@@ -25,6 +26,9 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'loyalty' });
+const {
+  recalculateUserLoyalty,
+} = require('../services/user-mutation-service');
 
 // ── GET /api/loyalty/tiers — liste des paliers (public, pour affichage client) ──
 router.get('/tiers', async (req, res, next) => {
@@ -95,7 +99,10 @@ router.put('/tiers/:id', authenticate, requireAdmin, async (req, res, next) => {
 // ── POST /api/loyalty/recalculate/:user_id — admin : recalculer le palier ──────
 router.post('/recalculate/:user_id', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    await db.query('SELECT recalculate_loyalty($1)', [req.params.user_id]);
+    await recalculateUserLoyalty(
+      db,
+      req.params.user_id
+    );
     const { rows } = await db.query('SELECT * FROM v_loyalty_summary WHERE id = $1', [req.params.user_id]);
     res.json(rows[0] || {});
   } catch(err) { next(err); }
@@ -106,7 +113,7 @@ router.post('/recalculate-all', authenticate, requireAdmin, async (req, res, nex
   try {
     const { rows: users } = await db.query(`SELECT id FROM users WHERE role = 'client'`);
     for (const u of users) {
-      await db.query('SELECT recalculate_loyalty($1)', [u.id]);
+      await recalculateUserLoyalty(db, u.id);
     }
     res.json({ recalculated: users.length });
   } catch(err) { next(err); }

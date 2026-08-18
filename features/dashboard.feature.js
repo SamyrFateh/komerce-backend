@@ -95,7 +95,7 @@ module.exports = {
       'signals: R',
       'sms_log: RW',
       'suppliers_stats: R',
-      'users: W',   // authorized-writer via auth-identity.revokeSessions() (arbitrage A) — écritures directes de routes/admin/users.js à recâbler
+      'users: R',   // W-via auth-identity/user-mutation-service ? LOT12
       'wallet_transactions: W',
       'wallets: W',
     ],
@@ -194,6 +194,7 @@ module.exports = {
       'economic-engine (métriques financières)',
       'wallet (soldes et crédits)',
       'auth',
+      'auth-identity (mutations users via services/user-mutation-service.js ? LOT12)',
       'customs',
       'documents',
       'recommendations',

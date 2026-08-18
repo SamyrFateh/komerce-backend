@@ -64,7 +64,12 @@ describe('POST-O8 — Loyalty extraction seams (mission §12)', () => {
       path.join(__dirname, '../../services/loyalty-service.js'), 'utf8'
     );
     const fnBody = src.slice(src.indexOf('async function recalculateLoyalty'));
-    expect(fnBody).toMatch(/await\s+db\.query\('SELECT recalculate_loyalty/);
+    expect(fnBody).toMatch(
+      /await\s+recalculateUserLoyalty\(db,\s*userId\)/
+    );
+    expect(src).toMatch(
+      /require\('\.\/user-mutation-service'\)/
+    );
   });
 
   // ── LOYALTY-5 — payment hook matrix (STATIC/CODE_INSPECTION) ─────────────

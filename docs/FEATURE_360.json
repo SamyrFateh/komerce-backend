@@ -46,12 +46,12 @@
     "healthy": 14,
     "attention": 16,
     "blocked": 0,
-    "businessDependencies": 177,
+    "businessDependencies": 179,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 44,
+    "debtItemsTotal": 43,
     "gateHealthy": 17,
     "gateBlocked": 0
   },
@@ -640,34 +640,28 @@
       },
       "ownership": {
         "ownsTables": [],
-        "writesTables": [
-          {
-            "table": "users",
-            "mode": "RW",
-            "lifecycleOwner": "auth-identity",
-            "ownershipStatus": "writer-not-owner"
-          }
-        ],
+        "writesTables": [],
         "readsTables": [
           {
             "table": "revoked_tokens",
+            "lifecycleOwner": "auth-identity"
+          },
+          {
+            "table": "users",
             "lifecycleOwner": "auth-identity"
           }
         ]
       },
       "data": {
         "ownsTables": [],
-        "writesTables": [
-          {
-            "table": "users",
-            "mode": "RW",
-            "lifecycleOwner": "auth-identity",
-            "ownershipStatus": "writer-not-owner"
-          }
-        ],
+        "writesTables": [],
         "readsTables": [
           {
             "table": "revoked_tokens",
+            "lifecycleOwner": "auth-identity"
+          },
+          {
+            "table": "users",
             "lifecycleOwner": "auth-identity"
           }
         ]
@@ -1013,7 +1007,7 @@
             ]
           },
           "services": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "services/otp-test-mode.js",
@@ -1024,11 +1018,16 @@
                 "declared": "services/pickup-authorization-service.js",
                 "resolvedPath": "services/pickup-authorization-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/user-mutation-service.js",
+                "resolvedPath": "services/user-mutation-service.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           },
           "tests": {
-            "count": 6,
+            "count": 7,
             "files": [
               {
                 "declared": "tests/integration/admin-authz-probe.test.js",
@@ -1059,6 +1058,11 @@
                 "declared": "tests/unit/pickup-authorization-service.test.js",
                 "resolvedPath": "tests/unit/pickup-authorization-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/user-mutation-service.test.js",
+                "resolvedPath": "tests/unit/user-mutation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -1073,7 +1077,7 @@
             ]
           }
         },
-        "totalFiles": 16,
+        "totalFiles": 18,
         "boutiqueManifest": "auth",
         "boutiqueFiles": {
           "count": 5,
@@ -1271,6 +1275,26 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "anonymizeUser",
+            "file": "services/user-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "createAdminUser",
+            "file": "services/user-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "deleteNonAdminUsers",
+            "file": "services/user-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "deleteUser",
+            "file": "services/user-mutation-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "getActiveAuthorizationForUpdate",
             "file": "services/pickup-authorization-service.js",
             "status": "resolved"
@@ -1281,8 +1305,33 @@
             "status": "resolved"
           },
           {
+            "fn": "incrementBigBasketCount",
+            "file": "services/user-mutation-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "makeIntlPhoneInput",
             "file": "public/boutique/js/b-phone.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "markBigBasketNotified",
+            "file": "services/user-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "recalculateUserLoyalty",
+            "file": "services/user-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setUserPasswordHash",
+            "file": "services/user-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "setUserRole",
+            "file": "services/user-mutation-service.js",
             "status": "resolved"
           }
         ],
@@ -1364,7 +1413,21 @@
           ]
         },
         {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "loyalty",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -5001,12 +5064,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "users",
-            "mode": "W",
-            "lifecycleOwner": "auth-identity",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "wallet_transactions",
             "mode": "W",
             "lifecycleOwner": "wallet",
@@ -5071,6 +5128,10 @@
           {
             "table": "suppliers_stats",
             "lifecycleOwner": null
+          },
+          {
+            "table": "users",
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -5177,12 +5238,6 @@
             "ownershipStatus": "writer-not-owner"
           },
           {
-            "table": "users",
-            "mode": "W",
-            "lifecycleOwner": "auth-identity",
-            "ownershipStatus": "writer-not-owner"
-          },
-          {
             "table": "wallet_transactions",
             "mode": "W",
             "lifecycleOwner": "wallet",
@@ -5247,6 +5302,10 @@
           {
             "table": "suppliers_stats",
             "lifecycleOwner": null
+          },
+          {
+            "table": "users",
+            "lifecycleOwner": "auth-identity"
           }
         ]
       },
@@ -5259,6 +5318,13 @@
       "businessDependencies": [
         {
           "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -11750,12 +11816,6 @@
             "mode": "RW",
             "lifecycleOwner": "loyalty",
             "ownershipStatus": "owner"
-          },
-          {
-            "table": "users",
-            "mode": "RW",
-            "lifecycleOwner": "auth-identity",
-            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -11766,6 +11826,10 @@
           {
             "table": "orders",
             "lifecycleOwner": "orders"
+          },
+          {
+            "table": "users",
+            "lifecycleOwner": "auth-identity"
           },
           {
             "table": "v_loyalty_summary",
@@ -11796,12 +11860,6 @@
             "mode": "RW",
             "lifecycleOwner": "loyalty",
             "ownershipStatus": "owner"
-          },
-          {
-            "table": "users",
-            "mode": "RW",
-            "lifecycleOwner": "auth-identity",
-            "ownershipStatus": "writer-not-owner"
           }
         ],
         "readsTables": [
@@ -11812,6 +11870,10 @@
           {
             "table": "orders",
             "lifecycleOwner": "orders"
+          },
+          {
+            "table": "users",
+            "lifecycleOwner": "auth-identity"
           },
           {
             "table": "v_loyalty_summary",
@@ -11828,6 +11890,13 @@
       "businessDependencies": [
         {
           "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -11892,9 +11961,8 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 2,
+        "declaredNotObserved": 1,
         "declaredNotObservedEvidence": [
-          "auth-identity",
           "wallet"
         ]
       },
@@ -11916,13 +11984,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 2,
+        "debtCount": 1,
         "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"auth-identity\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",

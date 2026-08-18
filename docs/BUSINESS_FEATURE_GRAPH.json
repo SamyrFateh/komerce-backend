@@ -882,6 +882,13 @@
       {
         "feature": "auth-identity",
         "category": "services",
+        "declared": "services/user-mutation-service.js",
+        "resolvedPath": "services/user-mutation-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "services",
         "declared": "services/pickup-authorization-service.js",
         "resolvedPath": "services/pickup-authorization-service.js",
         "status": "resolved-in-technical-graph"
@@ -961,6 +968,13 @@
         "category": "tests",
         "declared": "tests/unit/otp-test-mode.test.js",
         "resolvedPath": "tests/unit/otp-test-mode.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/user-mutation-service.test.js",
+        "resolvedPath": "tests/unit/user-mutation-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13175,6 +13189,60 @@
       },
       {
         "feature": "auth-identity",
+        "fn": "createAdminUser",
+        "file": "services/user-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
+        "fn": "setUserRole",
+        "file": "services/user-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
+        "fn": "setUserPasswordHash",
+        "file": "services/user-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
+        "fn": "anonymizeUser",
+        "file": "services/user-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
+        "fn": "deleteUser",
+        "file": "services/user-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
+        "fn": "deleteNonAdminUsers",
+        "file": "services/user-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
+        "fn": "incrementBigBasketCount",
+        "file": "services/user-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
+        "fn": "markBigBasketNotified",
+        "file": "services/user-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
+        "fn": "recalculateUserLoyalty",
+        "file": "services/user-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "auth-identity",
         "fn": "getActiveAuthorizationForUpdate",
         "file": "services/pickup-authorization-service.js",
         "status": "resolved"
@@ -13995,6 +14063,12 @@
         "from": "dashboard",
         "to": "auth",
         "raw": "auth",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
+        "to": "auth-identity",
+        "raw": "auth-identity (mutations users via services/user-mutation-service.js ? LOT12)",
         "resolved": true
       },
       {
@@ -18543,6 +18617,26 @@
       },
       {
         "from": "dashboard",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin/system.js",
+                "targetFile": "services/user-mutation-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin/users.js",
+                "targetFile": "services/user-mutation-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
         "to": "business-rules",
         "channels": [
           {
@@ -21107,6 +21201,26 @@
               {
                 "sourceFileId": "routes/loyalty.js",
                 "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "loyalty",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/loyalty-service.js",
+                "targetFile": "services/user-mutation-service.js"
+              },
+              {
+                "sourceFileId": "routes/loyalty.js",
+                "targetFile": "services/user-mutation-service.js"
               }
             ]
           }
@@ -24870,7 +24984,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 822
+        "filesObserved": 824
       },
       "boutique": {
         "filesObserved": 158,
@@ -25285,36 +25399,21 @@
     "users": {
       "writers": [
         {
-          "feature": "auth",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
           "feature": "auth-identity",
           "mode": "RW",
           "declaredOwner": true,
           "technical": false
-        },
-        {
-          "feature": "dashboard",
-          "mode": "W",
-          "declaredOwner": false,
-          "technical": false
-        },
-        {
-          "feature": "loyalty",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
         }
       ],
       "readers": [
+        "auth",
         "auth-passkey",
         "business-rules",
+        "dashboard",
         "documents",
         "economic-engine",
         "logistics",
+        "loyalty",
         "notifications",
         "orders",
         "payments",
@@ -27052,11 +27151,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> orders",
         "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "users",
-        "msg": "table \"users\" : lifecycle owner = auth-identity (db.tables \"!\"), mais aussi écrite par auth, dashboard, loyalty"
       }
     ],
     "debt": [
@@ -27064,11 +27158,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> orders",
         "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "users",
-        "msg": "table \"users\" : lifecycle owner = auth-identity (db.tables \"!\"), mais aussi écrite par auth, dashboard, loyalty"
       }
     ],
     "expectedTopology": [
@@ -27271,11 +27360,11 @@
       }
     ],
     "summary": {
-      "signals": 2,
-      "debt": 2,
+      "signals": 1,
+      "debt": 1,
       "expectedTopology": 31,
       "generatorLimitations": 8,
-      "classifiedCandidates": 41
+      "classifiedCandidates": 40
     }
   }
 }

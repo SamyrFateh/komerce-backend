@@ -9,7 +9,8 @@
  * @depends       db, services/notification-service.js, utils/logger.js
  * @used-by       routes/admin-finance-config.js, routes/cash.js, routes/orders/create.js, routes/pickup-secret.js, routes/shared-cart.js, services/payment-cash-confirm.js, services/payment-stripe.js
  * @db-read       finance_config, loyalty_rewards, orders, users
- * @db-write      loyalty_rewards, users
+ * @db-write      loyalty_rewards
+ * @db-write-via:user-mutation-service users
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  loyalty
@@ -46,6 +47,11 @@
 
 const db = require('../db');
 const log = require('../utils/logger').forModule('loyalty-service');
+const {
+  incrementBigBasketCount,
+  markBigBasketNotified,
+  recalculateUserLoyalty,
+} = require('./user-mutation-service');
 
 // ─── Cache de la config (5 min) pour éviter de requêter à chaque commande ───
 let _configCache = null;
@@ -124,12 +130,11 @@ async function handleOrderConfirmed({ orderId, dbClient = null }) {
     }
 
     // 2. Incrémenter le compteur (en DB directement pour atomicité)
-    const { rows: [updated] } = await dbHandle.query(`
-      UPDATE users
-      SET big_basket_count = big_basket_count + 1
-      WHERE id = $1
-      RETURNING big_basket_count, big_basket_last_notified_count, full_name, phone
-    `, [order.user_id]);
+    const { rows: [updated] } =
+      await incrementBigBasketCount(
+        dbHandle,
+        order.user_id
+      );
 
     const newCount       = Number(updated.big_basket_count);
     const lastNotified   = Number(updated.big_basket_last_notified_count);
@@ -157,9 +162,10 @@ async function handleOrderConfirmed({ orderId, dbClient = null }) {
     `, [order.user_id, orderId, newCount]);
 
     // 5. Mémoriser qu'on a notifié à ce palier (évite les re-triggers)
-    await dbHandle.query(`
-      UPDATE users SET big_basket_last_notified_count = $1 WHERE id = $2
-    `, [newCount, order.user_id]);
+    await markBigBasketNotified(dbHandle, {
+      userId: order.user_id,
+      count: newCount,
+    });
 
     // 6. Notifier le client par WhatsApp (fire-and-forget, non-bloquant)
     try {
@@ -295,7 +301,7 @@ async function getLoyaltyDiscount(db, userId) {
  */
 async function recalculateLoyalty(db, userId) {
   try {
-    await db.query('SELECT recalculate_loyalty($1)', [userId]);
+    await recalculateUserLoyalty(db, userId);
   } catch (err) {
     log.error({ err }, '[LOYALTY] recalculateLoyalty error:');
   }

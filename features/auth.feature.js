@@ -87,7 +87,7 @@ module.exports = {
   db: {
     tables: [
       'revoked_tokens: R',
-      'users: RW',
+      'users: R',
     ],
   },
 
