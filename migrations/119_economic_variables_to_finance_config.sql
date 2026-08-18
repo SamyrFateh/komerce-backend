@@ -10,10 +10,11 @@
 --   hub_monthly_cost_aed     == hub_monthly_cost_aed      == 7000
 --
 -- Les 9 colonnes ci-dessous n'existaient pas encore dans finance_config.
--- Elles sont initialisées depuis economic_variables avec EXACTEMENT la priorité
--- historique value_used > value_supposed > fallback CURRENT.
--- Aucun UPDATE/DELETE de economic_variables : la table reste conservée pour
--- compatibilité/forensic et devient read-only côté runtime après ce lot.
+-- Sur une DB déployée, elles sont initialisées depuis economic_variables avec
+-- EXACTEMENT la priorité historique value_used > value_supposed > fallback.
+-- Sur un environnement neuf où la table legacy n'existe pas encore au moment
+-- du releaseCommand, les mêmes fallbacks CURRENT sont utilisés fail-safe.
+-- Aucun UPDATE/DELETE de economic_variables.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 ALTER TABLE finance_config
@@ -27,80 +28,66 @@ ALTER TABLE finance_config
   ADD COLUMN IF NOT EXISTS margin_rail_c            NUMERIC(5,2),
   ADD COLUMN IF NOT EXISTS margin_rail_d            NUMERIC(5,2);
 
-UPDATE finance_config
-SET customs_rate_default_pct = COALESCE(
-      customs_rate_default_pct,
-      (SELECT COALESCE(value_used, value_supposed)::numeric
-         FROM economic_variables
-        WHERE key = 'customs_rate_default_pct' AND is_active = TRUE
-        LIMIT 1),
-      42
-    ),
-    mix_rail_a = COALESCE(
-      mix_rail_a,
-      (SELECT COALESCE(value_used, value_supposed)::numeric
-         FROM economic_variables
-        WHERE key = 'mix_rail_a' AND is_active = TRUE
-        LIMIT 1),
-      60
-    ),
-    mix_rail_b = COALESCE(
-      mix_rail_b,
-      (SELECT COALESCE(value_used, value_supposed)::numeric
-         FROM economic_variables
-        WHERE key = 'mix_rail_b' AND is_active = TRUE
-        LIMIT 1),
-      25
-    ),
-    mix_rail_c = COALESCE(
-      mix_rail_c,
-      (SELECT COALESCE(value_used, value_supposed)::numeric
-         FROM economic_variables
-        WHERE key = 'mix_rail_c' AND is_active = TRUE
-        LIMIT 1),
-      10
-    ),
-    mix_rail_d = COALESCE(
-      mix_rail_d,
-      (SELECT COALESCE(value_used, value_supposed)::numeric
-         FROM economic_variables
-        WHERE key = 'mix_rail_d' AND is_active = TRUE
-        LIMIT 1),
-      5
-    ),
-    margin_rail_a = COALESCE(
-      margin_rail_a,
-      (SELECT COALESCE(value_used, value_supposed)::numeric
-         FROM economic_variables
-        WHERE key = 'margin_rail_a' AND is_active = TRUE
-        LIMIT 1),
-      45
-    ),
-    margin_rail_b = COALESCE(
-      margin_rail_b,
-      (SELECT COALESCE(value_used, value_supposed)::numeric
-         FROM economic_variables
-        WHERE key = 'margin_rail_b' AND is_active = TRUE
-        LIMIT 1),
-      18
-    ),
-    margin_rail_c = COALESCE(
-      margin_rail_c,
-      (SELECT COALESCE(value_used, value_supposed)::numeric
-         FROM economic_variables
-        WHERE key = 'margin_rail_c' AND is_active = TRUE
-        LIMIT 1),
-      35
-    ),
-    margin_rail_d = COALESCE(
-      margin_rail_d,
-      (SELECT COALESCE(value_used, value_supposed)::numeric
-         FROM economic_variables
-        WHERE key = 'margin_rail_d' AND is_active = TRUE
-        LIMIT 1),
-      70
-    )
-WHERE id = 1;
+DO $lot_1a4$
+BEGIN
+  IF to_regclass('public.economic_variables') IS NOT NULL THEN
+    -- SQL dynamique volontaire : une référence statique à une table absente
+    -- ferait échouer le parse d'un environnement neuf avant le IF.
+    EXECUTE $legacy_copy$
+      UPDATE finance_config
+      SET customs_rate_default_pct = COALESCE(
+            customs_rate_default_pct,
+            (SELECT COALESCE(value_used, value_supposed)::numeric FROM economic_variables
+              WHERE key = 'customs_rate_default_pct' AND is_active = TRUE LIMIT 1), 42),
+          mix_rail_a = COALESCE(
+            mix_rail_a,
+            (SELECT COALESCE(value_used, value_supposed)::numeric FROM economic_variables
+              WHERE key = 'mix_rail_a' AND is_active = TRUE LIMIT 1), 60),
+          mix_rail_b = COALESCE(
+            mix_rail_b,
+            (SELECT COALESCE(value_used, value_supposed)::numeric FROM economic_variables
+              WHERE key = 'mix_rail_b' AND is_active = TRUE LIMIT 1), 25),
+          mix_rail_c = COALESCE(
+            mix_rail_c,
+            (SELECT COALESCE(value_used, value_supposed)::numeric FROM economic_variables
+              WHERE key = 'mix_rail_c' AND is_active = TRUE LIMIT 1), 10),
+          mix_rail_d = COALESCE(
+            mix_rail_d,
+            (SELECT COALESCE(value_used, value_supposed)::numeric FROM economic_variables
+              WHERE key = 'mix_rail_d' AND is_active = TRUE LIMIT 1), 5),
+          margin_rail_a = COALESCE(
+            margin_rail_a,
+            (SELECT COALESCE(value_used, value_supposed)::numeric FROM economic_variables
+              WHERE key = 'margin_rail_a' AND is_active = TRUE LIMIT 1), 45),
+          margin_rail_b = COALESCE(
+            margin_rail_b,
+            (SELECT COALESCE(value_used, value_supposed)::numeric FROM economic_variables
+              WHERE key = 'margin_rail_b' AND is_active = TRUE LIMIT 1), 18),
+          margin_rail_c = COALESCE(
+            margin_rail_c,
+            (SELECT COALESCE(value_used, value_supposed)::numeric FROM economic_variables
+              WHERE key = 'margin_rail_c' AND is_active = TRUE LIMIT 1), 35),
+          margin_rail_d = COALESCE(
+            margin_rail_d,
+            (SELECT COALESCE(value_used, value_supposed)::numeric FROM economic_variables
+              WHERE key = 'margin_rail_d' AND is_active = TRUE LIMIT 1), 70)
+      WHERE id = 1
+    $legacy_copy$;
+  ELSE
+    UPDATE finance_config
+    SET customs_rate_default_pct = COALESCE(customs_rate_default_pct, 42),
+        mix_rail_a               = COALESCE(mix_rail_a, 60),
+        mix_rail_b               = COALESCE(mix_rail_b, 25),
+        mix_rail_c               = COALESCE(mix_rail_c, 10),
+        mix_rail_d               = COALESCE(mix_rail_d, 5),
+        margin_rail_a            = COALESCE(margin_rail_a, 45),
+        margin_rail_b            = COALESCE(margin_rail_b, 18),
+        margin_rail_c            = COALESCE(margin_rail_c, 35),
+        margin_rail_d            = COALESCE(margin_rail_d, 70)
+    WHERE id = 1;
+  END IF;
+END
+$lot_1a4$;
 
 ALTER TABLE finance_config
   ALTER COLUMN customs_rate_default_pct SET DEFAULT 42,
