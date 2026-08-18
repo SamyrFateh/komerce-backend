@@ -95,6 +95,10 @@ function scrollToCatalog() {
  * Owner : home-controller.js (« subcats desktop + active state »).
  * Mobile reste inchangé : early return, aucune participation au pager mobile.
  *
+ * Contrat de transition : les classes historiques k-subcats-* / k-subchip
+ * restent présentes pour le comportement et les invariants existants ; les
+ * classes k-subcutout-* ajoutent uniquement la nouvelle présentation.
+ *
  * @param {string|null} catKey  Univers actif ('all'/null = barre masquée).
  * @param {{count?:number}} [opts]  Compteur produits de l'univers.
  */
@@ -130,37 +134,37 @@ export function renderSubcatRail(catKey, opts = {}) {
   const activeSubcat = state.activeSubcat || '';
 
   const header = `
-    <div class="k-subcutout-context" data-cat-label="${escapeHtml(catKey)}">
-      <button type="button" class="k-subcutout-back" data-back-all="1" aria-label="Retour à toutes les catégories">
+    <div class="k-subcats-context k-subcutout-context" data-cat-label="${escapeHtml(catKey)}">
+      <button type="button" class="k-subcats-back k-subcutout-back" data-back-all="1" aria-label="Retour à toutes les catégories">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         <span>Toutes les catégories</span>
       </button>
-      <span class="k-subcutout-title">
-        ${emoji ? `<span class="k-subcutout-emoji" aria-hidden="true">${escapeHtml(emoji)}</span>` : ''}
-        <span class="k-subcutout-name">${escapeHtml(label)}</span>
-        ${count != null ? `<span class="k-subcutout-count">${count}</span>` : ''}
+      <span class="k-subcats-title k-subcutout-title">
+        ${emoji ? `<span class="k-subcats-emoji k-subcutout-emoji" aria-hidden="true">${escapeHtml(emoji)}</span>` : ''}
+        <span class="k-subcats-name k-subcutout-name">${escapeHtml(label)}</span>
+        ${count != null ? `<span class="k-subcats-count k-subcutout-count">${count}</span>` : ''}
       </span>
     </div>`;
 
   let rail = '';
   if (subcats.length) {
     const buttons = [
-      `<button type="button" class="k-subcutout ${activeSubcat ? '' : 'active'}" data-subcat="" aria-label="Voir tous les produits ${escapeHtml(label)}">
+      `<button type="button" class="k-subchip k-subcutout ${activeSubcat ? '' : 'active'}" data-subcat="" aria-label="Voir tous les produits ${escapeHtml(label)}">
         <span class="k-subcutout-icon k-subcutout-icon--all" aria-hidden="true">✦</span>
-        <span class="k-subcutout-label">Tout voir</span>
+        <span class="k-subchip-label k-subcutout-label">Tout voir</span>
       </button>`,
       ...subcats.map((sub) => {
         const key = escapeHtml(sub.key);
         const lbl = escapeHtml(sub.shortLabel || sub.label || sub.key);
         const icon = escapeHtml(sub.icon || '✨');
         const active = activeSubcat === sub.key ? ' active' : '';
-        return `<button type="button" class="k-subcutout${active}" data-subcat="${key}">
-          <span class="k-subcutout-icon" aria-hidden="true">${icon}</span>
-          <span class="k-subcutout-label">${lbl}</span>
+        return `<button type="button" class="k-subchip k-subcutout${active}" data-subcat="${key}">
+          <span class="k-subchip-icon k-subcutout-icon" aria-hidden="true">${icon}</span>
+          <span class="k-subchip-label k-subcutout-label">${lbl}</span>
         </button>`;
       }),
     ].join('');
-    rail = `<div class="k-subcutout-rail k-desktop-rayons-rail" data-cat-label="${escapeHtml(catKey)}">${buttons}</div>`;
+    rail = `<div class="k-subcats-rail k-subcutout-rail k-desktop-rayons-rail k-subcats-visible" data-cat-label="${escapeHtml(catKey)}">${buttons}</div>`;
   }
 
   wrap.innerHTML = header + rail;
@@ -176,7 +180,7 @@ export function renderSubcatRail(catKey, opts = {}) {
     });
   }
 
-  wrap.querySelectorAll('.k-subcutout').forEach((chip) => {
+  wrap.querySelectorAll('.k-subchip').forEach((chip) => {
     chip.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
