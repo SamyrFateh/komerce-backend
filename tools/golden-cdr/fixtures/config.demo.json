@@ -1,0 +1,44 @@
+{
+  "_note": "Config SYNTHÉTIQUE pour la démo locale du harnais. Structure identique à loadGlobalConfig(). En prod, le mode capture fige la vraie config depuis la DB — ne PAS utiliser ce fichier comme source de vérité.",
+  "finance": {
+    "taux_aed_kmf": 138,
+    "taux_change_eur_kmf": 492,
+    "fret_eur_per_m3": 180,
+    "avg_articles_per_order": 2.5,
+    "avg_articles_per_parcel": 4.0,
+    "avg_articles_per_shipment": 200.0,
+    "allocation_confidence": "low",
+    "allocation_calibrated_at": null,
+    "objectif_commandes_mois": 500
+  },
+  "categories": {
+    "phones":      { "key": "phones",      "douane_pct": 5,  "tva_pct": 10, "taxe_add_pct": 0 },
+    "electronics": { "key": "electronics", "douane_pct": 10, "tva_pct": 10, "taxe_add_pct": 0 },
+    "cosmetics":   { "key": "cosmetics",   "douane_pct": 20, "tva_pct": 10, "taxe_add_pct": 5 },
+    "fashion":     { "key": "fashion",     "douane_pct": 5,  "tva_pct": 10, "taxe_add_pct": 0 },
+    "appliance":   { "key": "appliance",   "douane_pct": 10, "tva_pct": 10, "taxe_add_pct": 0 },
+    "bulky":       { "key": "bulky",       "douane_pct": 5,  "tva_pct": 10, "taxe_add_pct": 0 }
+  },
+  "components": [
+    { "key": "sourcing_fee",  "label": "Frais sourcing",     "category": "sourcing",         "unit": "pct",              "default_value": 3,      "applies_to": "all" },
+    { "key": "hub_handling",  "label": "Manutention hub",    "category": "hub",              "unit": "kmf_per_parcel",   "default_value": 2000,   "applies_to": "all" },
+    { "key": "packaging_std", "label": "Emballage",          "category": "packaging",        "unit": "kmf",              "default_value": 500,    "applies_to": "all" },
+    { "key": "freight_sea",   "label": "Fret maritime (DOUBLON)", "category": "freight",     "unit": "kmf_per_m3",       "default_value": 5000,   "applies_to": "all" },
+    { "key": "customs_comp",  "label": "Douane composant (dédupliqué)", "category": "customs", "unit": "pct",            "default_value": 3,      "applies_to": "all" },
+    { "key": "transit_port",  "label": "Port transitaire",   "category": "port_transitary",  "unit": "kmf_per_shipment", "default_value": 100000, "applies_to": "all" },
+    { "key": "distribution",  "label": "Distribution locale","category": "distribution",     "unit": "kmf_per_order",    "default_value": 3000,   "applies_to": "all" },
+    { "key": "relay_fee",     "label": "Frais relais",       "category": "relay",            "unit": "kmf",              "default_value": 1500,   "applies_to": "all" },
+    { "key": "stripe_fee",    "label": "Frais Stripe",       "category": "payment",          "unit": "pct",              "default_value": 3,      "applies_to": "all" },
+    { "key": "cash_fee",      "label": "Frais cash relais",  "category": "payment",          "unit": "kmf",              "default_value": 500,    "applies_to": "all" }
+  ],
+  "components_source": "cost_components",
+  "provisions": [
+    { "label": "Provision retour", "rate_pct": 2 },
+    { "label": "Provision casse",  "rate_pct": 1 }
+  ],
+  "charges": [
+    { "label": "Loyer + salaires", "recurrence_period": "monthly",   "amount_kmf": 2000000 },
+    { "label": "Frais par commande","recurrence_period": "per_order", "amount_kmf": 200 }
+  ],
+  "cost_benchmarks": []
+}
