@@ -27,6 +27,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+      - name: Installer les dépendances verrouillées
+        run: npm ci --ignore-scripts
       - name: Vérifier la présence du golden réel
         run: |
           if [ ! -f tools/golden-cdr/golden/cdr.golden.json ]; then
