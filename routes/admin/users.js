@@ -9,7 +9,8 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, users
- * @db-write      basket_items, baskets, order_status_history, recipients, scan_events, sms_log, users, wallet_transactions, wallets
+ * @db-write      basket_items, baskets, order_status_history, recipients, scan_events, sms_log, wallet_transactions, wallets
+ * @db-write-via:user-mutation-service users
  * @db-write-via:incident-write-service incidents
  * @db-write-via:scan-write-service scans
  * @db-txn        resolve_before_behavior_change
@@ -26,6 +27,13 @@ const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { detachUserFromScans } = require('../../services/scan-write-service');
 const { detachUserFromIncidents } = require('../../services/incident-write-service');
+const {
+  createAdminUser,
+  setUserRole,
+  setUserPasswordHash,
+  anonymizeUser,
+  deleteUser,
+} = require('../../services/user-mutation-service');
 const log = require('../../utils/logger').child({ module: 'admin/users' });
 
 const guard = [authenticate, requireRole(['admin'])];
@@ -70,12 +78,14 @@ router.post('/users', ...guard, async (req, res, next) => {
     const { rows: existing } = await db.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.length) return res.status(409).json({ error: 'Un utilisateur avec cet email existe déjà' });
     const password_hash = await bcrypt.hash(password, 10);
-    const { rows: [user] } = await db.query(
-      `INSERT INTO users (full_name, email, phone, role, currency_pref, password_hash, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-       RETURNING id, full_name, email, phone, role, currency_pref, created_at`,
-      [full_name, email.toLowerCase().trim(), phone || null, role, currency_pref, password_hash]
-    );
+    const { rows: [user] } = await createAdminUser(db, {
+      fullName: full_name,
+      email: email.toLowerCase().trim(),
+      phone: phone || null,
+      role,
+      currencyPref: currency_pref,
+      passwordHash: password_hash,
+    });
     log.info(`👤 Admin created user ${user.email} (${role}) by ${req.user.email}`);
     res.status(201).json(user);
   } catch(err) { next(err); }
@@ -88,10 +98,10 @@ router.put('/users/:id/role', ...guard, async (req, res, next) => {
     const { role } = req.body;
     if (!role || !VALID_ROLES.includes(role)) return res.status(400).json({ error: `Rôle invalide. Utilisez : ${VALID_ROLES.join(', ')}` });
     if (id === req.user.id && role !== 'admin') return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle' });
-    const { rows: [user] } = await db.query(
-      `UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2::uuid RETURNING id, full_name, email, role`,
-      [role, id]
-    );
+    const { rows: [user] } = await setUserRole(db, {
+      userId: id,
+      role,
+    });
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
     log.info(`🔑 Admin changed role of ${user.email} to ${role} by ${req.user.email}`);
     res.json({ success: true, user });
@@ -154,10 +164,10 @@ router.put('/users/:id/password', ...guard, async (req, res, next) => {
     }
 
     const password_hash = await bcrypt.hash(password, 12);
-    await db.query(
-      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2::uuid',
-      [password_hash, id]
-    );
+    await setUserPasswordHash(db, {
+      userId: id,
+      passwordHash: password_hash,
+    });
 
     const action = id === req.user.id ? 'self-changed' : 'admin-reset';
     log.info(`🔒 Password ${action} for ${existing.email} by ${req.user.email} (IP: ${req.ip})`);
@@ -177,10 +187,7 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
     const { rows: [{ count: orderCount }] } = await db.query('SELECT COUNT(*) FROM orders WHERE user_id = $1::uuid', [id]);
     if (Number(orderCount) > 0) {
-      await db.query(
-        `UPDATE users SET email = 'deleted_' || id || '@komerce.deleted', full_name = '[Compte supprimé]',
-           phone = NULL, password_hash = '', updated_at = NOW() WHERE id = $1::uuid`, [id]
-      );
+      await anonymizeUser(db, id);
       log.info(`🗑️ Admin soft-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur anonymisé (${orderCount} commande(s) conservée(s))`, type: 'soft_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     } else {
@@ -211,7 +218,7 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
           else await db.query(q, [id]);
         } catch (_) { /* table may not exist */ }
       }
-      await db.query('DELETE FROM users WHERE id = $1::uuid', [id]);
+      await deleteUser(db, id);
       log.info(`🗑️ Admin hard-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur ${user.full_name} supprimé définitivement`, type: 'hard_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     }

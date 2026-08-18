@@ -115,7 +115,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 2
 - tests: 13
 - tables owned (lifecycle): 0
-- tables written: 1
+- tables written: 0
 - interfaces exposed: 0
 - internal APIs: 6
 - dependencies (consumes): 4 — auth-identity, infrastructure, notifications, orders
@@ -125,18 +125,18 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Authentifier un utilisateur et gérer son identité active (OTP, login/register, magic-link, guest-checkout, profil) via les routes exposées.
 
-- services: 2
+- services: 3
 - routes: 3
 - boutique: 3
 - utils: 1
 - migrations: 1
-- tests: 6
+- tests: 7
 - tables owned (lifecycle): 4 — `revoked_tokens`, `users`, `otp_codes`, `user_pickup_authorizations`
 - tables written: 4
 - interfaces exposed: 22
-- internal APIs: 3
+- internal APIs: 12
 - dependencies (consumes): 7 — platform-ops, infrastructure, auth, auth-passkey, notifications, wallet, documents
-- consumers: 10 — auth, auth-passkey, catalog, documents, logistics, loyalty, orders, platform-ops, shared-cart, wallet
+- consumers: 11 — auth, auth-passkey, catalog, dashboard, documents, logistics, loyalty, orders, platform-ops, shared-cart, wallet
 
 ### auth-passkey _(business-feature)_
 
@@ -215,10 +215,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - dash: 83
 - tests: 31
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
-- tables written: 18
+- tables written: 17
 - interfaces exposed: 65
 - internal APIs: 0
-- dependencies (consumes): 15 — incident-management, orders, infrastructure, payments, logistics, inventory, economic-engine, wallet, auth, customs, documents, recommendations, purchasing, business-rules, decision-signals
+- dependencies (consumes): 16 — incident-management, orders, infrastructure, payments, logistics, inventory, economic-engine, wallet, auth, auth-identity, customs, documents, recommendations, purchasing, business-rules, decision-signals
 - consumers: 5 — economic-engine, incident-management, infrastructure, orders, admin-dashboard
 
 ### decision-signals _(piloting-capability)_
@@ -360,7 +360,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 1
 - tests: 3
 - tables owned (lifecycle): 2 — `loyalty_tiers`, `loyalty_rewards`
-- tables written: 3
+- tables written: 2
 - interfaces exposed: 7
 - internal APIs: 0
 - dependencies (consumes): 5 — infrastructure, auth, notifications, auth-identity, wallet
@@ -659,7 +659,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `transaction_documents` | `documents` | single-writer | documents | — |
 | `unsold_items` | `unsold-resolution` | single-writer | unsold-resolution | — |
 | `user_pickup_authorizations` | `auth-identity` | single-writer | auth-identity | — |
-| `users` | `auth-identity` | declared-table-owner | auth, auth-identity, dashboard, loyalty | auth-passkey, business-rules, documents, economic-engine, logistics, notifications, orders, payments, platform-ops, shared-cart, wallet |
+| `users` | `auth-identity` | declared-table-owner | auth-identity | auth, auth-passkey, business-rules, dashboard, documents, economic-engine, logistics, loyalty, notifications, orders, payments, platform-ops, shared-cart, wallet |
 | `v_loyalty_summary` | _ambiguë_ | no-declared-writer | — | loyalty |
 | `v_unsold_pipeline` | _ambiguë_ | no-declared-writer | — | unsold-resolution |
 | `wallet_consumptions` | `wallet` | single-writer | wallet | — |
@@ -1147,6 +1147,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-session-policy.js` | auth | resolved |
 | `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-token-policy.js` | auth | resolved |
 | `makeIntlPhoneInput` | `public/boutique/js/b-phone.js` | auth-identity | resolved |
+| `createAdminUser` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `setUserRole` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `setUserPasswordHash` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `anonymizeUser` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `deleteUser` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `deleteNonAdminUsers` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `incrementBigBasketCount` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `markBigBasketNotified` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `recalculateUserLoyalty` | `services/user-mutation-service.js` | auth-identity | resolved |
 | `getActiveAuthorizationForUpdate` | `services/pickup-authorization-service.js` | auth-identity | resolved |
 | `hasActiveAuthorization` | `services/pickup-authorization-service.js` | auth-identity | resolved |
 | `getRuleNumber` | `utils/rules.js` | business-rules | resolved |
@@ -1289,6 +1298,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | dashboard | economic-engine (`economic-engine (métriques financières)`) | ✔ |
 | dashboard | wallet (`wallet (soldes et crédits)`) | ✔ |
 | dashboard | auth (`auth`) | ✔ |
+| dashboard | auth-identity (`auth-identity (mutations users via services/user-mutation-service.js ? LOT12)`) | ✔ |
 | dashboard | customs (`customs`) | ✔ |
 | dashboard | documents (`documents`) | ✔ |
 | dashboard | recommendations (`recommendations`) | ✔ |
@@ -1461,12 +1471,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (2)
+### DETTE / DRIFT ACTIONNABLE (1)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
-- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ users — table "users" : lifecycle owner = auth-identity (db.tables "!"), mais aussi écrite par auth, dashboard, loyalty
 
 ### TOPOLOGIE ATTENDUE — hors dette (31)
 
@@ -1525,7 +1534,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 822 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 824 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 158 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1582,6 +1591,7 @@ Meta Graph monté : oui.
 | customs | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | customs | orders | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | auth | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| dashboard | auth-identity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | decision-signals | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1647,6 +1657,7 @@ Meta Graph monté : oui.
 | logistics | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | refunds | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | loyalty | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| loyalty | auth-identity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | loyalty | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | loyalty | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | notifications | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1774,7 +1785,6 @@ Meta Graph monté : oui.
 - `logistics` → `customs` (déclaré : `customs (statut declaration)`)
 - `logistics` → `economic-engine` (déclaré : `economic-engine`)
 - `logistics` → `wallet` (déclaré : `wallet`)
-- `loyalty` → `auth-identity` (déclaré : `auth-identity (identification du client)`)
 - `loyalty` → `wallet` (déclaré : `wallet (aucune écriture — v_loyalty_summary et le calcul de palier ne lisent pas les tables wallet)`)
 - `orders` → `dashboard` (déclaré : `dashboard`)
 - `recommendations` → `auth` (déclaré : `auth`)
