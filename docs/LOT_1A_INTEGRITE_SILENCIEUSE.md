@@ -1,6 +1,6 @@
 # LOT 1A — Intégrité silencieuse
 
-Statut : **OUVERT — 2/4 sous-lots engagés**. Migration de structure uniquement.
+Statut : **OUVERT — 3/4 sous-lots traités**. Migration de structure uniquement.
 
 Invariant de lot : **Golden CDR `BEFORE == AFTER`**. Aucun déplacement volontaire de prix n'est autorisé ici. Toute correction de vérité économique appartient au LOT 1B et suivra `DELTA TOTAL == DELTA EXPLIQUÉ`.
 
@@ -19,92 +19,102 @@ LOT 2 UI reste hors séquence.
 
 **Merged : PR #800 — commit `cc32bb4469584d0ed6012e68775de8bdb2112581`.**
 
-Décision de migration additive : **masquer puis purger plus tard**, conformément à I-8.
+- GET taxes/dims conservés temporairement en lecture forensic/compatibilité.
+- PUT taxes/dims → **410 Gone**, zéro écriture DB.
+- Settings masque les onglets Taxes/Dimensions via un guard additif.
+- Sources runtime : `customs_categories`.
+- Tables/code legacy conservés jusqu'au LOT 11.
+- Golden 13/13, Business Graph et PR enforcement verts.
 
-### État livré
+## 1A-2 — FX USD ✅
 
-- `GET /api/admin/pricing-matrices/taxes` : conservé temporairement en lecture forensic/compatibilité.
-- `GET /api/admin/pricing-matrices/dims` : conservé temporairement en lecture forensic/compatibilité.
-- `PUT /api/admin/pricing-matrices/taxes/:category` : **410 Gone**, zéro écriture DB.
-- `PUT /api/admin/pricing-matrices/dims/:category` : **410 Gone**, zéro écriture DB.
-- Settings : les onglets **Taxes** et **Dimensions** sont masqués par un guard additif chargé après `SettingsView`.
-- Sources de vérité rappelées explicitement par le 410 :
-  - taxes → `customs_categories.{douane_pct,tva_pct,taxe_add_pct}`;
-  - dimensions défaut → `customs_categories.{default_dim_l_cm,default_dim_w_cm,default_dim_h_cm}`.
-- Les tables, anciens GET et code legacy interne ne sont **pas supprimés** ici : purge physique en LOT 11 après preuve de remplacement.
+**Merged : PR #801 — commit `607e03984887e30d128d74449e44155bc4b0cd00`.**
 
-### Preuves livrées
+### Vérité livrée
 
-- unit : admin guard conservé; PUT taxes/dims = 410; aucune query DB sur PUT; GET conserve sa forme historique;
-- intégration DB réelle : ligne taxes/dims strictement identique avant/après un PUT legacy;
-- UI : Taxes/Dimensions absents, Règles/Historique conservés, remasquage après rerender;
-- Golden CDR : `PARITÉ OK` sur les 13 témoins CURRENT;
-- Business Graph régénéré officiellement;
-- PR enforcement : vert.
-
-## 1A-2 — FX USD — canonisation CURRENT
-
-Statut : **implémenté sur PR #801, validation finale en cours**.
-
-### Constat prouvé
-
-- La source persistée canonique reste `finance_config` :
-  - `taux_change_eur_kmf` pour EUR/KMF;
-  - `taux_aed_kmf` pour AED/KMF.
-- **Il n'existe pas de colonne USD canonique** dans `finance_config`.
-- Le comportement CURRENT dérivait USD de façon répétée dans plusieurs consommateurs :
+- EUR/KMF et AED/KMF restent persistés dans `finance_config`.
+- USD reste **DERIVED_CURRENT**, jamais persisté ni édité.
+- Règle CURRENT unique dans `utils/rates.js` :
 
 ```text
 USD_KMF = 0.92 × EUR_KMF
 ```
 
-- Cette formule était recopiée dans `services/pricing-cdr.js`, `services/supplier-catalog-scanner.js` et `PricingView.js`.
-- La capture Golden DB réelle porte actuellement **EUR=495 / AED=139**.
-- `PricingView` utilisait historiquement **EUR=492 / AED=138** via ses fallbacks locaux, car sa lecture du contrat `admin-finance-config` ne consommait pas réellement les taux DB. Brancher directement 495/139 en LOT 1A déplacerait les simulations silencieusement : **interdit**.
+- CDR et scanner sourcing consomment cette projection.
+- `PricingView` ne porte plus sa propre formule USD ; il consomme la projection compat API.
+- La divergence historique PricingView **492/138** vs DB réelle Golden **495/139** est rendue explicite mais n'est pas corrigée silencieusement.
 
-### Autorité retenue
+### Preuves livrées
 
-`utils/rates.js` est l'autorité runtime unique du FX :
+- backend FX : **54/54 PASS**;
+- PricingView actif sous son harnais Jest/jsdom : PASS;
+- scanner + CDR dédié : `10 USD` avec EUR=495 → **4554 KMF**;
+- Golden CDR : **13/13 PARITÉ OK**, fingerprint `05d6b471d8b870ca`;
+- Business Graph officiel + Required verdict verts.
 
-- EUR et AED restent persistés dans `finance_config`;
-- USD reste **DERIVED_CURRENT**, jamais édité ni persisté;
-- `USD_EUR_CURRENT_RATIO = 0.92` ne vit plus qu'à cet endroit;
-- `resolveFxRates(finance)` produit EUR/AED/USD;
-- USD est normalisé à 6 décimales pour ne pas exposer le bruit IEEE-754;
-- `getRates()` garde volontairement son ancien contrat `{ eur_kmf, aed_kmf }` pour ne pas élargir silencieusement les contrats existants.
+## 1A-3 — Commission relais — canonisation CURRENT
 
-### Compatibilité PricingView
+Statut : **implémenté sur PR #802, validation finale en cours**.
 
-`admin-finance-config` expose deux projections distinctes :
+### Audit prouvé
+
+La DB CURRENT contient quatre représentations :
 
 ```text
-fx.current
-  → vérité DB réelle + USD dérivé CURRENT
-
-fx.pricing_view_current_compat
-  → 492 / 138 / 452.64, reproduction exacte du comportement historique de PricingView
+finance_config.commission_relais_pct          = 5%
+finance_config.commission_relais_standard_kmf = 500
+finance_config.commission_relais_showroom_kmf = 750
+cost_components.commission_relais_kmf         = 500
 ```
 
-`PricingView` consomme désormais `pricing_view_current_compat` au lieu de porter sa propre formule `0.92`. Les literals 492/138/452.64 ne subsistent côté vue que comme fallback **old-server / config indisponible**, explicitement iso-comportemental.
+Consommation réelle avant 1A-3 :
 
-La correction future de la divergence PricingView ↔ DB réelle n'est **pas** absorbée dans 1A-2 : si elle doit déplacer un résultat, elle suivra le protocole de correction de vérité et un delta expliqué.
+- CDR estimé → `cost_components.commission_relais_kmf`;
+- allocation réelle d'un parcel collecté → `finance_config.commission_relais_standard_kmf`;
+- `commission_relais_pct` → éditable mais **aucun consommateur runtime trouvé**;
+- `commission_relais_showroom_kmf` → **aucun consommateur runtime trouvé**;
+- `business_rules.COMMISSION_RELAIS_*` → legacy, aucun lecteur runtime prouvé;
+- copies `economic_variables` → hors scope jusqu'à 1A-4.
 
-### Preuves déjà obtenues sur le patch 1A-2
+### Règle de priorité canonique
 
-- `rates` + scanner sourcing : **33/33 tests ciblés verts**;
-- scanner : USD avec EUR=495 → `10 USD = 4554 KMF`;
-- test CDR dédié : un `cost_component` USD de 10 avec EUR=495 est valorisé **4554 KMF**;
-- Golden CDR : **13/13 `PARITÉ OK`**, fingerprint `05d6b471d8b870ca`;
-- le workflow Golden surveille désormais aussi `utils/rates.js`.
+`utils/relay-commission.js` fixe une seule priorité CURRENT :
 
-### Gate de fermeture 1A-2
+```text
+1. cost_components.commission_relais_kmf          ← autorité OWNED nominale
+2. finance_config.commission_relais_standard_kmf  ← fallback legacy
+3. 500 KMF                                         ← fallback CURRENT ultime
+```
 
-- test `admin-finance-config` avec `fx.current` + `fx.pricing_view_current_compat` vert;
-- tests `PricingView` verts;
-- Business Graph régénéré via `npm run business-graph:gen`;
+`commission_relais_pct` et `showroom` sont volontairement exclus : aucun moteur ne doit deviner un contexte showroom. Une future commission scopée exige un contexte relais explicite et des tests dédiés.
+
+### État cible 1A-3
+
+- `allocateParcelRealCosts()` consomme le composant canonique en priorité ;
+- la provenance de la commission réelle est persistée dans `source` et renvoyée au résultat;
+- `finance_config.standard` reste fallback legacy uniquement;
+- les tentatives PUT sur `%`, `standard` ou `showroom` via `admin-finance-config` → **410 Gone**, zéro écriture DB;
+- `commission_relais_pct` reste lisible dans la réponse historique pour compat/forensic mais disparaît du schéma éditable;
+- l'éditeur canonique est le composant `cost_components` key `commission_relais_kmf`;
+- aucune suppression physique des anciennes colonnes avant LOT 11.
+
+### Preuves déjà obtenues avant push du patch
+
+- resolver : composant > standard > 500, zéro accepté comme valeur explicite;
+- Golden snapshot : composant=500, standard=500, showroom=750, pct=5;
+- allocation : composant prioritaire + fallback standard + provenance;
+- ancien éditeur finance : 410, zéro DB write;
+- suite focalisée relais/finance/allocation : **39/39 PASS**;
+- Golden CDR : **13/13 PARITÉ OK** avant push du patch.
+
+### Gate de fermeture 1A-3
+
+- helper/pather temporaires retirés;
+- workflow Golden étendu à `services/cost-allocation/allocate.js` + `utils/relay-commission.js`;
+- Business Graph régénéré officiellement;
 - Golden CDR vert sur le head final;
 - PR enforcement / Required verdict verts;
-- squash merge de PR #801.
+- squash merge de PR #802.
 
 ## Gates communs LOT 1A
 
@@ -119,9 +129,9 @@ Chaque sous-lot doit satisfaire :
 
 ## Ordre de travail
 
-- **1A-1** faux éditeurs Taxes/Dimensions — ✅ mergé PR #800.
-- **1A-2** FX USD — en validation finale PR #801.
-- **1A-3** commission relais — prochain : audit des trois champs puis règle de priorité verrouillée.
+- **1A-1** faux éditeurs Taxes/Dimensions — ✅ PR #800.
+- **1A-2** FX USD — ✅ PR #801.
+- **1A-3** commission relais — validation finale PR #802.
 - **1A-4** `redistribute` → `economic_variables` — dernier, avec re-test Ops.
 
 LOT 1A est fermé uniquement quand les quatre sous-lots sont prouvés et que le Golden CURRENT reste identique.
