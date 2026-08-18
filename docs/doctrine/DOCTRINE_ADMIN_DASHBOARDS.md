@@ -1,7 +1,7 @@
 # DOCTRINE ADMIN & DASHBOARDS KOMERCE
 
 **Version canonique ordonnée — v1.4 — Août 2026**
-**Statut : FIGÉE (surfaces & économie) + chapitre Sécurité (VI) + gabarit dashboard (VII, le moule).** Frontière Finance tranchée (II-5b) ; fret entièrement tranché — DEDICATED, W/M unifié, option (b) coût vs prix (I-5). Golden CDR livré (LOT 0C-eco). Décisions résiduelles non-bloquantes en Partie V et VI-5. **Prochain : suite du LOT 0 (0A matrice des surfaces, 0B inventaire des variables). Aucun chantier UI (LOT 2+) ne démarre avant validation doctrine + LOT 0.**
+**Statut : FIGÉE (surfaces & économie) + chapitre Sécurité (VI) + gabarit dashboard (VII, le moule).** Frontière Finance tranchée (II-5b) ; fret entièrement tranché — DEDICATED, W/M unifié, option (b) coût vs prix (I-5). Golden CDR (0C-eco), inventaire des surfaces (0A) et des variables (0B) livrés — **gate de sortie LOT 0 à 4/5, reste 0C-ui (gel des contrats)**. Décisions résiduelles non-bloquantes en Partie V et VI-5. **Prochain : 0C-ui puis clôture du LOT 0. Aucun chantier UI (LOT 2+) ne démarre avant validation doctrine + LOT 0.**
 
 > Ce document remplace le brouillon de doctrine et le verdict du challenge admin. Il a été
 > confronté au code réel du repo (`komerce.zip`) et à la carte générée `docs/DASHBOARDS_360.md`.
