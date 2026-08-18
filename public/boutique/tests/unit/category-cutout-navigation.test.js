@@ -12,7 +12,8 @@ const home = fs.readFileSync(path.join(ROOT, 'js/controllers/home-controller.js'
 describe('category cutout navigation contract', () => {
   it('conserve k-chip pour le comportement et ajoute un modifier visuel dédié', () => {
     expect(renderer).toMatch(/class="k-chip k-cat-cutout/);
-    expect(mobile).toMatch(/\.k-cat-cutout\s*\{[^}]*background:\s*transparent[^}]*border:\s*0/s);
+    expect(mobile).toMatch(/\.k-cat-cutout\s*\{[^}]*background:\s*transparent/s);
+    expect(mobile).toMatch(/\.k-cat-cutout\s*\{[^}]*border:\s*0/s);
   });
 
   it('affiche les catégories comme objets contenus avec petit libellé dessous', () => {
@@ -21,11 +22,11 @@ describe('category cutout navigation contract', () => {
     expect(mobile).toMatch(/\.k-cat-cutout\.active \.k-chip-label::after[\s\S]*height:\s*2px/);
   });
 
-  it('n émet plus les pills desktop historiques pour les sous-catégories', () => {
-    expect(home).toContain('class="k-subcutout');
-    expect(home).toContain('class="k-subcutout-rail k-desktop-rayons-rail"');
-    expect(home).toMatch(/querySelectorAll\('\.k-subcutout'\)/);
-    expect(home).not.toMatch(/class="k-subchip/);
+  it('préserve les hooks historiques et ajoute le skin détouré aux sous-catégories', () => {
+    expect(home).toContain('class="k-subchip k-subcutout');
+    expect(home).toContain('class="k-subcats-rail k-subcutout-rail k-desktop-rayons-rail k-subcats-visible"');
+    expect(home).toMatch(/querySelectorAll\('\.k-subchip'\)/);
+    expect(home).toContain('k-subcats-context k-subcutout-context');
   });
 
   it('rend les sous-catégories verticales, sans capsule ni fond métier', () => {
