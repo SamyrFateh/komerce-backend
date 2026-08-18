@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -15,6 +14,7 @@ const {
 } = require('../../services/transport-pricing');
 
 const RATES = {
+  SEA_WM_KG_PER_M3: 1000,
   SEA_KMF_PER_KG_COMMERCIAL: 65,
   AIR_KMF_PER_KG_TAXABLE: 2500,
   AIR_VOLUMETRIC_DIVISOR: 6000,
@@ -40,20 +40,21 @@ describe('resolveOrderItemTransportRail', () => {
   });
 });
 
-describe('computeTaxableWeightKg', () => {
-  test('SEA_STANDARD utilise le poids réel, jamais le poids volumétrique', () => {
+describe('computeTaxableWeightKg — alias W/M', () => {
+  test('SEA_STANDARD retourne le poids équivalent W/M, pas seulement le poids réel', () => {
     expect(computeTaxableWeightKg({
-      railCode: 'SEA_STANDARD', weightKg: 2, volumeCm3: 999999, airVolumetricDivisor: 6000,
-    })).toBe(2);
+      railCode: 'SEA_STANDARD',
+      weightKg: 2,
+      volumeCm3: 200000,
+      seaWmKgPerM3: 1000,
+    })).toBeCloseTo(200, 10);
   });
 
   test('AIR_EXPRESS utilise max(poids réel, poids volumétrique)', () => {
-    // volume 12000 / 6000 = 2 > poids réel 1 → poids volumétrique retenu
     expect(computeTaxableWeightKg({
       railCode: 'AIR_EXPRESS', weightKg: 1, volumeCm3: 12000, airVolumetricDivisor: 6000,
     })).toBe(2);
 
-    // poids réel 5 > poids volumétrique 2 → poids réel retenu
     expect(computeTaxableWeightKg({
       railCode: 'AIR_EXPRESS', weightKg: 5, volumeCm3: 12000, airVolumetricDivisor: 6000,
     })).toBe(5);
@@ -61,25 +62,42 @@ describe('computeTaxableWeightKg', () => {
 });
 
 describe('quoteTransportPriceForItem', () => {
-  test('calcule price_kmf = poids × quantité × tarif KMF/kg (SEA_STANDARD)', () => {
+  test('SEA volume-dominant facture la quantité W/M au tarif commercial KMF/kg équivalent', () => {
     const quote = quoteTransportPriceForItem({
       requestedTransportRailCode: null,
       weightKg: 1.5,
+      volumeCm3: 200000,
       quantity: 2,
       rates: RATES,
     });
-    expect(quote).toEqual({
+    expect(quote).toMatchObject({
       transport_rail: 'SEA_STANDARD',
-      taxable_weight_kg: 1.5,
+      taxable_weight_kg: 200,
+      chargeable_quantity: 0.2,
+      chargeable_unit: 'm3',
+      dominant_measure: 'volume',
       unit_price_kmf_per_kg: 65,
-      price_kmf: Math.round(1.5 * 2 * 65),
+      price_kmf: Math.round(200 * 2 * 65),
     });
   });
 
-  test('poids absent (produit sans weight_kg) → traité comme 0, jamais une valeur inventée', () => {
+  test('SEA poids-dominant conserve le même prix que le poids réel', () => {
+    const quote = quoteTransportPriceForItem({
+      requestedTransportRailCode: null,
+      weightKg: 1.5,
+      volumeCm3: 0,
+      quantity: 2,
+      rates: RATES,
+    });
+    expect(quote.price_kmf).toBe(Math.round(1.5 * 2 * 65));
+    expect(quote.dominant_measure).toBe('weight');
+  });
+
+  test('poids et volume absents → valeur économique nulle, jamais mesure inventée', () => {
     const quote = quoteTransportPriceForItem({
       requestedTransportRailCode: null,
       weightKg: undefined,
+      volumeCm3: undefined,
       quantity: 3,
       rates: RATES,
     });
@@ -95,16 +113,26 @@ describe('quoteTransportPriceForItem', () => {
     })).toThrow(TransportPricingError);
   });
 
-  test('tarif business_rules manquant ou invalide → échec explicite (aucun prix inventé)', () => {
+  test('tarif commercial manquant ou invalide → échec explicite', () => {
     expect(() => quoteTransportPriceForItem({
       requestedTransportRailCode: null,
       weightKg: 1,
       quantity: 1,
-      rates: { SEA_KMF_PER_KG_COMMERCIAL: 0 },
-    })).toThrow('Tarif commercial manquant');
+      rates: { SEA_WM_KG_PER_M3: 1000, SEA_KMF_PER_KG_COMMERCIAL: 0 },
+    })).toThrow(TransportPricingError);
   });
 
-  test('quantité invalide retombe sur 1 (jamais 0 ou négative)', () => {
+  test('policy SEA W/M manquante → échec explicite', () => {
+    expect(() => quoteTransportPriceForItem({
+      requestedTransportRailCode: null,
+      weightKg: 1,
+      volumeCm3: 200000,
+      quantity: 1,
+      rates: { SEA_KMF_PER_KG_COMMERCIAL: 65 },
+    })).toThrow('SEA_WM_KG_PER_M3');
+  });
+
+  test('quantité invalide conserve le comportement historique : retombe sur 1', () => {
     const quote = quoteTransportPriceForItem({
       requestedTransportRailCode: null,
       weightKg: 2,
@@ -116,16 +144,16 @@ describe('quoteTransportPriceForItem', () => {
 });
 
 describe('quoteTransportPriceForOrder', () => {
-  test('agrège le prix transport sur plusieurs lignes', () => {
+  test('agrège le prix transport W/M sur plusieurs lignes', () => {
     const result = quoteTransportPriceForOrder({
       items: [
-        { product_id: 'p1', weight_kg: 1, quantity: 2, requested_transport_rail: null },
-        { product_id: 'p2', weight_kg: 0.5, quantity: 3, requested_transport_rail: 'SEA_STANDARD' },
+        { product_id: 'p1', weight_kg: 1, volume_cm3: 200000, quantity: 2, requested_transport_rail: null },
+        { product_id: 'p2', weight_kg: 0.5, volume_cm3: 0, quantity: 3, requested_transport_rail: 'SEA_STANDARD' },
       ],
       rates: RATES,
     });
 
-    const expectedP1 = Math.round(1 * 2 * 65);
+    const expectedP1 = Math.round(200 * 2 * 65);
     const expectedP2 = Math.round(0.5 * 3 * 65);
 
     expect(result.transport_price_kmf).toBe(expectedP1 + expectedP2);
