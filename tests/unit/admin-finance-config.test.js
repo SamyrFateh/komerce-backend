@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -14,6 +13,7 @@
  * Couverture (invariants métier critiques) :
  *   ✓ GET / : crée la ligne id=1 si absente, puis renvoie la config formatée
  *   ✓ GET / : calculs dérivés (seuil_rentabilite, prix_vente_estime, marge_brute_article)
+ *   ✓ GET / : expose FX CURRENT + compat PricingView sans inventer de taux USD persisté
  *   ✓ GET /schema : expose FIELD_SCHEMA tel quel
  *   ✓ PUT / : 400 si aucun champ autorisé fourni (allowlist ALLOWED_FIELDS)
  *   ✓ PUT / : champ hors allowlist ignoré silencieusement (pas dans le SET)
@@ -43,7 +43,23 @@ const mockInvalidateRatesCache = jest.fn();
 jest.mock('../../utils/rates', () => ({
   invalidateCache: (...args) => mockInvalidateRatesCache(...args),
   getRates: jest.fn(),
-  RATES_FALLBACK: {},
+  RATES_FALLBACK: { eur_kmf: 492, aed_kmf: 138 },
+  resolveFxRates: (cfg = {}) => {
+    const eur = Number(cfg.taux_change_eur_kmf) || 492;
+    const aed = Number(cfg.taux_aed_kmf) || 138;
+    return {
+      eur_kmf: eur,
+      aed_kmf: aed,
+      usd_kmf: Number((eur * 0.92).toFixed(6)),
+      usd_eur_ratio: 0.92,
+    };
+  },
+  resolvePricingViewCurrentCompatRates: () => ({
+    eur_kmf: 492,
+    aed_kmf: 138,
+    usd_kmf: 452.64,
+    usd_eur_ratio: 0.92,
+  }),
 }));
 
 const express = require('express');
@@ -69,7 +85,7 @@ const baseCfg = {
   cost_fixed_sourcing_kmf: 10000, cost_fixed_transit_kmf: 5000, cost_fixed_hub_kmf: 3000,
   cost_fixed_relais_kmf: 2000, cost_fixed_support_kmf: 1000,
   target_marge_brute_pct: 20,
-  taux_change_eur_kmf: 500, cout_achat_moyen_eur: 10, markup_cible_pct: 200,
+  taux_change_eur_kmf: 500, taux_aed_kmf: 140, cout_achat_moyen_eur: 10, markup_cible_pct: 200,
   updated_at: '2026-06-01', updated_by: 'admin-1',
 };
 
@@ -87,7 +103,7 @@ describe('admin-finance-config — GET /', () => {
     expect(res.body.costs.total_kmf).toBe(21000);
   });
 
-  it('calcule correctement les indicateurs dérivés', async () => {
+  it('calcule correctement les indicateurs dérivés et expose les projections FX 1A-2', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [baseCfg] });
     const res = await request(app).get('/api/admin/finance-config');
     expect(res.status).toBe(200);
@@ -100,6 +116,20 @@ describe('admin-finance-config — GET /', () => {
     // cout_achat_kmf = 10 * 500 = 5000 ; marge_brute_article = 15000 - 5000 = 10000
     expect(res.body.derived.cout_achat_kmf).toBe(5000);
     expect(res.body.derived.marge_brute_article_kmf).toBe(10000);
+
+    expect(res.body.fx.current).toEqual({
+      eur_kmf: 500,
+      aed_kmf: 140,
+      usd_kmf: 460,
+      usd_eur_ratio: 0.92,
+    });
+    expect(res.body.fx.pricing_view_current_compat).toEqual({
+      eur_kmf: 492,
+      aed_kmf: 138,
+      usd_kmf: 452.64,
+      usd_eur_ratio: 0.92,
+    });
+    expect(res.body.fx.usd_nature).toBe('DERIVED_CURRENT');
   });
 
   it('seuil_rentabilite = 0 si marge cible est 0 (pas de division par zéro)', async () => {
