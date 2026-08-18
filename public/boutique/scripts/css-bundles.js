@@ -14,8 +14,7 @@
 
 /**
  * Chaque entrée décrit un bundle CSS de sortie.
- * - out   : nom du fichier dans css/dist/
- * - files : noms des sources dans css/ (sans extension .css)
+ * - out   : nom du fichier dans css/ (sans extension .css)
  *
  * Ajouter un nouveau fichier CSS ici suffit — deploy-css.js et audit-boutique-arch.js
  * liront automatiquement cette liste.
@@ -36,7 +35,7 @@ const BUNDLES = [
   },
   {
     out: 'desktop.css',
-    files: ['boutique-desktop'],
+    files: ['boutique-desktop', 'side-cart-desktop-polish'],
   },
 ];
 
