@@ -30,7 +30,7 @@ function renderEmpty(container) {
   container.replaceChildren();
   const empty = document.createElement('p');
   empty.className = 'k-kmc-field-hint';
-  empty.textContent = 'Aucune passkey active. Vous pourrez en créer une après une identification WhatsApp.';
+  empty.textContent = 'Aucune passkey active. Vous pourrez en créer une après une validation sensible par WhatsApp.';
   container.appendChild(empty);
 }
 
@@ -84,7 +84,16 @@ function renderCredentials(container, credentials) {
       revoke.disabled = true;
       revoke.textContent = 'Révocation…';
       try {
-        await withStepUpRetry(() => apiDelete(`/api/auth/passkey/credentials/${encodeURIComponent(credential.id)}`));
+        await withStepUpRetry(
+          () => apiDelete(`/api/auth/passkey/credentials/${encodeURIComponent(credential.id)}`),
+          {
+            reason: 'révoquer cette passkey',
+            title: 'Confirmer la révocation',
+            // L'utilisateur vient volontairement de retirer une Passkey : ne
+            // jamais lui en reproposer une immédiatement après l'OTP.
+            offerEnrollmentAfterOtp: false,
+          }
+        );
         row.remove();
         if (!list.children.length) renderEmpty(container);
       } catch (_) {
