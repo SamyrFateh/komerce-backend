@@ -1,0 +1,49 @@
+name: LOT1A-3 finalize
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.head_ref == 'agent/lot1a-3-relay-commission'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Relay proofs
+        run: >-
+          npx jest
+          tests/unit/relay-commission.test.js
+          tests/unit/relay-commission-allocation.test.js
+          tests/unit/admin-finance-config-relay-retired.test.js
+          tests/unit/admin-finance-config.test.js
+          tests/unit/cost-allocation-allocate.test.js
+          --runInBand
+      - name: Golden BEFORE == AFTER
+        run: node tools/golden-cdr/golden-cdr.js verify
+      - name: Regenerate canonical business graph
+        run: npm run business-graph:gen
+      - name: Commit generated graph only
+        run: |
+          git add docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md
+          if git diff --cached --quiet; then
+            echo "Business graph already fresh."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: régénère le business graph LOT 1A-3"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
