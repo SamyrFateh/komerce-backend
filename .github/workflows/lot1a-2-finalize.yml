@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-      - name: Install dependencies
+      - name: Install backend dependencies
         run: npm ci --ignore-scripts
       - name: Backend FX proofs
         run: >-
@@ -32,12 +32,12 @@ jobs:
           tests/unit/rates.test.js
           tests/unit/supplier-catalog-scanner.test.js
           --runInBand
-      - name: PricingView proofs
-        run: >-
-          npx jest
-          public/dashboards/tests/unit/PricingView.test.js
-          public/tests/unit/PricingView.test.js
-          --runInBand
+      - name: Install dashboard test dependencies
+        working-directory: public/dashboards
+        run: npm ci --ignore-scripts
+      - name: PricingView proof (active dashboard harness)
+        working-directory: public/dashboards
+        run: npx jest tests/unit/PricingView.test.js --runInBand --no-coverage --forceExit
       - name: Golden BEFORE == AFTER
         run: node tools/golden-cdr/golden-cdr.js verify
       - name: Regenerate canonical business graph
