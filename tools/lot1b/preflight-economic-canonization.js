@@ -9,18 +9,19 @@
  *
  * Usage :
  *   DATABASE_URL=... node tools/lot1b/preflight-economic-canonization.js
- *   ... --require-target   # exit 2 si les POLICY nécessaires à la cible manquent
+ *   ... --require-target       # exit 2 si la cible CURRENT (SEA) n'est pas prête
+ *   ... --require-air-target   # exit 2 si AIR ne peut pas être activé économiquement
  */
 
 const db = require('../../db');
 
 const TARGET_RULE_KEYS = Object.freeze([
   'FREIGHT_KMF_PER_KG',
+  'SEA_WM_KG_PER_M3',
   'SEA_KMF_PER_KG_COMMERCIAL',
   'AIR_KMF_PER_KG_TAXABLE',
   'AIR_VOLUMETRIC_DIVISOR',
-  // Les deux clés suivantes sont recherchées mais ne sont PAS inventées ici.
-  'SEA_DENSITY_KG_PER_M3',
+  // Le coût AIR distinct du prix commercial doit venir d'une calibration réelle.
   'AIR_KMF_PER_KG_COST',
 ]);
 
@@ -69,21 +70,36 @@ function indexRules(rows = []) {
   return out;
 }
 
+/**
+ * La cible CURRENT ne doit pas être bloquée par AIR : AIR_EXPRESS est encore
+ * INTERNAL/PENDING/DISABLED. SEA est prêt si sa règle W/M canonique existe.
+ * AIR possède son gate d'activation séparé : W/M + coût distinct du prix.
+ */
 function targetReadiness({ rules = {} } = {}) {
-  const seaDensity = finitePositive(rules.SEA_DENSITY_KG_PER_M3?.scalar_value);
+  const seaWmKgPerM3 = finitePositive(rules.SEA_WM_KG_PER_M3?.scalar_value);
+  const seaCommercialRate = finitePositive(rules.SEA_KMF_PER_KG_COMMERCIAL?.scalar_value);
   const airCostRate = finitePositive(rules.AIR_KMF_PER_KG_COST?.scalar_value);
+  const airCommercialRate = finitePositive(rules.AIR_KMF_PER_KG_TAXABLE?.scalar_value);
   const airDivisor = finitePositive(rules.AIR_VOLUMETRIC_DIVISOR?.scalar_value);
 
-  const missing = [];
-  if (seaDensity === null) missing.push('SEA_DENSITY_KG_PER_M3');
-  if (airCostRate === null) missing.push('AIR_KMF_PER_KG_COST');
-  if (airDivisor === null) missing.push('AIR_VOLUMETRIC_DIVISOR');
+  const currentMissing = [];
+  if (seaWmKgPerM3 === null) currentMissing.push('SEA_WM_KG_PER_M3');
+  if (seaCommercialRate === null) currentMissing.push('SEA_KMF_PER_KG_COMMERCIAL');
+
+  const airMissing = [];
+  if (airDivisor === null) airMissing.push('AIR_VOLUMETRIC_DIVISOR');
+  if (airCostRate === null) airMissing.push('AIR_KMF_PER_KG_COST');
+  if (airCommercialRate === null) airMissing.push('AIR_KMF_PER_KG_TAXABLE');
 
   return {
-    ready: missing.length === 0,
-    missing,
-    sea_density_kg_per_m3: seaDensity,
+    current_ready: currentMissing.length === 0,
+    current_missing: currentMissing,
+    air_activation_ready: airMissing.length === 0,
+    air_activation_missing: airMissing,
+    sea_wm_kg_per_m3: seaWmKgPerM3,
+    sea_commercial_kmf_per_kg: seaCommercialRate,
     air_cost_kmf_per_kg: airCostRate,
+    air_commercial_kmf_per_kg: airCommercialRate,
     air_volumetric_divisor_cm3_per_kg: airDivisor,
   };
 }
@@ -208,12 +224,19 @@ function printReport(report) {
   if (!report.legacy_pricing_components.length) console.log('- aucune / table absente');
   for (const row of report.legacy_pricing_components) console.log(`- ${printRow(row)}`);
 
-  console.log('\n[ratchet de cible W/M]');
-  if (report.target_readiness.ready) {
-    console.log('✓ TARGET POLICY COMPLETE — paramètres W/M requis présents.');
+  console.log('\n[ratchet cible CURRENT — SEA]');
+  if (report.target_readiness.current_ready) {
+    console.log(`✓ SEA TARGET READY — W/M ${report.target_readiness.sea_wm_kg_per_m3} kg/m3.`);
   } else {
-    console.log(`✗ TARGET POLICY INCOMPLETE — ${report.target_readiness.missing.join(', ')} manquant(s).`);
-    console.log('  Aucune valeur n’est inventée par ce préflight.');
+    console.log(`✗ SEA TARGET INCOMPLETE — ${report.target_readiness.current_missing.join(', ')} manquant(s).`);
+  }
+
+  console.log('\n[gate activation AIR]');
+  if (report.target_readiness.air_activation_ready) {
+    console.log('✓ AIR ECONOMIC TARGET READY — coût et W/M distincts présents.');
+  } else {
+    console.log(`○ AIR RESTE NON ACTIVABLE — ${report.target_readiness.air_activation_missing.join(', ')} manquant(s).`);
+    console.log('  C’est attendu tant que AIR_EXPRESS reste INTERNAL/PENDING/DISABLED.');
   }
 
   const duplicates = [
@@ -221,7 +244,7 @@ function printReport(report) {
     ['customs', report.current.customs_cost_component_rows_active],
     ['risk', report.current.risk_cost_component_rows_active],
   ];
-  console.log('\n[writers/valorisations à retirer de cost_components en 1B]');
+  console.log('\n[valorisations à retirer de cost_components en 1B]');
   for (const [name, rows] of duplicates) {
     console.log(`- ${name}: ${rows.length} ligne(s) active(s)`);
   }
@@ -241,7 +264,10 @@ async function main() {
     if (process.argv.includes('--json')) {
       console.log('\n' + JSON.stringify(report, null, 2));
     }
-    if (process.argv.includes('--require-target') && !report.target_readiness.ready) {
+    if (process.argv.includes('--require-target') && !report.target_readiness.current_ready) {
+      process.exitCode = 2;
+    }
+    if (process.argv.includes('--require-air-target') && !report.target_readiness.air_activation_ready) {
       process.exitCode = 2;
     }
   } catch (err) {
