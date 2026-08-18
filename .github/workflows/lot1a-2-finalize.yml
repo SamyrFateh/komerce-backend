@@ -1,0 +1,55 @@
+name: LOT1A-2 finalize
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.head_ref == 'agent/lot1a-2-usd-fx'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Backend FX proofs
+        run: >-
+          npx jest
+          tests/unit/admin-finance-config.test.js
+          tests/unit/pricing-cdr.test.js
+          tests/unit/pricing-cdr-fx.test.js
+          tests/unit/rates.test.js
+          tests/unit/supplier-catalog-scanner.test.js
+          --runInBand
+      - name: PricingView proofs
+        run: >-
+          npx jest
+          public/dashboards/tests/unit/PricingView.test.js
+          public/tests/unit/PricingView.test.js
+          --runInBand
+      - name: Golden BEFORE == AFTER
+        run: node tools/golden-cdr/golden-cdr.js verify
+      - name: Regenerate canonical business graph
+        run: npm run business-graph:gen
+      - name: Commit generated graph only
+        run: |
+          git add docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md
+          if git diff --cached --quiet; then
+            echo "Business graph already fresh."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: régénère le business graph LOT 1A-2"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
