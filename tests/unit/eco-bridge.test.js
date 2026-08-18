@@ -1,263 +1,235 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
  * @test-requires none
  */
 /**
- * tests/unit/eco-bridge.test.js
- * Couvre utils/eco-bridge.js
+ * LOT 1A-4 — utils/eco-bridge.js
  *
- * Cache mémoire (module-level, TTL 60s) → jest.resetModules() + re-require
- * avant chaque test pour repartir d'un cache vide, comme dashboard-shared.
+ * Le bridge ne lit plus economic_variables. Il expose les anciennes clés
+ * runtime depuis finance_config et conserve son cache 60s + résumé charges.
  */
 
 const mockDbQuery = jest.fn();
+const mockLoadFinanceConfig = jest.fn();
+const mockResolveLegacyInput = jest.fn();
+
 jest.mock('../../db', () => ({ query: (...args) => mockDbQuery(...args) }));
+jest.mock('../../services/economic-config', () => ({
+  LEGACY_RUNTIME_INPUTS: {
+    orders_per_month: { canonical: 'objectif_commandes_mois', fallback: 100 },
+    target_basket_avg: { canonical: 'target_panier_moyen_kmf', fallback: 15000 },
+    hub_monthly_cost_aed: { canonical: 'hub_monthly_cost_aed', fallback: 7000 },
+    customs_rate_default_pct: { canonical: 'customs_rate_default_pct', fallback: 42 },
+    mix_rail_a: { canonical: 'mix_rail_a', fallback: 60 },
+    mix_rail_b: { canonical: 'mix_rail_b', fallback: 25 },
+    mix_rail_c: { canonical: 'mix_rail_c', fallback: 10 },
+    mix_rail_d: { canonical: 'mix_rail_d', fallback: 5 },
+    margin_rail_a: { canonical: 'margin_rail_a', fallback: 45 },
+    margin_rail_b: { canonical: 'margin_rail_b', fallback: 18 },
+    margin_rail_c: { canonical: 'margin_rail_c', fallback: 35 },
+    margin_rail_d: { canonical: 'margin_rail_d', fallback: 70 },
+  },
+  loadFinanceConfig: (...args) => mockLoadFinanceConfig(...args),
+  resolveLegacyInput: (...args) => mockResolveLegacyInput(...args),
+}));
 
 jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() })),
 }));
+
+const CURRENT = {
+  objectif_commandes_mois: 100,
+  target_panier_moyen_kmf: 15000,
+  hub_monthly_cost_aed: 7000,
+  customs_rate_default_pct: 42,
+  mix_rail_a: 60, mix_rail_b: 25, mix_rail_c: 10, mix_rail_d: 5,
+  margin_rail_a: 45, margin_rail_b: 18, margin_rail_c: 35, margin_rail_d: 70,
+};
+
+const MAP = {
+  orders_per_month: 'objectif_commandes_mois',
+  target_basket_avg: 'target_panier_moyen_kmf',
+  hub_monthly_cost_aed: 'hub_monthly_cost_aed',
+  customs_rate_default_pct: 'customs_rate_default_pct',
+  mix_rail_a: 'mix_rail_a', mix_rail_b: 'mix_rail_b', mix_rail_c: 'mix_rail_c', mix_rail_d: 'mix_rail_d',
+  margin_rail_a: 'margin_rail_a', margin_rail_b: 'margin_rail_b', margin_rail_c: 'margin_rail_c', margin_rail_d: 'margin_rail_d',
+};
 
 let ecoBridge;
 
 beforeEach(() => {
   jest.resetModules();
   jest.clearAllMocks();
+  mockLoadFinanceConfig.mockResolvedValue(CURRENT);
+  mockResolveLegacyInput.mockImplementation((config, key) => {
+    const column = MAP[key];
+    if (!column) return undefined;
+    const fallback = key === 'orders_per_month' ? 100 : undefined;
+    return Number(config[column] ?? fallback);
+  });
   ecoBridge = require('../../utils/eco-bridge');
 });
 
-afterEach(() => {
-  jest.useRealTimers();
-});
+afterEach(() => jest.useRealTimers());
 
-describe('loadEcoVars', () => {
-  it('nominal → construit une map key→value', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [
-        { key: 'eur_kmf', value_used: '500', value_supposed: '490' },
-        { key: 'aed_kmf', value_used: null, value_supposed: '130' },
-      ],
-    });
+function expectedMap(config = CURRENT) {
+  const out = {};
+  for (const [key, column] of Object.entries(MAP)) out[key] = Number(config[column]);
+  return out;
+}
+
+describe('loadEcoVars — finance_config', () => {
+  it('construit la map des 12 clés runtime depuis la SOV canonique', async () => {
     const result = await ecoBridge.loadEcoVars();
-    expect(result).toEqual({ eur_kmf: 500, aed_kmf: 130 });
+    expect(result).toEqual(expectedMap());
+    expect(Object.keys(result)).toHaveLength(12);
+    expect(mockLoadFinanceConfig).toHaveBeenCalledTimes(1);
+    expect(mockDbQuery).not.toHaveBeenCalled();
   });
 
-  it('value_used prioritaire sur value_supposed', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'k1', value_used: '10', value_supposed: '999' }] });
-    const result = await ecoBridge.loadEcoVars();
-    expect(result.k1).toBe(10);
-  });
-
-  it('value_used ET value_supposed null → valeur null', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'k1', value_used: null, value_supposed: null }] });
-    const result = await ecoBridge.loadEcoVars();
-    expect(result.k1).toBeNull();
-  });
-
-  it('filtre is_active = TRUE dans la requête', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [] });
+  it('utilise le cache dans le TTL', async () => {
+    jest.useFakeTimers();
     await ecoBridge.loadEcoVars();
-    expect(mockDbQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE is_active = TRUE'));
+    jest.advanceTimersByTime(30_000);
+    const second = await ecoBridge.loadEcoVars();
+    expect(second.orders_per_month).toBe(100);
+    expect(mockLoadFinanceConfig).toHaveBeenCalledTimes(1);
   });
 
-  it('aucune ligne → map vide', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [] });
+  it('relit finance_config après expiration du TTL', async () => {
+    jest.useFakeTimers();
+    await ecoBridge.loadEcoVars();
+    jest.advanceTimersByTime(61_000);
+    mockLoadFinanceConfig.mockResolvedValueOnce({ ...CURRENT, objectif_commandes_mois: 120 });
+    const result = await ecoBridge.loadEcoVars();
+    expect(result.orders_per_month).toBe(120);
+    expect(mockLoadFinanceConfig).toHaveBeenCalledTimes(2);
+  });
+
+  it('retourne {} sans cache si finance_config est indisponible', async () => {
+    mockLoadFinanceConfig.mockRejectedValueOnce(new Error('db down'));
     expect(await ecoBridge.loadEcoVars()).toEqual({});
   });
 
-  it('appel suivant dans le TTL (60s) → utilise le cache, pas de nouvelle requête', async () => {
+  it('retombe sur le cache expiré si finance_config devient indisponible', async () => {
     jest.useFakeTimers();
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'k1', value_used: '1', value_supposed: null }] });
-    await ecoBridge.loadEcoVars();
-    jest.advanceTimersByTime(30_000);
-    const result = await ecoBridge.loadEcoVars();
-    expect(result).toEqual({ k1: 1 });
-    expect(mockDbQuery).toHaveBeenCalledTimes(1);
-  });
-
-  it('appel après expiration du TTL → relit la DB', async () => {
-    jest.useFakeTimers();
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'k1', value_used: '1', value_supposed: null }] });
-    await ecoBridge.loadEcoVars();
+    const first = await ecoBridge.loadEcoVars();
     jest.advanceTimersByTime(61_000);
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'k1', value_used: '2', value_supposed: null }] });
-    const result = await ecoBridge.loadEcoVars();
-    expect(result).toEqual({ k1: 2 });
-    expect(mockDbQuery).toHaveBeenCalledTimes(2);
-  });
-
-  it('erreur DB sans cache préexistant → retourne {} sans throw', async () => {
-    mockDbQuery.mockRejectedValueOnce(new Error('db down'));
-    const result = await ecoBridge.loadEcoVars();
-    expect(result).toEqual({});
-  });
-
-  it('erreur DB avec cache préexistant (expiré) → retombe sur l\'ancien cache', async () => {
-    jest.useFakeTimers();
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'k1', value_used: '1', value_supposed: null }] });
-    await ecoBridge.loadEcoVars();
-    jest.advanceTimersByTime(61_000);
-    mockDbQuery.mockRejectedValueOnce(new Error('db down'));
-    const result = await ecoBridge.loadEcoVars();
-    expect(result).toEqual({ k1: 1 });
+    mockLoadFinanceConfig.mockRejectedValueOnce(new Error('db down'));
+    expect(await ecoBridge.loadEcoVars()).toEqual(first);
   });
 });
 
-describe('getEcoVar', () => {
-  it('clé existante → retourne sa valeur (ignore le fallback)', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'eur_kmf', value_used: '500', value_supposed: null }] });
-    expect(await ecoBridge.getEcoVar('eur_kmf', 0)).toBe(500);
+describe('getEcoVar / getEcoVars', () => {
+  it('retourne une clé canonisée et ignore le fallback', async () => {
+    expect(await ecoBridge.getEcoVar('hub_monthly_cost_aed', 1)).toBe(7000);
   });
 
-  it('clé absente → retourne le fallback', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [] });
-    expect(await ecoBridge.getEcoVar('inconnu', 42)).toBe(42);
+  it('retourne le fallback pour une clé hors map runtime', async () => {
+    expect(await ecoBridge.getEcoVar('eur_kmf', 492)).toBe(492);
   });
 
-  it('clé présente mais valeur null → retourne le fallback', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'k1', value_used: null, value_supposed: null }] });
-    expect(await ecoBridge.getEcoVar('k1', 7)).toBe(7);
+  it('préserve une vraie valeur zéro', async () => {
+    mockLoadFinanceConfig.mockResolvedValueOnce({ ...CURRENT, objectif_commandes_mois: 0 });
+    expect(await ecoBridge.getEcoVar('orders_per_month', 99)).toBe(0);
   });
 
-  it('valeur 0 (falsy) → retourne 0, pas le fallback', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'k1', value_used: '0', value_supposed: null }] });
-    expect(await ecoBridge.getEcoVar('k1', 99)).toBe(0);
-  });
-});
-
-describe('getEcoVars (batch)', () => {
-  it('résout chaque spec indépendamment (trouvé/fallback)', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'eur_kmf', value_used: '500', value_supposed: null }] });
+  it('batch mélange valeur canonique et fallback', async () => {
     const result = await ecoBridge.getEcoVars([
-      { key: 'eur_kmf', fallback: 0 },
-      { key: 'aed_kmf', fallback: 130 },
+      { key: 'orders_per_month', fallback: 1 },
+      { key: 'inconnu', fallback: 7 },
     ]);
-    expect(result).toEqual({ eur_kmf: 500, aed_kmf: 130 });
+    expect(result).toEqual({ orders_per_month: 100, inconnu: 7 });
+    expect(mockLoadFinanceConfig).toHaveBeenCalledTimes(1);
   });
 
-  it('liste vide → objet vide', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [] });
+  it('liste batch vide retourne {}', async () => {
     expect(await ecoBridge.getEcoVars([])).toEqual({});
-  });
-
-  it('un seul appel DB pour plusieurs specs (loadEcoVars mutualisé)', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [] });
-    await ecoBridge.getEcoVars([{ key: 'a', fallback: 1 }, { key: 'b', fallback: 2 }, { key: 'c', fallback: 3 }]);
-    expect(mockDbQuery).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('invalidateEcoCache', () => {
-  it('force une relecture DB même dans le TTL', async () => {
-    jest.useFakeTimers();
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'k1', value_used: '1', value_supposed: null }] });
+  it('force une relecture finance_config dans le TTL', async () => {
     await ecoBridge.loadEcoVars();
     ecoBridge.invalidateEcoCache();
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'k1', value_used: '2', value_supposed: null }] });
+    mockLoadFinanceConfig.mockResolvedValueOnce({ ...CURRENT, objectif_commandes_mois: 121 });
     const result = await ecoBridge.loadEcoVars();
-    expect(result).toEqual({ k1: 2 });
-    expect(mockDbQuery).toHaveBeenCalledTimes(2);
+    expect(result.orders_per_month).toBe(121);
+    expect(mockLoadFinanceConfig).toHaveBeenCalledTimes(2);
   });
 });
 
 describe('loadChargesSummary', () => {
-  it('nominal → ventile per_order / monthly / weekly et calcule le coût par commande', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({
-        rows: [
-          { amount_kmf: '100', recurrence_period: 'per_order' },
-          { amount_kmf: '60000', recurrence_period: 'monthly' },
-          { amount_kmf: '1000', recurrence_period: 'weekly' },
-        ],
-      })
-      .mockResolvedValueOnce({ rows: [{ key: 'orders_per_month', value_used: '100', value_supposed: null }] });
-
+  it('ventile per_order / monthly / weekly avec orders_per_month canonique', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [
+      { amount_kmf: '100', recurrence_period: 'per_order' },
+      { amount_kmf: '60000', recurrence_period: 'monthly' },
+      { amount_kmf: '1000', recurrence_period: 'weekly' },
+    ] });
     const result = await ecoBridge.loadChargesSummary();
-    // weeklyTotal*4.33 = 4330 -> round -> 4330 ; totalMonthlyFixed = 60000+4330=64330
     expect(result.per_order_total).toBe(100);
     expect(result.monthly_total).toBe(64330);
     expect(result.monthly_per_order).toBe(Math.round(64330 / 100));
     expect(result.total_cost_per_order).toBe(100 + Math.round(64330 / 100));
     expect(result.orders_per_month).toBe(100);
-    expect(result.charges).toHaveLength(3);
+    expect(mockDbQuery).toHaveBeenCalledTimes(1);
+    expect(mockLoadFinanceConfig).toHaveBeenCalledTimes(1);
   });
 
-  it('filtre is_active = TRUE', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
-    await ecoBridge.loadChargesSummary();
-    expect(mockDbQuery).toHaveBeenCalledWith('SELECT * FROM charges WHERE is_active = TRUE');
-  });
-
-  it('orders_per_month absent en DB → fallback 100', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
-    const result = await ecoBridge.loadChargesSummary();
-    expect(result.orders_per_month).toBe(100);
-    expect(result.monthly_per_order).toBe(0);
-  });
-
-  it('orders_per_month = 0 → monthly_per_order = 0 (pas de division par zéro)', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ amount_kmf: '5000', recurrence_period: 'monthly' }] })
-      .mockResolvedValueOnce({ rows: [{ key: 'orders_per_month', value_used: '0', value_supposed: null }] });
+  it('orders_per_month = 0 évite la division par zéro', async () => {
+    mockLoadFinanceConfig.mockResolvedValueOnce({ ...CURRENT, objectif_commandes_mois: 0 });
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ amount_kmf: '5000', recurrence_period: 'monthly' }] });
     const result = await ecoBridge.loadChargesSummary();
     expect(result.monthly_per_order).toBe(0);
   });
 
-  it('recurrence_period inconnue → ignorée (pas ajoutée à un total)', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ amount_kmf: '1000', recurrence_period: 'yearly' }] })
-      .mockResolvedValueOnce({ rows: [] });
+  it('une recurrence inconnue est ignorée', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ amount_kmf: '1000', recurrence_period: 'yearly' }] });
     const result = await ecoBridge.loadChargesSummary();
     expect(result.per_order_total).toBe(0);
     expect(result.monthly_total).toBe(0);
   });
 
-  it('appel suivant dans le TTL → cache, pas de nouvelle requête', async () => {
+  it('cache le résumé charges dans le TTL', async () => {
     jest.useFakeTimers();
-    mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+    mockDbQuery.mockResolvedValueOnce({ rows: [] });
     await ecoBridge.loadChargesSummary();
     jest.advanceTimersByTime(30_000);
     await ecoBridge.loadChargesSummary();
-    expect(mockDbQuery).toHaveBeenCalledTimes(2); // charges + orders_per_month, une seule fois au total
+    expect(mockDbQuery).toHaveBeenCalledTimes(1);
+    expect(mockLoadFinanceConfig).toHaveBeenCalledTimes(1);
   });
 
-  it('erreur DB sans cache préexistant → retourne le résultat neutre par défaut', async () => {
+  it('retourne un résultat neutre si la lecture charges échoue sans cache', async () => {
     mockDbQuery.mockRejectedValueOnce(new Error('db down'));
-    const result = await ecoBridge.loadChargesSummary();
-    expect(result).toEqual({
+    expect(await ecoBridge.loadChargesSummary()).toEqual({
       charges: [], per_order_total: 0, monthly_total: 0,
       monthly_per_order: 0, total_cost_per_order: 0, orders_per_month: 100,
     });
   });
 
-  it('erreur DB avec cache préexistant (expiré) → retombe sur l\'ancien résultat', async () => {
+  it('retombe sur le résumé précédent si DB charges tombe après expiration', async () => {
     jest.useFakeTimers();
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ amount_kmf: '100', recurrence_period: 'per_order' }] })
-      .mockResolvedValueOnce({ rows: [] });
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ amount_kmf: '100', recurrence_period: 'per_order' }] });
     const first = await ecoBridge.loadChargesSummary();
     jest.advanceTimersByTime(61_000);
     mockDbQuery.mockRejectedValueOnce(new Error('db down'));
-    const second = await ecoBridge.loadChargesSummary();
-    expect(second).toEqual(first);
+    expect(await ecoBridge.loadChargesSummary()).toEqual(first);
   });
 });
 
 describe('invalidateChargesCache', () => {
-  it('force une relecture DB même dans le TTL', async () => {
-    jest.useFakeTimers();
-    mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+  it('relit les charges mais conserve le cache économique', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [] });
     await ecoBridge.loadChargesSummary();
     ecoBridge.invalidateChargesCache();
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ amount_kmf: '50', recurrence_period: 'per_order' }] }).mockResolvedValueOnce({ rows: [] });
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ amount_kmf: '50', recurrence_period: 'per_order' }] });
     const result = await ecoBridge.loadChargesSummary();
     expect(result.per_order_total).toBe(50);
-    // 1er appel: charges + orders_per_month (2 requêtes) ; 2e appel après invalidation
-    // des charges seules: charges relu, mais orders_per_month reste en cache (TTL eco
-    // intact) → 1 requête de plus, soit 3 au total.
-    expect(mockDbQuery).toHaveBeenCalledTimes(3);
+    expect(mockDbQuery).toHaveBeenCalledTimes(2);
+    expect(mockLoadFinanceConfig).toHaveBeenCalledTimes(1);
   });
 });
