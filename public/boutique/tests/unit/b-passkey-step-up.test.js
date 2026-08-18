@@ -18,6 +18,8 @@ const {
   withStepUpRetry,
 } = require('../../js/b-passkey-step-up.js');
 
+const PASSKEY_HINT_KEY = 'komerce_passkey_available_v1';
+
 function response(ok, body, status = ok ? 200 : 400) {
   return { ok, status, json: jest.fn().mockResolvedValue(body) };
 }
@@ -32,8 +34,13 @@ function installWebAuthn(get) {
   });
 }
 
+function markPasskeyAvailable() {
+  window.localStorage.setItem(PASSKEY_HINT_KEY, '1');
+}
+
 beforeEach(() => {
   global.fetch = jest.fn();
+  window.localStorage.clear();
   delete window.PublicKeyCredential;
   Object.defineProperty(window.navigator, 'credentials', { configurable: true, value: undefined });
   jest.clearAllMocks();
@@ -48,15 +55,17 @@ describe('AUTH-7 — Passkey step-up client', () => {
     expect(isStepUpRequiredError({ status: 428, code: 'other' })).toBe(false);
   });
 
-  it('retourne reauth_required si le navigateur n’a pas de WebAuthn', async () => {
+  it('retourne reauth_required si le navigateur n’a pas de Passkey localement prouvée', async () => {
+    installWebAuthn(jest.fn());
     await expect(performPasskeyStepUp()).resolves.toEqual({ outcome: 'reauth_required', method: 'otp' });
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it('fait options -> authenticator -> verify et ne change jamais d’identité côté client', async () => {
+  it('fait options -> authenticator -> verify seulement si ce navigateur a déjà prouvé une Passkey', async () => {
     const credential = { toJSON: () => ({ id: 'cred-A', type: 'public-key', response: {} }) };
     const get = jest.fn().mockResolvedValue(credential);
     installWebAuthn(get);
+    markPasskeyAvailable();
     global.fetch
       .mockResolvedValueOnce(response(true, { challenge: 'AQID', rpId: 'komerce.co', allowCredentials: [] }))
       .mockResolvedValueOnce(response(true, { verified: true }));
@@ -72,6 +81,7 @@ describe('AUTH-7 — Passkey step-up client', () => {
   it('rejoue une mutation sensible une seule fois après un step-up Passkey réussi', async () => {
     const credential = { toJSON: () => ({ id: 'cred-A', type: 'public-key', response: {} }) };
     installWebAuthn(jest.fn().mockResolvedValue(credential));
+    markPasskeyAvailable();
     global.fetch
       .mockResolvedValueOnce(response(true, { challenge: 'AQID', rpId: 'komerce.co', allowCredentials: [] }))
       .mockResolvedValueOnce(response(true, { verified: true }));
@@ -86,9 +96,8 @@ describe('AUTH-7 — Passkey step-up client', () => {
     expect(openIdentityModal).not.toHaveBeenCalled();
   });
 
-  it('utilise OTP si aucune Passkey step-up n’est disponible, accomplit l’opération puis signale l’offre facultative', async () => {
+  it('utilise OTP directement si aucune Passkey locale n’est connue, accomplit l’opération puis signale l’offre facultative', async () => {
     installWebAuthn(jest.fn());
-    global.fetch.mockResolvedValueOnce(response(false, { code: 'passkey_step_up_unavailable' }, 409));
     const err = Object.assign(new Error('recent auth'), { status: 428, code: 'step_up_required' });
     const operation = jest.fn()
       .mockRejectedValueOnce(err)
@@ -101,6 +110,7 @@ describe('AUTH-7 — Passkey step-up client', () => {
       title: 'Confirmer avec WhatsApp',
     })).resolves.toEqual({ ok: true });
 
+    expect(global.fetch).not.toHaveBeenCalled();
     expect(openIdentityModal).toHaveBeenCalledWith(expect.objectContaining({
       phone: '+33612345678',
       purpose: 'sensitive-step-up',
@@ -115,9 +125,20 @@ describe('AUTH-7 — Passkey step-up client', () => {
     }));
   });
 
+  it('refuse un OTP qui reviendrait avec une autre identité', async () => {
+    installWebAuthn(jest.fn());
+    openIdentityModal.mockResolvedValueOnce({ id: 99, phone: '+33699999999' });
+    const err = Object.assign(new Error('recent auth'), { status: 428, code: 'step_up_required' });
+    const operation = jest.fn().mockRejectedValue(err);
+
+    await expect(withStepUpRetry(operation)).rejects.toEqual(expect.objectContaining({
+      code: 'step_up_failed',
+    }));
+    expect(operation).toHaveBeenCalledTimes(1);
+  });
+
   it('ne propose jamais la Passkey avant que l’opération sensible ait réellement réussi', async () => {
     installWebAuthn(jest.fn());
-    global.fetch.mockResolvedValueOnce(response(false, { code: 'passkey_step_up_unavailable' }, 409));
     const stepUpRequired = Object.assign(new Error('recent auth'), { status: 428, code: 'step_up_required' });
     const finalFailure = Object.assign(new Error('business failure'), { status: 409, code: 'business_failure' });
     const operation = jest.fn()
@@ -134,7 +155,6 @@ describe('AUTH-7 — Passkey step-up client', () => {
 
   it('une révocation peut interdire explicitement toute reproposition Passkey après OTP', async () => {
     installWebAuthn(jest.fn());
-    global.fetch.mockResolvedValueOnce(response(false, { code: 'passkey_step_up_unavailable' }, 409));
     const err = Object.assign(new Error('recent auth'), { status: 428, code: 'step_up_required' });
     const operation = jest.fn()
       .mockRejectedValueOnce(err)
@@ -149,7 +169,6 @@ describe('AUTH-7 — Passkey step-up client', () => {
 
   it('une annulation OTP annule l’opération sans retry', async () => {
     installWebAuthn(jest.fn());
-    global.fetch.mockResolvedValueOnce(response(false, { code: 'passkey_step_up_unavailable' }, 409));
     openIdentityModal.mockResolvedValueOnce(null);
     const err = Object.assign(new Error('recent auth'), { status: 428, code: 'step_up_required' });
     const operation = jest.fn().mockRejectedValue(err);
