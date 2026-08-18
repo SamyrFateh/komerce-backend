@@ -85,9 +85,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+      # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
       - name: Migration immutability
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -182,12 +180,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      # Gates pure-Node, aucun npm ci necessaire. Mode --check uniquement :
-      # ne jamais generer (--write) en CI. Le git diff final prouve l'absence
-      # de mutation, donc l'absence de faux-rouge d'artefact.
+      # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
+      # Mode --check uniquement : ne jamais generer (--write) en CI. Le git diff
+      # final prouve l'absence de mutation, donc l'absence de faux-rouge d'artefact.
       - name: Feature slice guard
         run: node scripts/feature-guard.js --strict
       - name: Business graph reconstructible and fresh
