@@ -9,7 +9,8 @@
  *
  * Usage :
  *   DATABASE_URL=... node tools/lot1b/preflight-economic-canonization.js
- *   ... --require-target       # exit 2 si la cible CURRENT (SEA) n'est pas prête
+ *   ... --require-target       # exit 2 si SEA n'est pas migrable sans invention
+ *   ... --require-runtime      # exit 2 si la cible SEA runtime n'est pas déjà matérialisée
  *   ... --require-air-target   # exit 2 si AIR ne peut pas être activé économiquement
  */
 
@@ -18,6 +19,7 @@ const db = require('../../db');
 const TARGET_RULE_KEYS = Object.freeze([
   'FREIGHT_KMF_PER_KG',
   'SEA_WM_KG_PER_M3',
+  'SEA_EUR_PER_M3_COST',
   'SEA_KMF_PER_KG_COMMERCIAL',
   'AIR_KMF_PER_KG_TAXABLE',
   'AIR_VOLUMETRIC_DIVISOR',
@@ -71,20 +73,34 @@ function indexRules(rows = []) {
 }
 
 /**
- * La cible CURRENT ne doit pas être bloquée par AIR : AIR_EXPRESS est encore
- * INTERNAL/PENDING/DISABLED. SEA est prêt si sa règle W/M canonique existe.
- * AIR possède son gate d'activation séparé : W/M + coût distinct du prix.
+ * SEA possède deux états utiles pendant 1B-1 :
+ *   - migration_ready : la cible peut être créée SANS invention, car la policy
+ *     W/M, le prix commercial et la source de coût CURRENT sont tous présents ;
+ *   - runtime_ready : la migration 124 a déjà matérialisé SEA_EUR_PER_M3_COST.
+ *
+ * AIR possède un gate séparé : il reste INTERNAL/PENDING/DISABLED tant que son
+ * coût distinct n'est pas calibré.
  */
-function targetReadiness({ rules = {} } = {}) {
+function targetReadiness({ rules = {}, legacySeaCostEurPerM3 = null } = {}) {
   const seaWmKgPerM3 = finitePositive(rules.SEA_WM_KG_PER_M3?.scalar_value);
+  const seaCostEurPerM3 = finitePositive(rules.SEA_EUR_PER_M3_COST?.scalar_value);
   const seaCommercialRate = finitePositive(rules.SEA_KMF_PER_KG_COMMERCIAL?.scalar_value);
+  const legacySeaCost = finitePositive(legacySeaCostEurPerM3);
   const airCostRate = finitePositive(rules.AIR_KMF_PER_KG_COST?.scalar_value);
   const airCommercialRate = finitePositive(rules.AIR_KMF_PER_KG_TAXABLE?.scalar_value);
   const airDivisor = finitePositive(rules.AIR_VOLUMETRIC_DIVISOR?.scalar_value);
 
-  const currentMissing = [];
-  if (seaWmKgPerM3 === null) currentMissing.push('SEA_WM_KG_PER_M3');
-  if (seaCommercialRate === null) currentMissing.push('SEA_KMF_PER_KG_COMMERCIAL');
+  const migrationMissing = [];
+  if (seaWmKgPerM3 === null) migrationMissing.push('SEA_WM_KG_PER_M3');
+  if (seaCommercialRate === null) migrationMissing.push('SEA_KMF_PER_KG_COMMERCIAL');
+  if (seaCostEurPerM3 === null && legacySeaCost === null) {
+    migrationMissing.push('SEA_EUR_PER_M3_COST|finance_config.fret_eur_per_m3');
+  }
+
+  const runtimeMissing = [];
+  if (seaWmKgPerM3 === null) runtimeMissing.push('SEA_WM_KG_PER_M3');
+  if (seaCommercialRate === null) runtimeMissing.push('SEA_KMF_PER_KG_COMMERCIAL');
+  if (seaCostEurPerM3 === null) runtimeMissing.push('SEA_EUR_PER_M3_COST');
 
   const airMissing = [];
   if (airDivisor === null) airMissing.push('AIR_VOLUMETRIC_DIVISOR');
@@ -92,11 +108,15 @@ function targetReadiness({ rules = {} } = {}) {
   if (airCommercialRate === null) airMissing.push('AIR_KMF_PER_KG_TAXABLE');
 
   return {
-    current_ready: currentMissing.length === 0,
-    current_missing: currentMissing,
+    sea_migration_ready: migrationMissing.length === 0,
+    sea_migration_missing: migrationMissing,
+    sea_runtime_ready: runtimeMissing.length === 0,
+    sea_runtime_missing: runtimeMissing,
     air_activation_ready: airMissing.length === 0,
     air_activation_missing: airMissing,
     sea_wm_kg_per_m3: seaWmKgPerM3,
+    sea_cost_eur_per_m3: seaCostEurPerM3,
+    sea_legacy_cost_eur_per_m3: legacySeaCost,
     sea_commercial_kmf_per_kg: seaCommercialRate,
     air_cost_kmf_per_kg: airCostRate,
     air_commercial_kmf_per_kg: airCommercialRate,
@@ -154,7 +174,8 @@ async function readPreflight() {
     legacyPricingComponents = legacyRes.rows;
   }
 
-  const readiness = targetReadiness({ rules });
+  const legacySeaCostEurPerM3 = finitePositive(finance.fret_eur_per_m3);
+  const readiness = targetReadiness({ rules, legacySeaCostEurPerM3 });
   const legacySeaKmfPerM3 = computeLegacySeaKmfPerM3({
     fretEurPerM3: finance.fret_eur_per_m3,
     eurKmf: finance.taux_change_eur_kmf,
@@ -167,7 +188,7 @@ async function readPreflight() {
     risk_provisions: riskRes.rows,
     legacy_pricing_components: legacyPricingComponents,
     current: {
-      legacy_sea_cost_eur_per_m3: finitePositive(finance.fret_eur_per_m3),
+      legacy_sea_cost_eur_per_m3: legacySeaCostEurPerM3,
       eur_kmf: finitePositive(finance.taux_change_eur_kmf),
       legacy_sea_cost_kmf_per_m3: legacySeaKmfPerM3,
       freight_cost_component_rows_active: costComponentsRes.rows.filter(
@@ -224,11 +245,14 @@ function printReport(report) {
   if (!report.legacy_pricing_components.length) console.log('- aucune / table absente');
   for (const row of report.legacy_pricing_components) console.log(`- ${printRow(row)}`);
 
-  console.log('\n[ratchet cible CURRENT — SEA]');
-  if (report.target_readiness.current_ready) {
-    console.log(`✓ SEA TARGET READY — W/M ${report.target_readiness.sea_wm_kg_per_m3} kg/m3.`);
+  console.log('\n[ratchet cible SEA]');
+  if (report.target_readiness.sea_runtime_ready) {
+    console.log(`✓ SEA RUNTIME READY — W/M ${report.target_readiness.sea_wm_kg_per_m3} kg/m3 · coût ${report.target_readiness.sea_cost_eur_per_m3} EUR/m3.`);
+  } else if (report.target_readiness.sea_migration_ready) {
+    console.log(`✓ SEA MIGRATION READY — W/M ${report.target_readiness.sea_wm_kg_per_m3} kg/m3 · coût CURRENT ${report.target_readiness.sea_legacy_cost_eur_per_m3} EUR/m3 à copier par migration 124.`);
+    console.log(`  Runtime encore incomplet : ${report.target_readiness.sea_runtime_missing.join(', ')}.`);
   } else {
-    console.log(`✗ SEA TARGET INCOMPLETE — ${report.target_readiness.current_missing.join(', ')} manquant(s).`);
+    console.log(`✗ SEA TARGET INCOMPLETE — ${report.target_readiness.sea_migration_missing.join(', ')} manquant(s).`);
   }
 
   console.log('\n[gate activation AIR]');
@@ -264,7 +288,10 @@ async function main() {
     if (process.argv.includes('--json')) {
       console.log('\n' + JSON.stringify(report, null, 2));
     }
-    if (process.argv.includes('--require-target') && !report.target_readiness.current_ready) {
+    if (process.argv.includes('--require-target') && !report.target_readiness.sea_migration_ready) {
+      process.exitCode = 2;
+    }
+    if (process.argv.includes('--require-runtime') && !report.target_readiness.sea_runtime_ready) {
       process.exitCode = 2;
     }
     if (process.argv.includes('--require-air-target') && !report.target_readiness.air_activation_ready) {
