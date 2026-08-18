@@ -1,0 +1,53 @@
+name: TMP LOT 1A-4 apply
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/lot1a-4-economic-variables'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Apply asserted runtime patch
+        run: node tools/economic-variables/apply-1a4-runtime.js
+      - name: Focused LOT 1A-4 tests
+        run: >-
+          npx jest
+          tests/unit/economic-config.test.js
+          tests/unit/economic-variables-preflight-1a4.test.js
+          tests/unit/economic-engine-queries.test.js
+          tests/unit/dashboard-ops-queries.test.js
+          tests/unit/economic-route.test.js
+          --runInBand
+      - name: Diff check
+        run: git diff --check
+      - name: Commit runtime patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            services/economic-engine-queries.js \
+            services/dashboard-ops-queries.js \
+            utils/eco-bridge.js \
+            routes/economic.js \
+            routes/admin-finance-config.js
+          if git diff --cached --quiet; then
+            echo "No runtime patch to commit"
+            exit 0
+          fi
+          git commit -m "LOT 1A-4: route economic runtime through finance_config"
+          git push origin HEAD:${GITHUB_HEAD_REF}
