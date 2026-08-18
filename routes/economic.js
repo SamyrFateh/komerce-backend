@@ -70,7 +70,7 @@ router.get('/variables', async (req, res, next) => {
 router.put('/variables/:key', async (req, res, next) => {
   try {
     const key = req.params.key;
-    const result = await updateVariable(key, req.body);
+    const result = await updateVariable(key, req.body, req.user && req.user.id);
     if (result.error) return res.status(result.status || 400).json({ error: result.error });
     ecoBridge.invalidateEcoCache();
     ecoBridge.invalidateChargesCache();

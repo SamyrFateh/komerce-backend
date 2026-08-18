@@ -6,9 +6,9 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js
+ * @depends       db, services/economic-config.js, utils/logger.js
  * @db-write      none
- * @db-read      charges, economic_variables
+ * @db-read      charges, finance_config
  * @used-by       routes/economic.js, services/economic-engine-queries.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown
@@ -16,11 +16,11 @@
  */
 
 /**
- * KOMERCE — Economic Bridge v1.0
+ * KOMERCE — Economic Bridge v1.1
  * ═══════════════════════════════
- * Source unique de lecture pour TOUS les paramètres économiques.
+ * Bridge de compatibilité pour les anciennes clés économiques runtime.
  *
- * Lit depuis `economic_variables` (table SOV — Supposé/Observé/Utilisé).
+ * LOT 1A-4 : lit depuis `finance_config`; `economic_variables` est forensic read-only.
  * Remplace :
  *   - getRuleNumber() pour les paramètres pricing
  *   - getFinanceVal() dans le dashboard (qui était cassé — singleton vs key-value)
@@ -30,12 +30,13 @@
  *   - routes/dashboard.js (pilotage, hub cost, customs)
  *   - routes/economic-engine.js (redistribute, coherence)
  *
- * Cache mémoire 60s — invalidé après chaque PUT /variables/:key
+ * Cache mémoire 60s — invalidé après chaque write-through canonique
  */
 
 'use strict';
 
 const db = require('../db');
+const economicConfig = require('../services/economic-config');
 const log = require('../utils/logger').child({ module: 'eco-bridge' });
 
 // ── Cache ────────────────────────────────────────────────────────────
@@ -52,13 +53,10 @@ async function loadEcoVars() {
     return _varsCache;
   }
   try {
-    const { rows } = await db.query(
-      'SELECT key, value_used, value_supposed FROM economic_variables WHERE is_active = TRUE'
-    );
+    const config = await economicConfig.loadFinanceConfig();
     const map = {};
-    for (const r of rows) {
-      const val = r.value_used != null ? r.value_used : r.value_supposed;
-      map[r.key] = val != null ? Number(val) : null;
+    for (const key of Object.keys(economicConfig.LEGACY_RUNTIME_INPUTS)) {
+      map[key] = economicConfig.resolveLegacyInput(config, key);
     }
     _varsCache = map;
     _varsCacheAt = Date.now();

@@ -58,6 +58,18 @@ const FIELD_SCHEMA = {
   objectif_commandes_mois:     { type: 'int',     group: 'targets',  label: 'Objectif commandes/mois',   unit: '',    min: 0 },
   objectif_ca_mensuel_kmf:     { type: 'int',     group: 'targets',  label: 'Objectif CA mensuel',       unit: 'KMF', min: 0 },
 
+  // — Modèle économique canonique (LOT 1A-4) —
+  hub_monthly_cost_aed:           { type: 'int',     group: 'model',    label: 'Coût Hub mensuel',          unit: 'AED', min: 0 },
+  customs_rate_default_pct:       { type: 'decimal', group: 'model',    label: 'Douane terrain défaut',     unit: '%', min: 0, max: 100 },
+  mix_rail_a:                     { type: 'decimal', group: 'model',    label: 'Mix CA Rail A',             unit: '%', min: 0, max: 100 },
+  mix_rail_b:                     { type: 'decimal', group: 'model',    label: 'Mix CA Rail B',             unit: '%', min: 0, max: 100 },
+  mix_rail_c:                     { type: 'decimal', group: 'model',    label: 'Mix CA Rail C',             unit: '%', min: 0, max: 100 },
+  mix_rail_d:                     { type: 'decimal', group: 'model',    label: 'Mix CA Rail D',             unit: '%', min: 0, max: 100 },
+  margin_rail_a:                  { type: 'decimal', group: 'model',    label: 'Marge Rail A',              unit: '%', min: 0, max: 100 },
+  margin_rail_b:                  { type: 'decimal', group: 'model',    label: 'Marge Rail B',              unit: '%', min: 0, max: 100 },
+  margin_rail_c:                  { type: 'decimal', group: 'model',    label: 'Marge Rail C',              unit: '%', min: 0, max: 100 },
+  margin_rail_d:                  { type: 'decimal', group: 'model',    label: 'Marge Rail D',              unit: '%', min: 0, max: 100 },
+
   // — Paramètres sourcing —
   taux_change_eur_kmf:         { type: 'decimal', group: 'sourcing', label: 'Taux de change EUR→KMF',    unit: 'KMF/€', min: 1 },
   markup_cible_pct:            { type: 'decimal', group: 'sourcing', label: 'Markup cible',              unit: '%',   min: 0, max: 1000 },
