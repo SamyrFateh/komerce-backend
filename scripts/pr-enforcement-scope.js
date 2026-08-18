@@ -8,6 +8,7 @@
  * Lot 2A : migrations + dump live.
  * Lot 2B : Boutique runtime source + unit tests, sans css/dist ni E2E.
  * Lot 3  : governance / feature-first + workflows GitHub Actions actifs.
+ * CI FAST-2 : Golden CDR intégré au runner Backend existant quand pertinent.
  *
  * Tous les statuts Git du diff sont pris en compte. Une suppression doit
  * réveiller le même domaine qu'une création/modification du même chemin.
@@ -43,6 +44,15 @@ function isMigrationFile(file) {
 
 function isLiveSchemaFile(file) {
   return norm(file) === 'docs/db/railway-live-schema.sql';
+}
+
+// Parité économique CURRENT. Cette liste reprend exactement l'ancien
+// path-filter de .github/workflows/golden-cdr.yml ; elle vit désormais dans
+// le classifier unique pour éviter un second runner checkout/setup/npm-ci.
+function isGoldenCdrFile(file) {
+  const f = norm(file);
+  return /^(?:services\/(?:pricing-cdr|pricing-engine|pricing-recommend|transport-pricing|transport-rails)\.js|routes\/(?:admin-pricing-matrices|admin-finance-config|economic)\.js|services\/(?:economic-engine-queries|dashboard-ops-queries)\.js|services\/cost-allocation\/allocate\.js|utils\/(?:eco-bridge|rates|relay-commission)\.js|tools\/golden-cdr\/(?:golden-cdr|witnesses)\.js)$/i.test(f)
+    || /^tools\/golden-cdr\/(?:fixtures|golden)\/.+/i.test(f);
 }
 
 function isBoutiqueCssSource(file) {
@@ -124,6 +134,7 @@ function isGovernanceFile(file) {
 function classify(files) {
   const changedFiles = [...new Set((files || []).map(norm).filter(Boolean))].sort();
   const backendFiles = changedFiles.filter(isBackendFile);
+  const goldenFiles = changedFiles.filter(isGoldenCdrFile);
   const migrationFiles = changedFiles.filter(isMigrationFile);
   const schemaDump = changedFiles.some(isLiveSchemaFile);
   const boutiqueFiles = changedFiles.filter(isBoutiqueRelevant);
@@ -138,11 +149,13 @@ function classify(files) {
   return {
     changedFiles,
     backendFiles,
+    goldenFiles,
     migrationFiles,
     boutiqueFiles,
     boutiqueTestFiles,
     governanceFiles,
     backend: backendFiles.length > 0,
+    golden: goldenFiles.length > 0,
     migrations: migrationFiles.length > 0 || schemaDump,
     schemaDump,
     boutique: boutiqueFiles.length > 0,
@@ -173,6 +186,8 @@ function appendGithubOutput(path, model) {
   const lines = [
     `backend=${model.backend ? 'true' : 'false'}`,
     `backend_files=${model.backendFiles.join(',')}`,
+    `golden=${model.golden ? 'true' : 'false'}`,
+    `golden_files=${model.goldenFiles.join(',')}`,
     `migrations=${model.migrations ? 'true' : 'false'}`,
     `migration_files=${model.migrationFiles.join(',')}`,
     `schema_dump=${model.schemaDump ? 'true' : 'false'}`,
@@ -215,6 +230,7 @@ module.exports = {
   isBackendFile,
   isMigrationFile,
   isLiveSchemaFile,
+  isGoldenCdrFile,
   isBoutiqueCssSource,
   isBoutiqueJsSource,
   isBoutiqueHtml,
