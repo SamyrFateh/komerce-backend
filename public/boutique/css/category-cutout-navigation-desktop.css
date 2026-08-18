@@ -1,0 +1,282 @@
+/**
+ * @komerce-arch-lite
+ * @role          category-cutout-navigation-desktop
+ * @domain        catalog
+ * @layer         css
+ * @owner         public/boutique/js/controllers/home-controller.js
+ * @purpose       Étend le langage détouré aux catégories et sous-catégories desktop sans pills ni cadres imbriqués.
+ * @impact-areas  category-navigation, subcategory-navigation, desktop
+ * @version       2026-08
+ */
+
+@media (min-width: 900px) {
+  /* Niveau 1 — même contrat que mobile, simplement plus généreux. */
+  .k-cat-cutout {
+    gap: 4px;
+    padding: 2px 6px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+  }
+
+  .k-cat-cutout:hover,
+  .k-cat-cutout:active,
+  .k-cat-cutout.active {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .k-cat-cutout .k-chip-photo,
+  .k-cat-cutout.active .k-chip-photo,
+  .k-cat-cutout[data-cat] .k-chip-photo,
+  .k-cat-cutout.active[data-cat] .k-chip-photo {
+    width: 82px;
+    height: 72px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .k-cat-cutout .k-chip-photo img,
+  .k-cat-cutout.active .k-chip-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 0;
+    background: transparent;
+    filter: drop-shadow(0 6px 8px var(--border-text-08));
+  }
+
+  .k-cat-cutout:hover .k-chip-photo {
+    transform: translateY(-2px);
+    box-shadow: none;
+  }
+
+  .k-cat-cutout .k-chip-label,
+  .k-cat-cutout.active .k-chip-label {
+    position: relative;
+    margin: 0;
+    padding: 0 2px 4px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.15;
+  }
+
+  .k-cat-cutout.active .k-chip-label {
+    color: var(--text);
+    font-weight: 800;
+  }
+
+  .k-cat-cutout.active .k-chip-label::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 24px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--text);
+    transform: translateX(-50%);
+  }
+
+  /* Niveau 2 — nouveau composant de présentation. Le comportement reste dans
+     home-controller ; l'ancien .k-subchip reste disponible comme rollback
+     pendant la transition mais n'est plus émis par le renderer desktop. */
+  .k-subcutout-context {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 6px 24px 4px;
+    box-sizing: border-box;
+  }
+
+  .k-subcutout-back {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 6px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font);
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .k-subcutout-back:hover {
+    color: var(--text);
+  }
+
+  .k-subcutout-back svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+  }
+
+  .k-subcutout-title {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 750;
+    line-height: 1.2;
+  }
+
+  .k-subcutout-emoji {
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .k-subcutout-name {
+    white-space: nowrap;
+  }
+
+  .k-subcutout-count {
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .k-subcutout-rail {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 12px;
+    width: 100%;
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 4px 24px 10px;
+    box-sizing: border-box;
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: transparent;
+  }
+
+  .k-subcutout-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .k-subcutout {
+    position: relative;
+    flex: 0 0 auto;
+    min-width: 62px;
+    min-height: 54px;
+    padding: 2px 5px 5px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 3px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    font-family: var(--font);
+    cursor: pointer;
+  }
+
+  .k-subcutout:hover {
+    color: var(--text);
+  }
+
+  .k-subcutout-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 35px;
+    font-size: 24px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 5px var(--border-text-08));
+    transition: transform .15s var(--ease);
+  }
+
+  .k-subcutout:hover .k-subcutout-icon {
+    transform: translateY(-1px);
+  }
+
+  .k-subcutout-icon--all {
+    font-size: 20px;
+  }
+
+  .k-subcutout-label {
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+    color: currentColor;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.15;
+  }
+
+  .k-subcutout.active {
+    color: var(--text);
+  }
+
+  .k-subcutout.active .k-subcutout-label {
+    font-weight: 800;
+  }
+
+  .k-subcutout.active::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 24px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--text);
+    transform: translateX(-50%);
+  }
+
+  /* Premium home : contexte et objets sur une seule ligne visuelle ouverte. */
+  html.k-home-premium-v1 .k-subcutout-context {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  html.k-home-premium-v1 .k-subcutout-back {
+    width: 28px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  html.k-home-premium-v1 .k-subcutout-back span {
+    display: none;
+  }
+
+  html.k-home-premium-v1 .k-subcutout-rail {
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 2px 0 4px;
+    gap: 10px;
+  }
+}
