@@ -1,0 +1,59 @@
+name: TMP LOT 1A-4 final qualification
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  qualify:
+    if: github.head_ref == 'agent/lot1a-4-economic-variables'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+
+      - name: LOT 1A-4 permanent tests
+        run: >-
+          npx jest
+          tests/unit/economic-config.test.js
+          tests/unit/economic-variables-preflight-1a4.test.js
+          tests/unit/economic-variables-migration-119.test.js
+          tests/unit/economic-variables-readonly-1a4.test.js
+          tests/unit/economic-engine-queries.test.js
+          tests/unit/dashboard-ops-queries.test.js
+          tests/unit/economic-route.test.js
+          tests/unit/eco-bridge.test.js
+          tests/unit/admin-finance-config.test.js
+          --runInBand
+
+      - name: Golden CDR BEFORE == AFTER
+        run: node tools/golden-cdr/golden-cdr.js verify
+
+      - name: Regenerate Business Graph with official generator
+        run: npm run business-graph:gen
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: Commit official Business Graph projections only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md
+          if git diff --cached --quiet; then
+            echo "Business Graph already fresh"
+            exit 0
+          fi
+          git commit -m "chore(governance): refresh Business Graph for LOT 1A-4"
+          git push origin HEAD:${GITHUB_HEAD_REF}
