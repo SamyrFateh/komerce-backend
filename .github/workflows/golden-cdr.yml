@@ -9,6 +9,13 @@ on:
       - 'services/pricing-recommend.js'
       - 'services/transport-pricing.js'
       - 'services/transport-rails.js'
+      # LOT 1A — migrations de structure : BEFORE == AFTER obligatoire.
+      - 'routes/admin-pricing-matrices.js'
+      - 'routes/admin-finance-config.js'
+      - 'routes/economic.js'
+      - 'services/economic-engine-queries.js'
+      - 'services/dashboard-ops-queries.js'
+      - 'utils/eco-bridge.js'
       - 'tools/golden-cdr/golden-cdr.js'
       - 'tools/golden-cdr/witnesses.js'
       - 'tools/golden-cdr/fixtures/**'
