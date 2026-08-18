@@ -15,7 +15,7 @@
 'use strict';
 
 import {
-  isPasskeyLoginSupported,
+  shouldOfferPasskeyLogin,
   parseRequestOptions,
   serializeAuthenticationCredential,
 } from './b-passkey-login.js';
@@ -39,7 +39,10 @@ export function isStepUpRequiredError(error) {
 }
 
 export async function performPasskeyStepUp() {
-  if (!isPasskeyLoginSupported()) {
+  // Même règle UX que le login : WebAuthn disponible ne suffit pas. Sur ce
+  // navigateur, Komerce ne déclenche un prompt Passkey que si une Passkey y a
+  // déjà été réellement enrôlée ou utilisée avec succès.
+  if (!shouldOfferPasskeyLogin()) {
     return { outcome: 'reauth_required', method: 'otp' };
   }
 
@@ -84,25 +87,47 @@ export async function performPasskeyStepUp() {
   }
 }
 
+function sameIdentity(before, after) {
+  if (!before || !after) return false;
+  if (before.id != null && after.id != null) return String(before.id) === String(after.id);
+  if (before.phone && after.phone) return String(before.phone) === String(after.phone);
+  return false;
+}
+
 async function performOtpStepUp({
   reason = 'confirmer cette opération sensible',
   title = 'Confirmer avec WhatsApp',
   returnFocusTo = null,
 } = {}) {
   const current = getCurrentIdentity();
-  const user = await openIdentityModal({
+  // Un step-up confirme le compte courant ; il ne sert jamais à choisir ou
+  // créer une autre identité. Sans identité courante exploitable, on refuse.
+  if (!current?.phone || (current?.id == null && !current?.phone)) {
+    return { outcome: 'failed', reason: 'current_identity_unknown' };
+  }
+
+  const pending = openIdentityModal({
     reason,
     title,
-    phone: current?.phone || '',
+    phone: current.phone,
     returnFocusTo,
     // Ce purpose reste un contexte UI/événement. L'OTP serveur renouvelle la
     // session avec amr=otp/auth_time frais ; aucune Passkey n'est créée ici.
     purpose: 'sensitive-step-up',
   });
 
-  return user
-    ? { outcome: 'stepped_up', method: 'otp', user }
-    : { outcome: 'cancelled' };
+  // Le modal d'identité générique sait normalement changer de compte. Pour un
+  // step-up, ces sorties sont incohérentes : on les retire du parcours. Le
+  // contrôle `sameIdentity` ci-dessous reste la défense fonctionnelle finale.
+  const overlay = document.querySelector('.k-id-overlay');
+  overlay?.querySelector('#k-id-num-changed')?.remove();
+  overlay?.querySelector('#k-id-not-you')?.remove();
+
+  const user = await pending;
+  if (!user) return { outcome: 'cancelled' };
+  if (!sameIdentity(current, user)) return { outcome: 'failed', reason: 'account_mismatch' };
+
+  return { outcome: 'stepped_up', method: 'otp', user };
 }
 
 function signalSensitiveOperationCompleted({ method, reason } = {}) {
@@ -130,8 +155,8 @@ function stepUpError(outcome) {
 
 /**
  * Exécute une opération sensible et ne la rejoue qu'une seule fois :
- * - Passkey si une credential utilisable existe ;
- * - sinon OTP WhatsApp frais ;
+ * - Passkey seulement si ce navigateur l'a déjà réellement prouvée ;
+ * - sinon OTP WhatsApp frais sur le MÊME compte ;
  * - après succès par OTP, l'opération est déjà accomplie AVANT toute offre
  *   facultative d'enrôlement Passkey.
  *
