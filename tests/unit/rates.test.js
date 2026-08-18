@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -17,22 +16,12 @@
  *   3. business_rules (legacy, via getRuleNumber)
  *   4. Fallback hardcodé ultime (RATES_FALLBACK)
  *
- * Couverture :
- *   ✓ cache hit : ne requête pas la DB si appelé deux fois sous 60s
- *   ✓ cache expiré : re-requête la DB après 60s
- *   ✓ source primaire : finance_config avec taux_change_eur_kmf renseigné
- *   ✓ source primaire : aed_kmf absent/NaN → repli sur RATES_FALLBACK.aed_kmf
- *   ✓ source primaire : ligne présente mais taux_change_eur_kmf falsy → passe au fallback suivant
- *   ✓ source primaire : db.query rejette → passe au fallback suivant (pas de throw)
- *   ✓ fallback secondaire : business_rules répond correctement
- *   ✓ fallback secondaire : getRuleNumber rejette → fallback ultime
- *   ✓ fallback ultime : log.warn appelé + RATES_FALLBACK renvoyé tel quel
- *   ✓ invalidateCache() : force un refetch même sous le TTL
+ * LOT 1A-2 : la dérivation USD CURRENT est aussi verrouillée ici :
+ * USD_KMF = 0.92 × EUR_KMF, sans élargir le contrat historique getRates().
  */
 
 const mockDbQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...a) => mockDbQuery(...a) }));
-
 
 const mockGetRuleNumber = jest.fn();
 
@@ -48,6 +37,39 @@ beforeEach(() => {
   jest.clearAllMocks();
   rates = require('../../utils/rates');
   rates.configureRatesFallbackProvider(mockGetRuleNumber);
+});
+
+describe('LOT 1A-2 — projection FX canonique', () => {
+  it('dérive USD depuis EUR avec la règle CURRENT 0.92', () => {
+    expect(rates.USD_EUR_CURRENT_RATIO).toBe(0.92);
+    expect(rates.resolveFxRates({
+      taux_change_eur_kmf: 495,
+      taux_aed_kmf: 139,
+    })).toEqual({
+      eur_kmf: 495,
+      aed_kmf: 139,
+      usd_kmf: 455.4,
+      usd_eur_ratio: 0.92,
+    });
+  });
+
+  it('reproduit exactement les fallbacks CURRENT historiques du PricingView', () => {
+    expect(rates.resolvePricingViewCurrentCompatRates()).toEqual({
+      eur_kmf: 492,
+      aed_kmf: 138,
+      usd_kmf: 452.64,
+      usd_eur_ratio: 0.92,
+    });
+  });
+
+  it('resolveFxRates retombe sur les fallbacks historiques sans fabriquer une autre valeur USD', () => {
+    expect(rates.resolveFxRates({})).toEqual({
+      eur_kmf: 492,
+      aed_kmf: 138,
+      usd_kmf: 452.64,
+      usd_eur_ratio: 0.92,
+    });
+  });
 });
 
 describe('getRates — cache mémoire', () => {
