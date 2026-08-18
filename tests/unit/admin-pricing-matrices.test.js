@@ -1,6 +1,5 @@
 'use strict';
 
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -10,10 +9,8 @@ const request = require('supertest');
 const express = require('express');
 
 const mockDbQuery = jest.fn();
-const mockGetClient = jest.fn();
 jest.mock('../../db', () => ({
   query: (...args) => mockDbQuery(...args),
-  getClient: (...args) => mockGetClient(...args),
 }));
 
 const mockState = { user: { id: 'adm1', role: 'admin' } };
@@ -28,13 +25,6 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
-const mockInvalidateCache = jest.fn();
-jest.mock('../../utils/pricing-cache', () => ({
-  invalidatePricingMatricesCache: (...args) => mockInvalidateCache(...args),
-}));
-
-jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })) }));
-
 const router = require('../../routes/admin-pricing-matrices');
 
 function buildApp() {
@@ -45,187 +35,74 @@ function buildApp() {
   return app;
 }
 
-function makeClient() {
-  return {
-    query: jest.fn().mockResolvedValue({ rows: [] }),
-    release: jest.fn(),
-  };
-}
-
 beforeEach(() => {
   jest.clearAllMocks();
   mockState.user = { id: 'adm1', role: 'admin' };
 });
 
-describe('guard admin', () => {
-  it('403 pour un non-admin sur PUT taxes', async () => {
+describe('LOT 1A — éditeurs pricing fantômes', () => {
+  it('conserve le guard admin avant le verdict 410', async () => {
     mockState.user = { id: 'hub1', role: 'agent_hub' };
     const res = await request(buildApp())
       .put('/api/admin/pricing-matrices/taxes/electronique')
-      .send({ douane_pct: 0.1, tva_pct: 0.1, taxe_add_pct: 0, reason: 'ajustement marche' });
-    expect(res.status).toBe(403);
-  });
-});
+      .send({ douane_pct: 0.1 });
 
-describe('PUT /taxes/:category', () => {
-  it('400 sur une categorie hors liste blanche', async () => {
+    expect(res.status).toBe(403);
+    expect(mockDbQuery).not.toHaveBeenCalled();
+  });
+
+  it('PUT taxes échoue explicitement en 410 sans toucher la DB', async () => {
+    const res = await request(buildApp())
+      .put('/api/admin/pricing-matrices/taxes/electronique')
+      .send({ douane_pct: 0.1, tva_pct: 0.1, taxe_add_pct: 0 });
+
+    expect(res.status).toBe(410);
+    expect(res.body).toEqual(expect.objectContaining({
+      error: 'pricing_matrix_editor_retired',
+      matrix: 'taxes',
+      source_of_truth: 'customs_categories.{douane_pct,tva_pct,taxe_add_pct}',
+    }));
+    expect(mockDbQuery).not.toHaveBeenCalled();
+  });
+
+  it('PUT dims échoue explicitement en 410 sans toucher la DB', async () => {
+    const res = await request(buildApp())
+      .put('/api/admin/pricing-matrices/dims/electronique')
+      .send({ length_cm: 20, width_cm: 10, height_cm: 10 });
+
+    expect(res.status).toBe(410);
+    expect(res.body).toEqual(expect.objectContaining({
+      error: 'pricing_matrix_editor_retired',
+      matrix: 'dims',
+      source_of_truth: 'customs_categories.{default_dim_l_cm,default_dim_w_cm,default_dim_h_cm}',
+    }));
+    expect(mockDbQuery).not.toHaveBeenCalled();
+  });
+
+  it('renvoie 410 même pour une ancienne catégorie non canonique : aucune validation legacy ne survit', async () => {
     const res = await request(buildApp())
       .put('/api/admin/pricing-matrices/taxes/inconnue')
-      .send({ douane_pct: 0.1, tva_pct: 0.1, taxe_add_pct: 0, reason: 'ajustement marche' });
-    expect(res.status).toBe(400);
-  });
+      .send({});
 
-  it('400 si la justification (reason) est absente ou trop courte', async () => {
-    const res = await request(buildApp())
-      .put('/api/admin/pricing-matrices/taxes/electronique')
-      .send({ douane_pct: 0.1, tva_pct: 0.1, taxe_add_pct: 0, reason: 'court' });
-    expect(res.status).toBe(400);
-  });
-
-  it.each([-0.1, 1.5, 'abc'])('400 si une valeur de taxe est hors [0,1] ou non numerique (%p)', async (badVal) => {
-    const res = await request(buildApp())
-      .put('/api/admin/pricing-matrices/taxes/electronique')
-      .send({ douane_pct: badVal, tva_pct: 0.1, taxe_add_pct: 0, reason: 'ajustement marche valide' });
-    expect(res.status).toBe(400);
-  });
-
-  it('404 si la categorie n\'est pas initialisee en base (rollback)', async () => {
-    const client = makeClient();
-    client.query.mockImplementation((sql) => {
-      if (sql.includes('SELECT * FROM pricing_category_taxes')) return Promise.resolve({ rows: [] });
-      return Promise.resolve({ rows: [] });
-    });
-    mockGetClient.mockResolvedValue(client);
-
-    const res = await request(buildApp())
-      .put('/api/admin/pricing-matrices/taxes/electronique')
-      .send({ douane_pct: 0.1, tva_pct: 0.1, taxe_add_pct: 0, reason: 'ajustement marche valide' });
-
-    expect(res.status).toBe(404);
-    expect(client.query.mock.calls.map((c) => c[0])).toEqual(
-      expect.arrayContaining(['BEGIN', 'ROLLBACK'])
-    );
-  });
-
-  it('met a jour, journalise un audit et invalide le cache (transaction complete)', async () => {
-    const client = makeClient();
-    client.query.mockImplementation((sql) => {
-      if (sql.includes('SELECT * FROM pricing_category_taxes')) {
-        return Promise.resolve({ rows: [{ douane_pct: 0.05, tva_pct: 0.05, taxe_add_pct: 0 }] });
-      }
-      if (sql.includes('UPDATE pricing_category')) {
-        return Promise.resolve({ rows: [{ category: 'electronique', douane_pct: 0.1 }] });
-      }
-      return Promise.resolve({ rows: [] });
-    });
-    mockGetClient.mockResolvedValue(client);
-
-    const res = await request(buildApp())
-      .put('/api/admin/pricing-matrices/taxes/electronique')
-      .send({ douane_pct: 0.1, tva_pct: 0.1, taxe_add_pct: 0, reason: 'alignement marche 2026' });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(mockInvalidateCache).toHaveBeenCalledTimes(1);
-
-    const calledSql = client.query.mock.calls.map((c) => c[0]);
-    expect(calledSql).toEqual(
-      expect.arrayContaining(['BEGIN', 'COMMIT'])
-    );
-    expect(calledSql.some((s) => s.includes('INSERT INTO pricing_matrices_audit'))).toBe(true);
-  });
-
-  it('rollback + propagation si une erreur survient pendant la transaction', async () => {
-    const client = makeClient();
-    client.query.mockImplementation((sql) => {
-      if (sql.includes('SELECT * FROM pricing_category_taxes')) {
-        return Promise.resolve({ rows: [{ douane_pct: 0.05, tva_pct: 0.05, taxe_add_pct: 0 }] });
-      }
-      if (sql.includes('UPDATE pricing_category')) {
-        return Promise.reject(new Error('db write failed'));
-      }
-      return Promise.resolve({ rows: [] });
-    });
-    mockGetClient.mockResolvedValue(client);
-
-    const res = await request(buildApp())
-      .put('/api/admin/pricing-matrices/taxes/electronique')
-      .send({ douane_pct: 0.1, tva_pct: 0.1, taxe_add_pct: 0, reason: 'alignement marche 2026' });
-
-    expect(res.status).toBe(500);
-    expect(client.query.mock.calls.map((c) => c[0])).toEqual(
-      expect.arrayContaining(['ROLLBACK'])
-    );
-    expect(client.release).toHaveBeenCalled();
+    expect(res.status).toBe(410);
+    expect(mockDbQuery).not.toHaveBeenCalled();
   });
 });
 
-describe('PUT /dims/:category', () => {
-  it('400 sur des dimensions hors [1,200] ou non entieres', async () => {
-    const res = await request(buildApp())
-      .put('/api/admin/pricing-matrices/dims/electronique')
-      .send({ length_cm: 0, width_cm: 10, height_cm: 10, reason: 'ajustement dimensions colis' });
-    expect(res.status).toBe(400);
-  });
-
-  it('met a jour les dimensions et invalide le cache', async () => {
-    const client = makeClient();
-    client.query.mockImplementation((sql) => {
-      if (sql.includes('SELECT * FROM pricing_category_dims')) {
-        return Promise.resolve({ rows: [{ length_cm: 10, width_cm: 10, height_cm: 10 }] });
-      }
-      if (sql.includes('UPDATE pricing_category')) {
-        return Promise.resolve({ rows: [{ category: 'electronique', length_cm: 20 }] });
-      }
-      return Promise.resolve({ rows: [] });
-    });
-    mockGetClient.mockResolvedValue(client);
-
-    const res = await request(buildApp())
-      .put('/api/admin/pricing-matrices/dims/electronique')
-      .send({ length_cm: 20, width_cm: 10, height_cm: 10, reason: 'ajustement dimensions colis' });
-
-    expect(res.status).toBe(200);
-    expect(mockInvalidateCache).toHaveBeenCalledTimes(1);
-  });
-
-  it("l'echec de l'audit (best-effort) ne bloque pas l'update des dims", async () => {
-    const client = makeClient();
-    client.query.mockImplementation((sql) => {
-      if (sql.includes('SELECT * FROM pricing_category_dims')) {
-        return Promise.resolve({ rows: [{ length_cm: 10, width_cm: 10, height_cm: 10 }] });
-      }
-      if (sql.includes('UPDATE pricing_category')) {
-        return Promise.resolve({ rows: [{ category: 'electronique', length_cm: 20 }] });
-      }
-      if (sql.includes('INSERT INTO pricing_matrices_audit')) {
-        return Promise.reject(new Error('table manquante'));
-      }
-      return Promise.resolve({ rows: [] });
-    });
-    mockGetClient.mockResolvedValue(client);
-
-    const res = await request(buildApp())
-      .put('/api/admin/pricing-matrices/dims/electronique')
-      .send({ length_cm: 20, width_cm: 10, height_cm: 10, reason: 'ajustement dimensions colis' });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
-
-describe('GET /taxes et GET /dims', () => {
-  it('GET /taxes renvoie la liste', async () => {
+describe('lecture legacy temporaire', () => {
+  it('GET /taxes conserve la forme historique', async () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [{ category: 'electronique' }] });
     const res = await request(buildApp()).get('/api/admin/pricing-matrices/taxes');
+
     expect(res.status).toBe(200);
-    expect(res.body.taxes).toHaveLength(1);
+    expect(res.body.taxes).toEqual([{ category: 'electronique' }]);
   });
 
-  it('GET /dims renvoie la liste', async () => {
+  it('GET /dims conserve la forme historique', async () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [{ category: 'electronique' }] });
     const res = await request(buildApp()).get('/api/admin/pricing-matrices/dims');
+
     expect(res.status).toBe(200);
-    expect(res.body.dims).toHaveLength(1);
+    expect(res.body.dims).toEqual([{ category: 'electronique' }]);
   });
 });

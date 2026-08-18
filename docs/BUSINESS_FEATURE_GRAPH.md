@@ -1611,7 +1611,7 @@ Meta Graph monté : oui.
 | economic-engine | auth | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | economic-engine | catalog | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | economic-engine | dashboard | static-code | 8 | **DECLARED_AND_OBSERVED** |
-| economic-engine | infrastructure | static-code | 74 | **DECLARED_AND_OBSERVED** |
+| economic-engine | infrastructure | static-code | 73 | **DECLARED_AND_OBSERVED** |
 | economic-engine | logistics | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | economic-engine | orders | static-code | 2 | **DECLARED_AND_OBSERVED** |
