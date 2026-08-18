@@ -21,6 +21,13 @@ const { allocateParcelRealCosts } = require('../../services/cost-allocation');
 
 beforeEach(() => jest.clearAllMocks());
 
+function findRelayInsert(client) {
+  return client.query.mock.calls.find((c) => {
+    const sql = String(c[0]);
+    return sql.includes('INSERT INTO order_item_real_cost_allocations') && sql.includes("'relay'");
+  });
+}
+
 describe('LOT 1A-3 — allocation réelle commission relais', () => {
   test('cost_components gagne sur finance_config.standard et la provenance est tracée', async () => {
     const client = makeClient([
@@ -34,7 +41,7 @@ describe('LOT 1A-3 — allocation réelle commission relais', () => {
 
     const result = await allocateParcelRealCosts('parcel-001');
 
-    const insert = client.query.mock.calls.find((c) => String(c[0]).includes("'relay'"));
+    const insert = findRelayInsert(client);
     expect(insert).toBeDefined();
     expect(insert[1][3]).toBe(1240); // 620 × quantité 2
     expect(insert[1][4]).toBe('cost_components.commission_relais_kmf');
@@ -55,7 +62,8 @@ describe('LOT 1A-3 — allocation réelle commission relais', () => {
 
     const result = await allocateParcelRealCosts('parcel-002');
 
-    const insert = client.query.mock.calls.find((c) => String(c[0]).includes("'relay'"));
+    const insert = findRelayInsert(client);
+    expect(insert).toBeDefined();
     expect(insert[1][3]).toBe(600);
     expect(insert[1][4]).toBe('finance_config.commission_relais_standard_kmf');
     expect(result.relay_commission_source).toBe('finance_config.commission_relais_standard_kmf');
