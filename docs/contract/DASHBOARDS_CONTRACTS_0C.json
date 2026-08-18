@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "lot": "0C-ui",
+  "scope": {
+    "description": "Surfaces KEEP/MERGE alimentant les dashboards Pilotage et Finance",
+    "views": [
+      "SanteView",
+      "PilotageView",
+      "ControlTowerView",
+      "EconomicView",
+      "CostingView",
+      "PilotageFinView"
+    ]
+  },
+  "contracts": [
+    {
+      "view": "SanteView",
+      "method": "getCashReconciliation",
+      "http_method": "GET",
+      "endpoint": "/api/cash/reconciliation",
+      "status": "UNKNOWN",
+      "reason": "Route identifiée mais forme de succès non encore figée par une preuve structurelle dédiée."
+    },
+    {
+      "view": "SanteView",
+      "method": "getCashUncollected",
+      "http_method": "GET",
+      "endpoint": "/api/cash/uncollected",
+      "status": "UNKNOWN",
+      "reason": "Route identifiée mais forme de succès non encore figée par une preuve structurelle dédiée."
+    },
+    {
+      "view": "SanteView",
+      "method": "getClients",
+      "http_method": "GET",
+      "endpoint": "/api/dashboard/clients",
+      "status": "PROVEN",
+      "top_level_fields": ["periode", "kpi", "segments", "at_risk_clients", "vip_clients", "top_clients", "top_produits", "par_relais", "evolution"],
+      "proof": { "type": "service-read", "path": "services/dashboard-clients-queries.js", "symbol": "getClientsAnalysis" }
+    },
+    {
+      "view": "SanteView",
+      "method": "getCustomsRatesEffective",
+      "http_method": "GET",
+      "endpoint": "/api/admin/customs-shipments/rates/effective",
+      "status": "UNKNOWN",
+      "reason": "Endpoint résolu ; contrat de réponse à prouver sans extrapoler depuis la table SQL."
+    },
+    {
+      "view": "SanteView",
+      "method": "getFinance",
+      "http_method": "GET",
+      "endpoint": "/api/dashboard/finance",
+      "status": "PROVEN",
+      "top_level_fields": ["period", "taux", "kpi", "paiements", "marges", "par_categorie", "top_produits"],
+      "proof": { "type": "service-read", "path": "services/finance-metrics/finance-summary.js", "symbol": "getFinanceSummary" }
+    },
+    {
+      "view": "SanteView",
+      "method": "getFinanceConfig",
+      "http_method": "GET",
+      "endpoint": "/api/admin/finance-config",
+      "status": "UNKNOWN",
+      "reason": "Endpoint résolu ; réponse de configuration non figée dans ce sous-lot sans lecture structurelle dédiée."
+    },
+    {
+      "view": "SanteView",
+      "method": "getOps",
+      "http_method": "GET",
+      "endpoint": "/api/dashboard/ops",
+      "status": "PROVEN",
+      "top_level_fields": ["activite", "sla", "logistique", "delais", "alertes"],
+      "proof": { "type": "service-read", "path": "services/dashboard-ops-queries.js", "symbol": "getOps" }
+    },
+    {
+      "view": "SanteView",
+      "method": "getSales",
+      "http_method": "GET",
+      "endpoint": "/api/dashboard/sales",
+      "status": "PROVEN",
+      "top_level_fields": ["period", "kpi", "marges", "by_island", "by_payment", "top_products", "by_category", "evolution", "funnel", "cohorts"],
+      "proof": { "type": "service-read", "path": "services/finance-metrics/sales-analysis.js", "symbol": "getSalesAnalysis" }
+    },
+    {
+      "view": "PilotageView",
+      "method": "getUnified",
+      "http_method": "GET",
+      "endpoint": "/api/admin/dashboard/unified",
+      "status": "PROVEN",
+      "top_level_fields": ["kpis_global", "view_blocks", "economic_flow", "principles", "system_alerts", "data_quality"],
+      "proof": { "type": "test", "path": "tests/unit/admin-dashboard.test.js", "symbol": "GET /unified" }
+    },
+    {
+      "view": "ControlTowerView",
+      "method": "getControlTower",
+      "http_method": "GET",
+      "endpoint": "/api/admin/dashboard/control-tower",
+      "status": "PROVEN",
+      "top_level_fields": ["kpis", "charts", "tables", "alerts", "drilldown_links", "data_quality"],
+      "proof": { "type": "test+route-read", "path": "tests/unit/admin-dashboard.test.js", "symbol": "GET /control-tower" }
+    },
+    {
+      "view": "ControlTowerView",
+      "method": "getOps",
+      "http_method": "GET",
+      "endpoint": "/api/dashboard/ops",
+      "status": "PROVEN",
+      "top_level_fields": ["activite", "sla", "logistique", "delais", "alertes"],
+      "proof": { "type": "service-read", "path": "services/dashboard-ops-queries.js", "symbol": "getOps" }
+    },
+    {
+      "view": "ControlTowerView",
+      "method": "getUnsoldStats",
+      "http_method": "GET",
+      "endpoint": null,
+      "resolved_endpoint": "/api/unsold/stats/summary",
+      "status": "UNKNOWN",
+      "reason": "Le générateur 360 ne résout pas les patches post-load KmcApi. L'URL est prouvée par api-client-unsold.js, mais la forme du row SQL reste à figer strictement.",
+      "proof": { "type": "api-client-read", "path": "public/dashboards/admin/js/api-client-unsold.js", "symbol": "getUnsoldStats" }
+    },
+    {
+      "view": "EconomicView",
+      "method": "getEconomicCharges",
+      "http_method": "GET",
+      "endpoint": "/api/admin/economic/charges",
+      "status": "UNKNOWN",
+      "reason": "Route façade prouvée ; structure du résultat de getCharges à figer explicitement."
+    },
+    {
+      "view": "EconomicView",
+      "method": "getEconomicCoherence",
+      "http_method": "GET",
+      "endpoint": "/api/admin/economic/coherence",
+      "status": "UNKNOWN",
+      "reason": "Route façade prouvée ; structure du résultat de getCoherence à figer explicitement."
+    },
+    {
+      "view": "EconomicView",
+      "method": "getEconomicExecutive",
+      "http_method": "GET",
+      "endpoint": "/api/admin/economic/executive",
+      "status": "UNKNOWN",
+      "reason": "Route façade prouvée ; structure du résultat de buildExecutiveSummary à figer explicitement."
+    },
+    {
+      "view": "EconomicView",
+      "method": "getPricingDashboard",
+      "http_method": "GET",
+      "endpoint": "/api/pricing/dashboard",
+      "status": "UNKNOWN",
+      "reason": "Endpoint résolu ; forme de réponse non encore prouvée dans le périmètre 0C-ui."
+    },
+    {
+      "view": "CostingView",
+      "method": "getCosting",
+      "http_method": "GET",
+      "endpoint": "/api/admin/dashboard/costing",
+      "status": "PROVEN",
+      "top_level_fields": ["kpis", "charts", "tables", "alerts", "drilldown_links", "data_quality"],
+      "proof": { "type": "test+route-read", "path": "tests/unit/admin-dashboard.test.js", "symbol": "GET /costing" }
+    },
+    {
+      "view": "CostingView",
+      "method": "getCostingOrders",
+      "http_method": "GET",
+      "endpoint": "/api/admin/costing/orders",
+      "status": "UNKNOWN",
+      "reason": "Endpoint résolu ; payload de liste à figer par preuve structurelle dédiée."
+    },
+    {
+      "view": "CostingView",
+      "method": "getCostingProducts",
+      "http_method": "GET",
+      "endpoint": "/api/admin/costing/products",
+      "status": "UNKNOWN",
+      "reason": "Endpoint résolu ; payload de liste à figer par preuve structurelle dédiée."
+    },
+    {
+      "view": "CostingView",
+      "method": "getCostingRelais",
+      "http_method": "GET",
+      "endpoint": "/api/admin/costing/relais",
+      "status": "UNKNOWN",
+      "reason": "Endpoint résolu ; payload de liste à figer par preuve structurelle dédiée."
+    },
+    {
+      "view": "PilotageFinView",
+      "method": "getEconomicHistory",
+      "http_method": "GET",
+      "endpoint": "/api/admin/economic/history",
+      "status": "UNKNOWN",
+      "reason": "Route façade prouvée ; forme de getHistory à figer explicitement."
+    },
+    {
+      "view": "PilotageFinView",
+      "method": "getEconomicVariables",
+      "http_method": "GET",
+      "endpoint": "/api/admin/economic/variables",
+      "status": "UNKNOWN",
+      "reason": "Route façade prouvée ; forme de getVariables à figer explicitement."
+    },
+    {
+      "view": "PilotageFinView",
+      "method": "getFinance",
+      "http_method": "GET",
+      "endpoint": "/api/dashboard/finance",
+      "status": "PROVEN",
+      "top_level_fields": ["period", "taux", "kpi", "paiements", "marges", "par_categorie", "top_produits"],
+      "proof": { "type": "service-read", "path": "services/finance-metrics/finance-summary.js", "symbol": "getFinanceSummary" }
+    }
+  ]
+}
