@@ -17,11 +17,49 @@
 import { base64urlToBytes, bytesToBase64url } from './b-passkey-enrollment.js';
 
 const OVERLAY_SELECTOR = '.k-passkey-login-overlay';
+const AVAILABILITY_HINT_KEY = 'komerce_passkey_available_v1';
+
+function storageGet(key) {
+  try { return window.localStorage?.getItem(key); } catch (_) { return null; }
+}
+
+function storageSet(key, value) {
+  try { window.localStorage?.setItem(key, value); } catch (_) {}
+}
+
+function storageRemove(key) {
+  try { window.localStorage?.removeItem(key); } catch (_) {}
+}
+
+function markPasskeyAvailable() {
+  storageSet(AVAILABILITY_HINT_KEY, '1');
+}
+
+function clearPasskeyAvailabilityHint() {
+  storageRemove(AVAILABILITY_HINT_KEY);
+}
+
+// Ce marqueur est uniquement un indice UX local : il ne prouve jamais une
+// identité et ne contourne aucune vérification WebAuthn serveur. Il évite en
+// revanche de proposer une passkey sur un navigateur où Komerce n'en a jamais
+// vu réussir. La future couche Device Trust pourra remplacer cet indice local
+// par une décision serveur liée au device.
+export function hasPasskeyAvailabilityHint() {
+  return storageGet(AVAILABILITY_HINT_KEY) === '1';
+}
 
 export function isPasskeyLoginSupported() {
   return typeof window !== 'undefined'
     && typeof window.PublicKeyCredential !== 'undefined'
     && Boolean(window.navigator?.credentials?.get);
+}
+
+export function shouldOfferPasskeyLogin() {
+  return isPasskeyLoginSupported() && hasPasskeyAvailabilityHint();
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('komerce:passkey-enrolled', markPasskeyAvailable);
 }
 
 export function parseRequestOptions(options) {
@@ -103,15 +141,34 @@ function restoreBackground(records) {
 }
 
 function reasonText(reason) {
-  if (/groupe|panier/i.test(reason || '')) return 'Identifiez-vous pour continuer avec votre panier groupe.';
-  if (/commande|checkout/i.test(reason || '')) return 'Identifiez-vous pour continuer votre commande.';
-  if (/particip/i.test(reason || '')) return 'Identifiez-vous pour retrouver votre participation.';
-  return 'Utilisez la sécurité de votre téléphone ou ordinateur.';
+  if (/liste|groupe|panier/i.test(reason || '')) return 'Utilisez votre passkey Komerce pour créer et partager cette liste.';
+  if (/commande|checkout/i.test(reason || '')) return 'Utilisez votre passkey Komerce pour continuer votre commande.';
+  if (/particip/i.test(reason || '')) return 'Utilisez votre passkey Komerce pour retrouver votre participation.';
+  return 'Utilisez votre passkey Komerce pour continuer.';
 }
 
-export function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } = {}) {
-  if (!isPasskeyLoginSupported()) return Promise.resolve({ outcome: 'fallback' });
-  if (document.querySelector(OVERLAY_SELECTOR)) return Promise.resolve({ outcome: 'cancelled' });
+export async function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } = {}) {
+  // Un navigateur capable de WebAuthn ne signifie pas qu'une passkey Komerce
+  // y existe. Ne jamais afficher le choix Passkey sur la seule capacité API.
+  if (!shouldOfferPasskeyLogin()) {
+    return { outcome: 'fallback', reason: 'passkey_not_known_on_device' };
+  }
+  if (document.querySelector(OVERLAY_SELECTOR)) return { outcome: 'cancelled' };
+
+  // Préparer le challenge AVANT de monter l'UI : si le serveur ne peut pas
+  // préparer la cérémonie, l'utilisateur tombe directement sur WhatsApp sans
+  // voir un faux choix Passkey « indisponible ».
+  let requestOptions;
+  try {
+    requestOptions = await fetchJson('/api/auth/passkey/login/options', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+  } catch (_) {
+    return { outcome: 'fallback', reason: 'passkey_prepare_unavailable' };
+  }
 
   return new Promise(resolve => {
     const focusOrigin = returnFocusTo || document.activeElement;
@@ -126,7 +183,7 @@ export function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } 
         <div class="k-id-handle" aria-hidden="true"></div>
         <div class="k-id-head">
           <div>
-            <span class="k-id-title" id="k-passkey-login-title">Se connecter avec une passkey</span>
+            <span class="k-id-title" id="k-passkey-login-title">Confirmer votre identité</span>
             <span class="k-id-sub" id="k-passkey-login-sub">${reasonText(reason)}</span>
           </div>
           <button class="k-id-close" type="button" aria-label="Fermer">✕</button>
@@ -140,7 +197,7 @@ export function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } 
             </div>
           </div>
           <p class="k-id-error" id="k-passkey-login-error" role="alert" aria-live="assertive" aria-atomic="true"></p>
-          <button class="k-id-btn" type="button" id="k-passkey-login-cta" disabled>Préparation…</button>
+          <button class="k-id-btn" type="button" id="k-passkey-login-cta">Continuer avec ma passkey</button>
           <button class="k-id-btn k-id-secondary" type="button" id="k-passkey-login-whatsapp">Utiliser WhatsApp</button>
         </div>
       </div>`;
@@ -153,7 +210,6 @@ export function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } 
     const whatsapp = overlay.querySelector('#k-passkey-login-whatsapp');
     const close = overlay.querySelector('.k-id-close');
     const error = overlay.querySelector('#k-passkey-login-error');
-    let requestOptions = null;
     let busy = false;
     let settled = false;
     let recoverySuggested = false;
@@ -200,26 +256,6 @@ export function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } 
       }
     });
 
-    // Discoverable login: aucun numéro envoyé. Le serveur et l'authenticator
-    // déterminent la credential, puis le serveur remonte au compte lié.
-    fetchJson('/api/auth/passkey/login/options', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: '{}',
-    }).then(options => {
-      if (!overlay.isConnected || settled) return;
-      requestOptions = options;
-      cta.disabled = false;
-      cta.textContent = 'Continuer avec ma passkey';
-      cta.focus();
-    }).catch(() => {
-      if (!overlay.isConnected || settled) return;
-      error.textContent = 'La connexion par passkey est indisponible. Utilisez WhatsApp.';
-      cta.textContent = 'Passkey indisponible';
-      whatsapp.focus();
-    });
-
     cta.addEventListener('click', async () => {
       if (busy || !requestOptions) return;
       busy = true;
@@ -240,12 +276,17 @@ export function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } 
           body: JSON.stringify(payload),
         });
         if (!result.verified || !result.user) throw new Error('Authentification refusée.');
+        markPasskeyAvailable();
         finish({ outcome: 'authenticated', user: result.user });
       } catch (err) {
         busy = false;
         if (err?.name === 'NotAllowedError' || /annul/i.test(String(err?.message || ''))) {
-          error.textContent = 'Connexion annulée. Réessayez ou utilisez WhatsApp.';
+          error.textContent = 'Passkey non utilisée. Réessayez ou utilisez WhatsApp.';
         } else if (err?.status === 401) {
+          // Le serveur est l'autorité : une credential refusée/révoquée rend
+          // l'indice local obsolète. On le retire pour ne plus reproposer ce
+          // chemin au prochain besoin d'identification.
+          clearPasskeyAvailabilityHint();
           recoverySuggested = true;
           error.textContent = 'Cette passkey n’est plus utilisable. Utilisez WhatsApp pour récupérer votre compte.';
           whatsapp.textContent = 'Récupérer avec WhatsApp';
@@ -257,6 +298,6 @@ export function openPasskeyLogin({ reason = 'continuer', returnFocusTo = null } 
       }
     });
 
-    window.setTimeout(() => whatsapp.focus(), 0);
+    window.setTimeout(() => cta.focus(), 0);
   });
 }
