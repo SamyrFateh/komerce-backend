@@ -1,4 +1,4 @@
-﻿name: Golden CDR
+name: Golden CDR
 
 on:
   pull_request:
@@ -9,7 +9,10 @@ on:
       - 'services/pricing-recommend.js'
       - 'services/transport-pricing.js'
       - 'services/transport-rails.js'
-      - 'tools/golden-cdr/**'
+      - 'tools/golden-cdr/golden-cdr.js'
+      - 'tools/golden-cdr/witnesses.js'
+      - 'tools/golden-cdr/fixtures/**'
+      - 'tools/golden-cdr/golden/**'
 
 permissions:
   contents: read
