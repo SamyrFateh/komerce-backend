@@ -26,33 +26,40 @@ const db = require('../db');
  * visibles pour forensic mais ne sont plus une surface d'écriture runtime.
  */
 const LEGACY_RUNTIME_INPUTS = Object.freeze({
-  orders_per_month:         { canonical: 'objectif_commandes_mois',   fallback: 100,   min: 0 },
-  target_basket_avg:        { canonical: 'target_panier_moyen_kmf',   fallback: 15000, min: 0 },
-  hub_monthly_cost_aed:     { canonical: 'hub_monthly_cost_aed',      fallback: 7000,  min: 0 },
-  customs_rate_default_pct: { canonical: 'customs_rate_default_pct',  fallback: 42,    min: 0, max: 100 },
-  mix_rail_a:               { canonical: 'mix_rail_a',                fallback: 60,    min: 0, max: 100 },
-  mix_rail_b:               { canonical: 'mix_rail_b',                fallback: 25,    min: 0, max: 100 },
-  mix_rail_c:               { canonical: 'mix_rail_c',                fallback: 10,    min: 0, max: 100 },
-  mix_rail_d:               { canonical: 'mix_rail_d',                fallback: 5,     min: 0, max: 100 },
-  margin_rail_a:            { canonical: 'margin_rail_a',             fallback: 45,    min: 0, max: 100 },
-  margin_rail_b:            { canonical: 'margin_rail_b',             fallback: 18,    min: 0, max: 100 },
-  margin_rail_c:            { canonical: 'margin_rail_c',             fallback: 35,    min: 0, max: 100 },
-  margin_rail_d:            { canonical: 'margin_rail_d',             fallback: 70,    min: 0, max: 100 },
+  orders_per_month:         { canonical: 'objectif_commandes_mois',  fallback: 100,   min: 0 },
+  target_basket_avg:        { canonical: 'target_panier_moyen_kmf',  fallback: 15000, min: 0 },
+  hub_monthly_cost_aed:     { canonical: 'hub_monthly_cost_aed',     fallback: 7000,  min: 0 },
+  customs_rate_default_pct: { canonical: 'customs_rate_default_pct', fallback: 42,    min: 0, max: 100 },
+  mix_rail_a:               { canonical: 'mix_rail_a',               fallback: 60,    min: 0, max: 100 },
+  mix_rail_b:               { canonical: 'mix_rail_b',               fallback: 25,    min: 0, max: 100 },
+  mix_rail_c:               { canonical: 'mix_rail_c',               fallback: 10,    min: 0, max: 100 },
+  mix_rail_d:               { canonical: 'mix_rail_d',               fallback: 5,     min: 0, max: 100 },
+  margin_rail_a:            { canonical: 'margin_rail_a',            fallback: 45,    min: 0, max: 100 },
+  margin_rail_b:            { canonical: 'margin_rail_b',            fallback: 18,    min: 0, max: 100 },
+  margin_rail_c:            { canonical: 'margin_rail_c',            fallback: 35,    min: 0, max: 100 },
+  margin_rail_d:            { canonical: 'margin_rail_d',            fallback: 70,    min: 0, max: 100 },
 });
 
 const COMPUTED_PROJECTION = Object.freeze({
-  total_cost_per_order:      'totalCostPerOrder',
-  margin_weighted_avg:       'weightedMargin',
-  seuil_rentabilite:         'breakEven',
-  safety_ratio:              'safetyRatio',
-  margin_pressure:           'marginPressure',
-  net_profit_per_order:      'netProfit',
-  monthly_breakeven_orders:  'monthlyBreakevenOrders',
+  total_cost_per_order:     'totalCostPerOrder',
+  margin_weighted_avg:      'weightedMargin',
+  seuil_rentabilite:        'breakEven',
+  safety_ratio:             'safetyRatio',
+  margin_pressure:          'marginPressure',
+  net_profit_per_order:     'netProfit',
+  monthly_breakeven_orders: 'monthlyBreakevenOrders',
 });
 
 function numeric(value, fallback) {
+  if (value === null || value === undefined || value === '') return Number(fallback);
   const n = Number(value);
   return Number.isFinite(n) ? n : Number(fallback);
+}
+
+function optionalNumber(value) {
+  if (value === null || value === undefined || value === '') return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
 }
 
 async function loadFinanceConfig() {
@@ -126,9 +133,9 @@ function projectLegacyRows(rows, config, computed) {
 
 function effectiveLegacyWriteValue(body) {
   if (!body || typeof body !== 'object') return undefined;
-  if (body.value_used !== undefined) return Number(body.value_used);
-  if (body.source_used === 'supposed' && body.value_supposed !== undefined) return Number(body.value_supposed);
-  if (body.source_used === 'observed' && body.value_observed !== undefined) return Number(body.value_observed);
+  if (body.value_used !== undefined) return optionalNumber(body.value_used);
+  if (body.source_used === 'supposed' && body.value_supposed !== undefined) return optionalNumber(body.value_supposed);
+  if (body.source_used === 'observed' && body.value_observed !== undefined) return optionalNumber(body.value_observed);
   return undefined;
 }
 
@@ -186,6 +193,7 @@ module.exports = {
   LEGACY_RUNTIME_INPUTS,
   COMPUTED_PROJECTION,
   numeric,
+  optionalNumber,
   loadFinanceConfig,
   resolveLegacyInput,
   buildModelInputs,
