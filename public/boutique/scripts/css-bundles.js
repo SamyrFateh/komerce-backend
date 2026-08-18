@@ -14,7 +14,8 @@
 
 /**
  * Chaque entrée décrit un bundle CSS de sortie.
- * - out   : nom du fichier dans css/ (sans extension .css)
+ * - out   : nom du fichier dans css/dist/
+ * - files : noms des sources dans css/ (sans extension .css)
  *
  * Ajouter un nouveau fichier CSS ici suffit — deploy-css.js et audit-boutique-arch.js
  * liront automatiquement cette liste.
@@ -26,7 +27,7 @@ const BUNDLES = [
   },
   {
     out: 'components.css',
-    files: ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
+    files: ['categories', 'category-cutout-navigation', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
             'modal-mobile-canonical', 'modal-enriched-content', 'modal-cart-sku-guard',
             'cart', 'interactions', 'modal-mobile-suggestion-actions', 'modal-product-polish', 'hero-cart-proxy',
             'shared-list-side-cart', 'shared-list-side-cart-responsive', 'shared-list-library-remove',
@@ -35,7 +36,7 @@ const BUNDLES = [
   },
   {
     out: 'desktop.css',
-    files: ['boutique-desktop', 'side-cart-desktop-polish'],
+    files: ['boutique-desktop', 'side-cart-desktop-polish', 'category-cutout-navigation-desktop'],
   },
 ];
 
