@@ -111,20 +111,17 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
-      - name: Fetch PR base commit only
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
       # schema-freshness doit retrouver le dernier commit ayant réellement
-      # touché le dump. On récupère donc l'historique de la seule branche de
-      # base, sans blobs, au lieu de réactiver fetch-depth:0 sur tout le repo.
-      - name: Fetch base branch history for schema baseline
+      # touché le dump. Un seul fetch rend le checkout non-shallow en ne
+      # récupérant que l'historique des branches head+base, sans blobs/tags.
+      - name: Fetch PR history for migration/schema gates
         env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-            git fetch --no-tags --filter=blob:none --unshallow origin "$BASE_REF"
-          fi
+          git fetch --no-tags --filter=blob:none --unshallow origin \
+            "+refs/heads/${HEAD_REF}:refs/remotes/origin/${HEAD_REF}" \
+            "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
       # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
       - name: Migration immutability
         env:
