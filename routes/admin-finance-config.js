@@ -11,7 +11,7 @@
  * @db-read       finance_config
  * @db-write      exchange_rates, finance_config
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      lot1a_relay_commission_one_runtime_truth
  * @impact-areas  economic-engine, admin-dashboard
  * @version       2026-06
  */
@@ -65,7 +65,6 @@ const FIELD_SCHEMA = {
   delai_transit_jours:         { type: 'int',     group: 'sourcing', label: 'Délai transit moyen',       unit: 'jours', min: 0 },
 
   // — Paramètres opérationnels —
-  commission_relais_pct:       { type: 'decimal', group: 'ops',      label: 'Commission relais',         unit: '%',   min: 0, max: 100 },
   frais_livraison_defaut_kmf:  { type: 'int',     group: 'ops',      label: 'Frais livraison défaut',    unit: 'KMF', min: 0 },
   seuil_livraison_gratuite_kmf:{ type: 'int',     group: 'ops',      label: 'Seuil livraison gratuite',  unit: 'KMF', min: 0 },
   taux_conversion_pct:         { type: 'decimal', group: 'ops',      label: 'Taux de conversion',        unit: '%',   min: 0, max: 100 },
@@ -78,6 +77,12 @@ const FIELD_SCHEMA = {
 };
 
 const ALLOWED_FIELDS = Object.keys(FIELD_SCHEMA);
+
+const RETIRED_RELAY_COMMISSION_FIELDS = new Set([
+  'commission_relais_pct',
+  'commission_relais_standard_kmf',
+  'commission_relais_showroom_kmf',
+]);
 
 // ── GET schema (pour le front — auto-génère le formulaire) ───────────────────
 router.get('/schema', adminOnly, async (req, res) => {
@@ -107,6 +112,17 @@ router.get('/', adminOnly, async (req, res, next) => {
 router.put('/', adminOnly, async (req, res, next) => {
   try {
     const body = req.body || {};
+    const retiredRelayFields = Object.keys(body).filter((field) => RETIRED_RELAY_COMMISSION_FIELDS.has(field));
+    if (retiredRelayFields.length) {
+      return res.status(410).json({
+        error: 'relay_commission_editor_retired',
+        retired_fields: retiredRelayFields,
+        source_of_truth: 'cost_components.commission_relais_kmf',
+        component_key: 'commission_relais_kmf',
+        message: 'LOT 1A-3 : la commission relais est éditée via le composant de coût canonique.',
+      });
+    }
+
     const updates = {};
 
     for (const field of ALLOWED_FIELDS) {
@@ -243,6 +259,7 @@ function formatConfig(cfg) {
       delai_transit_jours:  Number(cfg.delai_transit_jours || 25),
     },
     ops: {
+      // Lecture legacy conservée pour compat/forensic ; ce champ n'est plus éditable.
       commission_relais_pct:        Number(cfg.commission_relais_pct || 0),
       frais_livraison_defaut_kmf:   Number(cfg.frais_livraison_defaut_kmf || 0),
       seuil_livraison_gratuite_kmf: Number(cfg.seuil_livraison_gratuite_kmf || 0),

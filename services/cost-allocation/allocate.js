@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, ./_helpers (shareByWeight)
+ * @depends       db, ./_helpers (shareByWeight), utils/relay-commission.js
  * @used-by       services/cost-allocation/index.js
- * @db-read       customs_shipment_parcels, customs_shipments, finance_config, order_items, orders, parcel_items, parcels, products
+ * @db-read       cost_components, customs_shipment_parcels, customs_shipments, finance_config, order_items, orders, parcel_items, parcels, products
  * @db-write      order_item_real_cost_allocations
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -40,6 +40,7 @@
 
 const db = require('../../db');
 const { shareByWeight } = require('./_helpers');
+const { resolveRelayCommissionCurrent } = require('../../utils/relay-commission');
 
 // ═══════════════════════════════════════════════════════════════════════
 // 2. allocateShipmentRealCosts — ventile customs + freight + port d'un shipment
@@ -287,11 +288,12 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
 /**
  * Quand un parcel passe en 'collected', on alloue :
  *   - local_distribution (transport hub→relais) : par poids, depuis finance_config
- *   - relay (commission relais) : per_item, depuis finance_config
+ *   - relay (commission relais) : per_item, autorité cost_components
+ *     (`commission_relais_kmf`), avec finance_config.standard en fallback legacy.
  *
- * Ces couts sont calcules a partir des moyennes finance_config faute de
- * factures detaillees au parcel pres. is_actual=TRUE car ils sont engages
- * de facon predictible.
+ * LOT 1A-3 : aucune sélection implicite showroom. Tant qu'aucun contexte runtime
+ * ne porte explicitement ce type de relais, le composant global est la vérité.
+ * is_actual=TRUE car la commission est engagée de façon prévisible.
  */
 async function allocateParcelRealCosts(parcelId, dbClient = null) {
   const ownTx = !dbClient;
@@ -335,13 +337,28 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
     }
     const items = itemsRes.rows;
 
-    // Charger finance_config (commission relais standard, transport)
-    const fcRes = await client.query(
-      `SELECT commission_relais_standard_kmf
-       FROM finance_config LIMIT 1`
-    );
-    const fc = fcRes.rows[0] || {};
-    const commissionPerItem = Number(fc.commission_relais_standard_kmf) || 500;
+    // LOT 1A-3 — une priorité runtime explicite :
+    //   1. cost_components.commission_relais_kmf (autorité OWNED)
+    //   2. finance_config.commission_relais_standard_kmf (fallback legacy)
+    //   3. 500 KMF (fallback CURRENT)
+    // commission_relais_pct/showroom ne sont jamais devinés ici.
+    const relayCfgRes = await client.query(`
+      SELECT
+        (SELECT default_value
+           FROM cost_components
+          WHERE key = 'commission_relais_kmf'
+            AND is_active = TRUE
+            AND is_exceptional = FALSE
+            AND (active_from IS NULL OR active_from <= CURRENT_DATE)
+            AND (active_until IS NULL OR active_until >= CURRENT_DATE)
+          ORDER BY display_order, key
+          LIMIT 1) AS component_value,
+        (SELECT commission_relais_standard_kmf
+           FROM finance_config
+          WHERE id = 1) AS legacy_standard_value
+    `);
+    const relayCommission = resolveRelayCommissionCurrent(relayCfgRes.rows[0] || {});
+    const commissionPerItem = relayCommission.amount_kmf;
 
     let allocations = 0;
 
@@ -353,8 +370,8 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
            (order_id, order_item_id, parcel_id,
             cost_type, amount_kmf, allocation_method,
             source, is_actual, confidence)
-         VALUES ($1,$2,$3,'relay',$4,'per_item','finance_config',TRUE,'medium')`,
-        [parcel.order_id, it.order_item_id, parcelId, amount]
+         VALUES ($1,$2,$3,'relay',$4,'per_item',$5,TRUE,'medium')`,
+        [parcel.order_id, it.order_item_id, parcelId, amount, relayCommission.source]
       );
       allocations++;
     }
@@ -369,6 +386,8 @@ async function allocateParcelRealCosts(parcelId, dbClient = null) {
       parcel_id: parcelId,
       allocations_count: allocations,
       items_count: items.length,
+      relay_commission_kmf: commissionPerItem,
+      relay_commission_source: relayCommission.source,
     };
   } catch (err) {
     if (ownTx) await client.query('ROLLBACK').catch(() => {});
