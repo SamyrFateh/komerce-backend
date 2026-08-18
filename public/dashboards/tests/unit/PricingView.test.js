@@ -122,7 +122,10 @@ describe('PricingView', () => {
     document.getElementById('apv-styles')?.remove();
 
     routes = {
-      config: () => jsonResponse({ targets: { taux_aed_kmf: 138, taux_change_eur_kmf: 492 } }),
+      config: () => jsonResponse({
+        targets: {},
+        fx: { pricing_view_current_compat: { eur_kmf: 492, aed_kmf: 138, usd_kmf: 452.64, usd_eur_ratio: 0.92 } },
+      }),
       categories: () => jsonResponse(CATEGORIES),
       costComponents: () => jsonResponse([{ key: 'c1' }]),
       provisions: () => jsonResponse([{ key: 'r1' }]),
@@ -387,7 +390,27 @@ describe('PricingView', () => {
       await flush();
       call = global.fetch.mock.calls.find(([u]) => String(u).includes('/api/pricing/recommend') && !String(u).includes('batch'));
       body = JSON.parse(call[1].body);
-      expect(body.prix_aed).toBeCloseTo((50 * 0.92 * 492) / 138, 2);
+      expect(body.prix_aed).toBeCloseTo((50 * 452.64) / 138, 2);
+    });
+
+    it('USD consomme la projection backend au lieu d une formule locale', async () => {
+      routes.config = () => jsonResponse({
+        targets: {},
+        fx: { pricing_view_current_compat: { eur_kmf: 500, aed_kmf: 140, usd_kmf: 460, usd_eur_ratio: 0.92 } },
+      });
+      await switchToSimulation();
+      global.fetch.mockClear();
+
+      main.querySelector('[data-input="currency"]').value = 'USD';
+      main.querySelector('[data-input="currency"]').dispatchEvent(new Event('change', { bubbles: true }));
+      main.querySelector('[data-input="prix_achat"]').value = '50';
+      main.querySelector('[data-input="prix_achat"]').dispatchEvent(new Event('input', { bubbles: true }));
+      jest.advanceTimersByTime(300);
+      await flush();
+
+      const call = global.fetch.mock.calls.find(([u]) => String(u).includes('/api/pricing/recommend') && !String(u).includes('batch'));
+      const body = JSON.parse(call[1].body);
+      expect(body.prix_aed).toBeCloseTo((50 * 460) / 140, 2);
     });
 
     it('dim_l/dim_w/dim_h et channel diaspora pris en compte dans le body', async () => {

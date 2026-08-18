@@ -38,6 +38,7 @@ const db      = require('../db');
 const log     = require('../utils/logger').forModule('admin-finance-config');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { invalidateConfigCache } = require('../services/loyalty-service');
+const { resolveFxRates, resolvePricingViewCurrentCompatRates } = require('../utils/rates');
 
 const adminOnly = [authenticate, requireAdmin];
 
@@ -210,6 +211,8 @@ function formatConfig(cfg) {
   // Objectif mensuel
   const objCommandes = Number(cfg.objectif_commandes_mois || 100);
   const objCA = Number(cfg.objectif_ca_mensuel_kmf || 1500000);
+  const currentFx = resolveFxRates(cfg);
+  const pricingViewCurrentCompatFx = resolvePricingViewCurrentCompatRates();
 
   return {
     // Valeurs brutes (variabilisables)
@@ -227,6 +230,11 @@ function formatConfig(cfg) {
       seuil_rentabilite_kmf:    seuilRentabilite,
       objectif_commandes_mois:  objCommandes,
       objectif_ca_mensuel_kmf:  objCA,
+    },
+    fx: {
+      current: currentFx,
+      pricing_view_current_compat: pricingViewCurrentCompatFx,
+      usd_nature: 'DERIVED_CURRENT',
     },
     sourcing: {
       taux_change_eur_kmf:  tauxChange,

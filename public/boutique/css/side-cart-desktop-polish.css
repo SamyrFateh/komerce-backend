@@ -1,0 +1,219 @@
+/**
+ * @komerce-arch-lite
+ * @role          desktop-side-cart-visual-convergence
+ * @domain        boutique
+ * @layer         css
+ * @owner         public/boutique/js/b-cart.js
+ * @purpose       Aligne le side-cart desktop sur le langage mobile épuré : moins de cadres, typographie panier/liste commune et ancrage haut dans la PDP.
+ * @impact-areas  side-cart, shared-cart, modal-product, responsive
+ * @version       2026-08
+ */
+
+@media (min-width: 900px) {
+  /* Navigation Panier / Liste : même grammaire que le mobile.
+     Deux labels sur une surface ouverte ; seul l'actif reçoit un trait fin. */
+  #k-cart-surface-switch.k-cart-tabs {
+    position: relative;
+    min-height: 52px;
+    padding: 0 10px;
+    gap: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  #k-cart-surface-switch.k-cart-tabs::after {
+    display: none;
+  }
+
+  #k-cart-surface-switch .k-cart-tab {
+    position: relative;
+    height: 52px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  #k-cart-surface-switch .k-cart-tab--active,
+  #k-cart-surface-switch[data-active="personal"] .k-tab-personal.k-cart-tab--active {
+    color: var(--text);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+    font-weight: 800;
+  }
+
+  #k-cart-surface-switch[data-active="personal"] .k-tab-personal.k-cart-tab--active::after,
+  #k-cart-surface-switch .k-cart-tab-group--active::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 32px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--text);
+    transform: translateX(-50%);
+  }
+
+  #k-cart-surface-switch .k-cart-tab-group {
+    position: relative;
+    min-width: 0;
+    height: 52px;
+  }
+
+  #k-cart-surface-switch .k-cart-tab-group--active {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+    overflow: visible;
+  }
+
+  #k-cart-surface-switch .k-cart-tab-group--active .k-tab-shared-list.k-cart-tab--active,
+  #k-cart-surface-switch .k-cart-tab-group--active .k-cart-tab-exit {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    transform: none;
+  }
+
+  #k-cart-surface-switch .k-cart-tab-exit {
+    height: 52px;
+    color: var(--text-muted);
+  }
+
+  /* Liste d'articles : une seule colonne de lecture, séparée par l'espace et
+     un trait fin. Les contrôles restent inchangés fonctionnellement. */
+  .k-sc-items {
+    padding: 6px 10px 10px;
+    gap: 0;
+    background: var(--white);
+  }
+
+  .k-sc-item {
+    align-items: center;
+    gap: 10px;
+    padding: 10px 2px;
+    border: 0;
+    border-bottom: 1px solid var(--border-text-06);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .k-sc-item:hover {
+    background: var(--sand);
+    border-color: var(--border-text-06);
+  }
+
+  .k-sc-item-img {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    background: var(--sand);
+    border: 1px solid var(--border-text-06);
+  }
+
+  /* Parité exacte avec la ligne canonique panier/liste de cart.css. */
+  .k-sc-item-info {
+    min-height: 52px;
+    justify-content: flex-start;
+    gap: 2px;
+  }
+
+  .k-sc-item-name {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .k-sc-item-meta {
+    margin-top: 0;
+  }
+
+  .k-sc-item-price {
+    font-size: 12px;
+    font-weight: 850;
+    letter-spacing: 0;
+  }
+
+  /* La PDP n'agrandit plus artificiellement une ligne déjà canonique. */
+  .k-side-cart--in-modal .k-sc-item {
+    align-items: center;
+    gap: 10px;
+    padding: 10px 2px;
+  }
+
+  .k-side-cart--in-modal .k-sc-item-img {
+    width: 52px;
+    height: 52px;
+  }
+
+  .k-side-cart--in-modal .k-sc-item-info {
+    min-height: 52px;
+  }
+
+  .k-side-cart--in-modal .k-sc-item-name {
+    font-size: 12px;
+    font-weight: 500;
+    -webkit-line-clamp: 1;
+  }
+
+  /* Dans une fiche produit le side-cart commence sous la topbar, comme le
+     contenu principal. Plus de centrage vertical ni de bande vide en tête. */
+  #k-modal .k-modal-cart-slot {
+    justify-content: flex-start;
+    padding-block: 0;
+  }
+
+  .k-side-cart--in-modal {
+    max-height: 100%;
+    margin-block: 0;
+  }
+
+  /* Footer : hiérarchie transactionnelle, pas une collection de capsules. */
+  .k-sc-header {
+    padding: 10px 12px 12px;
+    gap: 7px;
+    background: var(--white);
+    border-top: 1px solid var(--border-text-08);
+  }
+
+  .k-sc-free-ship {
+    padding: 0;
+    margin-bottom: 1px;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .k-sc-clear {
+    width: auto;
+    align-self: center;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 10.5px;
+    font-weight: 600;
+  }
+
+  .k-sc-clear:hover {
+    border-color: transparent;
+    background: transparent;
+    color: var(--coral);
+  }
+}
