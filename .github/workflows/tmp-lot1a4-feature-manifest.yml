@@ -1,0 +1,57 @@
+name: TMP LOT 1A-4 feature manifest
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update-manifest:
+    if: github.head_ref == 'agent/lot1a-4-economic-variables'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Patch exact economic-engine slice declarations
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('features/economic-engine.feature.js')
+          s = p.read_text(encoding='utf-8')
+          replacements = [
+            ("      'services/economic-engine-queries.js',\n      'services/apply-pricing-updates.js',",
+             "      'services/economic-engine-queries.js',\n      'services/economic-config.js',\n      'services/apply-pricing-updates.js',"),
+            ("      'migrations/103_cost_benchmarks.sql',\n    ],",
+             "      'migrations/103_cost_benchmarks.sql',\n      'migrations/119_economic_variables_to_finance_config.sql',\n    ],"),
+            ("      'tests/unit/economic-engine-queries.test.js',\n      'tests/unit/pricing-apply.test.js',",
+             "      'tests/unit/economic-engine-queries.test.js',\n      'tests/unit/economic-config.test.js',\n      'tests/unit/economic-variables-preflight-1a4.test.js',\n      'tests/unit/economic-variables-migration-119.test.js',\n      'tests/unit/economic-variables-readonly-1a4.test.js',\n      'tests/unit/pricing-apply.test.js',"),
+            ("      'economic_variables: RW',", "      'economic_variables: R',"),
+          ]
+          for old, new in replacements:
+              if s.count(old) != 1:
+                  raise SystemExit(f'expected one match for {old!r}, got {s.count(old)}')
+              s = s.replace(old, new)
+          p.write_text(s, encoding='utf-8')
+      - name: Feature slice guard
+        run: node scripts/feature-guard.js --strict
+      - name: Regenerate Business Graph officially
+        run: npm run business-graph:gen
+      - name: Diff integrity
+        run: git diff --check
+      - name: Commit manifest and official projections
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add features/economic-engine.feature.js docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md
+          git commit -m "LOT 1A-4: declare canonical economic config in feature slice"
+          git push origin HEAD:${GITHUB_HEAD_REF}
