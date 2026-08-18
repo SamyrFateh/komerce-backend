@@ -4,11 +4,11 @@
  * @domain        auth-passkey
  * @layer         ui-service
  * @criticality   high
- * @inputs        komerce:identity-authenticated, WebAuthn registration options
+ * @inputs        komerce:sensitive-operation-confirmed, WebAuthn registration options
  * @outputs       webauthn_registration_response, passkey_enrollment_state
  * @depends       routes/auth-passkey.js, browser WebAuthn API
  * @used-by       public/boutique/js/main.js
- * @doctrine      auth3_post_otp_enrollment, no_secret_in_js_storage, user_opt_in
+ * @doctrine      post_sensitive_otp_enrollment, no_secret_in_js_storage, user_opt_in
  * @impact-areas  auth, account-security
  * @version       2026-08
  */
@@ -157,7 +157,7 @@ function closePrompt(overlay, background, focusOrigin) {
   }, 150);
 }
 
-function mountPrompt({ purpose = 'enrollment' } = {}) {
+function mountPrompt({ purpose = 'sensitive' } = {}) {
   const recovery = purpose === 'recovery';
   const focusOrigin = document.activeElement;
   const overlay = document.createElement('div');
@@ -171,8 +171,8 @@ function mountPrompt({ purpose = 'enrollment' } = {}) {
       <div class="k-id-handle" aria-hidden="true"></div>
       <div class="k-id-head">
         <div>
-          <span class="k-id-title" id="k-passkey-title">${recovery ? 'Créer une nouvelle passkey' : 'Sécuriser cet appareil'}</span>
-          <span class="k-id-sub" id="k-passkey-sub">${recovery ? 'Votre compte est récupéré. Créez une nouvelle passkey pour vos prochaines connexions.' : 'Connectez-vous ensuite avec la sécurité de votre téléphone ou ordinateur, sans code WhatsApp.'}</span>
+          <span class="k-id-title" id="k-passkey-title">${recovery ? 'Créer une nouvelle passkey' : 'Valider plus vite la prochaine fois'}</span>
+          <span class="k-id-sub" id="k-passkey-sub">${recovery ? 'Votre compte est récupéré. Créez une nouvelle passkey pour vos prochaines validations.' : 'Pour vos prochaines opérations sensibles, utilisez la sécurité de votre téléphone ou ordinateur au lieu d’un code WhatsApp.'}</span>
         </div>
         <button class="k-id-close" type="button" aria-label="Fermer">✕</button>
       </div>
@@ -239,7 +239,7 @@ function mountPrompt({ purpose = 'enrollment' } = {}) {
     if (!overlay.isConnected) return;
     registrationOptions = options;
     enable.disabled = false;
-    enable.textContent = 'Créer ma passkey';
+    enable.textContent = 'Activer ma passkey';
     enable.focus();
   }).catch(err => {
     if (!overlay.isConnected) return;
@@ -293,7 +293,7 @@ function mountPrompt({ purpose = 'enrollment' } = {}) {
   return overlay;
 }
 
-export async function offerPasskeyEnrollment({ purpose = 'enrollment' } = {}) {
+export async function offerPasskeyEnrollment({ purpose = 'sensitive' } = {}) {
   if (!isPasskeySupported()) return false;
   const recovery = purpose === 'recovery';
   if (!recovery && storageGet(OFFER_SEEN_KEY) === '1') return false;
@@ -306,7 +306,7 @@ export async function offerPasskeyEnrollment({ purpose = 'enrollment' } = {}) {
   return true;
 }
 
-function queuePostOtpOffer(attempt = 0, context = {}) {
+function queuePostSensitiveOtpOffer(attempt = 0, context = {}) {
   if (offerQueued) return;
   offerQueued = true;
 
@@ -314,7 +314,7 @@ function queuePostOtpOffer(attempt = 0, context = {}) {
     const blockingDialog = document.querySelector('[aria-modal="true"]');
     if (blockingDialog && attempt < 40) {
       offerQueued = false;
-      window.setTimeout(() => queuePostOtpOffer(attempt + 1, context), 250);
+      window.setTimeout(() => queuePostSensitiveOtpOffer(attempt + 1, context), 250);
       return;
     }
     offerQueued = false;
@@ -327,12 +327,14 @@ function queuePostOtpOffer(attempt = 0, context = {}) {
 export function setupPasskeyEnrollment() {
   if (installed || typeof window === 'undefined') return;
   installed = true;
-  window.addEventListener('komerce:identity-authenticated', event => {
-    // AUTH-4 : ne jamais reproposer un enrôlement après un login Passkey.
-    // L'absence de method reste assimilée à OTP pour compatibilité avec
-    // d'éventuels émetteurs historiques le temps de leur migration.
-    if (event?.detail?.method && event.detail.method !== 'otp') return;
-    const purpose = event?.detail?.purpose === 'recovery' ? 'recovery' : 'enrollment';
-    queuePostOtpOffer(0, { purpose });
+
+  // Doctrine 2026-08 : un OTP d'identification simple (partage, checkout,
+  // ouverture de compte...) termine l'action et ne déclenche RIEN derrière.
+  // L'offre Passkey n'arrive qu'après une opération sensible réellement
+  // accomplie grâce à un OTP de step-up.
+  window.addEventListener('komerce:sensitive-operation-confirmed', event => {
+    const detail = event?.detail || {};
+    if (detail.method !== 'otp' || detail.sensitive !== true || detail.completed !== true) return;
+    queuePostSensitiveOtpOffer(0, { purpose: 'sensitive' });
   });
 }
