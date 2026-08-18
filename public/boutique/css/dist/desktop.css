@@ -1691,16 +1691,33 @@
  * @domain        catalog
  * @layer         css
  * @owner         public/boutique/js/controllers/home-controller.js
- * @purpose       Étend le langage détouré aux catégories et sous-catégories desktop sans pills ni cadres imbriqués.
+ * @purpose       Komerce Shelf desktop : objets exposés sous le hero, sous-catégories légères, aucun cadre concurrent.
  * @impact-areas  category-navigation, subcategory-navigation, desktop
  * @version       2026-08
  */
 
 @media (min-width: 900px) {
-  /* Niveau 1 — même contrat que mobile, simplement plus généreux. */
+  /* ── NIVEAU 1 — ÉTAGÈRE KOMERCE ─────────────────────────── */
+  html.k-home-premium-v1 .k-shelf-rail,
+  .k-shelf-rail {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(72px, 1fr));
+    align-items: end;
+    gap: 8px;
+    width: 100%;
+    min-height: 100px;
+    height: auto;
+    padding: 7px 18px 9px;
+    overflow: visible;
+    background: var(--white);
+    border: 0;
+    border-bottom: 1px solid var(--border-text-06);
+    box-shadow: none;
+  }
+
   .k-cat-cutout {
     gap: 4px;
-    padding: 2px 6px;
+    padding: 2px 6px 6px;
     overflow: visible;
     border: 0;
     border-radius: 0;
@@ -1709,27 +1726,46 @@
     color: var(--text-muted);
   }
 
-  .k-cat-cutout:hover,
-  .k-cat-cutout:active,
-  .k-cat-cutout.active {
+  html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout,
+  .k-shelf-rail .k-cat-cutout:hover,
+  .k-shelf-rail .k-cat-cutout:active,
+  .k-shelf-rail .k-cat-cutout.active {
+    width: auto;
+    min-width: 0;
+    min-height: 86px;
+    height: auto;
+    margin: 0;
+    padding: 2px 6px 6px;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
+    transform: none;
   }
 
   .k-cat-cutout .k-chip-photo,
   .k-cat-cutout.active .k-chip-photo,
   .k-cat-cutout[data-cat] .k-chip-photo,
   .k-cat-cutout.active[data-cat] .k-chip-photo {
+    display: grid;
+    place-items: center;
     width: 82px;
-    height: 72px;
+    height: 70px;
     overflow: visible;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
     transform: none;
+  }
+
+  html.k-home-premium-v1 .k-shelf-rail .k-shelf-object-slot {
+    width: 82px;
+    height: 70px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .k-cat-cutout .k-chip-photo img,
@@ -1739,26 +1775,54 @@
     object-fit: contain;
     border-radius: 0;
     background: transparent;
-    filter: drop-shadow(0 6px 8px var(--border-text-08));
+  }
+
+  .k-cat-cutout .k-shelf-legacy-image {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .k-shelf-object-slot .k-chip-fallback {
+    display: none;
+  }
+
+  .k-shelf-object--category {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 7px 7px var(--border-text-08));
+  }
+
+  .k-shelf-rail .k-cat-cutout:hover .k-shelf-object--category,
+  .k-shelf-rail .k-cat-cutout.active .k-shelf-object--category {
+    transform: translateY(-3px);
+    filter: drop-shadow(0 9px 9px var(--border-text-08));
   }
 
   .k-cat-cutout:hover .k-chip-photo {
-    transform: translateY(-2px);
+    transform: none;
     box-shadow: none;
   }
 
   .k-cat-cutout .k-chip-label,
   .k-cat-cutout.active .k-chip-label {
     position: relative;
+    max-width: 108px;
     margin: 0;
-    padding: 0 2px 4px;
+    padding: 0 2px 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: var(--text-muted);
     font-size: 11px;
     font-weight: 600;
     line-height: 1.15;
+    text-align: center;
   }
 
-  .k-cat-cutout.active .k-chip-label {
+  .k-shelf-rail .k-cat-cutout.active .k-chip-label {
     color: var(--text);
     font-weight: 800;
   }
@@ -1768,25 +1832,23 @@
     position: absolute;
     left: 50%;
     bottom: 0;
-    width: 24px;
+    width: 26px;
     height: 2px;
     border-radius: 999px;
-    background: var(--text);
+    background: var(--ocean-dark);
     transform: translateX(-50%);
   }
 
-  /* Niveau 2 — nouveau composant de présentation. Le comportement reste dans
-     home-controller ; l'ancien .k-subchip reste disponible comme rollback
-     pendant la transition mais n'est plus émis par le renderer desktop. */
+  /* ── NIVEAU 2 — PETITE ÉTAGÈRE CONTEXTUELLE ────────────── */
   .k-subcutout-context {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 7px;
     flex-wrap: nowrap;
     width: 100%;
     max-width: 1480px;
     margin: 0 auto;
-    padding: 6px 24px 4px;
+    padding: 6px 24px 2px;
     box-sizing: border-box;
   }
 
@@ -1794,14 +1856,14 @@
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 6px;
+    gap: 4px;
+    padding: 4px 5px;
     border: 0;
     border-radius: 0;
     background: transparent;
     color: var(--text-muted);
     font-family: var(--font);
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
   }
@@ -1821,15 +1883,17 @@
     min-width: 0;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     color: var(--text);
     font-family: var(--font);
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 750;
     line-height: 1.2;
   }
 
+  /* Le contexte est textuel ; l'objet visuel vit dans le rail juste dessous. */
   .k-subcutout-emoji {
+    display: none;
     font-size: 15px;
     line-height: 1;
   }
@@ -1844,16 +1908,20 @@
     font-weight: 600;
   }
 
+  .k-subcutout-count::before {
+    content: '· ';
+  }
+
   .k-subcutout-rail {
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
     flex-wrap: nowrap;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
     max-width: 1480px;
     margin: 0 auto;
-    padding: 4px 24px 10px;
+    padding: 2px 24px 8px;
     box-sizing: border-box;
     overflow-x: auto;
     scrollbar-width: none;
@@ -1884,6 +1952,17 @@
     cursor: pointer;
   }
 
+  .k-shelf-subcats .k-subcutout,
+  .k-shelf-subcats .k-subcutout:hover,
+  .k-shelf-subcats .k-subcutout:active,
+  .k-shelf-subcats .k-subcutout.active {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+
   .k-subcutout:hover {
     color: var(--text);
   }
@@ -1893,22 +1972,44 @@
     place-items: center;
     width: 40px;
     height: 35px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     font-size: 24px;
     line-height: 1;
-    filter: drop-shadow(0 4px 5px var(--border-text-08));
+    filter: none;
     transition: transform .15s var(--ease);
   }
 
-  .k-subcutout:hover .k-subcutout-icon {
-    transform: translateY(-1px);
+  .k-shelf-object--subcategory {
+    width: 43px;
+    height: 39px;
+    filter: drop-shadow(0 4px 5px var(--border-text-08));
+  }
+
+  .k-subcutout:hover .k-subcutout-icon,
+  .k-subcutout.active .k-subcutout-icon {
+    transform: translateY(-2px);
   }
 
   .k-subcutout-icon--all {
     font-size: 20px;
   }
 
+  .k-shelf-object--all {
+    opacity: .8;
+    transform: scale(.86);
+  }
+
+  .k-shelf-emoji-fallback {
+    display: block;
+    font-size: 23px;
+    line-height: 35px;
+  }
+
   .k-subcutout-label {
-    max-width: 84px;
+    max-width: 88px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1935,21 +2036,21 @@
     width: 24px;
     height: 2px;
     border-radius: 999px;
-    background: var(--text);
+    background: var(--ocean-dark);
     transform: translateX(-50%);
   }
 
-  /* Premium home : contexte et objets sur une seule ligne visuelle ouverte. */
+  /* Premium home : contexte puis rail, sans cadres supplémentaires. */
   html.k-home-premium-v1 .k-subcutout-context {
     width: auto;
     max-width: none;
     margin: 0;
-    padding: 0;
+    padding: 4px 0 0;
   }
 
   html.k-home-premium-v1 .k-subcutout-back {
     width: 28px;
-    height: 40px;
+    height: 32px;
     padding: 0;
     justify-content: center;
   }
@@ -1963,7 +2064,22 @@
     width: auto;
     max-width: none;
     margin: 0;
-    padding: 2px 0 4px;
+    padding: 0 0 5px;
     gap: 10px;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1200px) {
+  html.k-home-premium-v1 .k-shelf-rail,
+  .k-shelf-rail {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .k-shelf-rail .k-cat-cutout {
+    flex: 0 0 104px;
   }
 }
