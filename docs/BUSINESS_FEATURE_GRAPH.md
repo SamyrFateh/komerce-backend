@@ -1568,7 +1568,7 @@ Meta Graph monté : oui.
 | auth-identity | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | auth-identity | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| auth-passkey | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | auth-identity | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | business-rules | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |

@@ -82,6 +82,20 @@ function isBusinessManifestSource(file) {
     || /^docs\/doctrine\/(?:FEATURE_DOCTRINE|APP_FEATURE_REGISTRY)\.md$/i.test(f);
 }
 
+// Le Business Graph O5 rescane les imports locaux des fichiers JS gouvernés
+// dans les trois scopes (backend, Boutique, Dash). Une modification de source
+// gouvernée peut donc rendre BUSINESS_FEATURE_GRAPH stale même si aucun manifest
+// ne change. Régression révélée par #807 : b-passkey-step-up.js a changé son
+// import/depends sans réveiller Governance, et le stale n'a été découvert qu'à
+// la PR suivante.
+function isBusinessGraphRuntimeSource(file) {
+  const f = norm(file);
+  return isBoutiqueJsSource(f)
+    || /^public\/dashboards\/.+\.(?:js|cjs|mjs|ts)$/i.test(f)
+    || /^public\/js\/.+\.(?:js|cjs|mjs|ts)$/i.test(f)
+    || f === 'public/sw.js';
+}
+
 // Lot 3 — governance / feature-first : cartes, baselines/ontologie, logique des
 // gates, capabilities, workflows GitHub Actions actifs et projections canoniques
 // dérivées. Tout fichier backend reconnu par Lot 1 réveille également la
@@ -93,11 +107,13 @@ function isBusinessManifestSource(file) {
 // AUTH-3 a révélé le même défaut sur les sources de vérité multi-scope du
 // Business Graph : les manifests Boutique/Dash et les doctrines de registre
 // étaient chargés par le générateur mais ne réveillaient pas Governance. Toute
-// source déclarative consommée par Business Graph doit donc être classée ici.
+// source déclarative OU runtime réellement rescannée par Business Graph doit
+// donc être classée ici.
 function isGovernanceFile(file) {
   const f = norm(file);
   return isBackendFile(f)
     || isBusinessManifestSource(f)
+    || isBusinessGraphRuntimeSource(f)
     || /^governance\/.+/i.test(f)
     || /^scripts\/.+\.(?:js|cjs|mjs)$/i.test(f)
     || /^capabilities\/.+\.(?:js|cjs|mjs)$/i.test(f)
@@ -206,6 +222,7 @@ module.exports = {
   isBoutiquePackageFile,
   isBoutiqueRelevant,
   isBusinessManifestSource,
+  isBusinessGraphRuntimeSource,
   isGovernanceFile,
   classify,
   diffFiles,

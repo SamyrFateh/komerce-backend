@@ -17624,7 +17624,15 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "public/boutique/js/b-passkey-step-up.js",
+                "targetFile": "public/boutique/js/b-identity.js"
+              },
+              {
                 "sourceFileId": "public/boutique/tests/unit/b-identity-recovery.test.js",
+                "targetFile": "public/boutique/js/b-identity.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-passkey-step-up.test.js",
                 "targetFile": "public/boutique/js/b-identity.js"
               }
             ]
