@@ -42,7 +42,7 @@ replace_once(
 )
 replace_once(
     'services/cost-allocation/allocate.js',
-    "         VALUES ($1,$2,$3,'relay',$4,'per_item','finance_config',TRUE,'medium')`,
+    "         VALUES ($1,$2,$3,'relay',$4,'per_item','finance_config',TRUE,'medium')",
     "         VALUES ($1,$2,$3,'relay',$4,'per_item',$5,TRUE,'medium')",
 )
 replace_once(
