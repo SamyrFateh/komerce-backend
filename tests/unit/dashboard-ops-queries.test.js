@@ -30,17 +30,25 @@ jest.mock('../../routes/dashboard-shared', () => ({
   getEurKmf: jest.fn(),
   loadDashConfig: jest.fn(),
 }));
-jest.mock('../../services/economic-engine-queries', () => ({
-  getVar: jest.fn(),
+jest.mock('../../services/economic-config', () => ({
+  loadFinanceConfig: jest.fn(),
+  resolveLegacyInput: jest.fn(),
 }));
 
 const db = require('../../db');
 const { getEurKmf, loadDashConfig } = require('../../routes/dashboard-shared');
-const { getVar } = require('../../services/economic-engine-queries');
+const economicConfig = require('../../services/economic-config');
 const opsQueries = require('../../services/dashboard-ops-queries');
 
 beforeEach(() => {
   jest.clearAllMocks();
+  economicConfig.loadFinanceConfig.mockResolvedValue({
+    customs_rate_default_pct: 42,
+    hub_monthly_cost_aed: 7000,
+  });
+  economicConfig.resolveLegacyInput.mockImplementation((config, key) =>
+    key === 'customs_rate_default_pct' ? Number(config.customs_rate_default_pct) : Number(config.hub_monthly_cost_aed)
+  );
 });
 
 // ── getOps ────────────────────────────────────────────────────────────────────
@@ -127,27 +135,22 @@ describe('getPilotage', () => {
     ca_cash_kmf: 2000000, ca_stripe_kmf: 3000000,
   };
 
-  it('FIX: appelle getEcoVar (getVar) avec les bonnes clés et valeurs par défaut', async () => {
+  it('lit douane fallback et coût hub depuis finance_config', async () => {
     getEurKmf.mockResolvedValueOnce({ eur_kmf: 491, aed_kmf: 134 });
     db.query
-      .mockResolvedValueOnce({ rows: [VOL_ROW] })          // 1. vol
-      .mockResolvedValueOnce({ rows: [] })                  // 2. catRows
-      .mockRejectedValueOnce(new Error('vue absente'))      // 3. customs_effective_rates (migration non passée)
-      .mockResolvedValueOnce({ rows: [] })                  // 4. pipelineRows
-      .mockResolvedValueOnce({ rows: [] });                 // 5. ratesHistory
-
-    getVar.mockResolvedValueOnce(42);   // customs_rate_default_pct
-    getVar.mockResolvedValueOnce(7000); // hub_monthly_cost_aed
+      .mockResolvedValueOnce({ rows: [VOL_ROW] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockRejectedValueOnce(new Error('vue absente'))
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
 
     const result = await opsQueries.getPilotage('2026-06');
 
-    expect(getVar).toHaveBeenNthCalledWith(1, 'customs_rate_default_pct', 42);
-    expect(getVar).toHaveBeenNthCalledWith(2, 'hub_monthly_cost_aed', 7000);
-
-    // fallback douane car la requête customs_effective_rates a échoué
+    expect(economicConfig.loadFinanceConfig).toHaveBeenCalledTimes(1);
+    expect(economicConfig.resolveLegacyInput).toHaveBeenCalledWith(expect.any(Object), 'customs_rate_default_pct');
+    expect(economicConfig.resolveLegacyInput).toHaveBeenCalledWith(expect.any(Object), 'hub_monthly_cost_aed');
     expect(result.couts.source_taux).toBe('finance_config_fallback');
     expect(result.couts.taux_terrain_pct).toBeCloseTo(42);
-    // hub_fixe_mensuel_kmf = hubCostAed(7000) * aed_kmf(134)
     expect(result.couts.hub_fixe_mensuel_kmf).toBe(7000 * 134);
   });
 
@@ -160,7 +163,6 @@ describe('getPilotage', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
-    getVar.mockResolvedValueOnce(42).mockResolvedValueOnce(7000);
 
     const result = await opsQueries.getPilotage('2026-06');
     expect(result.couts.source_taux).toBe('last_30d');
@@ -178,7 +180,6 @@ describe('getPilotage', () => {
       .mockResolvedValueOnce({ rows: [{ status: 'collected', nb: 80 }] })
       .mockResolvedValueOnce({ rows: [] });
 
-    getVar.mockResolvedValueOnce(42).mockResolvedValueOnce(7000);
 
     const result = await opsQueries.getPilotage('2026-06');
 

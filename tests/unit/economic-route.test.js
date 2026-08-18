@@ -131,7 +131,7 @@ describe('routes/economic', () => {
       queries.updateVariable.mockResolvedValueOnce({ key: 'eur_kmf', value: 750 });
       const res = await request(buildApp()).put('/api/economic/variables/eur_kmf').send({ value: 750 });
       expect(res.status).toBe(200);
-      expect(queries.updateVariable).toHaveBeenCalledWith('eur_kmf', { value: 750 });
+      expect(queries.updateVariable).toHaveBeenCalledWith('eur_kmf', { value: 750 }, 'admin-1');
       expect(ecoBridge.invalidateEcoCache).toHaveBeenCalled();
       expect(ecoBridge.invalidateChargesCache).toHaveBeenCalled();
     });

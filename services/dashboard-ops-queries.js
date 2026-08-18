@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, routes/dashboard-shared.js, services/economic-engine-queries.js, utils/logger.js
+ * @depends       db, routes/dashboard-shared.js, services/economic-config.js, utils/logger.js
  * @used-by       routes/dashboard-ops.js
- * @db-read       customs_effective_rates, exchange_rates, incidents, invoices, order_items, orders, parcels, products, recipients, relais, scan_events, users
+ * @db-read       customs_effective_rates, exchange_rates, finance_config, incidents, invoices, order_items, orders, parcels, products, recipients, relais, scan_events, users
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -41,9 +41,8 @@ const db  = require('../db');
 const log = require('../utils/logger').child({ module: 'dashboard-ops-queries' });
 const { getEurKmf, loadDashConfig } = require('../routes/dashboard-shared');
 
-// FIX : getEcoVar était undefined dans la route d'origine.
-// On délègue à economic-engine-queries.getVar() qui fait la même lecture DB.
-const { getVar: getEcoVar } = require('./economic-engine-queries');
+// LOT 1A-4 : Ops consomme directement la SOV finance_config.
+const economicConfig = require('./economic-config');
 
 // ─── getOps ───────────────────────────────────────────────────────────────
 
@@ -202,9 +201,10 @@ async function getPilotage(mois) {
   );
 
   const caKmf = parseFloat(vol.ca_kmf);
-  const customsDefault = await getEcoVar('customs_rate_default_pct', 42);
+  const financeConfig = await economicConfig.loadFinanceConfig();
+  const customsDefault = economicConfig.resolveLegacyInput(financeConfig, 'customs_rate_default_pct');
   const TAUX_TERRAIN = douaneEffectif ? douaneEffectif / 100 : customsDefault / 100;
-  const hubCostAed = await getEcoVar('hub_monthly_cost_aed', 7000);
+  const hubCostAed = economicConfig.resolveLegacyInput(financeConfig, 'hub_monthly_cost_aed');
   const hubMensuelKmf = hubCostAed * rates.aed_kmf;
 
   return {

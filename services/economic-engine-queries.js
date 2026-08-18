@@ -4,14 +4,14 @@
  * @domain        economic-engine
  * @layer         service
  * @criticality   high
- * @inputs        economic_variables, charges, trigger_event
+ * @inputs        finance_config, charges, trigger_event
  * @outputs       computed_variables, alerts, snapshots, executive_summary
- * @depends       db.js, utils/eco-bridge.js
+ * @depends       db.js, services/economic-config.js, utils/eco-bridge.js
  * @used-by       routes/economic-engine.js, admin-dashboards
- * @db-read       charges, economic_snapshots, economic_variables
- * @db-write      charges, economic_snapshots, economic_variables
+ * @db-read       charges, economic_snapshots, economic_variables, finance_config
+ * @db-write      charges, economic_snapshots, finance_config
  * @db-txn        snapshot_debounce, coherence_model_recalculation
- * @doctrine      couts_repartis_par_commande, coherence_model_economique, snapshot_debounce, sov_drift
+ * @doctrine      couts_repartis_par_commande, coherence_model_economique, snapshot_debounce, finance_config_single_runtime_truth, economic_variables_read_only
  * @impact-areas  pricing, margin, dashboard, admin-economic, finance-config
  * @version       2026-06
  */
@@ -46,9 +46,10 @@
  * corrigé ici (import ajouté).
  */
 
-const db        = require('../db');
-const ecoBridge = require('../utils/eco-bridge');
-const log       = require('../utils/logger').child({ module: 'economic-engine-queries' });
+const db             = require('../db');
+const ecoBridge      = require('../utils/eco-bridge');
+const economicConfig = require('./economic-config');
+const log            = require('../utils/logger').child({ module: 'economic-engine-queries' });
 
 // ─── Constants ───────────────────────────────────────────────────────
 
@@ -85,59 +86,8 @@ async function seedEconomicData() {
     await db.query("UPDATE charges SET recurrence_period = 'monthly' WHERE name IN ('Hub Dubai', 'Relais Comores', 'Sourcing Dubai', 'Support client') AND recurrence_period = 'per_order'");
   } catch(e) { /* ignore if charges table doesn't exist yet */ }
 
-  try {
-    await db.query("UPDATE economic_variables SET label = 'Hub (Dubai)' WHERE key = 'cost_hub' AND label = 'Hub (France)'");
-  } catch(e) { /* ignore if economic_variables table doesn't exist yet */ }
-
-  const variables = [
-    { category: 'cost',    key: 'cost_sourcing',        label: 'Sourcing (Dubai/Chine)',        unit: 'KMF', value_supposed: 1000,  is_critical: true,  is_computed: false },
-    { category: 'cost',    key: 'cost_transit',         label: 'Transit (vers Comores)',         unit: 'KMF', value_supposed: 500,   is_critical: true,  is_computed: false },
-    { category: 'cost',    key: 'cost_hub',             label: 'Hub (Dubai)',                   unit: 'KMF', value_supposed: 400,   is_critical: false, is_computed: false },
-    { category: 'cost',    key: 'cost_relais',          label: 'Relais (Comores)',               unit: 'KMF', value_supposed: 300,   is_critical: false, is_computed: false },
-    { category: 'cost',    key: 'cost_support',         label: 'Support client',                unit: 'KMF', value_supposed: 200,   is_critical: false, is_computed: false },
-    { category: 'cost',    key: 'total_cost_per_order', label: 'Coût total par commande',       unit: 'KMF', value_supposed: 2400,  is_critical: true,  is_computed: true  },
-    { category: 'revenue', key: 'target_basket_avg',    label: 'Panier moyen cible',            unit: 'KMF', value_supposed: 15000, is_critical: true,  is_computed: false },
-    { category: 'revenue', key: 'seuil_rentabilite',    label: 'Seuil de rentabilité',          unit: 'KMF', value_supposed: 6234,  is_critical: true,  is_computed: true  },
-    { category: 'revenue', key: 'orders_per_month',     label: 'Commandes / mois',              unit: 'count', value_supposed: 100, is_critical: true,  is_computed: false },
-    { category: 'margin',  key: 'margin_rail_a',        label: 'Marge Rail A (Essentiels)',     unit: '%',   value_supposed: 45,    is_critical: true,  is_computed: false },
-    { category: 'margin',  key: 'margin_rail_b',        label: 'Marge Rail B (Hero)',           unit: '%',   value_supposed: 18,    is_critical: true,  is_computed: false },
-    { category: 'margin',  key: 'margin_rail_c',        label: 'Marge Rail C (Sur-mesure)',     unit: '%',   value_supposed: 35,    is_critical: false, is_computed: false },
-    { category: 'margin',  key: 'margin_rail_d',        label: 'Marge Rail D (Impulsifs)',      unit: '%',   value_supposed: 70,    is_critical: false, is_computed: false },
-    { category: 'margin',  key: 'margin_weighted_avg',  label: 'Marge pondérée moyenne',       unit: '%',   value_supposed: 38.5,  is_critical: true,  is_computed: true  },
-    { category: 'mix',     key: 'mix_rail_a',           label: 'Mix CA Rail A',                 unit: '%',   value_supposed: 60,    is_critical: true,  is_computed: false },
-    { category: 'mix',     key: 'mix_rail_b',           label: 'Mix CA Rail B',                 unit: '%',   value_supposed: 25,    is_critical: false, is_computed: false },
-    { category: 'mix',     key: 'mix_rail_c',           label: 'Mix CA Rail C',                 unit: '%',   value_supposed: 10,    is_critical: false, is_computed: false },
-    { category: 'mix',     key: 'mix_rail_d',           label: 'Mix CA Rail D',                 unit: '%',   value_supposed: 5,     is_critical: false, is_computed: false },
-    { category: 'exchange', key: 'eur_kmf',             label: 'Taux EUR → KMF',               unit: 'ratio', value_supposed: 492, is_critical: true,  is_computed: false },
-    { category: 'exchange', key: 'aed_kmf',             label: 'Taux AED → KMF',               unit: 'ratio', value_supposed: 138, is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'commission_agent_pct',            label: 'Commission agent (%)',          unit: '%',   value_supposed: 5,     is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'transport_dxb_kmf',               label: 'Transport Deira → Hub',         unit: 'KMF', value_supposed: 500,   is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'transitaire_pct',                 label: 'Commission transitaire (%)',    unit: '%',   value_supposed: 2,     is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'transitaire_fixed_kmf',           label: 'Frais fixes transitaire',       unit: 'KMF', value_supposed: 450,   is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'portuaires_kmf',                  label: 'Frais portuaires',              unit: 'KMF', value_supposed: 1200,  is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'transport_relais_kmf',            label: 'Transport → relais',            unit: 'KMF', value_supposed: 840,   is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'commission_relais_standard_kmf',  label: 'Commission relais standard',    unit: 'KMF', value_supposed: 500,   is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'commission_relais_showroom_kmf',  label: 'Commission relais showroom',    unit: 'KMF', value_supposed: 750,   is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'frais_stripe_pct',                label: 'Frais Stripe (%)',              unit: '%',   value_supposed: 2.5,   is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'marge_cible_pct',                 label: 'Marge cible (%)',               unit: '%',   value_supposed: 12,    is_critical: true,  is_computed: false },
-    { category: 'pricing', key: 'fret_eur_m3',                     label: 'Fret maritime EUR/m³',          unit: 'EUR', value_supposed: 180,   is_critical: true,  is_computed: false },
-    { category: 'pricing', key: 'freight_kmf_per_kg',              label: 'Fret KMF/kg',                  unit: 'KMF', value_supposed: 65,    is_critical: false, is_computed: false },
-    { category: 'pricing', key: 'hub_monthly_cost_aed',            label: 'Coût Hub mensuel',              unit: 'AED', value_supposed: 7000,  is_critical: true,  is_computed: false },
-    { category: 'pricing', key: 'customs_rate_default_pct',        label: 'Taux douane terrain défaut',   unit: '%',   value_supposed: 42,    is_critical: true,  is_computed: false },
-    { category: 'health',  key: 'safety_ratio',                    label: 'Marge de sécurité',             unit: '%',   value_supposed: 0,     is_critical: true,  is_computed: true  },
-    { category: 'health',  key: 'margin_pressure',                 label: 'Pression charges',              unit: '%',   value_supposed: 0,     is_critical: true,  is_computed: true  },
-    { category: 'health',  key: 'monthly_breakeven_orders',        label: 'Commandes équilibre/mois',     unit: 'count', value_supposed: 0,   is_critical: true,  is_computed: true  },
-    { category: 'health',  key: 'net_profit_per_order',            label: 'Profit net par commande',       unit: 'KMF', value_supposed: 0,     is_critical: true,  is_computed: true  },
-  ];
-
-  for (const v of variables) {
-    await db.query(
-      `INSERT INTO economic_variables (category, key, label, unit, value_supposed, is_critical, is_computed)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (key) DO NOTHING`,
-      [v.category, v.key, v.label, v.unit, v.value_supposed, v.is_critical, v.is_computed]
-    );
-  }
+  // LOT 1A-4 : economic_variables est legacy read-only. Les métadonnées
+  // historiques restent en DB pour compat/forensic, sans seed runtime.
 
   const charges = [
     { family: 'operationnelle', name: 'Hub Dubai',       amount_kmf: 400,  is_recurring: true, recurrence_period: 'monthly'   },
@@ -164,20 +114,14 @@ function fmt(n) {
 }
 
 async function getVar(key, fallback) {
-  const result = await db.query(
-    'SELECT value_used, value_supposed FROM economic_variables WHERE key = $1 AND is_active = TRUE',
-    [key]
-  );
-  if (!result.rows[0]) return fallback;
-  const v = result.rows[0].value_used != null ? result.rows[0].value_used : result.rows[0].value_supposed;
-  return v !== null ? Number(v) : fallback;
+  const config = await economicConfig.loadFinanceConfig();
+  const value = economicConfig.resolveLegacyInput(config, key);
+  return value !== undefined ? value : fallback;
 }
 
+// Compat export : les computed ne sont plus persistés dans economic_variables.
 async function setComputed(key, value) {
-  await db.query(
-    "UPDATE economic_variables SET value_used = $1, value_supposed = $1, source_used = 'computed', updated_at = NOW() WHERE key = $2 AND is_computed = TRUE",
-    [value, key]
-  );
+  return { key, value, persisted: false, source: 'computed_projection' };
 }
 
 // ─── Coherence Checks ────────────────────────────────────────────────
@@ -263,10 +207,7 @@ function generateRecommendation(status, alerts) {
 
 // ─── Redistribution Engine ────────────────────────────────────────────
 
-async function redistribute(triggerEvent) {
-  const chargesResult = await db.query('SELECT * FROM charges WHERE is_active = TRUE');
-  const charges = chargesResult.rows;
-
+function computeModel(charges, inputs) {
   const perOrderCost = charges
     .filter(c => c.recurrence_period === 'per_order')
     .reduce((s, c) => s + Number(c.amount_kmf), 0);
@@ -280,58 +221,51 @@ async function redistribute(triggerEvent) {
     .reduce((s, c) => s + Number(c.amount_kmf), 0);
 
   const totalMonthlyCost = monthlyCost + Math.round(weeklyCost * 4.33);
-
-  const ordersPerMonth = await getVar('orders_per_month', 100);
+  const { ordersPerMonth, targetBasket, mixA, mixB, mixC, mixD, margA, margB, margC, margD } = inputs;
   const monthlyPerOrder = ordersPerMonth > 0 ? Math.round(totalMonthlyCost / ordersPerMonth) : 0;
   const totalCostPerOrder = perOrderCost + monthlyPerOrder;
-
-  const mixA = await getVar('mix_rail_a', 60);
-  const mixB = await getVar('mix_rail_b', 25);
-  const mixC = await getVar('mix_rail_c', 10);
-  const mixD = await getVar('mix_rail_d', 5);
-  const margA = await getVar('margin_rail_a', 45);
-  const margB = await getVar('margin_rail_b', 18);
-  const margC = await getVar('margin_rail_c', 35);
-  const margD = await getVar('margin_rail_d', 70);
-
   const weightedMargin = (mixA * margA + mixB * margB + mixC * margC + mixD * margD) / 100;
-
-  const breakEven = weightedMargin > 0
-    ? Math.round(totalCostPerOrder / (weightedMargin / 100))
-    : 999999;
-
-  const targetBasket = await getVar('target_basket_avg', 15000);
-
+  const breakEven = weightedMargin > 0 ? Math.round(totalCostPerOrder / (weightedMargin / 100)) : 999999;
   const safetyRatio = targetBasket > 0
     ? Number(((targetBasket - breakEven) / targetBasket * 100).toFixed(1))
     : 0;
-
   const marginPressure = targetBasket > 0
     ? Number((totalCostPerOrder / targetBasket * 100).toFixed(1))
     : 100;
-
   const grossProfit = Math.round(targetBasket * weightedMargin / 100);
   const netProfit = grossProfit - totalCostPerOrder;
-
   const monthlyBreakevenOrders = netProfit > 0 ? Math.ceil(totalMonthlyCost / netProfit) : 999;
 
-  await setComputed('total_cost_per_order', totalCostPerOrder);
-  await setComputed('margin_weighted_avg', Number(weightedMargin.toFixed(1)));
-  await setComputed('seuil_rentabilite', breakEven);
-  await setComputed('safety_ratio', safetyRatio);
-  await setComputed('margin_pressure', marginPressure);
-  await setComputed('net_profit_per_order', netProfit);
-  await setComputed('monthly_breakeven_orders', monthlyBreakevenOrders);
+  return {
+    perOrderCost, totalMonthlyCost, totalCostPerOrder, breakEven, targetBasket,
+    safetyRatio, marginPressure, weightedMargin, netProfit, monthlyBreakevenOrders,
+    mixA, mixB, mixC, mixD,
+  };
+}
 
-  let alerts = checkCoherence({ totalCostPerOrder, breakEven, targetBasket, safetyRatio,
-    marginPressure, weightedMargin, netProfit, mixA, mixB, mixC, mixD });
+async function redistribute(triggerEvent) {
+  const [chargesResult, config] = await Promise.all([
+    db.query('SELECT * FROM charges WHERE is_active = TRUE'),
+    economicConfig.loadFinanceConfig(),
+  ]);
+  const charges = chargesResult.rows;
+  const model = computeModel(charges, economicConfig.buildModelInputs(config));
+
+  let alerts = checkCoherence({
+    totalCostPerOrder: model.totalCostPerOrder,
+    breakEven: model.breakEven,
+    targetBasket: model.targetBasket,
+    safetyRatio: model.safetyRatio,
+    marginPressure: model.marginPressure,
+    weightedMargin: model.weightedMargin,
+    netProfit: model.netProfit,
+    mixA: model.mixA, mixB: model.mixB, mixC: model.mixC, mixD: model.mixD,
+  });
 
   const driftAlerts = await checkSOVDrift();
   alerts = alerts.concat(driftAlerts);
-
   const status = determineStatus(alerts);
 
-  // Debounce 15 min snapshot
   let shouldInsertSnapshot = true;
   try {
     const lastSnap = await db.query('SELECT created_at FROM economic_snapshots ORDER BY created_at DESC LIMIT 1');
@@ -344,15 +278,33 @@ async function redistribute(triggerEvent) {
   if (shouldInsertSnapshot) {
     await db.query(
       'INSERT INTO economic_snapshots (snapshot_data, model_status, trigger_event) VALUES ($1, $2, $3)',
-      [JSON.stringify({ totalCostPerOrder, breakEven, targetBasket, safetyRatio, marginPressure,
-        weightedMargin, netProfit, monthlyBreakevenOrders,
-        charges_per_order: perOrderCost, charges_monthly: totalMonthlyCost, charges_count: charges.length }),
-       status, triggerEvent || 'manual']
+      [JSON.stringify({
+        totalCostPerOrder: model.totalCostPerOrder,
+        breakEven: model.breakEven,
+        targetBasket: model.targetBasket,
+        safetyRatio: model.safetyRatio,
+        marginPressure: model.marginPressure,
+        weightedMargin: model.weightedMargin,
+        netProfit: model.netProfit,
+        monthlyBreakevenOrders: model.monthlyBreakevenOrders,
+        charges_per_order: model.perOrderCost,
+        charges_monthly: model.totalMonthlyCost,
+        charges_count: charges.length,
+      }), status, triggerEvent || 'manual']
     );
   }
 
-  return { status, totalCostPerOrder, breakEven, safetyRatio, marginPressure, netProfit,
-    weightedMargin, monthlyBreakevenOrders, alerts };
+  return {
+    status,
+    totalCostPerOrder: model.totalCostPerOrder,
+    breakEven: model.breakEven,
+    safetyRatio: model.safetyRatio,
+    marginPressure: model.marginPressure,
+    netProfit: model.netProfit,
+    weightedMargin: model.weightedMargin,
+    monthlyBreakevenOrders: model.monthlyBreakevenOrders,
+    alerts,
+  };
 }
 
 // ─── Executive Summary ────────────────────────────────────────────────
@@ -411,11 +363,16 @@ async function buildExecutiveSummary() {
 // ─── Read Queries ─────────────────────────────────────────────────────
 
 async function getVariables() {
-  const result = await db.query(
-    'SELECT * FROM economic_variables WHERE is_active = TRUE ORDER BY category, key'
-  );
+  const [varsResult, chargesResult, config] = await Promise.all([
+    db.query('SELECT * FROM economic_variables WHERE is_active = TRUE ORDER BY category, key'),
+    db.query('SELECT * FROM charges WHERE is_active = TRUE'),
+    economicConfig.loadFinanceConfig(),
+  ]);
+  const model = computeModel(chargesResult.rows, economicConfig.buildModelInputs(config));
+  const rows = economicConfig.projectLegacyRows(varsResult.rows, config, model);
+
   const categories = {};
-  result.rows.forEach(v => {
+  rows.forEach(v => {
     const cat = v.category;
     if (!categories[cat]) {
       const meta = CATEGORY_META[cat] || { label: cat, icon: '📦' };
@@ -423,7 +380,7 @@ async function getVariables() {
     }
     categories[cat].variables.push(v);
   });
-  return { categories };
+  return { categories, source_of_truth: 'finance_config', legacy_storage: 'read_only' };
 }
 
 async function getCharges() {
@@ -468,43 +425,28 @@ async function getHistory() {
 
 // ─── Mutation Services ────────────────────────────────────────────────
 
-async function updateVariable(key, body) {
+async function updateVariable(key, body, updatedBy) {
   const check = await db.query('SELECT * FROM economic_variables WHERE key = $1', [key]);
-  if (!check.rows[0]) return { notFound: true };
-  if (check.rows[0].is_computed) return { computed: true };
-
-  const updates = [];
-  const params = [];
-  let idx = 1;
-
-  if (body.value_supposed !== undefined) { updates.push('value_supposed = $' + idx); params.push(body.value_supposed); idx++; }
-  if (body.value_observed !== undefined) { updates.push('value_observed = $' + idx); params.push(body.value_observed); idx++; }
-  if (body.value_used     !== undefined) { updates.push('value_used = $'     + idx); params.push(body.value_used);     idx++; }
-  if (body.source_used    !== undefined) { updates.push('source_used = $'    + idx); params.push(body.source_used);    idx++; }
-
-  if (updates.length === 0) return { noFields: true };
-
-  updates.push('updated_at = NOW()');
-  params.push(key);
-
-  const sql = 'UPDATE economic_variables SET ' + updates.join(', ') + ' WHERE key = $' + idx + ' RETURNING *';
-  const result = await db.query(sql, params);
-
-  const row = result.rows[0];
-  if (row.source_used === 'supposed' && row.value_supposed !== null) {
-    await db.query('UPDATE economic_variables SET value_used = value_supposed WHERE key = $1', [key]);
-  } else if (row.source_used === 'observed' && row.value_observed !== null) {
-    await db.query('UPDATE economic_variables SET value_used = value_observed WHERE key = $1', [key]);
+  if (!check.rows[0]) return { error: 'variable_not_found', status: 404, key };
+  if (check.rows[0].is_computed) {
+    return { error: 'computed_variable_read_only', status: 410, key, source_of_truth: 'computed_projection' };
   }
 
-  const updated = await db.query('SELECT * FROM economic_variables WHERE key = $1', [key]);
+  const write = await economicConfig.writeThroughLegacyInput(key, body, updatedBy);
+  if (write.error) return write;
 
-  await redistribute('variable_update:' + key);
   ecoBridge.invalidateEcoCache();
   ecoBridge.invalidateChargesCache();
 
+  const [variable] = economicConfig.projectLegacyRows([check.rows[0]], write.finance_config, null);
+  await redistribute('variable_update:' + key);
   const summary = await buildExecutiveSummary();
-  return { variable: updated.rows[0], executive: summary };
+  return {
+    variable,
+    canonical_field: write.canonical_field,
+    source_of_truth: 'finance_config',
+    executive: summary,
+  };
 }
 
 async function createCharge(body) {
@@ -604,7 +546,7 @@ module.exports = {
   CATEGORY_META, FAMILY_META, STATUS_MAP,
   seedEconomicData,
   getVar, setComputed,
-  checkCoherence, checkSOVDrift, determineStatus, generateRecommendation,
+  checkCoherence, checkSOVDrift, determineStatus, generateRecommendation, computeModel,
   redistribute, buildExecutiveSummary,
   getVariables, getCharges, getCoherence, getHistory,
   updateVariable, createCharge, updateCharge, toggleCharge, deleteCharge,

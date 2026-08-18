@@ -32,8 +32,30 @@ jest.mock('../../utils/eco-bridge', () => ({
   invalidateEcoCache:     jest.fn(),
   invalidateChargesCache: jest.fn(),
 }));
+jest.mock('../../services/economic-config', () => ({
+  LEGACY_RUNTIME_INPUTS: {
+    orders_per_month: { canonical: 'objectif_commandes_mois', fallback: 100 },
+    target_basket_avg: { canonical: 'target_panier_moyen_kmf', fallback: 15000 },
+    hub_monthly_cost_aed: { canonical: 'hub_monthly_cost_aed', fallback: 7000 },
+    customs_rate_default_pct: { canonical: 'customs_rate_default_pct', fallback: 42 },
+    mix_rail_a: { canonical: 'mix_rail_a', fallback: 60 },
+    mix_rail_b: { canonical: 'mix_rail_b', fallback: 25 },
+    mix_rail_c: { canonical: 'mix_rail_c', fallback: 10 },
+    mix_rail_d: { canonical: 'mix_rail_d', fallback: 5 },
+    margin_rail_a: { canonical: 'margin_rail_a', fallback: 45 },
+    margin_rail_b: { canonical: 'margin_rail_b', fallback: 18 },
+    margin_rail_c: { canonical: 'margin_rail_c', fallback: 35 },
+    margin_rail_d: { canonical: 'margin_rail_d', fallback: 70 },
+  },
+  loadFinanceConfig: jest.fn(),
+  resolveLegacyInput: jest.fn(),
+  buildModelInputs: jest.fn(),
+  projectLegacyRows: jest.fn(),
+  writeThroughLegacyInput: jest.fn(),
+}));
 
 const db = require('../../db');
+const economicConfig = require('../../services/economic-config');
 const ecoQueries = require('../../services/economic-engine-queries');
 const {
   checkCoherence,
@@ -44,8 +66,36 @@ const {
   STATUS_MAP,
 } = ecoQueries;
 
+const CURRENT_FINANCE = {
+  objectif_commandes_mois: 100,
+  target_panier_moyen_kmf: 15000,
+  hub_monthly_cost_aed: 7000,
+  customs_rate_default_pct: 42,
+  mix_rail_a: 60, mix_rail_b: 25, mix_rail_c: 10, mix_rail_d: 5,
+  margin_rail_a: 45, margin_rail_b: 18, margin_rail_c: 35, margin_rail_d: 70,
+};
+
+function inputsFromConfig(c = CURRENT_FINANCE) {
+  return {
+    ordersPerMonth: Number(c.objectif_commandes_mois),
+    targetBasket: Number(c.target_panier_moyen_kmf),
+    mixA: Number(c.mix_rail_a), mixB: Number(c.mix_rail_b), mixC: Number(c.mix_rail_c), mixD: Number(c.mix_rail_d),
+    margA: Number(c.margin_rail_a), margB: Number(c.margin_rail_b), margC: Number(c.margin_rail_c), margD: Number(c.margin_rail_d),
+  };
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
+  economicConfig.loadFinanceConfig.mockResolvedValue(CURRENT_FINANCE);
+  economicConfig.resolveLegacyInput.mockImplementation((config, key) => {
+    const spec = economicConfig.LEGACY_RUNTIME_INPUTS[key];
+    return spec ? Number(config[spec.canonical] ?? spec.fallback) : undefined;
+  });
+  economicConfig.buildModelInputs.mockImplementation(inputsFromConfig);
+  economicConfig.projectLegacyRows.mockImplementation((rows) => rows);
+  economicConfig.writeThroughLegacyInput.mockResolvedValue({
+    error: 'economic_variable_editor_retired', status: 410, source_of_truth: 'finance_config',
+  });
 });
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
@@ -206,29 +256,17 @@ describe('generateRecommendation', () => {
 
 // ── getVar ────────────────────────────────────────────────────────────────────
 
-describe('getVar', () => {
-  it('retourne value_used si non null', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ value_used: 42, value_supposed: 100 }] });
-    const v = await ecoQueries.getVar('some_key', 99);
+describe('getVar — compat finance_config', () => {
+  it('lit une clé runtime canonisée via finance_config', async () => {
+    const v = await ecoQueries.getVar('customs_rate_default_pct', 99);
     expect(v).toBe(42);
+    expect(economicConfig.loadFinanceConfig).toHaveBeenCalledTimes(1);
+    expect(economicConfig.resolveLegacyInput).toHaveBeenCalledWith(CURRENT_FINANCE, 'customs_rate_default_pct');
   });
 
-  it('retourne value_supposed si value_used est null', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ value_used: null, value_supposed: 100 }] });
-    const v = await ecoQueries.getVar('some_key', 99);
-    expect(v).toBe(100);
-  });
-
-  it('retourne fallback si aucune ligne', async () => {
-    db.query.mockResolvedValueOnce({ rows: [] });
-    const v = await ecoQueries.getVar('missing_key', 55);
+  it('retourne le fallback pour une clé legacy sans mapping runtime', async () => {
+    const v = await ecoQueries.getVar('cost_transit', 55);
     expect(v).toBe(55);
-  });
-
-  it('retourne fallback si value_used et value_supposed sont tous les deux null', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ value_used: null, value_supposed: null }] });
-    const v = await ecoQueries.getVar('some_key', 77);
-    expect(v).toBe(77);
   });
 });
 
@@ -273,36 +311,22 @@ describe('checkSOVDrift', () => {
 
 // ── redistribute ──────────────────────────────────────────────────────────────
 
-// Helper : mock minimal pour que redistribute puisse s'exécuter sans DB réel.
-// Séquence attendue :
-//   1. SELECT charges (is_active=TRUE)
-//   2. getVar x 9 (orders_per_month, mix x4, margin x4) — chacun = 1 SELECT
-//   3. setComputed x 7 — chacun = 1 UPDATE
-//   4. checkSOVDrift = 1 SELECT
-//   5. debounce snapshot = 1 SELECT economic_snapshots
-//   6. INSERT economic_snapshots (si shouldInsert=true)
+// Helper : finance_config est mocké comme SOV; DB ne sert qu'aux charges, drift et snapshots.
 function mockRedistribute({ charges = [], varValue = null, hasRecentSnapshot = false } = {}) {
-  let callCount = 0;
+  if (varValue !== null) {
+    economicConfig.buildModelInputs.mockReturnValue({
+      ordersPerMonth: varValue, targetBasket: varValue,
+      mixA: varValue, mixB: varValue, mixC: varValue, mixD: varValue,
+      margA: varValue, margB: varValue, margC: varValue, margD: varValue,
+    });
+  }
   db.query.mockImplementation(async (sql) => {
     const s = sql.trim();
-    // 1. charges list
     if (s.includes('FROM charges WHERE is_active')) return { rows: charges };
-    // 2. getVar reads
-    if (s.includes('FROM economic_variables WHERE key')) {
-      return { rows: varValue !== null ? [{ value_used: varValue, value_supposed: varValue }] : [] };
-    }
-    // 3. setComputed updates
-    if (s.startsWith('UPDATE economic_variables SET value_used')) return { rows: [] };
-    // 4. checkSOVDrift
     if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
-    // 5. debounce snapshot check
     if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) {
-      if (hasRecentSnapshot) {
-        return { rows: [{ created_at: new Date().toISOString() }] }; // < 15 min
-      }
-      return { rows: [] };
+      return hasRecentSnapshot ? { rows: [{ created_at: new Date().toISOString() }] } : { rows: [] };
     }
-    // 6. INSERT snapshot
     if (s.includes('INSERT INTO economic_snapshots')) return { rows: [] };
     return { rows: [] };
   });
@@ -350,25 +374,16 @@ describe('redistribute', () => {
   });
 
   it('retourne status=blocking si breakEven > targetBasket', async () => {
-    // Forçons un cas bloquant : coûts per_order très élevés + panier cible bas.
-    // Valeurs renvoyées PAR CLÉ (getVar passe la clé en params[0]) — un mock
-    // uniforme fausserait le calcul (mix ≠ 100, marges absurdes → breakEven trop bas).
-    const vars = {
-      mix_rail_a: 25, mix_rail_b: 25, mix_rail_c: 25, mix_rail_d: 25, // somme = 100
-      margin_rail_a: 10, margin_rail_b: 10, margin_rail_c: 10, margin_rail_d: 10,
-      orders_per_month: 100,
-      target_basket_avg: 1000, // panier cible bas → breakEven (500000) > targetBasket
-    };
-    db.query.mockImplementation(async (sql, params) => {
+    economicConfig.buildModelInputs.mockReturnValue({
+      mixA: 25, mixB: 25, mixC: 25, mixD: 25,
+      margA: 10, margB: 10, margC: 10, margD: 10,
+      ordersPerMonth: 100, targetBasket: 1000,
+    });
+    db.query.mockImplementation(async (sql) => {
       const s = sql.trim();
       if (s.includes('FROM charges WHERE is_active')) {
         return { rows: [{ amount_kmf: 50000, recurrence_period: 'per_order', is_active: true }] };
       }
-      if (s.includes('FROM economic_variables WHERE key')) {
-        const v = vars[params && params[0]];
-        return { rows: v != null ? [{ value_used: v, value_supposed: v }] : [] };
-      }
-      if (s.startsWith('UPDATE economic_variables')) return { rows: [] };
       if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
       if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [] };
       if (s.includes('INSERT INTO economic_snapshots')) return { rows: [] };
@@ -382,34 +397,37 @@ describe('redistribute', () => {
 // ── getVariables ──────────────────────────────────────────────────────────────
 
 describe('getVariables', () => {
-  it('groupe les variables par catégorie avec label et icône', async () => {
-    db.query.mockResolvedValueOnce({
-      rows: [
-        { category: 'cost', key: 'cost_sourcing', label: 'Sourcing', value_used: 1000 },
-        { category: 'cost', key: 'cost_transit',  label: 'Transit',  value_used: 500  },
-        { category: 'margin', key: 'margin_rail_a', label: 'Rail A', value_used: 45   },
-      ],
+  function mockVariableRead(rows) {
+    db.query.mockImplementation(async (sql) => {
+      const s = sql.trim();
+      if (s.includes('FROM economic_variables WHERE is_active')) return { rows };
+      if (s.includes('FROM charges WHERE is_active')) return { rows: [] };
+      return { rows: [] };
     });
+  }
+
+  it('groupe les métadonnées legacy tout en déclarant finance_config comme vérité', async () => {
+    mockVariableRead([
+      { category: 'cost', key: 'cost_sourcing', label: 'Sourcing', value_used: 1000 },
+      { category: 'cost', key: 'cost_transit', label: 'Transit', value_used: 500 },
+      { category: 'margin', key: 'margin_rail_a', label: 'Rail A', value_used: 45 },
+    ]);
     const result = await ecoQueries.getVariables();
-    expect(result).toHaveProperty('categories');
-    expect(result.categories).toHaveProperty('cost');
+    expect(result.source_of_truth).toBe('finance_config');
+    expect(result.legacy_storage).toBe('read_only');
     expect(result.categories.cost.variables).toHaveLength(2);
     expect(result.categories.cost.label).toBe('Coûts');
-    expect(result.categories).toHaveProperty('margin');
     expect(result.categories.margin.variables).toHaveLength(1);
   });
 
   it('utilise un label et icône par défaut si la catégorie est inconnue', async () => {
-    db.query.mockResolvedValueOnce({
-      rows: [{ category: 'unknown_cat', key: 'x', label: 'X', value_used: 1 }],
-    });
+    mockVariableRead([{ category: 'unknown_cat', key: 'x', label: 'X', value_used: 1 }]);
     const result = await ecoQueries.getVariables();
-    expect(result.categories.unknown_cat).toHaveProperty('label', 'unknown_cat');
-    expect(result.categories.unknown_cat).toHaveProperty('icon', '📦');
+    expect(result.categories.unknown_cat).toMatchObject({ label: 'unknown_cat', icon: '📦' });
   });
 
   it('retourne categories={} si aucune variable active', async () => {
-    db.query.mockResolvedValueOnce({ rows: [] });
+    mockVariableRead([]);
     const result = await ecoQueries.getVariables();
     expect(result.categories).toEqual({});
   });
@@ -481,56 +499,52 @@ describe('getHistory', () => {
 
 // ── updateVariable ────────────────────────────────────────────────────────────
 
-describe('updateVariable', () => {
-  it('retourne notFound si la clé n\'existe pas', async () => {
-    db.query.mockResolvedValueOnce({ rows: [] }); // SELECT check
-    const result = await ecoQueries.updateVariable('missing_key', { value_supposed: 1 });
-    expect(result.notFound).toBe(true);
+describe('updateVariable — legacy read-only / write-through canonique', () => {
+  it('retourne 404 si la clé metadata n’existe pas', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await ecoQueries.updateVariable('missing_key', { value_used: 1 });
+    expect(result).toMatchObject({ error: 'variable_not_found', status: 404 });
   });
 
-  it('retourne computed si la variable est calculée', async () => {
+  it('retourne 410 pour une variable calculée', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ key: 'total_cost_per_order', is_computed: true }] });
-    const result = await ecoQueries.updateVariable('total_cost_per_order', { value_supposed: 1 });
-    expect(result.computed).toBe(true);
+    const result = await ecoQueries.updateVariable('total_cost_per_order', { value_used: 1 });
+    expect(result).toMatchObject({
+      error: 'computed_variable_read_only', status: 410, source_of_truth: 'computed_projection',
+    });
+    expect(economicConfig.writeThroughLegacyInput).not.toHaveBeenCalled();
   });
 
-  it('retourne noFields si aucun champ reconnu', async () => {
+  it('refuse 410 une clé legacy sans mapping et n’écrit jamais economic_variables', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ key: 'cost_transit', is_computed: false }] });
-    const result = await ecoQueries.updateVariable('cost_transit', {}); // body vide
-    expect(result.noFields).toBe(true);
+    const result = await ecoQueries.updateVariable('cost_transit', { value_used: 600 });
+    expect(result.status).toBe(410);
+    const legacyWrites = db.query.mock.calls.filter(([sql]) => /^(UPDATE|INSERT INTO) economic_variables/i.test(sql.trim()));
+    expect(legacyWrites).toHaveLength(0);
   });
 
-  it('effectue bien l\'UPDATE et appelle redistribute + buildExecutiveSummary', async () => {
-    let callIdx = 0;
+  it('write-through une clé canonisée puis reconstruit le résumé sans écriture legacy', async () => {
+    const metadata = { category: 'mix', key: 'mix_rail_a', label: 'Mix A', is_computed: false, value_supposed: 60 };
+    economicConfig.writeThroughLegacyInput.mockResolvedValueOnce({
+      key: 'mix_rail_a', canonical_field: 'mix_rail_a', value: 61,
+      finance_config: { ...CURRENT_FINANCE, mix_rail_a: 61 },
+    });
+    economicConfig.projectLegacyRows.mockImplementation((rows) => rows.map(r => ({ ...r, value_used: 61, source_used: 'finance_config' })));
+    economicConfig.buildModelInputs.mockImplementation(inputsFromConfig);
     db.query.mockImplementation(async (sql) => {
       const s = sql.trim();
-      // 1. SELECT check
-      if (s.startsWith('SELECT * FROM economic_variables WHERE key')) {
-        return { rows: [{ key: 'cost_transit', is_computed: false, source_used: 'supposed', value_supposed: 600, value_observed: null, value_used: 600 }] };
-      }
-      // 2. UPDATE SET value_supposed
-      if (s.startsWith('UPDATE economic_variables SET value_supposed')) return { rows: [{ source_used: 'supposed', value_supposed: 600, value_observed: null }] };
-      // 3. source_used → value_used sync (UPDATE SET value_used = value_supposed)
-      if (s.includes('value_used = value_supposed')) return { rows: [] };
-      // 4. SELECT après update
-      if (s.startsWith('SELECT * FROM economic_variables WHERE key')) return { rows: [{ key: 'cost_transit', value_used: 600 }] };
-      // redistribute chain
+      if (s.startsWith('SELECT * FROM economic_variables WHERE key')) return { rows: [metadata] };
       if (s.includes('FROM charges WHERE is_active')) return { rows: [] };
-      if (s.includes('FROM economic_variables WHERE key')) return { rows: [{ value_used: 100, value_supposed: 100 }] };
-      if (s.startsWith('UPDATE economic_variables SET value_used')) return { rows: [] };
       if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
-      if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [] };
-      if (s.includes('INSERT INTO economic_snapshots')) return { rows: [] };
-      // buildExecutiveSummary extra charges fetch
-      if (s.includes('FROM charges WHERE is_active = TRUE')) return { rows: [] };
+      if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [{ created_at: new Date().toISOString() }] };
       return { rows: [] };
     });
 
-    const result = await ecoQueries.updateVariable('cost_transit', { value_supposed: 600 });
-    // Doit retourner { variable, executive } et non un code d'erreur
-    expect(result).not.toHaveProperty('notFound');
-    expect(result).not.toHaveProperty('computed');
-    expect(result).not.toHaveProperty('noFields');
+    const result = await ecoQueries.updateVariable('mix_rail_a', { value_used: 61 }, 'admin-1');
+    expect(economicConfig.writeThroughLegacyInput).toHaveBeenCalledWith('mix_rail_a', { value_used: 61 }, 'admin-1');
+    expect(result).toMatchObject({ canonical_field: 'mix_rail_a', source_of_truth: 'finance_config' });
+    const legacyWrites = db.query.mock.calls.filter(([sql]) => /^(UPDATE|INSERT INTO) economic_variables/i.test(sql.trim()));
+    expect(legacyWrites).toHaveLength(0);
   });
 });
 
@@ -635,36 +649,23 @@ describe('deleteCharge', () => {
 // ── seedEconomicData ────────────────────────────────────────────────────────
 
 describe('seedEconomicData', () => {
-  it('insere les 36 variables et les 5 charges de demarrage sans throw', async () => {
-    db.query.mockImplementation(async (sql) => {
-      if (sql.includes('INSERT INTO economic_variables') || sql.includes('INSERT INTO charges')) {
-        return { rows: [] };
-      }
-      return { rows: [] };
-    });
-
+  it('seed uniquement les 5 charges et zéro economic_variables', async () => {
+    db.query.mockResolvedValue({ rows: [] });
     await expect(ecoQueries.seedEconomicData()).resolves.toBeUndefined();
-
-    const insertVarCalls = db.query.mock.calls.filter(([sql]) => sql.includes('INSERT INTO economic_variables'));
+    const legacyWrites = db.query.mock.calls.filter(([sql]) => /^(UPDATE|INSERT INTO) economic_variables/i.test(sql.trim()));
     const insertChargeCalls = db.query.mock.calls.filter(([sql]) => sql.includes('INSERT INTO charges'));
-    expect(insertVarCalls.length).toBe(38);
-    expect(insertChargeCalls.length).toBe(5);
+    expect(legacyWrites).toHaveLength(0);
+    expect(insertChargeCalls).toHaveLength(5);
   });
 
-  it('ignore silencieusement les erreurs si les tables legacy n\'existent pas encore', async () => {
+  it('continue le seed charges si les corrections historiques charges échouent', async () => {
     db.query.mockImplementation(async (sql) => {
-      if (sql.includes("UPDATE charges SET name = 'Hub Dubai'")
-        || sql.includes('UPDATE charges SET recurrence_period')
-        || sql.includes("UPDATE economic_variables SET label = 'Hub (Dubai)'")) {
-        throw new Error('relation does not exist');
-      }
+      if (sql.includes("UPDATE charges SET name = 'Hub Dubai'")) throw new Error('relation does not exist');
       return { rows: [] };
     });
-
     await expect(ecoQueries.seedEconomicData()).resolves.toBeUndefined();
-    // Malgre les rejets sur les migrations legacy, le seed des variables/charges continue
-    const insertVarCalls = db.query.mock.calls.filter(([sql]) => sql.includes('INSERT INTO economic_variables'));
-    expect(insertVarCalls.length).toBe(38);
+    const legacyWrites = db.query.mock.calls.filter(([sql]) => /^(UPDATE|INSERT INTO) economic_variables/i.test(sql.trim()));
+    expect(legacyWrites).toHaveLength(0);
   });
 });
 
@@ -695,13 +696,11 @@ describe('redistribute - repartition des couts monthly/weekly', () => {
   });
 
   it('reinsere un snapshot si le dernier date de plus de 15 minutes', async () => {
-    const oldDate = new Date(Date.now() - 20 * 60 * 1000).toISOString(); // 20 min
+    const oldDate = new Date(Date.now() - 20 * 60 * 1000).toISOString();
     let insertCalled = false;
     db.query.mockImplementation(async (sql) => {
       const s = sql.trim();
       if (s.includes('FROM charges WHERE is_active')) return { rows: [] };
-      if (s.includes('FROM economic_variables WHERE key')) return { rows: [{ value_used: 100, value_supposed: 100 }] };
-      if (s.startsWith('UPDATE economic_variables')) return { rows: [] };
       if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
       if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [{ created_at: oldDate }] };
       if (s.includes('INSERT INTO economic_snapshots')) { insertCalled = true; return { rows: [] }; }
@@ -729,12 +728,11 @@ describe('buildExecutiveSummary', () => {
       { family: 'demarrage', amount_kmf: 100, recurrence_period: 'weekly', is_active: true },
       { family: 'incident', amount_kmf: 999, recurrence_period: 'one_time', is_active: false },
     ];
-    const vars = {
-      mix_rail_a: 25, mix_rail_b: 25, mix_rail_c: 25, mix_rail_d: 25,
-      margin_rail_a: 10, margin_rail_b: 10, margin_rail_c: 10, margin_rail_d: 10,
-      orders_per_month: 100,
-      target_basket_avg: 1000, // panier bas -> plusieurs alertes (blocking + marginPressure + netProfit<0)
-    };
+    economicConfig.buildModelInputs.mockReturnValue({
+      mixA: 25, mixB: 25, mixC: 25, mixD: 25,
+      margA: 10, margB: 10, margC: 10, margD: 10,
+      ordersPerMonth: 100, targetBasket: 1000,
+    });
     db.query.mockImplementation(async (sql, params) => {
       const s = sql.trim();
       if (s.includes('FROM charges WHERE is_active')) return { rows: charges };
@@ -840,65 +838,12 @@ describe('toggleCharge', () => {
   });
 });
 
-// ── updateVariable : branche source_used === 'observed' ─────────────────────
+// ── LOT 1A-4 writer ratchet ─────────────────────────────────────────────────
 
-describe('updateVariable - sync value_used depuis value_observed', () => {
-  it('met a jour value_used = value_observed si source_used === "observed"', async () => {
-    db.query.mockImplementation(async (sql) => {
-      const s = sql.trim();
-      if (s.startsWith('SELECT * FROM economic_variables WHERE key')) {
-        return { rows: [{ key: 'cost_transit', is_computed: false, source_used: 'observed', value_supposed: 600, value_observed: 550, value_used: 550 }] };
-      }
-      if (s.startsWith('UPDATE economic_variables SET value_supposed')) {
-        return { rows: [{ source_used: 'observed', value_supposed: 600, value_observed: 550 }] };
-      }
-      if (s.includes('value_used = value_observed')) return { rows: [] };
-      if (s.includes('FROM charges WHERE is_active')) return { rows: [] };
-      if (s.includes('FROM economic_variables WHERE key')) return { rows: [{ value_used: 100, value_supposed: 100 }] };
-      if (s.startsWith('UPDATE economic_variables SET value_used')) return { rows: [] };
-      if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
-      if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [] };
-      if (s.includes('INSERT INTO economic_snapshots')) return { rows: [] };
-      return { rows: [] };
-    });
-
-    const result = await ecoQueries.updateVariable('cost_transit', { value_supposed: 600 });
-    expect(result).not.toHaveProperty('notFound');
-    const syncCall = db.query.mock.calls.find(([sql]) => sql.includes('value_used = value_observed'));
-    expect(syncCall).toBeDefined();
-    expect(syncCall[1]).toEqual(['cost_transit']);
-  });
-});
-
-describe('updateVariable - construction dynamique des champs SET', () => {
-  it('inclut value_observed, value_used et source_used dans le SET quand fournis', async () => {
-    db.query.mockImplementation(async (sql) => {
-      const s = sql.trim();
-      if (s.startsWith('SELECT * FROM economic_variables WHERE key')) {
-        return { rows: [{ key: 'cost_transit', is_computed: false, source_used: 'manual', value_supposed: 600, value_observed: 550, value_used: 500 }] };
-      }
-      if (s.startsWith('UPDATE economic_variables SET value_observed')) {
-        return { rows: [{ source_used: 'manual', value_supposed: 600, value_observed: 550 }] };
-      }
-      if (s.includes('FROM charges WHERE is_active')) return { rows: [] };
-      if (s.includes('FROM economic_variables WHERE key')) return { rows: [{ value_used: 100, value_supposed: 100 }] };
-      if (s.startsWith('UPDATE economic_variables SET value_used')) return { rows: [] };
-      if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
-      if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [] };
-      if (s.includes('INSERT INTO economic_snapshots')) return { rows: [] };
-      return { rows: [] };
-    });
-
-    const result = await ecoQueries.updateVariable('cost_transit', {
-      value_observed: 550, value_used: 550, source_used: 'observed',
-    });
-    expect(result).not.toHaveProperty('notFound');
-
-    const updateCall = db.query.mock.calls.find(([sql]) => sql.startsWith('UPDATE economic_variables SET value_observed'));
-    expect(updateCall).toBeDefined();
-    expect(updateCall[0]).toContain('value_observed = $1');
-    expect(updateCall[0]).toContain('value_used = $2');
-    expect(updateCall[0]).toContain('source_used = $3');
-    expect(updateCall[1]).toEqual([550, 550, 'observed', 'cost_transit']);
+describe('economic_variables writer ratchet', () => {
+  it('le service ne contient plus d’INSERT/UPDATE economic_variables', () => {
+    const source = require('fs').readFileSync(require.resolve('../../services/economic-engine-queries'), 'utf8');
+    expect(source).not.toMatch(/INSERT INTO economic_variables/i);
+    expect(source).not.toMatch(/UPDATE economic_variables/i);
   });
 });

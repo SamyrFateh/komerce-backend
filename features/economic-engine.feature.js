@@ -66,6 +66,7 @@ module.exports = {
       'services/pricing-rates.js',
       'services/pricing-output.js',
       'services/economic-engine-queries.js',
+      'services/economic-config.js',
       'services/apply-pricing-updates.js',
       'services/economic-price-audit-service.js',
       'services/pricing-strategy-service.js',
@@ -111,6 +112,7 @@ module.exports = {
       'migrations/067_finance_config_provision_risque.sql',
       'migrations/090_cost_benchmarks.sql',
       'migrations/103_cost_benchmarks.sql',
+      'migrations/119_economic_variables_to_finance_config.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -157,6 +159,10 @@ module.exports = {
       'tests/unit/cost-allocation.test.js',
       'tests/unit/transport-cost-allocation.test.js',
       'tests/unit/economic-engine-queries.test.js',
+      'tests/unit/economic-config.test.js',
+      'tests/unit/economic-variables-preflight-1a4.test.js',
+      'tests/unit/economic-variables-migration-119.test.js',
+      'tests/unit/economic-variables-readonly-1a4.test.js',
       'tests/unit/pricing-apply.test.js',
       'tests/unit/pricing-chain.test.js',
       'tests/unit/pricing-dashboard-truth.test.js',
@@ -214,7 +220,7 @@ module.exports = {
       'customs_shipment_parcels: R',
       'customs_shipments: R',
       'economic_snapshots: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
-      'economic_variables: RW',
+      'economic_variables: R',
       'exchange_rates: RW',
       'fabrics: R',
       'finance_config: RW',
