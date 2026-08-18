@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/pricing-engine.js
+ * @depends       services/pricing-engine.js, utils/rates.js
  * @used-by       routes/sourcing-scanner.js, services/suppliers/catalog-import-orchestrator.js
  * @db-read       none
  * @db-write      none
@@ -45,6 +45,7 @@
 'use strict';
 
 const pricingEngine = require('./pricing-engine');
+const { resolveFxRates } = require('../utils/rates');
 
 // ═══════════════════════════════════════════════════════════════════════
 // HELPERS NORMALISATION
@@ -74,10 +75,10 @@ function convertToKMF(amount, currency, finance) {
     );
   }
   if (cur === 'KMF') return Math.round(v);
-  if (cur === 'AED') return Math.round(v * (Number(finance?.taux_aed_kmf) || 138));
-  if (cur === 'EUR') return Math.round(v * (Number(finance?.taux_change_eur_kmf) || 492));
-  // USD : approx 0.92 EUR (à raffiner si besoin avec taux dédié)
-  return Math.round(v * 0.92 * (Number(finance?.taux_change_eur_kmf) || 492));
+  const fx = resolveFxRates(finance);
+  if (cur === 'AED') return Math.round(v * fx.aed_kmf);
+  if (cur === 'EUR') return Math.round(v * fx.eur_kmf);
+  return Math.round(v * fx.usd_kmf);
 }
 
 /**

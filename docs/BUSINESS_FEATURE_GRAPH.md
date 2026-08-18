@@ -1577,7 +1577,7 @@ Meta Graph monté : oui.
 | catalog | auth-identity | interface | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | business-rules | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | catalog | economic-engine | static-code | 7 | **DECLARED_AND_OBSERVED** |
-| catalog | infrastructure | static-code | 33 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 34 | **DECLARED_AND_OBSERVED** |
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | orders | static-code | 12 | **OBSERVED_UNDECLARED** |

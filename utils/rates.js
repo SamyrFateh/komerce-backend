@@ -8,26 +8,35 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/logger.js
  * @db-write      none
- * @db-read      finance_config
- * @used-by       routes/admin-finance-config.js, routes/dashboard-shared.js, routes/finance.js, routes/modules.js, routes/orders/create.js, routes/payments.js, services/pricing-rates.js, services/shared-cart-lifecycle.js
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
- * @version       2026-06
+ * @db-read       finance_config
+ * @used-by       routes/admin-finance-config.js, routes/dashboard-shared.js, routes/finance.js, routes/modules.js, routes/orders/create.js, routes/payments.js, services/pricing-cdr.js, services/pricing-rates.js, services/shared-cart-lifecycle.js, services/supplier-catalog-scanner.js
+ * @doctrine      lot1a_fx_one_runtime_truth
+ * @impact-areas  economic-engine, sourcing, infrastructure
+ * @version       2026-08
  */
-
 
 'use strict';
 /**
  * KOMERCE — Taux de change & paramètres financiers (utils/rates.js)
  *
- * Source de vérité : table `finance_config` (singleton id=1).
+ * Source de vérité persistée : table `finance_config` (singleton id=1).
  * Cette migration centralise ce qui était auparavant éclaté entre
  * exchange_rates, economic_variables, business_rules, et hardcodes JS.
  *
+ * LOT 1A-2 : USD n'a PAS de colonne persistée aujourd'hui. Le comportement
+ * CURRENT était une dérivation recopiée dans plusieurs consommateurs :
+ *   USD_KMF = 0.92 × EUR_KMF
+ *
+ * La règle 0.92 est désormais canonique ici. Elle reste une dérivation CURRENT
+ * (pas un nouveau taux marché, pas un champ admin), afin de garantir
+ * BEFORE == AFTER. Une future correction économique devra être un delta
+ * explicite, pas un changement caché dans une refactorisation.
+ *
  * Politique :
- *   - getRates() lit finance_config.taux_change_eur_kmf / .taux_aed_kmf
- *   - exchange_rates devient pur historique (lecture pour audit, plus écriture)
- *   - business_rules.EUR_KMF_FALLBACK reste fallback ULTIME si BDD inaccessible
+ *   - getRates() conserve son contrat historique { eur_kmf, aed_kmf } ;
+ *   - resolveFxRates(finance) fournit la projection canonique incluant USD ;
+ *   - exchange_rates reste pur historique ;
+ *   - business_rules.*_FALLBACK reste fallback si BDD inaccessible.
  *
  * Cache TTL 60s pour performance.
  */
@@ -35,8 +44,42 @@
 const db = require('../db');
 const log = require('./logger').child({ module: 'rates' });
 
-// Fallback hardcodé ultime (si BDD totalement inaccessible)
-const RATES_FALLBACK = { eur_kmf: 492, aed_kmf: 138 };
+// Fallbacks CURRENT historiques. Ne pas les modifier silencieusement : toute
+// correction de valeur relève d'un delta économique expliqué.
+const RATES_FALLBACK = Object.freeze({ eur_kmf: 492, aed_kmf: 138 });
+const USD_EUR_CURRENT_RATIO = 0.92;
+
+/**
+ * Projection pure des taux à partir de finance_config (ou d'un objet compatible).
+ * USD est DERIVED, jamais édité/storé ici.
+ *
+ * @param {object|null|undefined} finance
+ * @returns {{ eur_kmf: number, aed_kmf: number, usd_kmf: number, usd_eur_ratio: number }}
+ */
+function resolveFxRates(finance) {
+  const fc = finance || {};
+  const eurKmf = Number(fc.taux_change_eur_kmf) || RATES_FALLBACK.eur_kmf;
+  const aedKmf = Number(fc.taux_aed_kmf) || RATES_FALLBACK.aed_kmf;
+  return {
+    eur_kmf: eurKmf,
+    aed_kmf: aedKmf,
+    usd_kmf: Number((eurKmf * USD_EUR_CURRENT_RATIO).toFixed(6)),
+    usd_eur_ratio: USD_EUR_CURRENT_RATIO,
+  };
+}
+
+/**
+ * Projection qui reproduit exactement les fallbacks historiques du PricingView
+ * (492/138 et USD=0.92×492). Elle est exposée par l'API pendant la migration
+ * pour retirer le hardcode frontend SANS corriger silencieusement son ancien
+ * contrat de config. À retirer quand ce contrat fera l'objet d'un delta assumé.
+ */
+function resolvePricingViewCurrentCompatRates() {
+  return resolveFxRates({
+    taux_change_eur_kmf: RATES_FALLBACK.eur_kmf,
+    taux_aed_kmf: RATES_FALLBACK.aed_kmf,
+  });
+}
 
 // Fourni par bootstrap/feature-wiring.js. Le composant technique ne connaît
 // plus directement business-rules ; le composition root assemble les deux.
@@ -59,6 +102,10 @@ const CACHE_TTL_MS = 60_000;
  * Retourne les taux de change actifs depuis finance_config.
  * Fallback : business_rules → puis valeurs hardcodées.
  *
+ * Contrat historique volontairement inchangé en LOT 1A-2 : USD est accessible
+ * via resolveFxRates(), sans élargir silencieusement toutes les réponses qui
+ * consomment getRates().
+ *
  * @returns {Promise<{ eur_kmf: number, aed_kmf: number }>}
  */
 async function getRates() {
@@ -73,10 +120,8 @@ async function getRates() {
       'SELECT taux_change_eur_kmf, taux_aed_kmf FROM finance_config WHERE id = 1'
     );
     if (rows[0] && rows[0].taux_change_eur_kmf) {
-      _cache = {
-        eur_kmf: Number(rows[0].taux_change_eur_kmf),
-        aed_kmf: Number(rows[0].taux_aed_kmf) || RATES_FALLBACK.aed_kmf,
-      };
+      const resolved = resolveFxRates(rows[0]);
+      _cache = { eur_kmf: resolved.eur_kmf, aed_kmf: resolved.aed_kmf };
       _cacheAt = Date.now();
       return _cache;
     }
@@ -112,4 +157,12 @@ function invalidateCache() {
   _cacheAt = 0;
 }
 
-module.exports = { getRates, invalidateCache, configureRatesFallbackProvider, RATES_FALLBACK };
+module.exports = {
+  getRates,
+  invalidateCache,
+  configureRatesFallbackProvider,
+  RATES_FALLBACK,
+  USD_EUR_CURRENT_RATIO,
+  resolveFxRates,
+  resolvePricingViewCurrentCompatRates,
+};

@@ -206,7 +206,13 @@ async function verify(demo) {
   const args = process.argv.slice(2);
   const mode = args[0];
   const demo = args.includes('--demo');
-  if (mode === 'capture') await capture(demo);
+  if (mode === 'capture') {
+    await capture(demo);
+    // pricing-cdr importe le pool DB et son monitor périodique ; après l'écriture
+    // synchrone du golden, aucun travail utile ne reste. Sortie explicite pour que
+    // le CLI rende la main au lieu de rester vivant sur ces handles runtime.
+    process.exit(0);
+  }
   else if (mode === 'verify') await verify(demo);
   else {
     console.log('Usage : node golden-cdr.js <capture|verify> [--demo]');

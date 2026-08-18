@@ -17869,6 +17869,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/supplier-catalog-scanner.js",
+                "targetFile": "utils/rates.js"
+              },
+              {
                 "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
                 "targetFile": "db.js"
               },
@@ -19527,6 +19531,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/pricing-cdr.js",
+                "targetFile": "utils/rates.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-analysis.js",
                 "targetFile": "utils/logger.js"
               },
@@ -19549,10 +19557,6 @@
               {
                 "sourceFileId": "routes/admin-pricing-matrices.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "routes/admin-pricing-matrices.js",
-                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "routes/admin-cost-components.js",

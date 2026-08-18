@@ -100,16 +100,18 @@ async function _loadCatalog() {
 }
 
 async function _computeReco() {
-  const fc = _ps.config?.targets || _ps.config || {};
-  const tauxAed = Number(fc.taux_aed_kmf || 138);
-  const tauxEur = Number(fc.taux_change_eur_kmf || 492);
-  const tauxUsdEur = 0.92;
+  const compatFx = _ps.config?.fx?.pricing_view_current_compat || null;
+  // Fallbacks = comportement exact pré-1A-2, uniquement pour compat old-server
+  // ou indisponibilité config. La source nominale est désormais l'API finance.
+  const tauxAed = Number(compatFx?.aed_kmf) || 138;
+  const tauxEur = Number(compatFx?.eur_kmf) || 492;
+  const tauxUsd = Number(compatFx?.usd_kmf) || 452.64;
   function toAED(amount, cur) {
     const v = Number(amount) || 0; if (!v) return 0;
     if (cur === 'AED') return v;
     if (cur === 'KMF') return v / tauxAed;
     if (cur === 'EUR') return (v * tauxEur) / tauxAed;
-    if (cur === 'USD') return (v * tauxUsdEur * tauxEur) / tauxAed;
+    if (cur === 'USD') return (v * tauxUsd) / tauxAed;
     return v;
   }
   const volM3 = (_ps.inputDimL * _ps.inputDimW * _ps.inputDimH) / 1_000_000;
