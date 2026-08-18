@@ -15,7 +15,7 @@ export const KOMERCE_SHELF_SPRITE = '/boutique/categories/komerce-shelf-sprite.s
 const CATEGORY_VISUALS = {
   all: 'cat-all',
   Soldes: 'cat-soldes',
-  'Mode & Beauté': 'cat-mode',
+  'Mode & Beauté': '/boutique/categories/mode-v3.webp',
   Maison: 'cat-maison',
   Tech: 'cat-tech',
   Bricolage: 'cat-bricolage',
@@ -25,10 +25,10 @@ const CATEGORY_VISUALS = {
 
 const SUBCATEGORY_VISUALS = {
   'Mode & Beauté': {
-    Femme: 'sub-mode-femme',
-    Homme: 'sub-mode-homme',
-    Enfant: 'sub-mode-enfant',
-    Beauté: 'sub-mode-beaute',
+    Femme: '/boutique/categories/sub/mode-femme.webp',
+    Homme: '/boutique/categories/sub/mode-homme.webp',
+    Enfant: '/boutique/categories/sub/mode-enfant.webp',
+    Beauté: '/boutique/categories/sub/mode-beaute.webp',
   },
   Maison: {
     Confort: 'sub-maison-confort',
@@ -61,6 +61,10 @@ const SUBCATEGORY_VISUALS = {
   },
 };
 
+function isImageVisual(visual) {
+  return typeof visual === 'string' && /\.(?:avif|webp|png|jpe?g)(?:\?|$)/i.test(visual);
+}
+
 export function getShelfCategoryVisual(categoryKey) {
   return CATEGORY_VISUALS[categoryKey] || null;
 }
@@ -69,8 +73,13 @@ export function getShelfSubcategoryVisual(categoryKey, subcategoryKey) {
   return SUBCATEGORY_VISUALS[categoryKey]?.[subcategoryKey] || null;
 }
 
-export function renderShelfUse(symbolId, extraClass = '') {
-  if (!symbolId) return '';
+export function renderShelfUse(visual, extraClass = '') {
+  if (!visual) return '';
   const cls = extraClass ? ` ${extraClass}` : '';
-  return `<svg class="k-shelf-object${cls}" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><use href="${KOMERCE_SHELF_SPRITE}#${symbolId}"></use></svg>`;
+
+  if (isImageVisual(visual)) {
+    return `<img class="k-shelf-object${cls} k-shelf-object--image" src="${visual}" alt="" aria-hidden="true" loading="lazy" decoding="async" width="176" height="160" onerror="this.remove();">`;
+  }
+
+  return `<svg class="k-shelf-object${cls}" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><use href="${KOMERCE_SHELF_SPRITE}#${visual}"></use></svg>`;
 }
