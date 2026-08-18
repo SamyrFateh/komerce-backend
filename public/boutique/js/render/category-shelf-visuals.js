@@ -11,11 +11,12 @@
 'use strict';
 
 export const KOMERCE_SHELF_SPRITE = '/boutique/categories/komerce-shelf-sprite.svg';
+export const KOMERCE_MODE_PILOT_ATLAS = '/boutique/categories/mode-pilot-atlas.webp';
 
 const CATEGORY_VISUALS = {
   all: 'cat-all',
   Soldes: 'cat-soldes',
-  'Mode & Beauté': '/boutique/categories/mode-v3.webp',
+  'Mode & Beauté': 'atlas:0:0',
   Maison: 'cat-maison',
   Tech: 'cat-tech',
   Bricolage: 'cat-bricolage',
@@ -25,10 +26,11 @@ const CATEGORY_VISUALS = {
 
 const SUBCATEGORY_VISUALS = {
   'Mode & Beauté': {
-    Femme: '/boutique/categories/sub/mode-femme.webp',
-    Homme: '/boutique/categories/sub/mode-homme.webp',
-    Enfant: '/boutique/categories/sub/mode-enfant.webp',
-    Beauté: '/boutique/categories/sub/mode-beaute.webp',
+    __all: 'atlas:2:1',
+    Femme: 'atlas:1:0',
+    Homme: 'atlas:2:0',
+    Enfant: 'atlas:0:1',
+    Beauté: 'atlas:1:1',
   },
   Maison: {
     Confort: 'sub-maison-confort',
@@ -61,8 +63,15 @@ const SUBCATEGORY_VISUALS = {
   },
 };
 
-function isImageVisual(visual) {
-  return typeof visual === 'string' && /\.(?:avif|webp|png|jpe?g)(?:\?|$)/i.test(visual);
+function renderAtlasCell(visual, extraClass = '') {
+  const match = /^atlas:(\d):(\d)$/.exec(visual);
+  if (!match) return '';
+  const col = Number(match[1]);
+  const row = Number(match[2]);
+  const cls = extraClass ? ` ${extraClass}` : '';
+  const x = -(col * 256);
+  const y = -(row * 256);
+  return `<svg class="k-shelf-object${cls} k-shelf-object--image" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><image href="${KOMERCE_MODE_PILOT_ATLAS}" x="${x}" y="${y}" width="768" height="512" preserveAspectRatio="none"></image></svg>`;
 }
 
 export function getShelfCategoryVisual(categoryKey) {
@@ -75,11 +84,8 @@ export function getShelfSubcategoryVisual(categoryKey, subcategoryKey) {
 
 export function renderShelfUse(visual, extraClass = '') {
   if (!visual) return '';
+  if (visual.startsWith('atlas:')) return renderAtlasCell(visual, extraClass);
+
   const cls = extraClass ? ` ${extraClass}` : '';
-
-  if (isImageVisual(visual)) {
-    return `<img class="k-shelf-object${cls} k-shelf-object--image" src="${visual}" alt="" aria-hidden="true" loading="lazy" decoding="async" width="176" height="160" onerror="this.remove();">`;
-  }
-
   return `<svg class="k-shelf-object${cls}" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><use href="${KOMERCE_SHELF_SPRITE}#${visual}"></use></svg>`;
 }
