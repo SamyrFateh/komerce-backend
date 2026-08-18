@@ -27,7 +27,7 @@ const BUNDLES = [
   },
   {
     out: 'components.css',
-    files: ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
+    files: ['categories', 'category-cutout-navigation', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
             'modal-mobile-canonical', 'modal-enriched-content', 'modal-cart-sku-guard',
             'cart', 'interactions', 'modal-mobile-suggestion-actions', 'modal-product-polish', 'hero-cart-proxy',
             'shared-list-side-cart', 'shared-list-side-cart-responsive', 'shared-list-library-remove',
@@ -36,7 +36,7 @@ const BUNDLES = [
   },
   {
     out: 'desktop.css',
-    files: ['boutique-desktop'],
+    files: ['boutique-desktop', 'category-cutout-navigation-desktop'],
   },
 ];
 
