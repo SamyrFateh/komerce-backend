@@ -3612,6 +3612,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/economic-config.js",
+        "resolvedPath": "services/economic-config.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/apply-pricing-updates.js",
         "resolvedPath": "services/apply-pricing-updates.js",
         "status": "resolved-in-technical-graph"
@@ -3866,6 +3873,13 @@
         "category": "migrations",
         "declared": "migrations/103_cost_benchmarks.sql",
         "resolvedPath": "migrations/103_cost_benchmarks.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/119_economic_variables_to_finance_config.sql",
+        "resolvedPath": "migrations/119_economic_variables_to_finance_config.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -4153,6 +4167,34 @@
         "category": "tests",
         "declared": "tests/unit/economic-engine-queries.test.js",
         "resolvedPath": "tests/unit/economic-engine-queries.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/economic-config.test.js",
+        "resolvedPath": "tests/unit/economic-config.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/economic-variables-preflight-1a4.test.js",
+        "resolvedPath": "tests/unit/economic-variables-preflight-1a4.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/economic-variables-migration-119.test.js",
+        "resolvedPath": "tests/unit/economic-variables-migration-119.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/economic-variables-readonly-1a4.test.js",
+        "resolvedPath": "tests/unit/economic-variables-readonly-1a4.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18719,12 +18761,20 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/dashboard-ops-queries.js",
+                "targetFile": "services/economic-config.js"
+              },
+              {
                 "sourceFileId": "routes/dashboard.js",
                 "targetFile": "routes/dashboard-finance.js"
               },
               {
                 "sourceFileId": "tests/unit/admin-costing-full.test.js",
                 "targetFile": "routes/admin-costing.js"
+              },
+              {
+                "sourceFileId": "tests/unit/dashboard-ops-queries.test.js",
+                "targetFile": "services/economic-config.js"
               }
             ]
           }
@@ -19495,6 +19545,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/economic-config.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/apply-pricing-updates.js",
                 "targetFile": "db.js"
               },
@@ -19656,6 +19710,10 @@
               },
               {
                 "sourceFileId": "tests/unit/economic-engine-queries.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/economic-config.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -24980,7 +25038,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 824
+        "filesObserved": 829
       },
       "boutique": {
         "filesObserved": 158,
@@ -26446,17 +26504,12 @@
       "resolution": "declared-table-owner"
     },
     "economic_variables": {
-      "writers": [
-        {
-          "feature": "economic-engine",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
+      "writers": [],
+      "readers": [
+        "economic-engine"
       ],
-      "readers": [],
-      "lifecycleOwner": "economic-engine",
-      "resolution": "single-writer"
+      "lifecycleOwner": null,
+      "resolution": "no-declared-writer"
     },
     "fabrics": {
       "writers": [
