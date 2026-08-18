@@ -33,6 +33,9 @@ public/boutique.zip
 *.zip
 *.patch
 
+# Audits locaux / paquets de preuves (ne jamais committer)
+_audit/
+
 # Coverage temporaire généré par scripts/touched-tests-gate.js (--strict)
 .gate-coverage-tmp/
 
