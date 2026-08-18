@@ -6331,7 +6331,7 @@
             ]
           },
           "migrations": {
-            "count": 18,
+            "count": 19,
             "files": [
               {
                 "declared": "migrations/019_finance_columns.sql",
@@ -6422,6 +6422,11 @@
                 "declared": "migrations/103_cost_benchmarks.sql",
                 "resolvedPath": "migrations/103_cost_benchmarks.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/119_economic_variables_to_finance_config.sql",
+                "resolvedPath": "migrations/119_economic_variables_to_finance_config.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -6491,7 +6496,7 @@
             ]
           },
           "services": {
-            "count": 26,
+            "count": 27,
             "files": [
               {
                 "declared": "services/apply-pricing-updates.js",
@@ -6522,6 +6527,11 @@
                 "declared": "services/dashboard-finance-metrics.js",
                 "resolvedPath": "services/dashboard-finance-metrics.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/economic-config.js",
+                "resolvedPath": "services/economic-config.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/economic-engine-queries.js",
@@ -6626,7 +6636,7 @@
             ]
           },
           "tests": {
-            "count": 47,
+            "count": 51,
             "files": [
               {
                 "declared": "tests/integration/sourcing-engine-routes.test.js",
@@ -6714,6 +6724,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/economic-config.test.js",
+                "resolvedPath": "tests/unit/economic-config.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/economic-engine-queries.test.js",
                 "resolvedPath": "tests/unit/economic-engine-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6726,6 +6741,21 @@
               {
                 "declared": "tests/unit/economic-route.test.js",
                 "resolvedPath": "tests/unit/economic-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/economic-variables-migration-119.test.js",
+                "resolvedPath": "tests/unit/economic-variables-migration-119.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/economic-variables-preflight-1a4.test.js",
+                "resolvedPath": "tests/unit/economic-variables-preflight-1a4.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/economic-variables-readonly-1a4.test.js",
+                "resolvedPath": "tests/unit/economic-variables-readonly-1a4.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6881,7 +6911,7 @@
             ]
           }
         },
-        "totalFiles": 111,
+        "totalFiles": 117,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6913,10 +6943,6 @@
           {
             "table": "economic_snapshots",
             "resolution": "declared-table-owner"
-          },
-          {
-            "table": "economic_variables",
-            "resolution": "single-writer"
           },
           {
             "table": "exchange_rates",
@@ -6996,12 +7022,6 @@
           },
           {
             "table": "economic_snapshots",
-            "mode": "RW",
-            "lifecycleOwner": "economic-engine",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "economic_variables",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -7089,6 +7109,10 @@
           {
             "table": "customs_shipments",
             "lifecycleOwner": "customs"
+          },
+          {
+            "table": "economic_variables",
+            "lifecycleOwner": null
           },
           {
             "table": "fabrics",
@@ -7179,10 +7203,6 @@
             "resolution": "declared-table-owner"
           },
           {
-            "table": "economic_variables",
-            "resolution": "single-writer"
-          },
-          {
             "table": "exchange_rates",
             "resolution": "single-writer"
           },
@@ -7260,12 +7280,6 @@
           },
           {
             "table": "economic_snapshots",
-            "mode": "RW",
-            "lifecycleOwner": "economic-engine",
-            "ownershipStatus": "owner"
-          },
-          {
-            "table": "economic_variables",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -7353,6 +7367,10 @@
           {
             "table": "customs_shipments",
             "lifecycleOwner": "customs"
+          },
+          {
+            "table": "economic_variables",
+            "lifecycleOwner": null
           },
           {
             "table": "fabrics",
