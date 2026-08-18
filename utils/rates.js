@@ -63,7 +63,7 @@ function resolveFxRates(finance) {
   return {
     eur_kmf: eurKmf,
     aed_kmf: aedKmf,
-    usd_kmf: eurKmf * USD_EUR_CURRENT_RATIO,
+    usd_kmf: Number((eurKmf * USD_EUR_CURRENT_RATIO).toFixed(6)),
     usd_eur_ratio: USD_EUR_CURRENT_RATIO,
   };
 }
