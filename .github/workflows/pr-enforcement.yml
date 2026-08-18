@@ -181,7 +181,7 @@ jobs:
 
       - name: Body-class contract
         if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
-        run: node scripts/check-body-classes.js
+        run: node public/boutique/scripts/check-body-classes.js
 
       - name: Boutique architecture
         if: needs.changes.outputs.boutique_css == 'true' || needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
