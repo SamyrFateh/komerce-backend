@@ -20,6 +20,7 @@
 'use strict';
 
 const { markCustomsCleared } = require('./parcel-mutation-service');
+const { recomputeCustomsCosts } = require('./order-mutation-service');
 
 /**
  * customs-shipment-service.js
@@ -140,31 +141,7 @@ async function propagateCostDouane(client, parcelIds) {
   if (!ordersToUpdate.length) return;
   const orderIds = ordersToUpdate.map(r => r.order_id);
 
-  await client.query(
-    `UPDATE orders o
-        SET cost_douane_kmf = COALESCE((
-              SELECT SUM(csp.customs_share_kmf)
-                FROM customs_shipment_parcels csp
-                JOIN parcels p ON p.id = csp.parcel_id
-                JOIN customs_shipments cs ON cs.id = csp.shipment_id
-               WHERE p.order_id = o.id
-                 AND cs.is_active = TRUE
-            ), 0)
-      WHERE o.id = ANY($1::uuid[])`,
-    [orderIds]
-  );
-
-  await client.query(
-    `UPDATE orders
-        SET margin_real_pct = CASE
-              WHEN total_kmf > 0 AND (cost_transport_kmf > 0 OR cost_douane_kmf > 0)
-                THEN ROUND(((total_kmf - COALESCE(cost_transport_kmf,0) - COALESCE(cost_douane_kmf,0))::numeric
-                            / total_kmf * 100)::numeric, 2)
-              ELSE margin_real_pct
-            END
-      WHERE id = ANY($1::uuid[])`,
-    [orderIds]
-  );
+  await recomputeCustomsCosts(client, { orderIds });
 }
 
 // ── Lecture ───────────────────────────────────────────────────────────────────

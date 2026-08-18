@@ -34,6 +34,7 @@ const db = require('../db');
 const {
   assignSingleOrderItemToParcel,
 } = require('./parcel-item-mutation-service');
+const { setInventoryCompletion } = require('./order-mutation-service');
 
 const BUFFER_DEFAULT_HOURS = 12;
 
@@ -186,10 +187,12 @@ async function updateOrderCompletion(orderId) {
   if (!counts) return;
 
   const ratio = counts.total > 0 ? counts.received / counts.total : 0;
-  await db.query(`
-    UPDATE orders SET items_received = $2, items_total = $3, completion_ratio = $4, updated_at = NOW()
-    WHERE id = $1
-  `, [orderId, counts.received, counts.total, ratio]);
+  await setInventoryCompletion(db, {
+    orderId,
+    itemsReceived: counts.received,
+    itemsTotal: counts.total,
+    completionRatio: ratio,
+  });
 
   return { total: counts.total, received: counts.received, assigned: counts.assigned, ratio };
 }

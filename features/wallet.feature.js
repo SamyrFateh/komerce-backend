@@ -82,7 +82,7 @@ module.exports = {
   // routes/wallet.js).
   db: {
     tables: [
-      'orders: RW',      // wallet_applied_kmf uniquement
+      'orders: R',  // W-via orders/order-mutation-service ? LOT11
       'users: R',
       'wallet_consumptions: RW',
       'wallet_credit_lots: RW',
@@ -110,6 +110,7 @@ module.exports = {
       'POST /api/wallet/admin/reverse-lot',
     ],
     consumes: [
+      'orders (persistence via order-mutation-service ? LOT11)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/wallet.js -> middleware/auth.js)",

@@ -39,6 +39,10 @@
 
 'use strict';
 
+const {
+  backfillRoutingFields,
+} = require('./order-mutation-service');
+
 const log = require('../utils/logger').child({ module: 'routing' });
 
 // ── Destinations supportées ──────────────────────────────────────────────────
@@ -220,23 +224,7 @@ async function backfillRoutingData(db) {
 
   // ── Backfill orders existantes (si relais a un code mais la commande non) ──
   try {
-    const { rowCount } = await db.query(`
-      UPDATE orders o SET
-        destination_island = r.island_code,
-        routing_mode = CASE
-          WHEN r.island_code = 'ANJOUAN' THEN 'DIRECT'
-          WHEN r.island_code IN ('MORONI', 'MOHELI') THEN 'INTER_ISLAND'
-          WHEN r.island_code = 'MAYOTTE' THEN 'SPECIAL_ROUTE'
-        END,
-        transit_hub = CASE
-          WHEN r.island_code = 'ANJOUAN' THEN NULL
-          ELSE 'ANJOUAN'
-        END
-      FROM relais r
-      WHERE o.relais_id = r.id
-        AND o.destination_island IS NULL
-        AND r.island_code IS NOT NULL
-    `);
+    const { rowCount } = await backfillRoutingFields(db);
     if (rowCount > 0) {
       log.info(`[Routing] Backfill: ${rowCount} commandes existantes enrichies`);
     }

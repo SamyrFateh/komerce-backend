@@ -44,6 +44,12 @@ const refundReceiptService = require('./documents/refund-receipt');
 
 const { confirmPaymentCycle }    = require('./order-payment-confirmation');
 const { markRefunded }           = require('./payment-service');
+const {
+  setPaypalOrderId,
+  setPaypalCaptureMetadata,
+  setPaypalCaptureId,
+  appendOrderNote,
+} = require('./order-mutation-service');
 const { recordExternalRefund }   = require('./refund-service');
 const { appendOrderHistoryNote, transitionOrderStatus } = require('./order-status-machine');
 // O7.2 (Cycle B) : importait auparavant routes/pickup-secret.js (une route,
@@ -83,10 +89,10 @@ async function createPaypalOrder(order, paypal, db) {
     },
   });
 
-  await db.query(
-    'UPDATE orders SET paypal_order_id = $1 WHERE id = $2',
-    [ppOrder.id, order.id]
-  );
+  await setPaypalOrderId(db, {
+    orderId: order.id,
+    paypalOrderId: ppOrder.id,
+  });
 
   log.info({ order_id: order.id, paypal_order_id: ppOrder.id, amount_eur: amountEur },
     '[PAYPAL] order créée');
@@ -167,15 +173,14 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
 
     // Noop : race condition avec webhook
     if (cycleResult.noop) {
-      await client.query(
-        `UPDATE orders SET
-           paypal_capture_id    = COALESCE(paypal_capture_id, $1),
-           paypal_payer_email   = COALESCE(paypal_payer_email, $2),
-           paypal_payer_id      = COALESCE(paypal_payer_id, $3),
-           paypal_pay_in_4_used = $4
-         WHERE id = $5`,
-        [info.paypal_capture_id, info.payer_email, info.payer_id, info.pay_in_4, order.id]
-      );
+      await setPaypalCaptureMetadata(client, {
+        orderId: order.id,
+        captureId: info.paypal_capture_id,
+        payerEmail: info.payer_email,
+        payerId: info.payer_id,
+        payIn4Used: info.pay_in_4,
+        preserveExisting: true,
+      });
       await client.query('COMMIT');
       return { already_paid: true, order_id: order.id, order_reference: order.reference };
     }
@@ -204,9 +209,10 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
       const items = cycleResult.insufficientItems;
       const note  = '\n[INCIDENT paid_but_stock_blocked] ' +
         items.map(i => `${i.product_name}: dispo=${i.available}, besoin=${i.needed}`).join('; ');
-      await client.query(
-        `UPDATE orders SET notes = COALESCE(notes, '') || $1 WHERE id = $2`, [note, order.id]
-      );
+      await appendOrderNote(client, {
+        orderId: order.id,
+        note,
+      });
       // SAVEPOINT dédié (même doctrine que P0-A) : la persistance de l'alerte
       // ne doit jamais empoisonner le client transactionnel dont dépendent
       // les queries suivantes (UPDATE orders infos PayPal, pickup secret, COMMIT).
@@ -229,16 +235,14 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
     }
 
     // Persister infos PayPal
-    await client.query(
-      `UPDATE orders SET
-         paypal_capture_id    = $1,
-         paypal_payer_email   = $2,
-         paypal_payer_id      = $3,
-         paypal_pay_in_4_used = $4,
-         payment_mode         = COALESCE(payment_mode, 'paypal_eur'::payment_mode)
-       WHERE id = $5`,
-      [info.paypal_capture_id, info.payer_email, info.payer_id, info.pay_in_4, order.id]
-    );
+    await setPaypalCaptureMetadata(client, {
+      orderId: order.id,
+      captureId: info.paypal_capture_id,
+      payerEmail: info.payer_email,
+      payerId: info.payer_id,
+      payIn4Used: info.pay_in_4,
+      ensurePaymentMode: true,
+    });
 
     // Code secret retrait
     const { rows: [orderRow] } = await client.query(
@@ -452,13 +456,11 @@ async function _handleCaptureCompleted(event, db, paypal) {
       return;
     }
 
-    await client.query(
-      `UPDATE orders SET
-         paypal_capture_id = COALESCE(paypal_capture_id, $1),
-         payment_mode      = COALESCE(payment_mode, 'paypal_eur'::payment_mode)
-       WHERE id = $2`,
-      [info.paypal_capture_id, order.id]
-    );
+    await setPaypalCaptureId(client, {
+      orderId: order.id,
+      captureId: info.paypal_capture_id,
+      ensurePaymentMode: true,
+    });
 
     // Code secret retrait — parity avec capturePaypalOrder (webhook = seul chemin si capture HTTP échouée)
     let webhookPickupCode = null;

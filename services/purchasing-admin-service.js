@@ -32,6 +32,7 @@
  */
 
 const db  = require('../db');
+const { setSupplierSnapshot } = require('./order-mutation-service');
 const log = require('../utils/logger').child({ module: 'purchasing-admin-service' });
 
 // ─── Fournisseurs ──────────────────────────────────────────────────────────────
@@ -154,10 +155,11 @@ async function confirmPurchaseOrder(poId, orderId, data = {}) {
   // Dénormalisation : mettre à jour le nom fournisseur sur la commande
   const { rows: [sup] } = await db.query('SELECT name FROM suppliers WHERE id = $1', [po.supplier_id]);
   if (sup) {
-    await db.query(
-      'UPDATE orders SET supplier_name = $1, supplier_invoice_url = COALESCE($2, supplier_invoice_url), updated_at = NOW() WHERE id = $3',
-      [sup.name, tracking_url || null, orderId]
-    );
+    await setSupplierSnapshot(db, {
+      orderId,
+      supplierName: sup.name,
+      supplierInvoiceUrl: tracking_url || null,
+    });
   }
 
   return { success: true, purchase_order: po };

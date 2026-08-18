@@ -37,6 +37,7 @@
 
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
 const { ensureSecretGenerated, cacheCodeForReveal } = require('./pickup-secret-service');
+const { markCashPaidAt } = require('./order-mutation-service');
 const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'payment-cash-confirm' });
 
@@ -146,9 +147,7 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
       dbClient: client,
     });
 
-    await client.query(
-      'UPDATE orders SET cash_paid_at = COALESCE(cash_paid_at, NOW()) WHERE id = $1', [order.id]
-    );
+    await markCashPaidAt(client, order.id);
     await client.query('COMMIT');
 
     // Après commit (comme Stripe/PayPal/wallet) : cache pour révélation one-shot.

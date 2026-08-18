@@ -101,7 +101,7 @@ module.exports = {
       // table. Déclaration fautive, recopiée de l'en-tête JSDoc obsolète de
       // routes/admin-customs-shipments.js (corrigé en même temps).
       'order_items: R',
-      'orders: RW',
+      'orders: R',  // W-via orders/order-mutation-service ? LOT11
       'parcel_items: R',
       'parcels: R',  // W-via logistics/parcel-mutation-service - LOT8
       'products: R',
@@ -136,7 +136,8 @@ module.exports = {
       'GET /api/admin/customs-shipments/rates/effective',
       'GET /api/admin/customs-shipments/status/pending',
     ],
-    consumes: ['logistics (colis a classer)',
+    consumes: [
+      'orders (persistence via order-mutation-service ? LOT11)','logistics (colis a classer)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'documents (facture douane generee)',
       'auth',

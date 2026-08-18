@@ -41,6 +41,10 @@
 
 'use strict';
 
+const {
+  setComputedStatus,
+} = require('./order-mutation-service');
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONFIGURATION PAR DÉFAUT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -522,10 +526,10 @@ async function bootstrapOrderParcels(orderId, pool, config = {}) {
     [orderId]
   );
   const newStatus = computeOrderStatus(allParcels);
-  await pool.query(
-    'UPDATE orders SET computed_status = $1, updated_at = NOW() WHERE id = $2',
-    [newStatus, orderId]
-  );
+  await setComputedStatus(pool, {
+    orderId,
+    computedStatus: newStatus,
+  });
 
   return {
     createdParcels: persistedParcels,
