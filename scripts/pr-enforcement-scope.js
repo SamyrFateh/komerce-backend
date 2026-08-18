@@ -9,6 +9,7 @@
  * Lot 2B : Boutique runtime source + unit tests, sans css/dist ni E2E.
  * Lot 3  : governance / feature-first + workflows GitHub Actions actifs.
  * CI FAST-2 : Golden CDR intégré au runner Backend existant quand pertinent.
+ * CI FAST-3 : package.json scripts-only Governance ne réveille pas Backend.
  *
  * Tous les statuts Git du diff sont pris en compte. Une suppression doit
  * réveiller le même domaine qu'une création/modification du même chemin.
@@ -21,6 +22,17 @@ const fs = require('fs');
 const cp = require('child_process');
 
 const args = process.argv.slice(2);
+
+const GOVERNANCE_ONLY_PACKAGE_SCRIPTS = new Set([
+  'business-graph:gen',
+  'business-graph:check',
+  'business-graph:ratchet-check',
+  'business-graph:disposition-check',
+  'gate:findings:gen',
+  'feature:360:gen',
+  'feature:360:refresh-global',
+  'feature:360:check',
+]);
 
 function argValue(flag) {
   const i = args.indexOf(flag);
@@ -166,6 +178,75 @@ function classify(files) {
     boutiqueUnit,
     boutiquePackage,
     governance: governanceFiles.length > 0,
+    packageJsonGovernanceOnly: false,
+  };
+}
+
+function canonicalJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const key of Object.keys(value).sort()) out[key] = canonicalJson(value[key]);
+    return out;
+  }
+  return value;
+}
+
+function jsonEqual(a, b) {
+  return JSON.stringify(canonicalJson(a)) === JSON.stringify(canonicalJson(b));
+}
+
+function governanceOnlyPackageJsonObjects(basePkg, headPkg) {
+  if (!basePkg || !headPkg || typeof basePkg !== 'object' || typeof headPkg !== 'object') return false;
+
+  const baseRest = { ...basePkg };
+  const headRest = { ...headPkg };
+  const baseScripts = baseRest.scripts || {};
+  const headScripts = headRest.scripts || {};
+  delete baseRest.scripts;
+  delete headRest.scripts;
+
+  // Toute différence hors scripts (dependencies, engines, overrides, main,
+  // metadata runtime...) reste Backend par défaut.
+  if (!jsonEqual(baseRest, headRest)) return false;
+
+  const keys = [...new Set([...Object.keys(baseScripts), ...Object.keys(headScripts)])].sort();
+  const changed = keys.filter(key => baseScripts[key] !== headScripts[key]);
+  if (changed.length === 0) return false;
+
+  // Allowlist volontairement petite. Les lifecycle npm (prepare/preinstall/...),
+  // tests, build, start et scripts métier ne peuvent jamais être exemptés.
+  return changed.every(key => GOVERNANCE_ONLY_PACKAGE_SCRIPTS.has(key));
+}
+
+function readJsonAt(ref, file) {
+  const r = cp.spawnSync('git', ['show', `${ref}:${file}`], { encoding: 'utf8' });
+  if (r.status !== 0) return null;
+  try { return JSON.parse(r.stdout); }
+  catch (_) { return null; }
+}
+
+function governanceOnlyPackageJsonChange(base, head) {
+  return governanceOnlyPackageJsonObjects(
+    readJsonAt(base, 'package.json'),
+    readJsonAt(head, 'package.json')
+  );
+}
+
+function applyPackageJsonSemanticScope(model, files, packageJsonGovernanceOnly) {
+  const changedFiles = (files || []).map(norm);
+  if (!packageJsonGovernanceOnly
+    || !changedFiles.includes('package.json')
+    || changedFiles.includes('package-lock.json')) {
+    return model;
+  }
+
+  const backendFiles = model.backendFiles.filter(file => file !== 'package.json');
+  return {
+    ...model,
+    backendFiles,
+    backend: backendFiles.length > 0,
+    packageJsonGovernanceOnly: true,
   };
 }
 
@@ -180,6 +261,15 @@ function diffFiles(base, head) {
     throw new Error(`git diff impossible: ${(r.stderr || r.stdout || '').trim()}`);
   }
   return r.stdout.split(/\r?\n/).map(norm).filter(Boolean);
+}
+
+function classifyDiff(base, head) {
+  const files = diffFiles(base, head);
+  const model = classify(files);
+  const packageJsonGovernanceOnly = files.includes('package.json')
+    && !files.includes('package-lock.json')
+    && governanceOnlyPackageJsonChange(base, head);
+  return applyPackageJsonSemanticScope(model, files, packageJsonGovernanceOnly);
 }
 
 function appendGithubOutput(path, model) {
@@ -202,6 +292,7 @@ function appendGithubOutput(path, model) {
     `boutique_package=${model.boutiquePackage ? 'true' : 'false'}`,
     `governance=${model.governance ? 'true' : 'false'}`,
     `governance_files=${model.governanceFiles.join(',')}`,
+    `package_json_governance_only=${model.packageJsonGovernanceOnly ? 'true' : 'false'}`,
     `changed_count=${model.changedFiles.length}`,
   ];
   fs.appendFileSync(path, lines.join('\n') + '\n', 'utf8');
@@ -209,10 +300,9 @@ function appendGithubOutput(path, model) {
 
 function main() {
   const explicit = argValue('--files');
-  const files = explicit
-    ? explicit.split(',').map(norm).filter(Boolean)
-    : diffFiles(argValue('--base'), argValue('--head'));
-  const model = classify(files);
+  const model = explicit
+    ? classify(explicit.split(',').map(norm).filter(Boolean))
+    : classifyDiff(argValue('--base'), argValue('--head'));
   appendGithubOutput(argValue('--github-output'), model);
   process.stdout.write(JSON.stringify(model, null, 2) + '\n');
 }
@@ -227,6 +317,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  GOVERNANCE_ONLY_PACKAGE_SCRIPTS,
   norm,
   isBackendFile,
   isMigrationFile,
@@ -242,5 +333,9 @@ module.exports = {
   isBusinessGraphRuntimeSource,
   isGovernanceFile,
   classify,
+  governanceOnlyPackageJsonObjects,
+  governanceOnlyPackageJsonChange,
+  applyPackageJsonSemanticScope,
   diffFiles,
+  classifyDiff,
 };
