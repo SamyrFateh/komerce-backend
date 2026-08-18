@@ -115,6 +115,16 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
+      # schema-freshness doit retrouver le dernier commit ayant réellement
+      # touché le dump. On récupère donc l'historique de la seule branche de
+      # base, sans blobs, au lieu de réactiver fetch-depth:0 sur tout le repo.
+      - name: Fetch base branch history for schema baseline
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --filter=blob:none --unshallow origin "$BASE_REF"
+          fi
       # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
       - name: Migration immutability
         env:
