@@ -1596,7 +1596,7 @@ Meta Graph monté : oui.
 | dashboard | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | decision-signals | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| dashboard | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | infrastructure | static-code | 46 | **DECLARED_AND_OBSERVED** |
 | dashboard | logistics | static-code | 11 | **DECLARED_AND_OBSERVED** |

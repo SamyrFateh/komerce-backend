@@ -18719,20 +18719,12 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/dashboard-ops-queries.js",
-                "targetFile": "services/economic-engine-queries.js"
-              },
-              {
                 "sourceFileId": "routes/dashboard.js",
                 "targetFile": "routes/dashboard-finance.js"
               },
               {
                 "sourceFileId": "tests/unit/admin-costing-full.test.js",
                 "targetFile": "routes/admin-costing.js"
-              },
-              {
-                "sourceFileId": "tests/unit/dashboard-ops-queries.test.js",
-                "targetFile": "services/economic-engine-queries.js"
               }
             ]
           }
