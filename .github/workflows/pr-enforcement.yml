@@ -21,6 +21,8 @@ jobs:
     outputs:
       backend: ${{ steps.scope.outputs.backend }}
       backend_files: ${{ steps.scope.outputs.backend_files }}
+      golden: ${{ steps.scope.outputs.golden }}
+      golden_files: ${{ steps.scope.outputs.golden_files }}
       migrations: ${{ steps.scope.outputs.migrations }}
       migration_files: ${{ steps.scope.outputs.migration_files }}
       schema_dump: ${{ steps.scope.outputs.schema_dump }}
@@ -49,7 +51,9 @@ jobs:
   backend:
     name: Backend gates
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    # CI FAST-2 : le Golden partage ce runner avec Backend. Un changement du
+    # harnais Golden seul ouvre ce job sans exécuter les gates backend inutiles.
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.golden == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -61,16 +65,33 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+
       - name: Quality gate
+        if: needs.changes.outputs.backend == 'true'
         run: node scripts/code-quality-gate.js --strict
       - name: Feature guard
+        if: needs.changes.outputs.backend == 'true'
         run: node scripts/feature-guard.js --strict
       - name: Contract consumer check
+        if: needs.changes.outputs.backend == 'true'
         run: node scripts/contract-check.js
       - name: Related unit tests
+        if: needs.changes.outputs.backend == 'true'
         env:
           BACKEND_FILES: ${{ needs.changes.outputs.backend_files }}
         run: node scripts/run-staged-related-tests.js --files "$BACKEND_FILES"
+
+      - name: Golden CDR — présence du snapshot réel
+        if: needs.changes.outputs.golden == 'true'
+        run: |
+          if [ ! -f tools/golden-cdr/golden/cdr.golden.json ]; then
+            echo "::error::Golden absent (tools/golden-cdr/golden/cdr.golden.json). Lance 'capture' et commite-le."
+            exit 1
+          fi
+      - name: Golden CDR — parité
+        if: needs.changes.outputs.golden == 'true'
+        run: node tools/golden-cdr/golden-cdr.js verify
+
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
