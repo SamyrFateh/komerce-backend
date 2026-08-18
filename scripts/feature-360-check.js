@@ -17,6 +17,7 @@
  *     - health déterministe (recalcul == valeur stockée)
  *     - chaque debt item relié à un signal source réel (pas de dette inventée)
  *     - contrat P3b : au moins 18 sources de gates attribuables, aucune source échouée
+ *     - génération locale Feature 360 découplée du recalcul global gate:findings
  *
  * Usage : node scripts/feature-360-check.js
  * Intégration package.json : "feature:360:check": "node scripts/feature-360-check.js"
@@ -35,6 +36,21 @@ const MIN_GATE_SOURCES = 18;
 const C = { r: '\x1b[0m', red: '\x1b[31m', grn: '\x1b[32m', ylw: '\x1b[33m', bld: '\x1b[1m', dim: '\x1b[2m' };
 const errors = [];
 const fail = (code, detail) => errors.push({ code, detail });
+
+// Ratchet CI : une régénération de projection ne doit jamais relancer implicitement
+// l'agrégation globale des findings. Le refresh global reste une commande opt-in.
+const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+const feature360Gen = pkg.scripts?.['feature:360:gen'];
+const feature360RefreshGlobal = pkg.scripts?.['feature:360:refresh-global'];
+if (feature360Gen !== 'node scripts/gen-feature-360.js') {
+  fail('FEATURE_360_GEN_SCOPE_DRIFT', `feature:360:gen doit rester local à la projection, reçu: ${feature360Gen || '(absent)'}`);
+}
+if (feature360Gen && feature360Gen.includes('gate:findings:gen')) {
+  fail('FEATURE_360_GEN_GLOBAL_FINDINGS_COUPLING', 'feature:360:gen ne doit pas déclencher gate:findings:gen implicitement');
+}
+if (feature360RefreshGlobal !== 'npm run gate:findings:gen && npm run feature:360:gen') {
+  fail('FEATURE_360_GLOBAL_REFRESH_CONTRACT_DRIFT', `feature:360:refresh-global doit porter explicitement le recalcul global, reçu: ${feature360RefreshGlobal || '(absent)'}`);
+}
 
 const NOISE_FAMILIES = new Set(['TECHNICAL_PRIMITIVE', 'NON_RUNTIME_TEST', 'COMPOSITION_ROOT_WIRING', 'PROJECTION']);
 const VALID_DISPOSITIONS = new Set([
