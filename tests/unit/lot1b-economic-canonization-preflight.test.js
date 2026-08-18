@@ -34,38 +34,50 @@ describe('LOT 1B-0 — economic truth preflight', () => {
     expect(computeLegacySeaKmfPerM3({ fretEurPerM3: null, eurKmf: 495 })).toBeNull();
   });
 
-  test('CURRENT target is ready with canonical SEA_WM policy even if AIR cost is absent', () => {
+  test('SEA is migration-ready from canonical W/M + commercial rate + existing finance cost', () => {
     const rules = indexRules([
       { key: 'SEA_WM_KG_PER_M3', value: { value: 1000 } },
       { key: 'SEA_KMF_PER_KG_COMMERCIAL', value: { value: 65 } },
       { key: 'AIR_VOLUMETRIC_DIVISOR', value: { value: 6000 } },
       { key: 'AIR_KMF_PER_KG_TAXABLE', value: { value: 2500 } },
     ]);
-    expect(targetReadiness({ rules })).toEqual({
-      current_ready: true,
-      current_missing: [],
-      air_activation_ready: false,
-      air_activation_missing: ['AIR_KMF_PER_KG_COST'],
-      sea_wm_kg_per_m3: 1000,
-      sea_commercial_kmf_per_kg: 65,
-      air_cost_kmf_per_kg: null,
-      air_commercial_kmf_per_kg: 2500,
-      air_volumetric_divisor_cm3_per_kg: 6000,
-    });
+    const result = targetReadiness({ rules, legacySeaCostEurPerM3: 180 });
+    expect(result.sea_migration_ready).toBe(true);
+    expect(result.sea_runtime_ready).toBe(false);
+    expect(result.sea_runtime_missing).toEqual(['SEA_EUR_PER_M3_COST']);
+    expect(result.air_activation_ready).toBe(false);
+    expect(result.air_activation_missing).toEqual(['AIR_KMF_PER_KG_COST']);
+    expect(result.sea_wm_kg_per_m3).toBe(1000);
+    expect(result.sea_legacy_cost_eur_per_m3).toBe(180);
   });
 
-  test('CURRENT target blocks if canonical SEA W/M policy is absent', () => {
+  test('SEA runtime is ready only when the dedicated cost policy exists', () => {
     const rules = indexRules([
+      { key: 'SEA_WM_KG_PER_M3', value: { value: 1000 } },
+      { key: 'SEA_EUR_PER_M3_COST', value: { value: 180 } },
+      { key: 'SEA_KMF_PER_KG_COMMERCIAL', value: { value: 65 } },
+    ]);
+    const result = targetReadiness({ rules, legacySeaCostEurPerM3: 180 });
+    expect(result.sea_migration_ready).toBe(true);
+    expect(result.sea_runtime_ready).toBe(true);
+    expect(result.sea_runtime_missing).toEqual([]);
+    expect(result.sea_cost_eur_per_m3).toBe(180);
+  });
+
+  test('SEA migration blocks if both dedicated and legacy cost authority are absent', () => {
+    const rules = indexRules([
+      { key: 'SEA_WM_KG_PER_M3', value: { value: 1000 } },
       { key: 'SEA_KMF_PER_KG_COMMERCIAL', value: { value: 65 } },
     ]);
     const result = targetReadiness({ rules });
-    expect(result.current_ready).toBe(false);
-    expect(result.current_missing).toContain('SEA_WM_KG_PER_M3');
+    expect(result.sea_migration_ready).toBe(false);
+    expect(result.sea_migration_missing).toContain('SEA_EUR_PER_M3_COST|finance_config.fret_eur_per_m3');
   });
 
   test('AIR activation is ready only with distinct cost, price and divisor', () => {
     const rules = indexRules([
       { key: 'SEA_WM_KG_PER_M3', value: { value: 1000 } },
+      { key: 'SEA_EUR_PER_M3_COST', value: { value: 180 } },
       { key: 'SEA_KMF_PER_KG_COMMERCIAL', value: { value: 65 } },
       { key: 'AIR_KMF_PER_KG_COST', value: { value: 777 } },
       { key: 'AIR_KMF_PER_KG_TAXABLE', value: { value: 2500 } },
