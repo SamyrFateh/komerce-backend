@@ -44,7 +44,13 @@ function presentNumber(value) {
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
-function resolveRelayCommissionCurrent({ componentValue, legacyStandardValue } = {}) {
+function resolveRelayCommissionCurrent(input = {}) {
+  // Accepte la forme métier camelCase et la forme DB snake_case. Le mapping est
+  // explicite ici pour éviter qu'un alias de colonne SQL puisse contourner la
+  // même règle de priorité.
+  const componentValue = input.componentValue ?? input.component_value;
+  const legacyStandardValue = input.legacyStandardValue ?? input.legacy_standard_value;
+
   const component = presentNumber(componentValue);
   if (component !== null) {
     return {
