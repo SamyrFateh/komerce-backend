@@ -1279,12 +1279,12 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* Mode remplit naturellement davantage sa cellule atlas que les sprites.
    * On réduit uniquement son poids optique mobile sans changer le rail ni
    * la géométrie du slot. */
-  .k-shelf-rail .k-cat-cutout[data-cat="mode"] .k-shelf-atlas-cell {
+  .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"] .k-shelf-atlas-cell {
     transform: translateY(1px) scale(1.14);
   }
 
-  .k-shelf-rail .k-cat-cutout[data-cat="mode"]:hover .k-shelf-atlas-cell,
-  .k-shelf-rail .k-cat-cutout[data-cat="mode"].active .k-shelf-atlas-cell {
+  .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"]:hover .k-shelf-atlas-cell,
+  .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"].active .k-shelf-atlas-cell {
     transform: translateY(0) scale(1.18);
   }
 

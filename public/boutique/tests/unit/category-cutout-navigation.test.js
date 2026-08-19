@@ -36,8 +36,8 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 68px[^}]*height:\s*58px/s);
     expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*56px[\s\S]*height:\s*42px/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*scale\(1\.28\)/s);
-    expect(mobileBlock).toMatch(/data-cat=\"mode\"[^}]*\.k-shelf-atlas-cell\s*\{[^}]*scale\(1\.14\)/s);
-    expect(mobileBlock).toMatch(/data-cat=\"mode\"\]\.active \.k-shelf-atlas-cell\s*\{[^}]*scale\(1\.18\)/s);
+    expect(mobileBlock).toMatch(/data-cat=\"Mode & Beauté\"[^}]*\.k-shelf-atlas-cell\s*\{[^}]*scale\(1\.14\)/s);
+    expect(mobileBlock).toMatch(/data-cat=\"Mode & Beauté\"\]\.active \.k-shelf-atlas-cell\s*\{[^}]*scale\(1\.18\)/s);
     expect(mobileBlock).toMatch(/padding:\s*2px 8px 3px/);
     expect(mobileBlock).toMatch(/saturate\(1\.08\)/);
   });
