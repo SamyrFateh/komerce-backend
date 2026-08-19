@@ -1,0 +1,20 @@
+{
+  "found": true,
+  "run": {
+    "id": 32258723132,
+    "status": "completed",
+    "conclusion": "failure",
+    "html_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32258723132",
+    "created_at": "2026-08-19T13:32:57Z",
+    "updated_at": "2026-08-19T13:33:22Z"
+  },
+  "jobs": [
+    {
+      "id": 96086528517,
+      "name": "patch-and-pr",
+      "status": "completed",
+      "conclusion": "failure"
+    }
+  ],
+  "prs": []
+}
