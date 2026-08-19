@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
- * @version       2026-08-v10
+ * @version       2026-08-v11
  *
  * SHOWCASE V2 — fixtures fournisseur déterministes.
  *
@@ -41,7 +41,7 @@ const FIXTURE_TYPES = Object.freeze({
   'Mode & Beauté/Enfant': ['Kids cotton t-shirt', 'Kids school backpack', 'Kids casual jacket', 'Kids sneakers', 'Kids school uniform set'],
   'Mode & Beauté/Beauté': ['Hydrating face cream', 'Matte lipstick', 'Eau de parfum spray', 'Volumizing mascara', 'Gentle cleansing soap'],
   'Maison/Confort': ['Electric desk fan', 'Portable space heater', 'Steam clothes iron', 'Compact vacuum cleaner', 'Bed pillow'],
-  'Maison/Cuisine': ['Electric kettle', 'Stainless steel frying pan', 'Kitchen knife set', 'Countertop blender', 'Ceramic bowl set'],
+  'Maison/Cuisine': ['Electric kettle', 'Stainless steel frying pan', 'Stainless steel cutlery set', 'Countertop blender', 'Ceramic bowl set'],
   'Maison/Déco': ['Ceramic flower vase', 'Table lamp', 'Decorative cushion', 'Wall clock', 'Scented candle'],
   'Maison/Enfants': ['School backpack', 'Pencil case', 'Spiral notebook', 'Kids desk chair', 'Stationery set'],
   'Tech/Phones': ['Android smartphone', 'Dual SIM smartphone', '5G smartphone', 'Mobile phone handset', 'Rugged smartphone'],
