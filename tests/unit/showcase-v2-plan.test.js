@@ -36,10 +36,10 @@ const PRODUCT = {
   description: 'Description fournisseur de test suffisamment riche.',
   price_kmf: 10000,
   stock: 9,
-  image_url: 'https://res.cloudinary.com/fj7utq0g/image/upload/showcase-v2/hero.jpg',
+  image_url: 'https://res.cloudinary.com/fj7utq0g/image/upload/komerce/staging/showcase-v2/hero.jpg',
   images: [
-    'https://res.cloudinary.com/fj7utq0g/image/upload/showcase-v2/hero.jpg',
-    'https://res.cloudinary.com/fj7utq0g/image/upload/showcase-v2/scene.jpg',
+    'https://res.cloudinary.com/fj7utq0g/image/upload/komerce/staging/showcase-v2/hero.jpg',
+    'https://res.cloudinary.com/fj7utq0g/image/upload/komerce/staging/showcase-v2/scene.jpg',
   ],
   source: 'commons:123',
   source_url: 'https://commons.wikimedia.org/?curid=123',
