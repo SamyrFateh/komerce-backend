@@ -256,12 +256,12 @@
    * On réduit uniquement son poids optique mobile sans changer le rail ni
    * la géométrie du slot. */
   .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"] .k-shelf-atlas-cell {
-    transform: translateY(1px) scale(1.14);
+    transform: translateY(2px) scale(0.92);
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"]:hover .k-shelf-atlas-cell,
   .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"].active .k-shelf-atlas-cell {
-    transform: translateY(0) scale(1.18);
+    transform: translateY(1px) scale(0.96);
   }
 
   .k-cat-cutout .k-chip-label,
