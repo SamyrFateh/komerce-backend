@@ -84,6 +84,21 @@ describe('showcase-v2 deterministic supplier fixtures', () => {
     expect(product70.source_description).toContain('does not indicate size, age, quantity or technical specification');
   });
 
+  test('régression run 60 : les identités produit vagues sont remplacées par des objets marchands concrets', () => {
+    const products = buildCatalogue();
+    const product419 = products.find((product) => product.product_ref === 'SHOWCASE-V2-0419');
+    const product420 = products.find((product) => product.product_ref === 'SHOWCASE-V2-0420');
+
+    expect(product419).toBeDefined();
+    expect(product419.source_title).toBe('Decorative wooden photo frame — Compact');
+    expect(product420).toBeDefined();
+    expect(product420.source_title).toBe('Fabric gift bag — Compact');
+
+    for (const product of products) {
+      expect(product.source_title).not.toMatch(/\bdecorative gift item\b|\bpresent box\b|\bmobile phone handset\b|\bautomotive lamp\b|\bcar filter kit\b/i);
+    }
+  });
+
   test('le générateur est déterministe', () => {
     expect(buildCatalogue()).toEqual(buildCatalogue());
   });
