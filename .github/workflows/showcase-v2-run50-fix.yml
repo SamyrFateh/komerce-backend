@@ -1,0 +1,78 @@
+name: One-shot fix Showcase V2 run 50 semantic gate
+
+on:
+  push:
+    branches:
+      - ops/showcase-v2-run50
+    paths:
+      - '.github/workflows/showcase-v2-run50-fix.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  patch-and-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch semantic source gate and regression tests
+        run: |
+          set -euo pipefail
+          git config user.name "Komerce Showcase Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout -B fix/showcase-v2-run50-semantic
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('scripts/showcase-v2-source-build.js')
+          source = source_path.read_text(encoding='utf-8')
+          source = source.replace('@version       2026-08-v9', '@version       2026-08-v10', 1)
+
+          anchor = """const CULTURAL_MEDIA_MARKERS = Object.freeze([\n  'metropolitan museum of art', 'museum collection', 'museum object', 'museum exhibit',\n  'museum accession', 'art museum', 'art gallery', 'gallery collection', 'work of art',\n  'artwork', 'oil on canvas', 'tempera on', 'watercolor', 'watercolour', 'lithograph',\n  'etching', 'engraving', 'painting', 'drawing', 'museum',\n]);\n\n"""
+          insert = anchor + """const PRODUCT_IDENTITY_FALSE_POSITIVES = Object.freeze({\n  'Mode & Beauté/Femme': ['dress uniform'],\n  'Créations personnelles/Cérémonie': ['dress uniform'],\n});\n\n"""
+          if source.count(anchor) != 1:
+              raise SystemExit('anchor CULTURAL_MEDIA_MARKERS introuvable ou ambigu')
+          source = source.replace(anchor, insert, 1)
+
+          product_anchor = """  const editorial = EDITORIAL_MARKERS.find((marker) => catalogEligibility.keywordMatches(context, marker));\n"""
+          product_insert = """  const falsePositive = (PRODUCT_IDENTITY_FALSE_POSITIVES[key] || [])\n    .find((marker) => catalogEligibility.keywordMatches(sourceTitle, marker));\n  if (falsePositive) {\n    return { ok: false, reason: 'ambiguous-product-term', term: titleTerm, term_source: 'title', editorial: falsePositive };\n  }\n\n""" + product_anchor
+          if source.count(product_anchor) != 1:
+              raise SystemExit('anchor productIdentityFor introuvable ou ambigu')
+          source = source.replace(product_anchor, product_insert, 1)
+
+          export_anchor = """  CULTURAL_MEDIA_MARKERS,\n"""
+          if source.count(export_anchor) != 1:
+              raise SystemExit('anchor export introuvable ou ambigu')
+          source = source.replace(export_anchor, export_anchor + "  PRODUCT_IDENTITY_FALSE_POSITIVES,\n", 1)
+          source_path.write_text(source, encoding='utf-8')
+
+          test_path = Path('tests/unit/showcase-v2-source-build.test.js')
+          test = test_path.read_text(encoding='utf-8')
+          test_anchor = """  test('refuse une œuvre de musée même si son titre contient un terme produit', () => {\n"""
+          tests = """  test('régression run 50 : dress uniform ne peut pas devenir une robe Femme', () => {\n    const target = { category: 'Mode & Beauté', subcategory: 'Femme' };\n    const row = {\n      source_title: 'Hirohito in dress uniform (cropped)',\n      name: 'Hirohito in robe uniform (cropped)',\n      source_description: 'Emperor Showa in dress uniform.',\n      source_attribution: { artist: 'Unknown author' },\n    };\n    expect(productIdentityFor(row, target)).toMatchObject({\n      ok: false,\n      reason: 'ambiguous-product-term',\n      term: 'dress',\n      term_source: 'title',\n      editorial: 'dress uniform',\n    });\n  });\n\n  test('la désambiguïsation dress uniform reste ciblée et conserve les vrais uniformes Enfant', () => {\n    const target = { category: 'Mode & Beauté', subcategory: 'Enfant' };\n    const row = {\n      source_title: 'School uniform product',\n      name: 'Uniforme scolaire',\n      source_description: 'School uniform displayed alone on a neutral background.',\n    };\n    expect(productIdentityFor(row, target)).toMatchObject({ ok: true, term: 'uniform', term_source: 'title' });\n  });\n\n""" + test_anchor
+          if test.count(test_anchor) != 1:
+              raise SystemExit('anchor test introuvable ou ambigu')
+          test = test.replace(test_anchor, tests, 1)
+          test_path.write_text(test, encoding='utf-8')
+          PY
+
+          node --check scripts/showcase-v2-source-build.js
+          npx jest tests/unit/showcase-v2-source-build.test.js --runInBand
+          git add scripts/showcase-v2-source-build.js tests/unit/showcase-v2-source-build.test.js
+          git commit -m "fix(showcase): reject dress-uniform ambiguity before refinery"
+          git push --force-with-lease origin fix/showcase-v2-run50-semantic
+
+      - name: Open PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head fix/showcase-v2-run50-semantic \
+            --title "fix(showcase): reject dress-uniform ambiguity before refinery" \
+            --body "Run #50 proved 500/500 source contracts and ImageKit, then Luna rejected SHOWCASE-V2-0007 (Hirohito in dress uniform) at confidence 0.42. This change rejects the segment-specific ambiguity 'dress uniform' before ImageKit/Luna, preserves child uniform products, and locks both cases with unit tests. The Luna threshold is unchanged."
