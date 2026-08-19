@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
- * @version       2026-08-v11
+ * @version       2026-08-v12
  *
  * SHOWCASE V2 — fixtures fournisseur déterministes.
  *
@@ -104,10 +104,10 @@ function fixtureProductForSlot(slot) {
   if (!types?.length) throw new Error(`Aucune fixture produit définie pour ${key}`);
   const base = types[slot.localIndex % types.length];
   const series = FIXTURE_SERIES[Math.floor(slot.localIndex / types.length) % FIXTURE_SERIES.length];
-  const seriesNo = String(slot.localIndex + 1).padStart(2, '0');
-  const sourceTitle = `${base} — ${series} ${seriesNo}`;
+  const sourceTitle = `${base} — ${series}`;
   const description = [
     `Commercial supplier catalogue item: ${base}.`,
+    `Supplier commercial line: ${series}. This line name does not indicate size, age, quantity or technical specification.`,
     `Sellable physical product intended for e-commerce listing in ${slot.category} / ${slot.subcategory}.`,
     'The source record describes the product itself, with no person, artwork, museum object or editorial scene.',
   ].join(' ');
