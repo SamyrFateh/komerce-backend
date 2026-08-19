@@ -27,13 +27,16 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobile).toMatch(/\.k-cat-cutout \.k-chip-label,[\s\S]*font-size:\s*10\.5px/);
   });
 
-  it('porte les visuels de catégories et sous-catégories dans un registre unique', () => {
-    expect(visuals).toContain("'Mode & Beauté': 'cat-mode'");
-    expect(visuals).toContain("Femme: 'sub-mode-femme'");
-    expect(visuals).toContain("Phones: 'sub-tech-phone'");
-    expect(visuals).toContain("Filtres: 'sub-auto-filtres'");
-    expect(sprite).toContain('symbol id="cat-mode"');
-    expect(sprite).toContain('symbol id="sub-mode-femme"');
+  it('porte le pilote Mode image-first dans le registre visuel unique', () => {
+    expect(visuals).toContain("KOMERCE_MODE_PILOT_ATLAS = '/boutique/categories/mode-pilot-atlas.webp'");
+    expect(visuals).toContain("'Mode & Beauté': 'atlas:0:0'");
+    expect(visuals).toContain("Femme: 'atlas:1:0'");
+    expect(visuals).toContain("Homme: 'atlas:2:0'");
+    expect(visuals).toContain("Enfant: 'atlas:0:1'");
+    expect(visuals).toContain("Beauté: 'atlas:1:1'");
+    expect(visuals).toContain("__all: 'atlas:2:1'");
+    expect(visuals).toContain('renderAtlasCell');
+    expect(sprite).toContain('symbol id="cat-maison"');
     expect(sprite).toContain('symbol id="sub-auto-moto"');
   });
 
