@@ -146,22 +146,61 @@
   transform: translateX(-50%);
 }
 
+/*
+ * Mobile : retour à la géométrie historique efficace.
+ * Une seule ligne horizontale, compacte et scrollable ; les nouveaux objets
+ * détourés améliorent la lecture sans transformer la navigation en matrice.
+ */
 @media (max-width: 899px) {
   .k-shelf-rail {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    overflow: visible;
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 4px 8px 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
   }
 
-  html.k-mobile-premium-v1 .k-shelf-rail .k-cat-cutout {
-    width: auto;
-    min-width: 0;
-    min-height: 70px;
-    height: auto;
-    padding: 2px 3px 5px;
+  .k-shelf-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  html.k-mobile-premium-v1 .k-shelf-rail .k-cat-cutout,
+  .k-shelf-rail .k-cat-cutout {
+    flex: 0 0 68px;
+    width: 68px;
+    min-width: 68px;
+    min-height: 58px;
+    height: 58px;
+    gap: 1px;
+    padding: 1px 2px 4px;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
+  }
+
+  .k-cat-cutout .k-chip-photo,
+  .k-cat-cutout.active .k-chip-photo,
+  .k-cat-cutout[data-cat] .k-chip-photo,
+  .k-cat-cutout.active[data-cat] .k-chip-photo {
+    width: 46px;
+    height: 40px;
+  }
+
+  .k-cat-cutout .k-chip-label,
+  .k-cat-cutout.active .k-chip-label {
+    max-width: 66px;
+    padding-bottom: 3px;
+    font-size: 10px;
+    line-height: 1.1;
+  }
+
+  .k-cat-cutout.active .k-chip-label::after {
+    width: 20px;
   }
 }
