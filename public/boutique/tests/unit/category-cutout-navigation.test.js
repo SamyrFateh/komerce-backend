@@ -43,8 +43,8 @@ describe('Komerce Shelf category navigation contract', () => {
   });
 
   it('porte le showcase photo v1 dans le registre visuel unique', () => {
-    expect(visuals).toContain("KOMERCE_SHOWCASE_V1_MAIN = '/boutique/categories/komerce-showcase-v1-main.webp'");
-    expect(visuals).toContain("KOMERCE_SHOWCASE_V1_MODE = '/boutique/categories/komerce-showcase-v1-mode.webp'");
+    expect(visuals).toContain("KOMERCE_SHOWCASE_V1_MAIN = '/boutique/categories/komerce-showcase-v1-main.webp?v=2'");
+    expect(visuals).toContain("KOMERCE_SHOWCASE_V1_MODE = '/boutique/categories/komerce-showcase-v1-mode.webp?v=2'");
     expect(visuals).toContain("'Mode & Beauté': 'showcase-main:0:0'");
     expect(visuals).toContain("Maison: 'showcase-main:1:0'");
     expect(visuals).toContain("Tech: 'showcase-main:2:0'");
