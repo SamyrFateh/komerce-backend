@@ -1138,6 +1138,16 @@ html.k-mobile-premium-v1 .k-chip-label {
   pointer-events: none;
 }
 
+/* Le bundle desktop historique applique width/height:100% aux images de chip.
+ * Ce sélecteur appartient au mécanisme atlas et garantit que le crop 3 × 2
+ * reste canonique sur desktop comme sur mobile. */
+.k-shelf-object-slot .k-shelf-atlas-cell .k-shelf-atlas-image {
+  width: 300%;
+  height: 200%;
+  max-width: none;
+  object-fit: fill;
+}
+
 .k-shelf-atlas-cell[data-atlas-col="0"] .k-shelf-atlas-image { left: 0; }
 .k-shelf-atlas-cell[data-atlas-col="1"] .k-shelf-atlas-image { left: -100%; }
 .k-shelf-atlas-cell[data-atlas-col="2"] .k-shelf-atlas-image { left: -200%; }
