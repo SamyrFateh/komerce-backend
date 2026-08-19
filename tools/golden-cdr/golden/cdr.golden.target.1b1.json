@@ -1,12 +1,9 @@
 {
   "_based_on_current_behavior": "6277bd41ec366592",
-  "_kind": "golden-cdr",
+  "_kind": "golden-cdr-target",
   "_lot": "1B-1",
   "_lot1b_current_transport_enriched": true,
-  "_previous_current_behavior": "6277bd41ec366592",
-  "_promoted_from": "cdr.golden.target.1b1.json",
-  "_promoted_lot": "1B-1",
-  "captured_at": "2026-08-19T15:29:04.781Z",
+  "captured_at": "2026-08-18T12:13:00.076Z",
   "config_fingerprint": "490c923485992f33",
   "frozen_config": {
     "categories": {
@@ -1123,7 +1120,6 @@
   },
   "generated_at": "2026-08-19T15:29:04.781Z",
   "mode": "db",
-  "promoted_at": "2026-08-19T15:34:11.122Z",
   "snapshots": [
     {
       "allocation": {
