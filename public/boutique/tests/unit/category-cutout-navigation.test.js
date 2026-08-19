@@ -27,14 +27,16 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobile).toMatch(/\.k-cat-cutout \.k-chip-label,[\s\S]*font-size:\s*10\.5px/);
   });
 
-  it('restaure sur mobile une seule ligne horizontale compacte', () => {
+  it('garde sur mobile une seule ligne compacte tout en renforçant la présence des objets', () => {
     const mobileBlock = mobile.match(/@media \(max-width: 899px\) \{[\s\S]*\n\}/)?.[0] || '';
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*display:\s*flex/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*flex-wrap:\s*nowrap/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*overflow-x:\s*auto/s);
     expect(mobileBlock).not.toMatch(/grid-template-columns/);
-    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 68px/s);
-    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*46px[\s\S]*height:\s*40px/s);
+    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 72px/s);
+    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*54px[\s\S]*height:\s*44px/s);
+    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*scale\(1\.12\)/s);
+    expect(mobileBlock).toMatch(/saturate\(1\.08\)/);
   });
 
   it('porte le pilote Mode image-first dans le registre visuel unique', () => {
@@ -48,6 +50,17 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(visuals).toContain('renderAtlasCell');
     expect(sprite).toContain('symbol id="cat-maison"');
     expect(sprite).toContain('symbol id="sub-auto-moto"');
+  });
+
+  it('rend le raster Mode comme un crop img natif plutôt que comme une image embarquée dans un svg', () => {
+    expect(visuals).toContain('k-shelf-atlas-cell');
+    expect(visuals).toContain('k-shelf-atlas-image');
+    expect(visuals).toContain('data-atlas-col');
+    expect(visuals).toContain('data-atlas-row');
+    expect(visuals).not.toContain('<image href=');
+    expect(mobile).toMatch(/\.k-shelf-atlas-image\s*\{[^}]*width:\s*300%[^}]*height:\s*200%/s);
+    expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-col="2"] .k-shelf-atlas-image { left: -200%; }');
+    expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-row="1"] .k-shelf-atlas-image { top: -100%; }');
   });
 
   it('préserve les hooks historiques et ajoute le skin Shelf aux sous-catégories', () => {

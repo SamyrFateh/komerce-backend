@@ -96,6 +96,28 @@
   transition: transform .16s var(--ease), filter .16s var(--ease);
 }
 
+/* Atlas image-first : crop natif d'une cellule 3 × 2, sans raster dans un SVG. */
+.k-shelf-atlas-cell {
+  position: relative;
+  overflow: hidden;
+}
+
+.k-shelf-atlas-image {
+  position: absolute;
+  display: block;
+  width: 300%;
+  height: 200%;
+  max-width: none;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.k-shelf-atlas-cell[data-atlas-col="0"] .k-shelf-atlas-image { left: 0; }
+.k-shelf-atlas-cell[data-atlas-col="1"] .k-shelf-atlas-image { left: -100%; }
+.k-shelf-atlas-cell[data-atlas-col="2"] .k-shelf-atlas-image { left: -200%; }
+.k-shelf-atlas-cell[data-atlas-row="0"] .k-shelf-atlas-image { top: 0; }
+.k-shelf-atlas-cell[data-atlas-row="1"] .k-shelf-atlas-image { top: -100%; }
+
 .k-shelf-rail .k-cat-cutout:hover .k-shelf-object,
 .k-shelf-rail .k-cat-cutout.active .k-shelf-object {
   transform: translateY(-2px);
@@ -147,22 +169,23 @@
 }
 
 /*
- * Mobile : retour à la géométrie historique efficace.
- * Une seule ligne horizontale, compacte et scrollable ; les nouveaux objets
- * détourés améliorent la lecture sans transformer la navigation en matrice.
+ * Mobile : géométrie historique compacte + boost de présence des objets.
+ * Toujours une seule ligne horizontale ; on renforce l'image sans recréer
+ * de matrice, de capsule ni de surface concurrente avec le hero.
  */
 @media (max-width: 899px) {
   .k-shelf-rail {
     display: flex;
     align-items: flex-start;
     flex-wrap: nowrap;
-    gap: 4px;
-    padding: 4px 8px 6px;
+    gap: 8px;
+    padding: 6px 10px 8px;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
   }
 
   .k-shelf-rail::-webkit-scrollbar {
@@ -171,33 +194,48 @@
 
   html.k-mobile-premium-v1 .k-shelf-rail .k-cat-cutout,
   .k-shelf-rail .k-cat-cutout {
-    flex: 0 0 68px;
-    width: 68px;
-    min-width: 68px;
-    min-height: 58px;
-    height: 58px;
-    gap: 1px;
-    padding: 1px 2px 4px;
+    flex: 0 0 72px;
+    width: 72px;
+    min-width: 72px;
+    min-height: 64px;
+    height: 64px;
+    gap: 2px;
+    padding: 0 2px 4px;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
+    scroll-snap-align: start;
   }
 
   .k-cat-cutout .k-chip-photo,
   .k-cat-cutout.active .k-chip-photo,
   .k-cat-cutout[data-cat] .k-chip-photo,
   .k-cat-cutout.active[data-cat] .k-chip-photo {
-    width: 46px;
-    height: 40px;
+    width: 54px;
+    height: 44px;
+  }
+
+  .k-shelf-rail .k-cat-cutout .k-shelf-object {
+    transform: scale(1.12);
+    filter:
+      drop-shadow(0 5px 8px rgba(39, 58, 41, .18))
+      saturate(1.08)
+      contrast(1.04);
+  }
+
+  .k-shelf-rail .k-cat-cutout:hover .k-shelf-object,
+  .k-shelf-rail .k-cat-cutout.active .k-shelf-object {
+    transform: translateY(-1px) scale(1.16);
   }
 
   .k-cat-cutout .k-chip-label,
   .k-cat-cutout.active .k-chip-label {
-    max-width: 66px;
+    max-width: 68px;
+    margin-top: 1px;
     padding-bottom: 3px;
-    font-size: 10px;
-    line-height: 1.1;
+    font-size: 11px;
+    line-height: 1.08;
   }
 
   .k-cat-cutout.active .k-chip-label::after {

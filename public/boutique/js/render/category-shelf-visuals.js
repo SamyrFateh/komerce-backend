@@ -63,15 +63,18 @@ const SUBCATEGORY_VISUALS = {
   },
 };
 
+/**
+ * Rend une cellule du pilote Mode sans encapsuler le raster dans un <svg>.
+ * Le crop est fait par CSS sur une vraie balise <img>, plus robuste sur les
+ * navigateurs mobiles et compatible avec le même slot que les objets SVG.
+ */
 function renderAtlasCell(visual, extraClass = '') {
   const match = /^atlas:(\d):(\d)$/.exec(visual);
   if (!match) return '';
   const col = Number(match[1]);
   const row = Number(match[2]);
   const cls = extraClass ? ` ${extraClass}` : '';
-  const x = -(col * 256);
-  const y = -(row * 256);
-  return `<svg class="k-shelf-object${cls} k-shelf-object--image" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><image href="${KOMERCE_MODE_PILOT_ATLAS}" x="${x}" y="${y}" width="768" height="512" preserveAspectRatio="none"></image></svg>`;
+  return `<span class="k-shelf-object${cls} k-shelf-object--image k-shelf-atlas-cell" data-atlas-col="${col}" data-atlas-row="${row}" aria-hidden="true"><img class="k-shelf-atlas-image" src="${KOMERCE_MODE_PILOT_ATLAS}" alt="" loading="eager" decoding="async"></span>`;
 }
 
 export function getShelfCategoryVisual(categoryKey) {
