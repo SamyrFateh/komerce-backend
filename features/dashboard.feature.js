@@ -54,7 +54,6 @@ module.exports = {
     'docs/design/DASHBOARD_REDESIGN.md',
     'docs/design/TOUR-DE-CONTROLE-DASHBOARDS.md',
     'docs/design/analyse-dashboard-pilotage.md',
-    'docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md',
     'docs/prompts/PROMPT_DASHBOARD_ECONOMIQUE_BOITES_FLECHES.md',
   ],
 
@@ -263,8 +262,6 @@ module.exports = {
       'W/RW) écrivent réellement — ancien invariant "lecture seule" corrigé au Lot O1.5 (2026-07-12) car contredit par le code ; ' +
       'voir debt.knownGaps pour le plan de redistribution de ces mutations vers leurs features propriétaires',
     'les métriques passent par dashboard-cache.js (pas de requêtes directes dupliquées)',
-    'les primitives dashboard partagées restent de présentation : aucune vérité métier ni recompute économique dans FilterBar, Section ou UIState',
-    'FilterBar délègue intégralement son état à KmcFilters et n\'accepte que les clés déclarées dans KmcFilters.FILTER_KEYS',
     'admin-legacy ct-app-v7.js / ct-views-v7.js sont actifs en prod — ne pas supprimer sans migration',
     'auth-guard.js protège toutes les routes admin ; aucune route admin sans vérification de token',
   ],
@@ -335,8 +332,6 @@ module.exports = {
       'dashboards/admin/js/components/Charts.js',
       'dashboards/admin/js/components/KpiCard.js',
       'dashboards/admin/js/components/UI.js',
-      'dashboards/admin/js/components/FilterBar.js',
-      'dashboards/admin/js/components/Section.js',
 
       // ── CSS Lot 4 ─────────────────────────────────────────────────
       'dashboards/admin/css/ac-styles.css',
@@ -444,8 +439,6 @@ module.exports = {
       'tests/unit/dashboard-metrics.test.js',
       'tests/unit/dashboard-ops-queries.test.js',
       'tests/unit/relay-dashboard-queries.test.js',
-      'public/dashboards/tests/unit/dashboard-primitives.test.js',
-      'public/dashboards/tests/unit/UI.test.js',
     ],
   },
 
