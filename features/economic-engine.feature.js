@@ -44,6 +44,7 @@ module.exports = {
   files: {
     utils: [
       'utils/eco-bridge.js',
+      'utils/relay-commission.js',
     
       'utils/pricing-cache.js',],
     services: [
@@ -62,6 +63,7 @@ module.exports = {
       'services/cost-allocation/index.js',
       'services/transport-cost-allocation.js',
       'services/transport-pricing.js',
+      'services/transport-valuation.js',
       'services/pricing-guards.js',
       'services/pricing-rates.js',
       'services/pricing-output.js',
@@ -72,6 +74,7 @@ module.exports = {
       'services/pricing-strategy-service.js',
       'services/pricing-engine.js',
       'services/pricing-cdr.js',
+      'services/pricing-cdr-legacy.js',
     
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',],

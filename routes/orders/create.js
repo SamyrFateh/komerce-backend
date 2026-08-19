@@ -46,7 +46,7 @@ const walletService = require('../../services/wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('../../services/routing');
 const { notifyOrderCreated }             = require('../../services/notification-service');
 const productAdminService                = require('../../services/product-admin-service');
-const { quoteTransportPriceForOrder, TransportPricingError } = require('../../services/transport-pricing');
+const { quoteTransportForOrder, TransportPricingError } = require('../../services/transport-pricing');
 const log = require('../../utils/logger').child({ module: 'create' });
 
 // MODULE_TYPES — sous-types pour le module couture uniquement
@@ -175,21 +175,27 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     const productMap = Object.fromEntries(products.map(p => [p.id, p]));
 
     const [
-      maxQty, fretPerKg, aedFallback, customsPct, cashTimeout,
-      seaKmfPerKgCommercial, airKmfPerKgTaxable, airVolumetricDivisor,
+      maxQty, aedFallback, customsPct, cashTimeout,
+      seaWmKgPerM3, seaKmfPerKgCommercial, seaEurPerM3Cost, airKmfPerKgTaxable, airVolumetricDivisor,
     ] = await Promise.all([
       getRule('MAX_QUANTITY_PER_ITEM', 100),
-      getRule('FREIGHT_KMF_PER_KG', 65),
       getRule('AED_KMF_FALLBACK', 138),
       getRule('CUSTOMS_DEFAULT_PCT', 20),
       getRule('CASH_PAYMENT_TIMEOUT_HOURS', 36),
-      // §8 — tarifs commerciaux transport (distincts du coût interne fretPerKg)
+      getRule('SEA_WM_KG_PER_M3', null),
+      // LOT 1B-1 — coût et prix transport ont des policies distinctes.
+      // Aucune constante économique inventée : migration 124 doit fournir le coût SEA.
+
       getRule('SEA_KMF_PER_KG_COMMERCIAL', 65),
+      getRule('SEA_EUR_PER_M3_COST', null),
       getRule('AIR_KMF_PER_KG_TAXABLE', 2500),
       getRule('AIR_VOLUMETRIC_DIVISOR', 6000),
     ]);
     const transportRates = {
+      SEA_WM_KG_PER_M3: seaWmKgPerM3,
+      SEA_EUR_PER_M3_COST: seaEurPerM3Cost,
       SEA_KMF_PER_KG_COMMERCIAL: seaKmfPerKgCommercial,
+      EUR_KMF: eurKmfFinal,
       AIR_KMF_PER_KG_TAXABLE: airKmfPerKgTaxable,
       AIR_VOLUMETRIC_DIVISOR: airVolumetricDivisor,
     };
@@ -433,10 +439,9 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
 
       total_kmf += item._effective_unit_price_kmf * qty;
 
-      const fret_kmf = (product.weight_kg || 0.5) * qty * fretPerKg;
       const base_aed_kmf = (product.price_aed || 0) * aedFallback * qty;
       const customs_est = base_aed_kmf * (customsPct / 100) * (product.customs_risk_coeff || 1.0);
-      cost_estimated += base_aed_kmf + fret_kmf + customs_est;
+      cost_estimated += base_aed_kmf + customs_est;
     }
 
     if (hasSharedListItems && hasPersonalItems) {
@@ -465,8 +470,9 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     // donc ignorer le prix transport ici sous-évaluait artificiellement la
     // marge réelle en plus de ne jamais facturer le transport au client.
     let transport_price_kmf = 0;
+    let transport_cost_kmf = 0;
     try {
-      const transportQuote = quoteTransportPriceForOrder({
+      const transportQuote = quoteTransportForOrder({
         items: items.map(item => {
           const product = productMap[item.product_id];
           return {
@@ -480,6 +486,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
         rates: transportRates,
       });
       transport_price_kmf = transportQuote.transport_price_kmf;
+      transport_cost_kmf = transportQuote.transport_cost_kmf;
     } catch (e) {
       await client.query('ROLLBACK');
       if (e instanceof TransportPricingError) {
@@ -488,6 +495,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       throw e;
     }
     total_kmf += transport_price_kmf;
+    cost_estimated += transport_cost_kmf;
 
     const margin_est = total_kmf > 0
       ? ((total_kmf - cost_estimated) / total_kmf * 100).toFixed(2)

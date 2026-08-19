@@ -129,7 +129,10 @@ const PRODUCT = {
 
 function defaultMocks() {
   getRates.mockResolvedValue({ eur_kmf: 492 });
-  getRule.mockImplementation((key, fallback) => Promise.resolve(fallback));
+  getRule.mockImplementation((key, fallback) => Promise.resolve(({
+    SEA_WM_KG_PER_M3: 1000,
+    SEA_EUR_PER_M3_COST: 180,
+  })[key] ?? fallback));
   getLoyaltyDiscount.mockResolvedValue({ discountPct: 0, discountLabel: null });
   walletService.getBalanceInTx.mockResolvedValue(0);
   walletService.debit.mockResolvedValue(undefined);
