@@ -1,0 +1,169 @@
+name: tmp subcats cutout mobile scale
+
+on:
+  push:
+    branches:
+      - tmp/subcats-cutout-mobile-scale-build
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply level 2 cutout and mobile scale patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          desktop_path = Path('public/boutique/css/boutique-desktop.css')
+          mobile_path = Path('public/boutique/css/category-cutout-navigation.css')
+          test_path = Path('public/boutique/tests/unit/category-cutout-navigation.test.js')
+
+          desktop = desktop_path.read_text(encoding='utf-8')
+          marker = 'LOT NAV IMAGE-FIRST — niveau 2 sans capsules'
+          block = r'''
+
+/* ══════════════════════════════════════════════════════════════════
+   LOT NAV IMAGE-FIRST — niveau 2 sans capsules
+   Owner canonique : boutique-desktop.css (.k-subchip / #k-subcats-wrap).
+   Le modifier .k-subcutout garde le contrat comportemental historique mais
+   neutralise ici la géométrie legacy (pill, fond métier, ombre) à la source.
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  #k-subcats-wrap .k-subchip.k-subcutout,
+  #k-subcats-wrap .k-subchip.k-subcutout[data-subcat=""] {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 3px;
+    min-width: 62px;
+    min-height: 56px;
+    height: auto;
+    padding: 2px 5px 5px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+  }
+
+  #k-subcats-wrap .k-subchip.k-subcutout:hover,
+  #k-subcats-wrap .k-subchip.k-subcutout:active,
+  #k-subcats-wrap .k-subchip.k-subcutout.active {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text);
+    transform: none;
+  }
+
+  #k-subcats-wrap .k-subchip.k-subcutout .k-subcutout-icon {
+    width: 44px;
+    height: 39px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  #k-subcats-wrap .k-subchip.k-subcutout .k-shelf-object--subcategory {
+    width: 47px;
+    height: 43px;
+  }
+
+  #k-subcats-wrap .k-subchip.k-subcutout .k-subcutout-label {
+    color: currentColor;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.15;
+  }
+
+  #k-subcats-wrap .k-subchip.k-subcutout.active .k-subcutout-label {
+    font-weight: 800;
+  }
+}
+'''
+          if marker not in desktop:
+              desktop = desktop.rstrip() + block + '\n'
+          desktop_path.write_text(desktop, encoding='utf-8')
+
+          mobile = mobile_path.read_text(encoding='utf-8')
+          replacements = {
+              'flex: 0 0 64px;\n    width: 64px;\n    min-width: 64px;\n    min-height: 52px;\n    height: 52px;':
+              'flex: 0 0 68px;\n    width: 68px;\n    min-width: 68px;\n    min-height: 58px;\n    height: 58px;',
+              'width: 48px;\n    height: 36px;':
+              'width: 56px;\n    height: 42px;',
+              'transform: scale(1.18);':
+              'transform: scale(1.28);',
+              'transform: translateY(-1px) scale(1.22);':
+              'transform: translateY(-1px) scale(1.32);',
+          }
+          for old, new in replacements.items():
+              if old not in mobile:
+                  raise SystemExit(f'mobile pattern missing: {old!r}')
+              mobile = mobile.replace(old, new, 1)
+          mobile_path.write_text(mobile, encoding='utf-8')
+
+          test = test_path.read_text(encoding='utf-8')
+          if "const legacyDesktop = fs.readFileSync(path.join(ROOT, 'css/boutique-desktop.css'), 'utf8');" not in test:
+              needle = "const desktop = fs.readFileSync(path.join(ROOT, 'css/category-cutout-navigation-desktop.css'), 'utf8');\n"
+              if needle not in test:
+                  raise SystemExit('test desktop declaration missing')
+              test = test.replace(needle, needle + "const legacyDesktop = fs.readFileSync(path.join(ROOT, 'css/boutique-desktop.css'), 'utf8');\n", 1)
+
+          test_replacements = {
+              'flex:\\s*0 0 64px[^}]*height:\\s*52px': 'flex:\\s*0 0 68px[^}]*height:\\s*58px',
+              'width:\\s*48px[\\s\\S]*height:\\s*36px': 'width:\\s*56px[\\s\\S]*height:\\s*42px',
+              'scale\\(1\\.18\\)': 'scale\\(1\\.28\\)',
+          }
+          for old, new in test_replacements.items():
+              if old not in test:
+                  raise SystemExit(f'test pattern missing: {old!r}')
+              test = test.replace(old, new, 1)
+
+          new_test = r'''
+
+  it('neutralise les capsules legacy du niveau 2 dans leur owner canonique', () => {
+    expect(legacyDesktop).toMatch(/#k-subcats-wrap \.k-subchip\.k-subcutout,[\s\S]*flex-direction:\s*column[\s\S]*border:\s*0[\s\S]*border-radius:\s*0[\s\S]*background:\s*transparent[\s\S]*box-shadow:\s*none/);
+    expect(legacyDesktop).toMatch(/#k-subcats-wrap \.k-subchip\.k-subcutout\.active\s*\{[^}]*background:\s*transparent[^}]*border:\s*0[^}]*box-shadow:\s*none/s);
+    expect(legacyDesktop).toMatch(/#k-subcats-wrap \.k-subchip\.k-subcutout \.k-shelf-object--subcategory\s*\{[^}]*width:\s*47px[^}]*height:\s*43px/s);
+  });
+'''
+          anchor = "\n  it('garde les nouveaux skins hors des selectors ownership historiques', () => {"
+          if "neutralise les capsules legacy du niveau 2" not in test:
+              if anchor not in test:
+                  raise SystemExit('test insertion anchor missing')
+              test = test.replace(anchor, new_test + anchor, 1)
+          test_path.write_text(test, encoding='utf-8')
+          PY
+
+      - name: Regenerate Boutique CSS bundles
+        run: node public/boutique/scripts/deploy-css.js
+
+      - name: Commit generated closure
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/boutique-desktop.css \
+                  public/boutique/css/category-cutout-navigation.css \
+                  public/boutique/tests/unit/category-cutout-navigation.test.js \
+                  public/boutique/css/dist \
+                  public/boutique/.cache-buster-state.json \
+                  public/boutique/index.html
+          if git diff --cached --quiet; then
+            echo "No product changes"
+          else
+            git commit -m "UI: cut out level 2 and enlarge mobile category objects"
+            git push
+          fi
