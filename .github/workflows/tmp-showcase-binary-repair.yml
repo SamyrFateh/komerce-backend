@@ -1,0 +1,108 @@
+name: tmp showcase binary repair
+
+on:
+  pull_request:
+    branches:
+      - tmp/showcase-binary-repair-base
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Preserve encoded assets from trigger branch
+        run: |
+          mkdir -p /tmp/showcase-parts
+          cp .tmp-showcase-assets/* /tmp/showcase-parts/
+      - name: Switch to clean product branch
+        run: |
+          git fetch origin fix/showcase-real-atlas-binaries
+          git switch -C fix/showcase-real-atlas-binaries origin/fix/showcase-real-atlas-binaries
+      - name: Restore validated binary atlases
+        run: |
+          cat /tmp/showcase-parts/main.part* | base64 -d > public/boutique/categories/komerce-showcase-v1-main.webp
+          cat /tmp/showcase-parts/mode.part* | base64 -d > public/boutique/categories/komerce-showcase-v1-mode.webp
+          test "$(wc -c < public/boutique/categories/komerce-showcase-v1-main.webp)" -eq 65482
+          test "$(wc -c < public/boutique/categories/komerce-showcase-v1-mode.webp)" -eq 55858
+          echo '7d7eb4a4430f9c6b0b5b3cb6f55c61aadd84944fa134d0669239e0dceb619f23  public/boutique/categories/komerce-showcase-v1-main.webp' | sha256sum -c -
+          echo 'eea71c88c72c9e4ebcc319a930dd7bf6e92351f98d6f8e6780d086c05fda24b0  public/boutique/categories/komerce-showcase-v1-mode.webp' | sha256sum -c -
+      - name: Version asset URLs and add integrity regression test
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/boutique/js/render/category-shelf-visuals.js')
+          s=p.read_text()
+          s=s.replace("komerce-showcase-v1-main.webp?v=2", "komerce-showcase-v1-main.webp?v=3")
+          s=s.replace("komerce-showcase-v1-mode.webp?v=2", "komerce-showcase-v1-mode.webp?v=3")
+          p.write_text(s)
+          p=Path('public/boutique/tests/unit/category-cutout-navigation.test.js')
+          s=p.read_text()
+          s=s.replace("komerce-showcase-v1-main.webp?v=2", "komerce-showcase-v1-main.webp?v=3")
+          s=s.replace("komerce-showcase-v1-mode.webp?v=2", "komerce-showcase-v1-mode.webp?v=3")
+          p.write_text(s)
+          PY
+          cat > public/boutique/tests/unit/showcase-atlas-integrity.test.js <<'EOF'
+          'use strict';
+
+          const fs = require('fs');
+          const path = require('path');
+          const crypto = require('crypto');
+
+          const ROOT = path.resolve(__dirname, '../..');
+          const EXPECTED = [
+            {
+              file: 'categories/komerce-showcase-v1-main.webp',
+              bytes: 65482,
+              sha256: '7d7eb4a4430f9c6b0b5b3cb6f55c61aadd84944fa134d0669239e0dceb619f23',
+            },
+            {
+              file: 'categories/komerce-showcase-v1-mode.webp',
+              bytes: 55858,
+              sha256: 'eea71c88c72c9e4ebcc319a930dd7bf6e92351f98d6f8e6780d086c05fda24b0',
+            },
+          ];
+
+          function vp8xDimensions(buf) {
+            expect(buf.subarray(0, 4).toString('ascii')).toBe('RIFF');
+            expect(buf.subarray(8, 12).toString('ascii')).toBe('WEBP');
+            expect(buf.subarray(12, 16).toString('ascii')).toBe('VP8X');
+            const width = 1 + buf.readUIntLE(24, 3);
+            const height = 1 + buf.readUIntLE(27, 3);
+            return { width, height };
+          }
+
+          describe('Komerce showcase atlas binary integrity', () => {
+            for (const expected of EXPECTED) {
+              it(`keeps ${expected.file} as the validated decodable asset`, () => {
+                const buf = fs.readFileSync(path.join(ROOT, expected.file));
+                expect(buf.length).toBe(expected.bytes);
+                expect(crypto.createHash('sha256').update(buf).digest('hex')).toBe(expected.sha256);
+                expect(buf.readUInt32LE(4) + 8).toBe(buf.length);
+                expect(vp8xDimensions(buf)).toEqual({ width: 288, height: 192 });
+              });
+            }
+          });
+          EOF
+      - name: Run focused unit tests
+        run: |
+          npx jest public/boutique/tests/unit/category-cutout-navigation.test.js public/boutique/tests/unit/showcase-atlas-integrity.test.js --runInBand
+      - name: Commit repaired product branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/boutique/categories/komerce-showcase-v1-main.webp \
+                  public/boutique/categories/komerce-showcase-v1-mode.webp \
+                  public/boutique/js/render/category-shelf-visuals.js \
+                  public/boutique/tests/unit/category-cutout-navigation.test.js \
+                  public/boutique/tests/unit/showcase-atlas-integrity.test.js
+          git diff --cached --quiet && exit 1
+          git commit -m 'fix(ui): restore valid showcase atlas binaries'
+          git push origin HEAD:fix/showcase-real-atlas-binaries
