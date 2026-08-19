@@ -1,0 +1,75 @@
+name: tmp showcase v1 subcat all
+
+on:
+  pull_request:
+    branches:
+      - tmp/showcase-v1-subcat-all-build
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/showcase-v1-subcat-all-visual
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Boutique dependencies
+        run: npm --prefix public/boutique ci
+
+      - name: Route Tout voir through visual registry
+        shell: python
+        run: |
+          from pathlib import Path
+
+          home = Path('public/boutique/js/controllers/home-controller.js')
+          text = home.read_text(encoding='utf-8')
+
+          old_anchor = "  const activeSubcat = state.activeSubcat || '';\n\n  const header = `"
+          new_anchor = "  const activeSubcat = state.activeSubcat || '';\n  const allVisual = getShelfSubcategoryVisual(catKey, '__all') || 'cat-all';\n\n  const header = `"
+          if text.count(old_anchor) != 1:
+              raise SystemExit(f'expected one activeSubcat anchor, found {text.count(old_anchor)}')
+          text = text.replace(old_anchor, new_anchor)
+
+          old_render = "renderShelfUse('cat-all', 'k-shelf-object--subcategory k-shelf-object--all')"
+          new_render = "renderShelfUse(allVisual, 'k-shelf-object--subcategory k-shelf-object--all')"
+          if text.count(old_render) != 1:
+              raise SystemExit(f'expected one hardcoded Tout voir visual, found {text.count(old_render)}')
+          home.write_text(text.replace(old_render, new_render), encoding='utf-8')
+
+          test = Path('public/boutique/tests/unit/showcase-v1-subcat-all.test.js')
+          test.write_text("""'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.resolve(__dirname, '../..');
+const home = fs.readFileSync(path.join(ROOT, 'js/controllers/home-controller.js'), 'utf8');
+
+describe('Komerce showcase v1 — Tout voir', () => {
+  it('utilise le registre visuel du niveau 2 avec fallback cat-all', () => {
+    expect(home).toContain("const allVisual = getShelfSubcategoryVisual(catKey, '__all') || 'cat-all';");
+    expect(home).toContain("renderShelfUse(allVisual, 'k-shelf-object--subcategory k-shelf-object--all')");
+    expect(home).not.toContain("renderShelfUse('cat-all', 'k-shelf-object--subcategory k-shelf-object--all')");
+  });
+});
+""", encoding='utf-8')
+
+      - name: Verify focused contract
+        run: npm --prefix public/boutique test -- --runInBand tests/unit/showcase-v1-subcat-all.test.js tests/unit/category-cutout-navigation.test.js
+
+      - name: Commit product-only patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/js/controllers/home-controller.js public/boutique/tests/unit/showcase-v1-subcat-all.test.js
+          git diff --cached --quiet && exit 0
+          git commit -m "UI: use showcase visual for subcategory all"
+          git push origin HEAD:fix/showcase-v1-subcat-all-visual
