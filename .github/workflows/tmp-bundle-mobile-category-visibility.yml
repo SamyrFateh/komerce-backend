@@ -1,0 +1,34 @@
+name: Temporary mobile category visibility bundle
+
+on:
+  push:
+    branches:
+      - tmp/bundle-mobile-category-visibility
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build official boutique CSS bundles
+        run: node public/boutique/scripts/deploy-css.js
+      - name: Commit generated production bundle closure
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/dist public/boutique/.cache-buster-state.json public/boutique/index.html
+          if git diff --cached --quiet; then
+            echo "No generated changes"
+            exit 0
+          fi
+          git commit -m "build(css): bundle mobile category visibility boost"
+          git push
