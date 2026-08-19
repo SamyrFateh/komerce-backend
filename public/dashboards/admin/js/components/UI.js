@@ -199,3 +199,175 @@
 
   global.DataTable = { render };
 })(window);
+
+
+/**
+ * KOMERCE Dashboard — Canonical UI states (LOT 2A)
+ * ════════════════════════════════════════════════════════════════════════
+ * Réutilise strictement les classes historiques loading/empty/error.
+ */
+(function (global) {
+  'use strict';
+
+  function baseState(className, text) {
+    const el = document.createElement('div');
+    el.className = className;
+    if (text != null && text !== '') el.appendChild(document.createTextNode(String(text)));
+    return el;
+  }
+
+  function emptyState(text = 'Aucune donnée') {
+    return baseState('empty-state', text);
+  }
+
+  function loadingState(text = 'Chargement...') {
+    const el = baseState('loading-state', '');
+    const loader = document.createElement('span');
+    loader.className = 'loader';
+    el.appendChild(loader);
+    if (text) el.appendChild(document.createTextNode(` ${text}`));
+    return el;
+  }
+
+  function errorState(text = 'Erreur de chargement') {
+    return baseState('error-state', text);
+  }
+
+  global.UIState = { emptyState, loadingState, errorState };
+})(window);
+
+
+/**
+ * KOMERCE Dashboard — FilterBar primitive (LOT 2A)
+ * Délègue intégralement son état à KmcFilters. Aucun état parallèle.
+ */
+(function (global) {
+  'use strict';
+
+  const LABELS = {
+    from: 'Du',
+    to: 'Au',
+    island: 'Île',
+    relais_id: 'Relais',
+    status: 'Statut',
+    payment_status: 'Paiement',
+    cost_status: 'Qualité coût',
+    channel: 'Canal',
+    origin: 'Origine',
+  };
+
+  function requireStore() {
+    const store = global.KmcFilters;
+    if (!store || !Array.isArray(store.FILTER_KEYS) || typeof store.get !== 'function' || typeof store.set !== 'function') {
+      throw new Error('FilterBar requiert KmcFilters');
+    }
+    return store;
+  }
+
+  function render(container, keys) {
+    if (!container || typeof container.appendChild !== 'function') {
+      throw new Error('FilterBar: container invalide');
+    }
+
+    const store = requireStore();
+    const requested = Array.isArray(keys) ? keys : [];
+    const unknown = requested.filter(key => !store.FILTER_KEYS.includes(key));
+    if (unknown.length) throw new Error(`FilterBar: filtre(s) inconnu(s): ${unknown.join(', ')}`);
+
+    const state = store.get();
+    container.innerHTML = '';
+    const bar = document.createElement('div');
+    bar.className = 'grid grid-3';
+    bar.setAttribute('data-dashboard-filter-bar', '');
+
+    requested.forEach(key => {
+      const label = document.createElement('label');
+      label.dataset.filterKey = key;
+
+      const caption = document.createElement('span');
+      caption.textContent = LABELS[key] || key;
+      label.appendChild(caption);
+
+      const input = document.createElement('input');
+      input.name = key;
+      input.type = key === 'from' || key === 'to' ? 'date' : 'text';
+      input.value = state[key] == null ? '' : String(state[key]);
+      input.setAttribute('aria-label', LABELS[key] || key);
+      input.addEventListener('change', () => store.set({ [key]: input.value }));
+
+      label.appendChild(input);
+      bar.appendChild(label);
+    });
+
+    container.appendChild(bar);
+    return bar;
+  }
+
+  global.FilterBar = { render };
+})(window);
+
+
+/**
+ * KOMERCE Dashboard — Section primitive (LOT 2A)
+ * Formalise le markup `.page-section` existant, sans nouvelle convention CSS.
+ */
+(function (global) {
+  'use strict';
+
+  const STATES = new Set(['loading', 'empty', 'error']);
+
+  function stateElement(state, message) {
+    if (!state) return null;
+    if (!STATES.has(state)) throw new Error(`Section: état inconnu: ${state}`);
+    if (!global.UIState) throw new Error('Section requiert UIState pour rendre un état');
+    if (state === 'loading') return global.UIState.loadingState(message);
+    if (state === 'empty') return global.UIState.emptyState(message);
+    return global.UIState.errorState(message);
+  }
+
+  function appendContent(slot, content) {
+    if (content == null) return;
+    if (content instanceof HTMLElement) {
+      slot.appendChild(content);
+      return;
+    }
+    if (typeof content === 'function') {
+      const rendered = content(slot);
+      if (rendered instanceof HTMLElement && rendered.parentNode !== slot) slot.appendChild(rendered);
+      return;
+    }
+    slot.textContent = String(content);
+  }
+
+  function create(options = {}) {
+    const section = document.createElement('section');
+    section.className = 'page-section';
+
+    if (options.title) {
+      const title = document.createElement('h2');
+      title.className = 'page-section-title';
+      title.textContent = String(options.title);
+      section.appendChild(title);
+    }
+
+    const slot = document.createElement('div');
+    slot.setAttribute('data-section-slot', '');
+    const state = stateElement(options.state, options.message);
+    if (state) slot.appendChild(state);
+    else appendContent(slot, options.content);
+
+    section.appendChild(slot);
+    return { element: section, slot };
+  }
+
+  function render(container, options = {}) {
+    if (!container || typeof container.appendChild !== 'function') {
+      throw new Error('Section: container invalide');
+    }
+    const built = create(options);
+    container.appendChild(built.element);
+    return built;
+  }
+
+  global.Section = { create, render };
+})(window);
