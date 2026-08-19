@@ -165,3 +165,6 @@
     box-shadow: none;
   }
 }
+
+/* Atlas = sprite sheet : le viewport SVG doit clipper la cellule (sinon les autres cellules débordent). */
+.k-shelf-object--image { overflow: hidden; }
