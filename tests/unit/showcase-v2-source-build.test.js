@@ -62,6 +62,15 @@ describe('showcase-v2 deterministic supplier fixtures', () => {
     }
   });
 
+  test('régression run 58 : la banque Cuisine ne génère plus le couteau exclu', () => {
+    const kitchen = buildCatalogue().filter(
+      (product) => product.category === 'Maison' && product.subcategory === 'Cuisine'
+    );
+    expect(kitchen).toHaveLength(25);
+    expect(kitchen.some((product) => /\bknife\b/i.test(product.source_title))).toBe(false);
+    expect(kitchen.filter((product) => /\bcutlery\b/i.test(product.source_title))).toHaveLength(5);
+  });
+
   test('le générateur est déterministe', () => {
     expect(buildCatalogue()).toEqual(buildCatalogue());
   });
