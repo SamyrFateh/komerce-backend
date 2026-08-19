@@ -13,7 +13,7 @@
  * @db-write      none
  * @db-txn        no
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md
- * @version       2026-08-v12
+ * @version       2026-08-v13
  *
  * SHOWCASE V2 — fixtures fournisseur déterministes.
  *
@@ -44,18 +44,18 @@ const FIXTURE_TYPES = Object.freeze({
   'Maison/Cuisine': ['Electric kettle', 'Stainless steel frying pan', 'Stainless steel cutlery set', 'Countertop blender', 'Ceramic bowl set'],
   'Maison/Déco': ['Ceramic flower vase', 'Table lamp', 'Decorative cushion', 'Wall clock', 'Scented candle'],
   'Maison/Enfants': ['School backpack', 'Pencil case', 'Spiral notebook', 'Kids desk chair', 'Stationery set'],
-  'Tech/Phones': ['Android smartphone', 'Dual SIM smartphone', '5G smartphone', 'Mobile phone handset', 'Rugged smartphone'],
+  'Tech/Phones': ['Android smartphone', 'Dual SIM smartphone', '5G smartphone', 'Unlocked feature phone', 'Rugged smartphone'],
   'Tech/Audio': ['Wireless headphones', 'Bluetooth speaker', 'True wireless earbuds', 'USB microphone', 'Gaming headset'],
   'Tech/Montres': ['Digital wristwatch', 'Smartwatch', 'Mechanical wristwatch', 'Sports watch', 'Classic wristwatch'],
   'Bricolage/Outillage': ['Cordless drill', 'Phillips screwdriver set', 'Claw hammer', 'Combination pliers', 'Adjustable wrench'],
   'Bricolage/Electricité': ['Electrical connector set', 'Power extension cord', 'Wall electrical socket', 'Light switch', 'Electrical plug adapter'],
   'Bricolage/Sécurité': ['Steel padlock', 'Door lock cylinder', 'Home security camera', 'Door security latch', 'Compact safe'],
   'Créations personnelles/Cérémonie': ["Women's formal evening dress", 'Wedding dress', "Men's formal suit", 'Tuxedo jacket', 'Ceremonial gown'],
-  'Créations personnelles/Cadeau': ['Rigid gift box', 'Personalized keepsake box', 'Souvenir mug', 'Decorative gift item', 'Present box'],
+  'Créations personnelles/Cadeau': ['Rigid gift box', 'Personalized keepsake box', 'Souvenir mug', 'Decorative wooden photo frame', 'Fabric gift bag'],
   'Créations personnelles/Impression': ['Printed ceramic mug', 'Printed greeting card', 'A4 poster print', 'Printed notebook', 'Personalized stationery set'],
-  'Auto/Filtres': ['Engine oil filter', 'Automotive air filter', 'Fuel filter', 'Cabin air filter', 'Car filter kit'],
+  'Auto/Filtres': ['Engine oil filter', 'Automotive air filter', 'Fuel filter', 'Cabin air filter', 'Engine oil and air filter kit'],
   'Auto/Freinage': ['Front brake disc', 'Brake pad set', 'Rear brake caliper', 'Brake rotor', 'Disc brake kit'],
-  'Auto/Éclairage': ['Left car headlight', 'Right car headlight', 'LED headlamp', 'Tail light assembly', 'Automotive lamp'],
+  'Auto/Éclairage': ['Left car headlight', 'Right car headlight', 'LED headlamp', 'Tail light assembly', 'Automotive LED bulb pair'],
   'Auto/Moto': ['Motorcycle helmet', 'Motorcycle rear-view mirror', 'Motorcycle LED light', 'Motorcycle phone mount', 'Motorcycle lock'],
 });
 
