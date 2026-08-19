@@ -199,3 +199,39 @@
 
   global.DataTable = { render };
 })(window);
+
+
+/**
+ * KOMERCE Dashboard — Canonical UI states (LOT 2A)
+ * ════════════════════════════════════════════════════════════════════════
+ * Réutilise strictement les classes historiques loading/empty/error.
+ */
+(function (global) {
+  'use strict';
+
+  function baseState(className, text) {
+    const el = document.createElement('div');
+    el.className = className;
+    if (text != null && text !== '') el.appendChild(document.createTextNode(String(text)));
+    return el;
+  }
+
+  function emptyState(text = 'Aucune donnée') {
+    return baseState('empty-state', text);
+  }
+
+  function loadingState(text = 'Chargement...') {
+    const el = baseState('loading-state', '');
+    const loader = document.createElement('span');
+    loader.className = 'loader';
+    el.appendChild(loader);
+    if (text) el.appendChild(document.createTextNode(` ${text}`));
+    return el;
+  }
+
+  function errorState(text = 'Erreur de chargement') {
+    return baseState('error-state', text);
+  }
+
+  global.UIState = { emptyState, loadingState, errorState };
+})(window);
