@@ -1,7 +1,7 @@
 name: tmp mobile Mode taxonomy key build
 
 on:
-  push:
+  pull_request:
     branches:
       - tmp/mobile-mode-taxonomy-key-build
 
