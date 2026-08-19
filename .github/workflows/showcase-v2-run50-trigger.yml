@@ -1,4 +1,4 @@
-name: One-shot dispatch Showcase V2 clean fixtures
+name: One-shot probe Showcase V2 refinery progress
 
 on:
   push:
@@ -8,49 +8,51 @@ on:
       - '.github/workflows/showcase-v2-run50-trigger.yml'
 
 permissions:
-  actions: write
   contents: write
 
 jobs:
-  dispatch-showcase-v2:
+  probe-refinery:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ops/showcase-v2-run50
-
-      - name: Dispatch canonical V2 campaign on main and capture proof
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          TARGET_SHA: 81622bf1539baff1a55a6a549af073b3fde15088
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Capture read-only Railway progress
         run: |
           set -euo pipefail
-          gh workflow run showcase-v2-staging-deploy.yml --ref main
-
-          run_id=""
-          for attempt in $(seq 1 20); do
-            runs=$(gh run list \
-              --workflow showcase-v2-staging-deploy.yml \
-              --event workflow_dispatch \
-              --branch main \
-              --limit 10 \
-              --json databaseId,headSha,status,conclusion,createdAt,updatedAt,url)
-            run_id=$(echo "$runs" | jq -r --arg sha "$TARGET_SHA" '[.[] | select(.headSha == $sha)][0].databaseId // empty')
-            if [ -n "$run_id" ]; then break; fi
-            sleep 2
-          done
-
-          if [ -z "$run_id" ]; then
-            echo '{"found":false,"target_sha":"'"$TARGET_SHA"'"}' > .showcase-v2-run59-status.json
-            exit 1
-          fi
-
-          run=$(echo "$runs" | jq --arg sha "$TARGET_SHA" '[.[] | select(.headSha == $sha)][0]')
-          jq -n --argjson run "$run" '{found:true,run:$run}' > .showcase-v2-run59-status.json
-
+          node - <<'NODE'
+          const fs = require('fs');
+          const { Pool } = require('pg');
+          (async () => {
+            const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+            const { rows: [products] } = await pool.query(`
+              SELECT
+                COUNT(*) FILTER (WHERE product_ref LIKE 'SHOWCASE-V2-%')::int AS products,
+                COUNT(*) FILTER (WHERE product_ref LIKE 'SHOWCASE-V2-%' AND content_source='ai_enriched')::int AS enriched,
+                COUNT(*) FILTER (WHERE product_ref LIKE 'SHOWCASE-V2-%' AND quality_validated=TRUE)::int AS quality_validated,
+                COUNT(*) FILTER (WHERE product_ref LIKE 'SHOWCASE-V2-%' AND is_active=TRUE)::int AS active
+              FROM products
+            `);
+            const { rows: candidates } = await pool.query(`
+              SELECT state, COUNT(*)::int AS count
+                FROM sourcing_candidates
+               WHERE supplier_name='Komerce Showcase V2'
+               GROUP BY state
+               ORDER BY state
+            `);
+            await pool.end();
+            fs.writeFileSync('.showcase-v2-db-progress.json', JSON.stringify({ captured_at: new Date().toISOString(), products, candidates }, null, 2) + '\n');
+          })().catch((error) => { console.error(error); process.exit(1); });
+          NODE
           git config user.name "Komerce Showcase Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add .showcase-v2-run59-status.json
-          git commit -m "ops(showcase): capture clean-fixture campaign"
+          git add .showcase-v2-db-progress.json
+          git commit -m "ops(showcase): capture live refinery progress"
           git push origin HEAD:ops/showcase-v2-run50
