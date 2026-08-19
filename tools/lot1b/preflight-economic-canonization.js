@@ -76,7 +76,7 @@ function indexRules(rows = []) {
  * SEA possède deux états utiles pendant 1B-1 :
  *   - migration_ready : la cible peut être créée SANS invention, car la policy
  *     W/M, le prix commercial et la source de coût CURRENT sont tous présents ;
- *   - runtime_ready : la migration 124 a déjà matérialisé SEA_EUR_PER_M3_COST.
+ *   - runtime_ready : la migration 135 a déjà matérialisé SEA_EUR_PER_M3_COST.
  *
  * AIR possède un gate séparé : il reste INTERNAL/PENDING/DISABLED tant que son
  * coût distinct n'est pas calibré.
@@ -249,7 +249,7 @@ function printReport(report) {
   if (report.target_readiness.sea_runtime_ready) {
     console.log(`✓ SEA RUNTIME READY — W/M ${report.target_readiness.sea_wm_kg_per_m3} kg/m3 · coût ${report.target_readiness.sea_cost_eur_per_m3} EUR/m3.`);
   } else if (report.target_readiness.sea_migration_ready) {
-    console.log(`✓ SEA MIGRATION READY — W/M ${report.target_readiness.sea_wm_kg_per_m3} kg/m3 · coût CURRENT ${report.target_readiness.sea_legacy_cost_eur_per_m3} EUR/m3 à copier par migration 124.`);
+    console.log(`✓ SEA MIGRATION READY — W/M ${report.target_readiness.sea_wm_kg_per_m3} kg/m3 · coût CURRENT ${report.target_readiness.sea_legacy_cost_eur_per_m3} EUR/m3 à copier par migration 135.`);
     console.log(`  Runtime encore incomplet : ${report.target_readiness.sea_runtime_missing.join(', ')}.`);
   } else {
     console.log(`✗ SEA TARGET INCOMPLETE — ${report.target_readiness.sea_migration_missing.join(', ')} manquant(s).`);

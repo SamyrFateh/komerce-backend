@@ -184,7 +184,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       getRule('CASH_PAYMENT_TIMEOUT_HOURS', 36),
       getRule('SEA_WM_KG_PER_M3', null),
       // LOT 1B-1 — coût et prix transport ont des policies distinctes.
-      // Aucune constante économique inventée : migration 124 doit fournir le coût SEA.
+      // Aucune constante économique inventée : migration 135 doit fournir le coût SEA.
 
       getRule('SEA_KMF_PER_KG_COMMERCIAL', 65),
       getRule('SEA_EUR_PER_M3_COST', null),
