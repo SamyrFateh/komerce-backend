@@ -75,8 +75,9 @@ function scrollToCatalog() {
  * - le rail principal choisit l'univers ;
  * - #k-subcats-wrap porte le contexte de l'univers ;
  * - le niveau 2 reprend la même grammaire : objet visuel puis petit libellé ;
- * - les classes historiques restent présentes pour le comportement et les
- *   invariants ; k-shelf-* / k-subcutout-* portent uniquement la présentation.
+ * - k-subcutout est désormais le contrat unique comportement + présentation
+ *   du niveau 2 Shelf ; la classe legacy k-subchip reste uniquement dans
+ *   l'ancien CSS et ne doit plus contaminer la géométrie image-first.
  *
  * @param {string|null} catKey  Univers actif ('all'/null = barre masquée).
  * @param {{count?:number}} [opts]  Compteur produits de l'univers.
@@ -129,9 +130,9 @@ export function renderSubcatRail(catKey, opts = {}) {
   let rail = '';
   if (subcats.length) {
     const buttons = [
-      `<button type="button" class="k-subchip k-subcutout ${activeSubcat ? '' : 'active'}" data-subcat="" aria-label="Voir tous les produits ${escapeHtml(label)}">
+      `<button type="button" class="k-subcutout ${activeSubcat ? '' : 'active'}" data-subcat="" aria-label="Voir tous les produits ${escapeHtml(label)}">
         <span class="k-subcutout-icon k-subcutout-icon--all" aria-hidden="true">${renderShelfUse('cat-all', 'k-shelf-object--subcategory k-shelf-object--all')}</span>
-        <span class="k-subchip-label k-subcutout-label">Tout voir</span>
+        <span class="k-subcutout-label">Tout voir</span>
       </button>`,
       ...subcats.map((sub) => {
         const key = escapeHtml(sub.key);
@@ -142,9 +143,9 @@ export function renderSubcatRail(catKey, opts = {}) {
           ? renderShelfUse(visual, 'k-shelf-object--subcategory')
           : `<span class="k-shelf-emoji-fallback">${icon}</span>`;
         const active = activeSubcat === sub.key ? ' active' : '';
-        return `<button type="button" class="k-subchip k-subcutout${active}" data-subcat="${key}"${visual ? ` data-shelf-visual="${escapeHtml(visual)}"` : ''}>
-          <span class="k-subchip-icon k-subcutout-icon" aria-hidden="true">${object}</span>
-          <span class="k-subchip-label k-subcutout-label">${lbl}</span>
+        return `<button type="button" class="k-subcutout${active}" data-subcat="${key}"${visual ? ` data-shelf-visual="${escapeHtml(visual)}"` : ''}>
+          <span class="k-subcutout-icon" aria-hidden="true">${object}</span>
+          <span class="k-subcutout-label">${lbl}</span>
         </button>`;
       }),
     ].join('');
@@ -164,7 +165,7 @@ export function renderSubcatRail(catKey, opts = {}) {
     });
   }
 
-  wrap.querySelectorAll('.k-subchip').forEach((chip) => {
+  wrap.querySelectorAll('.k-subcutout').forEach((chip) => {
     chip.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();

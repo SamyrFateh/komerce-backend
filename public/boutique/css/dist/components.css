@@ -1216,10 +1216,9 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 
 /*
- * Mobile : même rail horizontal qu'avant, mais plus dense.
- * L'objet déborde optiquement de son slot au lieu de faire grandir le rail :
- * on récupère du catalogue au-dessus de la ligne de flottaison sans perdre
- * le langage image-first.
+ * Mobile : un seul rail horizontal compact. La présence visuelle augmente
+ * dans le slot, pas via une matrice ni une grosse carte : l'objet devient le
+ * premier signal, le libellé reste secondaire.
  */
 @media (max-width: 899px) {
   .k-shelf-rail {
@@ -1242,11 +1241,11 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   html.k-mobile-premium-v1 .k-shelf-rail .k-cat-cutout,
   .k-shelf-rail .k-cat-cutout {
-    flex: 0 0 64px;
-    width: 64px;
-    min-width: 64px;
-    min-height: 52px;
-    height: 52px;
+    flex: 0 0 68px;
+    width: 68px;
+    min-width: 68px;
+    min-height: 58px;
+    height: 58px;
     gap: 0;
     padding: 0 1px 2px;
     border: 0;
@@ -1260,12 +1259,12 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-cat-cutout.active .k-chip-photo,
   .k-cat-cutout[data-cat] .k-chip-photo,
   .k-cat-cutout.active[data-cat] .k-chip-photo {
-    width: 48px;
-    height: 36px;
+    width: 56px;
+    height: 42px;
   }
 
   .k-shelf-rail .k-cat-cutout .k-shelf-object {
-    transform: scale(1.18);
+    transform: scale(1.28);
     filter:
       drop-shadow(0 4px 7px rgba(39, 58, 41, .18))
       saturate(1.08)
@@ -1274,12 +1273,12 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   .k-shelf-rail .k-cat-cutout:hover .k-shelf-object,
   .k-shelf-rail .k-cat-cutout.active .k-shelf-object {
-    transform: translateY(-1px) scale(1.22);
+    transform: translateY(-1px) scale(1.32);
   }
 
   .k-cat-cutout .k-chip-label,
   .k-cat-cutout.active .k-chip-label {
-    max-width: 62px;
+    max-width: 66px;
     margin-top: 0;
     padding-bottom: 2px;
     font-size: 10.5px;
