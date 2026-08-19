@@ -42,24 +42,34 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobileBlock).toMatch(/saturate\(1\.08\)/);
   });
 
-  it('porte le pilote Mode image-first dans le registre visuel unique', () => {
-    expect(visuals).toContain("KOMERCE_MODE_PILOT_ATLAS = '/boutique/categories/mode-pilot-atlas.webp'");
-    expect(visuals).toContain("'Mode & Beauté': 'atlas:0:0'");
-    expect(visuals).toContain("Femme: 'atlas:1:0'");
-    expect(visuals).toContain("Homme: 'atlas:2:0'");
-    expect(visuals).toContain("Enfant: 'atlas:0:1'");
-    expect(visuals).toContain("Beauté: 'atlas:1:1'");
-    expect(visuals).toContain("__all: 'atlas:2:1'");
+  it('porte le showcase photo v1 dans le registre visuel unique', () => {
+    expect(visuals).toContain("KOMERCE_SHOWCASE_V1_MAIN = '/boutique/categories/komerce-showcase-v1-main.webp'");
+    expect(visuals).toContain("KOMERCE_SHOWCASE_V1_MODE = '/boutique/categories/komerce-showcase-v1-mode.webp'");
+    expect(visuals).toContain("'Mode & Beauté': 'showcase-main:0:0'");
+    expect(visuals).toContain("Maison: 'showcase-main:1:0'");
+    expect(visuals).toContain("Tech: 'showcase-main:2:0'");
+    expect(visuals).toContain("Bricolage: 'showcase-main:0:1'");
+    expect(visuals).toContain("'Créations personnelles': 'showcase-main:1:1'");
+    expect(visuals).toContain("Auto: 'showcase-main:2:1'");
+    expect(visuals).toContain("__all: 'showcase-mode:0:0'");
+    expect(visuals).toContain("Femme: 'showcase-mode:1:0'");
+    expect(visuals).toContain("Homme: 'showcase-mode:2:0'");
+    expect(visuals).toContain("Enfant: 'showcase-mode:0:1'");
+    expect(visuals).toContain("Beauté: 'showcase-mode:1:1'");
     expect(visuals).toContain('renderAtlasCell');
-    expect(sprite).toContain('symbol id="cat-maison"');
+    expect(sprite).toContain('symbol id="cat-all"');
+    expect(sprite).toContain('symbol id="cat-soldes"');
     expect(sprite).toContain('symbol id="sub-auto-moto"');
   });
 
-  it('rend le raster Mode comme un crop img natif plutôt que comme une image embarquée dans un svg', () => {
+  it('rend les showcases raster comme des crops img natifs', () => {
     expect(visuals).toContain('k-shelf-atlas-cell');
     expect(visuals).toContain('k-shelf-atlas-image');
+    expect(visuals).toContain('data-atlas-family');
     expect(visuals).toContain('data-atlas-col');
     expect(visuals).toContain('data-atlas-row');
+    expect(visuals).toContain("visual.startsWith('showcase-main:')");
+    expect(visuals).toContain("visual.startsWith('showcase-mode:')");
     expect(visuals).not.toContain('<image href=');
     expect(mobile).toContain('img:not(.k-shelf-atlas-image)');
     expect(mobile).toMatch(/\.k-shelf-atlas-image\s*\{[^}]*width:\s*300%[^}]*height:\s*200%/s);
