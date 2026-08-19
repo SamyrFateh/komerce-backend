@@ -1,4 +1,4 @@
-name: One-shot dispatch Showcase V2 concrete fixtures
+name: One-shot dispatch Showcase V2 fragility schema
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          TARGET_SHA: 98d626413cc96e94bcbbbad1c3f8bae8f05fd810
+          TARGET_SHA: 033bc31f07a776729cbce5526a93c04bfad94649
         run: |
           set -euo pipefail
           gh workflow run showcase-v2-staging-deploy.yml --ref main
@@ -42,15 +42,15 @@ jobs:
           done
 
           if [ -z "$run_id" ]; then
-            echo '{"found":false,"target_sha":"'"$TARGET_SHA"'"}' > .showcase-v2-run61-status.json
+            echo '{"found":false,"target_sha":"'"$TARGET_SHA"'"}' > .showcase-v2-run62-status.json
             exit 1
           fi
 
           run=$(echo "$runs" | jq --arg sha "$TARGET_SHA" '[.[] | select(.headSha == $sha)][0]')
-          jq -n --argjson run "$run" '{found:true,run:$run}' > .showcase-v2-run61-status.json
+          jq -n --argjson run "$run" '{found:true,run:$run}' > .showcase-v2-run62-status.json
 
           git config user.name "Komerce Showcase Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add .showcase-v2-run61-status.json
-          git commit -m "ops(showcase): capture concrete-fixtures campaign"
+          git add .showcase-v2-run62-status.json
+          git commit -m "ops(showcase): capture fragility-schema campaign"
           git push origin HEAD:ops/showcase-v2-run50
