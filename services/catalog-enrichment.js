@@ -86,7 +86,10 @@ function outputSchema() {
       name_fr: { type: 'string' },
       description_fr: { type: 'string' },
       category: { type: ['string', 'null'] },
-      fragility: { type: ['string', 'null'] },
+      fragility: {
+        type: ['string', 'null'],
+        enum: [...prompt.ALLOWED_FRAGILITIES, null],
+      },
       confidence: { type: 'number' },
       review_notes: { type: 'array', items: { type: 'string' } },
     },

@@ -85,6 +85,7 @@ describe('prompt catalog-enrichment', () => {
     ['confidence hors bornes', { ...GOOD_OUTPUT, confidence: 1.4 }],
     ['catégorie hors liste', { ...GOOD_OUTPUT, category: 'armes' }],
     ['fragility hors valeurs conseillées', { ...GOOD_OUTPUT, fragility: 'explosif' }],
+    ['fragility chaîne "null"', { ...GOOD_OUTPUT, fragility: 'null' }],
     ['name_fr vide', { ...GOOD_OUTPUT, name_fr: '  ' }],
   ])('validateOutput rejette : %s', (_label, bad) => {
     const v = prompt.validateOutput(bad, { allowedCategories: ['tech'] });
@@ -253,5 +254,9 @@ describe('transport IA multi-provider', () => {
     expect(body.store).toBe(false);
     expect(body.text.format).toMatchObject({ type: 'json_schema', strict: true });
     expect(body.text.format.schema.required).toEqual(expect.arrayContaining(['name_fr', 'description_fr', 'confidence']));
+    expect(body.text.format.schema.properties.fragility).toEqual({
+      type: ['string', 'null'],
+      enum: [...prompt.ALLOWED_FRAGILITIES, null],
+    });
   });
 });
