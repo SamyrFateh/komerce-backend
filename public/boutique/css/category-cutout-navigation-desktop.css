@@ -396,3 +396,39 @@
     flex: 0 0 104px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   FIX pavés gris desktop : neutraliser l'ancien design "carte premium"
+   pour les univers détourés (.k-cat-cutout). Scoped fort pour battre
+   les règles legacy .k-chip::after / .k-chip-photo svg / label premium.
+   Owner : category-cutout-navigation-desktop.css
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout::after,
+  .k-shelf-rail .k-cat-cutout::after { content: none; display: none; }
+
+  html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout,
+  .k-shelf-rail .k-cat-cutout { background: transparent; border: 0; box-shadow: none; }
+
+  /* objet détouré = pleine taille du slot (bat .k-chip-photo svg{15px}) */
+  html.k-home-premium-v1 .k-shelf-rail .k-shelf-object-slot .k-shelf-object,
+  .k-shelf-rail .k-shelf-object-slot .k-shelf-object { width: 100%; height: 100%; }
+
+  /* label SOUS l'objet, discret (bat le label premium absolu/blanc) */
+  html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout .k-chip-label,
+  .k-shelf-rail .k-cat-cutout .k-chip-label {
+    position: relative; inset: auto;
+    padding: 0 2px 5px; margin: 0;
+    color: var(--text-muted); font-size: 11px; font-weight: 600;
+    text-align: center; text-shadow: none;
+  }
+  html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout.active .k-chip-label,
+  .k-shelf-rail .k-cat-cutout.active .k-chip-label { color: var(--text); font-weight: 800; }
+
+  /* état actif : aucune bordure/ombre de carte */
+  html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout.active,
+  .k-shelf-rail .k-cat-cutout.active { border: 0; box-shadow: none; transform: none; }
+
+  /* pas de filtre premium sur l'image atlas */
+  html.k-home-premium-v1 .k-shelf-rail .k-chip-photo img { filter: none; }
+}
