@@ -71,7 +71,7 @@ function renderAtlasCell(visual, extraClass = '') {
   const cls = extraClass ? ` ${extraClass}` : '';
   const x = -(col * 256);
   const y = -(row * 256);
-  return `<svg class="k-shelf-object${cls} k-shelf-object--image" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><image href="${KOMERCE_MODE_PILOT_ATLAS}" x="${x}" y="${y}" width="768" height="512" preserveAspectRatio="none"></image></svg>`;
+  return `<svg class="k-shelf-object${cls} k-shelf-object--image" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><image href="${KOMERCE_MODE_PILOT_ATLAS}" x="${x}" y="${y}" width="768" height="512" preserveAspectRatio="xMidYMid meet"></image></svg>`;
 }
 
 export function getShelfCategoryVisual(categoryKey) {
