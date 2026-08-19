@@ -1,0 +1,55 @@
+name: tmp mobile Mode taxonomy key build
+
+on:
+  push:
+    branches:
+      - tmp/mobile-mode-taxonomy-key-build
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/mobile-mode-taxonomy-key-build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Patch real Mode taxonomy key
+        shell: python
+        run: |
+          from pathlib import Path
+          css = Path('public/boutique/css/category-cutout-navigation.css')
+          text = css.read_text(encoding='utf-8')
+          old = 'data-cat="mode"'
+          new = 'data-cat="Mode & Beauté"'
+          if text.count(old) != 3:
+              raise SystemExit(f'expected 3 CSS occurrences, found {text.count(old)}')
+          css.write_text(text.replace(old, new), encoding='utf-8')
+
+          test = Path('public/boutique/tests/unit/category-cutout-navigation.test.js')
+          t = test.read_text(encoding='utf-8')
+          old_test = 'data-cat=\\"mode\\"'
+          new_test = 'data-cat=\\"Mode & Beauté\\"'
+          if t.count(old_test) != 2:
+              raise SystemExit(f'expected 2 test occurrences, found {t.count(old_test)}')
+          test.write_text(t.replace(old_test, new_test), encoding='utf-8')
+      - name: Regenerate Boutique CSS bundles
+        run: node public/boutique/scripts/deploy-css.js
+      - name: Verify focused contract
+        run: npm --prefix public/boutique test -- --runInBand tests/unit/category-cutout-navigation.test.js
+      - name: Commit generated closure
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/category-cutout-navigation.css \
+                  public/boutique/tests/unit/category-cutout-navigation.test.js \
+                  public/boutique/css/dist/components.css \
+                  public/boutique/.cache-buster-state.json \
+                  public/boutique/index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "UI: target Mode optical balance by canonical key"
+          git push origin HEAD:tmp/mobile-mode-taxonomy-key-build
