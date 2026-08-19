@@ -62,9 +62,11 @@
   transform: none;
 }
 
-/* Compat historique : les catégories hors registre Shelf gardent une image contain. */
-.k-cat-cutout .k-chip-photo img,
-.k-cat-cutout.active .k-chip-photo img {
+/* Compat historique : les catégories hors atlas gardent une image contain.
+ * L'atlas Mode est volontairement exclu : son image doit rester à 300% × 200%
+ * pour que le crop 3 × 2 fonctionne réellement dans le slot. */
+.k-cat-cutout .k-chip-photo img:not(.k-shelf-atlas-image),
+.k-cat-cutout.active .k-chip-photo img:not(.k-shelf-atlas-image) {
   width: 100%;
   height: 100%;
   object-fit: contain;
