@@ -61,6 +61,7 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(visuals).not.toContain('<image href=');
     expect(mobile).toContain('img:not(.k-shelf-atlas-image)');
     expect(mobile).toMatch(/\.k-shelf-atlas-image\s*\{[^}]*width:\s*300%[^}]*height:\s*200%/s);
+    expect(mobile).toMatch(/\.k-shelf-object-slot > \.k-shelf-atlas-cell\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*width:\s*auto[^}]*height:\s*auto/s);
     expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-col="2"] .k-shelf-atlas-image { left: -200%; }');
     expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-row="1"] .k-shelf-atlas-image { top: -100%; }');
   });
