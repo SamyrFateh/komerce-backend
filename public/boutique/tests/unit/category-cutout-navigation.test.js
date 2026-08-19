@@ -22,20 +22,21 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(renderer).toContain('k-shelf-object-slot');
     expect(renderer).toContain('renderShelfUse');
     expect(renderer).toContain('k-shelf-legacy-image');
-    expect(mobile).toMatch(/\.k-cat-cutout \.k-chip-photo img[\s\S]*object-fit:\s*contain/);
+    expect(mobile).toMatch(/\.k-cat-cutout \.k-chip-photo img[^\{]*\{[\s\S]*object-fit:\s*contain/);
     expect(mobile).toMatch(/\.k-cat-cutout \.k-shelf-legacy-image[\s\S]*opacity:\s*0/);
     expect(mobile).toMatch(/\.k-cat-cutout \.k-chip-label,[\s\S]*font-size:\s*10\.5px/);
   });
 
-  it('garde sur mobile une seule ligne compacte tout en renforçant la présence des objets', () => {
+  it('garde sur mobile une seule ligne très compacte sans réduire la présence optique des objets', () => {
     const mobileBlock = mobile.match(/@media \(max-width: 899px\) \{[\s\S]*\n\}/)?.[0] || '';
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*display:\s*flex/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*flex-wrap:\s*nowrap/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*overflow-x:\s*auto/s);
     expect(mobileBlock).not.toMatch(/grid-template-columns/);
-    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 72px/s);
-    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*54px[\s\S]*height:\s*44px/s);
-    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*scale\(1\.12\)/s);
+    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 64px[^}]*height:\s*52px/s);
+    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*48px[\s\S]*height:\s*36px/s);
+    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*scale\(1\.18\)/s);
+    expect(mobileBlock).toMatch(/padding:\s*2px 8px 3px/);
     expect(mobileBlock).toMatch(/saturate\(1\.08\)/);
   });
 
@@ -58,6 +59,7 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(visuals).toContain('data-atlas-col');
     expect(visuals).toContain('data-atlas-row');
     expect(visuals).not.toContain('<image href=');
+    expect(mobile).toContain('img:not(.k-shelf-atlas-image)');
     expect(mobile).toMatch(/\.k-shelf-atlas-image\s*\{[^}]*width:\s*300%[^}]*height:\s*200%/s);
     expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-col="2"] .k-shelf-atlas-image { left: -200%; }');
     expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-row="1"] .k-shelf-atlas-image { top: -100%; }');
