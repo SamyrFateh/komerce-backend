@@ -1,0 +1,61 @@
+name: tmp mobile Mode optical balance
+
+on:
+  push:
+    branches:
+      - tmp/mobile-mode-optical-balance-build
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/mobile-mode-optical-balance-build
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply focused mobile Mode balance patch
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          css = Path('public/boutique/css/category-cutout-navigation.css')
+          s = css.read_text(encoding='utf-8')
+          needle = '''  .k-shelf-rail .k-cat-cutout:hover .k-shelf-object,\n  .k-shelf-rail .k-cat-cutout.active .k-shelf-object {\n    transform: translateY(-1px) scale(1.32);\n  }\n\n'''
+          insert = needle + '''  /* Mode remplit naturellement davantage sa cellule atlas que les sprites.\n   * On réduit uniquement son poids optique mobile sans changer le rail ni\n   * la géométrie du slot. */\n  .k-shelf-rail .k-cat-cutout[data-cat="mode"] .k-shelf-atlas-cell {\n    transform: translateY(1px) scale(1.14);\n  }\n\n  .k-shelf-rail .k-cat-cutout[data-cat="mode"]:hover .k-shelf-atlas-cell,\n  .k-shelf-rail .k-cat-cutout[data-cat="mode"].active .k-shelf-atlas-cell {\n    transform: translateY(0) scale(1.18);\n  }\n\n'''
+          if needle not in s:
+              raise SystemExit('mobile hover/active scale anchor not found')
+          if 'scale(1.14)' in s:
+              raise SystemExit('Mode optical balance already present')
+          css.write_text(s.replace(needle, insert, 1), encoding='utf-8')
+
+          test = Path('public/boutique/tests/unit/category-cutout-navigation.test.js')
+          t = test.read_text(encoding='utf-8')
+          tneedle = "    expect(mobileBlock).toMatch(/\\.k-shelf-rail \\.k-cat-cutout \\.k-shelf-object\\s*\\{[^}]*scale\\(1\\.28\\)/s);\n"
+          tinsert = tneedle + "    expect(mobileBlock).toMatch(/data-cat=\\\"mode\\\"[^}]*\\.k-shelf-atlas-cell\\s*\\{[^}]*scale\\(1\\.14\\)/s);\n    expect(mobileBlock).toMatch(/data-cat=\\\"mode\\\"\\]\\.active \\.k-shelf-atlas-cell\\s*\\{[^}]*scale\\(1\\.18\\)/s);\n"
+          if tneedle not in t:
+              raise SystemExit('mobile contract test anchor not found')
+          test.write_text(t.replace(tneedle, tinsert, 1), encoding='utf-8')
+          PY
+      - name: Install Boutique dependencies
+        run: npm --prefix public/boutique ci
+      - name: Run focused contract test
+        run: npm --prefix public/boutique test -- --runInBand tests/unit/category-cutout-navigation.test.js
+      - name: Regenerate official CSS bundles
+        run: node public/boutique/scripts/deploy-css.js
+      - name: Commit generated product files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/category-cutout-navigation.css \
+                  public/boutique/tests/unit/category-cutout-navigation.test.js \
+                  public/boutique/css/dist/components.css \
+                  public/boutique/.cache-buster-state.json \
+                  public/boutique/index.html
+          git commit -m "UI: balance Mode visual weight on mobile"
+          git push origin HEAD:tmp/mobile-mode-optical-balance-build
