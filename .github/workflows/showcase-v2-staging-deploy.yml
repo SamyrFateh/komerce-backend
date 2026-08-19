@@ -2,6 +2,15 @@ name: Deploy staging showcase V2 refinery
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Mode de campagne : resume économise les étapes déjà prouvées ; fresh certifie depuis zéro'
+        required: true
+        type: choice
+        default: resume
+        options:
+          - resume
+          - fresh
   push:
     paths:
       - 'scripts/showcase-v2-plan.js'
@@ -128,7 +137,7 @@ jobs:
           NODE
 
   build-media:
-    name: Reset, build and mirror 500 V2 products
+    name: Prepare 500 V2 products for resume or fresh certification
     needs: preflight
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -153,18 +162,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Require staging media and French-enrichment secrets before reset
+      - name: Require staging secrets for selected mode
         shell: bash
+        env:
+          SHOWCASE_RUN_MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
-          for var in IMAGEKIT_PRIVATE_KEY DATABASE_URL OPENAI_API_KEY; do
+          for var in DATABASE_URL OPENAI_API_KEY; do
             if [ -z "${!var:-}" ]; then
               echo "::error::$var manquant dans les secrets GitHub"
               exit 1
             fi
           done
+          if [ "$SHOWCASE_RUN_MODE" = "fresh" ] && [ -z "${IMAGEKIT_PRIVATE_KEY:-}" ]; then
+            echo "::error::IMAGEKIT_PRIVATE_KEY manquant pour une certification fresh"
+            exit 1
+          fi
 
       - name: Fresh reset SHOWCASE-V2 staging
+        if: inputs.mode == 'fresh'
         run: node scripts/showcase-v2-reset.js
 
       - name: Build 500 taxonomy-covered and eligible source products
@@ -218,6 +234,7 @@ jobs:
           NODE
 
       - name: Mirror V2 media to ImageKit staging
+        if: inputs.mode == 'fresh'
         run: |
           node scripts/showcase-media-mirror.js \
             --target 500 \
@@ -226,6 +243,7 @@ jobs:
             --manifest data/catalogue-test-raw/showcase-catalog-v2.json
 
       - name: Strict ImageKit V2 audit
+        if: inputs.mode == 'fresh'
         run: |
           node scripts/showcase-media-audit.js \
             --target 500 \
@@ -236,7 +254,7 @@ jobs:
             --strict \
             --concurrency 12
 
-      - name: Preserve V2 media evidence
+      - name: Preserve V2 campaign inputs
         uses: actions/upload-artifact@v4
         with:
           name: showcase-v2-canonical-manifests
@@ -281,23 +299,33 @@ jobs:
             fi
           done
 
-      - name: Restore canonical V2 manifests
+      - name: Restore V2 campaign inputs
         uses: actions/download-artifact@v4
         with:
           name: showcase-v2-canonical-manifests
           path: data/catalogue-test-raw
 
-      - name: Cumulative refinery seed with mandatory French enrichment
+      - name: Resume or fresh refinery seed with mandatory French enrichment
+        shell: bash
+        env:
+          SHOWCASE_RUN_MODE: ${{ inputs.mode }}
         run: |
+          set -euo pipefail
+          if [ "$SHOWCASE_RUN_MODE" = "fresh" ]; then
+            manifest="data/catalogue-test-raw/showcase-catalog-v2.json"
+          else
+            manifest="data/catalogue-test-raw/showcase-catalog-v2-source.json"
+          fi
           node scripts/showcase-v2-seed.js \
             --target 500 \
-            --manifest data/catalogue-test-raw/showcase-catalog-v2.json
+            --mode "$SHOWCASE_RUN_MODE" \
+            --manifest "$manifest"
 
       - name: Preserve refinery evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: showcase-v2-refinery-input
-          path: data/catalogue-test-raw/showcase-catalog-v2.json
+          path: data/catalogue-test-raw/showcase-catalog-v2-source.json
           if-no-files-found: error
           retention-days: 14
