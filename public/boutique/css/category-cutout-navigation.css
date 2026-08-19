@@ -104,6 +104,17 @@
   overflow: hidden;
 }
 
+/* La cellule atlas de niveau 1 ne doit pas participer au sizing Grid : son
+ * enfant image est absolu, donc sa contribution intrinsèque vaut 0 et la
+ * track auto peut s'effondrer. Le slot k-shelf-object-slot est déjà positionné
+ * et dimensionné : la cellule remplit donc ce slot de façon déterministe. */
+.k-shelf-object-slot > .k-shelf-atlas-cell {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+}
+
 .k-shelf-atlas-image {
   position: absolute;
   display: block;
