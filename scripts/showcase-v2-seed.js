@@ -13,7 +13,7 @@
  * @db-write      products, catalog_media, product_variants, product_skus, product_sku_media, product_content_profile, product_content_sections, product_attributes, sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, catalog_enrichment_runs
  * @db-txn        yes (ingestion orchestrator + preparation/approval transactions per product)
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
- * @version       2026-08-v4
+ * @version       2026-08-v5
  */
 'use strict';
 
@@ -28,23 +28,29 @@ const catalogImportOrchestrator = require('../services/suppliers/catalog-import-
 const { validateForPromotion, promoteCatalog } = require('../services/catalog-promotion');
 const { upsertProductSku, auditProductSkuReadiness } = require('../services/product-admin-service');
 const catalogEnrichment = require('../services/catalog-enrichment');
+const catalogEnrichmentPrompt = require('../services/prompts/catalog-enrichment.prompt');
 const { approveProduct } = require('../services/catalog-approval');
 
 const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_MANIFEST = path.join(ROOT, 'data', 'catalogue-test-raw', 'showcase-catalog-v2.json');
 const TARGET = 500;
 const SUPPLIER_NAME = 'Komerce Showcase V2';
+const RUN_MODES = Object.freeze(['fresh', 'resume']);
 
 function parseArgs(argv) {
-  const out = { target: TARGET, manifest: DEFAULT_MANIFEST };
+  // CLI direct reste conservateur : fresh. Le workflow de debug passe
+  // explicitement --mode resume ; la certification finale passe --mode fresh.
+  const out = { target: TARGET, manifest: DEFAULT_MANIFEST, mode: 'fresh' };
   for (let i = 0; i < argv.length; i += 1) {
     const [key, inline] = argv[i].split('=', 2);
     const next = () => inline ?? argv[++i];
     if (key === '--target') out.target = Number.parseInt(next(), 10);
     else if (key === '--manifest') out.manifest = path.resolve(next());
+    else if (key === '--mode') out.mode = String(next() || '').trim().toLowerCase();
     else throw new Error(`Argument inconnu: ${argv[i]}`);
   }
   if (out.target !== TARGET) throw new Error('--target doit être exactement 500 pour Showcase V2');
+  if (!RUN_MODES.includes(out.mode)) throw new Error(`--mode doit être fresh ou resume (reçu: ${out.mode || '(vide)'})`);
   return out;
 }
 
@@ -73,18 +79,24 @@ function assertStaging() {
   resolveMediaProvider();
 }
 
-function validateManifest(products) {
+function validateManifestIdentity(products) {
   if (!Array.isArray(products) || products.length !== TARGET) {
     throw new Error(`Manifest V2 invalide: ${Array.isArray(products) ? products.length : 'non-array'}/${TARGET}`);
   }
-  const mediaProvider = resolveMediaProvider();
   const refs = new Set();
-  const heroes = new Set();
   for (const product of products) {
     if (!/^SHOWCASE-V2-\d{4}$/.test(product.product_ref || '')) throw new Error(`Référence V2 invalide: ${product.product_ref}`);
     if (refs.has(product.product_ref)) throw new Error(`Référence V2 dupliquée: ${product.product_ref}`);
     refs.add(product.product_ref);
     if (!product.source_title) throw new Error(`Titre source brut absent: ${product.product_ref}`);
+  }
+}
+
+function validateManifest(products) {
+  validateManifestIdentity(products);
+  const mediaProvider = resolveMediaProvider();
+  const heroes = new Set();
+  for (const product of products) {
     const images = normalizeImages(product);
     if (!images.length || images.some((url) => !isCanonicalMediaUrl(url, mediaProvider, 'showcase-v2'))) {
       throw new Error(`Média non canonique ${mediaProvider}: ${product.product_ref}`);
@@ -124,6 +136,41 @@ function buildImportContracts(products, slots) {
   });
 }
 
+function candidateRowsToMap(rows, slots) {
+  const expectedRefs = new Set(slots.map((slot) => slot.product_ref));
+  const byRef = new Map();
+  const badStates = [];
+  for (const row of rows) {
+    if (!expectedRefs.has(row.supplier_product_id)) continue;
+    if (byRef.has(row.supplier_product_id)) throw new Error(`Candidat V2 dupliqué: ${row.supplier_product_id}`);
+    if (!row.normalized_source_contract) throw new Error(`normalized_source_contract absent: ${row.supplier_product_id}`);
+    if (!row.raw_payload?.source_title) throw new Error(`raw_payload.source_title absent: ${row.supplier_product_id}`);
+    if (!['scanned', 'imported_to_catalog'].includes(row.state)) {
+      badStates.push({ ref: row.supplier_product_id, state: row.state, decision: row.scan_result?.sourcing_decision || null });
+    }
+    validateForPromotion(row.normalized_source_contract);
+    byRef.set(row.supplier_product_id, row);
+  }
+  if (byRef.size !== TARGET) throw new Error(`Snapshots candidats V2 incomplets: ${byRef.size}/${TARGET}`);
+  if (badStates.length) {
+    throw new Error(`Candidats non promouvables (${badStates.length}): ${JSON.stringify(badStates.slice(0, 20))}`);
+  }
+  return byRef;
+}
+
+async function loadExistingCandidates(slots) {
+  const refs = slots.map((slot) => slot.product_ref);
+  const { rows } = await db.query(
+    `SELECT id, supplier_product_id, product_name, description,
+            purchase_price_kmf, estimated_weight_kg, scan_result, state,
+            product_id, raw_payload, normalized_source_contract
+       FROM sourcing_candidates
+      WHERE supplier_name=$1 AND supplier_product_id = ANY($2::text[])`,
+    [SUPPLIER_NAME, refs],
+  );
+  return candidateRowsToMap(rows, slots);
+}
+
 async function ingestThroughRefinery(products, slots) {
   const items = buildImportContracts(products, slots);
   const body = {
@@ -142,39 +189,93 @@ async function ingestThroughRefinery(products, slots) {
     throw new Error(`Ingestion raffinerie incomplète: accepted=${result.body.accepted}, rejected=${result.body.rejected}`);
   }
 
-  const refs = slots.map((slot) => slot.product_ref);
-  const { rows } = await db.query(
-    `SELECT id, supplier_product_id, product_name, description,
-            purchase_price_kmf, estimated_weight_kg, scan_result, state,
-            product_id, raw_payload, normalized_source_contract
-       FROM sourcing_candidates
-      WHERE supplier_name=$1 AND supplier_product_id = ANY($2::text[])`,
-    [SUPPLIER_NAME, refs],
-  );
-  if (rows.length !== TARGET) throw new Error(`Snapshots candidats V2 incomplets: ${rows.length}/${TARGET}`);
-
-  const byRef = new Map();
-  const badStates = [];
-  for (const row of rows) {
-    if (!row.normalized_source_contract) throw new Error(`normalized_source_contract absent: ${row.supplier_product_id}`);
-    if (!row.raw_payload?.source_title) throw new Error(`raw_payload.source_title absent: ${row.supplier_product_id}`);
-    if (!['scanned', 'imported_to_catalog'].includes(row.state)) {
-      badStates.push({ ref: row.supplier_product_id, state: row.state, decision: row.scan_result?.sourcing_decision || null });
-    }
-    validateForPromotion(row.normalized_source_contract);
-    byRef.set(row.supplier_product_id, row);
-  }
-  if (badStates.length) {
-    throw new Error(`Candidats non promouvables (${badStates.length}): ${JSON.stringify(badStates.slice(0, 20))}`);
-  }
-
-  console.log(`[showcase-v2-seed] ingestion vraie: import=${result.body.import_id}, candidats=${rows.length}, erreurs=0`);
+  const byRef = await loadExistingCandidates(slots);
+  console.log(`[showcase-v2-seed] ingestion vraie: import=${result.body.import_id}, candidats=${byRef.size}, erreurs=0`);
   return byRef;
 }
 
 function candidatePrice(candidate, fallback) {
   const sr = candidate.scan_result || {};
   return roundKmf(sr.test_price_kmf || sr.recommended_price_kmf || sr.minimum_safe_price_kmf || fallback || 500);
+}
+
+function hydrateResumeProduct(sourceProduct, slot, candidate) {
+  const raw = candidate.raw_payload || {};
+  const contract = candidate.normalized_source_contract || {};
+  const sourceDescription = sourceProduct.source_description ?? null;
+  const rawDescription = raw.source_description ?? null;
+  const sourceLocale = sourceProduct.source_locale || 'en';
+  const rawLocale = raw.source_locale || 'en';
+
+  if (raw.source_title !== sourceProduct.source_title || rawDescription !== sourceDescription || rawLocale !== sourceLocale) {
+    throw new Error(`Resume refusé — source modifiée depuis l'ingestion: ${slot.product_ref}`);
+  }
+  const showcaseMeta = contract.raw_payload?.showcase_v2 || contract.raw_payload?.raw_payload?.showcase_v2 || null;
+  if (showcaseMeta && (showcaseMeta.product_ref !== slot.product_ref || showcaseMeta.category !== slot.category || showcaseMeta.subcategory !== slot.subcategory || Boolean(showcaseMeta.rich) !== Boolean(slot.rich))) {
+    throw new Error(`Resume refusé — taxonomie/contrat divergent: ${slot.product_ref}`);
+  }
+
+  const media = Array.isArray(contract.media)
+    ? [...contract.media].sort((a, b) => Number(a.display_order || 0) - Number(b.display_order || 0)).map((row) => row.url).filter(Boolean)
+    : [];
+  const imageUrl = contract.image_url || media[0] || null;
+  const images = media.length ? media : (imageUrl ? [imageUrl] : []);
+  return { ...sourceProduct, image_url: imageUrl, images };
+}
+
+function resumeProductProblems(row, slot, candidate, { promptVersion = catalogEnrichmentPrompt.PROMPT_VERSION, mediaProvider = resolveMediaProvider() } = {}) {
+  const problems = [];
+  if (!row) return ['produit absent'];
+  const raw = candidate.raw_payload || {};
+  const contract = candidate.normalized_source_contract || {};
+  const expectedSkus = slot.rich
+    ? (Array.isArray(contract.sellable_units) ? contract.sellable_units.filter((unit) => unit.is_active !== false).length : 0)
+    : 0;
+
+  if (!row.is_active || !row.is_available || !row.quality_validated || row.lifecycle_status !== 'active') problems.push('publication incomplète');
+  if (row.content_source !== 'ai_enriched') problems.push('enrichissement FR absent');
+  if (Number(row.enrichment_version) !== Number(promptVersion)) problems.push('version enrichissement obsolète');
+  if (row.needs_review === true || !Number.isFinite(Number(row.enrichment_confidence))) problems.push('enrichissement non certifié');
+  if (row.category !== slot.category || row.subcategory !== slot.subcategory) problems.push('taxonomie divergente');
+  if (row.name_source !== raw.source_title || (row.description_source ?? null) !== (raw.source_description ?? null) || (row.source_locale || 'en') !== (raw.source_locale || 'en')) problems.push('lignage source divergent');
+  if (!isCanonicalMediaUrl(row.image_url, mediaProvider, 'showcase-v2')) problems.push('média non canonique');
+  if (candidate.state !== 'imported_to_catalog' || String(candidate.product_id || '') !== String(row.id)) problems.push('candidat non rattaché');
+  if (slot.rich) {
+    if (row.inventory_model !== 'SKU' || Number(row.active_skus) !== expectedSkus || expectedSkus < 1) problems.push('SKU incomplets');
+  } else if (Number(row.active_skus) !== 0) {
+    problems.push('SKU inattendus');
+  }
+  return problems;
+}
+
+function isResumeProductComplete(row, slot, candidate, options) {
+  return resumeProductProblems(row, slot, candidate, options).length === 0;
+}
+
+async function loadResumeCompletedRefs(slots, candidates) {
+  const refs = slots.map((slot) => slot.product_ref);
+  const { rows } = await db.query(
+    `SELECT p.id, p.product_ref, p.category, p.subcategory,
+            p.is_active, p.is_available, p.quality_validated, p.lifecycle_status,
+            p.content_source, p.enrichment_version, p.enrichment_confidence, p.needs_review,
+            p.inventory_model, p.name_source, p.description_source, p.source_locale, p.image_url,
+            (SELECT COUNT(*)::int FROM product_skus ps WHERE ps.product_id=p.id AND ps.is_active=TRUE) AS active_skus
+       FROM products p
+      WHERE p.product_ref = ANY($1::text[])`,
+    [refs],
+  );
+  const byRef = new Map(rows.map((row) => [row.product_ref, row]));
+  const completed = new Set();
+  const pending = [];
+  for (const slot of slots) {
+    const candidate = candidates.get(slot.product_ref);
+    const row = byRef.get(slot.product_ref) || null;
+    const problems = resumeProductProblems(row, slot, candidate);
+    if (problems.length === 0) completed.add(slot.product_ref);
+    else pending.push({ ref: slot.product_ref, problems });
+  }
+  console.log(`[showcase-v2-seed] resume checkpoint DB: ${completed.size}/${TARGET} complets, ${pending.length} à rejouer${pending.length ? `, premier=${pending[0].ref} (${pending[0].problems.join(', ')})` : ''}`);
+  return completed;
 }
 
 async function upsertParent(client, product, slot, contract, candidate) {
@@ -326,7 +427,7 @@ async function enrichProductInFrench(productId, productRef) {
        FROM products WHERE id=$1`,
     [productId],
   );
-  if (!row || row.content_source !== 'ai_enriched' || !row.enrichment_version || row.needs_review) {
+  if (!row || row.content_source !== 'ai_enriched' || Number(row.enrichment_version) !== Number(catalogEnrichmentPrompt.PROMPT_VERSION) || row.needs_review) {
     throw new Error(`Invariant enrichissement FR cassé ${productRef}: ${JSON.stringify(row || null)}`);
   }
   return row;
@@ -375,8 +476,10 @@ async function postSeedAudit() {
        COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND content_source='connector_raw')::int AS raw_active_products,
        COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND char_length(name)>80)::int AS overlong_titles,
        COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND enrichment_version IS NULL)::int AS missing_enrichment_version,
+       COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND enrichment_version IS DISTINCT FROM $1)::int AS wrong_enrichment_version,
        COUNT(*) FILTER (WHERE is_active AND product_ref LIKE 'SHOWCASE-V2-%' AND needs_review=TRUE)::int AS active_needs_review
-     FROM products`
+     FROM products`,
+    [catalogEnrichmentPrompt.PROMPT_VERSION],
   );
 
   const { rows: distribution } = await db.query(
@@ -426,7 +529,7 @@ async function postSeedAudit() {
   if (totals.v1 !== 500 || totals.v2 !== 500 || totals.sku_products !== 350) {
     throw new Error(`Post-seed mismatch: ${JSON.stringify({ ...totals, ...skuStats })}`);
   }
-  if (totals.ai_enriched_products !== 500 || totals.raw_active_products !== 0 || totals.overlong_titles !== 0 || totals.missing_enrichment_version !== 0 || totals.active_needs_review !== 0) {
+  if (totals.ai_enriched_products !== 500 || totals.raw_active_products !== 0 || totals.overlong_titles !== 0 || totals.missing_enrichment_version !== 0 || totals.wrong_enrichment_version !== 0 || totals.active_needs_review !== 0) {
     throw new Error(`Audit éditorial FR refusé: ${JSON.stringify(totals)}`);
   }
   if (lineage.name_source_mismatch !== 0 || lineage.description_source_mismatch !== 0 || lineage.missing_raw_source_title !== 0) {
@@ -450,6 +553,7 @@ async function postSeedAudit() {
       raw_active_products: totals.raw_active_products,
       overlong_titles: totals.overlong_titles,
       missing_enrichment_version: totals.missing_enrichment_version,
+      wrong_enrichment_version: totals.wrong_enrichment_version,
       active_needs_review: totals.active_needs_review,
     },
     source_lineage: lineage,
@@ -460,34 +564,58 @@ async function postSeedAudit() {
 async function seed(options) {
   assertStaging();
   if (!fs.existsSync(options.manifest)) throw new Error(`Manifest absent: ${options.manifest}`);
-  const products = JSON.parse(fs.readFileSync(options.manifest, 'utf8'));
-  validateManifest(products);
+  const manifestProducts = JSON.parse(fs.readFileSync(options.manifest, 'utf8'));
+  validateManifestIdentity(manifestProducts);
   await assertV1Foundation();
 
   const slots = buildSlots();
-  for (let index = 0; index < products.length; index += 1) {
-    const product = products[index];
+  for (let index = 0; index < manifestProducts.length; index += 1) {
+    const product = manifestProducts[index];
     const slot = slots[index];
     if (product.product_ref !== slot.product_ref || product.category !== slot.category || product.subcategory !== slot.subcategory) {
       throw new Error(`Manifest/plan divergent à ${index}: ${product.product_ref}`);
     }
   }
 
-  // Chaîne réellement éprouvée : connecteur → normalisation → éligibilité →
-  // pricing → candidat inactif → promotion/SKU → enrichissement FR → approbation.
-  const candidates = await ingestThroughRefinery(products, slots);
+  let products;
+  let candidates;
+  let completed = new Set();
+  if (options.mode === 'fresh') {
+    validateManifest(manifestProducts);
+    // Chaîne réellement éprouvée : connecteur → normalisation → éligibilité →
+    // pricing → candidat inactif → promotion/SKU → enrichissement FR → approbation.
+    products = manifestProducts;
+    candidates = await ingestThroughRefinery(products, slots);
+  } else {
+    // Reprise sans coût inutile : les 500 candidats issus du dernier fresh sont
+    // la source des médias canoniques et du contrat. Aucune réingestion, aucun
+    // remirroring ImageKit, aucun appel Luna pour une fiche déjà complète.
+    candidates = await loadExistingCandidates(slots);
+    products = manifestProducts.map((product, index) => hydrateResumeProduct(product, slots[index], candidates.get(slots[index].product_ref)));
+    validateManifest(products);
+    completed = await loadResumeCompletedRefs(slots, candidates);
+  }
 
+  const pendingTotal = TARGET - completed.size;
+  let replayed = 0;
   for (let index = 0; index < products.length; index += 1) {
     const product = products[index];
     const slot = slots[index];
     const candidate = candidates.get(slot.product_ref);
     if (!candidate) throw new Error(`Candidat V2 introuvable: ${slot.product_ref}`);
+    if (completed.has(slot.product_ref)) continue;
+
     await processProduct(product, slot, candidate);
-    if ((index + 1) % 25 === 0) console.log(`[showcase-v2-seed] ${index + 1}/${TARGET} enrichis FR + approuvés`);
+    replayed += 1;
+    if (options.mode === 'fresh') {
+      if ((index + 1) % 25 === 0) console.log(`[showcase-v2-seed] ${index + 1}/${TARGET} enrichis FR + approuvés`);
+    } else if (replayed % 25 === 0 || replayed === pendingTotal) {
+      console.log(`[showcase-v2-seed] resume ${replayed}/${pendingTotal} rejoués — ${completed.size + replayed}/${TARGET} complets`);
+    }
   }
 
   await postSeedAudit();
-  console.log('[showcase-v2-seed] ✅ campagne V2 committée, enrichie FR et auditée');
+  console.log(`[showcase-v2-seed] ✅ campagne V2 ${options.mode} committée, enrichie FR et auditée`);
 }
 
 async function main() {
@@ -509,7 +637,11 @@ if (require.main === module) {
 module.exports = {
   parseArgs,
   validateManifest,
+  validateManifestIdentity,
   buildImportContracts,
   candidatePrice,
+  hydrateResumeProduct,
+  resumeProductProblems,
+  isResumeProductComplete,
   resolveEnrichmentProvider,
 };
