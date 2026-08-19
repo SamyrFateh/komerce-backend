@@ -54,6 +54,8 @@ describe('showcase-v2 deterministic supplier fixtures', () => {
       expect(product.source_locale).toBe('en');
       expect(product.source_title).toBeTruthy();
       expect(product.source_description).toContain('Commercial supplier catalogue item');
+      expect(product.source_description).toContain('Supplier commercial line');
+      expect(product.source_description).toContain('does not indicate size, age, quantity or technical specification');
       expect(product.source_description).toContain('Sellable physical product');
       expect(product.source_description).not.toMatch(/Paul Klee|Hirohito|museum collection|work of art/i);
       expect(product.source_url).toMatch(/^https:\/\/fixtures\.komerce\.test\/products\//);
@@ -69,6 +71,17 @@ describe('showcase-v2 deterministic supplier fixtures', () => {
     expect(kitchen).toHaveLength(25);
     expect(kitchen.some((product) => /\bknife\b/i.test(product.source_title))).toBe(false);
     expect(kitchen.filter((product) => /\bcutlery\b/i.test(product.source_title))).toHaveLength(5);
+  });
+
+  test('régression run 59 : les gammes ne portent plus de suffixe numérique ambigu', () => {
+    const products = buildCatalogue();
+    expect(products.some((product) => /—\s+[A-Za-z]+\s+\d+\s*$/.test(product.source_title))).toBe(false);
+
+    const product70 = products.find((product) => product.product_ref === 'SHOWCASE-V2-0070');
+    expect(product70).toBeDefined();
+    expect(product70.source_title).toBe('Kids school uniform set — Essential');
+    expect(product70.source_description).toContain('Supplier commercial line: Essential');
+    expect(product70.source_description).toContain('does not indicate size, age, quantity or technical specification');
   });
 
   test('le générateur est déterministe', () => {
