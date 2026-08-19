@@ -32,3 +32,5 @@ jobs:
           fi
           git commit -m "build(css): bundle compact mobile category rail"
           git push
+
+# trigger 2
