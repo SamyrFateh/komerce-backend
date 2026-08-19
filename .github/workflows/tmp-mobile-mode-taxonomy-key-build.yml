@@ -18,6 +18,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install Boutique dependencies
+        run: npm --prefix public/boutique ci
       - name: Patch real Mode taxonomy key
         shell: python
         run: |
