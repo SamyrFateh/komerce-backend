@@ -1,0 +1,33 @@
+{
+  "found": true,
+  "run": {
+    "id": 32255839479,
+    "run_number": 54,
+    "status": "in_progress",
+    "conclusion": null,
+    "created_at": "2026-08-19T13:02:11Z",
+    "updated_at": "2026-08-19T13:02:38Z",
+    "html_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32255839479",
+    "head_branch": "main",
+    "head_sha": "635c4d98f2260e6fbcfe3a058ba0f33791938fd2",
+    "event": "workflow_dispatch"
+  },
+  "jobs": [
+    {
+      "id": 96077221652,
+      "name": "V2 contract, French editorial and refinery preflight",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-08-19T13:02:15Z",
+      "completed_at": "2026-08-19T13:02:32Z"
+    },
+    {
+      "id": 96077316372,
+      "name": "Reset, build and mirror 500 V2 products",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at": "2026-08-19T13:02:37Z",
+      "completed_at": null
+    }
+  ]
+}
