@@ -6,6 +6,12 @@
  * @test-requires none
  */
 
+jest.mock('../../db', () => ({
+  query: jest.fn(),
+  getClient: jest.fn(),
+  pool: { end: jest.fn() },
+}));
+
 const {
   TAXONOMY_TARGETS,
   profileFor,
@@ -14,6 +20,13 @@ const {
   buildV2Contract,
   summary,
 } = require('../../scripts/showcase-v2-plan');
+const {
+  parseArgs: parseSeedArgs,
+  hydrateResumeProduct,
+  resumeProductProblems,
+  isResumeProductComplete,
+} = require('../../scripts/showcase-v2-seed');
+const { PROMPT_VERSION } = require('../../services/prompts/catalog-enrichment.prompt');
 const manualConnector = require('../../services/suppliers/connectors/manual-connector');
 
 const PRODUCT = {
@@ -103,5 +116,91 @@ describe('showcase-v2-plan', () => {
     expect(contract.option_axes).toBeNull();
     expect(contract.sellable_units).toBeNull();
     expect(contract.stock_available).toBe(9);
+  });
+});
+
+describe('showcase-v2 resume — économie sans faux vert', () => {
+  function resumeFixture() {
+    const slot = buildSlots()[0];
+    const contract = buildV2Contract(PRODUCT, slot);
+    const candidate = {
+      id: 'candidate-1',
+      supplier_product_id: slot.product_ref,
+      state: 'imported_to_catalog',
+      product_id: 'product-1',
+      raw_payload: {
+        source_title: PRODUCT.source_title,
+        source_description: PRODUCT.source_description,
+        source_locale: PRODUCT.source_locale,
+      },
+      normalized_source_contract: contract,
+    };
+    const row = {
+      id: 'product-1',
+      product_ref: slot.product_ref,
+      category: slot.category,
+      subcategory: slot.subcategory,
+      is_active: true,
+      is_available: true,
+      quality_validated: true,
+      lifecycle_status: 'active',
+      content_source: 'ai_enriched',
+      enrichment_version: PROMPT_VERSION,
+      enrichment_confidence: 0.96,
+      needs_review: false,
+      inventory_model: 'SKU',
+      name_source: PRODUCT.source_title,
+      description_source: PRODUCT.source_description,
+      source_locale: PRODUCT.source_locale,
+      image_url: PRODUCT.image_url,
+      active_skus: contract.sellable_units.length,
+    };
+    return { slot, contract, candidate, row };
+  }
+
+  test('le CLI direct reste fresh mais accepte explicitement resume', () => {
+    expect(parseSeedArgs(['--target', '500', '--manifest', 'x.json']).mode).toBe('fresh');
+    expect(parseSeedArgs(['--target', '500', '--manifest', 'x.json', '--mode', 'resume']).mode).toBe('resume');
+    expect(() => parseSeedArgs(['--mode', 'cheap-but-unsafe'])).toThrow(/fresh ou resume/);
+  });
+
+  test('hydrate le manifest source depuis le contrat média déjà ingéré sans remirroring', () => {
+    const { slot, candidate } = resumeFixture();
+    const sourceOnly = {
+      ...PRODUCT,
+      product_ref: slot.product_ref,
+      category: slot.category,
+      subcategory: slot.subcategory,
+      image_url: 'https://upload.wikimedia.org/source.jpg',
+      images: ['https://upload.wikimedia.org/source.jpg'],
+    };
+    const hydrated = hydrateResumeProduct(sourceOnly, slot, candidate);
+    expect(hydrated.image_url).toBe(PRODUCT.image_url);
+    expect(hydrated.images).toEqual(PRODUCT.images);
+  });
+
+  test('un produit réellement complet est sauté sans nouvel appel Luna', () => {
+    const { slot, candidate, row } = resumeFixture();
+    expect(resumeProductProblems(row, slot, candidate, { mediaProvider: 'cloudinary' })).toEqual([]);
+    expect(isResumeProductComplete(row, slot, candidate, { mediaProvider: 'cloudinary' })).toBe(true);
+  });
+
+  test('une version Luna obsolète ou un SKU manquant force le replay du seul produit', () => {
+    const { slot, candidate, row } = resumeFixture();
+    expect(resumeProductProblems({ ...row, enrichment_version: PROMPT_VERSION - 1 }, slot, candidate, { mediaProvider: 'cloudinary' }))
+      .toContain('version enrichissement obsolète');
+    expect(resumeProductProblems({ ...row, active_skus: row.active_skus - 1 }, slot, candidate, { mediaProvider: 'cloudinary' }))
+      .toContain('SKU incomplets');
+  });
+
+  test('une source modifiée depuis le fresh interdit la reprise silencieuse', () => {
+    const { slot, candidate } = resumeFixture();
+    expect(() => hydrateResumeProduct({
+      ...PRODUCT,
+      product_ref: slot.product_ref,
+      category: slot.category,
+      subcategory: slot.subcategory,
+      source_title: 'Supplier title changed after ingestion',
+    }, slot, candidate)).toThrow(/source modifiée/);
   });
 });
