@@ -1,0 +1,33 @@
+name: tmp bundle mode atlas zero width
+
+on:
+  push:
+    branches:
+      - tmp/bundle-mode-atlas-zero-width
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Regenerate Boutique CSS bundles
+        run: node public/boutique/scripts/deploy-css.js
+      - name: Commit generated bundle closure
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/dist public/boutique/.cache-buster-state.json public/boutique/index.html
+          if git diff --cached --quiet; then
+            echo "No generated changes"
+          else
+            git commit -m "chore: regenerate Boutique CSS bundles"
+            git push
+          fi
