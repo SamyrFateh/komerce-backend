@@ -1,0 +1,41 @@
+name: tmp fix home controller subcutout test
+
+on:
+  push:
+    branches:
+      - tmp/fix-home-controller-test-subcutout
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update legacy test selectors to Shelf contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('public/boutique/tests/unit/home-controller.test.js')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace("rend le header + les pills quand des sous-catégories existent", "rend le header + les objets détourés quand des sous-catégories existent")
+          s = s.replace("wrap.querySelectorAll('.k-subchip').length", "wrap.querySelectorAll('.k-subcutout').length")
+          s = s.replace("wrap.querySelector('.k-subchip.active')", "wrap.querySelector('.k-subcutout.active')")
+          s = s.replace("document.querySelector('.k-subchip[data-subcat=\"chaussures\"]')", "document.querySelector('.k-subcutout[data-subcat=\"chaussures\"]')")
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit test contract update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/tests/unit/home-controller.test.js
+          if git diff --cached --quiet; then
+            echo "No test changes"
+          else
+            git commit -m "Test: align home subcategory selectors with Shelf cutout"
+            git push
+          fi
