@@ -1,0 +1,42 @@
+name: Probe Showcase V2 run50 fix
+
+on:
+  push:
+    branches:
+      - ops/showcase-v2-run50
+    paths:
+      - '.github/workflows/showcase-v2-run50-fix-probe.yml'
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops/showcase-v2-run50
+      - name: Capture fix workflow status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          sleep 8
+          run_json=$(gh api "/repos/${GH_REPO}/actions/workflows/showcase-v2-run50-fix.yml/runs?branch=ops/showcase-v2-run50&per_page=1")
+          run_id=$(echo "$run_json" | jq -r '.workflow_runs[0].id // empty')
+          if [ -z "$run_id" ]; then
+            echo '{"found":false}' > .showcase-run50-fix-status.json
+          else
+            jobs=$(gh api "/repos/${GH_REPO}/actions/runs/${run_id}/jobs?per_page=100")
+            prs=$(gh api "/repos/${GH_REPO}/pulls?head=SamyrFateh:fix/showcase-v2-run50-semantic&state=all&per_page=5")
+            jq -n --argjson run "$(echo "$run_json" | jq '.workflow_runs[0]')" --argjson jobs "$jobs" --argjson prs "$prs" '{found:true,run:{id:$run.id,status:$run.status,conclusion:$run.conclusion,html_url:$run.html_url,created_at:$run.created_at,updated_at:$run.updated_at},jobs:[$jobs.jobs[]|{id,name,status,conclusion}],prs:[$prs[]|{number,title,state,html_url}]}' > .showcase-run50-fix-status.json
+          fi
+          git config user.name "Komerce Showcase Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .showcase-run50-fix-status.json
+          git commit -m "ops(showcase): record run50 fix status" || exit 0
+          git push origin HEAD:ops/showcase-v2-run50
