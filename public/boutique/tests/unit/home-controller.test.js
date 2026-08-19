@@ -157,7 +157,7 @@ describe('home-controller', () => {
       expect(document.documentElement.style.getPropertyValue('--sidebar-top')).toBe('');
     });
 
-    it('rend le header + les pills quand des sous-catégories existent', () => {
+    it('rend le header + les objets détourés quand des sous-catégories existent', () => {
       setViewport(1200);
       mountFixture('<div id="k-subcats-wrap"></div>');
       getCategoryLabel.mockReturnValue('Mode & Vêtements');
@@ -177,8 +177,8 @@ describe('home-controller', () => {
       expect(wrap.textContent).toContain('Mode & Vêtements');
       expect(wrap.textContent).toContain('42');
       // "Tout voir" + 2 sous-catégories
-      expect(wrap.querySelectorAll('.k-subchip').length).toBe(3);
-      const activeChip = wrap.querySelector('.k-subchip.active');
+      expect(wrap.querySelectorAll('.k-subcutout').length).toBe(3);
+      const activeChip = wrap.querySelector('.k-subcutout.active');
       expect(activeChip.textContent).toContain('Chaussures');
     });
 
@@ -222,7 +222,7 @@ describe('home-controller', () => {
       getSubcategories.mockReturnValue([{ key: 'chaussures', label: 'Chaussures' }]);
       state.activeSubcat = null;
       renderSubcatRail('mode');
-      document.querySelector('.k-subchip[data-subcat="chaussures"]')
+      document.querySelector('.k-subcutout[data-subcat="chaussures"]')
         .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(state.activeSubcat).toBe('chaussures');
       expect(renderGrid).toHaveBeenCalled();
@@ -234,7 +234,7 @@ describe('home-controller', () => {
       getSubcategories.mockReturnValue([{ key: 'chaussures', label: 'Chaussures' }]);
       state.activeSubcat = 'chaussures';
       renderSubcatRail('mode');
-      document.querySelector('.k-subchip[data-subcat="chaussures"]')
+      document.querySelector('.k-subcutout[data-subcat="chaussures"]')
         .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(state.activeSubcat).toBeNull();
     });
