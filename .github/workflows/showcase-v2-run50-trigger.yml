@@ -26,31 +26,32 @@ jobs:
           TARGET_SHA: 5082a650eaab05ab0056957ed3be1b6c7f6e4714
         run: |
           set -euo pipefail
+          started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           gh workflow run showcase-v2-staging-deploy.yml --ref main -f mode=resume
 
           run_id=""
-          for attempt in $(seq 1 20); do
+          for attempt in $(seq 1 30); do
             runs=$(gh run list \
               --workflow showcase-v2-staging-deploy.yml \
               --event workflow_dispatch \
               --branch main \
-              --limit 10 \
+              --limit 20 \
               --json databaseId,headSha,status,conclusion,createdAt,updatedAt,url)
-            run_id=$(echo "$runs" | jq -r --arg sha "$TARGET_SHA" '[.[] | select(.headSha == $sha)][0].databaseId // empty')
+            run_id=$(echo "$runs" | jq -r --arg sha "$TARGET_SHA" --arg started "$started_at" '[.[] | select(.headSha == $sha and .createdAt >= $started)][0].databaseId // empty')
             if [ -n "$run_id" ]; then break; fi
             sleep 2
           done
 
           if [ -z "$run_id" ]; then
-            echo '{"found":false,"target_sha":"'"$TARGET_SHA"'","mode":"resume"}' > .showcase-v2-run64-status.json
+            echo '{"found":false,"target_sha":"'"$TARGET_SHA"'","mode":"resume","started_at":"'"$started_at"'"}' > .showcase-v2-run65-status.json
             exit 1
           fi
 
-          run=$(echo "$runs" | jq --arg sha "$TARGET_SHA" '[.[] | select(.headSha == $sha)][0]')
-          jq -n --argjson run "$run" '{found:true,mode:"resume",run:$run}' > .showcase-v2-run64-status.json
+          run=$(echo "$runs" | jq --arg sha "$TARGET_SHA" --arg started "$started_at" '[.[] | select(.headSha == $sha and .createdAt >= $started)][0]')
+          jq -n --arg started_at "$started_at" --argjson run "$run" '{found:true,mode:"resume",started_at:$started_at,run:$run}' > .showcase-v2-run65-status.json
 
           git config user.name "Komerce Showcase Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add .showcase-v2-run64-status.json
-          git commit -m "ops(showcase): capture resume run64"
+          git add .showcase-v2-run65-status.json
+          git commit -m "ops(showcase): capture timestamped resume run65"
           git push origin HEAD:ops/showcase-v2-run50
