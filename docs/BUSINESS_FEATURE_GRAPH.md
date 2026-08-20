@@ -212,8 +212,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 10
 - routes: 16
 - migrations: 1
-- dash: 86
-- tests: 32
+- dash: 87
+- tests: 33
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 17
 - interfaces exposed: 65
@@ -1534,7 +1534,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 831 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 833 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 158 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_

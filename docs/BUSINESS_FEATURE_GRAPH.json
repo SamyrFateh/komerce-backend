@@ -2443,6 +2443,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/primitives.js",
+        "resolvedPath": "public/dashboards/canonical/js/primitives.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/admin/index.html",
         "resolvedPath": "public/dashboards/admin/index.html",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3089,6 +3096,13 @@
         "category": "tests",
         "declared": "tests/unit/canonical-dashboard-boundary.test.js",
         "resolvedPath": "tests/unit/canonical-dashboard-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-dashboard-primitives.test.js",
+        "resolvedPath": "tests/unit/canonical-dashboard-primitives.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -25078,7 +25092,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 831
+        "filesObserved": 833
       },
       "boutique": {
         "filesObserved": 158,

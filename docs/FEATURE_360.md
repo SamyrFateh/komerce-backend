@@ -510,12 +510,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "recommendations" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 145 fichier(s) déclaré(s)
-  - dash : 86
+**Implementation** : 147 fichier(s) déclaré(s)
+  - dash : 87
   - migrations : 1
   - routes : 16
   - services : 10
-  - tests : 32
+  - tests : 33
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
