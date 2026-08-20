@@ -19,7 +19,7 @@ jobs:
         with:
           ref: ops/showcase-v2-run50
 
-      - name: Capture latest trigger, repair and canonical deploy runs
+      - name: Capture latest trigger, repair, deploy and storefront proof runs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -42,12 +42,21 @@ jobs:
             --branch main \
             --limit 10 \
             --json databaseId,status,conclusion,createdAt,updatedAt,url,headSha 2>/dev/null || echo '[]')
-          jq -n --argjson trigger "$trigger" --argjson repair "$repair" --argjson deploy "$deploy" \
-            '{captured_at:(now|todate),trigger_runs:$trigger,repair_runs:$repair,deploy_runs:$deploy}' \
+          storefront=$(gh run list \
+            --workflow showcase-v2-storefront-proof.yml \
+            --branch ops/showcase-v2-run50 \
+            --limit 5 \
+            --json databaseId,status,conclusion,createdAt,updatedAt,url,headSha 2>/dev/null || echo '[]')
+          jq -n \
+            --argjson trigger "$trigger" \
+            --argjson repair "$repair" \
+            --argjson deploy "$deploy" \
+            --argjson storefront "$storefront" \
+            '{captured_at:(now|todate),trigger_runs:$trigger,repair_runs:$repair,deploy_runs:$deploy,storefront_runs:$storefront}' \
             > .showcase-v2-status-probe.json
 
           git config user.name "Komerce Showcase Bot"
           git config user.email "actions@users.noreply.github.com"
           git add .showcase-v2-status-probe.json
-          git commit -m "ops(showcase): capture trigger repair and deploy status" || exit 0
+          git commit -m "ops(showcase): capture storefront proof status" || exit 0
           git push origin HEAD:ops/showcase-v2-run50
