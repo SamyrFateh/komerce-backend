@@ -1,0 +1,81 @@
+/* LOT 2B-CANON — layout du renderer DashboardSchema. Aucun sélecteur legacy. */
+.kmc-dashboard {
+  width: min(1440px, calc(100% - 32px));
+  margin: 28px auto 64px;
+  display: grid;
+  gap: 18px;
+}
+
+.kmc-dashboard-header {
+  display: grid;
+  gap: 6px;
+  padding: 4px 2px;
+}
+
+.kmc-dashboard-title {
+  margin: 0;
+  color: var(--kmc-navy);
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+
+.kmc-dashboard-description {
+  max-width: 760px;
+  margin: 0;
+  color: var(--kmc-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.kmc-dashboard-zone {
+  min-width: 0;
+}
+
+.kmc-dashboard-zone-sections {
+  display: grid;
+  gap: 16px;
+}
+
+.kmc-dashboard-zone-sections > .kmc-section {
+  min-width: 0;
+}
+
+.kmc-dashboard-drill {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.kmc-dashboard-drill-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  color: var(--kmc-navy);
+  background: var(--kmc-paper);
+  border: 1px solid var(--kmc-line-strong);
+  border-radius: var(--kmc-radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.kmc-dashboard-drill-link:hover,
+.kmc-dashboard-drill-link:focus-visible {
+  border-color: var(--kmc-navy);
+  background: var(--kmc-card);
+}
+
+@media (max-width: 720px) {
+  .kmc-dashboard {
+    width: min(100% - 24px, 1440px);
+    margin-top: 18px;
+    gap: 14px;
+  }
+
+  .kmc-dashboard-drill {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

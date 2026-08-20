@@ -28,6 +28,33 @@ La liste est volontairement fermée :
 - `DataTable`
 - `ChartPanel`
 
-Elles vivent dans `js/primitives.js` et restent purement présentationnelles : aucune API, aucun calcul métier, aucun store métier parallèle. `ChartPanel` fournit seulement un slot de rendu ; le choix d'un moteur graphique relève du renderer et des besoins réels.
+Elles vivent dans `js/primitives.js` et restent purement présentationnelles : aucune API, aucun calcul métier, aucun store métier parallèle. `ChartPanel` fournit seulement un slot de rendu ; le choix d'un moteur graphique relève du caller et des besoins réels.
 
-`DashboardSchema` et le renderer minimal appartiennent au LOT 2B-CANON et ne sont pas anticipés ici.
+## DashboardSchema V1 — LOT 2B-CANON
+
+Le contrat est figé dans `js/dashboard-schema.js`. Un dashboard peut déclarer uniquement :
+
+- `id`, `title`, `description` ;
+- `filters` : des descripteurs de filtres présentationnels ;
+- `metrics` : une `source` canonique + une liste `pick` de métriques ;
+- `alerts` : une `source` canonique ;
+- `sections` : uniquement `type: "chart"` ou `type: "table"`, avec `source` obligatoire ;
+- `drill` : des destinations explicites `{ id, label, href }`.
+
+Les fonctions sont interdites dans le schema. Les types de sections sont fermés. Les blocs data-bound déclarent toujours une source au format `domaine.nom`.
+
+Le schema choisit, ordonne et présente ; il ne calcule aucune vérité métier.
+
+## Renderer V1 — LOT 2B-CANON
+
+`js/dashboard-renderer.js` est volontairement synchrone et sans accès réseau. Il reçoit :
+
+1. un `DashboardSchema` valide ;
+2. `context.data`, dictionnaire de données déjà résolues indexé par `source` ;
+3. éventuellement `filters`, `onFilterChange` et `renderChart`.
+
+Le renderer ne contient ni `fetch`, ni endpoint API, ni moteur graphique. Il délègue le DOM aux primitives V1 et rend les zones dans l'ordre canonique :
+
+`FilterBar → MetricStrip → AlertPanel → Sections → Drill`.
+
+Le futur LOT 2C-CANON devra donc assembler les sources de Pilotage avant d'appeler le renderer ; il ne devra pas créer un shell ou un renderer parallèle.
