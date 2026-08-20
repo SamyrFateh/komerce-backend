@@ -4198,33 +4198,40 @@
         "kind": "business-transversal",
         "status": "production"
       },
-      "service": "Exposer en lecture agrégée les données opérationnelles et financières pour le contrôle total de la plateforme via les dashboards admin (Control Tower, Pilotage, Santé, Clients, Hub, Relais).",
+      "service": "Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, sans réutiliser les deux générations historiques de dashboards.",
       "perimeter": {
         "in": [
           "routes agrégées dashboard admin (KPIs, clients, opérations, hub, relais, radar, risques)",
           "queries de métriques et cache dashboard",
-          "shell admin SPA + views opérationnelles (ControlTower, Pilotage, Santé, Simulator, ActionCenter)",
-          "admin-legacy Control Tower v7 (actif en prod)",
-          "auth-guard et composants partagés du shell admin"
+          "Legacy 1 : public/dashboards/admin/** — runtime actuel, gelé en maintenance corrective et rollback uniquement",
+          "Legacy 0 : public/dashboards/admin-legacy/** — génération antérieure deprecated, conservation historique/rollback",
+          "Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard",
+          "auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis"
         ],
         "out": [
           "mutations de données (chaque feature métier owns ses mutations)",
           "logique panier, commandes, paiements (feature orders / payments / shared-cart)",
           "moteur tarifaire (feature economic-engine)",
-          "views métier déléguées : PricingView, ProductsView, CategoriesView, etc."
+          "nouveau développement dashboard sous public/dashboards/admin/** ou public/dashboards/admin-legacy/** hors correctif explicite",
+          "import ou héritage UI de admin/** ou admin-legacy/** depuis canonical/**",
+          "migration écran-par-écran des anciennes vues : elles sont des sources de besoins, pas des unités à porter"
         ]
       },
       "authority": "backend-core — tout ajout de route agrégée ou de requête de métriques doit être validé par le propriétaire de dashboard-metrics.js et dashboard-cache.js",
       "invariants": [
         "dashboard agrège en lecture pour les vues de pilotage/reporting (Control Tower, Pilotage, Santé, Clients, radar, risques) : ces surfaces-là ne mutent aucune donnée. À l'inverse, les routes hub/relais/admin opérationnelles (voir db.tables entrées W/RW) écrivent réellement — ancien invariant \"lecture seule\" corrigé au Lot O1.5 (2026-07-12) car contredit par le code ; voir debt.knownGaps pour le plan de redistribution de ces mutations vers leurs features propriétaires",
         "les métriques passent par dashboard-cache.js (pas de requêtes directes dupliquées)",
-        "admin-legacy ct-app-v7.js / ct-views-v7.js sont actifs en prod — ne pas supprimer sans migration",
-        "auth-guard.js protège toutes les routes admin ; aucune route admin sans vérification de token"
+        "Legacy 0 public/dashboards/admin-legacy/** est deprecated et ne reçoit aucun nouveau développement",
+        "Legacy 1 public/dashboards/admin/** reste servi mais est gelé : correctifs et rollback uniquement, aucune nouvelle capacité dashboard",
+        "Canonical public/dashboards/canonical/** est la seule cible de développement des quatre dashboards futurs : Pilotage, Commerce, Opérations, Finance",
+        "canonical/** ne référence ni n’importe aucun code ou CSS de admin/** ou admin-legacy/** ; les anciennes vues ne servent que de sources de besoins",
+        "/admin-next sert canonical pendant la construction ; les routes /admin/* restent sur Legacy 1 jusqu’au cutover explicitement validé",
+        "auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me"
       ],
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 83,
+            "count": 86,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -4587,6 +4594,21 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/base.css",
+                "resolvedPath": "public/dashboards/canonical/css/base.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/index.html",
+                "resolvedPath": "public/dashboards/canonical/index.html",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/app.js",
+                "resolvedPath": "public/dashboards/canonical/js/app.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "hub/index.html",
                 "resolvedPath": "public/hub/index.html",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4794,7 +4816,7 @@
             ]
           },
           "tests": {
-            "count": 31,
+            "count": 32,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -4839,6 +4861,11 @@
               {
                 "declared": "tests/unit/admin-system.test.js",
                 "resolvedPath": "tests/unit/admin-system.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-dashboard-boundary.test.js",
+                "resolvedPath": "tests/unit/canonical-dashboard-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -4954,7 +4981,7 @@
             ]
           }
         },
-        "totalFiles": 141,
+        "totalFiles": 145,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -82,6 +82,13 @@ function mountHtmlRoutes(app, rootDir) {
     redirectToGroup(res, req.query.p || req.query.token || req.query.share);
   });
 
+  // ── Admin canonical greenfield ─────────────────────────────────────────
+  // Route volontairement séparée : aucun /admin/* historique n'est détourné
+  // tant que le nouveau Pilotage n'a pas prouvé sa parité fonctionnelle.
+  app.get('/admin-next', (req, res) => {
+    sendHtml(res, path.join(publicDir, 'dashboards', 'canonical', 'index.html'));
+  });
+
   const ADMIN_DASHBOARD_PATHS = [
     '/admin/pilotage',
     '/admin/control-tower',

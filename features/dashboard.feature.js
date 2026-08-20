@@ -1,9 +1,9 @@
 // features/dashboard.feature.js
 // Backfill complet — 2026-06-28
-// Couverture dashboard : 82 fichiers (socle + legacy)
+// Couverture dashboard : socle backend + deux générations UI legacy + canonical greenfield
 // 16 views métier re-routées vers economic-engine, customs, catalog, shared-cart, inventory, logistics
 //
-// Re-routing validé 2026-06-28.
+// Re-routing validé 2026-06-28. Frontière Legacy / Canonical figée en LOT 2-RESET (2026-08).
 'use strict';
 
 module.exports = {
@@ -17,22 +17,25 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ──────────────────────────────────────────────────────
-  service: 'Exposer en lecture agrégée les données opérationnelles et financières pour le contrôle total de la plateforme via les dashboards admin (Control Tower, Pilotage, Santé, Clients, Hub, Relais).',
+  service: 'Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, sans réutiliser les deux générations historiques de dashboards.',
 
   // ── Périmètre ──────────────────────────────────────────────────────────
   perimeter: {
     in: [
       'routes agrégées dashboard admin (KPIs, clients, opérations, hub, relais, radar, risques)',
       'queries de métriques et cache dashboard',
-      'shell admin SPA + views opérationnelles (ControlTower, Pilotage, Santé, Simulator, ActionCenter)',
-      'admin-legacy Control Tower v7 (actif en prod)',
-      'auth-guard et composants partagés du shell admin',
+      'Legacy 1 : public/dashboards/admin/** — runtime actuel, gelé en maintenance corrective et rollback uniquement',
+      'Legacy 0 : public/dashboards/admin-legacy/** — génération antérieure deprecated, conservation historique/rollback',
+      'Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard',
+      'auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis',
     ],
     out: [
       'mutations de données (chaque feature métier owns ses mutations)',
       'logique panier, commandes, paiements (feature orders / payments / shared-cart)',
       'moteur tarifaire (feature economic-engine)',
-      'views métier déléguées : PricingView, ProductsView, CategoriesView, etc.',
+      'nouveau développement dashboard sous public/dashboards/admin/** ou public/dashboards/admin-legacy/** hors correctif explicite',
+      'import ou héritage UI de admin/** ou admin-legacy/** depuis canonical/**',
+      'migration écran-par-écran des anciennes vues : elles sont des sources de besoins, pas des unités à porter',
     ],
   },
 
@@ -54,6 +57,7 @@ module.exports = {
     'docs/design/DASHBOARD_REDESIGN.md',
     'docs/design/TOUR-DE-CONTROLE-DASHBOARDS.md',
     'docs/design/analyse-dashboard-pilotage.md',
+    'docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md',
     'docs/prompts/PROMPT_DASHBOARD_ECONOMIQUE_BOITES_FLECHES.md',
   ],
 
@@ -262,12 +266,17 @@ module.exports = {
       'W/RW) écrivent réellement — ancien invariant "lecture seule" corrigé au Lot O1.5 (2026-07-12) car contredit par le code ; ' +
       'voir debt.knownGaps pour le plan de redistribution de ces mutations vers leurs features propriétaires',
     'les métriques passent par dashboard-cache.js (pas de requêtes directes dupliquées)',
-    'admin-legacy ct-app-v7.js / ct-views-v7.js sont actifs en prod — ne pas supprimer sans migration',
-    'auth-guard.js protège toutes les routes admin ; aucune route admin sans vérification de token',
+    'Legacy 0 public/dashboards/admin-legacy/** est deprecated et ne reçoit aucun nouveau développement',
+    'Legacy 1 public/dashboards/admin/** reste servi mais est gelé : correctifs et rollback uniquement, aucune nouvelle capacité dashboard',
+    'Canonical public/dashboards/canonical/** est la seule cible de développement des quatre dashboards futurs : Pilotage, Commerce, Opérations, Finance',
+    'canonical/** ne référence ni n’importe aucun code ou CSS de admin/** ou admin-legacy/** ; les anciennes vues ne servent que de sources de besoins',
+    '/admin-next sert canonical pendant la construction ; les routes /admin/* restent sur Legacy 1 jusqu’au cutover explicitement validé',
+    'auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me',
   ],
 
   // ── Vérification gouvernance ───────────────────────────────────────────
   verification: [
+    'npx jest tests/unit/canonical-dashboard-boundary.test.js --runInBand',
     'npm run dashboards:360:check',
     'npm run map:check',
   ],
@@ -310,7 +319,12 @@ module.exports = {
       'migrations/071_relay_dashboard_tables.sql',
     ],
     dash: [
-      // ── Entrées déclarées avant backfill ──────────────────────────
+      // ── Canonical — seule cible de nouveau développement dashboard ──
+      'dashboards/canonical/index.html',
+      'dashboards/canonical/css/base.css',
+      'dashboards/canonical/js/app.js',
+
+      // ── Legacy 1 — admin actuel, gelé maintenance corrective ──────
       'dashboards/admin/index.html',
       'dashboards/admin/portal-pilotage.html',
       'dashboards/admin/portal-pilotage.js',
@@ -322,7 +336,7 @@ module.exports = {
       'js/parcel-components.js',
       'js/qr-viewer.js',
 
-      // ── Socle Lot 4 : shell, API client, utils, composants ────────
+      // ── Socle Legacy 1 : shell, API client, utils, composants ─────
       'dashboards/admin/js/app.js',
       'dashboards/admin/js/api-client.js',
       'dashboards/admin/js/utils.js',
@@ -333,7 +347,7 @@ module.exports = {
       'dashboards/admin/js/components/KpiCard.js',
       'dashboards/admin/js/components/UI.js',
 
-      // ── CSS Lot 4 ─────────────────────────────────────────────────
+      // ── CSS Legacy 1 ───────────────────────────────────────────────
       'dashboards/admin/css/ac-styles.css',
       'dashboards/admin/css/components.css',
       'dashboards/admin/css/layout.css',
@@ -341,7 +355,7 @@ module.exports = {
       'dashboards/admin/css/shell.css',
       'dashboards/admin/css/tokens.css',
 
-      // ── Views Lot 4 — domaine "dashboard / operations" ──────────
+      // ── Views Legacy 1 ─────────────────────────────────────────────
       'dashboards/admin/js/views/ClientsView.js',
       'dashboards/admin/js/views/SettingsView.js',
       'dashboards/admin/js/views/ActionCenterView.js',
@@ -357,19 +371,19 @@ module.exports = {
       'dashboards/admin/js/views/AccountingView.js',
       'dashboards/admin/js/views/InvoicesView.js',
 
-      // ── admin-legacy — ACTIF (CT v7 en prod) ─────────────────────
+      // ── Legacy 0 — génération antérieure deprecated ────────────────
       'dashboards/admin-legacy/control-tower.html',
       'dashboards/admin-legacy/css/ct-inventory.css',
       'dashboards/admin-legacy/js/ct-api.js',
       'dashboards/admin-legacy/js/ct-app.js',           // deprecated v5
       'dashboards/admin-legacy/js/ct-app-v6.js',        // deprecated v6
-      'dashboards/admin-legacy/js/ct-app-v7.js',        // ACTIF
+      'dashboards/admin-legacy/js/ct-app-v7.js',        // dernier runtime historique
       // ct-notifications.js supprimé (deprecated v5) — ref retirée 2026-07-01
       'dashboards/admin-legacy/js/ct-platform.js',
-      'dashboards/admin-legacy/js/ct-scenarios.js',     // deprecated v5
-      'dashboards/admin-legacy/js/ct-views.js',         // deprecated v5
-      'dashboards/admin-legacy/js/ct-views-v6.js',      // deprecated v6
-      'dashboards/admin-legacy/js/ct-views-v7.js',      // ACTIF
+      'dashboards/admin-legacy/js/ct-scenarios.js',
+      'dashboards/admin-legacy/js/ct-views.js',
+      'dashboards/admin-legacy/js/ct-views-v6.js',
+      'dashboards/admin-legacy/js/ct-views-v7.js',
       'dashboards/admin-legacy/js/ct-views-accounting.js',
       'dashboards/admin-legacy/js/ct-views-action-center.js',
       'dashboards/admin-legacy/js/ct-views-clients.js',
@@ -417,6 +431,7 @@ module.exports = {
       'tests/unit/admin-radar.test.js',
       // tests/unit/admin-rules.test.js — retiré (B2, 2026-07-29) : suit routes/admin-rules.js vers business-rules.
       'tests/unit/admin-system.test.js',
+      'tests/unit/canonical-dashboard-boundary.test.js',
       'tests/unit/dashboard-cache.test.js',
       'tests/unit/dashboard-clients-route.test.js',
       'tests/unit/dashboard-control-tower.test.js',
@@ -456,31 +471,24 @@ module.exports = {
   // plus honnête disponible dans le schéma actuel tant que ces mutations n'ont pas
   // été auditées et redistribuées vers leurs features propriétaires (hors périmètre
   // O1, qui est un ontology refactor et non un product refactor).
-  // Delta gouvernance (2026-07-12) : le champ binaire `type` (ligne ~10) restait
-  // 'feature' malgré ce verdict — incohérence corrigée en 'transversal', aligné sur
-  // `kind: business-transversal`. `feature-registry-check.js` compte désormais
-  // `dashboard` dans les domaines transversaux, pas dans les features métier.
   classification: {
-    axis:     'business',   // business | support — seule source de la binarité
+    axis:     'business',
     kind:     'business-transversal',
     decision: 'aggregation-lecture',
     signals: {
-      ownsTables:          false, // pas de tables propriétaires — agrège les données des features métier
+      ownsTables:          false,
       ownsLifecycle:       false,
-      activeService:       false, // agréger = passif pour l'essentiel
-      multiConsumer:       false, // c'est dashboard qui consomme les autres, pas l'inverse
+      activeService:       false,
+      multiConsumer:       false,
       ownsMigrations:      false,
       externalSideEffect:  'none',
       surface:             'api+spa',
     },
     rationale: [
       'pas de table propriétaire — consomme les données des features métier sans les posséder',
-      'lifecycle UI indépendant (SPA admin/hub/relais) justifie un manifest propre vs rattachement',
-      'certaines routes admin opérationnelles (hub, relay) écrivent des données — pas strictement lecture seule',
-      'cas particulier : agrégation + opérations admin — business-transversal reflète mieux la réalité',
-      'Lot O1.5 (2026-07-12) : classification business-feature explicitement écartée — dashboard ne possède ' +
-        'jamais la vérité métier ni les runtime evidence des features qu\'il agrège ; voir ONTOLOGY_GAP ci-dessus ' +
-        'pour l\'écart entre ce verdict et l\'exemple \'aggregation-readonly\' cité par la doctrine',
+      'le domaine contient encore des routes opérationnelles historiques hybrides ; la nouvelle projection canonical est isolée sans prétendre effacer cette dette backend',
+      'les deux générations UI historiques sont gelées et le nouveau développement est physiquement séparé sous public/dashboards/canonical/**',
+      'dashboard ne possède jamais la vérité métier ni les runtime evidence des features qu’il agrège',
     ],
   },
 };

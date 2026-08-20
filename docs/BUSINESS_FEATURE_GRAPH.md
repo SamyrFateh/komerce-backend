@@ -207,13 +207,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### dashboard _(business-transversal)_
 
-> Exposer en lecture agrégée les données opérationnelles et financières pour le contrôle total de la plateforme via les dashboards admin (Control Tower, Pilotage, Santé, Clients, Hub, Relais).
+> Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, sans réutiliser les deux générations historiques de dashboards.
 
 - services: 10
 - routes: 16
 - migrations: 1
-- dash: 83
-- tests: 31
+- dash: 86
+- tests: 32
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 17
 - interfaces exposed: 65
@@ -1534,7 +1534,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 829 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 831 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 158 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1598,7 +1598,7 @@ Meta Graph monté : oui.
 | dashboard | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 46 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 47 | **DECLARED_AND_OBSERVED** |
 | dashboard | logistics | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | dashboard | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | dashboard | purchasing | static-code | 2 | **DECLARED_AND_OBSERVED** |

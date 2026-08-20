@@ -458,28 +458,35 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Kind** : business-transversal  ·  **Status** : production
 
-**Service** : Exposer en lecture agrégée les données opérationnelles et financières pour le contrôle total de la plateforme via les dashboards admin (Control Tower, Pilotage, Santé, Clients, Hub, Relais).
+**Service** : Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, sans réutiliser les deux générations historiques de dashboards.
 
 **Perimeter** :
 - _in_ :
   - routes agrégées dashboard admin (KPIs, clients, opérations, hub, relais, radar, risques)
   - queries de métriques et cache dashboard
-  - shell admin SPA + views opérationnelles (ControlTower, Pilotage, Santé, Simulator, ActionCenter)
-  - admin-legacy Control Tower v7 (actif en prod)
-  - auth-guard et composants partagés du shell admin
+  - Legacy 1 : public/dashboards/admin/** — runtime actuel, gelé en maintenance corrective et rollback uniquement
+  - Legacy 0 : public/dashboards/admin-legacy/** — génération antérieure deprecated, conservation historique/rollback
+  - Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard
+  - auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis
 - _out_ :
   - mutations de données (chaque feature métier owns ses mutations)
   - logique panier, commandes, paiements (feature orders / payments / shared-cart)
   - moteur tarifaire (feature economic-engine)
-  - views métier déléguées : PricingView, ProductsView, CategoriesView, etc.
+  - nouveau développement dashboard sous public/dashboards/admin/** ou public/dashboards/admin-legacy/** hors correctif explicite
+  - import ou héritage UI de admin/** ou admin-legacy/** depuis canonical/**
+  - migration écran-par-écran des anciennes vues : elles sont des sources de besoins, pas des unités à porter
 
 **Authority** : backend-core — tout ajout de route agrégée ou de requête de métriques doit être validé par le propriétaire de dashboard-metrics.js et dashboard-cache.js
 
 **Invariants** :
 - dashboard agrège en lecture pour les vues de pilotage/reporting (Control Tower, Pilotage, Santé, Clients, radar, risques) : ces surfaces-là ne mutent aucune donnée. À l'inverse, les routes hub/relais/admin opérationnelles (voir db.tables entrées W/RW) écrivent réellement — ancien invariant "lecture seule" corrigé au Lot O1.5 (2026-07-12) car contredit par le code ; voir debt.knownGaps pour le plan de redistribution de ces mutations vers leurs features propriétaires
 - les métriques passent par dashboard-cache.js (pas de requêtes directes dupliquées)
-- admin-legacy ct-app-v7.js / ct-views-v7.js sont actifs en prod — ne pas supprimer sans migration
-- auth-guard.js protège toutes les routes admin ; aucune route admin sans vérification de token
+- Legacy 0 public/dashboards/admin-legacy/** est deprecated et ne reçoit aucun nouveau développement
+- Legacy 1 public/dashboards/admin/** reste servi mais est gelé : correctifs et rollback uniquement, aucune nouvelle capacité dashboard
+- Canonical public/dashboards/canonical/** est la seule cible de développement des quatre dashboards futurs : Pilotage, Commerce, Opérations, Finance
+- canonical/** ne référence ni n’importe aucun code ou CSS de admin/** ou admin-legacy/** ; les anciennes vues ne servent que de sources de besoins
+- /admin-next sert canonical pendant la construction ; les routes /admin/* restent sur Legacy 1 jusqu’au cutover explicitement validé
+- auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me
 
 **Owns** : `order_incidents`, `partners`
 **Writes (not owner)** : `basket_items` (writer-not-owner), `baskets` (writer-not-owner), `invoices` (writer-not-owner), `loyalty_rewards` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `sms_log` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
@@ -503,12 +510,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "recommendations" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 141 fichier(s) déclaré(s)
-  - dash : 83
+**Implementation** : 145 fichier(s) déclaré(s)
+  - dash : 86
   - migrations : 1
   - routes : 16
   - services : 10
-  - tests : 31
+  - tests : 32
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
