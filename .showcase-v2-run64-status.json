@@ -1,0 +1,13 @@
+{
+  "found": true,
+  "mode": "resume",
+  "run": {
+    "conclusion": "failure",
+    "createdAt": "2026-08-19T23:52:07Z",
+    "databaseId": 32315032536,
+    "headSha": "5082a650eaab05ab0056957ed3be1b6c7f6e4714",
+    "status": "completed",
+    "updatedAt": "2026-08-20T00:07:57Z",
+    "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32315032536"
+  }
+}
