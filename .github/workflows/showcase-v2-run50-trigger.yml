@@ -15,7 +15,7 @@ jobs:
   repair-and-resume:
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       NODE_ENV: test
       KOMERCE_ALLOW_SHOWCASE_SEED: '1'
     steps:
