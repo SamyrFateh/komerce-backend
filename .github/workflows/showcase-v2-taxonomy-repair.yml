@@ -1,0 +1,122 @@
+name: One-shot repair Showcase V2 taxonomy and resume
+
+on:
+  push:
+    branches:
+      - ops/showcase-v2-run50
+    paths:
+      - '.github/workflows/showcase-v2-taxonomy-repair.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  repair-and-resume:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NODE_ENV: test
+      KOMERCE_ALLOW_SHOWCASE_SEED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Restore canonical Showcase V2 taxonomy with traced overrides
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const db = require('./db');
+          const { buildSlots } = require('./scripts/showcase-v2-plan');
+
+          (async () => {
+            if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL requis');
+            const slots = buildSlots();
+            if (slots.length !== 500) throw new Error(`Plan V2 invalide: ${slots.length}/500`);
+            const client = await db.getClient();
+            try {
+              await client.query('BEGIN');
+              let repaired = 0;
+              for (const slot of slots) {
+                const { rows: [product] } = await client.query(
+                  `UPDATE products
+                      SET category=$2, subcategory=$3, updated_at=NOW()
+                    WHERE product_ref=$1
+                    RETURNING id, product_ref`,
+                  [slot.product_ref, slot.category, slot.subcategory]
+                );
+                if (!product) throw new Error(`Produit V2 absent: ${slot.product_ref}`);
+                await client.query(
+                  `INSERT INTO catalog_field_overrides
+                     (product_id, field_name, field_value, reason)
+                   VALUES ($1, 'category', $2, $3)
+                   ON CONFLICT (product_id, field_name) DO UPDATE SET
+                     field_value=EXCLUDED.field_value,
+                     reason=EXCLUDED.reason,
+                     updated_at=NOW()`,
+                  [
+                    product.id,
+                    slot.category,
+                    'Showcase V2: taxonomie hiérarchique canonique imposée par le plan; l’enrichissement éditorial ne possède pas ce champ de test.'
+                  ]
+                );
+                repaired += 1;
+              }
+
+              const { rows: distribution } = await client.query(
+                `SELECT category, subcategory, COUNT(*)::int AS count
+                   FROM products
+                  WHERE is_active=TRUE AND product_ref LIKE 'SHOWCASE-V2-%'
+                  GROUP BY category, subcategory
+                  ORDER BY category, subcategory`
+              );
+              await client.query('COMMIT');
+              console.log(`[showcase-v2-taxonomy-repair] repaired=${repaired}`);
+              console.log(JSON.stringify(distribution, null, 2));
+            } catch (error) {
+              await client.query('ROLLBACK').catch(() => {});
+              throw error;
+            } finally {
+              client.release();
+              await db.pool.end();
+            }
+          })().catch((error) => {
+            console.error('[showcase-v2-taxonomy-repair] échec:', error.message);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Dispatch canonical resume and print exact run id
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run showcase-v2-staging-deploy.yml --ref main -f mode=resume
+          for attempt in $(seq 1 30); do
+            run=$(gh run list \
+              --workflow showcase-v2-staging-deploy.yml \
+              --event workflow_dispatch \
+              --branch main \
+              --limit 20 \
+              --json databaseId,headSha,status,conclusion,createdAt,url \
+              | jq -c --arg started "$started_at" '[.[] | select(.createdAt >= $started)][0] // empty')
+            if [ -n "$run" ]; then
+              echo "[showcase-v2-taxonomy-repair] resume=$run"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo '::error::Run resume non retrouvé après dispatch'
+          exit 1
