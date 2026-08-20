@@ -1,4 +1,4 @@
-name: One-shot dispatch Showcase V2 resumable campaign
+name: One-shot capture Showcase V2 post-repair status
 
 on:
   push:
@@ -8,50 +8,41 @@ on:
       - '.github/workflows/showcase-v2-run50-trigger.yml'
 
 permissions:
-  actions: write
+  actions: read
   contents: write
 
 jobs:
-  dispatch-showcase-v2:
+  capture-status:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ops/showcase-v2-run50
 
-      - name: Dispatch resumable V2 campaign on main and capture proof
+      - name: Capture latest repair and canonical deploy runs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          TARGET_SHA: 5082a650eaab05ab0056957ed3be1b6c7f6e4714
+        shell: bash
         run: |
           set -euo pipefail
-          started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          gh workflow run showcase-v2-staging-deploy.yml --ref main -f mode=resume
-
-          run_id=""
-          for attempt in $(seq 1 30); do
-            runs=$(gh run list \
-              --workflow showcase-v2-staging-deploy.yml \
-              --event workflow_dispatch \
-              --branch main \
-              --limit 20 \
-              --json databaseId,headSha,status,conclusion,createdAt,updatedAt,url)
-            run_id=$(echo "$runs" | jq -r --arg sha "$TARGET_SHA" --arg started "$started_at" '[.[] | select(.headSha == $sha and .createdAt >= $started)][0].databaseId // empty')
-            if [ -n "$run_id" ]; then break; fi
-            sleep 2
-          done
-
-          if [ -z "$run_id" ]; then
-            echo '{"found":false,"target_sha":"'"$TARGET_SHA"'","mode":"resume","started_at":"'"$started_at"'"}' > .showcase-v2-run65-status.json
-            exit 1
-          fi
-
-          run=$(echo "$runs" | jq --arg sha "$TARGET_SHA" --arg started "$started_at" '[.[] | select(.headSha == $sha and .createdAt >= $started)][0]')
-          jq -n --arg started_at "$started_at" --argjson run "$run" '{found:true,mode:"resume",started_at:$started_at,run:$run}' > .showcase-v2-run65-status.json
+          repair=$(gh run list \
+            --workflow showcase-v2-taxonomy-repair.yml \
+            --branch ops/showcase-v2-run50 \
+            --limit 5 \
+            --json databaseId,status,conclusion,createdAt,updatedAt,url,headSha 2>/dev/null || echo '[]')
+          deploy=$(gh run list \
+            --workflow showcase-v2-staging-deploy.yml \
+            --event workflow_dispatch \
+            --branch main \
+            --limit 10 \
+            --json databaseId,status,conclusion,createdAt,updatedAt,url,headSha 2>/dev/null || echo '[]')
+          jq -n --argjson repair "$repair" --argjson deploy "$deploy" \
+            '{captured_at:(now|todate),repair_runs:$repair,deploy_runs:$deploy}' \
+            > .showcase-v2-post-repair-status.json
 
           git config user.name "Komerce Showcase Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add .showcase-v2-run65-status.json
-          git commit -m "ops(showcase): capture timestamped resume run65"
+          git add .showcase-v2-post-repair-status.json
+          git commit -m "ops(showcase): capture post-repair status"
           git push origin HEAD:ops/showcase-v2-run50
