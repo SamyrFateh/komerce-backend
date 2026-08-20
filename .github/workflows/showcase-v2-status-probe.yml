@@ -19,13 +19,18 @@ jobs:
         with:
           ref: ops/showcase-v2-run50
 
-      - name: Capture latest repair and canonical deploy runs
+      - name: Capture latest trigger, repair and canonical deploy runs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
           set -euo pipefail
+          trigger=$(gh run list \
+            --workflow showcase-v2-run50-trigger.yml \
+            --branch ops/showcase-v2-run50 \
+            --limit 8 \
+            --json databaseId,status,conclusion,createdAt,updatedAt,url,headSha 2>/dev/null || echo '[]')
           repair=$(gh run list \
             --workflow showcase-v2-taxonomy-repair.yml \
             --branch ops/showcase-v2-run50 \
@@ -37,12 +42,12 @@ jobs:
             --branch main \
             --limit 10 \
             --json databaseId,status,conclusion,createdAt,updatedAt,url,headSha 2>/dev/null || echo '[]')
-          jq -n --argjson repair "$repair" --argjson deploy "$deploy" '{captured_at:(now|todate),repair_runs:$repair,deploy_runs:$deploy}' > .showcase-v2-status-probe.json
+          jq -n --argjson trigger "$trigger" --argjson repair "$repair" --argjson deploy "$deploy" \
+            '{captured_at:(now|todate),trigger_runs:$trigger,repair_runs:$repair,deploy_runs:$deploy}' \
+            > .showcase-v2-status-probe.json
 
           git config user.name "Komerce Showcase Bot"
           git config user.email "actions@users.noreply.github.com"
           git add .showcase-v2-status-probe.json
-          git commit -m "ops(showcase): capture latest campaign status" || exit 0
+          git commit -m "ops(showcase): capture trigger repair and deploy status" || exit 0
           git push origin HEAD:ops/showcase-v2-run50
-
-# refreshed after Railway secret correction
