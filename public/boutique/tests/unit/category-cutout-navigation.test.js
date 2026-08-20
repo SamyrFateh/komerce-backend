@@ -27,19 +27,21 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobile).toMatch(/\.k-cat-cutout \.k-chip-label,[\s\S]*font-size:\s*10\.5px/);
   });
 
-  it('garde sur mobile une seule ligne compacte avec des objets plus présents', () => {
+  it('garde sur mobile une seule ligne compacte avec des objets équilibrés', () => {
     const mobileBlock = mobile.match(/@media \(max-width: 899px\) \{[\s\S]*\n\}/)?.[0] || '';
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*display:\s*flex/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*flex-wrap:\s*nowrap/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*overflow-x:\s*auto/s);
     expect(mobileBlock).not.toMatch(/grid-template-columns/);
-    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 68px[^}]*height:\s*58px/s);
-    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*56px[\s\S]*height:\s*42px/s);
-    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*scale\(1\.28\)/s);
-    expect(mobileBlock).toMatch(/data-cat=\"Mode & Beauté\"[^}]*\.k-shelf-atlas-cell\s*\{[^}]*scale\(0\.92\)/s);
-    expect(mobileBlock).toMatch(/data-cat=\"Mode & Beauté\"\]\.active \.k-shelf-atlas-cell\s*\{[^}]*scale\(0\.96\)/s);
-    expect(mobileBlock).toMatch(/padding:\s*2px 8px 3px/);
-    expect(mobileBlock).toMatch(/saturate\(1\.08\)/);
+    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 68px[^}]*height:\s*64px/s);
+    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*50px[\s\S]*height:\s*38px/s);
+    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*scale\(1\.04\)/s);
+    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout \.k-shelf-atlas-cell\s*\{[^}]*translateY\(1px\)[^}]*scale\(0\.96\)/s);
+    expect(mobileBlock).toMatch(/\.k-cat-cutout\.active \.k-shelf-atlas-cell\s*\{[^}]*scale\(0\.98\)/s);
+    expect(mobileBlock).toMatch(/padding:\s*4px 8px 5px/);
+    expect(mobileBlock).toMatch(/saturate\(1\.10\)/);
+    expect(mobileBlock).toMatch(/contrast\(1\.08\)/);
+    expect(mobileBlock).toMatch(/margin-top:\s*2px/);
   });
 
   it('porte le showcase photo v1 dans le registre visuel unique', () => {
