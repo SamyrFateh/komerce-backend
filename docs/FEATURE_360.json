@@ -4231,7 +4231,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 86,
+            "count": 87,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -4609,6 +4609,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/primitives.js",
+                "resolvedPath": "public/dashboards/canonical/js/primitives.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "hub/index.html",
                 "resolvedPath": "public/hub/index.html",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4816,7 +4821,7 @@
             ]
           },
           "tests": {
-            "count": 32,
+            "count": 33,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -4866,6 +4871,11 @@
               {
                 "declared": "tests/unit/canonical-dashboard-boundary.test.js",
                 "resolvedPath": "tests/unit/canonical-dashboard-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-dashboard-primitives.test.js",
+                "resolvedPath": "tests/unit/canonical-dashboard-primitives.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -4981,7 +4991,7 @@
             ]
           }
         },
-        "totalFiles": 145,
+        "totalFiles": 147,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -277,6 +277,7 @@ module.exports = {
   // ── Vérification gouvernance ───────────────────────────────────────────
   verification: [
     'npx jest tests/unit/canonical-dashboard-boundary.test.js --runInBand',
+    'npx jest tests/unit/canonical-dashboard-primitives.test.js --runInBand',
     'npm run dashboards:360:check',
     'npm run map:check',
   ],
@@ -323,6 +324,7 @@ module.exports = {
       'dashboards/canonical/index.html',
       'dashboards/canonical/css/base.css',
       'dashboards/canonical/js/app.js',
+      'dashboards/canonical/js/primitives.js',
 
       // ── Legacy 1 — admin actuel, gelé maintenance corrective ──────
       'dashboards/admin/index.html',
@@ -432,6 +434,7 @@ module.exports = {
       // tests/unit/admin-rules.test.js — retiré (B2, 2026-07-29) : suit routes/admin-rules.js vers business-rules.
       'tests/unit/admin-system.test.js',
       'tests/unit/canonical-dashboard-boundary.test.js',
+      'tests/unit/canonical-dashboard-primitives.test.js',
       'tests/unit/dashboard-cache.test.js',
       'tests/unit/dashboard-clients-route.test.js',
       'tests/unit/dashboard-control-tower.test.js',
