@@ -8,13 +8,17 @@ const ROOT = path.resolve(__dirname, '../..');
 const EXPECTED = [
   {
     file: 'categories/komerce-showcase-v1-main.webp',
-    bytes: 13110,
-    sha256: '9f6f77ec717f9e82f960f99cee11cfbdb33fb707dd0fcb8883cec0a08da7ec78',
+    bytes: 6262,
+    sha256: '8a7797d755f6e7e9e66d97eed661bbc0f5dceac7550daa92bdf2aac8bdba56c7',
+    width: 144,
+    height: 96,
   },
   {
     file: 'categories/komerce-showcase-v1-mode.webp',
     bytes: 11626,
     sha256: '5342618696fbdc8bf17dda4a4f1d10adec1387ead3111f161eb8d255dee60237',
+    width: 192,
+    height: 128,
   },
 ];
 
@@ -34,7 +38,10 @@ describe('Komerce showcase atlas binary integrity', () => {
       expect(buf.length).toBe(expected.bytes);
       expect(crypto.createHash('sha256').update(buf).digest('hex')).toBe(expected.sha256);
       expect(buf.readUInt32LE(4) + 8).toBe(buf.length);
-      expect(vp8xDimensions(buf)).toEqual({ width: 192, height: 128 });
+      expect(vp8xDimensions(buf)).toEqual({
+        width: expected.width,
+        height: expected.height,
+      });
     });
   }
 });
