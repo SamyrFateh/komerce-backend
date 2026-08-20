@@ -58,5 +58,7 @@ jobs:
           git config user.name "Komerce Showcase Bot"
           git config user.email "actions@users.noreply.github.com"
           git add .showcase-v2-status-probe.json
-          git commit -m "ops(showcase): capture storefront proof status" || exit 0
+          git commit -m "ops(showcase): capture canonical-stock storefront rerun" || exit 0
           git push origin HEAD:ops/showcase-v2-run50
+
+# probe refresh after canonical responsive stock assertion
