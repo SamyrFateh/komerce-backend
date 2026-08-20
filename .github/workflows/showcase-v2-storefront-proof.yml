@@ -188,6 +188,17 @@ jobs:
             await expect(stock).toContainText(/en stock/i);
           }
 
+          async function assertUnavailableDoesNotMutate(page, axisKey, unavailableValue, availableValue, expectedMessage, availableSku) {
+            const availableButton = page.locator(optionSelector(axisKey, availableValue));
+            const unavailableButton = page.locator(optionSelector(axisKey, unavailableValue));
+            await unavailableButton.click();
+            await expect(unavailableButton).not.toHaveAttribute('aria-pressed', 'true');
+            await expect(availableButton).toHaveAttribute('aria-pressed', 'true');
+            await expect(page.locator('#k-add-cart-btn')).toBeEnabled();
+            if (availableSku) await expect(page.locator('#k-modal-sku')).toContainText(availableSku);
+            await expect(page.locator('#k-modal-selection-message')).toContainText(expectedMessage);
+          }
+
           test('Showcase V2 — catalogue → PDC → modal SKU/media/stock/prix', async ({ page }, testInfo) => {
             await page.goto(process.env.BASE_URL, { waitUntil: 'domcontentloaded' });
             await waitForGrid(page);
@@ -230,16 +241,8 @@ jobs:
             }
             await assertSelectedMedia(page, candidate.detail, available);
 
-            await page.locator(optionSelector(axisB.key, outB)).click();
-            await expect(page.locator('#k-add-cart-btn')).toBeDisabled();
-            await expect(page.locator('#k-modal-selection-message')).toContainText(/rupture/i);
-
-            await page.locator(optionSelector(axisB.key, missingValue)).click();
-            await expect(page.locator('#k-add-cart-btn')).toBeDisabled();
-            await expect(page.locator('#k-modal-selection-message')).toContainText(/non propos|combinaison/i);
-
-            await page.locator(optionSelector(axisB.key, availableB)).click();
-            await expect(page.locator('#k-add-cart-btn')).toBeEnabled();
+            await assertUnavailableDoesNotMutate(page, axisB.key, outB, availableB, /rupture/i, available.sku);
+            await assertUnavailableDoesNotMutate(page, axisB.key, missingValue, availableB, /non propos|combinaison/i, available.sku);
 
             fs.mkdirSync('test-results', { recursive: true });
             const slug = testInfo.project.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -260,6 +263,7 @@ jobs:
               selected_stock: available.available_quantity,
               out_of_stock_sku: out.sku,
               incompatible_combo: { [axisA.key]: aValue, [axisB.key]: missingValue },
+              unavailable_click_preserves_selected_sku: true,
               status: 'PASS'
             };
             fs.writeFileSync(path.join('test-results', `showcase-v2-storefront-${slug}.json`), JSON.stringify(evidence, null, 2));
