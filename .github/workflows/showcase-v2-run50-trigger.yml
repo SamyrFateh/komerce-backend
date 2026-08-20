@@ -42,15 +42,15 @@ jobs:
           done
 
           if [ -z "$run_id" ]; then
-            echo '{"found":false,"target_sha":"'"$TARGET_SHA"'","mode":"resume"}' > .showcase-v2-run63-status.json
+            echo '{"found":false,"target_sha":"'"$TARGET_SHA"'","mode":"resume"}' > .showcase-v2-run64-status.json
             exit 1
           fi
 
           run=$(echo "$runs" | jq --arg sha "$TARGET_SHA" '[.[] | select(.headSha == $sha)][0]')
-          jq -n --argjson run "$run" '{found:true,mode:"resume",run:$run}' > .showcase-v2-run63-status.json
+          jq -n --argjson run "$run" '{found:true,mode:"resume",run:$run}' > .showcase-v2-run64-status.json
 
           git config user.name "Komerce Showcase Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add .showcase-v2-run63-status.json
-          git commit -m "ops(showcase): capture resumable campaign"
+          git add .showcase-v2-run64-status.json
+          git commit -m "ops(showcase): capture resume run64"
           git push origin HEAD:ops/showcase-v2-run50
