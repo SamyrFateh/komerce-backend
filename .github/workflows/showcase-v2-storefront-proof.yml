@@ -164,6 +164,30 @@ jobs:
             expect(actualPaths.some((actual) => expectedPaths.some((expected) => actual === expected))).toBe(true);
           }
 
+          async function assertAvailableStock(page, unit, isMobile) {
+            const qty = Number(unit.available_quantity);
+            expect(qty).toBeGreaterThan(0);
+
+            if (isMobile) {
+              const pill = page.locator('#k-modal-stock-pill');
+              await expect(pill).toBeVisible({ timeout: 5_000 });
+              const label = pill.locator('.k-mdm-stock-pill-label');
+              if (qty <= 5) {
+                await expect(label).toHaveText(`Plus que ${qty}`);
+                await expect(pill).toHaveClass(/k-mdm-stock-pill--low/);
+              } else {
+                await expect(label).toHaveText('En stock');
+                await expect(pill).toHaveClass(/k-mdm-stock-pill--ok/);
+              }
+              return;
+            }
+
+            const stock = page.locator('#k-modal-stock');
+            await expect(stock).toBeVisible({ timeout: 5_000 });
+            await expect(stock).toContainText(String(qty));
+            await expect(stock).toContainText(/en stock/i);
+          }
+
           test('Showcase V2 — catalogue → PDC → modal SKU/media/stock/prix', async ({ page }, testInfo) => {
             await page.goto(process.env.BASE_URL, { waitUntil: 'domcontentloaded' });
             await waitForGrid(page);
@@ -198,7 +222,7 @@ jobs:
 
             await page.locator(optionSelector(axisB.key, availableB)).click();
             await expect(page.locator('#k-add-cart-btn')).toBeEnabled();
-            await expect(page.locator('#k-modal-stock')).toContainText('Disponible');
+            await assertAvailableStock(page, available, isMobile);
             if (available.sku) await expect(page.locator('#k-modal-sku')).toContainText(available.sku);
             const expectedPrice = available.price_kmf ?? candidate.detail.pricing.price_kmf;
             if (expectedPrice != null) {
