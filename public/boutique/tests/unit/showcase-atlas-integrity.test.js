@@ -8,8 +8,8 @@ const ROOT = path.resolve(__dirname, '../..');
 const EXPECTED = [
   {
     file: 'categories/komerce-showcase-v1-main.webp',
-    bytes: 14378,
-    sha256: '415705b88bef32be6f4f9e7b5cfa27d9aa80a16212601e2ed74c66b13ae27b48',
+    bytes: 13110,
+    sha256: '9f6f77ec717f9e82f960f99cee11cfbdb33fb707dd0fcb8883cec0a08da7ec78',
   },
   {
     file: 'categories/komerce-showcase-v1-mode.webp',
