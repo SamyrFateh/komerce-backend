@@ -4231,7 +4231,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 87,
+            "count": 90,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -4599,6 +4599,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/renderer.css",
+                "resolvedPath": "public/dashboards/canonical/css/renderer.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/index.html",
                 "resolvedPath": "public/dashboards/canonical/index.html",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4606,6 +4611,16 @@
               {
                 "declared": "dashboards/canonical/js/app.js",
                 "resolvedPath": "public/dashboards/canonical/js/app.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/dashboard-renderer.js",
+                "resolvedPath": "public/dashboards/canonical/js/dashboard-renderer.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/dashboard-schema.js",
+                "resolvedPath": "public/dashboards/canonical/js/dashboard-schema.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -4821,7 +4836,7 @@
             ]
           },
           "tests": {
-            "count": 33,
+            "count": 34,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -4876,6 +4891,11 @@
               {
                 "declared": "tests/unit/canonical-dashboard-primitives.test.js",
                 "resolvedPath": "tests/unit/canonical-dashboard-primitives.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-dashboard-schema-renderer.test.js",
+                "resolvedPath": "tests/unit/canonical-dashboard-schema-renderer.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -4991,7 +5011,7 @@
             ]
           }
         },
-        "totalFiles": 147,
+        "totalFiles": 151,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -278,6 +278,7 @@ module.exports = {
   verification: [
     'npx jest tests/unit/canonical-dashboard-boundary.test.js --runInBand',
     'npx jest tests/unit/canonical-dashboard-primitives.test.js --runInBand',
+    'npx jest tests/unit/canonical-dashboard-schema-renderer.test.js --runInBand',
     'npm run dashboards:360:check',
     'npm run map:check',
   ],
@@ -323,8 +324,11 @@ module.exports = {
       // ── Canonical — seule cible de nouveau développement dashboard ──
       'dashboards/canonical/index.html',
       'dashboards/canonical/css/base.css',
+      'dashboards/canonical/css/renderer.css',
       'dashboards/canonical/js/app.js',
       'dashboards/canonical/js/primitives.js',
+      'dashboards/canonical/js/dashboard-schema.js',
+      'dashboards/canonical/js/dashboard-renderer.js',
 
       // ── Legacy 1 — admin actuel, gelé maintenance corrective ──────
       'dashboards/admin/index.html',
@@ -435,6 +439,7 @@ module.exports = {
       'tests/unit/admin-system.test.js',
       'tests/unit/canonical-dashboard-boundary.test.js',
       'tests/unit/canonical-dashboard-primitives.test.js',
+      'tests/unit/canonical-dashboard-schema-renderer.test.js',
       'tests/unit/dashboard-cache.test.js',
       'tests/unit/dashboard-clients-route.test.js',
       'tests/unit/dashboard-control-tower.test.js',

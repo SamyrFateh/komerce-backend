@@ -2436,6 +2436,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/css/renderer.css",
+        "resolvedPath": "public/dashboards/canonical/css/renderer.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/app.js",
         "resolvedPath": "public/dashboards/canonical/js/app.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2445,6 +2452,20 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/primitives.js",
         "resolvedPath": "public/dashboards/canonical/js/primitives.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/dashboard-schema.js",
+        "resolvedPath": "public/dashboards/canonical/js/dashboard-schema.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/dashboard-renderer.js",
+        "resolvedPath": "public/dashboards/canonical/js/dashboard-renderer.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3103,6 +3124,13 @@
         "category": "tests",
         "declared": "tests/unit/canonical-dashboard-primitives.test.js",
         "resolvedPath": "tests/unit/canonical-dashboard-primitives.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-dashboard-schema-renderer.test.js",
+        "resolvedPath": "tests/unit/canonical-dashboard-schema-renderer.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -25092,7 +25120,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 833
+        "filesObserved": 836
       },
       "boutique": {
         "filesObserved": 158,
