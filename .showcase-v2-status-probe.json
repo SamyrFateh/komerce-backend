@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-08-20T06:32:01Z",
+  "captured_at": "2026-08-20T06:34:53Z",
   "trigger_runs": [
     {
       "conclusion": "success",
@@ -180,11 +180,20 @@
   "storefront_runs": [
     {
       "conclusion": "",
+      "createdAt": "2026-08-20T06:34:23Z",
+      "databaseId": 32340153972,
+      "headSha": "cce070432595fd08f2f97a73028e65bcdfa9c739",
+      "status": "in_progress",
+      "updatedAt": "2026-08-20T06:34:26Z",
+      "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32340153972"
+    },
+    {
+      "conclusion": "failure",
       "createdAt": "2026-08-20T06:31:33Z",
       "databaseId": 32339959247,
       "headSha": "94f195ff9f23d72535b5068ddbbb97dfbcdc6e39",
-      "status": "in_progress",
-      "updatedAt": "2026-08-20T06:31:36Z",
+      "status": "completed",
+      "updatedAt": "2026-08-20T06:32:37Z",
       "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32339959247"
     }
   ]
