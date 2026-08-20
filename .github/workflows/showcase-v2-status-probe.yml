@@ -44,3 +44,5 @@ jobs:
           git add .showcase-v2-status-probe.json
           git commit -m "ops(showcase): capture latest campaign status" || exit 0
           git push origin HEAD:ops/showcase-v2-run50
+
+# refreshed after Railway secret correction
