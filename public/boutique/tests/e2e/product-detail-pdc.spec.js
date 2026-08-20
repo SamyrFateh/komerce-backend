@@ -158,6 +158,34 @@ async function openCandidate(page, candidate) {
   await expect(page.locator(root)).toBeVisible({ timeout: 8_000 });
 }
 
+async function assertAvailableStock(page, unit) {
+  const qty = Number(unit.available_quantity);
+  expect(qty).toBeGreaterThan(0);
+
+  const viewport = page.viewportSize();
+  const isMobile = viewport ? viewport.width < 900 : false;
+
+  if (isMobile) {
+    const pill = page.locator('#k-modal-stock-pill');
+    const label = pill.locator('.k-mdm-stock-pill-label');
+    await expect(pill, 'le stock mobile doit être rendu par le pill canonique').toBeVisible({ timeout: 5_000 });
+
+    if (qty <= 5) {
+      await expect(label).toHaveText(`Plus que ${qty}`);
+      await expect(pill).toHaveClass(/k-mdm-stock-pill--low/);
+    } else {
+      await expect(label).toHaveText('En stock');
+      await expect(pill).toHaveClass(/k-mdm-stock-pill--ok/);
+    }
+    return;
+  }
+
+  const stock = page.locator('#k-modal-stock');
+  await expect(stock, 'le stock desktop doit exposer la quantité du SKU sélectionné').toBeVisible({ timeout: 5_000 });
+  await expect(stock).toContainText(String(qty));
+  await expect(stock).toContainText(/en stock/i);
+}
+
 async function selectTargetUnit(page, candidate) {
   const addButton = page.locator('#k-add-cart-btn');
   await expect(addButton, 'un produit SKU doit être verrouillé avant résolution complète').toBeDisabled();
@@ -174,7 +202,7 @@ async function selectTargetUnit(page, candidate) {
   }
 
   await expect(addButton, 'le CTA doit être actif une fois le SKU réel résolu').toBeEnabled();
-  await expect(page.locator('#k-modal-stock')).toContainText('Disponible');
+  await assertAvailableStock(page, candidate.unit);
 
   if (candidate.unit.sku) {
     await expect(page.locator('#k-modal-sku')).toContainText(candidate.unit.sku);
