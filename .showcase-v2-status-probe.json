@@ -1,5 +1,79 @@
 {
-  "captured_at": "2026-08-20T00:49:45Z",
+  "captured_at": "2026-08-20T00:50:26Z",
+  "trigger_runs": [
+    {
+      "conclusion": "",
+      "createdAt": "2026-08-20T00:49:01Z",
+      "databaseId": 32318721715,
+      "headSha": "ea49c1fcced25a3d27553fb86e2938b97dc9ae52",
+      "status": "in_progress",
+      "updatedAt": "2026-08-20T00:49:05Z",
+      "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32318721715"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-08-20T00:46:50Z",
+      "databaseId": 32318588504,
+      "headSha": "8814fc33577ad0ca5b308f62b725a88fb2aefc97",
+      "status": "completed",
+      "updatedAt": "2026-08-20T00:47:08Z",
+      "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32318588504"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-20T00:45:34Z",
+      "databaseId": 32318507840,
+      "headSha": "3f91fe9395e3a8b0cd4c4a2302e215aedf9cf69f",
+      "status": "completed",
+      "updatedAt": "2026-08-20T00:45:50Z",
+      "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32318507840"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-20T00:29:02Z",
+      "databaseId": 32317477712,
+      "headSha": "a7ddc2c6f49eb6c17427e6a19925f0ded6d8b8de",
+      "status": "completed",
+      "updatedAt": "2026-08-20T00:29:26Z",
+      "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32317477712"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-20T00:25:51Z",
+      "databaseId": 32317278797,
+      "headSha": "3aee6c1aadd99128e2f63b2c049216c1b4f58e83",
+      "status": "completed",
+      "updatedAt": "2026-08-20T00:26:06Z",
+      "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32317278797"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-19T23:52:00Z",
+      "databaseId": 32315023428,
+      "headSha": "4bd3bbbaffe90f5e06eb970b88798208b2d74d01",
+      "status": "completed",
+      "updatedAt": "2026-08-19T23:52:15Z",
+      "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32315023428"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-19T22:21:05Z",
+      "databaseId": 32308403610,
+      "headSha": "24029797707a4df60ca716aad5e0b513374d690b",
+      "status": "completed",
+      "updatedAt": "2026-08-19T22:21:26Z",
+      "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32308403610"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-19T20:08:53Z",
+      "databaseId": 32296936164,
+      "headSha": "d63c32e84f561d64fa6377e754f87a5161663907",
+      "status": "completed",
+      "updatedAt": "2026-08-19T20:09:12Z",
+      "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32296936164"
+    }
+  ],
   "repair_runs": [
     {
       "conclusion": "failure",
