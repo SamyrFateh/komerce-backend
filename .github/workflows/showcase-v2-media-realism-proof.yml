@@ -1,0 +1,51 @@
+name: One-shot Showcase V2 media realism visual proof
+
+on:
+  push:
+    branches:
+      - ops/showcase-v2-run50
+    paths:
+      - '.github/workflows/showcase-v2-media-realism-proof.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  capture-pilot-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the exact 21 ImageKit pilot heroes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p proof
+          base='https://ik.imagekit.io/9lenxlsmgv/komerce/staging/showcase-v2'
+          refs=(
+            0001 0036 0061 0086
+            0131 0156 0181 0201
+            0221 0251 0281
+            0311 0336 0361
+            0381 0401 0421
+            0436 0456 0471 0486
+          )
+          for n in "${refs[@]}"; do
+            ref="showcase-v2-${n}"
+            curl --fail --silent --show-error --location \
+              "$base/$ref/hero.jpg?proof=32344315603" \
+              --output "proof/$ref.jpg"
+            type=$(file --brief --mime-type "proof/$ref.jpg")
+            test "$type" = 'image/jpeg' || { echo "Unexpected MIME for $ref: $type"; exit 1; }
+            bytes=$(wc -c < "proof/$ref.jpg")
+            test "$bytes" -gt 10000 || { echo "Image too small for $ref: $bytes"; exit 1; }
+            printf '%s\t%s\n' "$ref" "$bytes" >> proof/manifest.tsv
+          done
+          test "$(find proof -name 'showcase-v2-*.jpg' | wc -l)" -eq 21
+          cat proof/manifest.tsv
+
+      - name: Upload visual proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-v2-media-realism-pilot-images
+          path: proof/
+          retention-days: 14
+          if-no-files-found: error
