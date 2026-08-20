@@ -1,0 +1,16 @@
+{
+  "found": true,
+  "scope": "pilot",
+  "quality": "medium",
+  "expected_count": 21,
+  "started_at": "2026-08-20T07:30:17Z",
+  "run": {
+    "conclusion": "",
+    "createdAt": "2026-08-20T07:30:18Z",
+    "databaseId": 32344315603,
+    "headSha": "351ff4c1f687c4ddfe742d64a981903990cb48c0",
+    "status": "queued",
+    "updatedAt": "2026-08-20T07:30:18Z",
+    "url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/32344315603"
+  }
+}
