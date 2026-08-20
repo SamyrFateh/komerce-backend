@@ -1,0 +1,31 @@
+name: Temp mobile category CSS bundle
+
+on:
+  push:
+    branches:
+      - ui/mobile-category-rail-balance
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ui/mobile-category-rail-balance
+          fetch-depth: 1
+
+      - name: Rebuild canonical Boutique CSS bundles
+        run: node public/boutique/scripts/deploy-css.js
+
+      - name: Commit generated bundle and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/tmp-mobile-category-css-bundle.yml
+          git add public/boutique/css/dist/components.css public/boutique/index.html public/boutique/.cache-buster-state.json
+          git commit -m "build(css): regenerate mobile category bundle"
+          git push origin HEAD:ui/mobile-category-rail-balance
