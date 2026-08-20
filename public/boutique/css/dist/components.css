@@ -1216,9 +1216,9 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 
 /*
- * Mobile : un seul rail horizontal compact. La présence visuelle augmente
- * dans le slot, pas via une matrice ni une grosse carte : l'objet devient le
- * premier signal, le libellé reste secondaire.
+ * Mobile : un seul rail horizontal compact. Les objets restent le premier
+ * signal, mais leur poids optique est volontairement contenu pour ne pas
+ * concurrencer le hero ni le premier rayon produit.
  */
 @media (max-width: 899px) {
   .k-shelf-rail {
@@ -1226,7 +1226,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     align-items: flex-start;
     flex-wrap: nowrap;
     gap: 6px;
-    padding: 2px 8px 3px;
+    padding: 4px 8px 5px;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
@@ -1244,8 +1244,8 @@ html.k-mobile-premium-v1 .k-chip-label {
     flex: 0 0 68px;
     width: 68px;
     min-width: 68px;
-    min-height: 58px;
-    height: 58px;
+    min-height: 64px;
+    height: 64px;
     gap: 0;
     padding: 0 1px 2px;
     border: 0;
@@ -1259,39 +1259,38 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-cat-cutout.active .k-chip-photo,
   .k-cat-cutout[data-cat] .k-chip-photo,
   .k-cat-cutout.active[data-cat] .k-chip-photo {
-    width: 56px;
-    height: 42px;
+    width: 50px;
+    height: 38px;
   }
 
   .k-shelf-rail .k-cat-cutout .k-shelf-object {
-    transform: scale(1.28);
+    transform: scale(1.04);
     filter:
-      drop-shadow(0 4px 7px rgba(39, 58, 41, .18))
-      saturate(1.08)
-      contrast(1.04);
+      drop-shadow(0 3px 5px var(--border-text-08))
+      saturate(1.10)
+      contrast(1.08);
+  }
+
+  /* Les crops raster ont naturellement plus de masse qu'un pictogramme SVG :
+   * on leur donne une assise commune légèrement plus petite et plus basse. */
+  .k-shelf-rail .k-cat-cutout .k-shelf-atlas-cell {
+    transform: translateY(1px) scale(0.96);
   }
 
   .k-shelf-rail .k-cat-cutout:hover .k-shelf-object,
   .k-shelf-rail .k-cat-cutout.active .k-shelf-object {
-    transform: translateY(-1px) scale(1.32);
+    transform: translateY(-1px) scale(1.07);
   }
 
-  /* Mode remplit naturellement davantage sa cellule atlas que les sprites.
-   * On réduit uniquement son poids optique mobile sans changer le rail ni
-   * la géométrie du slot. */
-  .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"] .k-shelf-atlas-cell {
-    transform: translateY(2px) scale(0.92);
-  }
-
-  .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"]:hover .k-shelf-atlas-cell,
-  .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"].active .k-shelf-atlas-cell {
-    transform: translateY(1px) scale(0.96);
+  .k-shelf-rail .k-cat-cutout:hover .k-shelf-atlas-cell,
+  .k-shelf-rail .k-cat-cutout.active .k-shelf-atlas-cell {
+    transform: translateY(0) scale(0.98);
   }
 
   .k-cat-cutout .k-chip-label,
   .k-cat-cutout.active .k-chip-label {
     max-width: 66px;
-    margin-top: 0;
+    margin-top: 2px;
     padding-bottom: 2px;
     font-size: 10.5px;
     line-height: 1.05;
