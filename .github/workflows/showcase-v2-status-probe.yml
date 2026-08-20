@@ -1,0 +1,46 @@
+name: One-shot probe Showcase V2 campaign status
+
+on:
+  push:
+    branches:
+      - ops/showcase-v2-run50
+    paths:
+      - '.github/workflows/showcase-v2-status-probe.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops/showcase-v2-run50
+
+      - name: Capture latest repair and canonical deploy runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repair=$(gh run list \
+            --workflow showcase-v2-taxonomy-repair.yml \
+            --branch ops/showcase-v2-run50 \
+            --limit 5 \
+            --json databaseId,status,conclusion,createdAt,updatedAt,url,headSha 2>/dev/null || echo '[]')
+          deploy=$(gh run list \
+            --workflow showcase-v2-staging-deploy.yml \
+            --event workflow_dispatch \
+            --branch main \
+            --limit 10 \
+            --json databaseId,status,conclusion,createdAt,updatedAt,url,headSha 2>/dev/null || echo '[]')
+          jq -n --argjson repair "$repair" --argjson deploy "$deploy" '{captured_at:(now|todate),repair_runs:$repair,deploy_runs:$deploy}' > .showcase-v2-status-probe.json
+
+          git config user.name "Komerce Showcase Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .showcase-v2-status-probe.json
+          git commit -m "ops(showcase): capture latest campaign status" || exit 0
+          git push origin HEAD:ops/showcase-v2-run50
