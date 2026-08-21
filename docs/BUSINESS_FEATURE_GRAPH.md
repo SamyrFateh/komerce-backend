@@ -368,9 +368,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### market _(unclassified)_
 
-> Porter le référentiel des marchés ouverts (pays, devise) et, à terme, l'autorisation d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
+> Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
 
-- migrations: 1
+- migrations: 2
 - tables owned (lifecycle): 0
 - tables written: 0
 - interfaces exposed: 0

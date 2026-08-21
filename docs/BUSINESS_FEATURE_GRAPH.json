@@ -302,7 +302,7 @@
         "status": "draft",
         "owner": "backend-core",
         "since": "2026-08",
-        "service": "Porter le référentiel des marchés ouverts (pays, devise) et, à terme, l'autorisation d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.",
+        "service": "Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.",
         "businessKind": "unclassified",
         "kindSource": "none",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -6970,6 +6970,13 @@
         "category": "migrations",
         "declared": "migrations/135_markets_foundation.sql",
         "resolvedPath": "migrations/135_markets_foundation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "migrations",
+        "declared": "migrations/136_operator_market_scopes.sql",
+        "resolvedPath": "migrations/136_operator_market_scopes.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
