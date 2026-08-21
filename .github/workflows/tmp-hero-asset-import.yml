@@ -25,7 +25,7 @@ jobs:
           set -euo pipefail
           mkdir -p public/images
           curl --fail --location --retry 3 \
-            'https://media.canva.com/v2/image-resize/format:PNG/height:1000/quality:100/uri:ifs%3A%2F%2FM%2F6c5235ef-95dc-4080-80fc-cff9c67a43e2/watermark:F/width:1600?csig=AAAAAAAAAAAAAAAAAAAAAHx2wEwX_Jm2tnGjLsPFJxLkA18-TwYSq4jOWCks-Ga7&exp=1787341821&osig=AAAAAAAAAAAAAAAAAAAAACDO2ivfLE7Kp-my205aVIuvkVS_m6ZwJ7wo-nQTgrkD&signer=media-rpc&x-canva-quality=thumbnail' \
+            'https://export-download.canva.com/967931a7-a1b4-43b4-9870-c1b8730d4e85/0/0001-7877309151256874599.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260820%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260820T170054Z&X-Amz-Expires=86292&X-Amz-Signature=00934a3f4f21f3f1e0359bc40db8e3f760acf092e8ab8b25ad0c4230bf5c1956&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Fri%2C%2021%20Aug%202026%2016%3A59%3A06%20GMT' \
             --output public/images/komerce_hero_characters_v1.png
 
       - name: Validate PNG contract
