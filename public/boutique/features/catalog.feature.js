@@ -67,7 +67,7 @@ module.exports = {
       '../css/products.css',
     ],
     assets: [
-      '../../images/komerce_hero_desktop_panorama_v2.webp',
+      '../../images/komerce_hero_characters_v1.png',
       '../categories/all-v2.webp',
       '../categories/soldes-v2.webp',
       '../categories/mode-v2.webp',
