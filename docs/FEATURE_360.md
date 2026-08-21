@@ -1069,7 +1069,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - MarketContext (parcours acheteur) est un contexte client commutable, jamais une autorisation
 - requireMarketScope (M2) est résolu serveur depuis operator_market_scopes, jamais depuis un market_id fourni par le client
 - relais.market_id (M1b) est NOT NULL — un relais est un lieu physique, il ne peut pas exister sans marché
-- toute migration de market qui touche une table possédée par une autre feature (ex: relais, logistics) ajoute une colonne ou un index, jamais une règle métier de cette autre feature
+- orders.market_id (M1c) est un SNAPSHOT résolu du relais au moment de la commande, jamais une FK vivante re-synchronisée
+- orders.relais_id est NOT NULL dans le schéma (vérifié par exécution réelle, pas supposé) — aucune commande sans relais n'est possible, le backfill orders.market_id est donc total par construction
+- toute migration de market qui touche une table possédée par une autre feature (ex: relais, logistics ; orders) ajoute une colonne ou un index, jamais une règle métier de cette autre feature
 
 **Owns** : _aucune_
 
@@ -1090,8 +1092,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 3 fichier(s) déclaré(s)
-  - migrations : 3
+**Implementation** : 4 fichier(s) déclaré(s)
+  - migrations : 4
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market"]_
 

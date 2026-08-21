@@ -370,7 +370,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
 
-- migrations: 3
+- migrations: 4
 - tables owned (lifecycle): 0
 - tables written: 0
 - interfaces exposed: 0
