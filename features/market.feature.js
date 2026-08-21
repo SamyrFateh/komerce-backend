@@ -49,6 +49,7 @@ module.exports = {
     migrations: [
       'migrations/135_markets_foundation.sql',
       'migrations/136_operator_market_scopes.sql',
+      'migrations/137_relais_market_id.sql',
     ],
   },
 
@@ -82,6 +83,8 @@ module.exports = {
     'révocation d\'un scope = UPDATE revoked_at, jamais DELETE — l\'historique d\'accès n\'est pas reconstructible sinon',
     'MarketContext (parcours acheteur) est un contexte client commutable, jamais une autorisation',
     'requireMarketScope (M2) est résolu serveur depuis operator_market_scopes, jamais depuis un market_id fourni par le client',
+    'relais.market_id (M1b) est NOT NULL — un relais est un lieu physique, il ne peut pas exister sans marché',
+    'toute migration de market qui touche une table possédée par une autre feature (ex: relais, logistics) ajoute une colonne ou un index, jamais une règle métier de cette autre feature',
   ],
 
 };
