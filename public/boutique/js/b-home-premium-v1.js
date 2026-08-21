@@ -99,8 +99,8 @@ function injectHomeBlocks() {
     'Paiement sécurisé',
     'Suivi en 9 étapes',
     'Panier partagé',
-    'Prix en KMF',
-    'Livraison incluse aux Comores',
+    window.KomerceMarket.get().price_label,
+    window.KomerceMarket.get().free_ship_label,
   ].forEach(function(label) {
     chips.appendChild(makeEl('span', 'k-home-promise-chip', label));
   });

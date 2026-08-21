@@ -11,9 +11,9 @@
 <link rel="icon" href="/images/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="icon" href="/images/favicon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/images/favicon-192.png">
-<meta name="description" content="La boutique en ligne des Comores. Mode, tech, maison, beauté — commandez depuis l'Europe, retirez en cash chez votre relais local.">
-<meta property="og:title" content="Komerce — La boutique comorienne">
-<meta property="og:description" content="Mode, tech, maison, beauté — livré aux Comores. Paiement cash, retrait relais.">
+<meta name="description" id="k-meta-desc" content="">
+<meta property="og:title" id="k-og-title" content="">
+<meta property="og:description" id="k-og-desc" content="">
 <meta property="og:image" content="/images/og-cover.jpg">
 <meta property="og:url" content="https://komerce.fr">
 <meta property="og:type" content="website">
@@ -168,7 +168,7 @@
 <div class="k-search-slogan">La lune, <strong>vous pouvez l’attraper.</strong></div>
 
 <!-- ═══ HERO IMAGE (scrolls normally, visible first) ═══ -->
-<h1 class="sr-only">Komerce — La boutique en ligne des Comores</h1>
+<h1 class="sr-only" id="k-hero-h1"></h1>
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
@@ -178,13 +178,13 @@
         <!-- Mobile <900px : illustration 1080×260 sans texte imprimé -->
         <source media="(max-width: 899px)" type="image/webp" srcset="/images/komerce_hero_final_1080x310.webp" width="1080" height="310">
         <!-- Fallback : desktop par défaut (évite le flash mobile→desktop sur grand écran) -->
-        <img class="k-hero-img" src="/images/komerce_hero_desktop_panorama_v2.webp" width="1600" height="525" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
+        <img class="k-hero-img" src="/images/komerce_hero_desktop_panorama_v2.webp" width="1600" height="525" alt="" id="k-hero-img-tag" loading="eager" fetchpriority="high">
       </picture>
       <div class="k-hero-mini-slogan k-hero-mini-slogan--premium">
-        <span class="k-hero-badge">La boutique comorienne</span>
+        <span class="k-hero-badge" id="k-hero-badge"></span>
         <span class="k-line-1">La lune,</span>
         <span class="k-line-2">vous pouvez l’attraper.</span>
-        <p class="k-hero-sub">Mode, tech, beauté — livré aux Comores</p>
+        <p class="k-hero-sub" id="k-hero-sub"></p>
         <div class="k-hero-cta-row">
           <button class="k-hero-cta-primary">Découvrir le catalogue →</button>
           <button class="k-hero-cta-ghost k-header-nav-btn" data-tab="track">📦 Suivre ma commande</button>
@@ -295,7 +295,7 @@
       <div class="k-sc-header">
         <div class="k-sc-free-ship">
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 5l5 3 5-3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M3 5v6l5 3 5-3V5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-          Livraison incluse aux Comores
+          <span id="k-sc-free-ship-label"></span>
         </div>
         <div class="k-sc-subtotal-row">
           <span class="k-sc-subtotal-label">
@@ -524,7 +524,7 @@
           <path fill="#82C478" d="M296.05 184.0V123.94H311.45V138.57L309.8 136.15Q311.12 129.22 316.18 125.92Q321.24 122.62 328.28 122.62Q335.76 122.62 341.425 126.415Q347.09000000000003 130.21 348.52 136.59L343.79 137.03Q346.76 129.66 352.26 126.14Q357.76 122.62 365.13 122.62Q371.62 122.62 376.625 125.48Q381.63 128.34 384.49 133.45499999999998Q387.35 138.57 387.35 145.39V184.0H370.85V148.91Q370.85 145.39 369.58500000000004 142.85999999999999Q368.32 140.32999999999998 366.01 138.89999999999998Q363.7 137.47 360.4 137.47Q357.21 137.47 354.845 138.89999999999998Q352.48 140.32999999999998 351.21500000000003 142.85999999999999Q349.95 145.39 349.95 148.91V184.0H333.45V148.91Q333.45 145.39 332.185 142.85999999999999Q330.92 140.32999999999998 328.61 138.89999999999998Q326.3 137.47 323.0 137.47Q319.81 137.47 317.445 138.89999999999998Q315.08 140.32999999999998 313.815 142.85999999999999Q312.55 145.39 312.55 148.91V184.0Z M423.17 185.32Q413.6 185.32 406.56 181.08499999999998Q399.52 176.85 395.66999999999996 169.7Q391.82 162.55 391.82 153.86Q391.82 144.84 395.83500000000004 137.8Q399.85 130.76 406.67 126.69Q413.49 122.62 422.07 122.62Q429.22 122.62 434.72 124.875Q440.22 127.13 444.015 131.2Q447.81 135.27 449.78999999999996 140.60500000000002Q451.77 145.94 451.77 152.21Q451.77 153.97 451.605 155.675Q451.44 157.38 451.0 158.59H406.01V146.49H441.65L433.84 152.21Q434.94 147.48 433.73 143.79500000000002Q432.52 140.11 429.495 137.965Q426.47 135.82 422.07 135.82Q417.78 135.82 414.7 137.91Q411.62 140.0 410.08000000000004 144.07Q408.54 148.14 408.87 153.97Q408.43 159.03 410.08000000000004 162.88Q411.73 166.73 415.14 168.875Q418.55 171.02 423.39 171.02Q427.79 171.02 430.925 169.26Q434.06 167.5 435.82 164.42L449.02 170.69Q447.26 175.09 443.46500000000003 178.39Q439.67 181.69 434.5 183.505Q429.33 185.32 423.17 185.32Z M457.45 184.0V123.94H472.84999999999997V138.35L471.75 136.26Q473.72999999999996 128.67000000000002 478.29499999999996 125.97500000000001Q482.85999999999996 123.28 489.13 123.28H492.65V137.57999999999998H487.47999999999996Q481.42999999999995 137.57999999999998 477.68999999999994 141.265Q473.95 144.95 473.95 151.66V184.0Z M525.39 185.32Q516.37 185.32 509.16499999999996 181.195Q501.96 177.07 497.72499999999997 169.92000000000002Q493.48999999999995 162.77 493.48999999999995 153.86Q493.48999999999995 144.95 497.66999999999996 137.855Q501.84999999999997 130.76 509.11 126.69Q516.37 122.62 525.39 122.62Q532.0999999999999 122.62 537.8199999999999 124.93Q543.54 127.24000000000001 547.6099999999999 131.365Q551.68 135.49 553.4399999999999 141.1L539.14 147.26Q537.5999999999999 142.75 533.915 140.11Q530.2299999999999 137.47 525.39 137.47Q521.0999999999999 137.47 517.7449999999999 139.56Q514.39 141.65 512.4649999999999 145.39Q510.53999999999996 149.13 510.53999999999996 153.97Q510.53999999999996 158.81 512.4649999999999 162.55Q514.39 166.29 517.7449999999999 168.38Q521.0999999999999 170.47 525.39 170.47Q530.3399999999999 170.47 533.9699999999999 167.82999999999998Q537.5999999999999 165.19 539.14 160.68L553.4399999999999 166.95Q551.79 172.23 547.72 176.41Q543.65 180.59 537.93 182.95499999999998Q532.2099999999999 185.32 525.39 185.32Z M588.05 185.32Q578.4799999999999 185.32 571.4399999999999 181.08499999999998Q564.4 176.85 560.55 169.7Q556.6999999999999 162.55 556.6999999999999 153.86Q556.6999999999999 144.84 560.7149999999999 137.8Q564.7299999999999 130.76 571.55 126.69Q578.3699999999999 122.62 586.9499999999999 122.62Q594.0999999999999 122.62 599.5999999999999 124.875Q605.0999999999999 127.13 608.895 131.2Q612.6899999999999 135.27 614.67 140.60500000000002Q616.65 145.94 616.65 152.21Q616.65 153.97 616.4849999999999 155.675Q616.3199999999999 157.38 615.8799999999999 158.59H570.89V146.49H606.53L598.7199999999999 152.21Q599.8199999999999 147.48 598.6099999999999 143.79500000000002Q597.4 140.11 594.375 137.965Q591.3499999999999 135.82 586.9499999999999 135.82Q582.66 135.82 579.5799999999999 137.91Q576.4999999999999 140.0 574.9599999999999 144.07Q573.42 148.14 573.7499999999999 153.97Q573.31 159.03 574.9599999999999 162.88Q576.6099999999999 166.73 580.02 168.875Q583.43 171.02 588.27 171.02Q592.67 171.02 595.805 169.26Q598.9399999999999 167.5 600.6999999999999 164.42L613.9 170.69Q612.14 175.09 608.345 178.39Q604.55 181.69 599.3799999999999 183.505Q594.2099999999999 185.32 588.05 185.32Z"/>
         </svg>
       </div>
-      <p class="k-footer-tagline">La boutique en ligne qui livre aux Comores. Commandez depuis l'Europe, retirez en cash chez votre relais local.</p>
+      <p class="k-footer-tagline" id="k-footer-tagline"></p>
       <div class="k-footer-socials">
         <a class="k-footer-social-btn" href="https://wa.me/33699272526?text=Bonjour%20Komerce%20!" target="_blank" rel="noopener" aria-label="WhatsApp">
           <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>
@@ -618,7 +618,32 @@
 
 <!-- side cart déplacé dans #k-desktop-catalog-wrap -->
 
+<script src="/boutique/js/market-context.js"></script>
 <script defer src="/boutique/js/hero-bootstrap.js"></script>
+<script>
+/* H2 — hydratation des littéraux pays depuis market-context.js */
+(function(){
+  var m = window.KomerceMarket && window.KomerceMarket.get();
+  if (!m) return;
+  var map = {
+    'k-meta-desc':         ['content', m.seo_description],
+    'k-og-title':          ['content', m.og_title],
+    'k-og-desc':           ['content', m.og_description],
+    'k-hero-h1':           ['text',    m.seo_title],
+    'k-hero-img-tag':      ['alt',     m.seo_title],
+    'k-hero-badge':        ['text',    m.gentile],
+    'k-hero-sub':          ['text',    m.delivery_line],
+    'k-sc-free-ship-label':['text',    m.free_ship_label],
+    'k-footer-tagline':    ['text',    m.footer_tagline],
+  };
+  for (var id in map) {
+    var el = document.getElementById(id);
+    if (!el) continue;
+    if (map[id][0] === 'text') el.textContent = map[id][1];
+    else el.setAttribute(map[id][0], map[id][1]);
+  }
+})();
+</script>
 <!-- ⚠️ DEV ONLY — Données de test (supprimer en production) -->
 <!-- <script src="/boutique/js/mock-data.js"></script> -->
 <script src="/boutique/js/komerce-api.js?v=340"></script>
