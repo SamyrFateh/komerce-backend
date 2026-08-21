@@ -676,13 +676,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 117 fichier(s) déclaré(s)
+**Implementation** : 118 fichier(s) déclaré(s)
   - dash : 6
   - migrations : 19
   - routes : 12
   - services : 27
   - tests : 51
-  - utils : 2
+  - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="economic-engine"]_
 
@@ -812,10 +812,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `UNRESOLVED_INTERNAL_API` (medium) — utils/reference.js — génération de références commande/colis (null) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — validators/index.js — barrel des schémas Joi (null) — statut: undeclared-in-graph
 
-**Implementation** : 270 fichier(s) déclaré(s)
+**Implementation** : 271 fichier(s) déclaré(s)
   - assets : 29
   - bootstrap : 9
-  - ci : 23
+  - ci : 24
   - config : 12
   - db : 16
   - docs : 60

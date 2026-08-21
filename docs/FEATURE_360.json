@@ -7068,7 +7068,7 @@
             ]
           },
           "utils": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "utils/eco-bridge.js",
@@ -7079,11 +7079,16 @@
                 "declared": "utils/pricing-cache.js",
                 "resolvedPath": "utils/pricing-cache.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "utils/relay-commission.js",
+                "resolvedPath": "utils/relay-commission.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           }
         },
-        "totalFiles": 117,
+        "totalFiles": 118,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -8345,7 +8350,7 @@
             ]
           },
           "ci": {
-            "count": 23,
+            "count": 24,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -8460,6 +8465,11 @@
               {
                 "declared": ".github/workflows/pr-enforcement.yml",
                 "resolvedPath": ".github/workflows/pr-enforcement.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/showcase-v2-media-realism.yml",
+                "resolvedPath": ".github/workflows/showcase-v2-media-realism.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -9560,7 +9570,7 @@
             ]
           }
         },
-        "totalFiles": 270,
+        "totalFiles": 271,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
