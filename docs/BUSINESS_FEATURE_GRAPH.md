@@ -255,7 +255,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Calculer le prix, le cout et la marge d'un produit ou d'une commande selon une strategie tarifaire versionnee.
 
-- utils: 2
+- utils: 3
 - services: 27
 - routes: 12
 - migrations: 19
@@ -292,8 +292,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 6
 - scripts: 87
 - docs: 60
-- ci: 23
-- assets: 37
+- ci: 24
+- assets: 29
 - db: 16
 - routes: 1
 - config: 12
@@ -1534,8 +1534,8 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 836 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 158 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- backend : 837 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 160 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_

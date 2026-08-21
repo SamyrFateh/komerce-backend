@@ -44,8 +44,9 @@ module.exports = {
   files: {
     utils: [
       'utils/eco-bridge.js',
-    
-      'utils/pricing-cache.js',],
+      'utils/pricing-cache.js',
+      'utils/relay-commission.js',
+    ],
     services: [
       'services/pricing-apply.js',
       'services/pricing-dashboard.js',

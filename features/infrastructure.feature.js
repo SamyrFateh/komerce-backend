@@ -241,6 +241,7 @@ module.exports = {
       // Workflows ACTIFS — GitHub Actions ne charge que `.github/workflows/`.
       '.github/workflows/ci.yml',
       '.github/workflows/pr-enforcement.yml',
+      '.github/workflows/showcase-v2-media-realism.yml',
       // Workflows EN PAUSE (revue gouvernance CI/CD 2026-08-14, cf.
       // `.github/workflows-disabled/README.md`) : conservés dans Git mais
       // inactifs, réactivés individuellement après revue (chantier CI cible :
@@ -267,7 +268,6 @@ module.exports = {
       '.github/workflows-disabled/schema-refresh.yml',
     ],
     assets: [
-      'public/images/Komerce_Hero_Desktop.png',
       'public/images/Komerce_Kero_Desktop_2.png',
       'public/images/Logo_Komerce.png',
       'public/images/Logo_Komerce@2x.png',
@@ -293,13 +293,6 @@ module.exports = {
       'public/images/favicon.ico',
       'public/images/icon-192.png',
       'public/images/icon-512.png',
-      'public/images/komerce_hero_desktop_1600x320.webp',
-      'public/images/komerce_hero_desktop_1600x386.webp',
-      'public/images/komerce_hero_desktop_1600x525.webp',
-      'public/images/komerce_hero_final_1080x260.webp',
-      'public/images/komerce_hero_final_1080x310.webp',
-      'public/images/komerce_hero_mobile_1080x220.webp',
-      'public/images/komerce_hero_mobile_1080x260.webp',
       'public/images/panier_africain.png',
       'public/images/panier_africain_sm.png',
       'public/images/panier_tresse.png',
