@@ -5747,13 +5747,6 @@
       {
         "feature": "infrastructure",
         "category": "assets",
-        "declared": "public/images/Komerce_Hero_Desktop.png",
-        "resolvedPath": "public/images/Komerce_Hero_Desktop.png",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "assets",
         "declared": "public/images/Komerce_Kero_Desktop_2.png",
         "resolvedPath": "public/images/Komerce_Kero_Desktop_2.png",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5924,55 +5917,6 @@
         "category": "assets",
         "declared": "public/images/icon-512.png",
         "resolvedPath": "public/images/icon-512.png",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "assets",
-        "declared": "public/images/komerce_hero_desktop_1600x320.webp",
-        "resolvedPath": "public/images/komerce_hero_desktop_1600x320.webp",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "assets",
-        "declared": "public/images/komerce_hero_desktop_1600x386.webp",
-        "resolvedPath": "public/images/komerce_hero_desktop_1600x386.webp",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "assets",
-        "declared": "public/images/komerce_hero_desktop_1600x525.webp",
-        "resolvedPath": "public/images/komerce_hero_desktop_1600x525.webp",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "assets",
-        "declared": "public/images/komerce_hero_final_1080x260.webp",
-        "resolvedPath": "public/images/komerce_hero_final_1080x260.webp",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "assets",
-        "declared": "public/images/komerce_hero_final_1080x310.webp",
-        "resolvedPath": "public/images/komerce_hero_final_1080x310.webp",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "assets",
-        "declared": "public/images/komerce_hero_mobile_1080x220.webp",
-        "resolvedPath": "public/images/komerce_hero_mobile_1080x220.webp",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "assets",
-        "declared": "public/images/komerce_hero_mobile_1080x260.webp",
-        "resolvedPath": "public/images/komerce_hero_mobile_1080x260.webp",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {

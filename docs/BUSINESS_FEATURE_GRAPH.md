@@ -293,7 +293,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - scripts: 87
 - docs: 60
 - ci: 23
-- assets: 37
+- assets: 29
 - db: 16
 - routes: 1
 - config: 12
