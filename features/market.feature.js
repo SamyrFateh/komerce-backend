@@ -22,8 +22,8 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Porter le référentiel des marchés ouverts (pays, devise) et, à terme, ' +
-    'l\'autorisation d\'accès des opérateurs à un marché — jamais le settlement ' +
+  service: 'Porter le référentiel des marchés ouverts (pays, devise) et ' +
+    'l\'historique d\'accès des opérateurs à un marché — jamais le settlement ' +
     'ni l\'attribution économique, qui restent une primitive séparée et différée.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
@@ -48,21 +48,24 @@ module.exports = {
   files: {
     migrations: [
       'migrations/135_markets_foundation.sql',
+      'migrations/136_operator_market_scopes.sql',
     ],
   },
 
   // ── Securite ─────────────────────────────────────────────────────────────
-  // M0 est un lot pur DB : aucune route, aucun middleware. Le champ est posé
-  // à son état réel (zéro surface) plutôt qu'omis, pour que le prochain lot
-  // (M2, requireMarketScope) ait une base à mettre à jour au lieu d'ajouter
-  // le champ après coup.
+  // M0 et M1 sont des lots purs DB : aucune route, aucun middleware. Le
+  // champ est posé à son état réel (zéro surface) plutôt qu'omis, pour que
+  // le prochain lot applicatif (M2, requireMarketScope) ait une base à
+  // mettre à jour au lieu d'ajouter le champ après coup.
   security: {
     status: 'CONFIRMED_PROTECTED',
     authedRoutesDetected: 0,
     totalRoutes: 0,
-    note: 'M0 ne câble aucune route ni middleware — table de référentiel pur. ' +
-      'L\'autorisation arrive en M2 avec requireMarketScope, résolu côté serveur ' +
-      'depuis operator_market_scopes (M1), jamais depuis cette table seule.',
+    note: 'M0/M1 ne câblent aucune route ni middleware — deux tables de ' +
+      'référentiel et d\'historique d\'accès, zéro surface applicative. ' +
+      'L\'autorisation arrive en M2 avec requireMarketScope, résolu côté ' +
+      'serveur depuis operator_market_scopes, jamais depuis un market_id ' +
+      'fourni par le client.',
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
