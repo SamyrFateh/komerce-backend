@@ -16,6 +16,7 @@
       "features/inventory.feature.js",
       "features/logistics.feature.js",
       "features/loyalty.feature.js",
+      "features/market.feature.js",
       "features/notifications.feature.js",
       "features/orders.feature.js",
       "features/payments.feature.js",
@@ -39,7 +40,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 30,
+    "businessManifestsResolved": 31,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -288,6 +289,22 @@
         "service": "Calculer et maintenir le statut de fidelite d'un client (palier + compteur gros panier) et ses recompenses.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:market",
+        "name": "market",
+        "file": "features/market.feature.js",
+        "legacyType": "feature",
+        "status": "draft",
+        "owner": "backend-core",
+        "since": "2026-08",
+        "service": "Porter le référentiel des marchés ouverts (pays, devise) et, à terme, l'autorisation d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.",
+        "businessKind": "unclassified",
+        "kindSource": "none",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -6946,6 +6963,13 @@
         "category": "tests",
         "declared": "tests/unit/loyalty-service.test.js",
         "resolvedPath": "tests/unit/loyalty-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "migrations",
+        "declared": "migrations/135_markets_foundation.sql",
+        "resolvedPath": "migrations/135_markets_foundation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -27183,8 +27207,8 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 26,
-        "manifestsConnected": 26,
+        "manifestsDiscovered": 27,
+        "manifestsConnected": 27,
         "technicalNodesTotal": 289,
         "technicalNodesOwned": 289,
         "technicalOrphans": 0
@@ -27233,6 +27257,7 @@
         "legacy-control-tower",
         "logistics",
         "loyalty",
+        "market",
         "platform",
         "purchasing",
         "refunds",

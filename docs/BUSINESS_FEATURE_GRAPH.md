@@ -73,7 +73,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 26 | 26 | 289 | 289 | 0 |
+| backend | 27 | 27 | 289 | 289 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 15 | 15 | 80 | 80 | 0 |
 
@@ -82,7 +82,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 ### Identités canoniques
 
 - **Cross-repo features** (10) : `auth-identity`, `auth-passkey`, `catalog`, `notifications`, `orders`, `payments`, `platform-ops`, `recommendations`, `shared-cart`, `wallet`
-- **Single-repo features** (20) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `logistics`, `loyalty`, `platform`, `purchasing`, `refunds`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
+- **Single-repo features** (21) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `logistics`, `loyalty`, `market`, `platform`, `purchasing`, `refunds`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
 - **Unmapped local manifests** (0) : —
 
 ### Ontology gaps
@@ -365,6 +365,18 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - internal APIs: 0
 - dependencies (consumes): 5 — infrastructure, auth, notifications, auth-identity, wallet
 - consumers: 4 — economic-engine, logistics, orders, payments
+
+### market _(unclassified)_
+
+> Porter le référentiel des marchés ouverts (pays, devise) et, à terme, l'autorisation d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
+
+- migrations: 1
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 0
+- consumers: 0
 
 ### notifications _(business-transversal)_
 

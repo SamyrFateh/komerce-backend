@@ -4,8 +4,8 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 
 ## Global scorecard
 
-- Features : **30**
-- Healthy : **14**
+- Features : **31**
+- Healthy : **15**
 - Attention : **16**
 - Blocked : **0**
 - Business dependencies : **179**
@@ -14,13 +14,13 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Ambiguous ownership signals : **0**
 - Ontology gaps : **0**
 - Debt items (total) : **43**
-- Gate health — healthy : **14** · blocked : **0**
+- Gate health — healthy : **14** · blocked : **1**
 
 ## Gate findings — intégrité de projection
 
 - Source : `docs/GATE_FINDINGS.json` (version GF-2.1)
 - Sources de gates : **18** (0 en échec)
-- Findings : **54** total, **54** attribué(s), **0** sans attribution exploitable
+- Findings : **56** total, **56** attribué(s), **0** sans attribution exploitable
 - Fichiers non projetables : **0**
 - Fichiers multi-projetés : **0**
 
@@ -45,6 +45,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | legacy-control-tower | deprecated | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | logistics | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | carriers, parcel_events, parcel_items, parcels, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, relais, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, incident-management, infrastructure, loyalty, notifications, orders, payments, purchasing, refunds | admin-dashboard, catalog, customs, dashboard, decision-signals, economic-engine, infrastructure, inventory, orders, payments, platform-ops, purchasing | 3 |
 | loyalty | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers | auth, auth-identity, infrastructure, notifications | economic-engine, logistics, orders, payments | 1 |
+| market | unclassified | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | notifications | business-transversal | 🟢 HEALTHY | 🟡 ATTENTION | alerts, client_notifications, notification_log | auth, incident-management, infrastructure, platform-ops | auth, auth-identity, catalog, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart | 1 |
 | orders | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_history, disputes, order_comments, order_item_cost_imputations, order_items, order_status_history, orders, recipients, sms_log | auth, auth-identity, business-rules, catalog, customs, documents, economic-engine, infrastructure, logistics, loyalty, notifications, payments, platform-ops, purchasing, refunds, shared-cart, wallet | admin-dashboard, customs, dashboard, economic-engine, infrastructure, inventory, logistics, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, wallet | 1 |
 | payments | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | cash_collections, cash_deposits, paypal_events_processed, stripe_events_processed | auth, business-rules, documents, incident-management, infrastructure, logistics, loyalty, notifications, orders, platform-ops, purchasing, refunds | admin-dashboard, infrastructure, logistics, orders | 0 |
@@ -1037,6 +1038,60 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - tests : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="loyalty"]_
+
+## market
+
+**Kind** : unclassified  ·  **Status** : draft
+
+**Service** : Porter le référentiel des marchés ouverts (pays, devise) et, à terme, l'autorisation d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
+
+**Perimeter** :
+- _in_ :
+  - référentiel markets (code pays, devise, minor_unit) — M0
+  - historique d'accès operator_market_scopes (grain user, jamais settlement) — M1
+  - scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c
+  - MarketContext navigation (contextuel, client, commutable, jamais autorisant) — M2
+  - requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2
+- _out_ :
+  - settlement et attribution économique par opérateur (entité différée, hors périmètre)
+  - corridor framework (relation traversant les scopes, pas un axe d'ownership, hors périmètre)
+  - wallet multi-market (hors périmètre)
+  - product_market_offer (déclencheur = 1er marchand local, pas divergence de prix, hors périmètre)
+  - formatage devise affiché (feature economic-engine / boundary devise M5, qui consomme minor_unit)
+
+**Authority** : backend-core — doctrine gelée dans KOMERCE_MARKET_LAYER_FREEZE.md (2026-08-19, READY TO FREEZE). Toute extension du périmètre (settlement, corridor framework, entité opérateur) exige un nouveau freeze, pas une extension silencieuse de ce manifeste.
+
+**Invariants** :
+- markets est un référentiel pur — aucune colonne ni logique d'autorisation n'y est ajoutée
+- ouvrir un marché est un INSERT dans une migration, jamais un ALTER TABLE
+- operator_market_scopes (M1) = historique d'accès grain user, jamais source du settlement (grain organisation, différé)
+- révocation d'un scope = UPDATE revoked_at, jamais DELETE — l'historique d'accès n'est pas reconstructible sinon
+- MarketContext (parcours acheteur) est un contexte client commutable, jamais une autorisation
+- requireMarketScope (M2) est résolu serveur depuis operator_market_scopes, jamais depuis un market_id fourni par le client
+
+**Owns** : _aucune_
+
+**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+
+**Consumes** : _aucune_
+**Consumed by** : _aucune_
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : 🔴 BLOCKED — gates: gate:feature-classification-check, gate:feature-registry-check, fail: 1, warn: 1
+  - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
+  - [gate:feature-registry-check] 🔴 MISSING-CONTRACT — contract.exposes et contract.consumes manquants
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 1 fichier(s) déclaré(s)
+  - migrations : 1
+
+_Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market"]_
 
 ## notifications
 
