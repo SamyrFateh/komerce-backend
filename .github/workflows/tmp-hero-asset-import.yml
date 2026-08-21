@@ -1,0 +1,68 @@
+name: tmp hero asset import
+
+on:
+  push:
+    branches:
+      - ui-hero-characters-v1-asset
+    paths:
+      - .github/workflows/tmp-hero-asset-import.yml
+
+permissions:
+  contents: write
+
+jobs:
+  import-hero-master:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ui-hero-characters-v1-asset
+          fetch-depth: 0
+
+      - name: Download canonical transparent character master
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/images
+          curl --fail --location --retry 3 \
+            'https://media.canva.com/v2/image-resize/format:PNG/height:1000/quality:100/uri:ifs%3A%2F%2FM%2F6c5235ef-95dc-4080-80fc-cff9c67a43e2/watermark:F/width:1600?csig=AAAAAAAAAAAAAAAAAAAAAHx2wEwX_Jm2tnGjLsPFJxLkA18-TwYSq4jOWCks-Ga7&exp=1787341821&osig=AAAAAAAAAAAAAAAAAAAAACDO2ivfLE7Kp-my205aVIuvkVS_m6ZwJ7wo-nQTgrkD&signer=media-rpc&x-canva-quality=thumbnail' \
+            --output public/images/komerce_hero_characters_v1.png
+
+      - name: Validate PNG contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, struct
+
+          p = Path('public/images/komerce_hero_characters_v1.png')
+          data = p.read_bytes()
+          assert data[:8] == b'\x89PNG\r\n\x1a\n', 'not a PNG'
+          assert data[12:16] == b'IHDR', 'missing IHDR'
+          width, height = struct.unpack('>II', data[16:24])
+          bit_depth = data[24]
+          color_type = data[25]
+          assert (width, height) == (1600, 1000), (width, height)
+          assert bit_depth == 8, bit_depth
+          assert color_type in (4, 6), f'PNG has no alpha channel: color_type={color_type}'
+          assert len(data) > 500_000, f'unexpectedly small asset: {len(data)} bytes'
+          print({
+              'size': f'{width}x{height}',
+              'bit_depth': bit_depth,
+              'color_type': color_type,
+              'bytes': len(data),
+              'sha256': hashlib.sha256(data).hexdigest(),
+          })
+          PY
+
+      - name: Commit asset and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/images/komerce_hero_characters_v1.png
+          git rm .github/workflows/tmp-hero-asset-import.yml
+          git commit -m 'assets: add canonical hero character master v1'
+          git push origin HEAD:ui-hero-characters-v1-asset
