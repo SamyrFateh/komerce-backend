@@ -6980,6 +6980,13 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "market",
+        "category": "migrations",
+        "declared": "migrations/137_relais_market_id.sql",
+        "resolvedPath": "migrations/137_relais_market_id.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "notifications",
         "category": "tests",
         "declared": "core/test-whatsapp-notifications.js",
