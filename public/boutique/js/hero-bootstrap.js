@@ -107,7 +107,7 @@
       "« La pluie ne tombe pas sur un seul toit. » — Proverbe camerounais",
       "« Celui qui pose des questions ne se perd jamais. » — Proverbe haoussa",
 
-      /* 🌍 Afrique du Nord / Comores */
+      /* 🌍 Afrique du Nord */
       "« Saba'u 'ilm — walau ilâ s-sîn. » — Cherche le savoir, même jusqu'en Chine. (Arabe / Islam)",
       "« Man sabara zafira. » — Celui qui patiente réussit. (Arabe)",
       "« Al-waqt ka-s-sayf, in lam taqta'hu qata'ak. » — Le temps est comme une épée : si tu ne le coupes pas, il te coupe. (Arabe)",
