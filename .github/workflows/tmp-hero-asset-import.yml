@@ -19,42 +19,20 @@ jobs:
           ref: ui-hero-characters-v1-asset
           fetch-depth: 0
 
-      - name: Download validated transparent character source
+      - name: Download canonical transparent hero master
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p public/images
           curl --fail --location --retry 3 \
-            'https://export-download.canva.com/967931a7-a1b4-43b4-9870-c1b8730d4e85/0/0001-7877309151256874599.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260820%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260820T170054Z&X-Amz-Expires=86292&X-Amz-Signature=00934a3f4f21f3f1e0359bc40db8e3f760acf092e8ab8b25ad0c4230bf5c1956&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Fri%2C%2021%20Aug%202026%2016%3A59%3A06%20GMT' \
-            --output /tmp/komerce-hero-source.png
-
-      - name: Normalize source to canonical 1600x1000 master
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --quiet pillow
-          python - <<'PY'
-          from pathlib import Path
-          from PIL import Image
-
-          src = Path('/tmp/komerce-hero-source.png')
-          dst = Path('public/images/komerce_hero_characters_v1.png')
-
-          with Image.open(src) as im:
-              im.load()
-              assert im.size == (600, 375), f'unexpected Canva source geometry: {im.size}'
-              assert 'A' in im.getbands(), f'Canva source has no alpha channel: {im.mode}'
-              rgba = im.convert('RGBA')
-              alpha_min, alpha_max = rgba.getchannel('A').getextrema()
-              assert alpha_min < 255 and alpha_max == 255, (alpha_min, alpha_max)
-              master = rgba.resize((1600, 1000), Image.Resampling.LANCZOS)
-              master.save(dst, format='PNG', optimize=True)
-          PY
+            'https://media.canva.com/v2/image-resize/format:PNG/height:1000/quality:100/uri:ifs%3A%2F%2FM%2Ff7a5e888-b596-4dd5-981d-5e3f96d29d63/watermark:F/width:1600?csig=AAAAAAAAAAAAAAAAAAAAACbWHbSOe0fTdGjW1gs-p5u9SBLNwsefybES8s7ZhBOI&exp=1787345680&osig=AAAAAAAAAAAAAAAAAAAAAG-ptAkGf_f84sINCmU3aZaGetNbwz6ikTHe-6OymYJp&signer=media-rpc&x-canva-quality=thumbnail' \
+            --output public/images/komerce_hero_characters_v1.png
 
       - name: Validate canonical PNG contract
         shell: bash
         run: |
           set -euo pipefail
+          python -m pip install --quiet pillow
           python - <<'PY'
           from pathlib import Path
           import hashlib
@@ -66,13 +44,15 @@ jobs:
           with Image.open(p) as im:
               im.load()
               assert im.size == (1600, 1000), im.size
-              assert im.mode == 'RGBA', im.mode
-              alpha_min, alpha_max = im.getchannel('A').getextrema()
-              assert alpha_min < 255 and alpha_max == 255, (alpha_min, alpha_max)
-          assert len(data) > 150_000, f'unexpectedly small asset: {len(data)} bytes'
+              assert 'A' in im.getbands(), f'no alpha channel: {im.mode}'
+              rgba = im.convert('RGBA')
+              alpha_min, alpha_max = rgba.getchannel('A').getextrema()
+              assert alpha_min == 0 and alpha_max == 255, (alpha_min, alpha_max)
+          assert len(data) > 500_000, f'unexpectedly small asset: {len(data)} bytes'
           print({
               'size': '1600x1000',
-              'mode': 'RGBA',
+              'mode': im.mode,
+              'alpha': (alpha_min, alpha_max),
               'bytes': len(data),
               'sha256': hashlib.sha256(data).hexdigest(),
           })
