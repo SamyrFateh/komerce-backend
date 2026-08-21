@@ -18,6 +18,7 @@
         "features/inventory.feature.js",
         "features/logistics.feature.js",
         "features/loyalty.feature.js",
+        "features/market.feature.js",
         "features/notifications.feature.js",
         "features/orders.feature.js",
         "features/payments.feature.js",
@@ -42,8 +43,8 @@
     }
   },
   "summary": {
-    "features": 30,
-    "healthy": 14,
+    "features": 31,
+    "healthy": 15,
     "attention": 16,
     "blocked": 0,
     "businessDependencies": 179,
@@ -53,14 +54,14 @@
     "ontologyGaps": 0,
     "debtItemsTotal": 43,
     "gateHealthy": 14,
-    "gateBlocked": 0
+    "gateBlocked": 1
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 54,
-    "attributedFindings": 54,
+    "totalFindings": 56,
+    "attributedFindings": 56,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -12152,6 +12153,144 @@
             "evidence": "contract.consumes déclare \"wallet\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
           }
         ]
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "market",
+      "kind": "unclassified",
+      "status": "draft",
+      "manifestFile": "features/market.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "market",
+        "kind": "unclassified",
+        "status": "draft"
+      },
+      "service": "Porter le référentiel des marchés ouverts (pays, devise) et, à terme, l'autorisation d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.",
+      "perimeter": {
+        "in": [
+          "référentiel markets (code pays, devise, minor_unit) — M0",
+          "historique d'accès operator_market_scopes (grain user, jamais settlement) — M1",
+          "scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c",
+          "MarketContext navigation (contextuel, client, commutable, jamais autorisant) — M2",
+          "requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2"
+        ],
+        "out": [
+          "settlement et attribution économique par opérateur (entité différée, hors périmètre)",
+          "corridor framework (relation traversant les scopes, pas un axe d'ownership, hors périmètre)",
+          "wallet multi-market (hors périmètre)",
+          "product_market_offer (déclencheur = 1er marchand local, pas divergence de prix, hors périmètre)",
+          "formatage devise affiché (feature economic-engine / boundary devise M5, qui consomme minor_unit)"
+        ]
+      },
+      "authority": "backend-core — doctrine gelée dans KOMERCE_MARKET_LAYER_FREEZE.md (2026-08-19, READY TO FREEZE). Toute extension du périmètre (settlement, corridor framework, entité opérateur) exige un nouveau freeze, pas une extension silencieuse de ce manifeste.",
+      "invariants": [
+        "markets est un référentiel pur — aucune colonne ni logique d'autorisation n'y est ajoutée",
+        "ouvrir un marché est un INSERT dans une migration, jamais un ALTER TABLE",
+        "operator_market_scopes (M1) = historique d'accès grain user, jamais source du settlement (grain organisation, différé)",
+        "révocation d'un scope = UPDATE revoked_at, jamais DELETE — l'historique d'accès n'est pas reconstructible sinon",
+        "MarketContext (parcours acheteur) est un contexte client commutable, jamais une autorisation",
+        "requireMarketScope (M2) est résolu serveur depuis operator_market_scopes, jamais depuis un market_id fourni par le client"
+      ],
+      "implementation": {
+        "byCategory": {
+          "migrations": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "migrations/135_markets_foundation.sql",
+                "resolvedPath": "migrations/135_markets_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 1,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": []
+      },
+      "data": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": []
+      },
+      "interfaces": {
+        "internalApis": [],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [],
+      "consumedBy": [],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": []
+      },
+      "boundaryHealth": {
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "BLOCKED",
+        "failCount": 1,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check",
+          "gate:feature-registry-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          },
+          {
+            "gate": "gate:feature-registry-check",
+            "scope": "root",
+            "type": "MISSING-CONTRACT",
+            "verdict": "fail",
+            "file": null,
+            "message": "contract.exposes et contract.consumes manquants"
+          }
+        ]
+      },
+      "architecturalDebt": {
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
