@@ -22,31 +22,13 @@
 
   function isMobile(){ return window.innerWidth <= 899; }
 
-  // ── MOBILE : tout le wrap est fixe, on mesure sa hauteur ──
+  // ── MOBILE : le wrap n'est plus fixé (H0), plus de calcul de top ──
   function setupMobile(){
-    if (!isMobile()) return;   // desktop : ne pas poser style.top
-    let wrap = document.getElementById('k-hero-fixed-wrap');
-    if (!wrap) return;
-    function update(){
-      if (!isMobile()) {
-        // Desktop : remettre à zéro les styles inline posés par mobile
-        let scroll = document.getElementById('k-page-scroll');
-        if (scroll) { scroll.style.top = ''; scroll.style.position = ''; }
-        return;
-      }
-      let h = wrap.offsetHeight;
-      spacer.style.display = 'none'; // spacer not needed with fixed scroll
-      let scroll = document.getElementById('k-page-scroll');
-      if (scroll && !scroll.classList.contains('k-pager-active')) {
-        let headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 44;
-        scroll.style.top = (h + headerH) + 'px'; // header height lu depuis --header-h (cf. b-store.js)
-      }
-    }
-    update();
-    // Re-mesure après chargement de l'image hero
-    let img = wrap.querySelector('.k-hero-img');
-    if (img && !img.complete) img.addEventListener('load', update);
-    window.addEventListener('resize', update);
+    if (!isMobile()) return;
+    // H0 : #k-hero-fixed-wrap est en position:static, plus besoin de
+    // mesurer sa hauteur ni de poser style.top sur #k-page-scroll.
+    // Le spacer reprend son rôle normal de réserve.
+    spacer.style.display = '';
   }
 
   // ── DESKTOP : IntersectionObserver sticky bar ──

@@ -163,9 +163,8 @@
 <!-- ═══ HERO FIXED WRAP (mobile: fixed; desktop: normal flow) ═══ -->
 <div id="k-hero-fixed-wrap">
 
-<!-- Bandeau slogan — mobile uniquement, premier enfant du wrap fixe pour être
-     mesuré par _recalcPagerVars (cf. setupMobile() plus bas) -->
-<div class="k-search-slogan">La lune, <strong>vous pouvez l’attraper.</strong></div>
+<!-- Bandeau slogan supprimé (H0) — doublon de .k-hero-mini-slogan.
+     setupMobile() mesure #k-hero-fixed-wrap sans cet enfant. -->
 
 <!-- ═══ HERO IMAGE (scrolls normally, visible first) ═══ -->
 <h1 class="sr-only">Komerce — La boutique en ligne des Comores</h1>
@@ -234,22 +233,8 @@
 
 <!-- ═══ SLOGAN + PILLS + CATÉGORIES (sticks on scroll) ═══ -->
 <div class="k-hero-cats-sticky" id="k-sticky-bar">
-  <div class="k-hero-overlay">
-    <div class="k-hero-text-left">
-      <div class="k-hero-title k-hero-title--premium">
-        <span class="k-hero-title-top">La lune,</span>
-        <span class="k-hero-title-bottom">vous pouvez l’attraper.</span>
-      </div>
-    </div>
-
-    <div class="k-hero-right-col">
-      <div class="k-hero-pills">
-        <span class="k-hero-pill">📦 Retrait relais</span>
-        <span class="k-hero-pill">💳 Paiement cash</span>
-      </div>
-      <span class="k-hero-proverb-inline" id="k-proverb-text"></span>
-    </div>
-  </div>
+  <!-- hero-title + pills supprimés (H0) — le proverbe est déplacé dans le rail catégories -->
+  <span class="k-hero-proverb-inline" id="k-proverb-text"></span>
 
   <!-- ═══ CATÉGORIES ═══ -->
   <div class="k-cats-shell">

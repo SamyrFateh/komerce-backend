@@ -214,35 +214,11 @@
   height: 0;
 }
 
-/* Slogan mobile : masqué — remplacé par .k-search-slogan (bandeau sous la recherche, ci-dessous) */
+/* Slogan mobile : supprimé (H0) */
 .k-hero-mini-slogan { display: none; }
 .k-hero-bubble       { display: none; }
 
-/* ── Bandeau slogan recherche — mobile uniquement ───────────────
-   Premier enfant de #k-hero-fixed-wrap (index.html) : mesuré par
-   _recalcPagerVars / setupMobile(), le catalogue se décale donc
-   automatiquement de sa hauteur, sans calcul manuel. */
-.k-search-slogan { display: none; } /* desktop : caché */
-
-@media (max-width: 899px) {
-  .k-search-slogan {
-    display: block;
-    text-align: center;
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 15px;
-    letter-spacing: .01em;
-    color: var(--ocean-dark);
-    background: var(--sand-warm);
-    padding: 7px 16px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .k-search-slogan strong {
-    color: var(--coral);
-  }
-}
+/* k-search-slogan supprimé (H0) — doublon de .k-hero-mini-slogan */
 
 /* ── Rail pills texte — mobile-first ─────────────────────────── */
 .k-cats-rail {

@@ -701,14 +701,13 @@ body {
   background: var(--page-bg);
 }
 
-/* ── HERO FIXED WRAP — mobile : fixe en haut sous le header ─── */
-/* Desktop : remis à static dans layout.css @900px               */
+/* ── HERO FIXED WRAP — H0 : plus fixé, flow normal ────────── */
 #k-hero-fixed-wrap {
-  position: fixed;
-  top: var(--header-h, 44px);
-  left: 0;
-  right: 0;
-  z-index: 50;
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: auto;
   width: 100%;
 }
 
