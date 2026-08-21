@@ -47,6 +47,7 @@ module.exports = {
       '../css/shared-list-side-cart-responsive.css',
       '../css/shared-list-library-remove.css',
       '../css/shared-list-lists-tab.css',
+      '../css/side-cart-desktop-polish.css',
     ],
     tests: [
       '../tests/unit/group-checkout-adapter.test.js',

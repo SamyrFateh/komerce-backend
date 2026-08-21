@@ -54,6 +54,8 @@ module.exports = {
       '../js/controllers/home-controller.js',
       '../js/product-store.js',
       '../js/render/render-categories.js',
+      '../js/render/category-shelf-visuals.js',
+      '../js/market-context.js',
       '../js/render/render-home-sections.js',
       '../js/render/render-product-card.js',
       '../js/shop-schema.js',
@@ -65,6 +67,8 @@ module.exports = {
       '../css/hero.css',
       '../css/categories.css',
       '../css/products.css',
+      '../css/category-cutout-navigation.css',
+      '../css/category-cutout-navigation-desktop.css',
     ],
     assets: [
       '../../images/komerce_hero_characters_v1.png',

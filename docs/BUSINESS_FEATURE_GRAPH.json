@@ -3548,6 +3548,13 @@
       },
       {
         "feature": "economic-engine",
+        "category": "utils",
+        "declared": "utils/relay-commission.js",
+        "resolvedPath": "utils/relay-commission.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "economic-engine",
         "category": "services",
         "declared": "services/pricing-apply.js",
         "resolvedPath": "services/pricing-apply.js",
@@ -5616,6 +5623,13 @@
         "category": "ci",
         "declared": ".github/workflows/pr-enforcement.yml",
         "resolvedPath": ".github/workflows/pr-enforcement.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows/showcase-v2-media-realism.yml",
+        "resolvedPath": ".github/workflows/showcase-v2-media-realism.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15586,6 +15600,22 @@
       {
         "boutiqueManifest": "catalog",
         "category": "js",
+        "declared": "../js/render/category-shelf-visuals.js",
+        "resolvedPath": "public/boutique/js/render/category-shelf-visuals.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/market-context.js",
+        "resolvedPath": "public/boutique/js/market-context.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
         "declared": "../js/render/render-home-sections.js",
         "resolvedPath": "public/boutique/js/render/render-home-sections.js",
         "exists": true,
@@ -15652,6 +15682,22 @@
         "category": "css",
         "declared": "../css/products.css",
         "resolvedPath": "public/boutique/css/products.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "css",
+        "declared": "../css/category-cutout-navigation.css",
+        "resolvedPath": "public/boutique/css/category-cutout-navigation.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "css",
+        "declared": "../css/category-cutout-navigation-desktop.css",
+        "resolvedPath": "public/boutique/css/category-cutout-navigation-desktop.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16556,6 +16602,14 @@
         "category": "css",
         "declared": "../css/shared-list-lists-tab.css",
         "resolvedPath": "public/boutique/css/shared-list-lists-tab.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "css",
+        "declared": "../css/side-cart-desktop-polish.css",
+        "resolvedPath": "public/boutique/css/side-cart-desktop-polish.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -25064,10 +25118,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 836
+        "filesObserved": 837
       },
       "boutique": {
-        "filesObserved": 158,
+        "filesObserved": 160,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
