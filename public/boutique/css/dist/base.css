@@ -1967,8 +1967,8 @@ body:has(#k-page-scroll.k-pager-active) {
 /* Desktop : les deux visages, le téléphone et le doigt forment un cluster. */
 @media (min-width: 900px) {
   .k-hero-figures {
-    background-size: auto 150%;
-    background-position: 80% 24%;
+    background-size: auto 132%;
+    background-position: 80% 0%;
   }
 }
 /* Mobile : dérivé art-directed du même master. Les coiffures restent

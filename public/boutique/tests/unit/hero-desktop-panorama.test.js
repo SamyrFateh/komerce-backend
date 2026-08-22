@@ -40,7 +40,12 @@ describe('hero composition en calques (H1)', () => {
 
   test('réduit fortement le panorama desktop sans supprimer les CTA', () => {
     expect(hero).toContain('height: clamp(190px, 14vw, 208px);');
+    expect(hero).toContain('background-size: auto 132%;');
+    expect(hero).toContain('background-position: 80% 0%;');
     expect(hero).toContain('min-height: 40px;');
+    expect(index).toContain('Vos envies,');
+    expect(index).toContain('à portée de main.');
+    expect(index).not.toContain('La lune,');
     expect(index).toContain('Découvrir le catalogue →');
     expect(index).toContain('Suivre ma commande');
   });
