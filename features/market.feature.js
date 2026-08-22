@@ -41,6 +41,10 @@ module.exports = {
       'snapshot display_total_amount/display_currency (orders, services/order-display-snapshot.js) — ' +
         'troisième vérité, distincte de total_kmf/total_eur (Payment Boundary, finance_config, jamais touchée) ' +
         'et de currency_parities seule — P3, freeze 22-08-2026',
+      'P5 : vérifié CONTRE LE CODE RÉEL, satisfait par construction, NO CODE REQUIRED — ' +
+        'total_kmf homogène (KMF universel), total_eur toujours une métrique séparée (filtrée ' +
+        'payment_mode = "stripe_eur", jamais sommée avec total_kmf), display_total_amount ' +
+        'jamais lu par aucun dashboard. Zéro dette trouvée, zéro ligne de code nécessaire',
       'ouverture Mayotte (YT, EUR, minor_unit=2) — M10, premier marché après le seed KM',
     ],
     out: [
@@ -57,8 +61,11 @@ module.exports = {
         'taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé ' +
         'par la boundary devise (qui porte la devise RÉELLE d\'un marché, pas une conversion). ' +
         'b-utils.js devient un ADAPTER de cette boundary en P2, jamais l\'inverse',
-      'P4/P5 — documents contractuels lisant le snapshot P3, dashboards agrégation cross-market ' +
-        'en EUR reference — non faits, dépendent de P3/P2 respectivement',
+      'dashboards market-scoped (filtrer une vue par marché, afficher dans sa devise) — ' +
+        'chantier produit séparé, scope Market Layer/Dashboard, jamais partie de la Currency ' +
+        'Boundary. P5 fournit l\'outil (utils/currency.js#projectAmount) qui le rendrait ' +
+        'trivial à construire, ne construit pas le filtre lui-même — aucune demande produit ' +
+        'pour cette fonctionnalité au 22-08-2026',
       'devises de sourcing flottantes (USD/AED/CNY) — concern séparé par construction ' +
         '(freeze invariant 4/5), currency_parities ne les contient jamais',
       'settlement et attribution économique par opérateur (entité différée, hors périmètre)',
@@ -164,6 +171,8 @@ module.exports = {
     'P3 : aucun recalcul ultérieur du display snapshot — figé à la création, comme total_kmf/total_eur. Pour les commandes antérieures à la migration 143, les 3 colonnes restent NULL — aucun backfill fabriqué (invariant 7 du freeze)',
     'P3 : resolveDisplaySnapshot() (services/order-display-snapshot.js) ne throw jamais — un échec de résolution retourne un snapshot vide, ne bloque jamais la création d\'une commande. C\'est une donnée d\'audit/confirmation, pas une donnée de paiement',
     'P4 : correctif Payment Boundary trouvé pendant la cartographie P3 — services/invoice-service.js affichait "KMF" codé en dur sur toutes les factures, même en paiement EUR (Stripe/PayPal). Corrigé selon payment_mode, sans toucher currency_parities ni display_total_amount — ce n\'est pas un chantier Currency Boundary, fichiers déclarés dans documents.feature.js (migrations/144_invoices_total_eur.sql), pas ici',
+    'P5 : NO CODE REQUIRED, vérifié contre le code réel (grep exhaustif dashboard-metrics/ + finance-metrics/) — jamais supposé. Aucun dashboard ne mélange KMF/XAF/EUR dans un même agrégat, aucun ne lit display_total_amount. "Dashboards market-scoped" est un chantier produit séparé (Market Layer/Dashboard scope), jamais partie de cette boundary — aucune demande produit pour cette fonctionnalité au 22-08-2026',
+    'CHANTIER CURRENCY BOUNDARY CLÔTURÉ le 22-08-2026 — P1 à P4 livrés avec code, P5 satisfait par construction. Trois écarts trouvés en cours d\'exécution vs le plan initial (P3 : Payment Boundary préexistante découverte ; P4 : périmètre réduit à un seul fichier après investigation ; P5 : aucun code requis), chacun documenté avec sa preuve dans GAP_ANALYSIS_CURRENCY_BOUNDARY.md — jamais silencieusement absorbé dans le plan initial',
   ],
 
   // ── Classification ────────────────────────────────────────────────────────
