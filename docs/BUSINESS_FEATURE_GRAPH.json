@@ -969,6 +969,13 @@
       {
         "feature": "auth-identity",
         "category": "tests",
+        "declared": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
         "declared": "tests/integration/admin-authz-probe.test.js",
         "resolvedPath": "tests/integration/admin-authz-probe.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1055,6 +1062,20 @@
         "category": "migrations",
         "declared": "migrations/134_webauthn_step_up.sql",
         "resolvedPath": "migrations/134_webauthn_step_up.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
+        "declared": "tests/e2e-api/auth-passkey.challenge-replay.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/auth-passkey.challenge-replay.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
+        "declared": "tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6695,6 +6716,13 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/integration/test-harness/seed-helpers.js",
         "resolvedPath": "tests/integration/test-harness/seed-helpers.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7976,6 +8004,13 @@
       {
         "feature": "payments",
         "category": "tests",
+        "declared": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
         "declared": "tests/unit/payment-cash-confirm.test.js",
         "resolvedPath": "tests/unit/payment-cash-confirm.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9085,6 +9120,13 @@
         "declared": "css/wallet.css",
         "resolvedPath": "public/boutique/css/wallet.css",
         "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "wallet",
+        "category": "tests",
+        "declared": "tests/e2e-api/wallet.no-double-credit-concurrent.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/wallet.no-double-credit-concurrent.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "wallet",
@@ -17712,6 +17754,10 @@
               {
                 "sourceFileId": "routes/otp.js",
                 "targetFile": "utils/auth-session.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
               }
             ]
           }
@@ -17843,6 +17889,14 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+                "targetFile": "routes/pickup-secret.js"
+              },
+              {
                 "sourceFileId": "tests/integration/admin-authz-probe.test.js",
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
               },
@@ -17953,6 +18007,10 @@
               },
               {
                 "sourceFileId": "routes/auth-passkey.js",
+                "targetFile": "utils/auth-session.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js",
                 "targetFile": "utils/auth-session.js"
               }
             ]
@@ -20976,6 +21034,10 @@
               },
               {
                 "sourceFileId": "services/pickup-secret-service.js",
+                "targetFile": "services/pickup-authorization-service.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
                 "targetFile": "services/pickup-authorization-service.js"
               }
             ]
@@ -25456,7 +25518,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 852
+        "filesObserved": 858
       },
       "boutique": {
         "filesObserved": 162,
@@ -27629,7 +27691,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> logistics",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

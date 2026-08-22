@@ -115,6 +115,7 @@ module.exports = {
       'dashboards/admin/js/views/OrdersLogisticsView.js',
     ],
     tests: [
+      'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js',
       'tests/integration/test-harness/seed-helpers.js',
       'tests/unit/auto-distribute-api.test.js',
       'tests/unit/auto-parcel.test.js',
@@ -361,7 +362,8 @@ module.exports = {
     'la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport',
     'le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)',
     'un colis ne change de statut que via une sequence de scan validee',
-    'secret de retrait a usage unique',
+    { statement: 'secret de retrait a usage unique, et une seule voie de remise peut gagner pour une commande',
+      test: 'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js' },
     'le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l\'agent relais — comparaison aveugle uniquement',
     'le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l\'un ne bloque jamais l\'autre',
   ],

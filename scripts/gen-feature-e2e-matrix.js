@@ -42,7 +42,7 @@ const OUT_MD = path.join(OUT_DIR, 'FEATURE_E2E_MATRIX.md');
 const OUT_JSON = path.join(OUT_DIR, 'FEATURE_E2E_MATRIX.json');
 
 const LOTS = {
-  1: ['auth', 'auth-identity', 'catalog', 'shared-cart', 'orders', 'payments'],
+  1: ['auth', 'auth-identity', 'auth-passkey', 'catalog', 'shared-cart', 'orders', 'payments'],
   2: ['purchasing', 'logistics', 'inventory', 'customs', 'refunds', 'wallet',
       'loyalty', 'unsold-resolution'],
   3: ['business-rules', 'economic-engine', 'notifications', 'documents',

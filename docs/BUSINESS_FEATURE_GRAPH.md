@@ -131,7 +131,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - boutique: 3
 - utils: 1
 - migrations: 1
-- tests: 7
+- tests: 8
 - tables owned (lifecycle): 4 — `revoked_tokens`, `users`, `otp_codes`, `user_pickup_authorizations`
 - tables written: 4
 - interfaces exposed: 22
@@ -146,7 +146,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 3
 - routes: 1
 - migrations: 2
-- tests: 6
+- tests: 8
 - tables owned (lifecycle): 2 — `webauthn_credentials`, `webauthn_challenges`
 - tables written: 2
 - interfaces exposed: 8
@@ -345,7 +345,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 18
 - boutique: 1
 - dash: 2
-- tests: 36
+- tests: 37
 - tables owned (lifecycle): 11 — `parcels`, `relais`, `parcel_items`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `carriers`, `parcel_events`, `pickup_verify_attempts`, `shipments`
 - tables written: 11
 - interfaces exposed: 70
@@ -421,7 +421,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 4
 - migrations: 1
 - boutique: 2
-- tests: 18
+- tests: 19
 - tables owned (lifecycle): 4 — `cash_collections`, `cash_deposits`, `paypal_events_processed`, `stripe_events_processed`
 - tables written: 4
 - interfaces exposed: 18
@@ -553,7 +553,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 1
 - migrations: 2
 - boutique: 2
-- tests: 3
+- tests: 4
 - tables owned (lifecycle): 4 — `wallet_transactions`, `wallets`, `wallet_consumptions`, `wallet_credit_lots`
 - tables written: 4
 - interfaces exposed: 9
@@ -1499,7 +1499,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 - **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> auth-passkey — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> business-rules — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "business-rules"
@@ -1553,7 +1553,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 852 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 858 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 162 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1578,15 +1578,15 @@ Meta Graph monté : oui.
 | auth | auth-identity | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | auth | infrastructure | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | auth | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| auth-identity | auth | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| auth-identity | auth | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | auth-identity | auth-passkey | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | auth-identity | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
 | auth-identity | infrastructure | static-code | 15 | **DECLARED_AND_OBSERVED** |
-| auth-identity | logistics | static-code | 2 | **OBSERVED_UNDECLARED** |
+| auth-identity | logistics | static-code | 4 | **OBSERVED_UNDECLARED** |
 | auth-identity | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | auth-identity | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | auth-identity | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
-| auth-passkey | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | auth | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | auth-identity | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | auth-passkey | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1664,7 +1664,7 @@ Meta Graph monté : oui.
 | inventory | orders | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | inventory | payments | static-code | 1 | **OBSERVED_UNDECLARED** |
 | logistics | auth | static-code | 13 | **DECLARED_AND_OBSERVED** |
-| logistics | auth-identity | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| logistics | auth-identity | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | business-rules | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
