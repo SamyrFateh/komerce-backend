@@ -242,7 +242,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 7
 - routes: 3
-- migrations: 6
+- migrations: 7
 - utils: 5
 - tests: 14
 - tables owned (lifecycle): 2 — `invoices`, `transaction_documents`

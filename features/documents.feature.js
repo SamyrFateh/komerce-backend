@@ -78,6 +78,7 @@ module.exports = {
       'migrations/083_transaction_documents.sql',
       'migrations/086_invoice_public_token.sql',
       'migrations/131_private_client_documents.sql',
+      'migrations/144_invoices_total_eur.sql',
     ],
     utils: [
       'utils/documents/refund-receipt-html.js',

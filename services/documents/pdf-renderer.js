@@ -93,7 +93,16 @@ function renderLines(pdf, documentType, document) {
       pdf.font('Helvetica').fontSize(10)
         .text(`${item.qty} × ${item.name} — ${formatAmount(item.total)}`);
     });
-    rows.push(['Total payé', formatAmount(document.total_kmf)]);
+    // P4 (freeze 22-08-2026) : total_amount/total_currency_label sont déjà
+    // résolus par invoice-service.js#generateHTML() selon payment_mode
+    // (KMF pour cash_relais, EUR pour stripe_eur/paypal_eur) — ce bloc ne
+    // fait QUE les afficher, jamais un second calcul. Ne touche pas
+    // formatAmount() (partagée avec refund_receipt/wallet_receipt, hors
+    // périmètre de ce correctif).
+    const totalLabel = document.total_amount != null && document.total_currency_label
+      ? `${Number(document.total_amount).toLocaleString('fr-FR')} ${document.total_currency_label}`
+      : formatAmount(document.total_kmf); // repli si le payload est ancien (facture pré-P4)
+    rows.push(['Total payé', totalLabel]);
   } else {
     rows.push(['Commande', meta.order_reference || '—']);
     if (documentType === 'refund_receipt') {

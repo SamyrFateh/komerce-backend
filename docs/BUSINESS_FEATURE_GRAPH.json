@@ -3418,6 +3418,13 @@
       },
       {
         "feature": "documents",
+        "category": "migrations",
+        "declared": "migrations/144_invoices_total_eur.sql",
+        "resolvedPath": "migrations/144_invoices_total_eur.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
         "category": "utils",
         "declared": "utils/documents/refund-receipt-html.js",
         "resolvedPath": "utils/documents/refund-receipt-html.js",
