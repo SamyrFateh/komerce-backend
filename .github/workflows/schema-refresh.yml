@@ -188,11 +188,49 @@ jobs:
             && echo "changed=false" >> $GITHUB_OUTPUT \
             || echo "changed=true" >> $GITHUB_OUTPUT
 
+      # ── Token dédié pour la création de PR (jamais GITHUB_TOKEN ici) ────
+      # PROBLÈME : une PR ouverte avec le GITHUB_TOKEN automatique d'un run
+      # NE DÉCLENCHE PAS les autres workflows sur événement `pull_request`
+      # (protection anti-boucle native de GitHub Actions, documentée). Or
+      # pr-enforcement.yml (le "Required verdict" qui protège main) se
+      # déclenche uniquement sur `pull_request: [opened, synchronize, ...]`.
+      # Avec GITHUB_TOKEN, la PR auto-créée par ce workflow ne recevrait
+      # JAMAIS ses checks obligatoires — soit bloquée indéfiniment si la
+      # protection de branche les exige strictement, soit pire, mergeable
+      # sans aucune vérification si elle ne les exige pas nommément.
+      #
+      # Fix : un PAT dédié (secrets.SCHEMA_REFRESH_PR_TOKEN, scope `repo`,
+      # idéalement compte de service — jamais un token personnel éphémère)
+      # est traité par GitHub comme une PR humaine normale, déclenche
+      # pull_request normalement. Seule cette étape l'utilise ; le checkout
+      # et la création d'issue d'alerte restent sur GITHUB_TOKEN (suffisant,
+      # pas concernés par cette limite).
+      #
+      # Prérequis manuels (hors CI, à faire une fois côté repo) :
+      #   1. Créer un PAT classic ou fine-grained, scope `repo`
+      #   2. Settings → Secrets and variables → Actions → New repository
+      #      secret → SCHEMA_REFRESH_PR_TOKEN
+      #   3. Settings → Actions → General → Workflow permissions → cocher
+      #      "Allow GitHub Actions to create and approve pull requests"
+      #      (réglage distinct de permissions.pull-requests: write ci-dessus
+      #      — les deux sont nécessaires, ni l'un ni l'autre ne suffit seul)
+
+      # Échec clair et actionnable plutôt qu'une erreur d'auth cryptique de
+      # peter-evans/create-pull-request si le secret n'a pas encore été
+      # configuré (prérequis manuel #2 ci-dessus).
+      - name: Verify PR token secret is configured
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          if [ -z "${{ secrets.SCHEMA_REFRESH_PR_TOKEN }}" ]; then
+            echo "::error::secrets.SCHEMA_REFRESH_PR_TOKEN absent — une PR créée avec GITHUB_TOKEN ne déclencherait pas pr-enforcement.yml. Configurer ce secret avant de relancer (voir commentaire ci-dessus)."
+            exit 1
+          fi
+
       - name: Create PR if schema changed
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SCHEMA_REFRESH_PR_TOKEN }}
           commit-message: 'chore(schema): refresh docs/db/railway-live-schema.sql depuis Railway prod'
           branch: chore/schema-refresh-auto
           delete-branch: true

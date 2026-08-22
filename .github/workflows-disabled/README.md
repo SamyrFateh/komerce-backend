@@ -6,7 +6,10 @@ GitHub Actions ne charge que les fichiers placés dans `.github/workflows/`. Les
 
 Pendant la pause, seuls restent actifs :
 - `.github/workflows/ci.yml` — CI technique, déclenchement manuel uniquement ;
-- `.github/workflows/showcase-v2-staging-deploy.yml` — raffinerie Showcase V2 staging.
+- `.github/workflows/showcase-v2-staging-deploy.yml` — raffinerie Showcase V2 staging ;
+- `.github/workflows/schema-refresh.yml` — réactivé le 2026-08-22 après revue
+  (durci : token PAT dédié pour la création de PR, garde-fou explicite si le
+  secret manque — voir commentaires du fichier).
 
 Les anciens contrôles Carte First, doctrine, impact/coffre-fort, contrats, E2E, graph/schema et workflows Lots 7/8 sont archivés ici pour être revus avant réactivation individuelle.
 

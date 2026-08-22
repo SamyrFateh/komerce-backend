@@ -5659,6 +5659,13 @@
       {
         "feature": "infrastructure",
         "category": "ci",
+        "declared": ".github/workflows/schema-refresh.yml",
+        "resolvedPath": ".github/workflows/schema-refresh.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
         "declared": ".github/workflows-disabled/README.md",
         "resolvedPath": ".github/workflows-disabled/README.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5773,13 +5780,6 @@
         "category": "ci",
         "declared": ".github/workflows-disabled/pr-governance.yml",
         "resolvedPath": ".github/workflows-disabled/pr-governance.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows-disabled/schema-refresh.yml",
-        "resolvedPath": ".github/workflows-disabled/schema-refresh.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {

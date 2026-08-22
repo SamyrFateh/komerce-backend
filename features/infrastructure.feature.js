@@ -243,6 +243,7 @@ module.exports = {
       '.github/workflows/ci.yml',
       '.github/workflows/pr-enforcement.yml',
       '.github/workflows/showcase-v2-media-realism.yml',
+      '.github/workflows/schema-refresh.yml',
       // Workflows EN PAUSE (revue gouvernance CI/CD 2026-08-14, cf.
       // `.github/workflows-disabled/README.md`) : conservés dans Git mais
       // inactifs, réactivés individuellement après revue (chantier CI cible :
@@ -266,7 +267,6 @@ module.exports = {
       '.github/workflows-disabled/lot8-pre-go-live-certification.yml',
       '.github/workflows-disabled/lot8-reconcile-current-main-once.yml',
       '.github/workflows-disabled/pr-governance.yml',
-      '.github/workflows-disabled/schema-refresh.yml',
     ],
     assets: [
       'public/images/Komerce_Kero_Desktop_2.png',
