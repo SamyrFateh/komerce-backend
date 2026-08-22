@@ -1078,6 +1078,28 @@
     gap: 10px;
   }
 
+  /* Rail transverse (checkout de liste partagée, 22-08-2026) — frère de
+     .ck-checkout-layout dans le DOM (jamais enfant de .ck-checkout-primary,
+     cf. b-checkout.js#_renderCheckoutSuggestionsShelf), donc il n'hérite
+     PAS automatiquement du centrage/largeur max de .ck-checkout-layout.
+     Même traitement ici pour rester visuellement aligné avec les deux
+     colonnes au-dessus, plutôt que de déborder sur toute la largeur du
+     body (--ck-desktop-max peut être < 100vw sur grand écran). */
+  .ck-checkout-suggestions--transverse {
+    width: min(var(--ck-desktop-max), 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Jusqu'à 6 cartes (limite déjà demandée au backend, cf. limit=6 dans
+     _renderCheckoutSuggestionsShelf) — la pleine largeur transverse permet
+     d'en montrer plus que les 3 fixes du rail imbriqué dans la colonne
+     gauche. minmax(150px, 1fr) laisse le nombre de colonnes s'ajuster
+     naturellement à la largeur réelle plutôt qu'un compte figé. */
+  .ck-checkout-suggestions--transverse .ck-checkout-recent-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
   .ck-checkout-recent-card {
     min-width: 0;
     overflow: hidden;
