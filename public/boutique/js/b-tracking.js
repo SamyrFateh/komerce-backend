@@ -535,10 +535,10 @@ function renderListsError(el, err) {
 function renderListsAuthRequired(el) {
   el.innerHTML =
     '<div class="k-track-error k-track-auth-required">' +
-      '<div class="k-track-error-icon">📲</div>' +
-      '<div class="k-track-error-title">Confirmez votre WhatsApp</div>' +
-      '<div class="k-track-error-sub">Identifiez-vous pour retrouver les listes créées ou enregistrées avec ce numéro.</div>' +
-      '<button class="k-track-retry-btn" id="k-track-lists-auth-btn">Continuer</button>' +
+      '<div class="k-track-error-icon">📋</div>' +
+      '<div class="k-track-error-title">Pas encore de liste</div>' +
+      '<div class="k-track-error-sub">Vos listes créées ou reçues apparaîtront ici. Si vous en avez déjà, identifiez-vous pour les retrouver.</div>' +
+      '<button class="k-track-retry-btn" id="k-track-lists-auth-btn">M\'identifier</button>' +
     '</div>';
 
   el.querySelector('#k-track-lists-auth-btn')?.addEventListener('click', async (event) => {
