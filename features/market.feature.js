@@ -35,6 +35,7 @@ module.exports = {
       'requireMarketScope autorisation (serveur, enferme l\'opérateur, jamais le client) — M2',
       'garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2',
       'boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5',
+      'parités fixes currency_parities, projection via EUR reference (jamais un axe direct entre devises Zone franc) — P1',
       'ouverture Mayotte (YT, EUR, minor_unit=2) — M10, premier marché après le seed KM',
     ],
     out: [
@@ -49,7 +50,16 @@ module.exports = {
         'renommer une colonne de montant en prod est un chantier séparé, à fort risque',
       'conversion d\'affichage KMF\u2192EUR diaspora (public/boutique/js/b-utils.js#fmt(), ' +
         'taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé ' +
-        'par la boundary devise (qui porte la devise RÉELLE d\'un marché, pas une conversion)',
+        'par la boundary devise (qui porte la devise RÉELLE d\'un marché, pas une conversion). ' +
+        'b-utils.js devient un ADAPTER de cette boundary en P2, jamais l\'inverse',
+      'P2 — fusion fmt/fmtPrice en un adapter client unique consommant P1, branché sur ' +
+        'market-context.js — non fait, dépend de P1',
+      'P3 — extension order-cost-snapshot.js pour figer transaction_amount/transaction_currency ' +
+        'au moment de la commande — non fait, dépend de P1',
+      'P4/P5 — documents contractuels lisant le snapshot P3, dashboards agrégation cross-market ' +
+        'en EUR reference — non faits, dépendent de P3/P2 respectivement',
+      'devises de sourcing flottantes (USD/AED/CNY) — concern séparé par construction ' +
+        '(freeze invariant 4/5), currency_parities ne les contient jamais',
       'settlement et attribution économique par opérateur (entité différée, hors périmètre)',
       'corridor framework (relation traversant les scopes, pas un axe d\'ownership, hors périmètre)',
       'wallet multi-market (hors périmètre)',
@@ -68,6 +78,7 @@ module.exports = {
       'migrations/139_market_open_mayotte.sql',
       'migrations/140_market_open_cameroon.sql',
       'migrations/141_market_open_congo.sql',
+      'migrations/142_currency_parities.sql',
     ],
     services: [
       'middleware/require-market-scope.js',
@@ -78,6 +89,8 @@ module.exports = {
       'tests/integration/market-scope-isolation.test.js',
       'tests/unit/currency.test.js',
       'tests/integration/currency-boundary.test.js',
+      'tests/unit/currency-boundary-p1.test.js',
+      'tests/integration/currency-parities-boundary.test.js',
       'tests/integration/market-open-mayotte.test.js',
       'tests/integration/market-open-cameroon.test.js',
       'tests/integration/market-open-congo.test.js',
@@ -135,6 +148,11 @@ module.exports = {
     'utils/currency.js#getMarketCurrency throw si le marché n\'existe pas — jamais de devise par défaut silencieuse',
     'utils/currency.js#formatAmount suppose un montant déjà dans l\'unité affichée (12500, pas 1250000 sous-unité) — cohérent avec les colonnes *_kmf existantes, jamais une convention cents inventée sans besoin réel',
     'M10 (ouverture Mayotte) est un INSERT seul — vérifié réellement : 0 fichier de M1/M1b/M1c/M2/M5 modifié pour ouvrir ce marché, cf. tests/integration/market-open-mayotte.test.js',
+    'reference_currency = EUR (canonique de la Currency Boundary), structurellement distinct de economic_engine_base_currency = KMF (economic-engine, inchangé) — ne jamais confondre les deux (freeze P1, 22-08-2026)',
+    'invariant 9 : aucune paire directe entre deux devises Zone franc (KMF\u2194XAF) n\'est jamais stockée ni calculée comme telle — toute conversion se dérive de deux parités vers EUR au moment du calcul, cf. currency_parities et projectAmount()',
+    'currency_parities est la SEULE source de parités — aucune parité ne peut être maintenue manuellement dans un second artefact applicatif (server.js et b-utils.js consomment via adapter, ne portent jamais leur propre valeur)',
+    'la Currency Boundary possède la règle monétaire ; utils/currency.js (serveur) et b-utils.js (client, P2) en sont les adapters, jamais des propriétaires concurrents de la règle',
+    'aucune devise de sourcing flottante (USD/AED/CNY) dans currency_parities — absence par construction, pas par oubli (freeze invariants 4/5)',
   ],
 
 };
