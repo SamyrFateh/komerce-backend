@@ -12,62 +12,93 @@
  *
  * Scénarios :
  *   R1 — Double clic sur "Confirmer" : pas de doublon de commande
- *   R2 — Réseau coupé pendant le checkout : erreur claire, panier intact
- *   R3 — Wallet affiché mais solde = 0 : checkbox visible mais pas de débit
- *   R4 — Checkout avec panier vide : bouton désactivé ou erreur claire
- *   R5 — Bénéficiaire avec même numéro que payeur : rejeté avec message
+ *   R2 — Réseau coupé pendant le checkout : erreur claire, retry possible
+ *   R3 — Wallet 0 : section masquée proprement, jamais bloquée sur Chargement…
+ *   R4 — Checkout avec panier vide : ouverture bloquée ou confirmation impossible
+ *   R5 — Checkout canonique : aucune identité bénéficiaire distincte collectée
  *
- * Ces tests ne soumettent PAS de commande réelle (sauf R1 en staging).
- * Ils testent les guards du frontend + la cohérence des messages d'erreur.
+ * Aucun de ces tests ne soumet une vraie commande : les POST /api/orders sont
+ * interceptés ou bloqués lorsque le scénario atteint la soumission.
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
 const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
-  openCheckout, selectRecipientOther,
+  openCheckout,
 } = require('../helpers/boutique.helpers');
 const { verifySession, verifyWalletBalance } = require('../helpers/api.helpers');
+
+/**
+ * Le catalogue réel peut exposer en première position un produit simple OU un
+ * produit SKU. Le runtime refuse volontairement l'ajout d'un SKU tant que tous
+ * les axes [data-axis-key] ne sont pas résolus. Pour les scénarios dont la
+ * variante n'est pas l'objet du test, choisir une option réellement disponible
+ * par axe rend le prérequis panier déterministe sans contourner le contrat UI.
+ */
+async function ensureModalPurchaseReady(page) {
+  const addBtn = page.locator('#k-add-cart-btn');
+  if (await addBtn.isEnabled().catch(() => false)) return;
+
+  const axes = page.locator('#k-modal-overlay [data-axis-key]');
+  const axisCount = await axes.count();
+
+  for (let i = 0; i < axisCount; i += 1) {
+    const axis = axes.nth(i);
+    const alreadySelected = axis.locator('button[aria-pressed="true"]');
+    if ((await alreadySelected.count()) > 0) continue;
+
+    const options = axis.locator('button[data-option-value]');
+    const optionCount = await options.count();
+    let chosen = false;
+
+    for (let j = 0; j < optionCount; j += 1) {
+      const option = options.nth(j);
+      const optionState = String(
+        (await option.getAttribute('data-option-state')) || ''
+      ).toUpperCase();
+      const unavailable = optionState === 'OUT_OF_STOCK'
+        || optionState === 'INCOMPATIBLE';
+
+      if (!unavailable && await option.isEnabled().catch(() => false)) {
+        await option.click();
+        chosen = true;
+        break;
+      }
+    }
+
+    if (!chosen) {
+      throw new Error(
+        `[E2E] Aucun choix disponible pour l'axe ${i + 1}/${axisCount}`
+      );
+    }
+  }
+
+  await expect(
+    addBtn,
+    'Le produit doit devenir achetable après sélection des options disponibles'
+  ).toBeEnabled({ timeout: 5_000 });
+}
+
+async function openPurchasableFirstProduct(page) {
+  await waitForGrid(page);
+  await openFirstCard(page);
+  await ensureModalPurchaseReady(page);
+  await addToCartFromModal(page);
+}
 
 test.describe('ROBUSTESSE — Flux business edge cases', () => {
 
   // ─── R1 — Double clic "Confirmer" ──────────────────────────────────────────
 
   test('R1 — Double clic rapide sur confirmer ne crée pas de doublon', async ({ page }) => {
-    // Flux multi-étapes (carte → panier → checkout → relais → double clic) en
-    // mode DISTANT : aligné sur le précédent établi dans wallet-lifecycle.spec.js
-    // pour les flux qui dépassent le budget par défaut de 60s.
-    test.setTimeout(90_000);
-
-    // ⏱ DIAGNOSTIC TEMPORAIRE — checkpoints pour localiser un blocage.
-    // À retirer une fois le hang localisé.
-    const t0 = Date.now();
-    const cp = (label) => console.log(`[R1][+${((Date.now() - t0) / 1000).toFixed(1)}s] ${label}`);
-
-    cp('avant goto');
     await page.goto(BASE_URL);
-    cp('après goto, avant waitForGrid');
-    await waitForGrid(page);
-    cp('après waitForGrid, avant openFirstCard');
-    await openFirstCard(page);
-    cp('après openFirstCard, avant addToCartFromModal');
-    await addToCartFromModal(page);
-    cp('après addToCartFromModal, avant openCheckout');
+    await openPurchasableFirstProduct(page);
     await openCheckout(page);
-    cp('après openCheckout, avant selectRecipientOther');
-    await selectRecipientOther(page);
-    cp('après selectRecipientOther');
 
-    const nameInput = page.locator('#of-beneficiary-name');
-    const phoneInput = page.locator('#of-beneficiary-phone');
-    if ((await nameInput.count()) > 0) await nameInput.fill('Test Double Clic');
-    if ((await phoneInput.count()) > 0) await phoneInput.fill('7004444');
-    cp('après remplissage bénéficiaire, avant wait relais-summary');
+    await page.locator('#ck-relais-summary')
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .catch(() => {});
 
-    await page.locator('#ck-relais-summary').waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
-    cp('après wait relais-summary');
-
-    // Intercepter UNIQUEMENT les POST /api/orders (ne pas toucher les GET,
-    // ex. listing/tracking, qui matchent aussi le glob '**/api/orders*')
     const orderCalls = [];
     await page.route('**/api/orders*', async (route, request) => {
       if (request.method() !== 'POST') {
@@ -75,66 +106,59 @@ test.describe('ROBUSTESSE — Flux business edge cases', () => {
         return;
       }
       orderCalls.push({ timestamp: Date.now() });
-      // Répondre un faux succès (ne pas toucher le vrai backend)
       await route.fulfill({
         status: 201,
         contentType: 'application/json',
         body: JSON.stringify({
-          order: { id: 'test-r1', reference: 'KM-R1TEST', status: 'pending',
-                   total_kmf: 5000, payment_mode: 'cash_relais', payment_status: 'pending' },
+          order: {
+            id: 'test-r1',
+            reference: 'KM-R1TEST',
+            status: 'pending',
+            total_kmf: 5000,
+            payment_mode: 'cash_relais',
+            payment_status: 'pending',
+          },
         }),
       });
     });
 
     const confirmBtn = page.locator('#btn-confirm-order');
     await expect(confirmBtn).toBeEnabled({ timeout: 15_000 });
-    cp('confirmBtn enabled, avant double clic');
 
-    // Double clic rapide (simule un doigt nerveux sur mobile)
-    await confirmBtn.click();
-    cp('après 1er clic');
-    await confirmBtn.click({ force: true }).catch(() => {});
-    cp('après 2e clic');
+    // Deux événements click dans la MÊME tâche navigateur. Contrairement à
+    // deux confirmBtn.click() Playwright successifs, le second ne peut pas se
+    // transformer en attente d'actionability sur un bouton déjà retiré par le
+    // premier succès. On teste ainsi réellement la course du handler frontend.
+    await confirmBtn.evaluate((btn) => {
+      btn.click();
+      btn.click();
+    });
 
-    // Attendre un peu pour laisser les éventuels doubles passer
-    await page.waitForTimeout(2_000);
-    cp('après wait 2s final');
-
-    // Le frontend doit avoir envoyé AU PLUS 1 requête
-    // (btn.dataset.busy = '1' empêche le double submit)
-    // eslint-disable-next-line no-console
-    console.log(`[R1] Requêtes POST /api/orders interceptées : ${orderCalls.length}`);
-    expect(
-      orderCalls.length,
-      'Le double clic ne doit pas envoyer 2 requêtes'
-    ).toBeLessThanOrEqual(1);
+    await expect
+      .poll(() => orderCalls.length, {
+        message: 'Le double clic doit produire exactement un POST /api/orders',
+        timeout: 5_000,
+      })
+      .toBe(1);
   });
 
   // ─── R2 — Réseau coupé pendant le checkout ────────────────────────────────
 
   test('R2 — Coupure réseau pendant soumission → erreur claire, pas de crash', async ({ page }) => {
     await page.goto(BASE_URL);
-    await waitForGrid(page);
-    await openFirstCard(page);
-    await addToCartFromModal(page);
+    await openPurchasableFirstProduct(page);
     await openCheckout(page);
-    await selectRecipientOther(page);
 
-    const nameInput = page.locator('#of-beneficiary-name');
-    const phoneInput = page.locator('#of-beneficiary-phone');
-    if ((await nameInput.count()) > 0) await nameInput.fill('Test Network Fail');
-    if ((await phoneInput.count()) > 0) await phoneInput.fill('7005678');
+    await page.locator('#ck-relais-summary')
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .catch(() => {});
 
-    await page.locator('#ck-relais-summary').waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
-
-    // Couper le réseau juste AVANT la soumission
     await page.route('**/api/orders*', (route) => route.abort('connectionrefused'));
 
     const confirmBtn = page.locator('#btn-confirm-order');
     await expect(confirmBtn).toBeEnabled({ timeout: 15_000 });
     await confirmBtn.click();
 
-    // Attendre le toast d'erreur
     const toast = page.locator('#k-toast');
     await page.waitForFunction(
       () => {
@@ -148,13 +172,11 @@ test.describe('ROBUSTESSE — Flux business edge cases', () => {
     // eslint-disable-next-line no-console
     console.log(`[R2] Toast après coupure réseau : "${toastText.trim()}"`);
 
-    // Le toast doit montrer un message d'erreur (pas un crash silencieux)
     expect(
       toastText.trim().length,
       'Un message d\'erreur doit s\'afficher'
     ).toBeGreaterThan(0);
 
-    // Le bouton confirmer doit redevenir cliquable (pas bloqué en "Envoi en cours…")
     await page.unrouteAll({ behavior: 'ignoreErrors' });
     await page.waitForTimeout(1_000);
 
@@ -163,53 +185,42 @@ test.describe('ROBUSTESSE — Flux business edge cases', () => {
     // eslint-disable-next-line no-console
     console.log(`[R2] Bouton après erreur : disabled=${btnDisabled}, text="${btnText.trim()}"`);
 
-    // Le bouton doit se réactiver pour permettre un retry
-    // (submitOrder catch → btn.disabled = false)
     expect(btnDisabled, 'Le bouton doit se réactiver après erreur réseau').toBe(false);
   });
 
   // ─── R3 — Wallet solde = 0 ────────────────────────────────────────────────
 
-  test('R3 — Wallet section visible même avec solde 0 (pas de crash)', async ({ page }) => {
-    // Idem R1 : flux multi-étapes en mode DISTANT, budget par défaut trop juste.
-    test.setTimeout(90_000);
-
+  test('R3 — Wallet 0 masqué proprement, solde positif visible', async ({ page }) => {
     await page.goto(BASE_URL);
 
     const session = await verifySession(page);
-    if (!session.authenticated) {
-      test.skip();
-      return;
-    }
+    expect(session.authenticated, 'La session doit être active').toBe(true);
 
-    await waitForGrid(page);
-    await openFirstCard(page);
-    await addToCartFromModal(page);
+    await openPurchasableFirstProduct(page);
     await openCheckout(page);
 
-    // Attendre que la section wallet charge
     await page.waitForFunction(
       () => {
         const el = document.getElementById('wallet-balance-text');
         return el && !el.textContent.includes('Chargement');
       },
       { timeout: 10_000 }
-    ).catch(() => {});
+    );
 
+    const wallet = await verifyWalletBalance(page);
     const walletSection = page.locator('#wallet-section');
-    if ((await walletSection.count()) > 0) {
+    const balanceText = await page.locator('#wallet-balance-text').textContent();
+
+    expect(balanceText, 'Le wallet ne doit jamais rester sur Chargement').not.toContain('Chargement');
+    expect(balanceText, 'Le solde ne doit pas contenir NaN').not.toContain('NaN');
+    expect(balanceText, 'Le solde ne doit pas contenir undefined').not.toContain('undefined');
+
+    if (wallet && wallet.balance > 0) {
       await expect(walletSection).toBeVisible();
-
-      const balanceText = await page.locator('#wallet-balance-text').textContent().catch(() => '');
-      // eslint-disable-next-line no-console
-      console.log(`[R3] Solde wallet affiché dans le checkout : "${balanceText.trim()}"`);
-
-      // Pas de NaN, pas de "undefined", pas de crash
-      expect(balanceText, 'Le solde ne doit pas contenir NaN').not.toContain('NaN');
-      expect(balanceText, 'Le solde ne doit pas contenir undefined').not.toContain('undefined');
+      expect(balanceText).toContain('Solde disponible');
     } else {
-      // eslint-disable-next-line no-console
-      console.log('[R3] Section wallet non présente dans le checkout');
+      await expect(walletSection).toBeHidden();
+      expect(balanceText).toContain('Aucun crédit disponible');
     }
   });
 
@@ -219,14 +230,12 @@ test.describe('ROBUSTESSE — Flux business edge cases', () => {
     await page.goto(BASE_URL);
     await waitForGrid(page);
 
-    // S'assurer que le panier est vide
     await page.evaluate(() => {
       localStorage.removeItem('kmrc_cart');
     });
     await page.reload();
     await waitForGrid(page);
 
-    // Tenter d'ouvrir le checkout directement via le bus
     const checkoutOpened = await page.evaluate(() => {
       if (window.__bus) {
         window.__bus.emit('checkout:open');
@@ -236,86 +245,37 @@ test.describe('ROBUSTESSE — Flux business edge cases', () => {
     });
 
     if (checkoutOpened) {
-      // Le checkout ne devrait pas s'ouvrir, OU s'ouvrir avec un message "panier vide"
       await page.waitForTimeout(1_000);
 
       const orderModal = page.locator('#k-order-modal.open, .k-order-modal.open');
       const isOpen = (await orderModal.count()) > 0;
 
       if (isOpen) {
-        // Si le modal s'ouvre quand même, le bouton confirmer doit être désactivé
         const confirmBtn = page.locator('#btn-confirm-order');
         if ((await confirmBtn.count()) > 0) {
           const disabled = await confirmBtn.isDisabled();
-          // eslint-disable-next-line no-console
-          console.log(`[R4] Checkout ouvert avec panier vide — btn disabled: ${disabled}`);
+          expect(
+            disabled,
+            'Un checkout vide ouvert défensivement ne doit jamais être confirmable'
+          ).toBe(true);
         }
-      } else {
-        // eslint-disable-next-line no-console
-        console.log('[R4] Checkout correctement bloqué avec panier vide ✓');
       }
     }
   });
 
-  // ─── R5 — Bénéficiaire = même numéro que payeur ───────────────────────────
+  // ─── R5 — Identité de retrait canonique ────────────────────────────────────
 
-  test('R5 — Bénéficiaire avec le même numéro que le payeur → rejeté', async ({ page }) => {
-    // Ce test vérifie le guard anti-fraude de submitOrder() :
-    // "Le numéro de la personne qui récupère doit être différent du vôtre"
+  test('R5 — Checkout ne collecte aucune identité bénéficiaire distincte', async ({ page }) => {
     await page.goto(BASE_URL);
-    await waitForGrid(page);
-    await openFirstCard(page);
-    await addToCartFromModal(page);
+    await openPurchasableFirstProduct(page);
     await openCheckout(page);
-    await selectRecipientOther(page);
 
-    // Remplir le nom
-    const nameInput = page.locator('#of-beneficiary-name');
-    if ((await nameInput.count()) > 0) await nameInput.fill('Test Same Phone');
+    await expect(page.locator('.ck-recip-seg')).toHaveCount(0);
+    await expect(page.locator('#of-beneficiary-name')).toHaveCount(0);
+    await expect(page.locator('#of-beneficiary-phone')).toHaveCount(0);
 
-    // Remplir le numéro avec LE MÊME que le compte de test
-    // (récupéré depuis l'identité OTP déjà posée)
-    const testPhone = process.env.TEST_ACCOUNT_PHONE;
-    if (!testPhone) {
-      // eslint-disable-next-line no-console
-      console.log('[R5] TEST_ACCOUNT_PHONE non fourni — skip');
-      test.skip();
-      return;
-    }
-
-    const phoneInput = page.locator('#of-beneficiary-phone');
-    if ((await phoneInput.count()) > 0) {
-      await phoneInput.fill(testPhone);
-    }
-
-    await page.locator('#ck-relais-summary').waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
-
-    // Intercepter pour éviter toute soumission réelle
-    await page.route('**/api/orders*', async (route) => {
-      // Si on arrive ici, c'est que le guard n'a pas bloqué → fail
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({ order: { reference: 'SHOULD-NOT-REACH' } }),
-      });
-    });
-
-    const confirmBtn = page.locator('#btn-confirm-order');
-    await expect(confirmBtn).toBeEnabled({ timeout: 15_000 }).catch(() => {});
-
-    if (await confirmBtn.isEnabled()) {
-      await confirmBtn.click();
-
-      // Attendre le toast d'erreur (le guard dans submitOrder détecte le numéro dupliqué)
-      await page.waitForTimeout(2_000);
-      const toastText = await page.locator('#k-toast').textContent().catch(() => '');
-      // eslint-disable-next-line no-console
-      console.log(`[R5] Toast après même numéro : "${toastText.trim()}"`);
-
-      // Le toast doit mentionner "différent" ou bloquer la soumission
-      // Note : le guard se déclenche APRÈS requireIdentity(), donc le test
-      // ne peut pas toujours atteindre ce point sans un vrai OTP.
-      // On vérifie au moins qu'aucune requête n'est partie.
-    }
+    const secureNotice = page.locator('.ck-secure-pickup-notice').first();
+    await expect(secureNotice).toBeVisible();
+    await expect(secureNotice).toContainText(/WhatsApp|Retrait sécurisé/i);
   });
 });

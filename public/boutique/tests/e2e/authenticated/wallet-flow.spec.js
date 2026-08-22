@@ -7,12 +7,13 @@
 /**
  * @e2e   authenticated/wallet-flow.spec.js
  * @feature wallet
- * @brief Flux métier wallet authentifié : session → solde → historique.
+ * @brief Flux métier wallet authentifié : session → bloc wallet Mon Komerce → cohérence API.
  *
  * Vérifie que la chaîne complète fonctionne :
- *   1. Session active → pas de gate d'auth
- *   2. Solde affiché correspond au backend (GET /api/wallet)
- *   3. Historique de transactions lisible (pas de NaN, format KMF)
+ *   1. Session active → pas de gate de réauthentification
+ *   2. Mon Komerce affiche le bloc wallet compact canonique
+ *   3. Le solde affiché correspond au backend (GET /api/wallet)
+ *   4. Aucun NaN/undefined n'est rendu
  *
  * READ-ONLY : aucune action destructive (pas de débit, pas de paiement).
  */
@@ -23,56 +24,51 @@ const { verifySession, verifyWalletBalance } = require('../helpers/api.helpers')
 
 test.describe('FLOW — Wallet authentifié', () => {
 
-  test('F10 — Session active → solde wallet cohérent entre UI et API', async ({ page }) => {
+  test('F10 — Session active → solde wallet cohérent entre Mon Komerce et API', async ({ page }) => {
     await page.goto(BASE_URL);
 
     // ── 1. Vérifier que la session est active côté backend ──
-    // (verifySession utilise /api/auth/me — le vrai endpoint, cf. api.helpers.js)
     const session = await verifySession(page);
     expect(session.authenticated, 'La session doit être active').toBe(true);
 
-    // ── 2. Naviguer vers l'onglet wallet ──
-    // Le tab s'appelle 'komerce' (Mon Komerce) depuis la refonte nav.
-    // Il contient #k-komerce-view qui initialise #k-wallet-view à l'intérieur.
+    // ── 2. Naviguer vers Mon Komerce ──
+    // Depuis la consolidation 2026-08, le wallet n'a plus sa vue autonome
+    // #k-wallet-view dans ce parcours. Le contrat UI canonique est désormais :
+    // #k-komerce-view > #k-kmc-wallet-block.
     await navigateToTab(page, 'komerce');
 
-    // Attendre d'abord #k-komerce-view (container), puis #k-wallet-view (wallet)
-    await page.waitForSelector('#k-komerce-view', { timeout: 5_000 });
-    const walletView = page.locator('#k-wallet-view');
-    await expect(walletView).toBeAttached({ timeout: 8_000 });
+    const komerceView = page.locator('#k-komerce-view');
+    await expect(komerceView).toBeVisible({ timeout: 8_000 });
+
+    const walletBlock = page.locator('#k-kmc-wallet-block');
+    await expect(walletBlock).toBeVisible({ timeout: 8_000 });
 
     await page.waitForFunction(
       () => {
-        const el = document.getElementById('k-wallet-view');
-        return !!el && !el.textContent.includes('Chargement…') && el.textContent.length > 5;
+        const el = document.getElementById('k-kmc-wallet-block');
+        return !!el && !el.textContent.includes('Chargement…') && el.textContent.trim().length > 5;
       },
       { timeout: 15_000 }
     );
 
-    // ── 3. Pas de gate d'auth ──
-    const authGate = page.locator('#k-wlt-auth-btn');
-    await expect(authGate).toHaveCount(0);
+    // ── 3. Une session valide ne doit pas afficher le gate de réauth ──
+    await expect(page.locator('#k-kmc-reauth')).toHaveCount(0);
 
     // ── 4. Vérifier la cohérence UI ↔ API ──
     const apiBalance = await verifyWalletBalance(page);
-    if (apiBalance) {
-      const balanceCard = page.locator('.k-wlt-card');
-      const zeroState = page.locator('.k-wlt-zero');
-      const hasBalance = (await balanceCard.count()) > 0;
-      const hasZero = (await zeroState.count()) > 0;
-      expect(hasBalance || hasZero, 'L\'UI doit afficher un état de solde').toBe(true);
+    expect(apiBalance, 'GET /api/wallet doit répondre').toBeTruthy();
 
-      if (apiBalance.balance > 0) {
-        expect(hasBalance, 'Solde > 0 → carte solde visible').toBe(true);
-      }
-    }
+    const amount = walletBlock.locator('.k-kmc-wallet-summary strong');
+    await expect(amount).toBeVisible();
 
-    // ── 5. Historique : pas de NaN ──
-    const txAmounts = page.locator('.k-wlt-tx-amt');
-    const txCount = await txAmounts.count();
-    for (let i = 0; i < Math.min(txCount, 5); i++) {
-      const text = await txAmounts.nth(i).textContent();
-      expect(text, `Transaction ${i} ne doit pas contenir NaN`).not.toContain('NaN');
-    }
+    const amountText = (await amount.textContent()) || '';
+    expect(amountText).toContain('KMF');
+    expect(amountText).not.toContain('NaN');
+    expect(amountText).not.toContain('undefined');
+
+    const uiBalance = Number(amountText.replace(/[^0-9-]/g, ''));
+    expect(uiBalance, 'Le solde affiché doit être numérique').not.toBeNaN();
+    expect(uiBalance, 'Le solde Mon Komerce doit correspondre à GET /api/wallet')
+      .toBe(Number(apiBalance.balance));
   });
 });
