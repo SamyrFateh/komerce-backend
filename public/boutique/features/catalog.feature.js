@@ -72,7 +72,7 @@ module.exports = {
       '../css/category-cutout-navigation-desktop.css',
     ],
     assets: [
-      '../../images/komerce_hero_catalog_canonical_v2.webp',
+      '../../images/komerce_hero_catalog_canonical_v3.webp',
       '../categories/all-v2.webp',
       '../categories/soldes-v2.webp',
       '../categories/mode-v2.webp',
