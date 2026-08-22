@@ -61,6 +61,7 @@ module.exports = {
       'css/wallet.css',
     ],
     tests: [
+      'tests/e2e-api/wallet.no-double-credit-concurrent.e2e.test.js',
       'tests/unit/wallet-service.test.js',
       'tests/unit/store-credits.test.js',
       'tests/unit/wallet-route.test.js',

@@ -64,6 +64,8 @@ module.exports = {
       'migrations/134_webauthn_step_up.sql',
     ],
     tests: [
+      'tests/e2e-api/auth-passkey.challenge-replay.e2e.test.js',
+      'tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js',
       'tests/unit/auth-passkey.test.js',
       'tests/unit/auth-passkey-management.test.js',
       'tests/unit/webauthn-service.test.js',
@@ -143,11 +145,13 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
-    'un challenge register/login est à usage unique — sa consommation est atomique ' +
-      '(UPDATE ... WHERE consumed_at IS NULL RETURNING) et couvre rejeu + expiration',
+    { statement: 'un challenge register/login est à usage unique — sa consommation est atomique ' +
+        '(UPDATE ... WHERE consumed_at IS NULL RETURNING) et couvre rejeu + expiration',
+      test: 'tests/e2e-api/auth-passkey.challenge-replay.e2e.test.js' },
     'un challenge émis pour un user ne peut jamais être consommé au bénéfice d\'un autre user',
     'expectedOrigin et expectedRPID viennent exclusivement de la config serveur, jamais du client',
-    'une réponse register ne peut pas être vérifiée comme login, et inversement (ceremony_type strict)',
+    { statement: 'une réponse register ne peut pas être vérifiée comme login, et inversement (ceremony_type strict)',
+      test: 'tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js' },
     'requireUserVerification est vérifié par la lib, pas seulement demandé à l\'authenticator',
     'credential_id est unique (contrainte DB + vérification applicative avant insert)',
     'une credential revoked_at non nul est inutilisable au login, sans exception',
