@@ -66,6 +66,8 @@ module.exports = {
       'migrations/137_relais_market_id.sql',
       'migrations/138_orders_market_id.sql',
       'migrations/139_market_open_mayotte.sql',
+      'migrations/140_market_open_cameroon.sql',
+      'migrations/141_market_open_congo.sql',
     ],
     services: [
       'middleware/require-market-scope.js',
@@ -77,6 +79,8 @@ module.exports = {
       'tests/unit/currency.test.js',
       'tests/integration/currency-boundary.test.js',
       'tests/integration/market-open-mayotte.test.js',
+      'tests/integration/market-open-cameroon.test.js',
+      'tests/integration/market-open-congo.test.js',
     ],
   },
 
