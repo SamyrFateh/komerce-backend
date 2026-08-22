@@ -11,7 +11,7 @@
 
 'use strict';
 
-/* Komerce SW v339 — rotation navigation : proportions mobiles et sous-catégories monochromes
+/* Komerce SW v340 — finition navigation : mains mobiles et sous-catégories graphite
  *
  * La rotation force le rechargement des modules Commandes / Mon Komerce et
  * de leurs styles afin que les documents privés et le wallet compact soient
@@ -20,7 +20,7 @@
  * La garde anti-empoisonnement demeure : une réponse HTML reçue à la place
  * d'un script ou d'une feuille CSS n'est jamais mise en cache.
  */
-const CACHE = 'komerce-v339';
+const CACHE = 'komerce-v340';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -33,7 +33,7 @@ self.addEventListener('activate', (event) => {
       await Promise.all(
         keys.map((key) => {
           if (key === CACHE || !key.startsWith('komerce-')) return undefined;
-          console.log('[SW v339] Purge ancien cache :', key);
+          console.log('[SW v340] Purge ancien cache :', key);
           return caches.delete(key);
         })
       );
@@ -46,7 +46,7 @@ self.addEventListener('activate', (event) => {
       });
 
       clients.forEach((client) => {
-        client.postMessage({ type: 'sw-updated', version: 'v339' });
+        client.postMessage({ type: 'sw-updated', version: 'v340' });
       });
     })()
   );
