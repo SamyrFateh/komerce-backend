@@ -101,9 +101,9 @@ describeE2E('E2E-P0-PAYPAL-RED — payments · montant/devise de capture', ({ db
       [productId, 'E2E PayPalRed ' + tag(label)]
     );
     await db.query(
-      `INSERT INTO orders (id, user_id, relais_id, reference, status, payment_status,
+      `INSERT INTO orders (id, user_id, relais_id, market_id, reference, status, payment_status,
                            payment_mode, total_kmf, total_eur, paypal_order_id)
-       VALUES ($1, $2, $3, $4, 'pending', 'pending', 'paypal_eur', 25000, 50, $5)`,
+       VALUES ($1, $2, $3, (SELECT market_id FROM relais WHERE id = $3), $4, 'pending', 'pending', 'paypal_eur', 25000, 50, $5)`,
       [orderId, clientId, relaisId, reference, paypalOrderId]
     );
     await db.query(
@@ -146,8 +146,8 @@ describeE2E('E2E-P0-PAYPAL-RED — payments · montant/devise de capture', ({ db
       [clientId, tag('ppred') + '@komerce.test', '+2693' + Math.floor(Math.random() * 9e6 + 1e6)]
     );
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address)
-       VALUES ($1, 'E2E Relais PayPalRed', 'E2E Agent', '+269000111', 'Moroni Test')`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+       VALUES ($1, 'E2E Relais PayPalRed', 'E2E Agent', '+269000111', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
 
