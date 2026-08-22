@@ -7023,6 +7023,13 @@
       },
       {
         "feature": "market",
+        "category": "migrations",
+        "declared": "migrations/142_currency_parities.sql",
+        "resolvedPath": "migrations/142_currency_parities.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
         "category": "services",
         "declared": "middleware/require-market-scope.js",
         "resolvedPath": "middleware/require-market-scope.js",
@@ -7061,6 +7068,20 @@
         "category": "tests",
         "declared": "tests/integration/currency-boundary.test.js",
         "resolvedPath": "tests/integration/currency-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/currency-boundary-p1.test.js",
+        "resolvedPath": "tests/unit/currency-boundary-p1.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/currency-parities-boundary.test.js",
+        "resolvedPath": "tests/integration/currency-parities-boundary.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -20495,6 +20516,22 @@
       },
       {
         "from": "infrastructure",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "server.js",
+                "targetFile": "utils/currency.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "infrastructure",
         "to": "notifications",
         "channels": [
           {
@@ -21602,6 +21639,10 @@
               },
               {
                 "sourceFileId": "tests/integration/currency-boundary.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/currency-parities-boundary.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -25322,7 +25363,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 847
+        "filesObserved": 849
       },
       "boutique": {
         "filesObserved": 161,
@@ -25357,7 +25398,7 @@
     ],
     "familySummary": {
       "PROJECTION": 0,
-      "COMPOSITION_ROOT_WIRING": 13,
+      "COMPOSITION_ROOT_WIRING": 14,
       "NON_RUNTIME_TEST": 4,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
@@ -25468,6 +25509,21 @@
           "static-code"
         ],
         "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "market",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "unclassified",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
         "policy": "application-wiring-not-consumption",
         "exceptionRequired": false,
         "exceptionReasons": []
@@ -25630,6 +25686,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|unclassified|technical-primitive": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
@@ -27513,6 +27570,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> market",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> purchasing",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
       },
@@ -27667,9 +27729,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 31,
+      "expectedTopology": 32,
       "generatorLimitations": 8,
-      "classifiedCandidates": 39
+      "classifiedCandidates": 40
     }
   }
 }
