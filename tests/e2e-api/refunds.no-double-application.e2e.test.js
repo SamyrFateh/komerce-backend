@@ -35,8 +35,8 @@
 
 const request = require('supertest');
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const Stripe = require('stripe');
+const { signAuthToken } = require('../../utils/auth-session');
 
 const { describeE2E, createCleanup, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
@@ -188,8 +188,10 @@ describeE2E('E2E-P0-REFUND — refunds · non-double application', ({ db }) => {
       [relaisId]
     );
 
-    const sign = (id, role) =>
-      jwt.sign({ id, role }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });
+    const sign = (id, role) => signAuthToken(
+      { id, role },
+      { method: 'e2e' }
+    );
     clientToken = sign(clientId, 'client');
     adminToken = sign(adminId, 'admin');
 
