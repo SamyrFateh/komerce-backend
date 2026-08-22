@@ -227,6 +227,7 @@ jobs:
           fi
 
       - name: Create PR if schema changed
+        id: cpr
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
@@ -244,8 +245,31 @@ jobs:
             Vérifié en mode strict `node scripts/check-schema-freshness.js --all` :
             toutes les migrations courantes doivent être présentes dans le dump.
 
-            **À merger sans délai** — la CI d'intégration peut échouer tant que ce PR est ouvert.
+            Auto-merge activé — se fusionne seul dès que les checks obligatoires
+            (dont `Required verdict`) passent au vert. Aucun check n'est court-circuité :
+            l'auto-merge de GitHub n'agit qu'une fois la CI verte, il automatise
+            uniquement le clic, jamais la vérification elle-même.
           labels: schema,automated
+
+      # Un dump de schéma généré n'a pas de décision humaine à porter — les
+      # checks obligatoires (schema-freshness, resurrection, Required verdict)
+      # sont la seule barrière, comme pour toute PR. L'auto-merge GitHub
+      # respecte ces checks à la lettre : il attend qu'ils soient tous verts,
+      # ne fusionne jamais avant, jamais en les court-circuitant. Sans ce
+      # step, chaque refresh reste une PR ouverte à fusionner à la main —
+      # exactement le point de friction identifié le 22 août (PR #872).
+      #
+      # Prérequis manuel (repo settings, une fois) :
+      #   Settings → General → Pull Requests → "Allow auto-merge"
+      # Sans ce réglage, `gh pr merge --auto` échoue avec un message clair
+      # plutôt qu'un échec silencieux.
+      - name: Enable auto-merge on the PR
+        if: steps.diff.outputs.changed == 'true' && steps.cpr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ secrets.SCHEMA_REFRESH_PR_TOKEN }}
+        run: |
+          gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" \
+            --auto --merge --repo "${{ github.repository }}"
 
       - name: No changes
         if: steps.diff.outputs.changed == 'false'

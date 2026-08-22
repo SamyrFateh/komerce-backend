@@ -793,7 +793,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 0 test-only, 9 composition-root
+**Technical context** : 0 primitive dependencies, 0 test-only, 10 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 11, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
@@ -1052,12 +1052,17 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2
   - garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2
   - boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5
+  - parités fixes currency_parities, projection via EUR reference (jamais un axe direct entre devises Zone franc) — P1
   - ouverture Mayotte (YT, EUR, minor_unit=2) — M10, premier marché après le seed KM
 - _out_ :
   - MarketContext navigation acheteur — déjà livré côté boutique (public/boutique/js/market-context.js, chantier hero H2/H3), contextuel et commutable, jamais lu par requireMarketScope
   - branchement de requireMarketScope sur une route concrète — aucune route admin scopée par marché n'existe encore dans ce dépôt ; le middleware est livré et testé, pas encore consommé
   - migration des 94 colonnes *_kmf existantes vers utils/currency.js — M5 livre l'outil de formatage, ne touche à aucune colonne ni aucun appelant existant ; renommer une colonne de montant en prod est un chantier séparé, à fort risque
-  - conversion d'affichage KMF→EUR diaspora (public/boutique/js/b-utils.js#fmt(), taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé par la boundary devise (qui porte la devise RÉELLE d'un marché, pas une conversion)
+  - conversion d'affichage KMF→EUR diaspora (public/boutique/js/b-utils.js#fmt(), taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé par la boundary devise (qui porte la devise RÉELLE d'un marché, pas une conversion). b-utils.js devient un ADAPTER de cette boundary en P2, jamais l'inverse
+  - P2 — fusion fmt/fmtPrice en un adapter client unique consommant P1, branché sur market-context.js — non fait, dépend de P1
+  - P3 — extension order-cost-snapshot.js pour figer transaction_amount/transaction_currency au moment de la commande — non fait, dépend de P1
+  - P4/P5 — documents contractuels lisant le snapshot P3, dashboards agrégation cross-market en EUR reference — non faits, dépendent de P3/P2 respectivement
+  - devises de sourcing flottantes (USD/AED/CNY) — concern séparé par construction (freeze invariant 4/5), currency_parities ne les contient jamais
   - settlement et attribution économique par opérateur (entité différée, hors périmètre)
   - corridor framework (relation traversant les scopes, pas un axe d'ownership, hors périmètre)
   - wallet multi-market (hors périmètre)
@@ -1082,6 +1087,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - utils/currency.js#getMarketCurrency throw si le marché n'existe pas — jamais de devise par défaut silencieuse
 - utils/currency.js#formatAmount suppose un montant déjà dans l'unité affichée (12500, pas 1250000 sous-unité) — cohérent avec les colonnes *_kmf existantes, jamais une convention cents inventée sans besoin réel
 - M10 (ouverture Mayotte) est un INSERT seul — vérifié réellement : 0 fichier de M1/M1b/M1c/M2/M5 modifié pour ouvrir ce marché, cf. tests/integration/market-open-mayotte.test.js
+- reference_currency = EUR (canonique de la Currency Boundary), structurellement distinct de economic_engine_base_currency = KMF (economic-engine, inchangé) — ne jamais confondre les deux (freeze P1, 22-08-2026)
+- invariant 9 : aucune paire directe entre deux devises Zone franc (KMF↔XAF) n'est jamais stockée ni calculée comme telle — toute conversion se dérive de deux parités vers EUR au moment du calcul, cf. currency_parities et projectAmount()
+- currency_parities est la SEULE source de parités — aucune parité ne peut être maintenue manuellement dans un second artefact applicatif (server.js et b-utils.js consomment via adapter, ne portent jamais leur propre valeur)
+- la Currency Boundary possède la règle monétaire ; utils/currency.js (serveur) et b-utils.js (client, P2) en sont les adapters, jamais des propriétaires concurrents de la règle
+- aucune devise de sourcing flottante (USD/AED/CNY) dans currency_parities — absence par construction, pas par oubli (freeze invariants 4/5)
 
 **Owns** : _aucune_
 
@@ -1101,10 +1111,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 12 fichier(s) déclaré(s)
-  - migrations : 5
+**Implementation** : 19 fichier(s) déclaré(s)
+  - migrations : 8
   - services : 2
-  - tests : 5
+  - tests : 9
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market"]_
 

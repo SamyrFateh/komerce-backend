@@ -370,9 +370,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
 
-- migrations: 5
+- migrations: 8
 - services: 2
-- tests: 5
+- tests: 9
 - tables owned (lifecycle): 0
 - tables written: 0
 - interfaces exposed: 0
@@ -1493,7 +1493,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 - none
 
-### TOPOLOGIE ATTENDUE — hors dette (31)
+### TOPOLOGIE ATTENDUE — hors dette (32)
 
 - **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
@@ -1504,6 +1504,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> decision-signals — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "decision-signals"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> documents — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "documents"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> loyalty — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "loyalty"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> market — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "market"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> purchasing — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "purchasing"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> sourcing — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "sourcing"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> unsold-resolution — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "unsold-resolution"
@@ -1550,7 +1551,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 845 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 849 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 161 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1645,6 +1646,7 @@ Meta Graph monté : oui.
 | infrastructure | inventory | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | infrastructure | logistics | static-code | 21 | **DECLARED_AND_OBSERVED** |
 | infrastructure | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | market | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | infrastructure | orders | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | infrastructure | payments | static-code | 4 | **DECLARED_AND_OBSERVED** |
@@ -1676,7 +1678,7 @@ Meta Graph monté : oui.
 | loyalty | auth-identity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | loyalty | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | loyalty | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| market | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| market | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | notifications | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | notifications | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | notifications | infrastructure | static-code | 13 | **DECLARED_AND_OBSERVED** |
@@ -1769,6 +1771,7 @@ Meta Graph monté : oui.
 - `infrastructure` → `decision-signals` (canaux: static-code)
 - `infrastructure` → `documents` (canaux: static-code)
 - `infrastructure` → `loyalty` (canaux: static-code)
+- `infrastructure` → `market` (canaux: static-code)
 - `infrastructure` → `purchasing` (canaux: static-code)
 - `infrastructure` → `sourcing` (canaux: static-code)
 - `infrastructure` → `unsold-resolution` (canaux: static-code)
@@ -1842,7 +1845,7 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | Family | N | Policy |
 |---|---|---|
 | PROJECTION | 0 | projection-dependency-policy |
-| COMPOSITION_ROOT_WIRING | 13 | application-wiring-not-consumption |
+| COMPOSITION_ROOT_WIRING | 14 | application-wiring-not-consumption |
 | NON_RUNTIME_TEST | 4 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
@@ -1850,7 +1853,7 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **17** | |
+| **TOTAL** | **18** | |
 
 ### Projection dependencies
 
@@ -1868,6 +1871,7 @@ Bootstrap/cron/error-handler qui montent ou déclenchent une feature. Pas une co
 - `infrastructure` → `decision-signals` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `documents` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `loyalty` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `market` — technical-primitive, RUNTIME_ONLY
 - `infrastructure` → `purchasing` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `sourcing` — business-file-import, RUNTIME_ONLY
 - `infrastructure` → `unsold-resolution` — business-file-import, RUNTIME_ONLY
