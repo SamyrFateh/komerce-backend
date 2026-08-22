@@ -1983,7 +1983,7 @@ body:has(#k-page-scroll.k-pager-active) {
   .k-hero-figures {
     background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
     background-size: auto 92%;
-    background-position: 70% 45%;
+    background-position: 70% 12%;
   }
 }
 
@@ -3008,7 +3008,7 @@ body:has(#k-page-scroll.k-pager-active) {
   .k-hero-media .k-hero-figures {
     background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
     background-size: auto 92%;
-    background-position: 70% 45%;
+    background-position: 70% 12%;
     -webkit-mask-image: none;
     mask-image: none;
   }

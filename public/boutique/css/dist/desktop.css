@@ -2269,7 +2269,7 @@
       grayscale(1)
       saturate(0)
       contrast(1.18)
-      brightness(.76);
+      brightness(.68);
   }
 
   .k-subcutout:hover .k-shelf-object--subcategory,
@@ -2282,7 +2282,7 @@
       grayscale(1)
       saturate(0)
       contrast(1.24)
-      brightness(.68);
+      brightness(.60);
   }
 
   /* Mode & Beauté — atlas photo : quatre masses différentes. */
@@ -2332,12 +2332,9 @@
   .k-subcutout-icon--all .k-shelf-object--all {
     opacity: .9;
     transform: translateY(1px) scale(1.03);
-    filter:
-      drop-shadow(0 3px 5px var(--border-text-08))
-      grayscale(1)
-      saturate(0)
-      contrast(1.18)
-      brightness(.76);
+    color: currentColor;
+    fill: currentColor;
+    filter: drop-shadow(0 2px 3px var(--border-text-08));
   }
 
   .k-subcutout.active .k-subcutout-icon--all .k-shelf-object--all,
@@ -2349,7 +2346,7 @@
     font-size: 21px;
     line-height: 40px;
     opacity: .9;
-    filter: grayscale(1) saturate(0) contrast(1.18) brightness(.76);
+    filter: grayscale(1) saturate(0) contrast(1.18) brightness(.68);
   }
 
   .k-subcutout:hover .k-subcutout-icon,
@@ -2364,6 +2361,10 @@
   .k-subcutout-label {
     font-size: 10.5px;
     font-weight: 620;
+  }
+
+  .k-subcutout {
+    color: var(--catalog-nav-muted);
   }
 
   .k-subcutout.active {

@@ -97,6 +97,8 @@ describe('continuité catégories et sous-catégories desktop', () => {
       expect(desktopShelf).toContain(`[data-shelf-visual="${key}"]`);
     });
     expect(desktopShelf).toContain('.k-subcutout-icon--all .k-shelf-object--all');
+    expect(desktopShelf).toContain('fill: currentColor;');
+    expect(subcat).toContain('getShelfSubcategoryVisual');
     expect(desktopShelf).toContain('.k-shelf-emoji-fallback');
     expect(desktopShelf).toContain('grayscale(1)');
     expect(desktopShelf).toContain('saturate(0)');
