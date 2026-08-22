@@ -38,8 +38,8 @@
 
 const request = require('supertest');
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const Stripe = require('stripe');
+const { signAuthToken } = require('../../utils/auth-session');
 
 const { describeE2E, createCleanup, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
@@ -121,10 +121,10 @@ describeE2E('E2E-L1-01 — orders · commande payée par webhook Stripe', ({ db 
     );
     cleanup.track('relais', 'id', relaisId);
 
-    token = jwt.sign({ id: userId, role: 'client' }, process.env.JWT_SECRET, {
-      algorithm: 'HS256',
-      expiresIn: '1h',
-    });
+    token = signAuthToken(
+      { id: userId, role: 'client' },
+      { method: 'e2e' }
+    );
 
     // Application réelle : mêmes routeurs que bootstrap/api-routes.js.
     app = express();
