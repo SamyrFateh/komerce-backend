@@ -44,7 +44,7 @@ describe('continuité catégories et sous-catégories desktop', () => {
   test('harmonise le rail mobile sans capsule ni hausse de hauteur', () => {
     expect(cutout).toContain('@media (max-width: 899px)');
     expect(cutout).toContain('height: 64px;');
-    expect(cutout).toContain('--k-optical-scale: 1.06;');
+    expect(cutout).toContain('--k-optical-scale: 1;');
     expect(cutout).toContain('saturate(var(--k-optical-saturation))');
     expect(cutout).toContain('sepia(.04)');
   });

@@ -62,9 +62,8 @@
   transform: none;
 }
 
-/* Compat historique : les catégories hors atlas gardent une image contain.
- * L'atlas Mode est volontairement exclu : son image doit rester à 300% × 200%
- * pour que le crop 3 × 2 fonctionne réellement dans le slot. */
+/* Les cutouts HD de niveau 1 gardent leur masse optique normalisée. L'atlas
+ * des sous-catégories Mode reste exclu car son crop est en 300% × 200%. */
 .k-cat-cutout .k-chip-photo img:not(.k-shelf-atlas-image),
 .k-cat-cutout.active .k-chip-photo img:not(.k-shelf-atlas-image) {
   width: 100%;
@@ -192,9 +191,9 @@
 }
 
 /*
- * Mobile premium V2 : une seule étagère blanche et une masse optique commune.
- * Chaque univers reçoit son propre calibrage ; on ne force plus une même échelle
- * sur un sac, un fauteuil, un téléphone ou un pictogramme SVG.
+ * Mobile premium V3 : une seule étagère blanche et une masse optique commune.
+ * Les huit cutouts sont normalisés sur un canvas 512 × 512 ; les corrections
+ * par univers restent donc minimes et ne compensent plus un atlas hétérogène.
  */
 @media (max-width: 899px) {
   .k-shelf-rail {
@@ -221,10 +220,10 @@
   .k-shelf-rail .k-cat-cutout {
     --k-optical-x: 0px;
     --k-optical-y: 1px;
-    --k-optical-scale: 1.06;
+    --k-optical-scale: 1;
     --k-optical-active-y: -1px;
-    --k-optical-active-scale: 1.10;
-    --k-optical-saturation: .84;
+    --k-optical-active-scale: 1.05;
+    --k-optical-saturation: 1;
     flex: 0 0 68px;
     width: 68px;
     min-width: 68px;
@@ -241,62 +240,62 @@
 
   .k-shelf-rail .k-cat-cutout[data-cat="all"] {
     --k-optical-y: 0px;
-    --k-optical-scale: 1.18;
+    --k-optical-scale: 1.02;
     --k-optical-active-y: -2px;
-    --k-optical-active-scale: 1.22;
-    --k-optical-saturation: .86;
+    --k-optical-active-scale: 1.07;
+    --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Soldes"] {
     --k-optical-y: 1px;
-    --k-optical-scale: 1.15;
+    --k-optical-scale: 1.01;
     --k-optical-active-y: -1px;
-    --k-optical-active-scale: 1.19;
-    --k-optical-saturation: .82;
+    --k-optical-active-scale: 1.06;
+    --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"] {
     --k-optical-y: 1px;
-    --k-optical-scale: 1.06;
-    --k-optical-active-scale: 1.10;
-    --k-optical-saturation: .74;
+    --k-optical-scale: 1;
+    --k-optical-active-scale: 1.05;
+    --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Maison"] {
     --k-optical-y: 2px;
-    --k-optical-scale: .99;
+    --k-optical-scale: 1;
     --k-optical-active-y: 0px;
-    --k-optical-active-scale: 1.03;
-    --k-optical-saturation: .72;
+    --k-optical-active-scale: 1.05;
+    --k-optical-saturation: .98;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Tech"] {
     --k-optical-y: 1px;
-    --k-optical-scale: 1.03;
-    --k-optical-active-scale: 1.07;
-    --k-optical-saturation: .80;
+    --k-optical-scale: 1;
+    --k-optical-active-scale: 1.05;
+    --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Bricolage"] {
     --k-optical-y: 1px;
-    --k-optical-scale: 1.06;
-    --k-optical-active-scale: 1.10;
-    --k-optical-saturation: .82;
+    --k-optical-scale: 1;
+    --k-optical-active-scale: 1.05;
+    --k-optical-saturation: .98;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Créations personnelles"] {
     --k-optical-y: 1px;
-    --k-optical-scale: 1.03;
+    --k-optical-scale: 1.02;
     --k-optical-active-scale: 1.07;
-    --k-optical-saturation: .80;
+    --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Auto"] {
     --k-optical-y: 2px;
-    --k-optical-scale: 1.01;
+    --k-optical-scale: 1;
     --k-optical-active-y: 0px;
     --k-optical-active-scale: 1.05;
-    --k-optical-saturation: .80;
+    --k-optical-saturation: .96;
   }
 
   .k-cat-cutout .k-chip-photo,
