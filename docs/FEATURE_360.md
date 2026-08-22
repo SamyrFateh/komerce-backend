@@ -1052,6 +1052,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2
   - garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2
   - boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5
+  - ouverture Mayotte (YT, EUR, minor_unit=2) — M10, premier marché après le seed KM
 - _out_ :
   - MarketContext navigation acheteur — déjà livré côté boutique (public/boutique/js/market-context.js, chantier hero H2/H3), contextuel et commutable, jamais lu par requireMarketScope
   - branchement de requireMarketScope sur une route concrète — aucune route admin scopée par marché n'existe encore dans ce dépôt ; le middleware est livré et testé, pas encore consommé
@@ -1080,6 +1081,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - scripts/check-no-market-id-mutation.js est un gate, pas une convention documentée : un market_id mutable non gardé dans validators/*.js fait échouer la CI
 - utils/currency.js#getMarketCurrency throw si le marché n'existe pas — jamais de devise par défaut silencieuse
 - utils/currency.js#formatAmount suppose un montant déjà dans l'unité affichée (12500, pas 1250000 sous-unité) — cohérent avec les colonnes *_kmf existantes, jamais une convention cents inventée sans besoin réel
+- M10 (ouverture Mayotte) est un INSERT seul — vérifié réellement : 0 fichier de M1/M1b/M1c/M2/M5 modifié pour ouvrir ce marché, cf. tests/integration/market-open-mayotte.test.js
 
 **Owns** : _aucune_
 
@@ -1099,10 +1101,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 10 fichier(s) déclaré(s)
-  - migrations : 4
+**Implementation** : 12 fichier(s) déclaré(s)
+  - migrations : 5
   - services : 2
-  - tests : 4
+  - tests : 5
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market"]_
 

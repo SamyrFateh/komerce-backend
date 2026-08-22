@@ -370,9 +370,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
 
-- migrations: 4
+- migrations: 5
 - services: 2
-- tests: 4
+- tests: 5
 - tables owned (lifecycle): 0
 - tables written: 0
 - interfaces exposed: 0
@@ -1550,7 +1550,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 844 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 845 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 160 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1676,7 +1676,7 @@ Meta Graph monté : oui.
 | loyalty | auth-identity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | loyalty | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | loyalty | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| market | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| market | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | notifications | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | notifications | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | notifications | infrastructure | static-code | 13 | **DECLARED_AND_OBSERVED** |

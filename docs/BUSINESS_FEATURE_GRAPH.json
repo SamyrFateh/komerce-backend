@@ -7002,6 +7002,13 @@
       },
       {
         "feature": "market",
+        "category": "migrations",
+        "declared": "migrations/139_market_open_mayotte.sql",
+        "resolvedPath": "migrations/139_market_open_mayotte.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
         "category": "services",
         "declared": "middleware/require-market-scope.js",
         "resolvedPath": "middleware/require-market-scope.js",
@@ -7040,6 +7047,13 @@
         "category": "tests",
         "declared": "tests/integration/currency-boundary.test.js",
         "resolvedPath": "tests/integration/currency-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/market-open-mayotte.test.js",
+        "resolvedPath": "tests/integration/market-open-mayotte.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -21545,6 +21559,10 @@
               {
                 "sourceFileId": "tests/integration/currency-boundary.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-open-mayotte.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -25252,7 +25270,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 844
+        "filesObserved": 845
       },
       "boutique": {
         "filesObserved": 160,
