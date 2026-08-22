@@ -192,16 +192,16 @@
 }
 
 /*
- * Mobile : un seul rail horizontal compact. Les objets restent le premier
- * signal, mais leur poids optique est volontairement contenu pour ne pas
- * concurrencer le hero ni le premier rayon produit.
+ * Mobile premium : une seule étagère blanche, objets détourés homogénéisés.
+ * La couleur vient des produits eux-mêmes ; le système commun fournit lumière,
+ * profondeur et sélection Komerce sans capsule concurrente.
  */
 @media (max-width: 899px) {
   .k-shelf-rail {
     display: flex;
     align-items: flex-start;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 4px;
     padding: 4px 8px 5px;
     overflow-x: auto;
     overflow-y: hidden;
@@ -209,6 +209,10 @@
     scrollbar-width: none;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
+    background: var(--white);
+    box-shadow:
+      0 10px 22px var(--border-text-08),
+      inset 0 -1px 0 var(--border-text-08);
   }
 
   .k-shelf-rail::-webkit-scrollbar {
@@ -235,44 +239,99 @@
   .k-cat-cutout.active .k-chip-photo,
   .k-cat-cutout[data-cat] .k-chip-photo,
   .k-cat-cutout.active[data-cat] .k-chip-photo {
-    width: 50px;
-    height: 38px;
+    width: 56px;
+    height: 41px;
+    isolation: isolate;
   }
 
+  /* Même halo chaud sous chaque objet : il rassemble les couleurs sans les
+   * repeindre et conserve l'effet détouré flottant sur fond blanc. */
+  .k-shelf-rail .k-cat-cutout .k-chip-photo::before {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    left: 50%;
+    bottom: 1px;
+    width: 46px;
+    height: 21px;
+    border-radius: 50%;
+    background: var(--sand-warm);
+    opacity: .34;
+    filter: blur(6px);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  /* Le rail précédent poussait volontairement saturation + contraste. C'est
+   * précisément ce qui rendait rouge, bleu et noir trop disparates. Ici tous
+   * les objets passent par le même grade doux, puis l'actif récupère du relief. */
   .k-shelf-rail .k-cat-cutout .k-shelf-object {
-    transform: scale(1.04);
+    position: relative;
+    z-index: 1;
+    transform: scale(1.10);
     filter:
-      drop-shadow(0 3px 5px var(--border-text-08))
-      saturate(1.10)
-      contrast(1.08);
+      drop-shadow(0 4px 7px var(--border-text-08))
+      saturate(.84)
+      contrast(1.02)
+      brightness(1.02);
   }
 
-  /* Les crops raster ont naturellement plus de masse qu'un pictogramme SVG :
-   * on leur donne une assise commune légèrement plus petite et plus basse. */
+  /* Les deux SVG historiques ont moins de masse intrinsèque que les photos :
+   * même échelle perçue, sans changer leur dessin ni leur palette de marque. */
+  .k-shelf-rail .k-cat-cutout[data-cat="all"] .k-shelf-object,
+  .k-shelf-rail .k-cat-cutout[data-cat="Soldes"] .k-shelf-object {
+    transform: scale(1.22);
+  }
+
+  /* Les crops raster restent légèrement plus contenus que les SVG mais gagnent
+   * assez de présence pour lire l'objet avant le libellé. */
   .k-shelf-rail .k-cat-cutout .k-shelf-atlas-cell {
-    transform: translateY(1px) scale(0.96);
+    transform: translateY(1px) scale(1.04);
   }
 
   .k-shelf-rail .k-cat-cutout:hover .k-shelf-object,
   .k-shelf-rail .k-cat-cutout.active .k-shelf-object {
-    transform: translateY(-1px) scale(1.07);
+    transform: translateY(-2px) scale(1.13);
+    filter:
+      drop-shadow(0 5px 9px var(--border-text-08))
+      saturate(.96)
+      contrast(1.04)
+      brightness(1.03);
   }
 
   .k-shelf-rail .k-cat-cutout:hover .k-shelf-atlas-cell,
   .k-shelf-rail .k-cat-cutout.active .k-shelf-atlas-cell {
-    transform: translateY(0) scale(0.98);
+    transform: translateY(-1px) scale(1.08);
+  }
+
+  .k-shelf-rail .k-cat-cutout.active[data-cat="all"] .k-shelf-object,
+  .k-shelf-rail .k-cat-cutout.active[data-cat="Soldes"] .k-shelf-object {
+    transform: translateY(-2px) scale(1.25);
+  }
+
+  .k-shelf-rail .k-cat-cutout.active .k-chip-photo::before {
+    opacity: .52;
   }
 
   .k-cat-cutout .k-chip-label,
   .k-cat-cutout.active .k-chip-label {
     max-width: 66px;
-    margin-top: 2px;
-    padding-bottom: 2px;
-    font-size: 10.5px;
+    margin-top: 1px;
+    padding-bottom: 3px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
     line-height: 1.05;
+    letter-spacing: -.01em;
+  }
+
+  .k-shelf-rail .k-cat-cutout.active .k-chip-label {
+    color: var(--ocean-dark);
+    font-weight: 800;
   }
 
   .k-cat-cutout.active .k-chip-label::after {
-    width: 18px;
+    width: 20px;
+    height: 2px;
   }
 }
