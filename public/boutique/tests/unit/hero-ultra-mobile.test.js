@@ -13,15 +13,22 @@ describe('hero ultra mobile contract', () => {
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
-  test('préserve la boîte récit et la petite lune', () => {
+  test('passe en mode diagnostic visuel pur', () => {
     expect(css).toContain('background-size: auto 205%;');
     expect(css).toContain('background-position: 87% 18%;');
-    expect(css).toContain('.k-hero-media .k-hero-moon');
-    expect(css).toContain('width: 20px;');
-    expect(css).toContain("content: 'Catalogue →';");
+    expect(css).toContain('-webkit-mask-image: none;');
+    expect(css).toContain('mask-image: none;');
+    expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
+    expect(css).toContain('display: none;');
   });
 
-  test('n’introduit ni !important ni couleur hexadécimale', () => {
+  test('préserve la petite lune', () => {
+    expect(css).toContain('.k-hero-media .k-hero-moon');
+    expect(css).toContain('width: 20px;');
+    expect(css).toContain('height: 20px;');
+  });
+
+  test('n’introduit ni priorité forcée ni couleur hexadécimale', () => {
     expect(css).not.toContain('!important');
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
