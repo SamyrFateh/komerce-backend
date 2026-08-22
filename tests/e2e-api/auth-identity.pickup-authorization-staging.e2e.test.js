@@ -151,10 +151,10 @@ describeE2E(
       );
 
       await db.query(
-        `INSERT INTO relais (id, name, agent_name, phone, address)
+        `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
          VALUES
-           ($1, 'E2E Relais Lot 7', 'Agent Lot 7', $3, 'Moroni Test'),
-           ($2, 'E2E Relais Étranger Lot 7', 'Agent Étranger', $4, 'Mutsamudu Test')`,
+           ($1, 'E2E Relais Lot 7', 'Agent Lot 7', $3, 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM')),
+           ($2, 'E2E Relais Étranger Lot 7', 'Agent Étranger', $4, 'Mutsamudu Test', (SELECT id FROM markets WHERE code = 'KM'))`,
         [
           relaisId,
           foreignRelaisId,

@@ -115,8 +115,8 @@ describeE2E('E2E-L1-01 — orders · commande payée par webhook Stripe', ({ db 
 
     // ── Précondition métier : point de retrait ──────────────────────────────
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address)
-       VALUES ($1, 'E2E Relais Moroni', 'E2E Agent', '+269000111', 'Moroni Test')`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+       VALUES ($1, 'E2E Relais Moroni', 'E2E Agent', '+269000111', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
     cleanup.track('relais', 'id', relaisId);

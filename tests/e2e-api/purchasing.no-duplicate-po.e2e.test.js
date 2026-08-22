@@ -125,8 +125,8 @@ describeE2E('E2E-P0-PURCHASING — purchasing · anti-doublon de bon de commande
       [clientId, `${tag('puclient')}@komerce.test`, `+2693${Math.floor(Math.random() * 9e6 + 1e6)}`]
     );
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address)
-       VALUES ($1, 'E2E Relais Purchasing', 'E2E Agent', '+269000111', 'Moroni Test')`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+       VALUES ($1, 'E2E Relais Purchasing', 'E2E Agent', '+269000111', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
     await db.query(

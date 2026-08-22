@@ -160,8 +160,8 @@ describeE2E('E2E-P0-PAYPAL — payments · contrat webhook PayPal', ({ db }) => 
       [clientId, `${tag('ppclient')}@komerce.test`, `+2693${Math.floor(Math.random() * 9e6 + 1e6)}`]
     );
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address)
-       VALUES ($1, 'E2E Relais PayPal', 'E2E Agent', '+269000111', 'Moroni Test')`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+       VALUES ($1, 'E2E Relais PayPal', 'E2E Agent', '+269000111', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
 

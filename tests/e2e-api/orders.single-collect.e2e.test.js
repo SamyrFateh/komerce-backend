@@ -73,8 +73,8 @@ describeE2E('E2E-P0-COLLECT — orders · remise unique', ({ db }) => {
     cleanup.trackSql(`DELETE FROM orders WHERE relais_id = $1`, [relaisId]);
 
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address)
-       VALUES ($1, 'E2E Relais Collect', 'E2E Agent', '+269000333', 'Moroni Test')`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+       VALUES ($1, 'E2E Relais Collect', 'E2E Agent', '+269000333', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
 
