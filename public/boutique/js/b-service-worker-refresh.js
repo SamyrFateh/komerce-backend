@@ -15,8 +15,8 @@
 'use strict';
 /* global navigator, caches, location, sessionStorage */
 
-const ACTIVE_KOMERCE_CACHE = 'komerce-v338';
-const RELOAD_MARKER = 'kmrc_sw_reload_v338';
+const ACTIVE_KOMERCE_CACHE = 'komerce-v339';
+const RELOAD_MARKER = 'kmrc_sw_reload_v339';
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -28,13 +28,13 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     const isCurrentUpdate =
       event.data?.type === 'sw-updated' &&
-      event.data?.version === 'v338';
+      event.data?.version === 'v339';
 
     if (!isCurrentUpdate || !navigator.serviceWorker.controller) return;
     if (sessionStorage.getItem(RELOAD_MARKER) === '1') return;
 
     sessionStorage.setItem(RELOAD_MARKER, '1');
-    console.log('[SW] Nouvelle version v338 → rechargement unique');
+    console.log('[SW] Nouvelle version v339 → rechargement unique');
     location.reload();
   });
 

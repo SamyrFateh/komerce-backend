@@ -98,7 +98,9 @@
 /* Desktop : les deux visages, le téléphone et le doigt forment un cluster. */
 @media (min-width: 900px) {
   .k-hero-figures {
-    background-size: auto 132%;
+    /* Le master tient presque entièrement dans la carte : les coiffures,
+       le téléphone et les deux gestes restent visibles sans agrandir le hero. */
+    background-size: auto 108%;
     background-position: 80% 0%;
   }
 }

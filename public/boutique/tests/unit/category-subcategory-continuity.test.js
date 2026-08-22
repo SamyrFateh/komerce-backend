@@ -13,7 +13,9 @@ const categories = fs.readFileSync(path.resolve(__dirname, '../../css/categories
 const cutout = fs.readFileSync(path.resolve(__dirname, '../../css/category-cutout-navigation.css'), 'utf8');
 const desktopShelf = fs.readFileSync(path.resolve(__dirname, '../../css/category-cutout-navigation-desktop.css'), 'utf8');
 const desktop = fs.readFileSync(path.resolve(__dirname, '../../css/boutique-desktop.css'), 'utf8');
+const interactions = fs.readFileSync(path.resolve(__dirname, '../../css/interactions.css'), 'utf8');
 const visuals = fs.readFileSync(path.resolve(__dirname, '../../js/render/category-shelf-visuals.js'), 'utf8');
+const subcat = fs.readFileSync(path.resolve(__dirname, '../../js/b-subcat.js'), 'utf8');
 const index = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
 const schema = fs.readFileSync(path.resolve(__dirname, '../../js/shop-schema.js'), 'utf8');
 
@@ -43,8 +45,8 @@ describe('continuité catégories et sous-catégories desktop', () => {
 
   test('harmonise le rail mobile sans capsule ni hausse de hauteur', () => {
     expect(cutout).toContain('@media (max-width: 899px)');
-    expect(cutout).toContain('height: 68px;');
-    expect(cutout).toContain('--k-optical-scale: .97;');
+    expect(cutout).toContain('height: 60px;');
+    expect(cutout).toContain('--k-optical-scale: .94;');
     expect(cutout).toContain('saturate(var(--k-optical-saturation))');
     expect(cutout).not.toContain('sepia(.04)');
     expect(cutout).toContain('contrast(1.10)');
@@ -96,7 +98,18 @@ describe('continuité catégories et sous-catégories desktop', () => {
     });
     expect(desktopShelf).toContain('.k-subcutout-icon--all .k-shelf-object--all');
     expect(desktopShelf).toContain('.k-shelf-emoji-fallback');
-    expect(desktopShelf).toContain('filter: saturate(.72) sepia(.08) brightness(1.02);');
+    expect(desktopShelf).toContain('grayscale(1)');
+    expect(desktopShelf).toContain('saturate(0)');
+    expect(desktopShelf).not.toContain('sepia(');
+    expect(desktopShelf).toContain('color: var(--catalog-nav-strong);');
+  });
+
+  test('réutilise les mêmes objets monochromes dans le pager mobile', () => {
+    expect(subcat).toContain('getShelfSubcategoryVisual');
+    expect(subcat).toContain("renderShelfUse(visual, 'k-shelf-object--subcategory k-flat-subcat-object')");
+    expect(interactions).toMatch(/\.k-flat-subcat-tab\s*\{[^}]*flex-direction:\s*column[^}]*background:\s*transparent[^}]*border:\s*0/s);
+    expect(interactions).toMatch(/\.k-flat-subcat-object\s*\{[^}]*grayscale\(1\)[^}]*saturate\(0\)/s);
+    expect(interactions).toMatch(/\.k-flat-subcat-tab\.is-active::after\s*\{[^}]*width:\s*18px/s);
   });
 
   test('garde les huit images dans la seule source taxonomique', () => {
