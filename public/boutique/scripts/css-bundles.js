@@ -23,7 +23,7 @@
 const BUNDLES = [
   {
     out: 'base.css',
-    files: ['tokens', 'reset', 'layout', 'hero'],
+    files: ['tokens', 'reset', 'layout', 'hero', 'hero-ultra-mobile'],
   },
   {
     out: 'components.css',
