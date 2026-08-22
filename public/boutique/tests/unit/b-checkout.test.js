@@ -1801,6 +1801,12 @@ describe('b-checkout', () => {
       expect(call[2].subtitle).toMatch(/panier personnel/);
       expect(call[1][0].product.id).toBe('p-sug');
       expect(call[1][0].variantLabel).toBe('Complète votre panier');
+      // Transverse (22-08-2026, suite) : conteneur = dom.orderBody, PAS
+      // .ck-checkout-primary — .ck-checkout-layout est une grille CSS 2
+      // colonnes en desktop, un rail imbriqué dans la colonne gauche reste
+      // coincé à sa largeur.
+      expect(call[0]).toBe(dom.orderBody);
+      expect(call[2].sectionClass).toContain('ck-checkout-suggestions--transverse');
     });
 
     it('ajout depuis une suggestion : va dans le panier personnel, ne modifie JAMAIS le récap de la liste figée', async () => {

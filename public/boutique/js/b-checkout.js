@@ -455,11 +455,18 @@ function _sharedListProductIds(items) {
  * (GET /api/boutique/suggestions, signal cart_product_ids) — même
  * infrastructure que la modale produit, pas un système parallèle.
  *
+ * TRANSVERSE (22-08-2026, suite) : inséré comme frère de .ck-checkout-layout
+ * dans `body` (dom.orderBody), PAS comme enfant de .ck-checkout-primary —
+ * .ck-checkout-layout est une grille CSS à 2 colonnes en desktop
+ * (checkout-vertical-rail.css), donc un rail imbriqué dans la colonne
+ * gauche reste coincé à sa largeur. En sortant de la grille, le rail
+ * occupe la pleine largeur de la page, sous les deux colonnes.
+ *
  * Asynchrone (contrairement à _renderCheckoutRecentShelf, purement local) :
  * n'affiche rien tant que la réponse n'est pas là, jamais un état de
  * chargement qui bloque le reste du checkout.
  */
-async function _renderCheckoutSuggestionsShelf(container) {
+async function _renderCheckoutSuggestionsShelf(body) {
   if (
     typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
@@ -487,11 +494,13 @@ async function _renderCheckoutSuggestionsShelf(container) {
   // Le container a pu changer entre le début du fetch et sa résolution
   // (fermeture/réouverture du checkout) — on revérifie sa présence dans
   // le DOM avant d'y injecter quoi que ce soit.
-  if (!container?.isConnected) return;
+  if (!body?.isConnected) return;
 
-  renderCheckoutRecentProducts(container, entries, {
+  // Frère de .ck-checkout-layout, pas enfant de .ck-checkout-primary —
+  // voir le commentaire de tête pour la raison (grille CSS 2 colonnes).
+  renderCheckoutRecentProducts(body, entries, {
     onOpen: _openRecentProduct,
-    sectionClass: 'ck-checkout-recent ck-checkout-suggestions',
+    sectionClass: 'ck-checkout-recent ck-checkout-suggestions ck-checkout-suggestions--transverse',
     titleId: 'ck-checkout-suggestions-title',
     title: 'Vous pourriez aussi aimer',
     subtitle: 'Ajoutés à votre panier personnel — la liste que vous payez reste inchangée.',
@@ -506,7 +515,8 @@ async function _renderCheckoutSuggestionsShelf(container) {
   });
 }
 
-function _refreshCheckoutPrimaryProjection(container) {  const current = _currentCheckoutSelection();
+function _refreshCheckoutPrimaryProjection(container) {
+  const current = _currentCheckoutSelection();
   const previousSummary = container?.querySelector('#ck-order-summary');
   const nextSummary = _buildRecapItemsBlock(
     current.items,
@@ -1463,7 +1473,7 @@ export function renderCheckout() {
     if (od.checkoutSelection.source === 'personal-cart') {
       _renderCheckoutRecentShelf(checkoutPrimary);
     } else if (od.checkoutSelection.source === 'shared-list') {
-      _renderCheckoutSuggestionsShelf(checkoutPrimary);
+      _renderCheckoutSuggestionsShelf(body);
     }
 
     // Pays/zone (Comores/France) déplacé DANS le picker de relais (cf. _openRelaisPicker) :
