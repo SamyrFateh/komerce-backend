@@ -55,6 +55,15 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(cutout).not.toMatch(/@media \(max-width:\s*899px\)[\s\S]*border-radius:\s*999px/);
   });
 
+  test('préserve le positionnement absolu des cellules atlas mobile', () => {
+    expect(cutout).toMatch(
+      /\.k-shelf-object-slot\s*>\s*\.k-shelf-atlas-cell\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/s
+    );
+    expect(cutout).not.toMatch(
+      /@media \(max-width:\s*899px\)[\s\S]*\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*position:\s*relative/s
+    );
+  });
+
   test('garde les huit images dans la seule source taxonomique', () => {
     expect(index).toMatch(/<nav class="k-cats" id="k-cats" aria-label="Catégories du catalogue"><\/nav>/);
     expect(index).not.toMatch(/\/boutique\/categories\/.+\.(?:jpg|webp)/);
