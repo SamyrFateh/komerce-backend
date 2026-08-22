@@ -38,16 +38,26 @@ import { fmt, sanitize, optimizeImgUrl } from './b-utils.js';
 export function renderCheckoutRecentProducts(container, entries = [], actions = {}) {
   if (!container || !Array.isArray(entries) || !entries.length) return null;
 
+  const {
+    onOpen,
+    onAdd,
+    sectionClass = 'ck-checkout-recent',
+    titleId = 'ck-checkout-recent-title',
+    title = 'Récemment consultés',
+    subtitle = 'Retrouvez vos derniers choix sans quitter la commande.',
+    defaultDetailLabel = 'Consulté récemment',
+  } = actions;
+
   const section = document.createElement('section');
-  section.className = 'ck-checkout-recent';
-  section.setAttribute('aria-labelledby', 'ck-checkout-recent-title');
+  section.className = sectionClass;
+  section.setAttribute('aria-labelledby', titleId);
 
   const heading = document.createElement('div');
   heading.className = 'ck-checkout-recent-heading';
   heading.innerHTML =
     '<div>'
-      + '<h3 id="ck-checkout-recent-title">Récemment consultés</h3>'
-      + '<p>Retrouvez vos derniers choix sans quitter la commande.</p>'
+      + `<h3 id="${titleId}">${sanitize(title)}</h3>`
+      + `<p>${sanitize(subtitle)}</p>`
     + '</div>';
 
   const grid = document.createElement('div');
@@ -90,11 +100,11 @@ export function renderCheckoutRecentProducts(container, entries = [], actions = 
     const detail = document.createElement('span');
     detail.className = 'ck-checkout-recent-detail';
     detail.textContent = entry.variantLabel
-      || (entry.action === 'choose' ? 'Options à choisir' : 'Consulté récemment');
+      || (entry.action === 'choose' ? 'Options à choisir' : defaultDetailLabel);
 
     copy.append(name, detail);
     productLink.append(media, copy);
-    productLink.addEventListener('click', () => actions.onOpen?.(entry));
+    productLink.addEventListener('click', () => onOpen?.(entry));
 
     const footer = document.createElement('div');
     footer.className = 'ck-checkout-recent-footer';
@@ -123,8 +133,8 @@ export function renderCheckoutRecentProducts(container, entries = [], actions = 
           ? 'Indisponible'
           : 'Ajouter';
       action.addEventListener('click', () => {
-        if (entry.action === 'choose') actions.onOpen?.(entry);
-        else if (entry.action === 'add') actions.onAdd?.(entry, action);
+        if (entry.action === 'choose') onOpen?.(entry);
+        else if (entry.action === 'add') onAdd?.(entry, action);
       });
       footer.appendChild(action);
     }

@@ -1734,4 +1734,130 @@ describe('b-checkout', () => {
       );
     });
   });
+
+  describe('renderCheckout — suggestions sur checkout de liste partagée (22-08-2026)', () => {
+    beforeEach(() => {
+      state.orderData = {
+        payment_mode: 'cash_relais',
+        checkoutSelection: {
+          source: 'shared-list',
+          sourceId: 'cart-1',
+          items: [{
+            product: { id: 'p-test', name: 'Produit liste', price_kmf: 5000 },
+            qty: 1,
+            shared_cart_item_id: 'sci-received',
+          }],
+          total: 5000,
+        },
+      };
+      state.checkoutDisplayContext = {
+        origin: 'SHARED_LIST',
+        sharedCartId: 'cart-1',
+        isCreator: true,
+        title: 'Ma liste',
+      };
+      getCurrentIdentity.mockReturnValue(null);
+      restoreIdentity.mockResolvedValue(null);
+    });
+
+    it('appelle /api/boutique/suggestions avec les product_id de la liste, jamais l’historique perso', async () => {
+      apiGet.mockImplementation((url) =>
+        url.startsWith('/api/boutique/suggestions')
+          ? Promise.resolve({ count: 0, suggestions: [] })
+          : Promise.resolve({})
+      );
+
+      renderCheckout();
+      await flush();
+
+      const suggestionCall = apiGet.mock.calls.find(
+        (call) => call[0].startsWith('/api/boutique/suggestions')
+      );
+      expect(suggestionCall).toBeDefined();
+      expect(suggestionCall[0]).toContain('cart_product_ids=p-test');
+    });
+
+    it('rend le rail avec un titre honnête, jamais "Récemment consultés" (liste partagée = pas d’historique perso pertinent)', async () => {
+      apiGet.mockImplementation((url) =>
+        url.startsWith('/api/boutique/suggestions')
+          ? Promise.resolve({
+              count: 1,
+              suggestions: [{
+                product_id: 'p-sug', name: 'Suggestion', price_kmf: 8000,
+                image_url: null, category: 'Mode', subcategory: null,
+                reason_code: 'cart_complement', reason_label: 'Complète votre panier',
+              }],
+            })
+          : Promise.resolve({})
+      );
+
+      renderCheckout();
+      await flush();
+
+      const call = renderCheckoutRecentProducts.mock.calls.find(
+        (c) => c[2]?.title === 'Vous pourriez aussi aimer'
+      );
+      expect(call).toBeDefined();
+      expect(call[2].subtitle).toMatch(/panier personnel/);
+      expect(call[1][0].product.id).toBe('p-sug');
+      expect(call[1][0].variantLabel).toBe('Complète votre panier');
+    });
+
+    it('ajout depuis une suggestion : va dans le panier personnel, ne modifie JAMAIS le récap de la liste figée', async () => {
+      apiGet.mockImplementation((url) =>
+        url.startsWith('/api/boutique/suggestions')
+          ? Promise.resolve({
+              count: 1,
+              suggestions: [{
+                product_id: 'p-sug', name: 'Suggestion', price_kmf: 8000,
+                image_url: null, category: 'Mode', subcategory: null,
+                reason_code: 'cart_complement', reason_label: 'Complète votre panier',
+              }],
+            })
+          : Promise.resolve({})
+      );
+
+      renderCheckout();
+      await flush();
+
+      const call = renderCheckoutRecentProducts.mock.calls.find(
+        (c) => c[2]?.title === 'Vous pourriez aussi aimer'
+      );
+      const [entry] = call[1];
+      const itemsBefore = state.orderData.checkoutSelection.items.length;
+
+      call[2].onAdd(entry);
+
+      expect(addToCart).toHaveBeenCalledWith(entry.product, 1, null, undefined);
+      expect(state.orderData.checkoutSelection.items).toHaveLength(itemsBefore); // récap figé inchangé
+      expect(showToast).toHaveBeenCalledWith('✓ Ajouté à votre panier personnel', 'success');
+    });
+
+    it('échec réseau : silencieux, ne casse jamais le rendu du checkout', async () => {
+      apiGet.mockImplementation((url) =>
+        url.startsWith('/api/boutique/suggestions')
+          ? Promise.reject(new Error('network down'))
+          : Promise.resolve({})
+      );
+
+      expect(() => renderCheckout()).not.toThrow();
+      await flush();
+
+      const summary = dom.orderBody.querySelector('#ck-order-summary');
+      expect(summary).not.toBeNull(); // le reste du checkout s'est bien rendu
+    });
+
+    it('panier personnel (pas liste partagée) : jamais d’appel à /api/boutique/suggestions', async () => {
+      state.orderData.checkoutSelection.source = 'personal-cart';
+      apiGet.mockImplementation(() => Promise.resolve({}));
+
+      renderCheckout();
+      await flush();
+
+      const suggestionCall = apiGet.mock.calls.find(
+        (call) => call[0].startsWith('/api/boutique/suggestions')
+      );
+      expect(suggestionCall).toBeUndefined();
+    });
+  });
 });

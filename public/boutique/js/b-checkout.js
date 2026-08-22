@@ -402,8 +402,111 @@ function _renderCheckoutRecentShelf(container) {
   });
 }
 
-function _refreshCheckoutPrimaryProjection(container) {
-  const current = _currentCheckoutSelection();
+/**
+ * Mappe une suggestion brute du moteur de ranking (services/boutique-
+ * ranking-engine.js — { product_id, name, price_kmf, image_url,
+ * reason_label, ... }) vers la forme { product, action, cartLine,
+ * variantLabel } attendue par renderCheckoutRecentProducts(). Une
+ * suggestion à variantes (couleur/taille) ouvre la modale ('choose')
+ * plutôt qu'un ajout direct sans sélection — même garde que
+ * buildCheckoutRecentChoices() pour la même raison (bug modale produit
+ * du 22-08-2026 : jamais d'ajout silencieux sans variante choisie).
+ */
+function _mapSuggestionToEntry(raw) {
+  const product = {
+    id: raw.product_id,
+    name: raw.name,
+    price_kmf: raw.price_kmf,
+    image_url: raw.image_url,
+    category: raw.category,
+    subcategory: raw.subcategory,
+    has_variants: false, // le moteur de ranking ne renvoie pas cette info :
+                          // repli prudent, 'choose' n'est jamais déclenché
+                          // à tort ; si le produit a réellement des
+                          // variantes, sa fiche s'ouvrira normalement au clic.
+  };
+  return {
+    product,
+    action: 'add',
+    cartLine: null,
+    variantLabel: raw.reason_label || '',
+  };
+}
+
+/**
+ * Extrait les product_id des articles d'une liste partagée, pour servir
+ * de signal cart_product_ids au moteur de suggestions.
+ */
+function _sharedListProductIds(items) {
+  const ids = new Set();
+  (Array.isArray(items) ? items : []).forEach((line) => {
+    const id = _checkoutLineProductId(line);
+    if (id) ids.add(id);
+  });
+  return Array.from(ids);
+}
+
+/**
+ * Rail de suggestions pour un checkout de LISTE PARTAGÉE (freeze produit
+ * 22-08-2026) — la liste elle-même reste figée (doctrine shared-cart :
+ * "achetable, jamais éditable"), donc CE rail n'ajoute JAMAIS dans le
+ * récap affiché. Tout ajout va dans state.cart, le panier personnel du
+ * visiteur, entièrement séparé. Utilise le moteur déjà en production
+ * (GET /api/boutique/suggestions, signal cart_product_ids) — même
+ * infrastructure que la modale produit, pas un système parallèle.
+ *
+ * Asynchrone (contrairement à _renderCheckoutRecentShelf, purement local) :
+ * n'affiche rien tant que la réponse n'est pas là, jamais un état de
+ * chargement qui bloque le reste du checkout.
+ */
+async function _renderCheckoutSuggestionsShelf(container) {
+  if (
+    typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && !window.matchMedia('(min-width: 900px)').matches
+  ) return;
+
+  const od = state.orderData;
+  const productIds = _sharedListProductIds(od?.checkoutSelection?.items);
+  if (!productIds.length) return;
+
+  let response;
+  try {
+    response = await apiGet(
+      `/api/boutique/suggestions?cart_product_ids=${productIds.join(',')}&limit=6`
+    );
+  } catch (err) {
+    // Une suggestion qui échoue ne doit jamais casser le checkout —
+    // silencieux, le vide reste préférable à une erreur visible ici.
+    return;
+  }
+
+  const entries = (response?.suggestions || []).map(_mapSuggestionToEntry);
+  if (!entries.length) return;
+
+  // Le container a pu changer entre le début du fetch et sa résolution
+  // (fermeture/réouverture du checkout) — on revérifie sa présence dans
+  // le DOM avant d'y injecter quoi que ce soit.
+  if (!container?.isConnected) return;
+
+  renderCheckoutRecentProducts(container, entries, {
+    onOpen: _openRecentProduct,
+    sectionClass: 'ck-checkout-recent ck-checkout-suggestions',
+    titleId: 'ck-checkout-suggestions-title',
+    title: 'Vous pourriez aussi aimer',
+    subtitle: 'Ajoutés à votre panier personnel — la liste que vous payez reste inchangée.',
+    defaultDetailLabel: 'Sélection Komerce',
+    onAdd: (entry) => {
+      addToCart(entry.product, 1, null, undefined);
+      // Jamais _mergeRecentCartLineIntoCheckout ici : le récap affiché est
+      // celui de la liste FIGÉE, jamais celui du panier personnel qu'on
+      // vient d'enrichir séparément — les deux ne se mélangent jamais.
+      showToast('✓ Ajouté à votre panier personnel', 'success');
+    },
+  });
+}
+
+function _refreshCheckoutPrimaryProjection(container) {  const current = _currentCheckoutSelection();
   const previousSummary = container?.querySelector('#ck-order-summary');
   const nextSummary = _buildRecapItemsBlock(
     current.items,
@@ -1359,6 +1462,8 @@ export function renderCheckout() {
 
     if (od.checkoutSelection.source === 'personal-cart') {
       _renderCheckoutRecentShelf(checkoutPrimary);
+    } else if (od.checkoutSelection.source === 'shared-list') {
+      _renderCheckoutSuggestionsShelf(checkoutPrimary);
     }
 
     // Pays/zone (Comores/France) déplacé DANS le picker de relais (cf. _openRelaisPicker) :

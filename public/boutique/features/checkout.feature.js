@@ -40,10 +40,12 @@ module.exports = {
       'fichiers js/* annotes @domain checkout',
       'présentation responsive du tunnel checkout',
       'projection desktop des produits récemment consultés sous le récapitulatif du panier personnel',
+      'projection desktop de suggestions (moteur recommendations) sous le récapitulatif d\'un checkout de liste partagée — freeze produit 22-08-2026',
     ],
     out: [
       'cycle de vie backend de la commande (feature orders, owner canonique)',
       'encaissement Stripe/PayPal/cash (feature payments, capacité consommée)',
+      'calcul de classement des suggestions (feature recommendations, owner canonique — checkout consomme GET /api/boutique/suggestions sans le posséder)',
     ],
   },
 
@@ -82,6 +84,7 @@ module.exports = {
       'catalogue — historique local canonique state.viewedHistory et produits déjà chargés',
       'payment — b-checkout.js importe b-paypal.js ; l’encaissement reste possédé par payments',
       'wallet — b-checkout.js appelle /api/wallet',
+      'recommendations — b-checkout.js appelle GET /api/boutique/suggestions (signal cart_product_ids) pour le rail de suggestions du checkout de liste partagée, freeze 22-08-2026',
     ],
   },
 
@@ -95,6 +98,8 @@ module.exports = {
     'le checkout rend sa coque et son récapitulatif immédiatement, indépendamment du chargement des SDK de paiement',
     'une intention Acheter maintenant finalise uniquement la ligne courante explicitement transmise, sans absorber le panier personnel existant',
     'le rayon récemment consulté est limité au checkout du panier personnel ; il ne sélectionne jamais une variante implicitement et ne modifie CheckoutSelection qu’après une action Ajouter explicite',
+    'le rail de suggestions (checkout de liste partagée, freeze 22-08-2026) ne modifie JAMAIS CheckoutSelection.items ni le récapitulatif figé affiché — tout ajout va exclusivement dans state.cart (panier personnel, entité séparée), jamais fusionné avec la liste payée. Toast distinct ("Ajouté à votre panier personnel") pour ne jamais laisser croire à une modification de la liste figée',
+    'le rail de suggestions du checkout de liste partagée échoue silencieusement (jamais un throw, jamais un état de chargement bloquant) — une suggestion indisponible ne doit jamais dégrader le reste du tunnel checkout',
     'les CTA de récapitulatif et de paiement utilisent l accent commerce ; le chrome reste neutre et les couleurs propres aux moyens de paiement sont préservées',
   ],
 
