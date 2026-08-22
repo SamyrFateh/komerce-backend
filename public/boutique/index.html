@@ -24,8 +24,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
-<!-- H1 : un seul calque, preload unique -->
-<link rel="preload" as="image" href="/images/komerce_hero_characters_v1.png" type="image/png" fetchpriority="high">
+<!-- H1 : un seul calque canonique, identique sur tous les marchés -->
+<link rel="preload" as="image" href="/images/komerce_hero_catalog_canonical_v4.webp" type="image/webp" fetchpriority="high">
 <!-- CSS Komerce v3 — bundlé (Sprint 3) : 4 fichiers au lieu de 13 -->
 <!-- base    = tokens + reset + layout + hero -->
 <!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
@@ -38,9 +38,9 @@
      Ne jamais remettre en inline, ne jamais ajouter defer/async, ne jamais
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=197">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=602">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=121">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=201">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=603">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=122">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
      cascade, alors que deploy-css.js ne le régénérait jamais (absent de
@@ -171,16 +171,9 @@
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
-      <!-- H1 : calque détaché (personnages PNG) + lune SVG + ciel CSS.
-           Un seul asset, deux cadrages (desktop / mobile) via background-position. -->
-      <div class="k-hero-figures" role="img" id="k-hero-img-tag" aria-label="">
-        <svg class="k-hero-moon" viewBox="0 0 60 60" aria-hidden="true">
-          <circle cx="30" cy="30" r="26" fill="#F7E9C4" opacity=".5"/>
-          <circle cx="30" cy="30" r="17" fill="#F0D799"/>
-          <circle cx="24" cy="25" r="3" fill="#E8C97C" opacity=".7"/>
-          <circle cx="35" cy="34" r="2" fill="#E8C97C" opacity=".6"/>
-        </svg>
-      </div>
+      <!-- H1 : calque détouré canonique commun aux trois marchés.
+           Le K du téléphone porte seul la signature visuelle. -->
+      <div class="k-hero-figures" role="img" id="k-hero-img-tag" aria-label=""></div>
       <div class="k-hero-mini-slogan k-hero-mini-slogan--premium">
         <span class="k-hero-badge" id="k-hero-badge"></span>
         <span class="k-line-1">La lune,</span>

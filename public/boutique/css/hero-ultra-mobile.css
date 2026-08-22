@@ -11,10 +11,10 @@
  */
 
 /*
- * HERO ULTRA MOBILE — DIAGNOSTIC VISUEL
- * Cible : 104–116 px de hauteur utile.
- * On conserve uniquement le fond chaud, le détourage canonique et la lune.
- * Le masque réservé au texte est neutralisé pour juger le cadrage réel.
+ * HERO ULTRA MOBILE — CANONIQUE COMPACT
+ * Cible : 88–100 px de hauteur utile.
+ * On conserve uniquement le fond chaud et le détourage canonique commun
+ * aux trois marchés. Le K du téléphone remplace tout symbole additionnel.
  */
 @media (max-width: 899px) {
   #k-hero-fixed-wrap > .k-hero {
@@ -22,7 +22,7 @@
   }
 
   .k-hero .k-hero-inner .k-hero-media {
-    height: clamp(104px, 29vw, 116px);
+    height: clamp(88px, 24vw, 100px);
     margin-top: 0;
     margin-bottom: 0;
     border-radius: 16px;
@@ -31,18 +31,11 @@
   }
 
   .k-hero-media .k-hero-figures {
-    background-size: auto 167%;
-    background-position: 81% 18%;
+    background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');
+    background-size: auto 100%;
+    background-position: 70% 0%;
     -webkit-mask-image: none;
     mask-image: none;
-  }
-
-  .k-hero-media .k-hero-moon {
-    width: 20px;
-    height: 20px;
-    right: 38%;
-    top: 5px;
-    opacity: .92;
   }
 
   .k-hero-media .k-hero-mini-slogan--premium {

@@ -8,8 +8,8 @@
  *
  * H1 — verifie la composition en calques du hero.
  * Remplace les assertions sur les noms de fichiers webp par des assertions
- * sur la structure de composition : calque present, lune unique, aucun <img>
- * porteur de texte.
+ * sur la structure de composition : calque present, hero canonique unique,
+ * aucun symbole lunaire ni <img> porteur de texte.
  */
 const fs = require('fs');
 const path = require('path');
@@ -24,19 +24,25 @@ describe('hero composition en calques (H1)', () => {
     expect(index).not.toMatch(/<img[^>]+class="k-hero-img"/);
   });
 
-  test('le preload cible le calque PNG unique', () => {
+  test('le preload cible le WebP canonique unique', () => {
     expect(index).toMatch(
-      /<link rel="preload" as="image" href="\/images\/komerce_hero_characters_v1\.png"/
+      /<link rel="preload" as="image" href="\/images\/komerce_hero_catalog_canonical_v4\.webp" type="image\/webp"/
     );
     // Plus de preload des anciens webp
     expect(index).not.toMatch(/preload.*komerce_hero_desktop_panorama/);
     expect(index).not.toMatch(/preload.*komerce_hero_final_1080/);
   });
 
-  test('la lune est un SVG inline unique', () => {
-    const moons = index.match(/class="k-hero-moon"/g);
-    expect(moons).not.toBeNull();
-    expect(moons.length).toBe(1);
+  test('aucun symbole lunaire ne concurrence le K du téléphone', () => {
+    expect(index).not.toMatch(/class="k-hero-moon"/);
+    expect(hero).not.toContain('.k-hero-moon');
+  });
+
+  test('réduit fortement le panorama desktop sans supprimer les CTA', () => {
+    expect(hero).toContain('height: clamp(190px, 14vw, 208px);');
+    expect(hero).toContain('min-height: 40px;');
+    expect(index).toContain('Découvrir le catalogue →');
+    expect(index).toContain('Suivre ma commande');
   });
 
   test('le CSS porte deux cadrages independants par breakpoint', () => {

@@ -1952,40 +1952,33 @@ body:has(#k-page-scroll.k-pager-active) {
 .k-hero-overlay, .k-hero-badge, .k-hero-sub, .k-hero-cta-row,
 .k-hero-trust, .k-hero-pills, .k-hero-text-left, .k-hero-tag { display: none; }
 
-/* ── H1 — calque personnages + lune SVG ─────────────────────────
-   Un seul PNG détouré, deux cadrages par breakpoint.
-   La lune est un SVG inline, le ciel est --sand-bright en CSS.
+/* ── H1 — calque personnages canonique ──────────────────────────
+   Un seul WebP détouré, deux cadrages par breakpoint.
+   Le K au dos du téléphone porte seul la signature de marque.
    Aucun asset ne varie par pays. ─────────────────────────────── */
 .k-hero-figures {
   position: absolute;
   inset: 0;
-  background-image: url('/images/komerce_hero_characters_v1.png');
+  background-image: url('/images/komerce_hero_catalog_canonical_v4.webp');
   background-repeat: no-repeat;
-  -webkit-mask-image: linear-gradient(90deg, transparent, black 40%);
-  mask-image: linear-gradient(90deg, transparent, black 40%);
+  -webkit-mask-image: none;
+  mask-image: none;
 }
-.k-hero-moon {
-  position: absolute;
-  z-index: 1;
-  pointer-events: none;
-}
-/* Desktop : plan large, personnages à droite */
+/* Desktop : les deux visages, le téléphone et le doigt forment un cluster. */
 @media (min-width: 900px) {
   .k-hero-figures {
-    background-size: auto 115%;
-    background-position: 58% 44%;
+    background-size: auto 150%;
+    background-position: 80% 24%;
   }
-  .k-hero-moon { width: 52px; height: 52px; right: 7%; top: 16px; }
 }
-/* Mobile : bandeau serré, têtes + téléphone + main levée */
+/* Mobile : dérivé art-directed du même master. Les coiffures restent
+   entièrement dans le cadre ; le bas des torses absorbe la coupe. */
 @media (max-width: 899px) {
   .k-hero-figures {
-    background-size: auto 165%;
-    background-position: 72% 26%;
-    -webkit-mask-image: linear-gradient(90deg, transparent 4%, black 44%);
-    mask-image: linear-gradient(90deg, transparent 4%, black 44%);
+    background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');
+    background-size: auto 100%;
+    background-position: 70% 0%;
   }
-  .k-hero-moon { width: 34px; height: 34px; right: 9%; top: 11px; }
 }
 
 .k-hero-cats-sticky {
@@ -2578,7 +2571,7 @@ body:has(#k-page-scroll.k-pager-active) {
   /* ── Hero lui-même : hauteur compacte ── */
   html.k-home-premium-v1 .k-hero {
     overflow: clip;
-    padding-top: clamp(16px, 1.4vw, 22px);
+    padding-top: clamp(10px, 1vw, 14px);
   }
 
   html.k-home-premium-v1 .k-hero-inner {
@@ -2594,7 +2587,7 @@ body:has(#k-page-scroll.k-pager-active) {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
-    height: clamp(320px, 21vw, 368px);
+    height: clamp(190px, 14vw, 208px);
     margin: 0;
     border: 1px solid var(--border);
     border-radius: 18px;
@@ -2630,9 +2623,9 @@ body:has(#k-page-scroll.k-pager-active) {
     grid-column: 1;
     grid-row: 1;
     align-self: stretch;
-    width: 43%;
-    max-width: 650px;
-    padding: 0 clamp(30px, 3.4vw, 58px);
+    width: 45%;
+    max-width: 620px;
+    padding: 0 clamp(22px, 2.6vw, 40px);
     background: transparent;
     position: relative;
     z-index: 2;
@@ -2655,7 +2648,7 @@ body:has(#k-page-scroll.k-pager-active) {
     letter-spacing: .12em;
     text-transform: uppercase;
     color: var(--green-text);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
   html.k-home-premium-v1 .k-hero-badge::before {
     content: '';
@@ -2671,9 +2664,9 @@ body:has(#k-page-scroll.k-pager-active) {
   html.k-home-premium-v1 .k-hero-mini-slogan--premium .k-line-1 {
     display: block;
     font-family: var(--font-display);
-    font-size: clamp(34px, 2.75vw, 50px);
+    font-size: clamp(28px, 2.2vw, 40px);
     font-weight: 800;
-    line-height: 1.1;
+    line-height: 1.02;
     color: var(--green-dark-text);
     letter-spacing: -.02em;
   }
@@ -2682,13 +2675,13 @@ body:has(#k-page-scroll.k-pager-active) {
   html.k-home-premium-v1 .k-hero-mini-slogan--premium .k-line-2 {
     display: block;
     font-family: var(--font-display);
-    font-size: clamp(34px, 2.75vw, 50px);
+    font-size: clamp(28px, 2.2vw, 40px);
     font-weight: 800;
     font-style: italic;
-    line-height: 1.1;
+    line-height: 1.02;
     color: var(--coral);
     letter-spacing: -.02em;
-    margin-bottom: 14px;
+    margin-bottom: 8px;
   }
 
   /* Sous-titre */
@@ -2697,7 +2690,7 @@ body:has(#k-page-scroll.k-pager-active) {
     font-size: clamp(13px, 1.05vw, 16px);
     color: var(--hero-text-muted);
     line-height: 1.45;
-    margin: 0 0 18px;
+    margin: 0 0 10px;
     max-width: 420px;
   }
 
@@ -2707,18 +2700,18 @@ body:has(#k-page-scroll.k-pager-active) {
     gap: 8px;
     align-items: center;
     flex-wrap: nowrap;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
 
   html.k-home-premium-v1 .k-hero-cta-primary {
     background: var(--coral);
     color: var(--white);
     border: none;
-    min-height: 46px;
+    min-height: 40px;
     border-radius: 10px;
-    padding: 10px 20px;
+    padding: 8px 16px;
     font-family: var(--font);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(200,92,45,.28);
@@ -2734,11 +2727,11 @@ body:has(#k-page-scroll.k-pager-active) {
     background: transparent;
     color: var(--green-text);
     border: 1.5px solid currentColor;
-    min-height: 46px;
+    min-height: 40px;
     border-radius: 10px;
-    padding: 9px 18px;
+    padding: 7px 15px;
     font-family: var(--font);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: background .15s, color .15s;
@@ -2754,7 +2747,7 @@ body:has(#k-page-scroll.k-pager-active) {
     display: flex !important;
     align-items: center;
     gap: 5px;
-    font-size: 11.5px;
+    font-size: 10.5px;
     color: var(--hero-text-soft);
     flex-wrap: nowrap;
     padding: 0;
@@ -2770,16 +2763,16 @@ body:has(#k-page-scroll.k-pager-active) {
   html.k-home-premium-v1 .k-hero-media::after {
     content: '● Livraison express disponible';
     position: absolute;
-    top: 16px;
-    right: 20px;
+    top: 10px;
+    right: 12px;
     background: rgba(255,255,255,.92);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     border: 1px solid rgba(42,122,62,.18);
     border-radius: 20px;
-    padding: 6px 13px;
+    padding: 5px 10px;
     font-family: var(--font);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--green-dark-text);
     letter-spacing: .01em;
@@ -2800,14 +2793,14 @@ body:has(#k-page-scroll.k-pager-active) {
 @media (min-width: 1200px) {
   html.k-home-premium-v1 body.sc-reserve .k-hero-media,
   html.k-home-premium-v1 body:has(.k-side-cart.has-items) .k-hero-media {
-    height: clamp(306px, 17.5vw, 332px);
+    height: clamp(184px, 12.5vw, 198px);
   }
 
   html.k-home-premium-v1 body.sc-reserve .k-hero-mini-slogan--premium .k-line-1,
   html.k-home-premium-v1 body.sc-reserve .k-hero-mini-slogan--premium .k-line-2,
   html.k-home-premium-v1 body:has(.k-side-cart.has-items) .k-hero-mini-slogan--premium .k-line-1,
   html.k-home-premium-v1 body:has(.k-side-cart.has-items) .k-hero-mini-slogan--premium .k-line-2 {
-    font-size: clamp(34px, 2.35vw, 44px);
+    font-size: clamp(28px, 2vw, 36px);
   }
 }
 
@@ -2969,5 +2962,52 @@ body:has(#k-page-scroll.k-pager-active) {
     color: var(--text-muted);
     line-height: 1.45;
     max-width: 320px;
+  }
+}
+
+
+/* ── hero-ultra-mobile.css ───────────────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          boutique-hero-ultra-mobile
+ * @domain        catalog
+ * @layer         ui
+ * @owner         public/boutique/css/hero.css
+ * @purpose       Extension mobile additive du hero H1 : boîte récit ultra-compacte.
+ *                Mode diagnostic temporaire : visuel pur, sans texte ni CTA.
+ * @impact-areas  boutique, hero, mobile
+ * @version       2026-08
+ */
+
+/*
+ * HERO ULTRA MOBILE — CANONIQUE COMPACT
+ * Cible : 88–100 px de hauteur utile.
+ * On conserve uniquement le fond chaud et le détourage canonique commun
+ * aux trois marchés. Le K du téléphone remplace tout symbole additionnel.
+ */
+@media (max-width: 899px) {
+  #k-hero-fixed-wrap > .k-hero {
+    background: var(--page-bg);
+  }
+
+  .k-hero .k-hero-inner .k-hero-media {
+    height: clamp(88px, 24vw, 100px);
+    margin-top: 0;
+    margin-bottom: 0;
+    border-radius: 16px;
+    background: var(--hero-bg);
+    box-shadow: 0 6px 18px var(--border-text-06);
+  }
+
+  .k-hero-media .k-hero-figures {
+    background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');
+    background-size: auto 100%;
+    background-position: 70% 0%;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .k-hero-media .k-hero-mini-slogan--premium {
+    display: none;
   }
 }
