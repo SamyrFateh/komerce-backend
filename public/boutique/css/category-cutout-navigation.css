@@ -266,8 +266,6 @@
    * précisément ce qui rendait rouge, bleu et noir trop disparates. Ici tous
    * les objets passent par le même grade doux, puis l'actif récupère du relief. */
   .k-shelf-rail .k-cat-cutout .k-shelf-object {
-    position: relative;
-    z-index: 1;
     transform: scale(1.10);
     filter:
       drop-shadow(0 4px 7px var(--border-text-08))
