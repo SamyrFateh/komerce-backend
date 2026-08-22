@@ -7009,6 +7009,20 @@
       },
       {
         "feature": "market",
+        "category": "migrations",
+        "declared": "migrations/140_market_open_cameroon.sql",
+        "resolvedPath": "migrations/140_market_open_cameroon.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "migrations",
+        "declared": "migrations/141_market_open_congo.sql",
+        "resolvedPath": "migrations/141_market_open_congo.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
         "category": "services",
         "declared": "middleware/require-market-scope.js",
         "resolvedPath": "middleware/require-market-scope.js",
@@ -7054,6 +7068,20 @@
         "category": "tests",
         "declared": "tests/integration/market-open-mayotte.test.js",
         "resolvedPath": "tests/integration/market-open-mayotte.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/market-open-cameroon.test.js",
+        "resolvedPath": "tests/integration/market-open-cameroon.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/market-open-congo.test.js",
+        "resolvedPath": "tests/integration/market-open-congo.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -21579,6 +21607,14 @@
               {
                 "sourceFileId": "tests/integration/market-open-mayotte.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-open-cameroon.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-open-congo.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -25286,7 +25322,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 845
+        "filesObserved": 847
       },
       "boutique": {
         "filesObserved": 161,

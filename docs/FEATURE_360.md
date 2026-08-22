@@ -1101,10 +1101,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 12 fichier(s) déclaré(s)
-  - migrations : 5
+**Implementation** : 16 fichier(s) déclaré(s)
+  - migrations : 7
   - services : 2
-  - tests : 5
+  - tests : 7
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market"]_
 

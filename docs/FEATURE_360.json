@@ -12227,7 +12227,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 5,
+            "count": 7,
             "files": [
               {
                 "declared": "migrations/135_markets_foundation.sql",
@@ -12253,6 +12253,16 @@
                 "declared": "migrations/139_market_open_mayotte.sql",
                 "resolvedPath": "migrations/139_market_open_mayotte.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/140_market_open_cameroon.sql",
+                "resolvedPath": "migrations/140_market_open_cameroon.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/141_market_open_congo.sql",
+                "resolvedPath": "migrations/141_market_open_congo.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -12272,11 +12282,21 @@
             ]
           },
           "tests": {
-            "count": 5,
+            "count": 7,
             "files": [
               {
                 "declared": "tests/integration/currency-boundary.test.js",
                 "resolvedPath": "tests/integration/currency-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/market-open-cameroon.test.js",
+                "resolvedPath": "tests/integration/market-open-cameroon.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/market-open-congo.test.js",
+                "resolvedPath": "tests/integration/market-open-congo.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12302,7 +12322,7 @@
             ]
           }
         },
-        "totalFiles": 12,
+        "totalFiles": 16,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
