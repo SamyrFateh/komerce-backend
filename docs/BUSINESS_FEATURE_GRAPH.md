@@ -208,18 +208,18 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ### dashboard _(business-transversal)_
 
-> Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, sans réutiliser les deux générations historiques de dashboards.
+> Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.
 
 - services: 10
-- routes: 16
+- routes: 17
 - migrations: 1
-- dash: 90
-- tests: 34
+- dash: 93
+- tests: 37
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 17
-- interfaces exposed: 65
+- interfaces exposed: 66
 - internal APIs: 0
-- dependencies (consumes): 16 — incident-management, orders, infrastructure, payments, logistics, inventory, economic-engine, wallet, auth, auth-identity, customs, documents, recommendations, purchasing, business-rules, decision-signals
+- dependencies (consumes): 18 — incident-management, orders, infrastructure, payments, logistics, inventory, economic-engine, wallet, auth, auth-identity, customs, documents, notifications, recommendations, purchasing, business-rules, decision-signals, market
 - consumers: 5 — economic-engine, incident-management, infrastructure, orders, admin-dashboard
 
 ### decision-signals _(piloting-capability)_
@@ -379,7 +379,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 1 — infrastructure
-- consumers: 1 — orders
+- consumers: 2 — dashboard, orders
 
 ### notifications _(business-transversal)_
 
@@ -390,12 +390,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - utils: 2
 - services: 12
 - routes: 4
-- tables owned (lifecycle): 3 — `alerts`, `client_notifications`, `notification_log`
+- tables owned (lifecycle): 3 — `client_notifications`, `alerts`, `notification_log`
 - tables written: 3
 - interfaces exposed: 6
 - internal APIs: 8
 - dependencies (consumes): 5 — incident-management, platform-ops, infrastructure, auth, toutes les features emettrices
-- consumers: 11 — auth, auth-identity, catalog, incident-management, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart
+- consumers: 12 — auth, auth-identity, catalog, dashboard, incident-management, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart
 
 ### orders _(business-feature)_
 
@@ -593,7 +593,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `catalog_glossary` | _ambiguë_ | no-declared-writer | — | catalog |
 | `catalog_media` | `catalog` | declared-table-owner | catalog | sourcing |
 | `charges` | `economic-engine` | single-writer | economic-engine | — |
-| `client_notifications` | `notifications` | single-writer | notifications | — |
+| `client_notifications` | `notifications` | single-writer | notifications | dashboard |
 | `competitor_prices` | `economic-engine` | single-writer | economic-engine | — |
 | `cost_benchmarks` | `economic-engine` | single-writer | economic-engine | — |
 | `cost_component_events` | `economic-engine` | single-writer | economic-engine | — |
@@ -671,7 +671,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `supplier_catalog_imports` | `catalog` | single-writer | catalog | sourcing |
 | `suppliers` | `purchasing` | single-writer | purchasing | — |
 | `suppliers_stats` | _ambiguë_ | no-declared-writer | — | dashboard |
-| `transaction_documents` | `documents` | single-writer | documents | — |
+| `transaction_documents` | `documents` | single-writer | documents | dashboard |
 | `unsold_items` | `unsold-resolution` | single-writer | unsold-resolution | — |
 | `user_pickup_authorizations` | `auth-identity` | single-writer | auth-identity | — |
 | `users` | `auth-identity` | declared-table-owner | auth-identity | auth, auth-passkey, business-rules, dashboard, documents, economic-engine, logistics, loyalty, notifications, orders, payments, platform-ops, shared-cart, wallet |
@@ -777,6 +777,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/admin/customs-shipments/rates/effective` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
 | `GET /api/admin/customs-shipments/status/pending` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
 | `GET /api/admin/dashboard` | dashboard | `routes/admin/dashboard.js` (resolved-owned) |
+| `GET /api/admin/demo/orders/{id}/timeline` | dashboard | `routes/admin/demo-order-flow.js` (resolved-owned) |
 | `GET /api/dashboard/clients` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
 | `GET /api/dashboard/ops` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
 | `GET /api/dashboard/hub` | dashboard | `routes/dashboard-hub.js` (resolved-owned) |
@@ -1317,10 +1318,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | dashboard | auth-identity (`auth-identity (mutations users via services/user-mutation-service.js ? LOT12)`) | ✔ |
 | dashboard | customs (`customs`) | ✔ |
 | dashboard | documents (`documents`) | ✔ |
+| dashboard | notifications (`notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)`) | ✔ |
 | dashboard | recommendations (`recommendations`) | ✔ |
 | dashboard | purchasing (`purchasing (repare les commandes sans purchase order — services/repair-ordered-without-purchase-orders.js, O7.3 provider purchasing)`) | ✔ |
 | dashboard | business-rules (`business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)`) | ✔ |
 | dashboard | decision-signals (`decision-signals (services/radar-queries.js — routes/admin-radar.js)`) | ✔ |
+| dashboard | market (`market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)`) | ✔ |
 | documents | auth (`auth (gardes authenticate/requireAdmin sur les routes documents et factures)`) | ✔ |
 | documents | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | documents | orders (`orders`) | ✔ |
@@ -1553,7 +1556,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 858 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 864 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 162 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1609,7 +1612,7 @@ Meta Graph monté : oui.
 | customs | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | customs | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | customs | orders | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | auth | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| dashboard | auth | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | dashboard | auth-identity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1617,8 +1620,9 @@ Meta Graph monté : oui.
 | dashboard | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 47 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 48 | **DECLARED_AND_OBSERVED** |
 | dashboard | logistics | static-code | 11 | **DECLARED_AND_OBSERVED** |
+| dashboard | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | dashboard | purchasing | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | decision-signals | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1793,6 +1797,7 @@ Meta Graph monté : oui.
 - `dashboard` → `inventory` (déclaré : `inventory (lecture stock)`)
 - `dashboard` → `wallet` (déclaré : `wallet (soldes et crédits)`)
 - `dashboard` → `recommendations` (déclaré : `recommendations`)
+- `dashboard` → `market` (déclaré : `market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)`)
 - `documents` → `orders` (déclaré : `orders`)
 - `documents` → `customs` (déclaré : `customs`)
 - `documents` → `wallet` (déclaré : `wallet`)

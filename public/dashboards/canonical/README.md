@@ -58,3 +58,16 @@ Le renderer ne contient ni `fetch`, ni endpoint API, ni moteur graphique. Il dé
 `FilterBar → MetricStrip → AlertPanel → Sections → Drill`.
 
 Le futur LOT 2C-CANON devra donc assembler les sources de Pilotage avant d'appeler le renderer ; il ne devra pas créer un shell ou un renderer parallèle.
+
+## AdminContext + MarketScope — prérequis LOT 2C-CANON
+
+`js/admin-context.js` formalise la projection UI d'une autorité déjà résolue par le serveur. Il ne lit ni query string, ni stockage local, ni endpoint et ne déduit jamais un scope depuis le rôle.
+
+- `mode: global` : Komerce central peut agréger tous les marchés ou sélectionner une vue pays ;
+- `mode: market` : un partenaire reste enfermé dans les marchés fournis par le serveur ;
+- `allowedMarkets` : ensemble de navigation autorisé, jamais une liste fabriquée par le client ;
+- `capabilities` : adaptation fonctionnelle de l'interface, jamais remplacement de l'autorisation backend.
+
+Chaque future source de Pilotage devra appliquer `requireMarketScope` côté serveur avant agrégation. Le filtre pays du `DashboardSchema` n'est qu'un contrôle de présentation.
+
+Contrat complet : `docs/contract/DASHBOARD_MARKET_SCOPE_2C.md`.

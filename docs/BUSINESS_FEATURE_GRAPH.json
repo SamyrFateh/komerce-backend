@@ -174,7 +174,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2025-09",
-        "service": "Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, sans réutiliser les deux générations historiques de dashboards.",
+        "service": "Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.",
         "businessKind": "business-transversal",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -2348,6 +2348,13 @@
       {
         "feature": "dashboard",
         "category": "routes",
+        "declared": "routes/admin/demo-order-flow.js",
+        "resolvedPath": "routes/admin/demo-order-flow.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
         "declared": "routes/admin/index.js",
         "resolvedPath": "routes/admin/index.js",
         "status": "resolved-in-technical-graph"
@@ -2481,6 +2488,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/css/demo-order-flow.css",
+        "resolvedPath": "public/dashboards/canonical/css/demo-order-flow.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/app.js",
         "resolvedPath": "public/dashboards/canonical/js/app.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2504,6 +2518,20 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/dashboard-renderer.js",
         "resolvedPath": "public/dashboards/canonical/js/dashboard-renderer.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/admin-context.js",
+        "resolvedPath": "public/dashboards/canonical/js/admin-context.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/demo-order-flow.js",
+        "resolvedPath": "public/dashboards/canonical/js/demo-order-flow.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3118,6 +3146,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/admin-demo-order-flow.test.js",
+        "resolvedPath": "tests/unit/admin-demo-order-flow.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/admin-facades-route.test.js",
         "resolvedPath": "tests/unit/admin-facades-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3169,6 +3204,20 @@
         "category": "tests",
         "declared": "tests/unit/canonical-dashboard-schema-renderer.test.js",
         "resolvedPath": "tests/unit/canonical-dashboard-schema-renderer.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-dashboard-admin-context.test.js",
+        "resolvedPath": "tests/unit/canonical-dashboard-admin-context.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-demo-order-flow.test.js",
+        "resolvedPath": "tests/unit/canonical-demo-order-flow.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10465,6 +10514,14 @@
       },
       {
         "feature": "dashboard",
+        "entry": "GET /api/admin/demo/orders/:orderId/timeline",
+        "method": "GET",
+        "path": "/api/admin/demo/orders/{id}/timeline",
+        "routeFile": "routes/admin/demo-order-flow.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
         "entry": "GET /api/dashboard/clients",
         "method": "GET",
         "path": "/api/dashboard/clients",
@@ -14395,6 +14452,12 @@
       },
       {
         "from": "dashboard",
+        "to": "notifications",
+        "raw": "notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
         "to": "recommendations",
         "raw": "recommendations",
         "resolved": true
@@ -14415,6 +14478,12 @@
         "from": "dashboard",
         "to": "decision-signals",
         "raw": "decision-signals (services/radar-queries.js — routes/admin-radar.js)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
+        "to": "market",
+        "raw": "market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)",
         "resolved": true
       },
       {
@@ -18989,6 +19058,10 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/admin/demo-order-flow.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "routes/admin/partners.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -19225,6 +19298,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "routes/admin/demo-order-flow.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/admin/partners.js",
                 "targetFile": "db.js"
               },
@@ -19419,6 +19496,22 @@
               {
                 "sourceFileId": "tests/unit/hub-dashboard-route.test.js",
                 "targetFile": "utils/parcelSync.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
+        "to": "notifications",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin/demo-order-flow.js",
+                "targetFile": "services/client-notification-service.js"
               }
             ]
           }
@@ -25518,7 +25611,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 858
+        "filesObserved": 864
       },
       "boutique": {
         "filesObserved": 162,
@@ -26566,6 +26659,21 @@
       "lifecycleOwner": "shared-cart",
       "resolution": "multi-writer-resolved-by-classification-signal"
     },
+    "client_notifications": {
+      "writers": [
+        {
+          "feature": "notifications",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "dashboard"
+      ],
+      "lifecycleOwner": "notifications",
+      "resolution": "single-writer"
+    },
     "exchange_rates": {
       "writers": [
         {
@@ -26825,6 +26933,21 @@
       "lifecycleOwner": null,
       "resolution": "no-declared-writer"
     },
+    "transaction_documents": {
+      "writers": [
+        {
+          "feature": "documents",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "dashboard"
+      ],
+      "lifecycleOwner": "documents",
+      "resolution": "single-writer"
+    },
     "wallet_transactions": {
       "writers": [
         {
@@ -26883,19 +27006,6 @@
         "orders"
       ],
       "lifecycleOwner": "refunds",
-      "resolution": "single-writer"
-    },
-    "transaction_documents": {
-      "writers": [
-        {
-          "feature": "documents",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "documents",
       "resolution": "single-writer"
     },
     "charges": {
@@ -27328,19 +27438,6 @@
       "readers": [],
       "lifecycleOwner": "notifications",
       "resolution": "declared-table-owner"
-    },
-    "client_notifications": {
-      "writers": [
-        {
-          "feature": "notifications",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "notifications",
-      "resolution": "single-writer"
     },
     "notification_log": {
       "writers": [

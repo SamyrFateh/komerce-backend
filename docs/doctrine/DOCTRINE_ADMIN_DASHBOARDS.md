@@ -188,6 +188,19 @@ Le rendu historique peut servir de **référence visuelle** : densité, hiérarc
 
 **Sécurité** : pas de dashboard autonome au départ. Client 360 / Authentification + une bande sécurité dans Pilotage ; surface dédiée seulement si le volume le justifie.
 
+### II-1b. Deux audiences, un seul runtime canonical
+
+Les quatre dashboards servent deux audiences sans duplication technique :
+
+- **Komerce central** : vue globale, comparaison et drill par marché ;
+- **partenaire opérateur pays** : vues fonctionnelles et opérationnelles strictement limitées aux marchés autorisés.
+
+`MARKET` est l'unité de délégation business. `CORRIDOR` est une dimension technique/logistique et ne confère aucun droit. Le rôle vertical ne suffit jamais : le scope horizontal est résolu côté serveur depuis `operator_market_scopes` et appliqué par `requireMarketScope` avant agrégation.
+
+Le filtre pays du frontend ne constitue pas une sécurité. Le canonical consomme un `AdminContext` serveur et ne charge jamais des données globales pour les filtrer après coup dans le navigateur.
+
+Contrat : `docs/contract/DASHBOARD_MARKET_SCOPE_2C.md`.
+
 ## II-2. Six Workspaces
 
 1. **Operations / Hub-Relais** — hub, inventaire, affectations, réception, préparation, relais, collecte.
@@ -298,6 +311,14 @@ Le renderer connaît une liste fermée de blocs. Pas de dashboard builder géné
 ## LOT 2C-CANON — Pilotage
 
 Premier dashboard réel. Il consomme les agrégateurs canoniques et `signals` ; il ne migre aucune ancienne vue.
+
+Avant toute donnée métier, il branche l'autorité `market` :
+
+1. `AdminContext` est fourni par une projection serveur ;
+2. chaque source market-scoped applique `requireMarketScope` avant agrégation ;
+3. Komerce central peut obtenir une vue globale ou choisir un marché ;
+4. un partenaire ne reçoit que ses marchés autorisés, indépendamment de son rôle vertical ;
+5. Pilotage expose une configuration globale et une configuration pays via le même schema/renderer, jamais deux applications.
 
 ## LOT 2D-CANON — preuve de couverture
 
@@ -540,6 +561,9 @@ Gates à rendre bloquants :
 - source obligatoire pour tout bloc data-bound ;
 - zéro recompute métier dans schema/renderer ;
 - nouveau dashboard N+1 = schema + sources, pas nouveau shell/CSS bespoke.
+- aucun scope market déduit d'un rôle, d'une query string ou d'un stockage navigateur ;
+- aucune agrégation globale filtrée après coup côté client ;
+- chaque source partenaire prouve son isolation inter-marchés côté serveur.
 
 ## VII-11. Séquence
 
