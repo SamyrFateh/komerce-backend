@@ -203,7 +203,18 @@ function setupModalCart() {
       state.modalProduct,
       state.modalProductDetail,
       state.modalSelection
-    )) return;
+    )) {
+      // À minima : renvoyer le focus vers la première variante plutôt
+      // qu'un clic silencieux sans aucun signal (bug signalé 22-08-2026).
+      // [data-axis-key] est le conteneur de chaque axe (couleur/taille/...),
+      // rendu identiquement en desktop (b-modal-desktop-product.js) et
+      // mobile (b-modal-mobile-product.js) — un seul correctif couvre les
+      // deux. Le premier bouton d'option à l'intérieur est nativement
+      // focusable (button natif), scrollIntoView le rend visible même si
+      // la modale a défilé au-delà.
+      focusFirstVariantOption();
+      return;
+    }
     const cartProduct = buildModalCartProduct(
       state.modalProduct,
       state.modalProductDetail,
@@ -214,6 +225,23 @@ function setupModalCart() {
     });
     _syncModalQtyUI();
   });
+}
+
+/**
+ * Renvoie le focus vers le premier bouton d'option de variante affiché
+ * dans la modale — seul signal donné aujourd'hui à un clic "Ajouter"
+ * bloqué par une sélection incomplète (couleur/taille non choisie).
+ * Cherche dans dom.modalOverlay (racine commune desktop/mobile) plutôt
+ * qu'un sélecteur global pour ne jamais capturer un axe d'une autre
+ * modale/instance restée dans le DOM.
+ */
+function focusFirstVariantOption() {
+  const root = dom.modalOverlay || document;
+  const firstAxis = root.querySelector('[data-axis-key]');
+  const firstButton = firstAxis?.querySelector('button');
+  if (!firstButton) return;
+  firstButton.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  firstButton.focus({ preventScroll: true });
 }
 
 export {

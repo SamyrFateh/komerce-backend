@@ -668,13 +668,13 @@ describe('renderListsTab — bibliothèque de listes (GAP-01/02)', () => {
     return el;
   }
 
-  it('un visiteur anonyme voit une demande d\'identification, pas une fausse erreur réseau', async () => {
+  it('un visiteur anonyme voit un message honnête (pas de liste sans identité), pas une fausse erreur réseau', async () => {
     restoreIdentity.mockResolvedValue(null);
     const el = mountListsPanel();
 
     await renderListsTab(el);
 
-    expect(el.textContent).toContain('Confirmez votre WhatsApp');
+    expect(el.textContent).toContain('Pas encore de liste');
     expect(el.textContent).not.toContain('Vérifiez votre connexion');
     expect(el.querySelector('#k-track-lists-auth-btn')).not.toBeNull();
     expect(getSharedCartLibrary).not.toHaveBeenCalled();
