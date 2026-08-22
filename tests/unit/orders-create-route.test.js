@@ -1080,7 +1080,11 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
     expect(res.status).toBe(201);
     const orderInsert = client.calls.find(call => /INSERT INTO orders/.test(call.sql));
     expect(orderInsert.sql).toMatch(/pickup_code_recipient_user_id/);
-    expect(orderInsert.params.slice(-2)).toEqual(['organizer', 'organizer-1']);
+    // P3 (22-08-2026) a ajouté 3 paramètres après pickup_code_recipient*
+    // (display_total_amount, display_currency, display_parity_snapshot) —
+    // ces deux valeurs ne sont plus .slice(-2), mais .slice(-5, -3).
+    // Comportement inchangé, juste un décalage d'index dans le tableau.
+    expect(orderInsert.params.slice(-5, -3)).toEqual(['organizer', 'organizer-1']);
     expect(res.body.order.pickup_code_recipient).toBe('organizer');
   });
 

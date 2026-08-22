@@ -45,7 +45,7 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 0,
-      "warningCount": 13,
+      "warningCount": 12,
       "coverageCount": 0,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
@@ -742,15 +742,6 @@
       "type": "CLASSIFICATION-MISSING",
       "verdict": "warn",
       "feature": "logistics",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "market",
       "file": null,
       "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
     },

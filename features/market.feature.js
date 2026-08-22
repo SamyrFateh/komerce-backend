@@ -38,6 +38,9 @@ module.exports = {
       'parités fixes currency_parities, projection via EUR reference (jamais un axe direct entre devises Zone franc) — P1',
       'adapter client fmt/fmtPrice (public/boutique/js/b-utils.js), consomme currency_parities via ' +
         '/api/public/config, projette vers le marché courant (market-context.js, override ?market= inclus) — P2',
+      'snapshot display_total_amount/display_currency (orders, services/order-display-snapshot.js) — ' +
+        'troisième vérité, distincte de total_kmf/total_eur (Payment Boundary, finance_config, jamais touchée) ' +
+        'et de currency_parities seule — P3, freeze 22-08-2026',
       'ouverture Mayotte (YT, EUR, minor_unit=2) — M10, premier marché après le seed KM',
     ],
     out: [
@@ -54,8 +57,6 @@ module.exports = {
         'taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé ' +
         'par la boundary devise (qui porte la devise RÉELLE d\'un marché, pas une conversion). ' +
         'b-utils.js devient un ADAPTER de cette boundary en P2, jamais l\'inverse',
-      'P3 — extension order-cost-snapshot.js pour figer transaction_amount/transaction_currency ' +
-        'au moment de la commande — non fait, dépend de P1',
       'P4/P5 — documents contractuels lisant le snapshot P3, dashboards agrégation cross-market ' +
         'en EUR reference — non faits, dépendent de P3/P2 respectivement',
       'devises de sourcing flottantes (USD/AED/CNY) — concern séparé par construction ' +
@@ -79,6 +80,7 @@ module.exports = {
       'migrations/140_market_open_cameroon.sql',
       'migrations/141_market_open_congo.sql',
       'migrations/142_currency_parities.sql',
+      'migrations/143_orders_display_snapshot.sql',
     ],
     services: [
       'middleware/require-market-scope.js',
@@ -155,6 +157,33 @@ module.exports = {
     'aucune devise de sourcing flottante (USD/AED/CNY) dans currency_parities — absence par construction, pas par oubli (freeze invariants 4/5)',
     'P2 : b-utils.js#fmt(amount, "KMF") ne force plus un affichage KMF littéral depuis le 22-08-2026 — "KMF" est devenu l\'alias "projette vers le marché courant" (résolu via market-context.js, override ?market= inclus). Toute AUTRE devise explicite (ex. "EUR") garde le comportement littéral historique, forcé, ignore le marché. Les 33 appels existants de fmt(x, "KMF") n\'ont pas été modifiés — ils héritent du nouveau comportement automatiquement. Quiconque lit un de ces appels doit savoir que "KMF" ne veut plus dire "force KMF"',
     'P2 : fmt()/fmtPrice() restent SYNCHRONES (33 appelants dans des boucles de rendu) — la projection consomme un snapshot déjà chargé (fetch unique au chargement du module, jamais un round-trip par appel). Avant résolution du fetch (fenêtre courte, ou en cas d\'échec réseau), repli sur l\'affichage KMF brut — jamais un montant faux ni une exception',
+    'P3 : orders.total_kmf/total_eur (Payment Boundary, finance_config) sont STRICTEMENT INCHANGÉS — Stripe, PayPal et cash_relais lisent exclusivement ces deux colonnes, jamais display_total_amount/display_currency. Les deux boundaries coexistent, jamais mélangées',
+    'P3 : display_market_code (client, requête POST /api/orders) est un indice de CONTEXTE, jamais un montant, jamais une autorisation — le serveur calcule lui-même display_total_amount via projectAmount() (services/order-display-snapshot.js). Un code invalide ou absent ne bloque jamais la commande',
+    'P3 : ne jamais supposer silencieusement que orders.market_id (celui du relais choisi) est le marché de navigation du client — display_market_code fait TOUJOURS foi s\'il est valide ; relais.market_id n\'est qu\'un repli si aucun code n\'a été fourni ou qu\'il est invalide. Preuve en base : tests/integration/order-display-snapshot.test.js démontre une ligne où market_id (KM) \u2260 display_currency (XAF)',
+    'P3 : display_parity_snapshot (JSONB) est une métadonnée d\'audit — la parité utilisée pour le calcul, jamais une source de vérité alternative. display_total_amount seul fait foi',
+    'P3 : aucun recalcul ultérieur du display snapshot — figé à la création, comme total_kmf/total_eur. Pour les commandes antérieures à la migration 143, les 3 colonnes restent NULL — aucun backfill fabriqué (invariant 7 du freeze)',
+    'P3 : resolveDisplaySnapshot() (services/order-display-snapshot.js) ne throw jamais — un échec de résolution retourne un snapshot vide, ne bloque jamais la création d\'une commande. C\'est une donnée d\'audit/confirmation, pas une donnée de paiement',
   ],
+
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    axis:     'business',
+    kind:     'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables:          true,
+      ownsLifecycle:       true,
+      activeService:       true,
+      multiConsumer:       true,
+      ownsMigrations:      true,
+      externalSideEffect:  'none',
+      surface:             'service+db',
+    },
+    rationale: [
+      'possède le référentiel des marchés (markets), l\'historique d\'accès (operator_market_scopes) et les parités monétaires fixes (currency_parities), avec ses propres migrations (135 à 143) et invariants',
+      'expose une boundary devise (utils/currency.js) consommée par plusieurs features (orders pour le snapshot display P3, boutique pour l\'affichage P2) sans posséder leurs cycles de vie propres',
+      'ne possède aucune route HTTP — surface exclusivement service/DB, consommée par composition directe (require), jamais un appel réseau',
+    ],
+  },
 
 };

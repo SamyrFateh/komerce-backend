@@ -47,21 +47,21 @@
     "healthy": 16,
     "attention": 15,
     "blocked": 0,
-    "businessDependencies": 181,
+    "businessDependencies": 182,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
     "debtItemsTotal": 42,
-    "gateHealthy": 14,
+    "gateHealthy": 15,
     "gateBlocked": 0
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 55,
-    "attributedFindings": 55,
+    "totalFindings": 54,
+    "attributedFindings": 54,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -12174,13 +12174,13 @@
     },
     {
       "id": "market",
-      "kind": "unclassified",
+      "kind": "business-feature",
       "status": "draft",
       "manifestFile": "features/market.feature.js",
       "repo": "backend",
       "identity": {
         "id": "market",
-        "kind": "unclassified",
+        "kind": "business-feature",
         "status": "draft"
       },
       "service": "Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.",
@@ -12194,6 +12194,7 @@
           "boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5",
           "parités fixes currency_parities, projection via EUR reference (jamais un axe direct entre devises Zone franc) — P1",
           "adapter client fmt/fmtPrice (public/boutique/js/b-utils.js), consomme currency_parities via /api/public/config, projette vers le marché courant (market-context.js, override ?market= inclus) — P2",
+          "snapshot display_total_amount/display_currency (orders, services/order-display-snapshot.js) — troisième vérité, distincte de total_kmf/total_eur (Payment Boundary, finance_config, jamais touchée) et de currency_parities seule — P3, freeze 22-08-2026",
           "ouverture Mayotte (YT, EUR, minor_unit=2) — M10, premier marché après le seed KM"
         ],
         "out": [
@@ -12201,7 +12202,6 @@
           "branchement de requireMarketScope sur une route concrète — aucune route admin scopée par marché n'existe encore dans ce dépôt ; le middleware est livré et testé, pas encore consommé",
           "migration des 94 colonnes *_kmf existantes vers utils/currency.js — M5 livre l'outil de formatage, ne touche à aucune colonne ni aucun appelant existant ; renommer une colonne de montant en prod est un chantier séparé, à fort risque",
           "conversion d'affichage KMF→EUR diaspora (public/boutique/js/b-utils.js#fmt(), taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé par la boundary devise (qui porte la devise RÉELLE d'un marché, pas une conversion). b-utils.js devient un ADAPTER de cette boundary en P2, jamais l'inverse",
-          "P3 — extension order-cost-snapshot.js pour figer transaction_amount/transaction_currency au moment de la commande — non fait, dépend de P1",
           "P4/P5 — documents contractuels lisant le snapshot P3, dashboards agrégation cross-market en EUR reference — non faits, dépendent de P3/P2 respectivement",
           "devises de sourcing flottantes (USD/AED/CNY) — concern séparé par construction (freeze invariant 4/5), currency_parities ne les contient jamais",
           "settlement et attribution économique par opérateur (entité différée, hors périmètre)",
@@ -12234,12 +12234,18 @@
         "la Currency Boundary possède la règle monétaire ; utils/currency.js (serveur) et b-utils.js (client, P2) en sont les adapters, jamais des propriétaires concurrents de la règle",
         "aucune devise de sourcing flottante (USD/AED/CNY) dans currency_parities — absence par construction, pas par oubli (freeze invariants 4/5)",
         "P2 : b-utils.js#fmt(amount, \"KMF\") ne force plus un affichage KMF littéral depuis le 22-08-2026 — \"KMF\" est devenu l'alias \"projette vers le marché courant\" (résolu via market-context.js, override ?market= inclus). Toute AUTRE devise explicite (ex. \"EUR\") garde le comportement littéral historique, forcé, ignore le marché. Les 33 appels existants de fmt(x, \"KMF\") n'ont pas été modifiés — ils héritent du nouveau comportement automatiquement. Quiconque lit un de ces appels doit savoir que \"KMF\" ne veut plus dire \"force KMF\"",
-        "P2 : fmt()/fmtPrice() restent SYNCHRONES (33 appelants dans des boucles de rendu) — la projection consomme un snapshot déjà chargé (fetch unique au chargement du module, jamais un round-trip par appel). Avant résolution du fetch (fenêtre courte, ou en cas d'échec réseau), repli sur l'affichage KMF brut — jamais un montant faux ni une exception"
+        "P2 : fmt()/fmtPrice() restent SYNCHRONES (33 appelants dans des boucles de rendu) — la projection consomme un snapshot déjà chargé (fetch unique au chargement du module, jamais un round-trip par appel). Avant résolution du fetch (fenêtre courte, ou en cas d'échec réseau), repli sur l'affichage KMF brut — jamais un montant faux ni une exception",
+        "P3 : orders.total_kmf/total_eur (Payment Boundary, finance_config) sont STRICTEMENT INCHANGÉS — Stripe, PayPal et cash_relais lisent exclusivement ces deux colonnes, jamais display_total_amount/display_currency. Les deux boundaries coexistent, jamais mélangées",
+        "P3 : display_market_code (client, requête POST /api/orders) est un indice de CONTEXTE, jamais un montant, jamais une autorisation — le serveur calcule lui-même display_total_amount via projectAmount() (services/order-display-snapshot.js). Un code invalide ou absent ne bloque jamais la commande",
+        "P3 : ne jamais supposer silencieusement que orders.market_id (celui du relais choisi) est le marché de navigation du client — display_market_code fait TOUJOURS foi s'il est valide ; relais.market_id n'est qu'un repli si aucun code n'a été fourni ou qu'il est invalide. Preuve en base : tests/integration/order-display-snapshot.test.js démontre une ligne où market_id (KM) ≠ display_currency (XAF)",
+        "P3 : display_parity_snapshot (JSONB) est une métadonnée d'audit — la parité utilisée pour le calcul, jamais une source de vérité alternative. display_total_amount seul fait foi",
+        "P3 : aucun recalcul ultérieur du display snapshot — figé à la création, comme total_kmf/total_eur. Pour les commandes antérieures à la migration 143, les 3 colonnes restent NULL — aucun backfill fabriqué (invariant 7 du freeze)",
+        "P3 : resolveDisplaySnapshot() (services/order-display-snapshot.js) ne throw jamais — un échec de résolution retourne un snapshot vide, ne bloque jamais la création d'une commande. C'est une donnée d'audit/confirmation, pas une donnée de paiement"
       ],
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "migrations/135_markets_foundation.sql",
@@ -12279,6 +12285,11 @@
               {
                 "declared": "migrations/142_currency_parities.sql",
                 "resolvedPath": "migrations/142_currency_parities.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/143_orders_display_snapshot.sql",
+                "resolvedPath": "migrations/143_orders_display_snapshot.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -12349,7 +12360,7 @@
             ]
           }
         },
-        "totalFiles": 19,
+        "totalFiles": 20,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12381,7 +12392,15 @@
           ]
         }
       ],
-      "consumedBy": [],
+      "consumedBy": [
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "projections": {
         "projectedBy": []
       },
@@ -12410,22 +12429,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -13217,7 +13225,7 @@
             ]
           },
           "services": {
-            "count": 11,
+            "count": 12,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -13233,6 +13241,11 @@
                 "declared": "services/order-cost-snapshot.js",
                 "resolvedPath": "services/order-cost-snapshot.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-display-snapshot.js",
+                "resolvedPath": "services/order-display-snapshot.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/order-item-availability-service.js",
@@ -13277,7 +13290,7 @@
             ]
           },
           "tests": {
-            "count": 31,
+            "count": 33,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
@@ -13297,6 +13310,11 @@
               {
                 "declared": "tests/integration/admin-order-refund-payment-service.test.js",
                 "resolvedPath": "tests/integration/admin-order-refund-payment-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/order-display-snapshot.test.js",
+                "resolvedPath": "tests/integration/order-display-snapshot.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -13337,6 +13355,11 @@
               {
                 "declared": "tests/unit/order-cost-snapshot.test.js",
                 "resolvedPath": "tests/unit/order-cost-snapshot.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-display-snapshot.test.js",
+                "resolvedPath": "tests/unit/order-display-snapshot.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -13447,7 +13470,7 @@
             ]
           }
         },
-        "totalFiles": 58,
+        "totalFiles": 61,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 14,
@@ -14027,6 +14050,13 @@
         },
         {
           "provider": "loyalty",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

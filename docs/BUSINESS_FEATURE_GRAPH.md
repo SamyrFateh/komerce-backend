@@ -16,6 +16,7 @@
 - `inventory`
 - `logistics`
 - `loyalty`
+- `market`
 - `orders`
 - `payments`
 - `purchasing`
@@ -366,11 +367,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - dependencies (consumes): 5 — infrastructure, auth, notifications, auth-identity, wallet
 - consumers: 4 — economic-engine, logistics, orders, payments
 
-### market _(unclassified)_
+### market _(business-feature)_
 
 > Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
 
-- migrations: 8
+- migrations: 9
 - services: 2
 - tests: 9
 - tables owned (lifecycle): 0
@@ -378,7 +379,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 1 — infrastructure
-- consumers: 0
+- consumers: 1 — orders
 
 ### notifications _(business-transversal)_
 
@@ -401,15 +402,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.
 
 - utils: 1
-- services: 11
+- services: 12
 - routes: 12
 - boutique: 3
-- tests: 31
+- tests: 33
 - tables owned (lifecycle): 9 — `order_items`, `orders`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `disputes`
 - tables written: 9
 - interfaces exposed: 27
 - internal APIs: 29
-- dependencies (consumes): 18 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds, shared-cart
+- dependencies (consumes): 19 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, market, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds, shared-cart
 - consumers: 18 — auth, catalog, customs, dashboard, documents, economic-engine, infrastructure, inventory, logistics, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet, admin-dashboard
 
 ### payments _(business-feature)_
@@ -1393,6 +1394,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | orders | economic-engine (`economic-engine (cout figure a la commande)`) | ✔ |
 | orders | logistics (`logistics (rattachement colis)`) | ✔ |
 | orders | catalog (`catalog (lecture produit)`) | ✔ |
+| orders | market (`market (P3 — resolveDisplaySnapshot() résout le contexte marché du client via utils/currency.js ; preuve: services/order-display-snapshot.js -> utils/currency.js)`) | ✔ |
 | orders | purchasing (`purchasing (engagement fournisseur + sync annulation via syncPurchaseOrdersOnOrderCancel ; aucun SQL direct orders -> purchase_orders)`) | ✔ |
 | orders | loyalty (`loyalty (remise palier au checkout + recalcul apres commande — services/loyalty-service.js getLoyaltyDiscount/recalculateLoyalty, O7.3 provider loyalty)`) | ✔ |
 | orders | payments (`payments (marque un remboursement — services/payment-service.js markRefunded, O7.3 provider payments)`) | ✔ |
@@ -1550,7 +1552,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 849 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 852 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 161 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1688,9 +1690,10 @@ Meta Graph monté : oui.
 | orders | customs | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| orders | infrastructure | static-code, interface | 53 | **DECLARED_AND_OBSERVED** |
+| orders | infrastructure | static-code, interface | 55 | **DECLARED_AND_OBSERVED** |
 | orders | logistics | static-code, interface | 18 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| orders | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 7 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 37 | **DECLARED_AND_OBSERVED** |

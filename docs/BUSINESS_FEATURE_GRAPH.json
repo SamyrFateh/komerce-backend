@@ -303,8 +303,8 @@
         "owner": "backend-core",
         "since": "2026-08",
         "service": "Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.",
-        "businessKind": "unclassified",
-        "kindSource": "none",
+        "businessKind": "business-feature",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -7030,6 +7030,13 @@
       },
       {
         "feature": "market",
+        "category": "migrations",
+        "declared": "migrations/143_orders_display_snapshot.sql",
+        "resolvedPath": "migrations/143_orders_display_snapshot.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
         "category": "services",
         "declared": "middleware/require-market-scope.js",
         "resolvedPath": "middleware/require-market-scope.js",
@@ -7437,6 +7444,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/order-display-snapshot.js",
+        "resolvedPath": "services/order-display-snapshot.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/order-status-machine.js",
         "resolvedPath": "services/order-status-machine.js",
         "status": "resolved-in-technical-graph"
@@ -7649,6 +7663,20 @@
         "category": "tests",
         "declared": "tests/unit/order-cost-snapshot.test.js",
         "resolvedPath": "tests/unit/order-cost-snapshot.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-display-snapshot.test.js",
+        "resolvedPath": "tests/unit/order-display-snapshot.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/integration/order-display-snapshot.test.js",
+        "resolvedPath": "tests/integration/order-display-snapshot.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14776,6 +14804,12 @@
         "from": "orders",
         "to": "catalog",
         "raw": "catalog (lecture produit)",
+        "resolved": true
+      },
+      {
+        "from": "orders",
+        "to": "market",
+        "raw": "market (P3 — resolveDisplaySnapshot() résout le contexte marché du client via utils/currency.js ; preuve: services/order-display-snapshot.js -> utils/currency.js)",
         "resolved": true
       },
       {
@@ -22103,6 +22137,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/order-display-snapshot.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "services/order-status-machine.js",
                 "targetFile": "db.js"
               },
@@ -22236,6 +22274,10 @@
               },
               {
                 "sourceFileId": "tests/unit/admin-order-refund.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/order-display-snapshot.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -22418,6 +22460,26 @@
               {
                 "sourceFileId": "tests/unit/orders-status-route.test.js",
                 "targetFile": "services/loyalty-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "orders",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/order-display-snapshot.js",
+                "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "tests/unit/order-display-snapshot.test.js",
+                "targetFile": "utils/currency.js"
               }
             ]
           }
@@ -25347,7 +25409,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 849
+        "filesObserved": 852
       },
       "boutique": {
         "filesObserved": 161,
