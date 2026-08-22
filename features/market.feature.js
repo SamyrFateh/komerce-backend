@@ -36,6 +36,8 @@ module.exports = {
       'garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2',
       'boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5',
       'parités fixes currency_parities, projection via EUR reference (jamais un axe direct entre devises Zone franc) — P1',
+      'adapter client fmt/fmtPrice (public/boutique/js/b-utils.js), consomme currency_parities via ' +
+        '/api/public/config, projette vers le marché courant (market-context.js, override ?market= inclus) — P2',
       'ouverture Mayotte (YT, EUR, minor_unit=2) — M10, premier marché après le seed KM',
     ],
     out: [
@@ -52,8 +54,6 @@ module.exports = {
         'taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé ' +
         'par la boundary devise (qui porte la devise RÉELLE d\'un marché, pas une conversion). ' +
         'b-utils.js devient un ADAPTER de cette boundary en P2, jamais l\'inverse',
-      'P2 — fusion fmt/fmtPrice en un adapter client unique consommant P1, branché sur ' +
-        'market-context.js — non fait, dépend de P1',
       'P3 — extension order-cost-snapshot.js pour figer transaction_amount/transaction_currency ' +
         'au moment de la commande — non fait, dépend de P1',
       'P4/P5 — documents contractuels lisant le snapshot P3, dashboards agrégation cross-market ' +
@@ -153,6 +153,8 @@ module.exports = {
     'currency_parities est la SEULE source de parités — aucune parité ne peut être maintenue manuellement dans un second artefact applicatif (server.js et b-utils.js consomment via adapter, ne portent jamais leur propre valeur)',
     'la Currency Boundary possède la règle monétaire ; utils/currency.js (serveur) et b-utils.js (client, P2) en sont les adapters, jamais des propriétaires concurrents de la règle',
     'aucune devise de sourcing flottante (USD/AED/CNY) dans currency_parities — absence par construction, pas par oubli (freeze invariants 4/5)',
+    'P2 : b-utils.js#fmt(amount, "KMF") ne force plus un affichage KMF littéral depuis le 22-08-2026 — "KMF" est devenu l\'alias "projette vers le marché courant" (résolu via market-context.js, override ?market= inclus). Toute AUTRE devise explicite (ex. "EUR") garde le comportement littéral historique, forcé, ignore le marché. Les 33 appels existants de fmt(x, "KMF") n\'ont pas été modifiés — ils héritent du nouveau comportement automatiquement. Quiconque lit un de ces appels doit savoir que "KMF" ne veut plus dire "force KMF"',
+    'P2 : fmt()/fmtPrice() restent SYNCHRONES (33 appelants dans des boucles de rendu) — la projection consomme un snapshot déjà chargé (fetch unique au chargement du module, jamais un round-trip par appel). Avant résolution du fetch (fenêtre courte, ou en cas d\'échec réseau), repli sur l\'affichage KMF brut — jamais un montant faux ni une exception',
   ],
 
 };

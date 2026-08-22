@@ -20516,22 +20516,6 @@
       },
       {
         "from": "infrastructure",
-        "to": "market",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "server.js",
-                "targetFile": "utils/currency.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
-      },
-      {
-        "from": "infrastructure",
         "to": "notifications",
         "channels": [
           {
@@ -25398,7 +25382,7 @@
     ],
     "familySummary": {
       "PROJECTION": 0,
-      "COMPOSITION_ROOT_WIRING": 14,
+      "COMPOSITION_ROOT_WIRING": 13,
       "NON_RUNTIME_TEST": 4,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
@@ -25509,21 +25493,6 @@
           "static-code"
         ],
         "couplingObserved": "business-file-import",
-        "policy": "application-wiring-not-consumption",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "infrastructure",
-        "to": "market",
-        "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-foundation",
-        "providerKind": "unclassified",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
         "policy": "application-wiring-not-consumption",
         "exceptionRequired": false,
         "exceptionReasons": []
@@ -25686,7 +25655,6 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|unclassified|technical-primitive": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
@@ -27570,11 +27538,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "infrastructure -> market",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> purchasing",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
       },
@@ -27729,9 +27692,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 32,
+      "expectedTopology": 31,
       "generatorLimitations": 8,
-      "classifiedCandidates": 40
+      "classifiedCandidates": 39
     }
   }
 }

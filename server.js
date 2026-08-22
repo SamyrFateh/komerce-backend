@@ -52,7 +52,6 @@ const { runAllSeeds }                     = require('./scripts/seed');
 const { errorHandler } = require('./middleware/error-handler');
 const { requestIdMiddleware } = require('./middleware/request-id');
 const { csrfOriginGuard } = require('./middleware/csrf-origin');
-const { getCurrencyParity } = require('./utils/currency');
 
 const app = express();
 
@@ -203,25 +202,28 @@ app.get('/api/health', async (req, res) => {
 });
 
 // ── Public config ─────────────────────────────────────────────
-// eur_kmf_rate/aed_kmf_rate lus depuis currency_parities (P1, source unique
-// de vérité) — plus jamais un env var codé en dur. aed_kmf_rate RETIRÉ :
-// violait l'invariant 9 du freeze (une devise de sourcing future ne peut
-// jamais être exposée en paire directe contre KMF, uniquement contre EUR,
-// et pas dans P1 de toute façon — invariant 5). Zéro consommateur trouvé
-// pour ce champ avant retrait (grep sur tout le dépôt, 22-08-2026).
+// currency_parities (P1, source unique) exposée en totalité — pas un seul
+// scalaire — pour que l'adapter client (P2, b-utils.js) puisse projeter
+// KMF vers N'IMPORTE quelle devise de marché (XAF, EUR...) sans round-trip
+// supplémentaire. Toujours dérivé via EUR côté client, jamais un axe
+// direct KMF-XAF (invariant 9) — le client reproduit exactement la même
+// formule que utils/currency.js#projectAmount(), sur les mêmes lignes DB.
 app.get('/api/public/config', async (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=300');
-  let eur_kmf_rate = null;
+  let currency_parities = [];
   try {
-    eur_kmf_rate = await getCurrencyParity('KMF');
+    const { rows } = await db.query(
+      `SELECT currency, eur_rate FROM currency_parities ORDER BY currency`
+    );
+    currency_parities = rows.map(r => ({ currency: r.currency, eur_rate: Number(r.eur_rate) }));
   } catch (e) {
-    log.warn({ err: e.message }, '[public-config] currency_parities indisponible, eur_kmf_rate omis');
+    log.warn({ err: e.message }, '[public-config] currency_parities indisponible, table vide renvoyée');
   }
   res.json({
     stripe_public_key: process.env.STRIPE_PUBLIC_KEY || process.env.STRIPE_PK || '',
     paypal_client_id:  process.env.PAYPAL_CLIENT_ID  || '',
     paypal_env:        process.env.PAYPAL_ENV        || 'sandbox',
-    eur_kmf_rate,
+    currency_parities,
     whatsapp_number:   process.env.SUPPORT_WHATSAPP    || '',
     support_email:     process.env.SUPPORT_EMAIL       || '',
     env:               process.env.NODE_ENV || 'development',
