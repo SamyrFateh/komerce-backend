@@ -2119,3 +2119,266 @@
   /* pas de filtre premium sur l'image atlas */
   html.k-home-premium-v1 .k-shelf-rail .k-chip-photo img { filter: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   TAXONOMY RAILS PREMIUM V2 — calibration optique systémique
+   Niveau 1 : 8 univers. Niveau 2 : chaque icône connue + fallback futur.
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  html.k-home-premium-v1 .k-shelf-rail,
+  .k-shelf-rail {
+    min-height: 94px;
+    padding-top: 5px;
+    padding-bottom: 7px;
+  }
+
+  html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout,
+  .k-shelf-rail .k-cat-cutout {
+    --k-desktop-x: 0px;
+    --k-desktop-y: 1px;
+    --k-desktop-scale: 1;
+    --k-desktop-active-y: -2px;
+    --k-desktop-active-scale: 1.04;
+    --k-desktop-saturation: .84;
+    min-height: 82px;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="all"] {
+    --k-desktop-y: 0px;
+    --k-desktop-scale: 1.10;
+    --k-desktop-active-scale: 1.14;
+    --k-desktop-saturation: .86;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Soldes"] {
+    --k-desktop-y: 1px;
+    --k-desktop-scale: 1.08;
+    --k-desktop-active-scale: 1.12;
+    --k-desktop-saturation: .82;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"] {
+    --k-desktop-scale: 1;
+    --k-desktop-saturation: .76;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Maison"] {
+    --k-desktop-y: 2px;
+    --k-desktop-scale: .94;
+    --k-desktop-active-y: 0px;
+    --k-desktop-active-scale: .98;
+    --k-desktop-saturation: .74;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Tech"] {
+    --k-desktop-scale: .98;
+    --k-desktop-active-scale: 1.02;
+    --k-desktop-saturation: .80;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Bricolage"] {
+    --k-desktop-scale: 1.01;
+    --k-desktop-active-scale: 1.05;
+    --k-desktop-saturation: .82;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Créations personnelles"] {
+    --k-desktop-scale: .99;
+    --k-desktop-active-scale: 1.03;
+    --k-desktop-saturation: .80;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Auto"] {
+    --k-desktop-y: 2px;
+    --k-desktop-scale: .97;
+    --k-desktop-active-y: 0px;
+    --k-desktop-active-scale: 1.01;
+    --k-desktop-saturation: .80;
+  }
+
+  .k-shelf-object--category {
+    transform:
+      translate(var(--k-desktop-x), var(--k-desktop-y))
+      scale(var(--k-desktop-scale));
+    filter:
+      drop-shadow(0 5px 7px var(--border-text-08))
+      saturate(var(--k-desktop-saturation))
+      sepia(.035)
+      contrast(1.01)
+      brightness(1.025);
+  }
+
+  .k-shelf-rail .k-cat-cutout:hover .k-shelf-object--category,
+  .k-shelf-rail .k-cat-cutout.active .k-shelf-object--category {
+    transform:
+      translate(var(--k-desktop-x), var(--k-desktop-active-y))
+      scale(var(--k-desktop-active-scale));
+    filter:
+      drop-shadow(0 6px 8px var(--border-text-08))
+      saturate(calc(var(--k-desktop-saturation) + .08))
+      sepia(.025)
+      contrast(1.02)
+      brightness(1.025);
+  }
+
+  .k-shelf-rail .k-cat-cutout.active .k-chip-label {
+    color: var(--ocean-dark);
+  }
+
+  .k-cat-cutout.active .k-chip-label::after {
+    width: 20px;
+  }
+
+  /* Niveau 2 : socle commun, puis correction optique par objet. */
+  .k-subcutout {
+    --k-sub-x: 0px;
+    --k-sub-y: 1px;
+    --k-sub-scale: .98;
+    --k-sub-active-y: -1px;
+    --k-sub-active-scale: 1.03;
+    --k-sub-saturation: .84;
+    min-width: 66px;
+    min-height: 58px;
+  }
+
+  .k-subcutout-icon {
+    position: relative;
+    width: 46px;
+    height: 40px;
+    font-size: 22px;
+  }
+
+  .k-subcutout-icon::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 34px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--sand-warm);
+    opacity: .16;
+    filter: blur(4px);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .k-shelf-object--subcategory {
+    width: 46px;
+    height: 41px;
+    transform:
+      translate(var(--k-sub-x), var(--k-sub-y))
+      scale(var(--k-sub-scale));
+    filter:
+      drop-shadow(0 3px 5px var(--border-text-08))
+      saturate(var(--k-sub-saturation))
+      sepia(.03)
+      contrast(1.01)
+      brightness(1.02);
+  }
+
+  .k-subcutout:hover .k-shelf-object--subcategory,
+  .k-subcutout.active .k-shelf-object--subcategory {
+    transform:
+      translate(var(--k-sub-x), var(--k-sub-active-y))
+      scale(var(--k-sub-active-scale));
+    filter:
+      drop-shadow(0 4px 6px var(--border-text-08))
+      saturate(calc(var(--k-sub-saturation) + .08))
+      sepia(.02)
+      contrast(1.02)
+      brightness(1.02);
+  }
+
+  /* Mode & Beauté — atlas photo : quatre masses différentes. */
+  .k-subcutout[data-shelf-visual="showcase-mode:1:0"] {
+    --k-sub-y: 1px; --k-sub-scale: .98; --k-sub-saturation: .76;
+  }
+  .k-subcutout[data-shelf-visual="showcase-mode:2:0"] {
+    --k-sub-y: 1px; --k-sub-scale: .96; --k-sub-saturation: .76;
+  }
+  .k-subcutout[data-shelf-visual="showcase-mode:0:1"] {
+    --k-sub-y: 2px; --k-sub-scale: .94; --k-sub-active-y: 0px; --k-sub-saturation: .78;
+  }
+  .k-subcutout[data-shelf-visual="showcase-mode:1:1"] {
+    --k-sub-y: 1px; --k-sub-scale: .93; --k-sub-saturation: .78;
+  }
+
+  /* Maison. */
+  .k-subcutout[data-shelf-visual="sub-maison-confort"] { --k-sub-scale: .98; }
+  .k-subcutout[data-shelf-visual="sub-maison-cuisine"] { --k-sub-scale: 1; }
+  .k-subcutout[data-shelf-visual="sub-maison-deco"] { --k-sub-scale: .96; }
+  .k-subcutout[data-shelf-visual="sub-maison-enfants"] { --k-sub-scale: .98; }
+
+  /* Tech. */
+  .k-subcutout[data-shelf-visual="sub-tech-phone"] { --k-sub-scale: 1; }
+  .k-subcutout[data-shelf-visual="sub-tech-ordi"] { --k-sub-y: 2px; --k-sub-scale: .96; --k-sub-active-y: 0px; }
+  .k-subcutout[data-shelf-visual="sub-tech-audio"] { --k-sub-scale: 1.02; }
+  .k-subcutout[data-shelf-visual="sub-tech-montre"] { --k-sub-scale: .98; }
+  .k-subcutout[data-shelf-visual="sub-tech-gaming"] { --k-sub-y: 2px; --k-sub-scale: .96; --k-sub-active-y: 0px; }
+
+  /* Bricolage. */
+  .k-subcutout[data-shelf-visual="sub-brico-outils"] { --k-sub-scale: .96; }
+  .k-subcutout[data-shelf-visual="sub-brico-elec"] { --k-sub-scale: .92; }
+  .k-subcutout[data-shelf-visual="sub-brico-securite"] { --k-sub-scale: .94; }
+
+  /* Créations personnelles. */
+  .k-subcutout[data-shelf-visual="sub-perso-ceremonie"] { --k-sub-scale: .96; }
+  .k-subcutout[data-shelf-visual="sub-perso-cadeau"] { --k-sub-scale: .98; }
+  .k-subcutout[data-shelf-visual="sub-perso-impression"] { --k-sub-scale: .92; }
+
+  /* Auto & Moto. */
+  .k-subcutout[data-shelf-visual="sub-auto-filtres"] { --k-sub-scale: .94; }
+  .k-subcutout[data-shelf-visual="sub-auto-freinage"] { --k-sub-scale: .96; }
+  .k-subcutout[data-shelf-visual="sub-auto-eclairage"] { --k-sub-scale: .98; }
+  .k-subcutout[data-shelf-visual="sub-auto-moto"] { --k-sub-scale: .96; }
+
+  /* "Tout voir" et futur fallback DB : même ligne de sol et même température. */
+  .k-subcutout-icon--all .k-shelf-object--all {
+    opacity: .9;
+    transform: translateY(1px) scale(1.03);
+    filter:
+      drop-shadow(0 3px 5px var(--border-text-08))
+      saturate(.84)
+      sepia(.03)
+      brightness(1.02);
+  }
+
+  .k-subcutout.active .k-subcutout-icon--all .k-shelf-object--all,
+  .k-subcutout:hover .k-subcutout-icon--all .k-shelf-object--all {
+    transform: translateY(-1px) scale(1.07);
+  }
+
+  .k-shelf-emoji-fallback {
+    font-size: 21px;
+    line-height: 40px;
+    opacity: .9;
+    filter: saturate(.72) sepia(.08) brightness(1.02);
+  }
+
+  .k-subcutout:hover .k-subcutout-icon,
+  .k-subcutout.active .k-subcutout-icon {
+    transform: none;
+  }
+
+  .k-subcutout.active .k-subcutout-icon::before {
+    opacity: .24;
+  }
+
+  .k-subcutout-label {
+    font-size: 10.5px;
+    font-weight: 620;
+  }
+
+  .k-subcutout.active {
+    color: var(--ocean-dark);
+  }
+
+  .k-subcutout.active .k-subcutout-label {
+    font-weight: 780;
+  }
+
+  .k-subcutout.active::after {
+    width: 18px;
+  }
+}
