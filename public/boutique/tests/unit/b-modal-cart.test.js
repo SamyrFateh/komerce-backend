@@ -417,6 +417,43 @@ describe('b-modal-cart', () => {
       expect(addToCart).not.toHaveBeenCalled();
     });
 
+    test('Ajouter sans sélection complète : renvoie le focus vers la première variante (bug signalé 22-08-2026)', () => {
+      setupModalCart();
+      state.modalProduct = { id: 33, has_variants: true };
+      state.modalProductDetail = {
+        inventory_model: 'LEGACY_VARIANTS',
+        option_axes: [{ key: 'Pointure' }],
+      };
+
+      // Reproduit la structure réelle rendue par b-modal-desktop-product.js
+      // / b-modal-mobile-product.js : <section data-axis-key> > <button>.
+      const axisGroup = document.createElement('section');
+      axisGroup.dataset.axisKey = 'Pointure';
+      const firstOption = document.createElement('button');
+      firstOption.type = 'button';
+      firstOption.dataset.optionValue = 'M';
+      axisGroup.appendChild(firstOption);
+      document.body.appendChild(axisGroup);
+
+      dom.addCartBtn.click();
+
+      expect(addToCart).not.toHaveBeenCalled(); // comportement fail-closed préservé
+      expect(document.activeElement).toBe(firstOption); // + le nouveau signal
+    });
+
+    test('Ajouter sans sélection complète, aucun axe dans le DOM : ne throw jamais', () => {
+      setupModalCart();
+      state.modalProduct = { id: 33, has_variants: true };
+      state.modalProductDetail = {
+        inventory_model: 'LEGACY_VARIANTS',
+        option_axes: [{ key: 'Pointure' }],
+      };
+      // Aucun [data-axis-key] dans le DOM (ex. modale pas encore rendue) —
+      // focusFirstVariantOption() doit se contenter d'un no-op silencieux.
+      expect(() => dom.addCartBtn.click()).not.toThrow();
+      expect(addToCart).not.toHaveBeenCalled();
+    });
+
     test('Ajouter SKU transmet le snapshot sélectionné', () => {
       setupModalCart();
       state.modalProduct = { id: 33, name: 'Thermos', price_kmf: 5000, image_url: '/base.jpg' };
