@@ -20813,6 +20813,10 @@
               {
                 "sourceFileId": "routes/inventory-api.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
               }
             ]
           }
@@ -21873,6 +21877,18 @@
               {
                 "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/orders.single-collect.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
               }
             ]
           }
@@ -24428,6 +24444,22 @@
       },
       {
         "from": "refunds",
+        "to": "auth",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "refunds",
         "to": "documents",
         "channels": [
           {
@@ -25460,7 +25492,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 13,
-      "NON_RUNTIME_TEST": 4,
+      "NON_RUNTIME_TEST": 5,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -25711,6 +25743,21 @@
       },
       {
         "from": "refunds",
+        "to": "auth",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "refunds",
         "to": "payments",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
@@ -25736,6 +25783,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1
     },
     "runtimeCycles": [],
@@ -27660,6 +27708,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "refunds -> auth",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"auth\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "refunds -> payments",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"payments\""
       },
@@ -27769,9 +27822,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 31,
+      "expectedTopology": 32,
       "generatorLimitations": 8,
-      "classifiedCandidates": 39
+      "classifiedCandidates": 40
     }
   }
 }

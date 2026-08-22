@@ -552,7 +552,8 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      destination_island, routing_mode, transit_hub,
      transport_price_kmf,
      pickup_code_recipient, pickup_code_recipient_user_id,
-     display_total_amount, display_currency, display_parity_snapshot
+     display_total_amount, display_currency, display_parity_snapshot,
+     market_id
    ) VALUES (
      $1,$2,$3,$4,$5,
      $6,
@@ -570,7 +571,8 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      $30,$31,$32,
      $33,
      $34,$35,
-     $36,$37,$38
+     $36,$37,$38,
+     $39
    ) RETURNING *`,
   [
     uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
@@ -609,6 +611,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     displaySnapshot.amount,
     displaySnapshot.currency,
     displaySnapshot.meta ? JSON.stringify(displaySnapshot.meta) : null,
+    relais?.market_id || null,
   ]
 );
 

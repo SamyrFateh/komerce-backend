@@ -1495,7 +1495,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 - none
 
-### TOPOLOGIE ATTENDUE — hors dette (31)
+### TOPOLOGIE ATTENDUE — hors dette (32)
 
 - **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
@@ -1515,6 +1515,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "payments"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> recommendations — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "recommendations"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> shared-cart — dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "shared-cart"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** refunds -> auth — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "auth"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** refunds -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "payments"
 - **[WRITER-NOT-OWNER]** basket_items — table "basket_items" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** baskets — table "baskets" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
@@ -1657,7 +1658,7 @@ Meta Graph monté : oui.
 | infrastructure | sourcing | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | unsold-resolution | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | wallet | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| inventory | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| inventory | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | inventory | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | inventory | logistics | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | inventory | orders | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1683,7 +1684,7 @@ Meta Graph monté : oui.
 | notifications | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | notifications | infrastructure | static-code | 13 | **DECLARED_AND_OBSERVED** |
 | notifications | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| orders | auth | static-code | 12 | **DECLARED_AND_OBSERVED** |
+| orders | auth | static-code | 15 | **DECLARED_AND_OBSERVED** |
 | orders | auth-identity | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | orders | business-rules | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | orders | catalog | static-code | 6 | **DECLARED_AND_OBSERVED** |
@@ -1737,6 +1738,7 @@ Meta Graph monté : oui.
 | recommendations | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | orders | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| refunds | auth | static-code | 1 | **OBSERVED_UNDECLARED** |
 | refunds | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | refunds | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | refunds | orders | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1781,6 +1783,7 @@ Meta Graph monté : oui.
 - `platform-ops` → `payments` (canaux: static-code)
 - `platform-ops` → `recommendations` (canaux: static-code)
 - `platform-ops` → `shared-cart` (canaux: static-code)
+- `refunds` → `auth` (canaux: static-code)
 - `refunds` → `payments` (canaux: static-code)
 
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
@@ -1846,14 +1849,14 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 |---|---|---|
 | PROJECTION | 0 | projection-dependency-policy |
 | COMPOSITION_ROOT_WIRING | 13 | application-wiring-not-consumption |
-| NON_RUNTIME_TEST | 4 | non-runtime-evidence |
+| NON_RUNTIME_TEST | 5 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **17** | |
+| **TOTAL** | **18** | |
 
 ### Projection dependencies
 
@@ -1886,6 +1889,7 @@ Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
 - `auth-identity` → `logistics` — business-file-import, TEST_ONLY
 - `inventory` → `payments` — business-file-import, TEST_ONLY
 - `platform-ops` → `payments` — business-file-import, TEST_ONLY
+- `refunds` → `auth` — technical-primitive, TEST_ONLY
 - `refunds` → `payments` — business-file-import, TEST_ONLY
 
 ### Technical primitives
