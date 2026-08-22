@@ -81,12 +81,59 @@ function invalidateMarketCurrencyCache(marketId) {
 }
 
 /**
+ * Résout { currency, minor_unit, market_id } depuis un CODE marché
+ * ('KM', 'YT', 'CM', 'CG') plutôt qu'un market_id UUID. Utilisé côté
+ * serveur pour résoudre un contexte marché fourni par le client (P3 —
+ * display_market_code envoyé par le frontend, jamais un montant, jamais
+ * une autorisation, cf. freeze §CURRENCY BOUNDARY invariant 3/4).
+ * Cache partagé avec getMarketCurrency (même Map, clé = code au lieu d'UUID
+ * — les deux espaces de clés ne collisionnent jamais, un code marché fait
+ * 2 caractères, un UUID en fait 36).
+ * @param {string} code
+ * @returns {Promise<{currency: string, minor_unit: number, market_id: string}>}
+ * @throws si le code est inconnu — jamais une devise par défaut silencieuse
+ */
+async function getMarketCurrencyByCode(code) {
+  const cached = _cache.get(code);
+  if (cached && Date.now() - cached.ts < MARKET_CACHE_TTL) {
+    return { currency: cached.currency, minor_unit: cached.minor_unit, market_id: cached.market_id };
+  }
+
+  const { rows } = await db.query(
+    `SELECT id, currency, minor_unit FROM markets WHERE code = $1`,
+    [code]
+  );
+  if (!rows.length) {
+    throw new Error(`getMarketCurrencyByCode: code marché inconnu (${code})`);
+  }
+
+  const { id: market_id, currency, minor_unit } = rows[0];
+  _cache.set(code, { currency, minor_unit, market_id, ts: Date.now() });
+  return { currency, minor_unit, market_id };
+}
+
+/**
  * Symbole/libellé d'une devise. EUR affiche '€', les autres affichent leur
  * code ISO tel quel (KMF, XAF) — pas de table de symboles inventée pour des
  * devises qui n'existent pas encore dans markets.
  */
 function currencySymbol(currency) {
   return currency === 'EUR' ? '€' : String(currency || '');
+}
+
+/**
+ * Arrondit un montant au nombre de décimales de minor_unit — la même
+ * précision que formatAmount() afficherait, mais retourne un NOMBRE, pas
+ * une chaîne. Utilisé pour stocker un snapshot immuable (P3) : le champ
+ * doit contenir exactement ce qu'un humain aurait vu, pas une valeur à
+ * pleine précision jamais réellement affichée.
+ * @param {number} amount
+ * @param {number} minor_unit
+ * @returns {number}
+ */
+function roundToMinorUnit(amount, minor_unit) {
+  const factor = Math.pow(10, minor_unit || 0);
+  return Math.round(amount * factor) / factor;
 }
 
 /**
@@ -218,11 +265,13 @@ async function projectAndFormatForMarket(amount, fromCurrency, marketId) {
 
 module.exports = {
   getMarketCurrency,
+  getMarketCurrencyByCode,
   invalidateMarketCurrencyCache,
   getCurrencyParity,
   invalidateCurrencyParityCache,
   projectAmount,
   projectAndFormatForMarket,
+  roundToMinorUnit,
   currencySymbol,
   formatAmount,
   formatAmountForMarket,

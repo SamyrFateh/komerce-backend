@@ -228,6 +228,13 @@ const orders = {
       module_accessories:        Joi.array().items(safeStr(100)).max(10),
       order_occasion:            safeStr(50),
       use_wallet:                Joi.boolean().default(false),
+      // Indice de CONTEXTE marché (freeze P3, invariant 3/4) — jamais un
+      // montant, jamais une autorisation. Le serveur résout le montant
+      // lui-même via utils/currency.js ; un code absent/invalide ne bloque
+      // jamais la commande (repli sur relais_fallback dans la route).
+      // Liste blanche plutôt que safeStr libre : défense en profondeur,
+      // cohérent avec l'esprit de forbidMarketId ci-dessous.
+      display_market_code:      Joi.string().valid('KM', 'YT', 'CM', 'CG').allow(null),
       market_id:                 forbidMarketId,
     }),
   },

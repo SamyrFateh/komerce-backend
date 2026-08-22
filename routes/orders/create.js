@@ -47,6 +47,7 @@ const { resolveRoutingFromRelais, RoutingError } = require('../../services/routi
 const { notifyOrderCreated }             = require('../../services/notification-service');
 const productAdminService                = require('../../services/product-admin-service');
 const { quoteTransportPriceForOrder, TransportPricingError } = require('../../services/transport-pricing');
+const { resolveDisplaySnapshot } = require('../../services/order-display-snapshot');
 const log = require('../../utils/logger').child({ module: 'create' });
 
 // MODULE_TYPES — sous-types pour le module couture uniquement
@@ -91,6 +92,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       use_wallet = false,
       share_token,
       pickup_code_recipient = 'buyer',
+      display_market_code = null,
     } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -521,6 +523,16 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
 
     const reference = await getUniqueRef(db);
 
+    // ── P3 : snapshot du montant PRÉSENTÉ au client (freeze 22-08-2026) ──
+    // Logique complète dans services/order-display-snapshot.js (extraite
+    // pour rester testable indépendamment des ~15 services orchestrés
+    // ici). Ne throw jamais, ne bloque jamais la création de commande.
+    const displaySnapshot = await resolveDisplaySnapshot({
+      totalKmf: total_kmf,
+      displayMarketCode: display_market_code,
+      relaisMarketId: relais?.market_id || null,
+    });
+
     const { rows: [order] } = await client.query(
      
   `INSERT INTO orders (
@@ -539,7 +551,8 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      discount_pct, discount_kmf, loyalty_label,
      destination_island, routing_mode, transit_hub,
      transport_price_kmf,
-     pickup_code_recipient, pickup_code_recipient_user_id
+     pickup_code_recipient, pickup_code_recipient_user_id,
+     display_total_amount, display_currency, display_parity_snapshot
    ) VALUES (
      $1,$2,$3,$4,$5,
      $6,
@@ -555,7 +568,9 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      $25,$26,
      $27,$28,$29,
      $30,$31,$32,
-     $33,$34,$35
+     $33,
+     $34,$35,
+     $36,$37,$38
    ) RETURNING *`,
   [
     uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
@@ -591,6 +606,9 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     transport_price_kmf,
     pickup_code_recipient,
     pickupCodeRecipientUserId,
+    displaySnapshot.amount,
+    displaySnapshot.currency,
+    displaySnapshot.meta ? JSON.stringify(displaySnapshot.meta) : null,
   ]
 );
 
