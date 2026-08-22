@@ -59,90 +59,76 @@ const after = `/**
  * Résout une sélection SKU achetable dans la modale courante.
  *
  * Le contrat PDP expose chaque axe via [data-axis-key] et chaque valeur via
- * [data-option-value][data-option-state]. Les renderers desktop et mobile
- * recalculent option_states après chaque clic ; on re-query donc le DOM à
- * chaque axe au lieu de conserver des locators devenus obsolètes après rerender.
+ * [data-option-value][data-option-state]. Desktop et mobile rerendent les axes
+ * après chaque choix ; la sélection est donc effectuée directement dans le DOM
+ * courant, un seul axe par passe, sans conserver de locator devenu obsolète.
  *
- * Aucun choix n'est inventé : on ne clique que des options explicitement
- * marquées AVAILABLE par le contrat produit. Si aucune combinaison achetable
- * n'existe, le helper échoue et laisse le produit/test rouge.
+ * Aucun choix n'est inventé : seules les options explicitement AVAILABLE sont
+ * cliquées. Si le contrat n'offre aucune combinaison achetable, le helper reste
+ * fail-closed et le test demeure rouge.
  */
 async function ensureModalPurchaseReady(page) {
   const addBtn = page.locator('#k-add-cart-btn');
   if (await addBtn.isEnabled().catch(() => false)) return;
 
-  const axisCount = await page.locator('[data-axis-key]').count();
+  const axisCount = await page.locator('#k-modal-overlay [data-axis-key]').count();
   if (axisCount === 0) return;
 
-  // Une sélection d'axe rerend la composition. Plusieurs passes permettent
-  // aux option_states recalculés de converger sans jamais choisir OUT_OF_STOCK
-  // ou INCOMPATIBLE.
-  const maxPasses = Math.max(2, axisCount + 1);
-  for (let pass = 0; pass < maxPasses; pass += 1) {
-    const axisKeys = await page.locator('[data-axis-key]').evaluateAll((axes) =>
-      axes.map((axis) => axis.getAttribute('data-axis-key')).filter(Boolean)
-    );
-
-    for (const axisKey of axisKeys) {
-      if (await addBtn.isEnabled().catch(() => false)) return;
-
-      // Re-query après chaque rerender. CSS.escape n'est pas nécessaire ici :
-      // on filtre l'attribut par evaluateAll, donc aucune interpolation CSS de
-      // la clé issue du backend.
-      const axis = page.locator('[data-axis-key]').filter({
-        has: page.locator('button[data-option-value]'),
-      }).filter({
-        has: page.locator(`button[data-option-value]`),
-      });
-
-      const current = page.locator('[data-axis-key]').filter({
-        has: page.locator('button[data-option-value]'),
-      });
-      const count = await current.count();
-      let axisLocator = null;
-      for (let i = 0; i < count; i += 1) {
-        const candidate = current.nth(i);
-        if ((await candidate.getAttribute('data-axis-key')) === axisKey) {
-          axisLocator = candidate;
-          break;
-        }
-      }
-      if (!axisLocator) continue;
-
-      const activeAvailable = axisLocator.locator(
-        'button[data-option-state="AVAILABLE"][aria-pressed="true"]'
-      );
-      if ((await activeAvailable.count()) > 0) continue;
-
-      const available = axisLocator.locator('button[data-option-state="AVAILABLE"]');
-      const availableCount = await available.count();
-      if (availableCount === 0) continue;
-
-      await available.first().click();
-      // L'event click déclenche un rerender synchrone puis la réconciliation
-      // panier en microtask. Attendre explicitement que l'axe ait une valeur
-      // active ou que le CTA devienne achetable évite toute temporisation fixe.
-      await expect
-        .poll(async () => {
-          if (await addBtn.isEnabled().catch(() => false)) return true;
-          return (await page.locator(
-            '[data-axis-key] button[data-option-state="AVAILABLE"][aria-pressed="true"]'
-          ).count()) > 0;
-        }, { timeout: 2_000 })
-        .toBe(true);
-    }
-
+  const maxSteps = Math.max(4, axisCount * 3);
+  for (let step = 0; step < maxSteps; step += 1) {
     if (await addBtn.isEnabled().catch(() => false)) return;
+
+    const clicked = await page.evaluate(() => {
+      const axes = Array.from(
+        document.querySelectorAll('#k-modal-overlay [data-axis-key]')
+      );
+
+      for (const axis of axes) {
+        const activeAvailable = axis.querySelector(
+          'button[data-option-state="AVAILABLE"][aria-pressed="true"]'
+        );
+        if (activeAvailable) continue;
+
+        const available = axis.querySelector(
+          'button[data-option-value][data-option-state="AVAILABLE"]'
+        );
+        if (!available) continue;
+
+        available.click();
+        return true;
+      }
+      return false;
+    });
+
+    if (!clicked) break;
   }
+
+  if (await addBtn.isEnabled().catch(() => false)) return;
+
+  const diagnostic = await page.evaluate(() => ({
+    message: document.getElementById('k-modal-selection-message')?.textContent?.trim() || '',
+    axes: Array.from(document.querySelectorAll('#k-modal-overlay [data-axis-key]')).map((axis) => ({
+      key: axis.getAttribute('data-axis-key'),
+      options: Array.from(axis.querySelectorAll('button[data-option-value]')).map((button) => ({
+        value: button.getAttribute('data-option-value'),
+        state: button.getAttribute('data-option-state'),
+        selected: button.getAttribute('aria-pressed') === 'true',
+      })),
+    })),
+  }));
+
+  throw new Error(
+    '[E2E] Produit non achetable après résolution des variantes : ' +
+    JSON.stringify(diagnostic)
+  );
 }
 
 /** Ajoute le produit actuellement ouvert dans la modale au panier. */
 async function addToCartFromModal(page) {
   const addBtn = page.locator('#k-add-cart-btn');
 
-  // Produit SIMPLE : le bouton est déjà actif. Produit SKU : le contrat exige
-  // une combinaison résolue avant l'achat. Le helper suit exactement cette
-  // règle au lieu de dépendre du hasard de la première carte du catalogue.
+  // Produit SIMPLE : CTA déjà actif. Produit SKU : suivre le contrat réel et
+  // résoudre une combinaison disponible avant l'ajout.
   await ensureModalPurchaseReady(page);
   await expect(addBtn).toBeEnabled({ timeout: 5_000 });
 
@@ -151,9 +137,8 @@ async function addToCartFromModal(page) {
     10
   );
 
-  // Snapshot de l'état STABILISÉ (après sélection éventuelle des variantes) :
-  // assertNoOverlayOnActions n'inspecte ainsi que ce qui apparaît réellement
-  // à cause de l'ajout au panier, jamais les éléments créés par un rerender SKU.
+  // Snapshot de l'état stabilisé APRÈS la sélection éventuelle des variantes :
+  // l'oracle d'overlay n'accuse ainsi que les éléments créés par l'ajout panier.
   await page.evaluate(() => {
     window.__preAddElements = new Set(document.querySelectorAll('body *'));
   });
