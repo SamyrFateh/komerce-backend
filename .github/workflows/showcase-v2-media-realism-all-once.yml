@@ -1,0 +1,66 @@
+name: Showcase V2 media realism all once
+
+on:
+  push:
+    branches:
+      - ops/showcase-v2-all-20260822
+    paths:
+      - '.github/workflows/showcase-v2-media-realism-all-once.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: showcase-v2-media-realism
+  cancel-in-progress: false
+
+jobs:
+  generate-realistic-heroes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      IMAGEKIT_PRIVATE_KEY: ${{ secrets.IMAGEKIT_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Require media realism secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$OPENAI_API_KEY" || { echo 'OPENAI_API_KEY missing'; exit 1; }
+          test -n "$IMAGEKIT_PRIVATE_KEY" || { echo 'IMAGEKIT_PRIVATE_KEY missing'; exit 1; }
+
+      - name: Materialize 500-image generation plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/showcase-v2-media-realism.js \
+            --scope all \
+            --quality medium \
+            --output artifacts/showcase-v2-media-realism-plan.json
+
+      - name: Generate and overwrite all ImageKit heroes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/showcase-v2-media-realism.js \
+            --apply \
+            --scope all \
+            --quality medium \
+            --concurrency 2 \
+            --confirm-all GENERATE-500 \
+            --output artifacts/showcase-v2-media-realism-report.json
+
+      - name: Upload media realism evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-v2-media-realism-all
+          path: artifacts/showcase-v2-media-realism-*.json
+          if-no-files-found: warn
+          retention-days: 14
