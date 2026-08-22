@@ -1976,8 +1976,8 @@ body:has(#k-page-scroll.k-pager-active) {
 @media (max-width: 899px) {
   .k-hero-figures {
     background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');
-    background-size: auto 100%;
-    background-position: 70% 0%;
+    background-size: auto 92%;
+    background-position: 70% 45%;
   }
 }
 
@@ -3001,8 +3001,8 @@ body:has(#k-page-scroll.k-pager-active) {
 
   .k-hero-media .k-hero-figures {
     background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');
-    background-size: auto 100%;
-    background-position: 70% 0%;
+    background-size: auto 92%;
+    background-position: 70% 45%;
     -webkit-mask-image: none;
     mask-image: none;
   }

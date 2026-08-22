@@ -17,8 +17,8 @@ describe('hero ultra mobile contract', () => {
 
   test('préserve les coiffures et le téléphone dans la boîte compacte', () => {
     expect(css).toContain("background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');");
-    expect(css).toContain('background-size: auto 100%;');
-    expect(css).toContain('background-position: 70% 0%;');
+    expect(css).toContain('background-size: auto 92%;');
+    expect(css).toContain('background-position: 70% 45%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
     expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
