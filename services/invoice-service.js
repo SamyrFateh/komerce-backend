@@ -59,7 +59,7 @@ class InvoiceService {
     // Load order + items + relay + recipient
     const orderRes = await db.query(`
       SELECT 
-        o.id, o.reference, o.total_kmf, o.cost_transport_kmf, 
+        o.id, o.reference, o.total_kmf, o.total_eur, o.cost_transport_kmf, 
         o.payment_mode, o.payment_status,
         o.relais_id, o.recipient_id, o.user_id,
         r.full_name AS client_name, r.phone AS client_phone,
@@ -122,8 +122,8 @@ class InvoiceService {
         invoice_number, order_id, parcel_id,
         client_name, client_phone, relay_name,
         items_snapshot, subtotal_kmf, shipping_kmf, total_kmf,
-        payment_mode, payment_status, owner_user_id
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        payment_mode, payment_status, owner_user_id, total_eur
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
       ON CONFLICT (order_id) DO UPDATE SET order_id = EXCLUDED.order_id
       RETURNING *
     `, [
@@ -140,6 +140,7 @@ class InvoiceService {
       order.payment_mode,
       order.payment_status,
       order.user_id,
+      order.total_eur != null ? Number(order.total_eur) : null,
     ]);
 
     const invoice = insertRes.rows[0];
@@ -231,6 +232,20 @@ class InvoiceService {
       : String(invoice.payment_status || 'INCONNU').toUpperCase();
     const statusClass = invoice.payment_status === 'paid' ? 'badge badge-paid' : 'badge';
 
+    // P4 (freeze 22-08-2026) — Payment Boundary : la facture affiche ce qui
+    // a été RÉELLEMENT payé, jamais 'KMF' codé en dur. cash_relais paie en
+    // KMF ; stripe_eur/paypal_eur paient en EUR (orders.total_eur, déjà
+    // calculé à la création de commande — jamais recalculé ici). Ne touche
+    // ni currency_parities (P1) ni display_total_amount (P3) — c'est une
+    // correction de la Payment Boundary elle-même (finance_config), pas de
+    // la Currency Boundary.
+    const isEurPayment = invoice.payment_mode === 'stripe_eur' || invoice.payment_mode === 'paypal_eur';
+    const totalAmount = isEurPayment ? Number(invoice.total_eur || 0) : Number(invoice.total_kmf || 0);
+    const totalCurrencyLabel = isEurPayment ? '€' : 'KMF';
+    const totalFormatted = isEurPayment
+      ? new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalAmount)
+      : new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(totalAmount);
+
     const date = new Date(invoice.created_at).toLocaleDateString('fr-FR', {
       day: '2-digit', month: '2-digit', year: 'numeric'
     });
@@ -249,6 +264,8 @@ class InvoiceService {
       payment_mode: invoice.payment_mode || '',
       payment_status: invoice.payment_status || '',
       total_kmf: Number(invoice.total_kmf || 0),
+      total_amount: totalAmount,
+      total_currency_label: totalCurrencyLabel,
       created_at: invoice.created_at || null,
       items,
     }), 'utf8').toString('base64');
@@ -333,7 +350,7 @@ body{font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.4;
     <tbody>${itemRows}</tbody>
   </table>
   <div class="totals">
-    <div class="total-row grand"><span>TOTAL</span><span>${fmt(invoice.total_kmf)} KMF</span></div>
+    <div class="total-row grand"><span>TOTAL</span><span>${totalFormatted} ${totalCurrencyLabel}</span></div>
   </div>
   <div class="totals-note" style="font-size:9px;text-align:center;margin-bottom:8px;color:#555">
     <em>Livraison incluse — pas de frais supplémentaires</em>
