@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const categories = fs.readFileSync(path.resolve(__dirname, '../../css/categories.css'), 'utf8');
+const cutout = fs.readFileSync(path.resolve(__dirname, '../../css/category-cutout-navigation.css'), 'utf8');
 const desktop = fs.readFileSync(path.resolve(__dirname, '../../css/boutique-desktop.css'), 'utf8');
 const index = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
 const schema = fs.readFileSync(path.resolve(__dirname, '../../js/shop-schema.js'), 'utf8');
@@ -39,6 +40,19 @@ describe('continuité catégories et sous-catégories desktop', () => {
   test('laisse les adaptations mobiles existantes intactes', () => {
     expect(categories).toMatch(/html\.k-mobile-premium-v1 \.k-cats/);
     expect(desktop).not.toMatch(/@media \(max-width:\s*899px\)[\s\S]*continuité catégories/);
+  });
+
+  test('harmonise le rail mobile sans capsule ni hausse de hauteur', () => {
+    expect(cutout).toContain('@media (max-width: 899px)');
+    expect(cutout).toContain('height: 64px;');
+    expect(cutout).toContain('background: var(--white);');
+    expect(cutout).toContain('saturate(.84)');
+    expect(cutout).toContain('contrast(1.02)');
+    expect(cutout).toContain('brightness(1.02)');
+    expect(cutout).toContain('background: var(--sand-warm);');
+    expect(cutout).toContain('scale(1.22)');
+    expect(cutout).toContain('color: var(--ocean-dark);');
+    expect(cutout).not.toMatch(/@media \(max-width:\s*899px\)[\s\S]*border-radius:\s*999px/);
   });
 
   test('garde les huit images dans la seule source taxonomique', () => {
