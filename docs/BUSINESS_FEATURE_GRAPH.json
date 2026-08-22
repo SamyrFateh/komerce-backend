@@ -7009,6 +7009,13 @@
       },
       {
         "feature": "market",
+        "category": "services",
+        "declared": "utils/currency.js",
+        "resolvedPath": "utils/currency.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market",
         "category": "tests",
         "declared": "tests/unit/require-market-scope.test.js",
         "resolvedPath": "tests/unit/require-market-scope.test.js",
@@ -7019,6 +7026,20 @@
         "category": "tests",
         "declared": "tests/integration/market-scope-isolation.test.js",
         "resolvedPath": "tests/integration/market-scope-isolation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/currency.test.js",
+        "resolvedPath": "tests/unit/currency.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/currency-boundary.test.js",
+        "resolvedPath": "tests/integration/currency-boundary.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -21508,7 +21529,15 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "utils/currency.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/market-scope-isolation.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/currency-boundary.test.js",
                 "targetFile": "db.js"
               }
             ]
@@ -25217,7 +25246,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 841
+        "filesObserved": 844
       },
       "boutique": {
         "filesObserved": 160,
