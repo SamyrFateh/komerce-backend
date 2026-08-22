@@ -11,18 +11,28 @@
 'use strict';
 
 export const KOMERCE_SHELF_SPRITE = '/boutique/categories/komerce-shelf-sprite.svg';
-export const KOMERCE_SHOWCASE_V1_MAIN = '/boutique/categories/komerce-showcase-v1-main.webp?v=4';
 export const KOMERCE_SHOWCASE_V1_MODE = '/boutique/categories/komerce-showcase-v1-mode.webp?v=3';
 
+export const KOMERCE_CATEGORY_CUTOUTS = Object.freeze({
+  all: '/boutique/categories/cat-all-v3.webp?v=1',
+  soldes: '/boutique/categories/cat-soldes-v3.webp?v=1',
+  mode: '/boutique/categories/cat-mode-v3.webp?v=1',
+  maison: '/boutique/categories/cat-maison-v3.webp?v=1',
+  tech: '/boutique/categories/cat-tech-v3.webp?v=1',
+  bricolage: '/boutique/categories/cat-bricolage-v3.webp?v=1',
+  perso: '/boutique/categories/cat-perso-v3.webp?v=1',
+  auto: '/boutique/categories/cat-auto-v3.webp?v=1',
+});
+
 const CATEGORY_VISUALS = {
-  all: 'cat-all',
-  Soldes: 'cat-soldes',
-  'Mode & Beauté': 'showcase-main:0:0',
-  Maison: 'showcase-main:1:0',
-  Tech: 'showcase-main:2:0',
-  Bricolage: 'showcase-main:0:1',
-  'Créations personnelles': 'showcase-main:1:1',
-  Auto: 'showcase-main:2:1',
+  all: 'cutout:all',
+  Soldes: 'cutout:soldes',
+  'Mode & Beauté': 'cutout:mode',
+  Maison: 'cutout:maison',
+  Tech: 'cutout:tech',
+  Bricolage: 'cutout:bricolage',
+  'Créations personnelles': 'cutout:perso',
+  Auto: 'cutout:auto',
 };
 
 const SUBCATEGORY_VISUALS = {
@@ -65,7 +75,6 @@ const SUBCATEGORY_VISUALS = {
 };
 
 const SHOWCASE_ATLASES = {
-  'showcase-main': KOMERCE_SHOWCASE_V1_MAIN,
   'showcase-mode': KOMERCE_SHOWCASE_V1_MODE,
 };
 
@@ -75,7 +84,7 @@ const SHOWCASE_ATLASES = {
  * mobile ; seules la famille d'asset et la cellule changent ici.
  */
 function renderAtlasCell(visual, extraClass = '') {
-  const match = /^(showcase-main|showcase-mode):(\d):(\d)$/.exec(visual);
+  const match = /^(showcase-mode):(\d):(\d)$/.exec(visual);
   if (!match) return '';
   const [, family, colRaw, rowRaw] = match;
   const src = SHOWCASE_ATLASES[family];
@@ -83,6 +92,14 @@ function renderAtlasCell(visual, extraClass = '') {
   const row = Number(rowRaw);
   const cls = extraClass ? ` ${extraClass}` : '';
   return `<span class="k-shelf-object${cls} k-shelf-object--image k-shelf-atlas-cell" data-atlas-family="${family}" data-atlas-col="${col}" data-atlas-row="${row}" aria-hidden="true"><img class="k-shelf-atlas-image" src="${src}" alt="" loading="eager" decoding="async"></span>`;
+}
+
+function renderCategoryCutout(visual, extraClass = '') {
+  const key = visual.slice('cutout:'.length);
+  const src = KOMERCE_CATEGORY_CUTOUTS[key];
+  if (!src) return '';
+  const cls = extraClass ? ` ${extraClass}` : '';
+  return `<img class="k-shelf-object${cls} k-shelf-cutout-image" src="${src}" alt="" aria-hidden="true" loading="eager" decoding="async" width="512" height="512">`;
 }
 
 export function getShelfCategoryVisual(categoryKey) {
@@ -95,7 +112,10 @@ export function getShelfSubcategoryVisual(categoryKey, subcategoryKey) {
 
 export function renderShelfUse(visual, extraClass = '') {
   if (!visual) return '';
-  if (visual.startsWith('showcase-main:') || visual.startsWith('showcase-mode:')) {
+  if (visual.startsWith('cutout:')) {
+    return renderCategoryCutout(visual, extraClass);
+  }
+  if (visual.startsWith('showcase-mode:')) {
     return renderAtlasCell(visual, extraClass);
   }
 

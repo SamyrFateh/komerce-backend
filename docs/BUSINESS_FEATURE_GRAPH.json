@@ -15915,64 +15915,64 @@
       {
         "boutiqueManifest": "catalog",
         "category": "assets",
-        "declared": "../categories/all-v2.webp",
-        "resolvedPath": "public/boutique/categories/all-v2.webp",
+        "declared": "../categories/cat-all-v3.webp",
+        "resolvedPath": "public/boutique/categories/cat-all-v3.webp",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "catalog",
         "category": "assets",
-        "declared": "../categories/soldes-v2.webp",
-        "resolvedPath": "public/boutique/categories/soldes-v2.webp",
+        "declared": "../categories/cat-soldes-v3.webp",
+        "resolvedPath": "public/boutique/categories/cat-soldes-v3.webp",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "catalog",
         "category": "assets",
-        "declared": "../categories/mode-v2.webp",
-        "resolvedPath": "public/boutique/categories/mode-v2.webp",
+        "declared": "../categories/cat-mode-v3.webp",
+        "resolvedPath": "public/boutique/categories/cat-mode-v3.webp",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "catalog",
         "category": "assets",
-        "declared": "../categories/maison-v2.webp",
-        "resolvedPath": "public/boutique/categories/maison-v2.webp",
+        "declared": "../categories/cat-maison-v3.webp",
+        "resolvedPath": "public/boutique/categories/cat-maison-v3.webp",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "catalog",
         "category": "assets",
-        "declared": "../categories/tech-v2.webp",
-        "resolvedPath": "public/boutique/categories/tech-v2.webp",
+        "declared": "../categories/cat-tech-v3.webp",
+        "resolvedPath": "public/boutique/categories/cat-tech-v3.webp",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "catalog",
         "category": "assets",
-        "declared": "../categories/bricolage-v2.webp",
-        "resolvedPath": "public/boutique/categories/bricolage-v2.webp",
+        "declared": "../categories/cat-bricolage-v3.webp",
+        "resolvedPath": "public/boutique/categories/cat-bricolage-v3.webp",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "catalog",
         "category": "assets",
-        "declared": "../categories/creations-v2.webp",
-        "resolvedPath": "public/boutique/categories/creations-v2.webp",
+        "declared": "../categories/cat-perso-v3.webp",
+        "resolvedPath": "public/boutique/categories/cat-perso-v3.webp",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "catalog",
         "category": "assets",
-        "declared": "../categories/auto-v2.webp",
-        "resolvedPath": "public/boutique/categories/auto-v2.webp",
+        "declared": "../categories/cat-auto-v3.webp",
+        "resolvedPath": "public/boutique/categories/cat-auto-v3.webp",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16029,6 +16029,14 @@
         "category": "tests",
         "declared": "../tests/unit/category-subcategory-continuity.test.js",
         "resolvedPath": "public/boutique/tests/unit/category-subcategory-continuity.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/category-cutout-assets-integrity.test.js",
+        "resolvedPath": "public/boutique/tests/unit/category-cutout-assets-integrity.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -25412,7 +25420,7 @@
         "filesObserved": 852
       },
       "boutique": {
-        "filesObserved": 161,
+        "filesObserved": 162,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {

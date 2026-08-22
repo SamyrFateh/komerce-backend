@@ -35,9 +35,9 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobileBlock).not.toMatch(/grid-template-columns/);
     expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 68px[^}]*height:\s*64px/s);
     expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*58px[\s\S]*height:\s*42px/s);
-    expect(mobileBlock).toContain('--k-optical-scale: 1.06;');
-    expect(mobileBlock).toContain('--k-optical-active-scale: 1.10;');
-    expect(mobileBlock).toContain('--k-optical-saturation: .84;');
+    expect(mobileBlock).toContain('--k-optical-scale: 1;');
+    expect(mobileBlock).toContain('--k-optical-active-scale: 1.05;');
+    expect(mobileBlock).toContain('--k-optical-saturation: 1;');
     expect(mobileBlock).toMatch(/translate\(var\(--k-optical-x\), var\(--k-optical-y\)\)/);
     expect(mobileBlock).toContain('saturate(var(--k-optical-saturation))');
     expect(mobileBlock).toContain('sepia(.04)');
@@ -45,47 +45,53 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobileBlock).toMatch(/margin-top:\s*0/);
   });
 
-  it('calibre les huit catégories sans altérer le contrat atlas', () => {
+  it('calibre légèrement les huit cutouts déjà normalisés', () => {
     [
       'all', 'Soldes', 'Mode & Beauté', 'Maison',
       'Tech', 'Bricolage', 'Créations personnelles', 'Auto',
     ].forEach((key) => {
       expect(mobile).toContain(`.k-shelf-rail .k-cat-cutout[data-cat="${key}"]`);
     });
-    expect(mobile).toMatch(/data-cat="all"[^}]*--k-optical-scale:\s*1\.18/s);
-    expect(mobile).toMatch(/data-cat="Mode & Beauté"[^}]*--k-optical-saturation:\s*\.74/s);
-    expect(mobile).toMatch(/data-cat="Maison"[^}]*--k-optical-scale:\s*\.99/s);
+    expect(mobile).toMatch(/data-cat="all"[^}]*--k-optical-scale:\s*1\.02/s);
+    expect(mobile).toMatch(/data-cat="Mode & Beauté"[^}]*--k-optical-saturation:\s*1/s);
+    expect(mobile).toMatch(/data-cat="Maison"[^}]*--k-optical-scale:\s*1/s);
     expect(mobile).toMatch(/data-cat="Auto"[^}]*--k-optical-y:\s*2px/s);
   });
 
-  it('porte le showcase photo v1 dans le registre visuel unique', () => {
-    expect(visuals).toContain("KOMERCE_SHOWCASE_V1_MAIN = '/boutique/categories/komerce-showcase-v1-main.webp?v=4'");
+  it('porte les huit cutouts HD dans le registre visuel unique', () => {
     expect(visuals).toContain("KOMERCE_SHOWCASE_V1_MODE = '/boutique/categories/komerce-showcase-v1-mode.webp?v=3'");
-    expect(visuals).toContain("'Mode & Beauté': 'showcase-main:0:0'");
-    expect(visuals).toContain("Maison: 'showcase-main:1:0'");
-    expect(visuals).toContain("Tech: 'showcase-main:2:0'");
-    expect(visuals).toContain("Bricolage: 'showcase-main:0:1'");
-    expect(visuals).toContain("'Créations personnelles': 'showcase-main:1:1'");
-    expect(visuals).toContain("Auto: 'showcase-main:2:1'");
+    expect(visuals).toContain("all: '/boutique/categories/cat-all-v3.webp?v=1'");
+    expect(visuals).toContain("soldes: '/boutique/categories/cat-soldes-v3.webp?v=1'");
+    expect(visuals).toContain("mode: '/boutique/categories/cat-mode-v3.webp?v=1'");
+    expect(visuals).toContain("maison: '/boutique/categories/cat-maison-v3.webp?v=1'");
+    expect(visuals).toContain("tech: '/boutique/categories/cat-tech-v3.webp?v=1'");
+    expect(visuals).toContain("bricolage: '/boutique/categories/cat-bricolage-v3.webp?v=1'");
+    expect(visuals).toContain("perso: '/boutique/categories/cat-perso-v3.webp?v=1'");
+    expect(visuals).toContain("auto: '/boutique/categories/cat-auto-v3.webp?v=1'");
+    expect(visuals).toContain("'Mode & Beauté': 'cutout:mode'");
+    expect(visuals).toContain("'Créations personnelles': 'cutout:perso'");
     expect(visuals).toContain("__all: 'showcase-mode:0:0'");
     expect(visuals).toContain("Femme: 'showcase-mode:1:0'");
     expect(visuals).toContain("Homme: 'showcase-mode:2:0'");
     expect(visuals).toContain("Enfant: 'showcase-mode:0:1'");
     expect(visuals).toContain("Beauté: 'showcase-mode:1:1'");
     expect(visuals).toContain('renderAtlasCell');
+    expect(visuals).toContain('renderCategoryCutout');
+    expect(visuals).toContain('k-shelf-cutout-image');
     expect(sprite).toContain('symbol id="cat-all"');
     expect(sprite).toContain('symbol id="cat-soldes"');
     expect(sprite).toContain('symbol id="sub-auto-moto"');
   });
 
-  it('rend les showcases raster comme des crops img natifs', () => {
+  it('rend les cutouts directs et réserve le crop atlas au niveau 2 Mode', () => {
     expect(visuals).toContain('k-shelf-atlas-cell');
     expect(visuals).toContain('k-shelf-atlas-image');
     expect(visuals).toContain('data-atlas-family');
     expect(visuals).toContain('data-atlas-col');
     expect(visuals).toContain('data-atlas-row');
-    expect(visuals).toContain("visual.startsWith('showcase-main:')");
+    expect(visuals).toContain("visual.startsWith('cutout:')");
     expect(visuals).toContain("visual.startsWith('showcase-mode:')");
+    expect(visuals).not.toContain("visual.startsWith('showcase-main:')");
     expect(visuals).not.toContain('<image href=');
     expect(mobile).toContain('img:not(.k-shelf-atlas-image)');
     expect(mobile).toMatch(/\.k-shelf-atlas-image\s*\{[^}]*width:\s*300%[^}]*height:\s*200%/s);
