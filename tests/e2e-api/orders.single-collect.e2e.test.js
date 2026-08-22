@@ -27,7 +27,7 @@
 
 const request = require('supertest');
 const express = require('express');
-const jwt = require('jsonwebtoken');
+const { signAuthToken } = require('../../utils/auth-session');
 
 const { describeE2E, createCleanup, tag, uuid } = require('../helpers/e2eDbKit');
 
@@ -45,8 +45,8 @@ describeE2E('E2E-P0-COLLECT — orders · remise unique', ({ db }) => {
     const orderId = uuid();
     await db.query(
       `INSERT INTO orders
-         (id, reference, relais_id, total_kmf, payment_mode, payment_status, status)
-       VALUES ($1, $2, $3, 25000, 'cash_relais', 'paid', 'available')`,
+         (id, reference, relais_id, market_id, total_kmf, payment_mode, payment_status, status)
+       VALUES ($1, $2, $3, (SELECT market_id FROM relais WHERE id = $3), 25000, 'cash_relais', 'paid', 'available')`,
       [orderId, `E2E-COLLECT-${tag(label)}`, relaisId]
     );
     return orderId;
@@ -84,10 +84,10 @@ describeE2E('E2E-P0-COLLECT — orders · remise unique', ({ db }) => {
       [agentId, `${tag('collect')}@komerce.test`, `+2693${Math.floor(Math.random() * 9e6 + 1e6)}`, relaisId]
     );
 
-    token = jwt.sign({ id: agentId, role: 'agent_relais' }, process.env.JWT_SECRET, {
-      algorithm: 'HS256',
-      expiresIn: '1h',
-    });
+    token = signAuthToken(
+      { id: agentId, role: 'agent_relais' },
+      { method: 'e2e' }
+    );
 
     app = express();
     app.use(require('cookie-parser')());
