@@ -13,19 +13,21 @@ describe('hero ultra mobile contract', () => {
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
-  test('passe en mode diagnostic visuel pur', () => {
-    expect(css).toContain('background-size: auto 205%;');
-    expect(css).toContain('background-position: 87% 18%;');
+  test('passe en mode diagnostic visuel pur avec crop détendu', () => {
+    expect(css).toContain('background-size: auto 190%;');
+    expect(css).toContain('background-position: 84% 20%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
     expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
     expect(css).toContain('display: none;');
   });
 
-  test('préserve la petite lune', () => {
+  test('préserve et recale la petite lune', () => {
     expect(css).toContain('.k-hero-media .k-hero-moon');
     expect(css).toContain('width: 20px;');
     expect(css).toContain('height: 20px;');
+    expect(css).toContain('right: 22%;');
+    expect(css).toContain('top: 3px;');
   });
 
   test('n’introduit ni priorité forcée ni couleur hexadécimale', () => {
