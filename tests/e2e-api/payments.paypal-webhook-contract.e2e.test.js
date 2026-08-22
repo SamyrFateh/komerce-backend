@@ -56,7 +56,7 @@ describeE2E('E2E-P0-PAYPAL — payments · contrat webhook PayPal', ({ db }) => 
   let app;
 
   // ── constructeurs d'événements ───────────────────────────────────────────
-  function captureCompleted({ eventId, captureId, paypalOrderId, reference, value = '100.00', currency = 'EUR' }) {
+  function captureCompleted({ eventId, captureId, paypalOrderId, reference, value = '50.00', currency = 'EUR' }) {
     return {
       id: eventId,
       event_type: 'PAYMENT.CAPTURE.COMPLETED',
