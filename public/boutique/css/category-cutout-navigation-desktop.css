@@ -545,7 +545,6 @@
     --k-sub-scale: .98;
     --k-sub-active-y: -1px;
     --k-sub-active-scale: 1.03;
-    --k-sub-saturation: .84;
     min-width: 66px;
     min-height: 58px;
   }
@@ -580,10 +579,10 @@
       scale(var(--k-sub-scale));
     filter:
       drop-shadow(0 3px 5px var(--border-text-08))
-      saturate(var(--k-sub-saturation))
-      sepia(.03)
-      contrast(1.01)
-      brightness(1.02);
+      grayscale(1)
+      saturate(0)
+      contrast(1.18)
+      brightness(.76);
   }
 
   .k-subcutout:hover .k-shelf-object--subcategory,
@@ -593,24 +592,24 @@
       scale(var(--k-sub-active-scale));
     filter:
       drop-shadow(0 4px 6px var(--border-text-08))
-      saturate(calc(var(--k-sub-saturation) + .08))
-      sepia(.02)
-      contrast(1.02)
-      brightness(1.02);
+      grayscale(1)
+      saturate(0)
+      contrast(1.24)
+      brightness(.68);
   }
 
   /* Mode & Beauté — atlas photo : quatre masses différentes. */
   .k-subcutout[data-shelf-visual="showcase-mode:1:0"] {
-    --k-sub-y: 1px; --k-sub-scale: .98; --k-sub-saturation: .76;
+    --k-sub-y: 1px; --k-sub-scale: .98;
   }
   .k-subcutout[data-shelf-visual="showcase-mode:2:0"] {
-    --k-sub-y: 1px; --k-sub-scale: .96; --k-sub-saturation: .76;
+    --k-sub-y: 1px; --k-sub-scale: .96;
   }
   .k-subcutout[data-shelf-visual="showcase-mode:0:1"] {
-    --k-sub-y: 2px; --k-sub-scale: .94; --k-sub-active-y: 0px; --k-sub-saturation: .78;
+    --k-sub-y: 2px; --k-sub-scale: .94; --k-sub-active-y: 0px;
   }
   .k-subcutout[data-shelf-visual="showcase-mode:1:1"] {
-    --k-sub-y: 1px; --k-sub-scale: .93; --k-sub-saturation: .78;
+    --k-sub-y: 1px; --k-sub-scale: .93;
   }
 
   /* Maison. */
@@ -648,9 +647,10 @@
     transform: translateY(1px) scale(1.03);
     filter:
       drop-shadow(0 3px 5px var(--border-text-08))
-      saturate(.84)
-      sepia(.03)
-      brightness(1.02);
+      grayscale(1)
+      saturate(0)
+      contrast(1.18)
+      brightness(.76);
   }
 
   .k-subcutout.active .k-subcutout-icon--all .k-shelf-object--all,
@@ -662,7 +662,7 @@
     font-size: 21px;
     line-height: 40px;
     opacity: .9;
-    filter: saturate(.72) sepia(.08) brightness(1.02);
+    filter: grayscale(1) saturate(0) contrast(1.18) brightness(.76);
   }
 
   .k-subcutout:hover .k-subcutout-icon,
@@ -680,7 +680,7 @@
   }
 
   .k-subcutout.active {
-    color: var(--ocean-dark);
+    color: var(--catalog-nav-strong);
   }
 
   .k-subcutout.active .k-subcutout-label {

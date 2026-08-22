@@ -201,7 +201,7 @@
     align-items: flex-start;
     flex-wrap: nowrap;
     gap: 4px;
-    padding: 4px 8px 5px;
+    padding: 3px 6px 4px;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
@@ -220,16 +220,16 @@
   .k-shelf-rail .k-cat-cutout {
     --k-optical-x: 0px;
     --k-optical-y: -1px;
-    --k-optical-scale: .97;
-    --k-optical-active-y: -3px;
-    --k-optical-active-scale: 1.05;
+    --k-optical-scale: .94;
+    --k-optical-active-y: -2px;
+    --k-optical-active-scale: 1.01;
     --k-optical-saturation: 1;
-    flex: 0 0 68px;
-    width: 68px;
-    min-width: 68px;
-    min-height: 68px;
-    height: 68px;
-    gap: 2px;
+    flex: 0 0 60px;
+    width: 60px;
+    min-width: 60px;
+    min-height: 60px;
+    height: 60px;
+    gap: 1px;
     padding: 0 1px 3px;
     border: 0;
     border-radius: 0;
@@ -239,62 +239,62 @@
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="all"] {
-    --k-optical-y: -2px;
-    --k-optical-scale: .99;
-    --k-optical-active-y: -4px;
-    --k-optical-active-scale: 1.07;
+    --k-optical-y: -1px;
+    --k-optical-scale: .96;
+    --k-optical-active-y: -3px;
+    --k-optical-active-scale: 1.03;
     --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Soldes"] {
     --k-optical-y: -1px;
-    --k-optical-scale: .98;
-    --k-optical-active-y: -3px;
-    --k-optical-active-scale: 1.06;
+    --k-optical-scale: .95;
+    --k-optical-active-y: -2px;
+    --k-optical-active-scale: 1.02;
     --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"] {
     --k-optical-y: -1px;
-    --k-optical-scale: .97;
-    --k-optical-active-scale: 1.05;
+    --k-optical-scale: .94;
+    --k-optical-active-scale: 1.01;
     --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Maison"] {
     --k-optical-y: -1px;
-    --k-optical-scale: .97;
-    --k-optical-active-y: -3px;
-    --k-optical-active-scale: 1.05;
+    --k-optical-scale: .94;
+    --k-optical-active-y: -2px;
+    --k-optical-active-scale: 1.01;
     --k-optical-saturation: .98;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Tech"] {
     --k-optical-y: -1px;
-    --k-optical-scale: .97;
-    --k-optical-active-scale: 1.05;
+    --k-optical-scale: .94;
+    --k-optical-active-scale: 1.01;
     --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Bricolage"] {
     --k-optical-y: -1px;
-    --k-optical-scale: .97;
-    --k-optical-active-scale: 1.05;
+    --k-optical-scale: .94;
+    --k-optical-active-scale: 1.01;
     --k-optical-saturation: .98;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Créations personnelles"] {
     --k-optical-y: -1px;
-    --k-optical-scale: .99;
-    --k-optical-active-scale: 1.07;
+    --k-optical-scale: .96;
+    --k-optical-active-scale: 1.03;
     --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Auto"] {
     --k-optical-y: -1px;
-    --k-optical-scale: .97;
-    --k-optical-active-y: -3px;
-    --k-optical-active-scale: 1.05;
+    --k-optical-scale: .94;
+    --k-optical-active-y: -2px;
+    --k-optical-active-scale: 1.01;
     --k-optical-saturation: .96;
   }
 
@@ -302,8 +302,8 @@
   .k-cat-cutout.active .k-chip-photo,
   .k-cat-cutout[data-cat] .k-chip-photo,
   .k-cat-cutout.active[data-cat] .k-chip-photo {
-    width: 58px;
-    height: 40px;
+    width: 50px;
+    height: 33px;
     isolation: isolate;
   }
 
@@ -313,9 +313,9 @@
     content: '';
     position: absolute;
     left: 50%;
-    bottom: 4px;
-    width: 42px;
-    height: 13px;
+    bottom: 3px;
+    width: 36px;
+    height: 10px;
     border-radius: 50%;
     background: var(--sand-warm);
     opacity: .20;
@@ -351,13 +351,13 @@
 
   .k-cat-cutout .k-chip-label,
   .k-cat-cutout.active .k-chip-label {
-    max-width: 66px;
+    max-width: 58px;
     z-index: 2;
     margin-top: 2px;
     padding: 0 3px 3px;
     background: var(--white);
     color: var(--catalog-nav-muted);
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 620;
     line-height: 1.15;
     letter-spacing: -.01em;

@@ -40,6 +40,10 @@ import { _renderCard, renderGrid } from './b-catalog.js';
 import { openModal }               from './b-modal.js';
 import { toggleFav, quickAdd, quickRemove, openCartWithHighlight } from './b-cart.js';
 import { isDesktop }               from './b-scroll-owner.js';
+import {
+  getShelfSubcategoryVisual,
+  renderShelfUse,
+}                                  from './render/category-shelf-visuals.js';
 
 
 'use strict';
@@ -164,8 +168,13 @@ import { isDesktop }               from './b-scroll-owner.js';
       '</div>' +
       '<div class="k-flat-subcat-tabs" id="k-flat-subcat-tabs">' +
         subs.map(function(s) {
-          return '<button class="k-flat-subcat-tab" data-flat-sub="' + s.key + '">' +
-            '<span class="k-flat-subcat-tab-icon">' + s.icon + '</span>' +
+          const visual = getShelfSubcategoryVisual(fs.cat, s.key);
+          const object = visual
+            ? renderShelfUse(visual, 'k-shelf-object--subcategory k-flat-subcat-object')
+            : '<span class="k-shelf-emoji-fallback">' + sanitize(s.icon || '✨') + '</span>';
+          return '<button class="k-flat-subcat-tab" data-flat-sub="' + s.key + '"' +
+            (visual ? ' data-shelf-visual="' + sanitize(visual) + '"' : '') + '>' +
+            '<span class="k-flat-subcat-tab-icon" aria-hidden="true">' + object + '</span>' +
             '<span class="k-flat-subcat-tab-label">' + sanitize(s.label) + '</span>' +
           '</button>';
         }).join('') +
