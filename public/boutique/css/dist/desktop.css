@@ -2336,8 +2336,8 @@
   .k-subcutout-icon--all .k-shelf-object--all {
     opacity: .9;
     transform: translateY(1px) scale(1.03);
-    color: #557253;
-    fill: #557253;
+    color: var(--catalog-nav-sage);
+    fill: var(--catalog-nav-sage);
     filter: drop-shadow(0 2px 3px var(--border-text-08));
   }
 
