@@ -33,7 +33,7 @@ jest.mock('../../services/notifications/notification-service', () => ({
 
 const request = require('supertest');
 const express = require('express');
-const jwt = require('jsonwebtoken');
+const { signAuthToken } = require('../../utils/auth-session');
 
 const {
   describeE2E,
@@ -82,9 +82,9 @@ describeE2E(
     async function seedOrder(orderId, label) {
       await db.query(
         `INSERT INTO orders
-           (id, reference, user_id, relais_id, total_kmf,
+           (id, reference, user_id, relais_id, market_id, total_kmf,
             payment_mode, payment_status, status)
-         VALUES ($1, $2, $3, $4, 25000, 'cash_relais', 'paid', 'available')`,
+         VALUES ($1, $2, $3, $4, (SELECT market_id FROM relais WHERE id = $4), 25000, 'cash_relais', 'paid', 'available')`,
         [orderId, `E2E-L7-${tag(label)}`, buyerId, relaisId]
       );
     }
@@ -194,20 +194,17 @@ describeE2E(
       await seedOrder(blockedOrderId, 'blocked');
       await seedOrder(revokeOrderId, 'revoke');
 
-      buyerToken = jwt.sign(
-        { id: buyerId, role: 'client', jti: uuid() },
-        process.env.JWT_SECRET,
-        { algorithm: 'HS256', expiresIn: '1h' }
+      buyerToken = signAuthToken(
+        { id: buyerId, role: 'client' },
+        { method: 'e2e' }
       );
-      agentToken = jwt.sign(
-        { id: agentId, role: 'agent_relais', jti: uuid() },
-        process.env.JWT_SECRET,
-        { algorithm: 'HS256', expiresIn: '1h' }
+      agentToken = signAuthToken(
+        { id: agentId, role: 'agent_relais' },
+        { method: 'e2e' }
       );
-      foreignAgentToken = jwt.sign(
-        { id: foreignAgentId, role: 'agent_relais', jti: uuid() },
-        process.env.JWT_SECRET,
-        { algorithm: 'HS256', expiresIn: '1h' }
+      foreignAgentToken = signAuthToken(
+        { id: foreignAgentId, role: 'agent_relais' },
+        { method: 'e2e' }
       );
 
       app = express();
