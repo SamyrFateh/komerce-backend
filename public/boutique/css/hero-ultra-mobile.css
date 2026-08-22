@@ -1,0 +1,51 @@
+/**
+ * @komerce-arch-lite
+ * @role          boutique-hero-ultra-mobile
+ * @domain        catalog
+ * @layer         ui
+ * @owner         public/boutique/css/hero.css
+ * @purpose       Extension mobile additive du hero H1 : boîte récit ultra-compacte.
+ *                Mode diagnostic temporaire : visuel pur, sans texte ni CTA.
+ * @impact-areas  boutique, hero, mobile
+ * @version       2026-08
+ */
+
+/*
+ * HERO ULTRA MOBILE — DIAGNOSTIC VISUEL
+ * Cible : 104–116 px de hauteur utile.
+ * On conserve uniquement le fond chaud, le détourage canonique et la lune.
+ * Le masque réservé au texte est neutralisé pour juger le cadrage réel.
+ */
+@media (max-width: 899px) {
+  #k-hero-fixed-wrap > .k-hero {
+    background: var(--page-bg);
+  }
+
+  .k-hero .k-hero-inner .k-hero-media {
+    height: clamp(104px, 29vw, 116px);
+    margin-top: 0;
+    margin-bottom: 0;
+    border-radius: 16px;
+    background: var(--hero-bg);
+    box-shadow: 0 6px 18px var(--border-text-06);
+  }
+
+  .k-hero-media .k-hero-figures {
+    background-size: auto 167%;
+    background-position: 81% 26%;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .k-hero-media .k-hero-moon {
+    width: 20px;
+    height: 20px;
+    right: 38%;
+    top: 5px;
+    opacity: .92;
+  }
+
+  .k-hero-media .k-hero-mini-slogan--premium {
+    display: none;
+  }
+}
