@@ -44,6 +44,56 @@ export function showToast(msg, type, duration) {
 export const _rates    = { EUR: 495, KMF: 1 };
 export const _currency = detectCurrency();
 
+/* ── CURRENCY BOUNDARY ADAPTER (P2, freeze 22-08-2026) ──────
+   b-utils.js devient un ADAPTER de la Currency Boundary — il ne porte
+   plus sa propre logique de conversion (l'ancien _rates ci-dessus reste
+   exporté pour compat mais n'est plus lu par fmt()/fmtPrice() en interne).
+   La source unique reste currency_parities (P1, DB), transmise en entier
+   via GET /api/public/config — jamais une copie locale maintenue à la
+   main dans ce fichier. */
+
+let _parities = null;          // Map<currency, eur_rate> — snapshot de P1
+let _parityFetchStarted = false;
+
+function _kickOffParityFetch() {
+  if (_parityFetchStarted) return;
+  _parityFetchStarted = true;
+  fetch('/api/public/config', { credentials: 'include' })
+    .then(res => (res.ok ? res.json() : Promise.reject(new Error('config indisponible'))))
+    .then(cfg => {
+      const map = new Map();
+      for (const p of (cfg.currency_parities || [])) map.set(p.currency, Number(p.eur_rate));
+      _parities = map;
+    })
+    .catch(() => { /* silencieux — le repli KMF de fmt() reste actif tant que ça échoue */ });
+}
+_kickOffParityFetch(); // démarré au chargement du module, jamais bloquant
+
+function _resolveMarket() {
+  const km = typeof window !== 'undefined' ? window.KomerceMarket : null;
+  if (!km) return { code: 'KM', currency: 'KMF', minor_unit: 0 };
+  const overrideCode = km.getPreviewOverride && km.getPreviewOverride();
+  const code = overrideCode || km.DEFAULT || 'KM';
+  return (km.getByCode && km.getByCode(code)) || { code: 'KM', currency: 'KMF', minor_unit: 0 };
+}
+
+/**
+ * Projette un montant KMF (source, economic-engine) vers targetCurrency —
+ * TOUJOURS dérivé via EUR (invariant 9), même formule et mêmes lignes DB
+ * que utils/currency.js#projectAmount() côté serveur, jamais un axe direct
+ * KMF-XAF recalculé ou stocké côté client.
+ * @returns {number|null} null si les parités ne sont pas encore chargées —
+ *   l'appelant sait alors retomber sur un affichage KMF sûr.
+ */
+function _projectKmf(amountKmf, targetCurrency) {
+  if (targetCurrency === 'KMF') return amountKmf;
+  if (!_parities) return null;
+  const kmfRate = _parities.get('KMF');
+  const targetRate = _parities.get(targetCurrency);
+  if (!kmfRate || !targetRate) return null;
+  return (amountKmf / kmfRate) * targetRate;
+}
+
 /* ── IMAGE CLOUDINARY ───────────────────────────────────── */
 
 /**
@@ -96,25 +146,78 @@ export function detectCurrency() {
 }
 
 /**
- * Formate un montant KMF en devise locale.
- * @param {number} kmf       - Montant en KMF
- * @param {string} [currency] - 'KMF' | 'EUR' (défaut = devise détectée)
- * @returns {string} Montant formaté avec symbole
+ * Formate un montant EXPRIMÉ EN KMF (economic-engine base currency, jamais
+ * touchée par ce chantier) pour affichage.
+ *
+ * SÉMANTIQUE DU 2e ARGUMENT — a changé le 22 août 2026 (P2, Currency
+ * Boundary) :
+ *
+ *   fmt(amount, 'KMF')  'KMF' n'est plus un ordre "force KMF littéral" — il
+ *                        devient l'alias "projette vers la devise du MARCHÉ
+ *                        COURANT" (résolu via market-context.js, override
+ *                        ?market= inclus). Avant l'ouverture de Mayotte/
+ *                        Cameroun/Congo, KM était le seul marché existant :
+ *                        'KMF' et "marché courant" désignaient la même
+ *                        chose par coïncidence, pas par contrat. Les 33
+ *                        appels existants de fmt(x, 'KMF') dans ce dépôt
+ *                        n'ont PAS été modifiés : ils héritent de ce nouveau
+ *                        comportement automatiquement.
+ *
+ *   fmt(amount, 'EUR')  comportement INCHANGÉ : force EUR, ignore le
+ *                        marché — reste un ordre littéral, comme avant.
+ *                        Toute devise explicite AUTRE que 'KMF' garde ce
+ *                        comportement (ex. b-cart.js, la ligne
+ *                        "≈ " + fmt(total, 'EUR') de conversion diaspora,
+ *                        continue de fonctionner à l'identique).
+ *
+ *   fmt(amount)          plus de détection par fuseau horaire — résout le
+ *                        marché courant, comme fmt(amount, 'KMF').
+ *
+ * Repli de sécurité : si les parités (P1) n'ont pas encore fini de charger
+ * (fenêtre courte au premier chargement de page), affiche le montant KMF
+ * brut plutôt qu'un montant projeté potentiellement faux. Le prochain appel
+ * (rendu suivant, navigation) utilisera la valeur correcte.
+ *
+ * @param {number} kmf - Montant en KMF
+ * @param {string} [currency] - voir sémantique ci-dessus
+ * @returns {string}
  */
 export function fmt(kmf, currency) {
-  const c = currency || _currency;
-  const rate = _rates[c] || 1;
-  const val = Math.round(kmf / rate);
-  return val.toLocaleString('fr-FR') + (c === 'EUR' ? ' €' : ' KMF');
+  const n = Number(kmf) || 0;
+
+  // Devise explicite ≠ 'KMF' : comportement historique inchangé, jamais de
+  // projection marché — un ordre littéral (ex. la ligne "≈ EUR" diaspora).
+  if (currency && currency !== 'KMF') {
+    const rate = _rates[currency] || 1;
+    const val = Math.round(n / rate);
+    return val.toLocaleString('fr-FR') + (currency === 'EUR' ? ' €' : ' ' + currency);
+  }
+
+  // 'KMF' explicite ou absent : résout le marché courant, projette.
+  const market = _resolveMarket();
+  const projected = _projectKmf(n, market.currency);
+
+  if (projected === null) {
+    return Math.round(n).toLocaleString('fr-FR') + ' KMF';
+  }
+
+  const minorUnit = market.minor_unit || 0;
+  const formatted = new Intl.NumberFormat('fr-FR', {
+    minimumFractionDigits: minorUnit,
+    maximumFractionDigits: minorUnit,
+  }).format(projected);
+  return formatted + ' ' + (market.currency === 'EUR' ? '€' : market.currency);
 }
 
 /**
- * Formate un montant en KMF (toujours, sans conversion).
- * @param {number} kmf - Montant en KMF
- * @returns {string} Ex: "12 500 KMF"
+ * Formate un montant EN KMF (source) projeté vers la devise du marché
+ * courant — alias de fmt(kmf, 'KMF'). Jusqu'au 22 août 2026, affichait
+ * TOUJOURS littéralement 'KMF' sans aucune conversion.
+ * @param {number} kmf
+ * @returns {string}
  */
 export function fmtPrice(kmf) {
-  return new Intl.NumberFormat('fr-FR').format(kmf) + ' KMF';
+  return fmt(kmf, 'KMF');
 }
 
 /* ── PRODUIT ─────────────────────────────────────────────── */
