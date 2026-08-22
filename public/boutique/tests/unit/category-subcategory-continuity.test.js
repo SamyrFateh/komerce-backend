@@ -13,7 +13,9 @@ const categories = fs.readFileSync(path.resolve(__dirname, '../../css/categories
 const cutout = fs.readFileSync(path.resolve(__dirname, '../../css/category-cutout-navigation.css'), 'utf8');
 const desktopShelf = fs.readFileSync(path.resolve(__dirname, '../../css/category-cutout-navigation-desktop.css'), 'utf8');
 const desktop = fs.readFileSync(path.resolve(__dirname, '../../css/boutique-desktop.css'), 'utf8');
+const interactions = fs.readFileSync(path.resolve(__dirname, '../../css/interactions.css'), 'utf8');
 const visuals = fs.readFileSync(path.resolve(__dirname, '../../js/render/category-shelf-visuals.js'), 'utf8');
+const subcat = fs.readFileSync(path.resolve(__dirname, '../../js/b-subcat.js'), 'utf8');
 const index = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
 const schema = fs.readFileSync(path.resolve(__dirname, '../../js/shop-schema.js'), 'utf8');
 
@@ -43,10 +45,11 @@ describe('continuité catégories et sous-catégories desktop', () => {
 
   test('harmonise le rail mobile sans capsule ni hausse de hauteur', () => {
     expect(cutout).toContain('@media (max-width: 899px)');
-    expect(cutout).toContain('height: 64px;');
-    expect(cutout).toContain('--k-optical-scale: 1.06;');
+    expect(cutout).toContain('height: 60px;');
+    expect(cutout).toContain('--k-optical-scale: .94;');
     expect(cutout).toContain('saturate(var(--k-optical-saturation))');
-    expect(cutout).toContain('sepia(.04)');
+    expect(cutout).not.toContain('sepia(.04)');
+    expect(cutout).toContain('contrast(1.10)');
   });
 
   test('calibre individuellement les huit univers du rail mobile', () => {
@@ -74,9 +77,9 @@ describe('continuité catégories et sous-catégories desktop', () => {
     ].forEach((key) => {
       expect(desktopShelf).toContain(`.k-shelf-rail .k-cat-cutout[data-cat="${key}"]`);
     });
-    expect(desktopShelf).toContain('--k-desktop-saturation: .84;');
+    expect(desktopShelf).toContain('--k-desktop-saturation: 1;');
     expect(desktopShelf).toContain('saturate(var(--k-desktop-saturation))');
-    expect(desktopShelf).toContain('sepia(.035)');
+    expect(desktopShelf).not.toContain('sepia(.035)');
     expect(desktopShelf).toContain('min-height: 94px;');
   });
 
@@ -94,8 +97,23 @@ describe('continuité catégories et sous-catégories desktop', () => {
       expect(desktopShelf).toContain(`[data-shelf-visual="${key}"]`);
     });
     expect(desktopShelf).toContain('.k-subcutout-icon--all .k-shelf-object--all');
+    expect(desktopShelf).toContain('fill: var(--catalog-nav-sage);');
+    expect(desktopShelf).toContain('fill: var(--green-dark-text);');
+    expect(subcat).toContain('getShelfSubcategoryVisual');
     expect(desktopShelf).toContain('.k-shelf-emoji-fallback');
-    expect(desktopShelf).toContain('filter: saturate(.72) sepia(.08) brightness(1.02);');
+    expect(desktopShelf).toContain('grayscale(1)');
+    expect(desktopShelf).toContain('sepia(.58)');
+    expect(desktopShelf).toContain('hue-rotate(62deg)');
+    expect(desktopShelf).toContain('saturate(1.55)');
+    expect(desktopShelf).toContain('color: var(--catalog-nav-strong);');
+  });
+
+  test('réutilise les mêmes objets monochromes dans le pager mobile', () => {
+    expect(subcat).toContain('getShelfSubcategoryVisual');
+    expect(subcat).toContain("renderShelfUse(visual, 'k-shelf-object--subcategory k-flat-subcat-object')");
+    expect(interactions).toMatch(/\.k-flat-subcat-tab\s*\{[^}]*flex-direction:\s*column[^}]*background:\s*transparent[^}]*border:\s*0/s);
+    expect(interactions).toMatch(/\.k-flat-subcat-object\s*\{[^}]*grayscale\(1\)[^}]*hue-rotate\(62deg\)[^}]*saturate\(1\.55\)/s);
+    expect(interactions).toMatch(/\.k-flat-subcat-tab\.is-active::after\s*\{[^}]*width:\s*18px/s);
   });
 
   test('garde les huit images dans la seule source taxonomique', () => {

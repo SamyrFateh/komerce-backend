@@ -28,6 +28,17 @@ import { getCategorySectionEmoji, getSectionOrder, getSubcategories, matchesSubc
 import { getPromoProducts, partitionProductsByCategory } from '../product-store.js';
 import { sanitize } from '../b-utils.js';
 import { state } from '../b-store.js';
+import { getShelfCategoryVisual, renderShelfUse } from './category-shelf-visuals.js';
+
+function renderSectionVisual(category, fallbackEmoji = '') {
+  const visual = getShelfCategoryVisual(category);
+  if (!visual) {
+    return '<span class="k-sec-header-emoji">' + sanitize(fallbackEmoji) + '</span>';
+  }
+  return '<span class="k-sec-header-cutout" aria-hidden="true">' +
+    renderShelfUse(visual, 'k-shelf-object--section') +
+    '</span>';
+}
 
 /**
  * Partitionne les items en ajoutant Soldes comme catégorie virtuelle.
@@ -71,7 +82,7 @@ export function renderHomeSections({
     parts.push('<div class="k-cat-section" data-cat="all">');
     parts.push(
       '<div class="k-sec-header" data-cat="all">' +
-      '<span class="k-sec-header-emoji">🔥</span>' +
+      renderSectionVisual('all', '🔥') +
       '<span class="k-sec-header-name">Tout</span>' +
       '<span class="k-sec-header-count">' + items.length + '</span>' +
       '</div>'
@@ -98,7 +109,7 @@ export function renderHomeSections({
       parts.push('<div class="k-cat-section" data-cat="' + sanitize(category) + '"' + emptyAttr + '>');
       parts.push(
         '<div class="k-sec-header" data-cat="' + sanitize(category) + '">' +
-        '<span class="k-sec-header-emoji">' + emoji + '</span>' +
+        renderSectionVisual(category, emoji) +
         '<span class="k-sec-header-name">' + sanitize(category) + '</span>' +
         (isEmpty ? '' : '<span class="k-sec-header-count">' + products.length + '</span>') +
         '</div>'
@@ -156,7 +167,7 @@ export function renderHomeSections({
     parts.push('<div class="k-cat-section" data-cat="' + sanitize(category) + '">');
     parts.push(
       '<div class="k-sec-header" id="' + anchorId + '" data-cat="' + sanitize(category) + '">' +
-      '<span class="k-sec-header-emoji">' + emoji + '</span>' +
+      renderSectionVisual(category, emoji) +
       '<span class="k-sec-header-name">' + sanitize(category) + '</span>' +
       '<span class="k-sec-header-count">' + total + '</span>' +
       '<button class="k-sec-see-all" data-see-cat="' + sanitize(category) + '">Voir tout →</button>' +

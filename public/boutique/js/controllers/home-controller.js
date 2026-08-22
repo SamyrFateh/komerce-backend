@@ -131,7 +131,14 @@ export function renderSubcatRail(catKey, opts = {}) {
   if (subcats.length) {
     const buttons = [
       `<button type="button" class="k-subcutout ${activeSubcat ? '' : 'active'}" data-subcat="" aria-label="Voir tous les produits ${escapeHtml(label)}">
-        <span class="k-subcutout-icon k-subcutout-icon--all" aria-hidden="true">${renderShelfUse('cat-all', 'k-shelf-object--subcategory k-shelf-object--all')}</span>
+        <span class="k-subcutout-icon k-subcutout-icon--all" aria-hidden="true">
+          <svg class="k-shelf-object k-shelf-object--subcategory k-shelf-object--all k-subcategory-all-glyph" viewBox="0 0 48 48" focusable="false">
+            <rect x="7" y="7" width="13" height="13" rx="3"></rect>
+            <rect x="28" y="7" width="13" height="13" rx="3"></rect>
+            <rect x="7" y="28" width="13" height="13" rx="3"></rect>
+            <rect x="28" y="28" width="13" height="13" rx="3"></rect>
+          </svg>
+        </span>
         <span class="k-subcutout-label">Tout voir</span>
       </button>`,
       ...subcats.map((sub) => {

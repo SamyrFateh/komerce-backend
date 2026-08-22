@@ -1089,6 +1089,32 @@ CREATE TABLE public.cost_components (
 
 
 --
+-- Name: currency_parities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.currency_parities (
+    currency text NOT NULL,
+    eur_rate numeric(14,5) NOT NULL,
+    source_note text NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE currency_parities; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.currency_parities IS 'Source unique des parités fixes vers EUR (reference_currency de la Currency Boundary). Un seul axe par devise — jamais de paire directe entre deux devises Zone franc. Ne contient QUE des devises à parité fixe garantie ; les devises de sourcing flottantes (USD/AED/CNY) sont un concern séparé, hors de cette table par construction (freeze 22-08-2026, invariants 4/5/9).';
+
+
+--
+-- Name: COLUMN currency_parities.eur_rate; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.currency_parities.eur_rate IS 'Unités de currency pour 1 EUR. Ex: KMF -> 491.96775 signifie 1 EUR = 491,96775 KMF. Pour projeter un montant EUR vers currency : amount_eur * eur_rate. Pour l''inverse : amount_currency / eur_rate.';
+
+
+--
 -- Name: customs_categories; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2326,6 +2352,9 @@ CREATE TABLE public.orders (
     pickup_code_recipient character varying(16) DEFAULT 'buyer'::character varying NOT NULL,
     pickup_code_recipient_user_id uuid,
     market_id uuid NOT NULL,
+    display_total_amount numeric(14,2),
+    display_currency text,
+    display_parity_snapshot jsonb,
     CONSTRAINT chk_orders_discount CHECK (((discount_pct >= (0)::numeric) AND (discount_pct <= (100)::numeric))),
     CONSTRAINT chk_orders_total CHECK ((total_kmf >= 0)),
     CONSTRAINT orders_pickup_code_recipient_check CHECK (((pickup_code_recipient)::text = ANY ((ARRAY['buyer'::character varying, 'organizer'::character varying])::text[])))
@@ -2589,6 +2618,27 @@ COMMENT ON COLUMN public.orders.transport_price_kmf IS 'Part du total (orders.to
 --
 
 COMMENT ON COLUMN public.orders.market_id IS 'Marché de la commande, SNAPSHOT résolu depuis relais.market_id au moment de la commande (ou du backfill pour les commandes existantes). Ne se re-synchronise jamais automatiquement si un relais changeait de marché. NOT NULL — garanti par orders.relais_id NOT NULL. Voir migrations/138_orders_market_id.sql.';
+
+
+--
+-- Name: COLUMN orders.display_total_amount; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.orders.display_total_amount IS 'Montant PRÉSENTÉ au client au moment de confirmer, dans display_currency. Figé à la création, jamais recalculé. JAMAIS lu par Stripe/PayPal/cash_relais (ceux-ci lisent exclusivement total_kmf/total_eur). NULL pour les commandes antérieures à cette migration — pas de backfill fabriqué (freeze P3, invariant 7).';
+
+
+--
+-- Name: COLUMN orders.display_currency; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.orders.display_currency IS 'Devise de display_total_amount — celle du contexte marché du client au moment de la commande (market-context.js, override ?market= inclus), PAS nécessairement celle de relais.market_id (freeze P3, invariant 4 : ne jamais supposer silencieusement que orders.market_id == marché de navigation — un acheteur diaspora peut consulter en XAF et livrer via un relais KM).';
+
+
+--
+-- Name: COLUMN orders.display_parity_snapshot; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.orders.display_parity_snapshot IS 'Métadonnée d''audit : parité(s) currency_parities utilisée(s) pour calculer display_total_amount, et la source du contexte marché (explicite ou fallback). Ne remplace JAMAIS display_total_amount comme source de vérité (freeze P3, invariant 5) — lecture humaine/debug uniquement.';
 
 
 --
@@ -5375,6 +5425,14 @@ ALTER TABLE ONLY public.cost_components
 
 ALTER TABLE ONLY public.cost_components
     ADD CONSTRAINT cost_components_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: currency_parities currency_parities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.currency_parities
+    ADD CONSTRAINT currency_parities_pkey PRIMARY KEY (currency);
 
 
 --

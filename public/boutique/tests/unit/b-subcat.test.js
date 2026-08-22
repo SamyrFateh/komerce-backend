@@ -254,6 +254,8 @@ describe('_renderFlatSubcat', () => {
     expect(state._flatSubcatHeaderHtml).toContain('k-flat-subcat-header');
     expect(state._flatSubcatHeaderHtml).toContain('k-flat-subcat-tabs');
     expect(state._flatSubcatHeaderHtml).toContain('data-flat-sub="fruits"');
+    expect(state._flatSubcatHeaderHtml).toContain('k-shelf-emoji-fallback');
+    expect(state._flatSubcatHeaderHtml).toContain('k-flat-subcat-tab-icon');
   });
 
   it('la page fruits inclut un k-sec-grid (produits disponibles)', () => {

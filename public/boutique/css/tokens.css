@@ -194,6 +194,11 @@
   /* ── Texte ────────────────────────────────────────────────── */
   --text:         #1F3024;
   --text-muted:   #6B7B63;
+  /* Navigation catalogue : neutres francs pour ne pas confondre état actif
+   * et identité de marque. Le vert reste réservé au soulignement actif. */
+  --catalog-nav-muted:  #666964;
+  --catalog-nav-strong: #2F312E;
+  --catalog-nav-sage:   #557253;
   --text-light:   #9EAC95;
   --border:       #E3D9C9;
 

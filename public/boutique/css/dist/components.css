@@ -205,9 +205,23 @@
   scroll-margin-top: 70px;
 }
 .k-sec-header-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
-.k-sec-header-name  { font-size: 16px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; }
+.k-sec-header-cutout {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+}
+.k-sec-header-cutout .k-shelf-object--section {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px var(--border-text-15)) contrast(1.10);
+}
+.k-sec-header-name  { font-size: 16px; font-weight: 700; color: var(--catalog-nav-strong); flex: 1; min-width: 0; }
 .k-sec-header-count {
-  font-weight: 500; color: var(--text-muted);
+  font-weight: 500; color: var(--catalog-nav-muted);
   border-radius: 20px;
   flex-shrink: 0; white-space: nowrap;
 }
@@ -1056,7 +1070,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  color: var(--text-muted);
+  color: var(--catalog-nav-muted);
 }
 
 .k-shelf-rail .k-cat-cutout:hover,
@@ -1086,9 +1100,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   transform: none;
 }
 
-/* Compat historique : les catégories hors atlas gardent une image contain.
- * L'atlas Mode est volontairement exclu : son image doit rester à 300% × 200%
- * pour que le crop 3 × 2 fonctionne réellement dans le slot. */
+/* Les cutouts HD de niveau 1 gardent leur masse optique normalisée. L'atlas
+ * des sous-catégories Mode reste exclu car son crop est en 300% × 200%. */
 .k-cat-cutout .k-chip-photo img:not(.k-shelf-atlas-image),
 .k-cat-cutout.active .k-chip-photo img:not(.k-shelf-atlas-image) {
   width: 100%;
@@ -1118,7 +1131,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   height: 100%;
   overflow: visible;
   filter: drop-shadow(0 5px 6px var(--border-text-08));
-  transform-origin: 50% 86%;
+  transform-origin: 50% 88%;
   transition: transform .16s var(--ease), filter .16s var(--ease);
 }
 
@@ -1177,7 +1190,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 
 .k-cat-cutout .k-chip-photo > span,
 .k-cat-cutout.active .k-chip-photo > span {
-  color: var(--text-muted);
+  color: var(--catalog-nav-muted);
   background: transparent;
 }
 
@@ -1191,7 +1204,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-muted);
+  color: var(--catalog-nav-muted);
   font-size: 10.5px;
   font-weight: 600;
   line-height: 1.15;
@@ -1199,7 +1212,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 
 .k-shelf-rail .k-cat-cutout.active .k-chip-label {
-  color: var(--text);
+  color: var(--catalog-nav-strong);
   font-weight: 800;
 }
 
@@ -1216,23 +1229,25 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 
 /*
- * Mobile : un seul rail horizontal compact. Les objets restent le premier
- * signal, mais leur poids optique est volontairement contenu pour ne pas
- * concurrencer le hero ni le premier rayon produit.
+ * Mobile premium V3 : une seule étagère blanche et une masse optique commune.
+ * Les huit cutouts sont normalisés sur un canvas 512 × 512 ; les corrections
+ * par univers restent donc minimes et ne compensent plus un atlas hétérogène.
  */
 @media (max-width: 899px) {
   .k-shelf-rail {
     display: flex;
     align-items: flex-start;
     flex-wrap: nowrap;
-    gap: 6px;
-    padding: 4px 8px 5px;
+    gap: 4px;
+    padding: 3px 6px 4px;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
+    background: var(--white);
+    box-shadow: inset 0 -1px 0 var(--border-text-08);
   }
 
   .k-shelf-rail::-webkit-scrollbar {
@@ -1241,13 +1256,19 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   html.k-mobile-premium-v1 .k-shelf-rail .k-cat-cutout,
   .k-shelf-rail .k-cat-cutout {
-    flex: 0 0 68px;
-    width: 68px;
-    min-width: 68px;
-    min-height: 64px;
-    height: 64px;
-    gap: 0;
-    padding: 0 1px 2px;
+    --k-optical-x: 0px;
+    --k-optical-y: -1px;
+    --k-optical-scale: .94;
+    --k-optical-active-y: -2px;
+    --k-optical-active-scale: 1.01;
+    --k-optical-saturation: 1;
+    flex: 0 0 60px;
+    width: 60px;
+    min-width: 60px;
+    min-height: 60px;
+    height: 60px;
+    gap: 1px;
+    padding: 0 1px 3px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -1255,49 +1276,139 @@ html.k-mobile-premium-v1 .k-chip-label {
     scroll-snap-align: start;
   }
 
+  .k-shelf-rail .k-cat-cutout[data-cat="all"] {
+    --k-optical-y: -1px;
+    --k-optical-scale: .96;
+    --k-optical-active-y: -3px;
+    --k-optical-active-scale: 1.03;
+    --k-optical-saturation: 1;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Soldes"] {
+    --k-optical-y: -1px;
+    --k-optical-scale: .95;
+    --k-optical-active-y: -2px;
+    --k-optical-active-scale: 1.02;
+    --k-optical-saturation: 1;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"] {
+    --k-optical-y: -1px;
+    --k-optical-scale: .94;
+    --k-optical-active-scale: 1.01;
+    --k-optical-saturation: 1;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Maison"] {
+    --k-optical-y: -1px;
+    --k-optical-scale: .94;
+    --k-optical-active-y: -2px;
+    --k-optical-active-scale: 1.01;
+    --k-optical-saturation: .98;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Tech"] {
+    --k-optical-y: -1px;
+    --k-optical-scale: .94;
+    --k-optical-active-scale: 1.01;
+    --k-optical-saturation: 1;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Bricolage"] {
+    --k-optical-y: -1px;
+    --k-optical-scale: .94;
+    --k-optical-active-scale: 1.01;
+    --k-optical-saturation: .98;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Créations personnelles"] {
+    --k-optical-y: -1px;
+    --k-optical-scale: .96;
+    --k-optical-active-scale: 1.03;
+    --k-optical-saturation: 1;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Auto"] {
+    --k-optical-y: -1px;
+    --k-optical-scale: .94;
+    --k-optical-active-y: -2px;
+    --k-optical-active-scale: 1.01;
+    --k-optical-saturation: .96;
+  }
+
   .k-cat-cutout .k-chip-photo,
   .k-cat-cutout.active .k-chip-photo,
   .k-cat-cutout[data-cat] .k-chip-photo,
   .k-cat-cutout.active[data-cat] .k-chip-photo {
     width: 50px;
-    height: 38px;
+    height: 33px;
+    isolation: isolate;
+  }
+
+  /* Un socle chaud très discret crée une même ligne de sol sans repeindre les
+   * objets. Le pseudo-élément reste derrière le raster/SVG dans le slot. */
+  .k-shelf-rail .k-cat-cutout .k-chip-photo::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 3px;
+    width: 36px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--sand-warm);
+    opacity: .20;
+    filter: blur(5px);
+    transform: translateX(-50%);
+    pointer-events: none;
   }
 
   .k-shelf-rail .k-cat-cutout .k-shelf-object {
-    transform: scale(1.04);
+    transform:
+      translate(var(--k-optical-x), var(--k-optical-y))
+      scale(var(--k-optical-scale));
     filter:
-      drop-shadow(0 3px 5px var(--border-text-08))
-      saturate(1.10)
-      contrast(1.08);
-  }
-
-  /* Les crops raster ont naturellement plus de masse qu'un pictogramme SVG :
-   * on leur donne une assise commune légèrement plus petite et plus basse. */
-  .k-shelf-rail .k-cat-cutout .k-shelf-atlas-cell {
-    transform: translateY(1px) scale(0.96);
+      drop-shadow(0 3px 6px var(--border-text-15))
+      saturate(var(--k-optical-saturation))
+      contrast(1.10);
   }
 
   .k-shelf-rail .k-cat-cutout:hover .k-shelf-object,
   .k-shelf-rail .k-cat-cutout.active .k-shelf-object {
-    transform: translateY(-1px) scale(1.07);
+    transform:
+      translate(var(--k-optical-x), var(--k-optical-active-y))
+      scale(var(--k-optical-active-scale));
+    filter:
+      drop-shadow(0 4px 7px var(--border-text-15))
+      saturate(calc(var(--k-optical-saturation) + .08))
+      contrast(1.13);
   }
 
-  .k-shelf-rail .k-cat-cutout:hover .k-shelf-atlas-cell,
-  .k-shelf-rail .k-cat-cutout.active .k-shelf-atlas-cell {
-    transform: translateY(0) scale(0.98);
+  .k-shelf-rail .k-cat-cutout.active .k-chip-photo::before {
+    opacity: .28;
   }
 
   .k-cat-cutout .k-chip-label,
   .k-cat-cutout.active .k-chip-label {
-    max-width: 66px;
+    max-width: 58px;
+    z-index: 2;
     margin-top: 2px;
-    padding-bottom: 2px;
-    font-size: 10.5px;
-    line-height: 1.05;
+    padding: 0 3px 3px;
+    background: var(--white);
+    color: var(--catalog-nav-muted);
+    font-size: 10px;
+    font-weight: 620;
+    line-height: 1.15;
+    letter-spacing: -.01em;
+  }
+
+  .k-shelf-rail .k-cat-cutout.active .k-chip-label {
+    color: var(--catalog-nav-strong);
+    font-weight: 780;
   }
 
   .k-cat-cutout.active .k-chip-label::after {
     width: 18px;
+    height: 2px;
   }
 }
 
@@ -9720,13 +9831,19 @@ body.modal-open .k-bnav { opacity: .7; }
 .k-flat-subcat-sub    { color:var(--ocean-dark); font-weight:700; overflow:hidden; text-overflow:ellipsis; }
 .k-flat-subcat-count  { font-size:11px; color:var(--text-muted); background:var(--sand-dark); padding:3px 8px; border-radius:10px; white-space:nowrap; font-weight:600; flex-shrink:0; }
 
-.k-flat-subcat-tabs             { display:flex; gap:6px; padding:8px 12px 10px; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch; background:var(--sand); border-bottom:1px solid var(--border); scroll-behavior:smooth; }
+.k-flat-subcat-tabs             { display:flex; align-items:flex-end; gap:5px; padding:5px 8px 7px; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch; background:var(--white); border-bottom:1px solid var(--border); scroll-behavior:smooth; }
 .k-flat-subcat-tabs::-webkit-scrollbar { display:none; }
-.k-flat-subcat-tab              { flex-shrink:0; display:inline-flex; align-items:center; gap:6px; padding:7px 14px; background:var(--white); border:1.5px solid var(--border); border-radius:20px; font-size:13px; font-weight:600; color:var(--text); cursor:pointer; white-space:nowrap; transition:all .18s var(--ease); }
+.k-flat-subcat-tab              { position:relative; flex:0 0 62px; min-width:62px; min-height:57px; display:inline-flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:2px; padding:2px 4px 6px; background:transparent; border:0; border-radius:0; color:var(--catalog-nav-muted); cursor:pointer; white-space:nowrap; transition:color .18s var(--ease); }
+.k-flat-subcat-tab::after       { content:''; position:absolute; left:50%; bottom:1px; width:0; height:2px; border-radius:999px; background:var(--ocean-dark); transform:translateX(-50%); transition:width .18s var(--ease); }
 .k-flat-subcat-tab:active       { transform:scale(.95); }
-.k-flat-subcat-tab.is-active    { background:var(--ocean); border-color:var(--ocean-dark); color:var(--white); box-shadow:0 2px 8px rgba(100,175,90,.35); }
-.k-flat-subcat-tab-icon         { font-size:15px; line-height:1; }
-.k-flat-subcat-tab-label        { font-size:13px; }
+.k-flat-subcat-tab.is-active    { background:transparent; color:var(--catalog-nav-strong); box-shadow:none; }
+.k-flat-subcat-tab.is-active::after { width:18px; }
+.k-flat-subcat-tab-icon         { position:relative; display:grid; place-items:center; width:40px; height:36px; overflow:visible; font-size:20px; line-height:36px; }
+.k-flat-subcat-object           { width:40px; height:36px; filter:drop-shadow(0 3px 5px var(--border-text-08)) grayscale(1) sepia(.58) hue-rotate(62deg) saturate(1.55) contrast(1.16) brightness(.74); }
+.k-flat-subcat-tab.is-active .k-flat-subcat-object { filter:drop-shadow(0 4px 6px var(--border-text-08)) grayscale(1) sepia(.68) hue-rotate(62deg) saturate(1.8) contrast(1.22) brightness(.66); transform:translateY(-1px); }
+.k-flat-subcat-tab-icon .k-shelf-emoji-fallback { display:block; filter:grayscale(1) sepia(.58) hue-rotate(62deg) saturate(1.55) contrast(1.16) brightness(.74); }
+.k-flat-subcat-tab-label        { max-width:60px; overflow:hidden; text-overflow:ellipsis; color:currentColor; font-size:10.5px; font-weight:620; line-height:1.1; }
+.k-flat-subcat-tab.is-active .k-flat-subcat-tab-label { font-weight:780; }
 
 .k-flat-subcat-empty       { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:60px 24px; text-align:center; }
 .k-flat-subcat-empty-emoji { font-size:52px; line-height:1; opacity:.6; }

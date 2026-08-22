@@ -1553,7 +1553,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 852 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 161 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 162 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
