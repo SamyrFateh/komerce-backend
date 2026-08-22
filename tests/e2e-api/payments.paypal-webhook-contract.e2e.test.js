@@ -95,9 +95,9 @@ describeE2E('E2E-P0-PAYPAL — payments · contrat webhook PayPal', ({ db }) => 
       [productId, `E2E PayPal ${tag(label)}`, stock]
     );
     await db.query(
-      `INSERT INTO orders (id, user_id, relais_id, reference, status, payment_status,
+      `INSERT INTO orders (id, user_id, relais_id, market_id, reference, status, payment_status,
                            payment_mode, total_kmf, total_eur, paypal_order_id)
-       VALUES ($1, $2, $3, $4, 'pending', 'pending', 'paypal_eur', 25000, 50, $5)`,
+       VALUES ($1, $2, $3, (SELECT market_id FROM relais WHERE id = $3), $4, 'pending', 'pending', 'paypal_eur', 25000, 50, $5)`,
       [orderId, clientId, relaisId, reference, paypalOrderId]
     );
     await db.query(
