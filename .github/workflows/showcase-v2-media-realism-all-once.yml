@@ -1,4 +1,4 @@
-name: Showcase V2 media realism all once
+name: Showcase V2 media realism resume remaining
 
 on:
   push:
@@ -35,22 +35,34 @@ jobs:
           test -n "$OPENAI_API_KEY" || { echo 'OPENAI_API_KEY missing'; exit 1; }
           test -n "$IMAGEKIT_PRIVATE_KEY" || { echo 'IMAGEKIT_PRIVATE_KEY missing'; exit 1; }
 
-      - name: Materialize 500-image generation plan
+      - name: Build exact resume set
+        id: resume
+        shell: bash
+        run: |
+          set -euo pipefail
+          refs="SHOWCASE-V2-0162"
+          for n in $(seq 164 500); do
+            refs="$refs,SHOWCASE-V2-$(printf '%04d' "$n")"
+          done
+          echo "count=338" >> "$GITHUB_OUTPUT"
+          echo "refs=$refs" >> "$GITHUB_OUTPUT"
+
+      - name: Materialize 338-image resume plan
         shell: bash
         run: |
           set -euo pipefail
           node scripts/showcase-v2-media-realism.js \
-            --scope all \
+            --refs '${{ steps.resume.outputs.refs }}' \
             --quality medium \
             --output artifacts/showcase-v2-media-realism-plan.json
 
-      - name: Generate and overwrite all ImageKit heroes
+      - name: Generate and overwrite remaining ImageKit heroes
         shell: bash
         run: |
           set -euo pipefail
           node scripts/showcase-v2-media-realism.js \
             --apply \
-            --scope all \
+            --refs '${{ steps.resume.outputs.refs }}' \
             --quality medium \
             --concurrency 2 \
             --confirm-all GENERATE-500 \
@@ -60,7 +72,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: showcase-v2-media-realism-all
+          name: showcase-v2-media-realism-resume-338
           path: artifacts/showcase-v2-media-realism-*.json
           if-no-files-found: warn
           retention-days: 14
