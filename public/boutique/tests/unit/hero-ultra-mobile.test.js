@@ -4,7 +4,9 @@ const fs = require('fs');
 const path = require('path');
 
 const cssPath = path.resolve(__dirname, '../../css/hero-ultra-mobile.css');
+const heroBootstrapPath = path.resolve(__dirname, '../../js/hero-bootstrap.js');
 const css = fs.readFileSync(cssPath, 'utf8');
+const heroBootstrap = fs.readFileSync(heroBootstrapPath, 'utf8');
 
 describe('hero ultra mobile contract', () => {
   test('reste strictement mobile et ultra compact', () => {
@@ -28,6 +30,17 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('height: 20px;');
     expect(css).toContain('right: 38%;');
     expect(css).toContain('top: 5px;');
+  });
+
+  test('replie le hero au scroll mobile et libère réellement la cage produits', () => {
+    expect(heroBootstrap).toContain('const HERO_COLLAPSE_THRESHOLD = 24;');
+    expect(heroBootstrap).toContain('const HERO_EXPAND_THRESHOLD = 4;');
+    expect(heroBootstrap).toContain("page.classList.contains('k-cat-section')");
+    expect(heroBootstrap).toContain("document.addEventListener('scroll', onMobileCategoryScroll, true);");
+    expect(heroBootstrap).toContain('translate3d(0, -${collapseDistance}px, 0)');
+    expect(heroBootstrap).toContain("style.setProperty('--pager-top', nextTop + 'px')");
+    expect(heroBootstrap).toContain('st >= HERO_COLLAPSE_THRESHOLD');
+    expect(heroBootstrap).toContain('st <= HERO_EXPAND_THRESHOLD');
   });
 
   test('n’introduit ni priorité forcée ni couleur hexadécimale', () => {
