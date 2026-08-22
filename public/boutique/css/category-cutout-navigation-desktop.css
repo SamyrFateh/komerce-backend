@@ -36,7 +36,7 @@
     border-radius: 0;
     background: transparent;
     box-shadow: none;
-    color: var(--text-muted);
+    color: var(--catalog-nav-muted);
   }
 
   html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout,
@@ -128,7 +128,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--text-muted);
+    color: var(--catalog-nav-muted);
     font-size: 11px;
     font-weight: 600;
     line-height: 1.15;
@@ -136,7 +136,7 @@
   }
 
   .k-shelf-rail .k-cat-cutout.active .k-chip-label {
-    color: var(--text);
+    color: var(--catalog-nav-strong);
     font-weight: 800;
   }
 
@@ -419,11 +419,11 @@
   .k-shelf-rail .k-cat-cutout .k-chip-label {
     position: relative; inset: auto;
     padding: 0 2px 5px; margin: 0;
-    color: var(--text-muted); font-size: 11px; font-weight: 600;
+    color: var(--catalog-nav-muted); font-size: 11px; font-weight: 600;
     text-align: center; text-shadow: none;
   }
   html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout.active .k-chip-label,
-  .k-shelf-rail .k-cat-cutout.active .k-chip-label { color: var(--text); font-weight: 800; }
+  .k-shelf-rail .k-cat-cutout.active .k-chip-label { color: var(--catalog-nav-strong); font-weight: 800; }
 
   /* état actif : aucune bordure/ombre de carte */
   html.k-home-premium-v1 .k-shelf-rail .k-cat-cutout.active,
@@ -452,61 +452,61 @@
     --k-desktop-scale: 1;
     --k-desktop-active-y: -2px;
     --k-desktop-active-scale: 1.04;
-    --k-desktop-saturation: .84;
+    --k-desktop-saturation: 1;
     min-height: 82px;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="all"] {
     --k-desktop-y: 0px;
-    --k-desktop-scale: 1.10;
-    --k-desktop-active-scale: 1.14;
-    --k-desktop-saturation: .86;
+    --k-desktop-scale: 1.02;
+    --k-desktop-active-scale: 1.07;
+    --k-desktop-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Soldes"] {
     --k-desktop-y: 1px;
-    --k-desktop-scale: 1.08;
-    --k-desktop-active-scale: 1.12;
-    --k-desktop-saturation: .82;
+    --k-desktop-scale: 1.01;
+    --k-desktop-active-scale: 1.06;
+    --k-desktop-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"] {
     --k-desktop-scale: 1;
-    --k-desktop-saturation: .76;
+    --k-desktop-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Maison"] {
     --k-desktop-y: 2px;
-    --k-desktop-scale: .94;
+    --k-desktop-scale: 1;
     --k-desktop-active-y: 0px;
-    --k-desktop-active-scale: .98;
-    --k-desktop-saturation: .74;
+    --k-desktop-active-scale: 1.05;
+    --k-desktop-saturation: .98;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Tech"] {
-    --k-desktop-scale: .98;
-    --k-desktop-active-scale: 1.02;
-    --k-desktop-saturation: .80;
+    --k-desktop-scale: 1;
+    --k-desktop-active-scale: 1.05;
+    --k-desktop-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Bricolage"] {
-    --k-desktop-scale: 1.01;
+    --k-desktop-scale: 1;
     --k-desktop-active-scale: 1.05;
-    --k-desktop-saturation: .82;
+    --k-desktop-saturation: .98;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Créations personnelles"] {
-    --k-desktop-scale: .99;
-    --k-desktop-active-scale: 1.03;
-    --k-desktop-saturation: .80;
+    --k-desktop-scale: 1.02;
+    --k-desktop-active-scale: 1.07;
+    --k-desktop-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Auto"] {
     --k-desktop-y: 2px;
-    --k-desktop-scale: .97;
+    --k-desktop-scale: 1;
     --k-desktop-active-y: 0px;
-    --k-desktop-active-scale: 1.01;
-    --k-desktop-saturation: .80;
+    --k-desktop-active-scale: 1.05;
+    --k-desktop-saturation: .96;
   }
 
   .k-shelf-object--category {
@@ -514,11 +514,9 @@
       translate(var(--k-desktop-x), var(--k-desktop-y))
       scale(var(--k-desktop-scale));
     filter:
-      drop-shadow(0 5px 7px var(--border-text-08))
+      drop-shadow(0 5px 7px var(--border-text-15))
       saturate(var(--k-desktop-saturation))
-      sepia(.035)
-      contrast(1.01)
-      brightness(1.025);
+      contrast(1.10);
   }
 
   .k-shelf-rail .k-cat-cutout:hover .k-shelf-object--category,
@@ -527,15 +525,13 @@
       translate(var(--k-desktop-x), var(--k-desktop-active-y))
       scale(var(--k-desktop-active-scale));
     filter:
-      drop-shadow(0 6px 8px var(--border-text-08))
+      drop-shadow(0 6px 8px var(--border-text-15))
       saturate(calc(var(--k-desktop-saturation) + .08))
-      sepia(.025)
-      contrast(1.02)
-      brightness(1.025);
+      contrast(1.13);
   }
 
   .k-shelf-rail .k-cat-cutout.active .k-chip-label {
-    color: var(--ocean-dark);
+    color: var(--catalog-nav-strong);
   }
 
   .k-cat-cutout.active .k-chip-label::after {

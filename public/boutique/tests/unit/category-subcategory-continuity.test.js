@@ -46,7 +46,8 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(cutout).toContain('height: 64px;');
     expect(cutout).toContain('--k-optical-scale: 1;');
     expect(cutout).toContain('saturate(var(--k-optical-saturation))');
-    expect(cutout).toContain('sepia(.04)');
+    expect(cutout).not.toContain('sepia(.04)');
+    expect(cutout).toContain('contrast(1.10)');
   });
 
   test('calibre individuellement les huit univers du rail mobile', () => {
@@ -74,9 +75,9 @@ describe('continuité catégories et sous-catégories desktop', () => {
     ].forEach((key) => {
       expect(desktopShelf).toContain(`.k-shelf-rail .k-cat-cutout[data-cat="${key}"]`);
     });
-    expect(desktopShelf).toContain('--k-desktop-saturation: .84;');
+    expect(desktopShelf).toContain('--k-desktop-saturation: 1;');
     expect(desktopShelf).toContain('saturate(var(--k-desktop-saturation))');
-    expect(desktopShelf).toContain('sepia(.035)');
+    expect(desktopShelf).not.toContain('sepia(.035)');
     expect(desktopShelf).toContain('min-height: 94px;');
   });
 

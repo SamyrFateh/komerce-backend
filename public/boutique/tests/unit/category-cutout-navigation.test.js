@@ -10,6 +10,12 @@ const renderer = fs.readFileSync(path.join(ROOT, 'js/render/render-categories.js
 const visuals = fs.readFileSync(path.join(ROOT, 'js/render/category-shelf-visuals.js'), 'utf8');
 const home = fs.readFileSync(path.join(ROOT, 'js/controllers/home-controller.js'), 'utf8');
 const sprite = fs.readFileSync(path.join(ROOT, 'categories/komerce-shelf-sprite.svg'), 'utf8');
+const sections = fs.readFileSync(path.join(ROOT, 'js/render/render-home-sections.js'), 'utf8');
+const categories = fs.readFileSync(path.join(ROOT, 'css/categories.css'), 'utf8');
+const tokens = fs.readFileSync(path.join(ROOT, 'css/tokens.css'), 'utf8');
+const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const swRefresh = fs.readFileSync(path.join(ROOT, 'js/b-service-worker-refresh.js'), 'utf8');
+const sw = fs.readFileSync(path.resolve(ROOT, '../sw.js'), 'utf8');
 
 describe('Komerce Shelf category navigation contract', () => {
   it('conserve k-chip pour le comportement et ajoute un modifier visuel dédié', () => {
@@ -40,7 +46,10 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobileBlock).toContain('--k-optical-saturation: 1;');
     expect(mobileBlock).toMatch(/translate\(var\(--k-optical-x\), var\(--k-optical-y\)\)/);
     expect(mobileBlock).toContain('saturate(var(--k-optical-saturation))');
-    expect(mobileBlock).toContain('sepia(.04)');
+    expect(mobileBlock).not.toContain('sepia(');
+    expect(mobileBlock).toContain('contrast(1.10)');
+    expect(mobile).toContain('color: var(--catalog-nav-muted);');
+    expect(mobile).toContain('color: var(--catalog-nav-strong);');
     expect(mobileBlock).toMatch(/padding:\s*4px 8px 5px/);
     expect(mobileBlock).toMatch(/margin-top:\s*0/);
   });
@@ -99,6 +108,27 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-col="2"] .k-shelf-atlas-image { left: -200%; }');
     expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-row="1"] .k-shelf-atlas-image { top: -100%; }');
     expect(mobile).not.toMatch(/@media \(max-width: 899px\)[\s\S]*\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*position:\s*relative/s);
+  });
+
+  it('utilise un contraste gris franc et les cutouts dans les titres de section', () => {
+    expect(tokens).toContain('--catalog-nav-muted:  #666964;');
+    expect(tokens).toContain('--catalog-nav-strong: #2F312E;');
+    expect(mobile).toContain('color: var(--catalog-nav-muted);');
+    expect(mobile).toContain('color: var(--catalog-nav-strong);');
+    expect(desktop).toContain('color: var(--catalog-nav-muted);');
+    expect(desktop).toContain('color: var(--catalog-nav-strong);');
+    expect(sections).toContain('renderSectionVisual');
+    expect(sections).toContain('k-sec-header-cutout');
+    expect(categories).toContain('.k-sec-header-cutout .k-shelf-object--section');
+  });
+
+  it('force la rotation du cache qui conservait encore l’ancien atlas', () => {
+    expect(index).toContain('/boutique/js/b-service-worker-refresh.js?v=338');
+    expect(index).toContain('/boutique/js/main.js?v=356');
+    expect(swRefresh).toContain("komerce-v338");
+    expect(swRefresh).toContain("event.data?.version === 'v338'");
+    expect(sw).toContain("const CACHE = 'komerce-v338'");
+    expect(sw).toContain("version: 'v338'");
   });
 
   it('détache le niveau 2 Shelf de la classe visuelle legacy k-subchip', () => {
