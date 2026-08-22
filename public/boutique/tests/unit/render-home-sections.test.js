@@ -55,12 +55,15 @@ describe('render-home-sections', () => {
       const html = renderHomeSections({ items, allProducts: items, isMobile: true, renderCard, normalizeCategory, shuffle: noShuffle });
       expect(html).toContain('data-cat="all"');
       expect(html).toContain('Tout');
+      expect(html).toContain('k-sec-header-cutout');
+      expect(html).toContain('cat-all-v3.webp');
     });
 
     it('inclut une section Soldes basée sur getPromoProducts (produit 3 a promo_pct=30)', () => {
       const html = renderHomeSections({ items, allProducts: items, isMobile: true, renderCard, normalizeCategory, shuffle: noShuffle });
       expect(html).toContain('data-cat="Soldes"');
       expect(html).toContain('Robe en promo');
+      expect(html).toContain('cat-soldes-v3.webp');
     });
 
     it('items vides → pas de crash, retourne quand même les sections (vides)', () => {
