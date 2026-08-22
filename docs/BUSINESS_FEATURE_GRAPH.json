@@ -4756,6 +4756,13 @@
       {
         "feature": "infrastructure",
         "category": "scripts",
+        "declared": "scripts/check-no-market-id-mutation.js",
+        "resolvedPath": "scripts/check-no-market-id-mutation.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
         "declared": "scripts/check-schema-freshness.js",
         "resolvedPath": "scripts/check-schema-freshness.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6991,6 +6998,27 @@
         "category": "migrations",
         "declared": "migrations/138_orders_market_id.sql",
         "resolvedPath": "migrations/138_orders_market_id.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "services",
+        "declared": "middleware/require-market-scope.js",
+        "resolvedPath": "middleware/require-market-scope.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/require-market-scope.test.js",
+        "resolvedPath": "tests/unit/require-market-scope.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/market-scope-isolation.test.js",
+        "resolvedPath": "tests/integration/market-scope-isolation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14583,6 +14611,12 @@
         "resolved": true
       },
       {
+        "from": "market",
+        "to": "infrastructure",
+        "raw": "infrastructure (db.js — pool de connexion Postgres, seule dépendance de middleware/require-market-scope.js)",
+        "resolved": true
+      },
+      {
         "from": "notifications",
         "to": "incident-management",
         "raw": "incident-management (incident persistence via incident-write-service)",
@@ -21463,6 +21497,26 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "market",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "middleware/require-market-scope.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-scope-isolation.test.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "notifications",
         "to": "auth",
         "channels": [
@@ -25163,7 +25217,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 837
+        "filesObserved": 841
       },
       "boutique": {
         "filesObserved": 160,

@@ -14,7 +14,7 @@
       "script": "scripts/feature-registry-check.js",
       "status": "ok",
       "exitCode": 0,
-      "errorCount": 1,
+      "errorCount": 0,
       "warningCount": 0,
       "coverageCount": 0,
       "unprojectableCount": 0,
@@ -816,15 +816,6 @@
       "feature": "catalog",
       "file": null,
       "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
-    },
-    {
-      "gate": "gate:feature-registry-check",
-      "scope": "root",
-      "type": "MISSING-CONTRACT",
-      "verdict": "fail",
-      "feature": "market",
-      "file": null,
-      "message": "contract.exposes et contract.consumes manquants"
     }
   ]
 }

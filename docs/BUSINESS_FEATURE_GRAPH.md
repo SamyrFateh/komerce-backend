@@ -290,7 +290,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - validators: 1
 - bootstrap: 9
 - migrations: 6
-- scripts: 87
+- scripts: 88
 - docs: 60
 - ci: 24
 - assets: 29
@@ -303,7 +303,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 4
 - internal APIs: 11
 - dependencies (consumes): 14 — auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notifications, platform-ops, orders, payments, recommendations, shared-cart, wallet
-- consumers: 25 — auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, documents, economic-engine, incident-management, inventory, logistics, loyalty, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
+- consumers: 26 — auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, documents, economic-engine, incident-management, inventory, logistics, loyalty, market, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
 
 ### inventory _(business-feature)_
 
@@ -371,11 +371,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
 
 - migrations: 4
+- services: 1
+- tests: 2
 - tables owned (lifecycle): 0
 - tables written: 0
 - interfaces exposed: 0
 - internal APIs: 0
-- dependencies (consumes): 0
+- dependencies (consumes): 1 — infrastructure
 - consumers: 0
 
 ### notifications _(business-transversal)_
@@ -1377,6 +1379,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | loyalty | notifications (`notifications (FF-C1 2026-07-29 — émission de message ; preuve: services/loyalty-service.js -> services/notification-service.js)`) | ✔ |
 | loyalty | auth-identity (`auth-identity (identification du client)`) | ✔ |
 | loyalty | wallet (`wallet (aucune écriture — v_loyalty_summary et le calcul de palier ne lisent pas les tables wallet)`) | ✔ |
+| market | infrastructure (`infrastructure (db.js — pool de connexion Postgres, seule dépendance de middleware/require-market-scope.js)`) | ✔ |
 | notifications | incident-management (`incident-management (incident persistence via incident-write-service)`) | ✔ |
 | notifications | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
 | notifications | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
@@ -1546,7 +1549,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 837 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 841 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 160 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1672,6 +1675,7 @@ Meta Graph monté : oui.
 | loyalty | auth-identity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | loyalty | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | loyalty | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| market | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | notifications | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | notifications | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | notifications | infrastructure | static-code | 13 | **DECLARED_AND_OBSERVED** |
