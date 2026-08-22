@@ -1,0 +1,212 @@
+name: E2E fixture autopatch
+
+on:
+  push:
+    branches:
+      - test/e2e-market-order-fixtures-auth-session
+    paths:
+      - .github/workflows/e2e-fixture-autopatch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[e2e-autopatch]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply exact E2E fixture updates
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          function exact(path, from, to) {
+            let text = fs.readFileSync(path, 'utf8');
+            if (!text.includes(from)) {
+              throw new Error(`Pattern not found in ${path}: ${from.slice(0, 100)}`);
+            }
+            text = text.replace(from, to);
+            fs.writeFileSync(path, text, 'utf8');
+          }
+
+          // AUTH-IDENTITY: direct orders inherit market from relais + canonical AUTH-8 sessions.
+          {
+            const p = 'tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js';
+            exact(p,
+              "const jwt = require('jsonwebtoken');",
+              "const { signAuthToken } = require('../../utils/auth-session');"
+            );
+            exact(p,
+`        \`INSERT INTO orders
+           (id, reference, user_id, relais_id, total_kmf,
+            payment_mode, payment_status, status)
+         VALUES ($1, $2, $3, $4, 25000, 'cash_relais', 'paid', 'available')\`,`,
+`        \`INSERT INTO orders
+           (id, reference, user_id, relais_id, market_id, total_kmf,
+            payment_mode, payment_status, status)
+         VALUES ($1, $2, $3, $4, (SELECT market_id FROM relais WHERE id = $4), 25000, 'cash_relais', 'paid', 'available')\`,`
+            );
+            exact(p,
+`      buyerToken = jwt.sign(
+        { id: buyerId, role: 'client', jti: uuid() },
+        process.env.JWT_SECRET,
+        { algorithm: 'HS256', expiresIn: '1h' }
+      );
+      agentToken = jwt.sign(
+        { id: agentId, role: 'agent_relais', jti: uuid() },
+        process.env.JWT_SECRET,
+        { algorithm: 'HS256', expiresIn: '1h' }
+      );
+      foreignAgentToken = jwt.sign(
+        { id: foreignAgentId, role: 'agent_relais', jti: uuid() },
+        process.env.JWT_SECRET,
+        { algorithm: 'HS256', expiresIn: '1h' }
+      );`,
+`      buyerToken = signAuthToken(
+        { id: buyerId, role: 'client' },
+        { method: 'e2e' }
+      );
+      agentToken = signAuthToken(
+        { id: agentId, role: 'agent_relais' },
+        { method: 'e2e' }
+      );
+      foreignAgentToken = signAuthToken(
+        { id: foreignAgentId, role: 'agent_relais' },
+        { method: 'e2e' }
+      );`
+            );
+          }
+
+          // CHECKOUT: use the canonical session issuer instead of hand-signed JWT.
+          {
+            const p = 'tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js';
+            exact(p,
+`const jwt = require('jsonwebtoken');
+const Stripe = require('stripe');`,
+`const Stripe = require('stripe');
+const { signAuthToken } = require('../../utils/auth-session');`
+            );
+            exact(p,
+`    token = jwt.sign({ id: userId, role: 'client' }, process.env.JWT_SECRET, {
+      algorithm: 'HS256',
+      expiresIn: '1h',
+    });`,
+`    token = signAuthToken(
+      { id: userId, role: 'client' },
+      { method: 'e2e' }
+    );`
+            );
+          }
+
+          // REFUNDS: same AUTH-8 session boundary for client and admin.
+          {
+            const p = 'tests/e2e-api/refunds.no-double-application.e2e.test.js';
+            exact(p,
+`const jwt = require('jsonwebtoken');
+const Stripe = require('stripe');`,
+`const Stripe = require('stripe');
+const { signAuthToken } = require('../../utils/auth-session');`
+            );
+            exact(p,
+`    const sign = (id, role) =>
+      jwt.sign({ id, role }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });`,
+`    const sign = (id, role) => signAuthToken(
+      { id, role },
+      { method: 'e2e' }
+    );`
+            );
+          }
+
+          // PICKUP RACE: direct order snapshot must copy the relay market.
+          {
+            const p = 'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js';
+            exact(p,
+`             relais_id,
+             total_kmf,`,
+`             relais_id,
+             market_id,
+             total_kmf,`
+            );
+            exact(p,
+`             $4,
+             25000,`,
+`             $4,
+             (SELECT market_id FROM relais WHERE id = $4),
+             25000,`
+            );
+          }
+
+          // PAYPAL: direct order snapshot must copy the relay market.
+          {
+            const p = 'tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js';
+            exact(p,
+`      \`INSERT INTO orders (id, user_id, relais_id, reference, status, payment_status,
+                           payment_mode, total_kmf, total_eur, paypal_order_id)
+       VALUES ($1, $2, $3, $4, 'pending', 'pending', 'paypal_eur', 25000, 50, $5)\`,`,
+`      \`INSERT INTO orders (id, user_id, relais_id, market_id, reference, status, payment_status,
+                           payment_mode, total_kmf, total_eur, paypal_order_id)
+       VALUES ($1, $2, $3, (SELECT market_id FROM relais WHERE id = $3), $4, 'pending', 'pending', 'paypal_eur', 25000, 50, $5)\`,`
+            );
+          }
+
+          // PURCHASING: direct order snapshot must copy the relay market.
+          {
+            const p = 'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js';
+            exact(p,
+`      \`INSERT INTO orders (id, user_id, relais_id, reference, status, payment_status,
+                           payment_mode, total_kmf, total_eur)
+       VALUES ($1, $2, $3, $4, 'confirmed', 'paid', 'cash_relais', 50000, 100)\`,`,
+`      \`INSERT INTO orders (id, user_id, relais_id, market_id, reference, status, payment_status,
+                           payment_mode, total_kmf, total_eur)
+       VALUES ($1, $2, $3, (SELECT market_id FROM relais WHERE id = $3), $4, 'confirmed', 'paid', 'cash_relais', 50000, 100)\`,`
+            );
+          }
+
+          // Exhaustive active-E2E guards.
+          const dir = 'tests/e2e-api';
+          const files = fs.readdirSync(dir)
+            .filter((name) => name.endsWith('.e2e.test.js'))
+            .map((name) => `${dir}/${name}`);
+
+          for (const file of files) {
+            const text = fs.readFileSync(file, 'utf8');
+            if (text.includes('jwt.sign(')) {
+              throw new Error(`Stale hand-signed session remains in ${file}`);
+            }
+            for (const match of text.matchAll(/INSERT INTO orders([\s\S]*?)VALUES/g)) {
+              if (!match[1].includes('market_id')) {
+                throw new Error(`Direct INSERT INTO orders without market_id remains in ${file}`);
+              }
+            }
+            for (const match of text.matchAll(/INSERT INTO relais([\s\S]*?)VALUES/g)) {
+              if (!match[1].includes('market_id')) {
+                throw new Error(`Direct INSERT INTO relais without market_id remains in ${file}`);
+              }
+            }
+          }
+
+          console.log(`E2E fixture guards OK — ${files.length} active suites scanned.`);
+          NODE
+
+      - name: Syntax and diff guards
+        shell: bash
+        run: |
+          for f in tests/e2e-api/*.e2e.test.js; do node --check "$f"; done
+          git diff --check
+          git diff --stat
+
+      - name: Commit exact test-only patch and remove one-shot workflow
+        shell: bash
+        run: |
+          rm .github/workflows/e2e-fixture-autopatch.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e-api .github/workflows/e2e-fixture-autopatch.yml
+          git diff --cached --check
+          git commit -m "[e2e-autopatch] test(e2e): align order market and auth fixtures"
+          git push origin HEAD:test/e2e-market-order-fixtures-auth-session
