@@ -47,21 +47,21 @@
     "healthy": 15,
     "attention": 16,
     "blocked": 0,
-    "businessDependencies": 179,
+    "businessDependencies": 180,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
     "debtItemsTotal": 43,
     "gateHealthy": 14,
-    "gateBlocked": 1
+    "gateBlocked": 0
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 56,
-    "attributedFindings": 56,
+    "totalFindings": 55,
+    "attributedFindings": 55,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -9006,7 +9006,7 @@
             ]
           },
           "scripts": {
-            "count": 87,
+            "count": 88,
             "files": [
               {
                 "declared": "audit-backend-arch.js",
@@ -9136,6 +9136,11 @@
               {
                 "declared": "scripts/check-boutique.mjs",
                 "resolvedPath": "scripts/check-boutique.mjs",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/check-no-market-id-mutation.js",
+                "resolvedPath": "scripts/check-no-market-id-mutation.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9571,7 +9576,7 @@
             ]
           }
         },
-        "totalFiles": 271,
+        "totalFiles": 272,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -9916,6 +9921,13 @@
         },
         {
           "consumer": "loyalty",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -12176,10 +12188,12 @@
           "référentiel markets (code pays, devise, minor_unit) — M0",
           "historique d'accès operator_market_scopes (grain user, jamais settlement) — M1",
           "scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c",
-          "MarketContext navigation (contextuel, client, commutable, jamais autorisant) — M2",
-          "requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2"
+          "requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2",
+          "garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2"
         ],
         "out": [
+          "MarketContext navigation acheteur — déjà livré côté boutique (public/boutique/js/market-context.js, chantier hero H2/H3), contextuel et commutable, jamais lu par requireMarketScope",
+          "branchement de requireMarketScope sur une route concrète — aucune route admin scopée par marché n'existe encore dans ce dépôt ; le middleware est livré et testé, pas encore consommé",
           "settlement et attribution économique par opérateur (entité différée, hors périmètre)",
           "corridor framework (relation traversant les scopes, pas un axe d'ownership, hors périmètre)",
           "wallet multi-market (hors périmètre)",
@@ -12198,7 +12212,9 @@
         "relais.market_id (M1b) est NOT NULL — un relais est un lieu physique, il ne peut pas exister sans marché",
         "orders.market_id (M1c) est un SNAPSHOT résolu du relais au moment de la commande, jamais une FK vivante re-synchronisée",
         "orders.relais_id est NOT NULL dans le schéma (vérifié par exécution réelle, pas supposé) — aucune commande sans relais n'est possible, le backfill orders.market_id est donc total par construction",
-        "toute migration de market qui touche une table possédée par une autre feature (ex: relais, logistics ; orders) ajoute une colonne ou un index, jamais une règle métier de cette autre feature"
+        "toute migration de market qui touche une table possédée par une autre feature (ex: relais, logistics ; orders) ajoute une colonne ou un index, jamais une règle métier de cette autre feature",
+        "forbidMarketId (validators/index.js) échoue fort (400, message explicite) plutôt que de compter sur stripUnknown pour retirer market_id silencieusement d'un payload client",
+        "scripts/check-no-market-id-mutation.js est un gate, pas une convention documentée : un market_id mutable non gardé dans validators/*.js fait échouer la CI"
       ],
       "implementation": {
         "byCategory": {
@@ -12226,9 +12242,34 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
+          },
+          "services": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "middleware/require-market-scope.js",
+                "resolvedPath": "middleware/require-market-scope.js",
+                "status": "resolved-on-disk-no-header"
+              }
+            ]
+          },
+          "tests": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "tests/integration/market-scope-isolation.test.js",
+                "resolvedPath": "tests/integration/market-scope-isolation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/require-market-scope.test.js",
+                "resolvedPath": "tests/unit/require-market-scope.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
           }
         },
-        "totalFiles": 4,
+        "totalFiles": 7,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12251,7 +12292,15 @@
           "count": 0
         }
       },
-      "businessDependencies": [],
+      "businessDependencies": [
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "consumedBy": [],
       "projections": {
         "projectedBy": []
@@ -12281,12 +12330,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "BLOCKED",
-        "failCount": 1,
+        "status": "ATTENTION",
+        "failCount": 0,
         "warnCount": 1,
         "gatesReporting": [
-          "gate:feature-classification-check",
-          "gate:feature-registry-check"
+          "gate:feature-classification-check"
         ],
         "findings": [
           {
@@ -12296,14 +12344,6 @@
             "verdict": "warn",
             "file": null,
             "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          },
-          {
-            "gate": "gate:feature-registry-check",
-            "scope": "root",
-            "type": "MISSING-CONTRACT",
-            "verdict": "fail",
-            "file": null,
-            "message": "contract.exposes et contract.consumes manquants"
           }
         ]
       },

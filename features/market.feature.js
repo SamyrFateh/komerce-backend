@@ -32,10 +32,16 @@ module.exports = {
       'référentiel markets (code pays, devise, minor_unit) — M0',
       'historique d\'accès operator_market_scopes (grain user, jamais settlement) — M1',
       'scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c',
-      'MarketContext navigation (contextuel, client, commutable, jamais autorisant) — M2',
       'requireMarketScope autorisation (serveur, enferme l\'opérateur, jamais le client) — M2',
+      'garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2',
     ],
     out: [
+      'MarketContext navigation acheteur — déjà livré côté boutique ' +
+        '(public/boutique/js/market-context.js, chantier hero H2/H3), ' +
+        'contextuel et commutable, jamais lu par requireMarketScope',
+      'branchement de requireMarketScope sur une route concrète — aucune route ' +
+        'admin scopée par marché n\'existe encore dans ce dépôt ; le middleware ' +
+        'est livré et testé, pas encore consommé',
       'settlement et attribution économique par opérateur (entité différée, hors périmètre)',
       'corridor framework (relation traversant les scopes, pas un axe d\'ownership, hors périmètre)',
       'wallet multi-market (hors périmètre)',
@@ -52,6 +58,13 @@ module.exports = {
       'migrations/137_relais_market_id.sql',
       'migrations/138_orders_market_id.sql',
     ],
+    services: [
+      'middleware/require-market-scope.js',
+    ],
+    tests: [
+      'tests/unit/require-market-scope.test.js',
+      'tests/integration/market-scope-isolation.test.js',
+    ],
   },
 
   // ── Securite ─────────────────────────────────────────────────────────────
@@ -63,11 +76,23 @@ module.exports = {
     status: 'CONFIRMED_PROTECTED',
     authedRoutesDetected: 0,
     totalRoutes: 0,
-    note: 'M0/M1 ne câblent aucune route ni middleware — deux tables de ' +
-      'référentiel et d\'historique d\'accès, zéro surface applicative. ' +
-      'L\'autorisation arrive en M2 avec requireMarketScope, résolu côté ' +
-      'serveur depuis operator_market_scopes, jamais depuis un market_id ' +
-      'fourni par le client.',
+    note: 'M0/M1 ne câblent aucune route. M2 livre requireMarketScope ' +
+      '(middleware/require-market-scope.js), résolu côté serveur depuis ' +
+      'operator_market_scopes, jamais depuis un market_id fourni par le ' +
+      'client — testé (12 tests unitaires mockés + 10 tests d\'intégration ' +
+      'contre un vrai Postgres), mais 0 route ne le consomme encore : ' +
+      'aucune route admin scopée par marché n\'existe dans ce dépôt à ce ' +
+      'jour. Le champ reste à 0/0 tant qu\'aucune route ne branche le ' +
+      'middleware — brancher sans route réelle serait une fausse déclaration.',
+  },
+
+  // ── Contrat ──────────────────────────────────────────────────────────────
+  contract: {
+    exposes: [], // aucune route encore câblée — requireMarketScope est livré (M2) mais non consommé
+    consumes: [
+      'infrastructure (db.js — pool de connexion Postgres, seule dépendance ' +
+        'de middleware/require-market-scope.js)',
+    ],
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
@@ -88,6 +113,8 @@ module.exports = {
     'orders.market_id (M1c) est un SNAPSHOT résolu du relais au moment de la commande, jamais une FK vivante re-synchronisée',
     'orders.relais_id est NOT NULL dans le schéma (vérifié par exécution réelle, pas supposé) — aucune commande sans relais n\'est possible, le backfill orders.market_id est donc total par construction',
     'toute migration de market qui touche une table possédée par une autre feature (ex: relais, logistics ; orders) ajoute une colonne ou un index, jamais une règle métier de cette autre feature',
+    'forbidMarketId (validators/index.js) échoue fort (400, message explicite) plutôt que de compter sur stripUnknown pour retirer market_id silencieusement d\'un payload client',
+    'scripts/check-no-market-id-mutation.js est un gate, pas une convention documentée : un market_id mutable non gardé dans validators/*.js fait échouer la CI',
   ],
 
 };

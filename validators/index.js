@@ -44,6 +44,16 @@ const posNum   = Joi.number().positive();
 const isoDate  = Joi.string().isoDate();
 const url      = Joi.string().trim().uri({ scheme: ['http', 'https'] });
 
+// market_id n'est jamais un champ mutable par le client (freeze §DATABASE :
+// "règle Joi jamais market_id en update"). stripUnknown retire déjà market_id
+// des payloads qui ne le déclarent pas, mais silencieusement — un schéma
+// d'update qui manipule une ressource scopée par marché doit déclarer ce
+// champ explicitement en .forbidden() : l'erreur devient visible et testable
+// au lieu d'être un retrait muet. Vérifié par scripts/check-no-market-id-mutation.js.
+const forbidMarketId = Joi.forbidden().messages({
+  'any.unknown': 'market_id ne peut jamais être fourni par le client — résolu serveur uniquement (requireMarketScope, freeze §3)',
+});
+
 const auth = {
   register: {
     body: Joi.object({
@@ -218,11 +228,12 @@ const orders = {
       module_accessories:        Joi.array().items(safeStr(100)).max(10),
       order_occasion:            safeStr(50),
       use_wallet:                Joi.boolean().default(false),
+      market_id:                 forbidMarketId,
     }),
   },
   updateStatus: {
     params: Joi.object({ id: uuid.required() }),
-    body: Joi.object({ status: safeStr(30).required(), note: safeStr(500) }),
+    body: Joi.object({ status: safeStr(30).required(), note: safeStr(500), market_id: forbidMarketId }),
   },
   updateCost: {
     params: Joi.object({ id: uuid.required() }),
@@ -234,6 +245,7 @@ const orders = {
       sh_category:          safeStr(50),
       supplier_name:        safeStr(200),
       supplier_invoice_url: url,
+      market_id:            forbidMarketId,
     }),
   },
   cancelOrder: {
@@ -475,6 +487,7 @@ const finance = {
 };
 
 module.exports = {
+  forbidMarketId,
   auth,
   products,
   orders,
