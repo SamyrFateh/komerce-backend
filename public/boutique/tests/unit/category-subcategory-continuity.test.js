@@ -97,12 +97,14 @@ describe('continuité catégories et sous-catégories desktop', () => {
       expect(desktopShelf).toContain(`[data-shelf-visual="${key}"]`);
     });
     expect(desktopShelf).toContain('.k-subcutout-icon--all .k-shelf-object--all');
-    expect(desktopShelf).toContain('fill: currentColor;');
+    expect(desktopShelf).toContain('fill: #557253;');
+    expect(desktopShelf).toContain('fill: var(--green-dark-text);');
     expect(subcat).toContain('getShelfSubcategoryVisual');
     expect(desktopShelf).toContain('.k-shelf-emoji-fallback');
     expect(desktopShelf).toContain('grayscale(1)');
-    expect(desktopShelf).toContain('saturate(0)');
-    expect(desktopShelf).not.toContain('sepia(');
+    expect(desktopShelf).toContain('sepia(.58)');
+    expect(desktopShelf).toContain('hue-rotate(62deg)');
+    expect(desktopShelf).toContain('saturate(1.55)');
     expect(desktopShelf).toContain('color: var(--catalog-nav-strong);');
   });
 
@@ -110,7 +112,7 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(subcat).toContain('getShelfSubcategoryVisual');
     expect(subcat).toContain("renderShelfUse(visual, 'k-shelf-object--subcategory k-flat-subcat-object')");
     expect(interactions).toMatch(/\.k-flat-subcat-tab\s*\{[^}]*flex-direction:\s*column[^}]*background:\s*transparent[^}]*border:\s*0/s);
-    expect(interactions).toMatch(/\.k-flat-subcat-object\s*\{[^}]*grayscale\(1\)[^}]*saturate\(0\)/s);
+    expect(interactions).toMatch(/\.k-flat-subcat-object\s*\{[^}]*grayscale\(1\)[^}]*hue-rotate\(62deg\)[^}]*saturate\(1\.55\)/s);
     expect(interactions).toMatch(/\.k-flat-subcat-tab\.is-active::after\s*\{[^}]*width:\s*18px/s);
   });
 
