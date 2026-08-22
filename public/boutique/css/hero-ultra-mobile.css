@@ -31,8 +31,8 @@
   }
 
   .k-hero-media .k-hero-figures {
-    background-size: auto 205%;
-    background-position: 87% 18%;
+    background-size: auto 190%;
+    background-position: 84% 20%;
     -webkit-mask-image: none;
     mask-image: none;
   }
@@ -40,8 +40,8 @@
   .k-hero-media .k-hero-moon {
     width: 20px;
     height: 20px;
-    right: 25%;
-    top: 7px;
+    right: 22%;
+    top: 3px;
     opacity: .92;
   }
 
