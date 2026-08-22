@@ -4,10 +4,10 @@
  * @domain        catalog
  * @layer         ui-bootstrap
  * @owner         public/boutique/js/b-home-premium-v1.js
- * @purpose       Hero sticky mobile (scroll.style.top), sticky bar desktop (IntersectionObserver),
+ * @purpose       Hero mobile repliable au scroll, sticky bar desktop (IntersectionObserver),
  *                CTA scroll, proverbe africain rotatif — exécuté après DOM ready (defer).
  * @impact-areas  boutique, hero, mobile, desktop
- * @version       2026-07
+ * @version       2026-08
  *
  * Externalisé depuis index.html (inline script #3) suite au durcissement
  * CSP FRESH-030/AUD-04 (script-src 'self', sans unsafe-inline).
@@ -22,13 +22,138 @@
 
   function isMobile(){ return window.innerWidth <= 899; }
 
-  // ── MOBILE : le wrap n'est plus fixé (H0), plus de calcul de top ──
+  const HERO_COLLAPSE_THRESHOLD = 24;
+  const HERO_EXPAND_THRESHOLD = 4;
+  const HERO_TRANSITION_MS = 160;
+  let mobileHeroCollapsed = false;
+  let mobileBasePagerTop = null;
+
+  function readMobilePagerTop(){
+    let ps = document.getElementById('k-page-scroll');
+    let raw = getComputedStyle(document.documentElement).getPropertyValue('--pager-top');
+    let cssTop = parseFloat(raw);
+    if (Number.isFinite(cssTop) && cssTop > 0) return cssTop;
+    let inlineTop = ps ? parseFloat(ps.style.top) : NaN;
+    if (Number.isFinite(inlineTop) && inlineTop > 0) return inlineTop;
+    if (ps) {
+      let rectTop = ps.getBoundingClientRect().top;
+      if (Number.isFinite(rectTop) && rectTop > 0) return rectTop;
+    }
+    return null;
+  }
+
+  function getMobileHeroCollapseDistance(){
+    let wrap = document.getElementById('k-hero-fixed-wrap');
+    let bar = document.getElementById('k-sticky-bar');
+    let hero = document.getElementById('k-hero');
+    if (!wrap) return 0;
+
+    // Distance exacte entre le haut du wrapper fixe et le rail catégories.
+    // En retirant cette distance, le rail vient se poser sous le header.
+    if (bar) {
+      let distance = bar.getBoundingClientRect().top - wrap.getBoundingClientRect().top;
+      if (distance > 0) return distance;
+    }
+    return hero ? hero.getBoundingClientRect().height : 0;
+  }
+
+  function setMobileHeroCollapsed(collapsed, instant){
+    if (!isMobile()) return;
+    if (collapsed === mobileHeroCollapsed) return;
+
+    let wrap = document.getElementById('k-hero-fixed-wrap');
+    let ps = document.getElementById('k-page-scroll');
+    if (!wrap || !ps || !ps.classList.contains('k-pager-active')) return;
+
+    let collapseDistance = getMobileHeroCollapseDistance();
+    if (collapseDistance <= 0) return;
+
+    if (collapsed) {
+      mobileBasePagerTop = readMobilePagerTop();
+    }
+    if (!Number.isFinite(mobileBasePagerTop) || mobileBasePagerTop <= 0) return;
+
+    let header = document.querySelector('.k-header');
+    let headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+    let nextTop = collapsed
+      ? Math.max(headerBottom, mobileBasePagerTop - collapseDistance)
+      : mobileBasePagerTop;
+    let bnav = document.querySelector('.k-bnav');
+    let bnavH = bnav ? bnav.offsetHeight : 56;
+    let nextH = Math.max(window.innerHeight - nextTop - bnavH, 300);
+    let reducedMotion = window.matchMedia
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let duration = instant || reducedMotion ? 0 : HERO_TRANSITION_MS;
+    let easing = 'cubic-bezier(.2,.7,.2,1)';
+
+    wrap.style.transition = `transform ${duration}ms ${easing}`;
+    ps.style.transition = `top ${duration}ms ${easing}`;
+    wrap.style.transform = collapsed
+      ? `translate3d(0, -${collapseDistance}px, 0)`
+      : 'translate3d(0, 0, 0)';
+
+    document.documentElement.style.setProperty('--pager-top', nextTop + 'px');
+    document.documentElement.style.setProperty('--pager-h', nextH + 'px');
+    ps.style.top = nextTop + 'px';
+    mobileHeroCollapsed = collapsed;
+  }
+
+  function onMobileCategoryScroll(event){
+    if (!isMobile()) return;
+    let ps = document.getElementById('k-page-scroll');
+    if (!ps || !ps.classList.contains('k-pager-active')) return;
+    if (document.body.classList.contains('modal-open')) return;
+
+    let page = event.target;
+    if (!page || !page.classList || !page.classList.contains('k-cat-section')) return;
+
+    let st = page.scrollTop;
+    let lastST = Number.isFinite(page._kHeroLastST) ? page._kHeroLastST : 0;
+    let goingDown = st > lastST + 1;
+    let goingUp = st < lastST - 1;
+    page._kHeroLastST = st;
+
+    if (goingDown && st >= HERO_COLLAPSE_THRESHOLD) {
+      setMobileHeroCollapsed(true, false);
+    } else if (goingUp && st <= HERO_EXPAND_THRESHOLD) {
+      setMobileHeroCollapsed(false, false);
+    }
+  }
+
+  // ── MOBILE : émotion d'abord, catalogue ensuite ──────────────
+  // Les pages catégorie sont les vrais scrollers verticaux du pager mobile.
+  // Le scroll ne bulle pas ; on l'écoute en capture au niveau document.
+  // À la descente, le hero sort derrière le header et le rail catégories reste
+  // fixé sous celui-ci. La cage produits remonte du même montant : le gain de
+  // place est réel. Le hero revient uniquement quand on remonte vraiment en haut.
   function setupMobile(){
     if (!isMobile()) return;
-    // H0 : #k-hero-fixed-wrap est en position:static, plus besoin de
-    // mesurer sa hauteur ni de poser style.top sur #k-page-scroll.
-    // Le spacer reprend son rôle normal de réserve.
     spacer.style.display = '';
+    document.addEventListener('scroll', onMobileCategoryScroll, true);
+
+    // Une rotation repart volontairement de l'état ouvert : b-pager re-mesure
+    // ensuite sa cage avec les nouvelles dimensions, sans baseTop périmé.
+    window.addEventListener('orientationchange', function(){
+      if (!isMobile()) return;
+      if (mobileHeroCollapsed) setMobileHeroCollapsed(false, true);
+      mobileBasePagerTop = null;
+    }, { passive: true });
+
+    // Si l'on franchit le breakpoint vers desktop, ne laisser aucun transform
+    // mobile en ligne qui pourrait polluer le layout desktop canonique.
+    window.addEventListener('resize', function(){
+      if (isMobile()) return;
+      let wrap = document.getElementById('k-hero-fixed-wrap');
+      let ps = document.getElementById('k-page-scroll');
+      if (mobileHeroCollapsed) setMobileHeroCollapsed(false, true);
+      if (wrap) {
+        wrap.style.transform = '';
+        wrap.style.transition = '';
+      }
+      if (ps) ps.style.transition = '';
+      mobileHeroCollapsed = false;
+      mobileBasePagerTop = null;
+    }, { passive: true });
   }
 
   // ── DESKTOP : IntersectionObserver sticky bar ──
