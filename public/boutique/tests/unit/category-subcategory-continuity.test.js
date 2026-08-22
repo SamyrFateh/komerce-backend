@@ -46,13 +46,33 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(cutout).toContain('@media (max-width: 899px)');
     expect(cutout).toContain('height: 64px;');
     expect(cutout).toContain('background: var(--white);');
-    expect(cutout).toContain('saturate(.84)');
-    expect(cutout).toContain('contrast(1.02)');
-    expect(cutout).toContain('brightness(1.02)');
+    expect(cutout).toContain('--k-optical-scale: 1.06;');
+    expect(cutout).toContain('--k-optical-saturation: .84;');
+    expect(cutout).toContain('saturate(var(--k-optical-saturation))');
+    expect(cutout).toContain('sepia(.04)');
+    expect(cutout).toContain('contrast(1.01)');
+    expect(cutout).toContain('brightness(1.03)');
     expect(cutout).toContain('background: var(--sand-warm);');
-    expect(cutout).toContain('scale(1.22)');
     expect(cutout).toContain('color: var(--ocean-dark);');
     expect(cutout).not.toMatch(/@media \(max-width:\s*899px\)[\s\S]*border-radius:\s*999px/);
+  });
+
+  test('calibre individuellement les huit univers du rail mobile', () => {
+    [
+      'all',
+      'Soldes',
+      'Mode & Beauté',
+      'Maison',
+      'Tech',
+      'Bricolage',
+      'Créations personnelles',
+      'Auto',
+    ].forEach((key) => {
+      expect(cutout).toContain(`.k-shelf-rail .k-cat-cutout[data-cat="${key}"]`);
+    });
+    expect(cutout).toMatch(/data-cat="Mode & Beauté"[^}]*--k-optical-saturation:\s*\.74/s);
+    expect(cutout).toMatch(/data-cat="Maison"[^}]*--k-optical-scale:\s*\.99/s);
+    expect(cutout).toMatch(/data-cat="all"[^}]*--k-optical-scale:\s*1\.18/s);
   });
 
   test('préserve le positionnement absolu des cellules atlas mobile', () => {
