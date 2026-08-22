@@ -39,9 +39,9 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*flex-wrap:\s*nowrap/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*overflow-x:\s*auto/s);
     expect(mobileBlock).not.toMatch(/grid-template-columns/);
-    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 68px[^}]*height:\s*64px/s);
-    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*58px[\s\S]*height:\s*42px/s);
-    expect(mobileBlock).toContain('--k-optical-scale: 1;');
+    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 68px[^}]*height:\s*68px/s);
+    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*58px[\s\S]*height:\s*40px/s);
+    expect(mobileBlock).toContain('--k-optical-scale: .97;');
     expect(mobileBlock).toContain('--k-optical-active-scale: 1.05;');
     expect(mobileBlock).toContain('--k-optical-saturation: 1;');
     expect(mobileBlock).toMatch(/translate\(var\(--k-optical-x\), var\(--k-optical-y\)\)/);
@@ -51,7 +51,8 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobile).toContain('color: var(--catalog-nav-muted);');
     expect(mobile).toContain('color: var(--catalog-nav-strong);');
     expect(mobileBlock).toMatch(/padding:\s*4px 8px 5px/);
-    expect(mobileBlock).toMatch(/margin-top:\s*0/);
+    expect(mobileBlock).toMatch(/margin-top:\s*2px/);
+    expect(mobileBlock).toMatch(/background:\s*var\(--white\)/);
   });
 
   it('calibre légèrement les huit cutouts déjà normalisés', () => {
@@ -61,10 +62,10 @@ describe('Komerce Shelf category navigation contract', () => {
     ].forEach((key) => {
       expect(mobile).toContain(`.k-shelf-rail .k-cat-cutout[data-cat="${key}"]`);
     });
-    expect(mobile).toMatch(/data-cat="all"[^}]*--k-optical-scale:\s*1\.02/s);
+    expect(mobile).toMatch(/data-cat="all"[^}]*--k-optical-scale:\s*\.99/s);
     expect(mobile).toMatch(/data-cat="Mode & Beauté"[^}]*--k-optical-saturation:\s*1/s);
-    expect(mobile).toMatch(/data-cat="Maison"[^}]*--k-optical-scale:\s*1/s);
-    expect(mobile).toMatch(/data-cat="Auto"[^}]*--k-optical-y:\s*2px/s);
+    expect(mobile).toMatch(/data-cat="Maison"[^}]*--k-optical-scale:\s*\.97/s);
+    expect(mobile).toMatch(/data-cat="Auto"[^}]*--k-optical-y:\s*-1px/s);
   });
 
   it('porte les huit cutouts HD dans le registre visuel unique', () => {

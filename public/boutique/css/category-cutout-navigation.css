@@ -219,18 +219,18 @@
   html.k-mobile-premium-v1 .k-shelf-rail .k-cat-cutout,
   .k-shelf-rail .k-cat-cutout {
     --k-optical-x: 0px;
-    --k-optical-y: 1px;
-    --k-optical-scale: 1;
-    --k-optical-active-y: -1px;
+    --k-optical-y: -1px;
+    --k-optical-scale: .97;
+    --k-optical-active-y: -3px;
     --k-optical-active-scale: 1.05;
     --k-optical-saturation: 1;
     flex: 0 0 68px;
     width: 68px;
     min-width: 68px;
-    min-height: 64px;
-    height: 64px;
-    gap: 0;
-    padding: 0 1px 2px;
+    min-height: 68px;
+    height: 68px;
+    gap: 2px;
+    padding: 0 1px 3px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -239,61 +239,61 @@
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="all"] {
-    --k-optical-y: 0px;
-    --k-optical-scale: 1.02;
-    --k-optical-active-y: -2px;
+    --k-optical-y: -2px;
+    --k-optical-scale: .99;
+    --k-optical-active-y: -4px;
     --k-optical-active-scale: 1.07;
     --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Soldes"] {
-    --k-optical-y: 1px;
-    --k-optical-scale: 1.01;
-    --k-optical-active-y: -1px;
+    --k-optical-y: -1px;
+    --k-optical-scale: .98;
+    --k-optical-active-y: -3px;
     --k-optical-active-scale: 1.06;
     --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"] {
-    --k-optical-y: 1px;
-    --k-optical-scale: 1;
+    --k-optical-y: -1px;
+    --k-optical-scale: .97;
     --k-optical-active-scale: 1.05;
     --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Maison"] {
-    --k-optical-y: 2px;
-    --k-optical-scale: 1;
-    --k-optical-active-y: 0px;
+    --k-optical-y: -1px;
+    --k-optical-scale: .97;
+    --k-optical-active-y: -3px;
     --k-optical-active-scale: 1.05;
     --k-optical-saturation: .98;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Tech"] {
-    --k-optical-y: 1px;
-    --k-optical-scale: 1;
+    --k-optical-y: -1px;
+    --k-optical-scale: .97;
     --k-optical-active-scale: 1.05;
     --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Bricolage"] {
-    --k-optical-y: 1px;
-    --k-optical-scale: 1;
+    --k-optical-y: -1px;
+    --k-optical-scale: .97;
     --k-optical-active-scale: 1.05;
     --k-optical-saturation: .98;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Créations personnelles"] {
-    --k-optical-y: 1px;
-    --k-optical-scale: 1.02;
+    --k-optical-y: -1px;
+    --k-optical-scale: .99;
     --k-optical-active-scale: 1.07;
     --k-optical-saturation: 1;
   }
 
   .k-shelf-rail .k-cat-cutout[data-cat="Auto"] {
-    --k-optical-y: 2px;
-    --k-optical-scale: 1;
-    --k-optical-active-y: 0px;
+    --k-optical-y: -1px;
+    --k-optical-scale: .97;
+    --k-optical-active-y: -3px;
     --k-optical-active-scale: 1.05;
     --k-optical-saturation: .96;
   }
@@ -303,7 +303,7 @@
   .k-cat-cutout[data-cat] .k-chip-photo,
   .k-cat-cutout.active[data-cat] .k-chip-photo {
     width: 58px;
-    height: 42px;
+    height: 40px;
     isolation: isolate;
   }
 
@@ -313,7 +313,7 @@
     content: '';
     position: absolute;
     left: 50%;
-    bottom: 3px;
+    bottom: 4px;
     width: 42px;
     height: 13px;
     border-radius: 50%;
@@ -352,12 +352,14 @@
   .k-cat-cutout .k-chip-label,
   .k-cat-cutout.active .k-chip-label {
     max-width: 66px;
-    margin-top: 0;
-    padding-bottom: 3px;
+    z-index: 2;
+    margin-top: 2px;
+    padding: 0 3px 3px;
+    background: var(--white);
     color: var(--catalog-nav-muted);
     font-size: 10.5px;
     font-weight: 620;
-    line-height: 1.05;
+    line-height: 1.15;
     letter-spacing: -.01em;
   }
 

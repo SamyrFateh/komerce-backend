@@ -43,8 +43,8 @@ describe('continuité catégories et sous-catégories desktop', () => {
 
   test('harmonise le rail mobile sans capsule ni hausse de hauteur', () => {
     expect(cutout).toContain('@media (max-width: 899px)');
-    expect(cutout).toContain('height: 64px;');
-    expect(cutout).toContain('--k-optical-scale: 1;');
+    expect(cutout).toContain('height: 68px;');
+    expect(cutout).toContain('--k-optical-scale: .97;');
     expect(cutout).toContain('saturate(var(--k-optical-saturation))');
     expect(cutout).not.toContain('sepia(.04)');
     expect(cutout).toContain('contrast(1.10)');
