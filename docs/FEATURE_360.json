@@ -12189,11 +12189,14 @@
           "historique d'accès operator_market_scopes (grain user, jamais settlement) — M1",
           "scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c",
           "requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2",
-          "garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2"
+          "garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2",
+          "boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5"
         ],
         "out": [
           "MarketContext navigation acheteur — déjà livré côté boutique (public/boutique/js/market-context.js, chantier hero H2/H3), contextuel et commutable, jamais lu par requireMarketScope",
           "branchement de requireMarketScope sur une route concrète — aucune route admin scopée par marché n'existe encore dans ce dépôt ; le middleware est livré et testé, pas encore consommé",
+          "migration des 94 colonnes *_kmf existantes vers utils/currency.js — M5 livre l'outil de formatage, ne touche à aucune colonne ni aucun appelant existant ; renommer une colonne de montant en prod est un chantier séparé, à fort risque",
+          "conversion d'affichage KMF→EUR diaspora (public/boutique/js/b-utils.js#fmt(), taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé par la boundary devise (qui porte la devise RÉELLE d'un marché, pas une conversion)",
           "settlement et attribution économique par opérateur (entité différée, hors périmètre)",
           "corridor framework (relation traversant les scopes, pas un axe d'ownership, hors périmètre)",
           "wallet multi-market (hors périmètre)",
@@ -12214,7 +12217,9 @@
         "orders.relais_id est NOT NULL dans le schéma (vérifié par exécution réelle, pas supposé) — aucune commande sans relais n'est possible, le backfill orders.market_id est donc total par construction",
         "toute migration de market qui touche une table possédée par une autre feature (ex: relais, logistics ; orders) ajoute une colonne ou un index, jamais une règle métier de cette autre feature",
         "forbidMarketId (validators/index.js) échoue fort (400, message explicite) plutôt que de compter sur stripUnknown pour retirer market_id silencieusement d'un payload client",
-        "scripts/check-no-market-id-mutation.js est un gate, pas une convention documentée : un market_id mutable non gardé dans validators/*.js fait échouer la CI"
+        "scripts/check-no-market-id-mutation.js est un gate, pas une convention documentée : un market_id mutable non gardé dans validators/*.js fait échouer la CI",
+        "utils/currency.js#getMarketCurrency throw si le marché n'existe pas — jamais de devise par défaut silencieuse",
+        "utils/currency.js#formatAmount suppose un montant déjà dans l'unité affichée (12500, pas 1250000 sous-unité) — cohérent avec les colonnes *_kmf existantes, jamais une convention cents inventée sans besoin réel"
       ],
       "implementation": {
         "byCategory": {
@@ -12244,21 +12249,36 @@
             ]
           },
           "services": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "middleware/require-market-scope.js",
                 "resolvedPath": "middleware/require-market-scope.js",
                 "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "utils/currency.js",
+                "resolvedPath": "utils/currency.js",
+                "status": "resolved-on-disk-no-header"
               }
             ]
           },
           "tests": {
-            "count": 2,
+            "count": 4,
             "files": [
+              {
+                "declared": "tests/integration/currency-boundary.test.js",
+                "resolvedPath": "tests/integration/currency-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/market-scope-isolation.test.js",
                 "resolvedPath": "tests/integration/market-scope-isolation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/currency.test.js",
+                "resolvedPath": "tests/unit/currency.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12269,7 +12289,7 @@
             ]
           }
         },
-        "totalFiles": 7,
+        "totalFiles": 10,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

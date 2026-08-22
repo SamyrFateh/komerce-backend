@@ -1052,9 +1052,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c
   - requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2
   - garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2
+  - boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5
 - _out_ :
   - MarketContext navigation acheteur — déjà livré côté boutique (public/boutique/js/market-context.js, chantier hero H2/H3), contextuel et commutable, jamais lu par requireMarketScope
   - branchement de requireMarketScope sur une route concrète — aucune route admin scopée par marché n'existe encore dans ce dépôt ; le middleware est livré et testé, pas encore consommé
+  - migration des 94 colonnes *_kmf existantes vers utils/currency.js — M5 livre l'outil de formatage, ne touche à aucune colonne ni aucun appelant existant ; renommer une colonne de montant en prod est un chantier séparé, à fort risque
+  - conversion d'affichage KMF→EUR diaspora (public/boutique/js/b-utils.js#fmt(), taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé par la boundary devise (qui porte la devise RÉELLE d'un marché, pas une conversion)
   - settlement et attribution économique par opérateur (entité différée, hors périmètre)
   - corridor framework (relation traversant les scopes, pas un axe d'ownership, hors périmètre)
   - wallet multi-market (hors périmètre)
@@ -1076,6 +1079,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - toute migration de market qui touche une table possédée par une autre feature (ex: relais, logistics ; orders) ajoute une colonne ou un index, jamais une règle métier de cette autre feature
 - forbidMarketId (validators/index.js) échoue fort (400, message explicite) plutôt que de compter sur stripUnknown pour retirer market_id silencieusement d'un payload client
 - scripts/check-no-market-id-mutation.js est un gate, pas une convention documentée : un market_id mutable non gardé dans validators/*.js fait échouer la CI
+- utils/currency.js#getMarketCurrency throw si le marché n'existe pas — jamais de devise par défaut silencieuse
+- utils/currency.js#formatAmount suppose un montant déjà dans l'unité affichée (12500, pas 1250000 sous-unité) — cohérent avec les colonnes *_kmf existantes, jamais une convention cents inventée sans besoin réel
 
 **Owns** : _aucune_
 
@@ -1095,10 +1100,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 7 fichier(s) déclaré(s)
+**Implementation** : 10 fichier(s) déclaré(s)
   - migrations : 4
-  - services : 1
-  - tests : 2
+  - services : 2
+  - tests : 4
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market"]_
 
