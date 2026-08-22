@@ -131,6 +131,7 @@ describe('capturePaypalOrder — amount mismatch', () => {
       extractCaptureInfo: jest.fn().mockReturnValue({
         status: 'COMPLETED',
         amount_value: 10.00,
+        currency: 'EUR',
         paypal_capture_id: 'CAP-1',
       }),
     };
@@ -163,7 +164,7 @@ describe('capturePaypalOrder — amount mismatch', () => {
     const paypal = {
       captureOrder: jest.fn().mockResolvedValue({ raw: true }),
       extractCaptureInfo: jest.fn().mockReturnValue({
-        status: 'COMPLETED', amount_value: 10, paypal_capture_id: 'CAP-PDF',
+        status: 'COMPLETED', amount_value: 10, currency: 'EUR', paypal_capture_id: 'CAP-PDF',
         payer_email: 'client@example.test', payer_id: 'payer-1', payer_name: 'Client', pay_in_4: false,
       }),
     };
@@ -316,7 +317,7 @@ describe('capturePaypalOrder — capture PayPal en échec', () => {
     const order = { id: 'o-z', reference: 'KMC-Z', total_eur: '49.90', payment_status: 'pending' };
     const paypal = {
       captureOrder: jest.fn().mockResolvedValue({}),
-      extractCaptureInfo: jest.fn().mockReturnValue({ status: 'COMPLETED', amount_value: 1, paypal_capture_id: 'CAP-Z' }),
+      extractCaptureInfo: jest.fn().mockReturnValue({ status: 'COMPLETED', amount_value: 1, currency: 'EUR', paypal_capture_id: 'CAP-Z' }),
     };
     mockDbQuery.mockRejectedValueOnce(new Error('db down')); // INSERT alerts échoue
 
@@ -332,6 +333,7 @@ describe('capturePaypalOrder — transaction complète (cycle paiement)', () => 
       extractCaptureInfo: jest.fn().mockReturnValue({
         status: 'COMPLETED',
         amount_value: 49.9,
+        currency: 'EUR',
         paypal_capture_id: 'CAP-OK',
         payer_email: 'client@example.com',
         payer_id: 'PAYER-1',
@@ -562,7 +564,7 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
   test('PAYMENT.CAPTURE.COMPLETED, fallback webhook : cycle success → COMMIT + event marqué processed dans la tx', async () => {
     baseDbNotSeen();
     mockDbQuery.mockResolvedValueOnce({
-      rows: [{ id: 'ord-fb', reference: 'KMC-FB', payment_status: 'pending' }],
+      rows: [{ id: 'ord-fb', reference: 'KMC-FB', total_eur: '49.90', payment_status: 'pending' }],
     });
     confirmPaymentCycle.mockResolvedValueOnce({ success: true, stockBlocked: false });
     mockClientQuery
@@ -573,7 +575,7 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
       .mockResolvedValueOnce({}); // COMMIT
     const paypal = {
       verifyWebhookSignature: jest.fn().mockResolvedValue(true),
-      extractCaptureInfo: jest.fn().mockReturnValue({ paypal_capture_id: 'CAP-FB' }),
+      extractCaptureInfo: jest.fn().mockReturnValue({ paypal_capture_id: 'CAP-FB', amount_value: 49.9, currency: 'EUR' }),
     };
 
     const result = await handlePaypalWebhookEvent(
@@ -587,7 +589,7 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
   test('PAYMENT.CAPTURE.COMPLETED, fallback webhook : cycle noop → COMMIT + marqué noop', async () => {
     baseDbNotSeen();
     mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'ord-fbn', reference: 'KMC-FBN', payment_status: 'pending' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'ord-fbn', reference: 'KMC-FBN', total_eur: '49.90', payment_status: 'pending' }] })
       .mockResolvedValueOnce({}); // INSERT noop (hors tx, via markPaypalEventProcessed → db.query)
     confirmPaymentCycle.mockResolvedValueOnce({ noop: true });
     mockClientQuery
@@ -596,7 +598,7 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
 
     const paypal = {
       verifyWebhookSignature: jest.fn().mockResolvedValue(true),
-      extractCaptureInfo: jest.fn().mockReturnValue({ paypal_capture_id: 'CAP-FBN' }),
+      extractCaptureInfo: jest.fn().mockReturnValue({ paypal_capture_id: 'CAP-FBN', amount_value: 49.9, currency: 'EUR' }),
     };
 
     const result = await handlePaypalWebhookEvent(
@@ -609,7 +611,7 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
   test('PAYMENT.CAPTURE.COMPLETED, fallback webhook : cycle rejeté → ROLLBACK + marqué rejected', async () => {
     baseDbNotSeen();
     mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'ord-fbr', reference: 'KMC-FBR', payment_status: 'pending' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'ord-fbr', reference: 'KMC-FBR', total_eur: '49.90', payment_status: 'pending' }] })
       .mockResolvedValueOnce({}); // INSERT rejected (hors tx)
     confirmPaymentCycle.mockResolvedValueOnce({ success: false, error: 'blocked' });
     mockClientQuery
@@ -618,7 +620,7 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
 
     const paypal = {
       verifyWebhookSignature: jest.fn().mockResolvedValue(true),
-      extractCaptureInfo: jest.fn().mockReturnValue({ paypal_capture_id: 'CAP-FBR' }),
+      extractCaptureInfo: jest.fn().mockReturnValue({ paypal_capture_id: 'CAP-FBR', amount_value: 49.9, currency: 'EUR' }),
     };
 
     const result = await handlePaypalWebhookEvent(
@@ -631,7 +633,7 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
   test('PAYMENT.CAPTURE.COMPLETED, fallback webhook : erreur transaction → ROLLBACK + rethrow', async () => {
     baseDbNotSeen();
     mockDbQuery.mockResolvedValueOnce({
-      rows: [{ id: 'ord-fbc', reference: 'KMC-FBC', payment_status: 'pending' }],
+      rows: [{ id: 'ord-fbc', reference: 'KMC-FBC', total_eur: '49.90', payment_status: 'pending' }],
     });
     confirmPaymentCycle.mockRejectedValueOnce(new Error('confirmPaymentCycle crash'));
     mockClientQuery
@@ -640,7 +642,7 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
 
     const paypal = {
       verifyWebhookSignature: jest.fn().mockResolvedValue(true),
-      extractCaptureInfo: jest.fn().mockReturnValue({ paypal_capture_id: 'CAP-FBC' }),
+      extractCaptureInfo: jest.fn().mockReturnValue({ paypal_capture_id: 'CAP-FBC', amount_value: 49.9, currency: 'EUR' }),
     };
 
     await expect(handlePaypalWebhookEvent(
@@ -827,7 +829,7 @@ describe('Lot A — dernières branches d\'erreur non-bloquantes', () => {
     const paypal = {
       captureOrder: jest.fn().mockResolvedValue({}),
       extractCaptureInfo: jest.fn().mockReturnValue({
-        status: 'COMPLETED', amount_value: 10, paypal_capture_id: 'CAP-CACHE', pay_in_4: false,
+        status: 'COMPLETED', amount_value: 10, currency: 'EUR', paypal_capture_id: 'CAP-CACHE', pay_in_4: false,
       }),
     };
     confirmPaymentCycle.mockResolvedValueOnce({ success: true, stockBlocked: false });

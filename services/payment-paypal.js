@@ -58,6 +58,59 @@ const { generateAndStoreSecret, cacheCodeForReveal } = require('./pickup-secret-
 const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'payment-paypal' });
 
+const PAYPAL_CAPTURE_CURRENCY = 'EUR';
+const PAYPAL_CAPTURE_TOLERANCE_EUR = 0.01;
+
+function validatePaypalCaptureContract(order, info) {
+  const expectedAmount = Number(order?.total_eur);
+  const actualAmount = Number(info?.amount_value);
+  const actualCurrency = String(info?.currency || '').trim().toUpperCase();
+  const currencyMismatch = actualCurrency !== PAYPAL_CAPTURE_CURRENCY;
+  const amountMismatch = !Number.isFinite(expectedAmount)
+    || expectedAmount <= 0
+    || !Number.isFinite(actualAmount)
+    || Math.abs(expectedAmount - actualAmount) > PAYPAL_CAPTURE_TOLERANCE_EUR;
+
+  return {
+    ok: !currencyMismatch && !amountMismatch,
+    reason: currencyMismatch ? 'currency_mismatch' : (amountMismatch ? 'amount_mismatch' : null),
+    expectedAmount,
+    actualAmount,
+    expectedCurrency: PAYPAL_CAPTURE_CURRENCY,
+    actualCurrency,
+  };
+}
+
+async function alertPaypalCaptureContractMismatch(db, order, info, validation, source, paypalOrderId) {
+  log.error({
+    order_id: order.id,
+    source,
+    expected_amount: validation.expectedAmount,
+    actual_amount: validation.actualAmount,
+    expected_currency: validation.expectedCurrency,
+    actual_currency: validation.actualCurrency,
+    reason: validation.reason,
+    capture_id: info?.paypal_capture_id,
+  }, '[PAYPAL] capture contract mismatch — rejetée');
+
+  try {
+    await createAlert(db, {
+      type: 'paypal_capture_contract_mismatch',
+      entityType: 'order',
+      entityId: order.id,
+      severity: 'high',
+      title: `Capture PayPal incohérente — ${order.reference}`,
+      description: `source=${source} reason=${validation.reason} ` +
+        `attendu=${validation.expectedAmount} ${validation.expectedCurrency} ` +
+        `reçu=${validation.actualAmount} ${validation.actualCurrency || '<missing>'} ` +
+        `capture=${info?.paypal_capture_id || '<missing>'} ` +
+        `order_paypal=${paypalOrderId || info?.paypal_order_id || '<missing>'}.`,
+    });
+  } catch (e) {
+    log.error({ err: e.message, order_id: order.id }, '[PAYPAL] alert capture mismatch insert failed');
+  }
+}
+
 // ─── createPaypalOrder ────────────────────────────────────────────────────────
 /**
  * Crée une PayPal Order pour une commande Komerce.
@@ -137,24 +190,17 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
     return { capture_not_completed: true, status: info?.status || 'unknown' };
   }
 
-  // Validation montant anti-tampering (tolérance 1 centime)
-  const expectedEur = Number(order.total_eur);
-  const actualEur   = info.amount_value;
-  if (Math.abs(expectedEur - actualEur) > 0.01) {
-    log.error({ order_id: order.id, expected: expectedEur, actual: actualEur,
-      capture_id: info.paypal_capture_id }, '[PAYPAL] MISMATCH montant — capture rejetée');
-    try {
-      await createAlert(db, {
-        type: 'paypal_amount_mismatch',
-        entityType: 'order',
-        entityId: order.id,
-        severity: 'high',
-        title: `Montant PayPal ne correspond pas — ${order.reference}`,
-        description: `Attendu ${expectedEur} EUR, reçu ${actualEur} EUR ` +
-          `(capture ${info.paypal_capture_id}, order PayPal ${paypalOrderId}).`,
-      });
-    } catch (e) { log.error({ err: e.message }, '[PAYPAL] alert insert failed'); }
-    return { amount_mismatch: true, expected: expectedEur, actual: actualEur };
+  const validation = validatePaypalCaptureContract(order, info);
+  if (!validation.ok) {
+    await alertPaypalCaptureContractMismatch(db, order, info, validation, 'capture_http', paypalOrderId);
+    return {
+      amount_mismatch: true,
+      reason: validation.reason,
+      expected: validation.expectedAmount,
+      actual: validation.actualAmount,
+      expected_currency: validation.expectedCurrency,
+      actual_currency: validation.actualCurrency,
+    };
   }
 
   // Transaction : cycle paiement + persistance infos PayPal + code retrait
@@ -428,6 +474,22 @@ async function _handleCaptureCompleted(event, db, paypal) {
     log.info({ order_id: order.id, event_id: event.id },
       '[PAYPAL-WEBHOOK] order déjà paid — idempotent');
     await markPaypalEventProcessed(event, 'noop', { order_id: order.id, reason: 'already_paid' }, db);
+    return;
+  }
+
+  const validation = validatePaypalCaptureContract(order, info);
+  if (!validation.ok) {
+    await alertPaypalCaptureContractMismatch(db, order, info, validation, 'webhook', info.paypal_order_id);
+    await markPaypalEventProcessed(event, 'rejected', {
+      reason: 'capture_contract_mismatch',
+      order_id: order.id,
+      paypal_capture_id: info.paypal_capture_id,
+      mismatch_reason: validation.reason,
+      expected_amount: validation.expectedAmount,
+      actual_amount: validation.actualAmount,
+      expected_currency: validation.expectedCurrency,
+      actual_currency: validation.actualCurrency,
+    }, db);
     return;
   }
 

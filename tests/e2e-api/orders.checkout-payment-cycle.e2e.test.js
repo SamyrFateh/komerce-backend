@@ -38,8 +38,8 @@
 
 const request = require('supertest');
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const Stripe = require('stripe');
+const { signAuthToken } = require('../../utils/auth-session');
 
 const { describeE2E, createCleanup, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
@@ -115,16 +115,16 @@ describeE2E('E2E-L1-01 — orders · commande payée par webhook Stripe', ({ db 
 
     // ── Précondition métier : point de retrait ──────────────────────────────
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address)
-       VALUES ($1, 'E2E Relais Moroni', 'E2E Agent', '+269000111', 'Moroni Test')`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+       VALUES ($1, 'E2E Relais Moroni', 'E2E Agent', '+269000111', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
     cleanup.track('relais', 'id', relaisId);
 
-    token = jwt.sign({ id: userId, role: 'client' }, process.env.JWT_SECRET, {
-      algorithm: 'HS256',
-      expiresIn: '1h',
-    });
+    token = signAuthToken(
+      { id: userId, role: 'client' },
+      { method: 'e2e' }
+    );
 
     // Application réelle : mêmes routeurs que bootstrap/api-routes.js.
     app = express();

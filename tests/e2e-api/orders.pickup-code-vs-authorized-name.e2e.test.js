@@ -206,10 +206,9 @@ describeE2E(
       orderReference = `E2E-LOT5-${tag('pickup-race')}`;
 
       await db.query(
-        `INSERT INTO relais
-           (id, name, agent_name, phone, address)
+        `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
          VALUES
-           ($1, $2, $3, $4, $5)`,
+           ($1, $2, $3, $4, $5, (SELECT id FROM markets WHERE code = 'KM'))`,
         [
           relaisId,
           'E2E Relais Lot 5',
@@ -253,6 +252,7 @@ describeE2E(
              reference,
              user_id,
              relais_id,
+             market_id,
              total_kmf,
              payment_mode,
              payment_status,
@@ -264,6 +264,7 @@ describeE2E(
              $2,
              $3,
              $4,
+             (SELECT market_id FROM relais WHERE id = $4),
              25000,
              'cash_relais',
              'paid',

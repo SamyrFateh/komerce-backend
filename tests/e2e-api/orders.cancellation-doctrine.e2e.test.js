@@ -36,7 +36,7 @@
 
 const request = require('supertest');
 const express = require('express');
-const jwt = require('jsonwebtoken');
+const { signAuthToken } = require('../../utils/auth-session');
 
 const { describeE2E, createCleanup, RUN_TAG, tag, uuid } = require('../helpers/e2eDbKit');
 
@@ -121,13 +121,15 @@ describeE2E('E2E-P0-ORDERS — orders · annulation, référence, snapshot', ({ 
       ]
     );
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address)
-       VALUES ($1, 'E2E Relais Orders', 'E2E Agent', '+269000111', 'Moroni Test')`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+       VALUES ($1, 'E2E Relais Orders', 'E2E Agent', '+269000111', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
 
-    const sign = (id) =>
-      jwt.sign({ id, role: 'client' }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });
+    const sign = (id) => signAuthToken(
+      { id, role: 'client' },
+      { method: 'e2e' }
+    );
     clientToken = sign(clientId);
     otherToken = sign(otherClientId);
 

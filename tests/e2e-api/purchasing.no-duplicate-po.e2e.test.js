@@ -69,9 +69,9 @@ describeE2E('E2E-P0-PURCHASING — purchasing · anti-doublon de bon de commande
       [productSupplierId, productId, supplierId, `SKU-${tag(label)}`]
     );
     await db.query(
-      `INSERT INTO orders (id, user_id, relais_id, reference, status, payment_status,
+      `INSERT INTO orders (id, user_id, relais_id, market_id, reference, status, payment_status,
                            payment_mode, total_kmf, total_eur)
-       VALUES ($1, $2, $3, $4, 'confirmed', 'paid', 'cash_relais', 50000, 100)`,
+       VALUES ($1, $2, $3, (SELECT market_id FROM relais WHERE id = $3), $4, 'confirmed', 'paid', 'cash_relais', 50000, 100)`,
       [orderId, clientId, relaisId, reference]
     );
     await db.query(
@@ -125,8 +125,8 @@ describeE2E('E2E-P0-PURCHASING — purchasing · anti-doublon de bon de commande
       [clientId, `${tag('puclient')}@komerce.test`, `+2693${Math.floor(Math.random() * 9e6 + 1e6)}`]
     );
     await db.query(
-      `INSERT INTO relais (id, name, agent_name, phone, address)
-       VALUES ($1, 'E2E Relais Purchasing', 'E2E Agent', '+269000111', 'Moroni Test')`,
+      `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+       VALUES ($1, 'E2E Relais Purchasing', 'E2E Agent', '+269000111', 'Moroni Test', (SELECT id FROM markets WHERE code = 'KM'))`,
       [relaisId]
     );
     await db.query(
