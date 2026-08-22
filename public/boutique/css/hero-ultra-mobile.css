@@ -5,19 +5,16 @@
  * @layer         ui
  * @owner         public/boutique/css/hero.css
  * @purpose       Extension mobile additive du hero H1 : boîte récit ultra-compacte.
- *                Conserve le PNG canonique, la lune SVG et le desktop inchangé.
+ *                Mode diagnostic temporaire : visuel pur, sans texte ni CTA.
  * @impact-areas  boutique, hero, mobile
  * @version       2026-08
  */
 
 /*
- * HERO ULTRA MOBILE
+ * HERO ULTRA MOBILE — DIAGNOSTIC VISUEL
  * Cible : 104–116 px de hauteur utile.
- * La « boîte récit » conserve uniquement les deux visages, le téléphone
- * et la main levée ; les torses peuvent sortir du cadre.
- *
- * Ce fichier est concaténé APRES hero.css dans base.css. Les sélecteurs
- * structuraux évitent toute priorité forcée et restent hors desktop.
+ * On conserve uniquement le fond chaud, le détourage canonique et la lune.
+ * Le masque réservé au texte est neutralisé pour juger le cadrage réel.
  */
 @media (max-width: 899px) {
   #k-hero-fixed-wrap > .k-hero {
@@ -34,133 +31,21 @@
   }
 
   .k-hero-media .k-hero-figures {
-    background-size: auto 205%;
-    background-position: 87% 18%;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 34%, black 51%);
-    mask-image: linear-gradient(90deg, transparent 0%, transparent 34%, black 51%);
+    background-size: auto 167%;
+    background-position: 81% 18%;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 
   .k-hero-media .k-hero-moon {
     width: 20px;
     height: 20px;
-    right: 25%;
-    top: 7px;
+    right: 38%;
+    top: 5px;
     opacity: .92;
   }
 
   .k-hero-media .k-hero-mini-slogan--premium {
-    display: flex;
-    inset: 0 auto 0 0;
-    width: 48%;
-    padding: 7px 0 6px 10px;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 0;
-    text-align: left;
-    pointer-events: none;
-  }
-
-  .k-hero-media .k-hero-mini-slogan--premium .k-hero-badge,
-  .k-hero-media .k-hero-mini-slogan--premium .k-hero-sub {
     display: none;
-  }
-
-  .k-hero-mini-slogan--premium .k-line-1 {
-    display: block;
-    font-family: var(--font-display);
-    font-size: clamp(13px, 3.55vw, 15px);
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -.01em;
-    color: var(--green-dark-text);
-    text-shadow: none;
-  }
-
-  .k-hero-mini-slogan--premium .k-line-2 {
-    display: block;
-    margin-top: 2px;
-    font-family: var(--font-display);
-    font-size: clamp(13px, 3.55vw, 15px);
-    font-weight: 800;
-    font-style: italic;
-    line-height: 1;
-    letter-spacing: -.015em;
-    color: var(--coral);
-    text-shadow: none;
-    white-space: nowrap;
-  }
-
-  .k-hero-media .k-hero-mini-slogan--premium .k-hero-cta-row {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin: 7px 0 0;
-    pointer-events: auto;
-  }
-
-  .k-hero-mini-slogan--premium .k-hero-cta-primary {
-    display: inline-flex;
-    min-width: 0;
-    min-height: 28px;
-    height: 28px;
-    align-items: center;
-    justify-content: center;
-    padding: 0 10px;
-    border: 0;
-    border-radius: 8px;
-    background: var(--coral);
-    color: var(--white);
-    font-family: var(--font);
-    font-size: 0;
-    font-weight: 700;
-    line-height: 1;
-    white-space: nowrap;
-    box-shadow: 0 2px 7px var(--border-text-10);
-    cursor: pointer;
-    pointer-events: auto;
-  }
-
-  .k-hero-mini-slogan--premium .k-hero-cta-primary::after {
-    content: 'Catalogue →';
-    font-size: 11px;
-  }
-
-  .k-hero-mini-slogan--premium .k-hero-cta-ghost {
-    display: inline-flex;
-    width: 30px;
-    min-width: 30px;
-    min-height: 28px;
-    height: 28px;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid var(--green-text);
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--white) 82%, transparent);
-    color: var(--green-text);
-    font-size: 0;
-    line-height: 1;
-    box-shadow: none;
-    cursor: pointer;
-    pointer-events: auto;
-  }
-
-  .k-hero-mini-slogan--premium .k-hero-cta-ghost::after {
-    content: '📦';
-    font-size: 12px;
-  }
-
-  .k-hero-media .k-hero-mini-slogan--premium .k-hero-trust {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    margin-top: 5px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--hero-text-soft);
-    font-size: clamp(7px, 2vw, 8.5px);
-    line-height: 1;
-    white-space: nowrap;
   }
 }

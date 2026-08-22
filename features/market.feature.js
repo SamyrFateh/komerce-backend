@@ -35,6 +35,7 @@ module.exports = {
       'requireMarketScope autorisation (serveur, enferme l\'opérateur, jamais le client) — M2',
       'garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2',
       'boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5',
+      'ouverture Mayotte (YT, EUR, minor_unit=2) — M10, premier marché après le seed KM',
     ],
     out: [
       'MarketContext navigation acheteur — déjà livré côté boutique ' +
@@ -64,6 +65,7 @@ module.exports = {
       'migrations/136_operator_market_scopes.sql',
       'migrations/137_relais_market_id.sql',
       'migrations/138_orders_market_id.sql',
+      'migrations/139_market_open_mayotte.sql',
     ],
     services: [
       'middleware/require-market-scope.js',
@@ -74,6 +76,7 @@ module.exports = {
       'tests/integration/market-scope-isolation.test.js',
       'tests/unit/currency.test.js',
       'tests/integration/currency-boundary.test.js',
+      'tests/integration/market-open-mayotte.test.js',
     ],
   },
 
@@ -127,6 +130,7 @@ module.exports = {
     'scripts/check-no-market-id-mutation.js est un gate, pas une convention documentée : un market_id mutable non gardé dans validators/*.js fait échouer la CI',
     'utils/currency.js#getMarketCurrency throw si le marché n\'existe pas — jamais de devise par défaut silencieuse',
     'utils/currency.js#formatAmount suppose un montant déjà dans l\'unité affichée (12500, pas 1250000 sous-unité) — cohérent avec les colonnes *_kmf existantes, jamais une convention cents inventée sans besoin réel',
+    'M10 (ouverture Mayotte) est un INSERT seul — vérifié réellement : 0 fichier de M1/M1b/M1c/M2/M5 modifié pour ouvrir ce marché, cf. tests/integration/market-open-mayotte.test.js',
   ],
 
 };

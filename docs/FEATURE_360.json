@@ -12191,7 +12191,8 @@
           "scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c",
           "requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2",
           "garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2",
-          "boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5"
+          "boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5",
+          "ouverture Mayotte (YT, EUR, minor_unit=2) — M10, premier marché après le seed KM"
         ],
         "out": [
           "MarketContext navigation acheteur — déjà livré côté boutique (public/boutique/js/market-context.js, chantier hero H2/H3), contextuel et commutable, jamais lu par requireMarketScope",
@@ -12220,12 +12221,13 @@
         "forbidMarketId (validators/index.js) échoue fort (400, message explicite) plutôt que de compter sur stripUnknown pour retirer market_id silencieusement d'un payload client",
         "scripts/check-no-market-id-mutation.js est un gate, pas une convention documentée : un market_id mutable non gardé dans validators/*.js fait échouer la CI",
         "utils/currency.js#getMarketCurrency throw si le marché n'existe pas — jamais de devise par défaut silencieuse",
-        "utils/currency.js#formatAmount suppose un montant déjà dans l'unité affichée (12500, pas 1250000 sous-unité) — cohérent avec les colonnes *_kmf existantes, jamais une convention cents inventée sans besoin réel"
+        "utils/currency.js#formatAmount suppose un montant déjà dans l'unité affichée (12500, pas 1250000 sous-unité) — cohérent avec les colonnes *_kmf existantes, jamais une convention cents inventée sans besoin réel",
+        "M10 (ouverture Mayotte) est un INSERT seul — vérifié réellement : 0 fichier de M1/M1b/M1c/M2/M5 modifié pour ouvrir ce marché, cf. tests/integration/market-open-mayotte.test.js"
       ],
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "migrations/135_markets_foundation.sql",
@@ -12246,6 +12248,11 @@
                 "declared": "migrations/138_orders_market_id.sql",
                 "resolvedPath": "migrations/138_orders_market_id.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/139_market_open_mayotte.sql",
+                "resolvedPath": "migrations/139_market_open_mayotte.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -12265,11 +12272,16 @@
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "tests/integration/currency-boundary.test.js",
                 "resolvedPath": "tests/integration/currency-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/market-open-mayotte.test.js",
+                "resolvedPath": "tests/integration/market-open-mayotte.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12290,7 +12302,7 @@
             ]
           }
         },
-        "totalFiles": 10,
+        "totalFiles": 12,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
