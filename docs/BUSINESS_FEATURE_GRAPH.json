@@ -15792,6 +15792,14 @@
       {
         "boutiqueManifest": "catalog",
         "category": "css",
+        "declared": "../css/hero-ultra-mobile.css",
+        "resolvedPath": "public/boutique/css/hero-ultra-mobile.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "css",
         "declared": "../css/categories.css",
         "resolvedPath": "public/boutique/css/categories.css",
         "exists": true,
@@ -15882,6 +15890,14 @@
         "category": "assets",
         "declared": "../categories/auto-v2.webp",
         "resolvedPath": "public/boutique/categories/auto-v2.webp",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/hero-ultra-mobile.test.js",
+        "resolvedPath": "public/boutique/tests/unit/hero-ultra-mobile.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -25273,7 +25289,7 @@
         "filesObserved": 845
       },
       "boutique": {
-        "filesObserved": 160,
+        "filesObserved": 161,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
