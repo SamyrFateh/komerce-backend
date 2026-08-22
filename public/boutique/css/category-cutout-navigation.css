@@ -94,7 +94,7 @@
   height: 100%;
   overflow: visible;
   filter: drop-shadow(0 5px 6px var(--border-text-08));
-  transform-origin: 50% 86%;
+  transform-origin: 50% 88%;
   transition: transform .16s var(--ease), filter .16s var(--ease);
 }
 
@@ -192,9 +192,9 @@
 }
 
 /*
- * Mobile premium : une seule étagère blanche, objets détourés homogénéisés.
- * La couleur vient des produits eux-mêmes ; le système commun fournit lumière,
- * profondeur et sélection Komerce sans capsule concurrente.
+ * Mobile premium V2 : une seule étagère blanche et une masse optique commune.
+ * Chaque univers reçoit son propre calibrage ; on ne force plus une même échelle
+ * sur un sac, un fauteuil, un téléphone ou un pictogramme SVG.
  */
 @media (max-width: 899px) {
   .k-shelf-rail {
@@ -210,9 +210,7 @@
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
     background: var(--white);
-    box-shadow:
-      0 10px 22px var(--border-text-08),
-      inset 0 -1px 0 var(--border-text-08);
+    box-shadow: inset 0 -1px 0 var(--border-text-08);
   }
 
   .k-shelf-rail::-webkit-scrollbar {
@@ -221,6 +219,12 @@
 
   html.k-mobile-premium-v1 .k-shelf-rail .k-cat-cutout,
   .k-shelf-rail .k-cat-cutout {
+    --k-optical-x: 0px;
+    --k-optical-y: 1px;
+    --k-optical-scale: 1.06;
+    --k-optical-active-y: -1px;
+    --k-optical-active-scale: 1.10;
+    --k-optical-saturation: .84;
     flex: 0 0 68px;
     width: 68px;
     min-width: 68px;
@@ -235,101 +239,140 @@
     scroll-snap-align: start;
   }
 
+  .k-shelf-rail .k-cat-cutout[data-cat="all"] {
+    --k-optical-y: 0px;
+    --k-optical-scale: 1.18;
+    --k-optical-active-y: -2px;
+    --k-optical-active-scale: 1.22;
+    --k-optical-saturation: .86;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Soldes"] {
+    --k-optical-y: 1px;
+    --k-optical-scale: 1.15;
+    --k-optical-active-y: -1px;
+    --k-optical-active-scale: 1.19;
+    --k-optical-saturation: .82;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Mode & Beauté"] {
+    --k-optical-y: 1px;
+    --k-optical-scale: 1.06;
+    --k-optical-active-scale: 1.10;
+    --k-optical-saturation: .74;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Maison"] {
+    --k-optical-y: 2px;
+    --k-optical-scale: .99;
+    --k-optical-active-y: 0px;
+    --k-optical-active-scale: 1.03;
+    --k-optical-saturation: .72;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Tech"] {
+    --k-optical-y: 1px;
+    --k-optical-scale: 1.03;
+    --k-optical-active-scale: 1.07;
+    --k-optical-saturation: .80;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Bricolage"] {
+    --k-optical-y: 1px;
+    --k-optical-scale: 1.06;
+    --k-optical-active-scale: 1.10;
+    --k-optical-saturation: .82;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Créations personnelles"] {
+    --k-optical-y: 1px;
+    --k-optical-scale: 1.03;
+    --k-optical-active-scale: 1.07;
+    --k-optical-saturation: .80;
+  }
+
+  .k-shelf-rail .k-cat-cutout[data-cat="Auto"] {
+    --k-optical-y: 2px;
+    --k-optical-scale: 1.01;
+    --k-optical-active-y: 0px;
+    --k-optical-active-scale: 1.05;
+    --k-optical-saturation: .80;
+  }
+
   .k-cat-cutout .k-chip-photo,
   .k-cat-cutout.active .k-chip-photo,
   .k-cat-cutout[data-cat] .k-chip-photo,
   .k-cat-cutout.active[data-cat] .k-chip-photo {
-    width: 56px;
-    height: 41px;
+    width: 58px;
+    height: 42px;
     isolation: isolate;
   }
 
-  /* Même halo chaud sous chaque objet : il rassemble les couleurs sans les
-   * repeindre et conserve l'effet détouré flottant sur fond blanc. */
+  /* Un socle chaud très discret crée une même ligne de sol sans repeindre les
+   * objets. Le pseudo-élément reste derrière le raster/SVG dans le slot. */
   .k-shelf-rail .k-cat-cutout .k-chip-photo::before {
     content: '';
     position: absolute;
-    z-index: 0;
     left: 50%;
-    bottom: 1px;
-    width: 46px;
-    height: 21px;
+    bottom: 3px;
+    width: 42px;
+    height: 13px;
     border-radius: 50%;
     background: var(--sand-warm);
-    opacity: .34;
-    filter: blur(6px);
+    opacity: .20;
+    filter: blur(5px);
     transform: translateX(-50%);
     pointer-events: none;
   }
 
-  /* Le rail précédent poussait volontairement saturation + contraste. C'est
-   * précisément ce qui rendait rouge, bleu et noir trop disparates. Ici tous
-   * les objets passent par le même grade doux, puis l'actif récupère du relief. */
   .k-shelf-rail .k-cat-cutout .k-shelf-object {
-    transform: scale(1.10);
+    transform:
+      translate(var(--k-optical-x), var(--k-optical-y))
+      scale(var(--k-optical-scale));
     filter:
-      drop-shadow(0 4px 7px var(--border-text-08))
-      saturate(.84)
-      contrast(1.02)
-      brightness(1.02);
-  }
-
-  /* Les deux SVG historiques ont moins de masse intrinsèque que les photos :
-   * même échelle perçue, sans changer leur dessin ni leur palette de marque. */
-  .k-shelf-rail .k-cat-cutout[data-cat="all"] .k-shelf-object,
-  .k-shelf-rail .k-cat-cutout[data-cat="Soldes"] .k-shelf-object {
-    transform: scale(1.22);
-  }
-
-  /* Les crops raster restent légèrement plus contenus que les SVG mais gagnent
-   * assez de présence pour lire l'objet avant le libellé. */
-  .k-shelf-rail .k-cat-cutout .k-shelf-atlas-cell {
-    transform: translateY(1px) scale(1.04);
+      drop-shadow(0 3px 6px var(--border-text-08))
+      saturate(var(--k-optical-saturation))
+      sepia(.04)
+      contrast(1.01)
+      brightness(1.03);
   }
 
   .k-shelf-rail .k-cat-cutout:hover .k-shelf-object,
   .k-shelf-rail .k-cat-cutout.active .k-shelf-object {
-    transform: translateY(-2px) scale(1.13);
+    transform:
+      translate(var(--k-optical-x), var(--k-optical-active-y))
+      scale(var(--k-optical-active-scale));
     filter:
-      drop-shadow(0 5px 9px var(--border-text-08))
-      saturate(.96)
-      contrast(1.04)
+      drop-shadow(0 4px 7px var(--border-text-08))
+      saturate(calc(var(--k-optical-saturation) + .08))
+      sepia(.03)
+      contrast(1.02)
       brightness(1.03);
   }
 
-  .k-shelf-rail .k-cat-cutout:hover .k-shelf-atlas-cell,
-  .k-shelf-rail .k-cat-cutout.active .k-shelf-atlas-cell {
-    transform: translateY(-1px) scale(1.08);
-  }
-
-  .k-shelf-rail .k-cat-cutout.active[data-cat="all"] .k-shelf-object,
-  .k-shelf-rail .k-cat-cutout.active[data-cat="Soldes"] .k-shelf-object {
-    transform: translateY(-2px) scale(1.25);
-  }
-
   .k-shelf-rail .k-cat-cutout.active .k-chip-photo::before {
-    opacity: .52;
+    opacity: .28;
   }
 
   .k-cat-cutout .k-chip-label,
   .k-cat-cutout.active .k-chip-label {
     max-width: 66px;
-    margin-top: 1px;
+    margin-top: 0;
     padding-bottom: 3px;
     color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 10.5px;
+    font-weight: 620;
     line-height: 1.05;
     letter-spacing: -.01em;
   }
 
   .k-shelf-rail .k-cat-cutout.active .k-chip-label {
     color: var(--ocean-dark);
-    font-weight: 800;
+    font-weight: 780;
   }
 
   .k-cat-cutout.active .k-chip-label::after {
-    width: 20px;
+    width: 18px;
     height: 2px;
   }
 }
