@@ -8455,11 +8455,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": ".github/workflows-disabled/schema-refresh.yml",
-                "resolvedPath": ".github/workflows-disabled/schema-refresh.yml",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": ".github/workflows/ci.yml",
                 "resolvedPath": ".github/workflows/ci.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8467,6 +8462,11 @@
               {
                 "declared": ".github/workflows/pr-enforcement.yml",
                 "resolvedPath": ".github/workflows/pr-enforcement.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/schema-refresh.yml",
+                "resolvedPath": ".github/workflows/schema-refresh.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
