@@ -3,8 +3,8 @@
 --
 
 
--- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
--- Dumped by pg_dump version 18.6 (Debian 18.6-1.pgdg13+2)
+-- Dumped from database version 18.6 (Debian 18.6-1.pgdg13+2)
+-- Dumped by pg_dump version 18.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1551,6 +1551,15 @@ CREATE TABLE public.finance_config (
     allocation_calibrated_at timestamp with time zone,
     allocation_notes text,
     provision_risque_pct numeric(6,4) DEFAULT 0.01 NOT NULL,
+    customs_rate_default_pct numeric(5,2) DEFAULT 42 NOT NULL,
+    mix_rail_a numeric(5,2) DEFAULT 60 NOT NULL,
+    mix_rail_b numeric(5,2) DEFAULT 25 NOT NULL,
+    mix_rail_c numeric(5,2) DEFAULT 10 NOT NULL,
+    mix_rail_d numeric(5,2) DEFAULT 5 NOT NULL,
+    margin_rail_a numeric(5,2) DEFAULT 45 NOT NULL,
+    margin_rail_b numeric(5,2) DEFAULT 18 NOT NULL,
+    margin_rail_c numeric(5,2) DEFAULT 35 NOT NULL,
+    margin_rail_d numeric(5,2) DEFAULT 70 NOT NULL,
     CONSTRAINT finance_config_allocation_confidence_check CHECK ((allocation_confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
     CONSTRAINT finance_config_id_check CHECK ((id = 1))
 );
@@ -1589,6 +1598,69 @@ COMMENT ON COLUMN public.finance_config.avg_orders_per_month IS 'Volume mensuel 
 --
 
 COMMENT ON COLUMN public.finance_config.provision_risque_pct IS 'Taux de provision risque mensuel appliquÃ© au CA (ex: 0.01 = 1%). Configurable via Control Tower > ParamÃ¨tres Ã©conomiques.';
+
+
+--
+-- Name: COLUMN finance_config.customs_rate_default_pct; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.customs_rate_default_pct IS 'Fallback douane terrain Ops. Copié iso-CURRENT depuis economic_variables par migration 119.';
+
+
+--
+-- Name: COLUMN finance_config.mix_rail_a; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.mix_rail_a IS 'Mix CA Rail A — source runtime canonique depuis migration 119.';
+
+
+--
+-- Name: COLUMN finance_config.mix_rail_b; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.mix_rail_b IS 'Mix CA Rail B — source runtime canonique depuis migration 119.';
+
+
+--
+-- Name: COLUMN finance_config.mix_rail_c; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.mix_rail_c IS 'Mix CA Rail C — source runtime canonique depuis migration 119.';
+
+
+--
+-- Name: COLUMN finance_config.mix_rail_d; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.mix_rail_d IS 'Mix CA Rail D — source runtime canonique depuis migration 119.';
+
+
+--
+-- Name: COLUMN finance_config.margin_rail_a; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.margin_rail_a IS 'Marge Rail A — source runtime canonique depuis migration 119.';
+
+
+--
+-- Name: COLUMN finance_config.margin_rail_b; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.margin_rail_b IS 'Marge Rail B — source runtime canonique depuis migration 119.';
+
+
+--
+-- Name: COLUMN finance_config.margin_rail_c; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.margin_rail_c IS 'Marge Rail C — source runtime canonique depuis migration 119.';
+
+
+--
+-- Name: COLUMN finance_config.margin_rail_d; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.finance_config.margin_rail_d IS 'Marge Rail D — source runtime canonique depuis migration 119.';
 
 
 --
@@ -1774,6 +1846,43 @@ ALTER SEQUENCE public.loyalty_tiers_id_seq OWNED BY public.loyalty_tiers.id;
 
 
 --
+-- Name: markets; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.markets (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    code text NOT NULL,
+    name text NOT NULL,
+    currency text NOT NULL,
+    minor_unit smallint DEFAULT 0 NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT markets_minor_unit_check CHECK (((minor_unit >= 0) AND (minor_unit <= 4)))
+);
+
+
+--
+-- Name: TABLE markets; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.markets IS 'Référentiel des marchés ouverts. Pur data — aucune autorisation. Voir operator_market_scopes (M1) pour qui peut agir sur quel marché.';
+
+
+--
+-- Name: COLUMN markets.code; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.markets.code IS 'ISO 3166-1 alpha-2. Clé stable référencée par relais.market_id (M1b) et orders.market_id (M1c) via markets.id, jamais via ce code directement.';
+
+
+--
+-- Name: COLUMN markets.minor_unit; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.markets.minor_unit IS 'Décimales de la devise : 0 pour KMF/XAF, 2 pour EUR. Consommé par la boundary devise (M5) — cette table ne formate rien elle-même.';
+
+
+--
 -- Name: notification_log; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1788,6 +1897,44 @@ CREATE TABLE public.notification_log (
     detail jsonb DEFAULT '{}'::jsonb,
     created_at timestamp with time zone DEFAULT now()
 );
+
+
+--
+-- Name: operator_market_scopes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.operator_market_scopes (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    role text NOT NULL,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    granted_by uuid,
+    revoked_at timestamp with time zone,
+    revoked_by uuid,
+    CONSTRAINT operator_market_scopes_role_check CHECK ((role = ANY (ARRAY['viewer'::text, 'manager'::text])))
+);
+
+
+--
+-- Name: TABLE operator_market_scopes; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.operator_market_scopes IS 'Historique d''ACCÈS opérateur → marché, grain user. Jamais la source de vérité du settlement (grain organisation, différé). Révocation = UPDATE revoked_at, jamais DELETE.';
+
+
+--
+-- Name: COLUMN operator_market_scopes.id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.operator_market_scopes.id IS 'Identité du grant lui-même, pas du couple (user_id, market_id) — un cycle grant/revoke/re-grant produit plusieurs lignes distinctes.';
+
+
+--
+-- Name: COLUMN operator_market_scopes.revoked_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.operator_market_scopes.revoked_at IS 'NULL = grant actif. Un grant révoqué n''est jamais supprimé : l''historique d''accès doit rester reconstructible à tout instant.';
 
 
 --
@@ -2178,6 +2325,7 @@ CREATE TABLE public.orders (
     pickup_collected_via text,
     pickup_code_recipient character varying(16) DEFAULT 'buyer'::character varying NOT NULL,
     pickup_code_recipient_user_id uuid,
+    market_id uuid NOT NULL,
     CONSTRAINT chk_orders_discount CHECK (((discount_pct >= (0)::numeric) AND (discount_pct <= (100)::numeric))),
     CONSTRAINT chk_orders_total CHECK ((total_kmf >= 0)),
     CONSTRAINT orders_pickup_code_recipient_check CHECK (((pickup_code_recipient)::text = ANY ((ARRAY['buyer'::character varying, 'organizer'::character varying])::text[])))
@@ -2434,6 +2582,13 @@ COMMENT ON COLUMN public.orders.paypal_pay_in_4_used IS 'TRUE si le payeur a cho
 --
 
 COMMENT ON COLUMN public.orders.transport_price_kmf IS 'Part du total (orders.total_kmf) facturée au transport, calculée par services/transport-pricing.js au moment de la commande. Distincte de cost_estimated_kmf (coût interne fret, jamais facturé tel quel). 0 pour les commandes créées avant la migration 118.';
+
+
+--
+-- Name: COLUMN orders.market_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.orders.market_id IS 'Marché de la commande, SNAPSHOT résolu depuis relais.market_id au moment de la commande (ou du backfill pour les commandes existantes). Ne se re-synchronise jamais automatiquement si un relais changeait de marché. NOT NULL — garanti par orders.relais_id NOT NULL. Voir migrations/138_orders_market_id.sql.';
 
 
 --
@@ -3558,8 +3713,16 @@ CREATE TABLE public.relais (
     island text DEFAULT 'Anjouan'::text NOT NULL,
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    island_code character varying(20)
+    island_code character varying(20),
+    market_id uuid NOT NULL
 );
+
+
+--
+-- Name: COLUMN relais.market_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.relais.market_id IS 'Marché auquel ce relais appartient. NOT NULL — un relais est un lieu physique, il ne peut pas exister sans marché. Backfill KM total au 2026-08 (M1b), voir migrations/137_relais_market_id.sql.';
 
 
 --
@@ -4859,6 +5022,64 @@ CREATE TABLE public.wallets (
 
 
 --
+-- Name: webauthn_challenges; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.webauthn_challenges (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid,
+    challenge text NOT NULL,
+    ceremony_type text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    consumed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT webauthn_challenges_ceremony_type_check CHECK ((ceremony_type = ANY (ARRAY['register'::text, 'login'::text, 'step_up'::text])))
+);
+
+
+--
+-- Name: TABLE webauthn_challenges; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.webauthn_challenges IS 'Challenges register/login à usage unique, TTL court (2 min), consommés atomiquement via UPDATE ... WHERE consumed_at IS NULL RETURNING (voir services/webauthn-service.js).';
+
+
+--
+-- Name: COLUMN webauthn_challenges.ceremony_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.webauthn_challenges.ceremony_type IS 'Cérémonie WebAuthn : register, login ou step_up. AUTH-7 interdit le croisement des challenges.';
+
+
+--
+-- Name: webauthn_credentials; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.webauthn_credentials (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    credential_id text NOT NULL,
+    public_key text NOT NULL,
+    sign_count bigint DEFAULT 0 NOT NULL,
+    transports text[] DEFAULT '{}'::text[] NOT NULL,
+    aaguid text,
+    backup_eligible boolean DEFAULT false NOT NULL,
+    backup_state boolean DEFAULT false NOT NULL,
+    device_label text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_used_at timestamp with time zone,
+    revoked_at timestamp with time zone
+);
+
+
+--
+-- Name: TABLE webauthn_credentials; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.webauthn_credentials IS 'Passkeys WebAuthn (AUTH-2). Owner exclusif : feature auth-passkey. Jamais de DDL runtime.';
+
+
+--
 -- Name: boutique_subcategories id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -5325,11 +5546,35 @@ ALTER TABLE ONLY public.loyalty_tiers
 
 
 --
+-- Name: markets markets_code_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.markets
+    ADD CONSTRAINT markets_code_key UNIQUE (code);
+
+
+--
+-- Name: markets markets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.markets
+    ADD CONSTRAINT markets_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: notification_log notification_log_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.notification_log
     ADD CONSTRAINT notification_log_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: operator_market_scopes operator_market_scopes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.operator_market_scopes
+    ADD CONSTRAINT operator_market_scopes_pkey PRIMARY KEY (id);
 
 
 --
@@ -6053,6 +6298,38 @@ ALTER TABLE ONLY public.wallets
 
 
 --
+-- Name: webauthn_challenges webauthn_challenges_challenge_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webauthn_challenges
+    ADD CONSTRAINT webauthn_challenges_challenge_key UNIQUE (challenge);
+
+
+--
+-- Name: webauthn_challenges webauthn_challenges_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webauthn_challenges
+    ADD CONSTRAINT webauthn_challenges_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: webauthn_credentials webauthn_credentials_credential_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webauthn_credentials
+    ADD CONSTRAINT webauthn_credentials_credential_id_key UNIQUE (credential_id);
+
+
+--
+-- Name: webauthn_credentials webauthn_credentials_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webauthn_credentials
+    ADD CONSTRAINT webauthn_credentials_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: idx_alerts_entity; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6697,6 +6974,13 @@ CREATE INDEX idx_oirca_shipment ON public.order_item_real_cost_allocations USING
 
 
 --
+-- Name: idx_operator_scope_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_operator_scope_market ON public.operator_market_scopes USING btree (market_id) WHERE (revoked_at IS NULL);
+
+
+--
 -- Name: idx_order_items_allocated; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6841,6 +7125,13 @@ CREATE INDEX idx_orders_created_status ON public.orders USING btree (created_at 
 --
 
 CREATE INDEX idx_orders_margin_alert ON public.orders USING btree (margin_alert) WHERE (margin_alert = true);
+
+
+--
+-- Name: idx_orders_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_orders_market ON public.orders USING btree (market_id);
 
 
 --
@@ -7509,6 +7800,13 @@ CREATE INDEX idx_recipients_user ON public.recipients USING btree (user_id);
 
 
 --
+-- Name: idx_relais_market; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_relais_market ON public.relais USING btree (market_id);
+
+
+--
 -- Name: idx_risk_provisions_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8027,6 +8325,20 @@ CREATE INDEX idx_wcons_order ON public.wallet_consumptions USING btree (order_id
 
 
 --
+-- Name: idx_webauthn_challenges_lookup; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_webauthn_challenges_lookup ON public.webauthn_challenges USING btree (challenge) WHERE (consumed_at IS NULL);
+
+
+--
+-- Name: idx_webauthn_credentials_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_webauthn_credentials_user ON public.webauthn_credentials USING btree (user_id) WHERE (revoked_at IS NULL);
+
+
+--
 -- Name: idx_wlots_wallet_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8073,6 +8385,13 @@ CREATE UNIQUE INDEX shared_cart_saved_access_unique ON public.shared_cart_saved_
 --
 
 CREATE UNIQUE INDEX shared_carts_one_open_per_organizer ON public.shared_carts USING btree (organizer_user_id) WHERE (status = 'open'::public.shared_cart_status);
+
+
+--
+-- Name: uniq_active_operator_scope; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_active_operator_scope ON public.operator_market_scopes USING btree (user_id, market_id) WHERE (revoked_at IS NULL);
 
 
 --
@@ -8727,6 +9046,38 @@ ALTER TABLE ONLY public.loyalty_rewards
 
 
 --
+-- Name: operator_market_scopes operator_market_scopes_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.operator_market_scopes
+    ADD CONSTRAINT operator_market_scopes_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id);
+
+
+--
+-- Name: operator_market_scopes operator_market_scopes_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.operator_market_scopes
+    ADD CONSTRAINT operator_market_scopes_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: operator_market_scopes operator_market_scopes_revoked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.operator_market_scopes
+    ADD CONSTRAINT operator_market_scopes_revoked_by_fkey FOREIGN KEY (revoked_by) REFERENCES public.users(id);
+
+
+--
+-- Name: operator_market_scopes operator_market_scopes_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.operator_market_scopes
+    ADD CONSTRAINT operator_market_scopes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: order_comments order_comments_author_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8924,6 +9275,14 @@ ALTER TABLE ONLY public.orders
 
 ALTER TABLE ONLY public.orders
     ADD CONSTRAINT orders_confection_artisan_id_fkey FOREIGN KEY (confection_artisan_id) REFERENCES public.partners(id) ON DELETE SET NULL;
+
+
+--
+-- Name: orders orders_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
 
 
 --
@@ -9303,6 +9662,14 @@ ALTER TABLE ONLY public.refunds
 
 
 --
+-- Name: relais relais_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.relais
+    ADD CONSTRAINT relais_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
 -- Name: scan_events scan_events_corrects_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9676,6 +10043,22 @@ ALTER TABLE ONLY public.wallet_transactions
 
 ALTER TABLE ONLY public.wallets
     ADD CONSTRAINT wallets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: webauthn_challenges webauthn_challenges_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webauthn_challenges
+    ADD CONSTRAINT webauthn_challenges_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: webauthn_credentials webauthn_credentials_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webauthn_credentials
+    ADD CONSTRAINT webauthn_credentials_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --

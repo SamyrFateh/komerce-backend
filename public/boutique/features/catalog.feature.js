@@ -65,6 +65,7 @@ module.exports = {
     ],
     css: [
       '../css/hero.css',
+      '../css/hero-ultra-mobile.css',
       '../css/categories.css',
       '../css/products.css',
       '../css/category-cutout-navigation.css',
@@ -82,6 +83,7 @@ module.exports = {
       '../categories/auto-v2.webp',
     ],
     tests: [
+      '../tests/unit/hero-ultra-mobile.test.js',
       '../tests/unit/b-favs.test.js',
       '../tests/unit/b-greeting.test.js',
       '../tests/unit/render-home-sections.test.js',
