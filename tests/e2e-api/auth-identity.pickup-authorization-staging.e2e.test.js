@@ -196,7 +196,7 @@ describeE2E(
 
       buyerToken = signAuthToken(
         { id: buyerId, role: 'client' },
-        { method: 'e2e' }
+        { method: 'otp' }
       );
       agentToken = signAuthToken(
         { id: agentId, role: 'agent_relais' },
