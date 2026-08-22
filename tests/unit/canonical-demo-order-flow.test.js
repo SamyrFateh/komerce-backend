@@ -6,7 +6,6 @@
  * @test-requires none
  */
 
-const { JSDOM } = require('jsdom');
 const demo = require('../../public/dashboards/canonical/js/demo-order-flow');
 
 const ORDER_ID = '11111111-1111-4111-8111-111111111111';
@@ -34,16 +33,67 @@ function trace(overrides = {}) {
   };
 }
 
+class FakeElement {
+  constructor(tagName) {
+    this.tagName = tagName.toLowerCase();
+    this.children = [];
+    this.attributes = {};
+    this.listeners = {};
+    this.className = '';
+    this.classList = { add: value => {
+      const values = new Set(this.className.split(/\s+/).filter(Boolean));
+      values.add(value);
+      this.className = [...values].join(' ');
+    } };
+    this._text = '';
+    this.disabled = false;
+    this.value = '';
+  }
+
+  append(...children) { this.children.push(...children); }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  addEventListener(type, listener) { (this.listeners[type] ||= []).push(listener); }
+  click() { if (!this.disabled) (this.listeners.click || []).forEach(listener => listener({ type: 'click' })); }
+  dispatchEvent(event) { (this.listeners[event.type] || []).forEach(listener => listener(event)); }
+  set textContent(value) { this._text = String(value); this.children = []; }
+  get textContent() { return this._text + this.children.map(child => child.textContent).join(''); }
+
+  matches(selector) {
+    if (selector.startsWith('.')) return this.className.split(/\s+/).includes(selector.slice(1));
+    const attribute = selector.match(/^([a-z]+)\[([^=]+)="([^"]+)"\]$/i);
+    if (attribute) return this.tagName === attribute[1] && String(this[attribute[2]] || this.attributes[attribute[2]]) === attribute[3];
+    return this.tagName === selector.toLowerCase();
+  }
+
+  querySelector(selector) {
+    const parts = selector.trim().split(/\s+/);
+    if (parts.length > 1) {
+      const parent = this.querySelector(parts.shift());
+      return parent ? parent.querySelector(parts.join(' ')) : null;
+    }
+    for (const child of this.children) {
+      if (child.matches && child.matches(selector)) return child;
+      const nested = child.querySelector && child.querySelector(selector);
+      if (nested) return nested;
+    }
+    return null;
+  }
+}
+
+function fakeDocument() {
+  return { createElement: tag => new FakeElement(tag) };
+}
+
 function setup(fetchMock) {
-  const dom = new JSDOM('<main id="root"></main>', { url: 'https://staging.test/admin-next' });
-  const root = dom.window.document.getElementById('root');
+  const document = fakeDocument();
+  const root = document.createElement('main');
   const mounted = demo.mount({
-    document: dom.window.document,
+    document,
     root,
     user: { first_name: 'Jojo' },
     fetch: fetchMock,
   });
-  return { dom, root, mounted };
+  return { document, root, mounted };
 }
 
 async function settle() {
@@ -122,7 +172,7 @@ test('affiche les états vides, paiement bloqué et changement de sélection', a
     ] }))
     .mockResolvedValueOnce(response(emptyTrace))
     .mockResolvedValueOnce(response(trace({ id: secondId, reference: 'CMD-43', status: 'available' })));
-  const { dom, root } = setup(fetchMock);
+  const { root } = setup(fetchMock);
   await settle();
 
   expect(root.textContent).toContain('Confirmer d’abord le paiement');
@@ -130,7 +180,7 @@ test('affiche les états vides, paiement bloqué et changement de sélection', a
   expect(root.textContent).toContain('Disponible après paiement confirmé');
   const select = root.querySelector('select');
   select.value = secondId;
-  select.dispatchEvent(new dom.window.Event('change'));
+  select.dispatchEvent({ type: 'change' });
   await settle();
   expect(root.textContent).toContain('CMD-43');
 });
@@ -203,9 +253,9 @@ test('couvre les identités de repli et le rafraîchissement après retrait', as
     .mockResolvedValueOnce(response({ success: true, status: 'collected' }))
     .mockResolvedValueOnce(response(collected))
     .mockResolvedValueOnce(response(collected));
-  const dom = new JSDOM('<main id="root"></main>');
-  const root = dom.window.document.getElementById('root');
-  demo.mount({ document: dom.window.document, root, user: { name: 'Nom' }, fetch: fetchMock });
+  const document = fakeDocument();
+  const root = document.createElement('main');
+  demo.mount({ document, root, user: { name: 'Nom' }, fetch: fetchMock });
   await settle();
   root.querySelector('.demo-flow__button--primary').click();
   await settle();
@@ -216,8 +266,8 @@ test('couvre les identités de repli et le rafraîchissement après retrait', as
   for (const user of [{ email: 'mail@test' }, { role: 'admin' }, undefined]) {
     const oneFetch = jest.fn()
       .mockResolvedValueOnce(response({ orders: [] }));
-    const local = new JSDOM('<main id="root"></main>');
-    demo.mount({ document: local.window.document, root: local.window.document.getElementById('root'), user, fetch: oneFetch });
+    const localDocument = fakeDocument();
+    demo.mount({ document: localDocument, root: localDocument.createElement('main'), user, fetch: oneFetch });
     await settle();
   }
 });
