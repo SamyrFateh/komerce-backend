@@ -15,7 +15,7 @@ describe('hero ultra mobile contract', () => {
 
   test('passe en mode diagnostic visuel pur avec marge sur les cheveux', () => {
     expect(css).toContain('background-size: auto 167%;');
-    expect(css).toContain('background-position: 81% 26%;');
+    expect(css).toContain('background-position: 81% 18%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
     expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
