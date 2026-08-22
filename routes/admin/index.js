@@ -49,6 +49,9 @@ router.use('/', require('./users'));
 // Groupe F — redirections rétro-compatibles dashboard/margins/alerts
 router.use('/', require('./dashboard'));
 
+// LOT 2C — cockpit de démonstration canonique (trace métier en lecture)
+router.use('/', require('./demo-order-flow'));
+
 // Groupe E — opérations système (reset, seed-test, counts)
 router.use('/', require('./system'));
 

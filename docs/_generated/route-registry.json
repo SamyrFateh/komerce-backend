@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-16T19:02:41.042Z",
+  "generatedAt": "2026-08-22T23:50:01.820Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 464,
+  "count": 472,
   "routes": [
     {
       "method": "GET",
@@ -443,6 +443,18 @@
       "mountPrefix": "/api/admin",
       "localPath": "/dashboard",
       "routeFile": "routes/admin/dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/demo/orders/:orderId/timeline",
+      "mountPrefix": "/api/admin",
+      "localPath": "/demo/orders/:orderId/timeline",
+      "routeFile": "routes/admin/demo-order-flow.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
         "routes/admin.js",
@@ -1733,16 +1745,6 @@
     },
     {
       "method": "POST",
-      "fullPath": "/api/auth/orders-by-phone",
-      "mountPrefix": "/api/auth",
-      "localPath": "/orders-by-phone",
-      "routeFile": "routes/auth.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
-      "method": "POST",
       "fullPath": "/api/auth/otp/request",
       "mountPrefix": "/api/auth/otp",
       "localPath": "/request",
@@ -1767,6 +1769,86 @@
       "mountPrefix": "/api/auth/otp",
       "localPath": "/verify",
       "routeFile": "routes/otp.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/auth/passkey/credentials",
+      "mountPrefix": "/api/auth/passkey",
+      "localPath": "/credentials",
+      "routeFile": "routes/auth-passkey.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "fullPath": "/api/auth/passkey/credentials/:id",
+      "mountPrefix": "/api/auth/passkey",
+      "localPath": "/credentials/:id",
+      "routeFile": "routes/auth-passkey.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/passkey/login/options",
+      "mountPrefix": "/api/auth/passkey",
+      "localPath": "/login/options",
+      "routeFile": "routes/auth-passkey.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/passkey/login/verify",
+      "mountPrefix": "/api/auth/passkey",
+      "localPath": "/login/verify",
+      "routeFile": "routes/auth-passkey.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/passkey/register/options",
+      "mountPrefix": "/api/auth/passkey",
+      "localPath": "/register/options",
+      "routeFile": "routes/auth-passkey.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/passkey/register/verify",
+      "mountPrefix": "/api/auth/passkey",
+      "localPath": "/register/verify",
+      "routeFile": "routes/auth-passkey.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/passkey/step-up/options",
+      "mountPrefix": "/api/auth/passkey",
+      "localPath": "/step-up/options",
+      "routeFile": "routes/auth-passkey.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/passkey/step-up/verify",
+      "mountPrefix": "/api/auth/passkey",
+      "localPath": "/step-up/verify",
+      "routeFile": "routes/auth-passkey.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
