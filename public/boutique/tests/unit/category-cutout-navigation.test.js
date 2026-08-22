@@ -27,21 +27,35 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobile).toMatch(/\.k-cat-cutout \.k-chip-label,[\s\S]*font-size:\s*10\.5px/);
   });
 
-  it('garde sur mobile une seule ligne compacte avec des objets équilibrés', () => {
+  it('garde sur mobile une seule ligne compacte avec calibration optique', () => {
     const mobileBlock = mobile.match(/@media \(max-width: 899px\) \{[\s\S]*\n\}/)?.[0] || '';
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*display:\s*flex/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*flex-wrap:\s*nowrap/s);
     expect(mobileBlock).toMatch(/\.k-shelf-rail\s*\{[^}]*overflow-x:\s*auto/s);
     expect(mobileBlock).not.toMatch(/grid-template-columns/);
     expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout\s*\{[^}]*flex:\s*0 0 68px[^}]*height:\s*64px/s);
-    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*50px[\s\S]*height:\s*38px/s);
-    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*scale\(1\.04\)/s);
-    expect(mobileBlock).toMatch(/\.k-shelf-rail \.k-cat-cutout \.k-shelf-atlas-cell\s*\{[^}]*translateY\(1px\)[^}]*scale\(0\.96\)/s);
-    expect(mobileBlock).toMatch(/\.k-cat-cutout\.active \.k-shelf-atlas-cell\s*\{[^}]*scale\(0\.98\)/s);
+    expect(mobileBlock).toMatch(/\.k-cat-cutout \.k-chip-photo,[\s\S]*width:\s*58px[\s\S]*height:\s*42px/s);
+    expect(mobileBlock).toContain('--k-optical-scale: 1.06;');
+    expect(mobileBlock).toContain('--k-optical-active-scale: 1.10;');
+    expect(mobileBlock).toContain('--k-optical-saturation: .84;');
+    expect(mobileBlock).toMatch(/translate\(var\(--k-optical-x\), var\(--k-optical-y\)\)/);
+    expect(mobileBlock).toContain('saturate(var(--k-optical-saturation))');
+    expect(mobileBlock).toContain('sepia(.04)');
     expect(mobileBlock).toMatch(/padding:\s*4px 8px 5px/);
-    expect(mobileBlock).toMatch(/saturate\(1\.10\)/);
-    expect(mobileBlock).toMatch(/contrast\(1\.08\)/);
-    expect(mobileBlock).toMatch(/margin-top:\s*2px/);
+    expect(mobileBlock).toMatch(/margin-top:\s*0/);
+  });
+
+  it('calibre les huit catégories sans altérer le contrat atlas', () => {
+    [
+      'all', 'Soldes', 'Mode & Beauté', 'Maison',
+      'Tech', 'Bricolage', 'Créations personnelles', 'Auto',
+    ].forEach((key) => {
+      expect(mobile).toContain(`.k-shelf-rail .k-cat-cutout[data-cat="${key}"]`);
+    });
+    expect(mobile).toMatch(/data-cat="all"[^}]*--k-optical-scale:\s*1\.18/s);
+    expect(mobile).toMatch(/data-cat="Mode & Beauté"[^}]*--k-optical-saturation:\s*\.74/s);
+    expect(mobile).toMatch(/data-cat="Maison"[^}]*--k-optical-scale:\s*\.99/s);
+    expect(mobile).toMatch(/data-cat="Auto"[^}]*--k-optical-y:\s*2px/s);
   });
 
   it('porte le showcase photo v1 dans le registre visuel unique', () => {
@@ -78,6 +92,7 @@ describe('Komerce Shelf category navigation contract', () => {
     expect(mobile).toMatch(/\.k-shelf-object-slot > \.k-shelf-atlas-cell\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*width:\s*auto[^}]*height:\s*auto/s);
     expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-col="2"] .k-shelf-atlas-image { left: -200%; }');
     expect(mobile).toContain('.k-shelf-atlas-cell[data-atlas-row="1"] .k-shelf-atlas-image { top: -100%; }');
+    expect(mobile).not.toMatch(/@media \(max-width: 899px\)[\s\S]*\.k-shelf-rail \.k-cat-cutout \.k-shelf-object\s*\{[^}]*position:\s*relative/s);
   });
 
   it('détache le niveau 2 Shelf de la classe visuelle legacy k-subchip', () => {
