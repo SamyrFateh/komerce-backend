@@ -336,6 +336,10 @@ module.exports = {
       'logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',
       'auth',
+      'orders (actions panier depuis les surfaces produit boutique — preuve: ' +
+        'b-catalog.js, render-product-card.js, b-modal-desktop-product.js, ' +
+        'b-subcat.js, b-favs.js, b-modal-buybox-shared.js (+ tests) -> ' +
+        'b-cart-core.js/b-cart.js, propriete orders-client canonicalFeature:orders)',
     ],
   },
 

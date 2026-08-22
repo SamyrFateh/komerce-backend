@@ -14140,6 +14140,12 @@
         "resolved": true
       },
       {
+        "from": "catalog",
+        "to": "orders",
+        "raw": "orders (actions panier depuis les surfaces produit boutique — preuve: b-catalog.js, render-product-card.js, b-modal-desktop-product.js, b-subcat.js, b-favs.js, b-modal-buybox-shared.js (+ tests) -> b-cart-core.js/b-cart.js, propriete orders-client canonicalFeature:orders)",
+        "resolved": true
+      },
+      {
         "from": "customs",
         "to": "orders",
         "raw": "orders (persistence via order-mutation-service ? LOT11)",
@@ -18321,7 +18327,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "catalog",
@@ -25285,7 +25291,7 @@
       "NON_RUNTIME_TEST": 4,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
-      "CROSS_FEATURE_DIRECT_IMPORT": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT": 0,
       "BUSINESS_FEATURE_INTERFACE": 0,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
@@ -25305,23 +25311,6 @@
         "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
-      },
-      {
-        "from": "catalog",
-        "to": "orders",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import"
-        ]
       },
       {
         "from": "infrastructure",
@@ -25567,7 +25556,6 @@
     "unclassified": [],
     "matrix": {
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
@@ -25619,6 +25607,7 @@
     ],
     "staleExceptions": [
       "auth-identity->platform-ops",
+      "catalog->orders",
       "catalog->platform-ops",
       "platform-ops->auth-identity",
       "platform-ops->catalog",
@@ -27404,20 +27393,8 @@
   },
   "drifts": {
     "error": [],
-    "warn": [
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "catalog -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
-      }
-    ],
-    "debt": [
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "catalog -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"orders\""
-      }
-    ],
+    "warn": [],
+    "debt": [],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -27618,11 +27595,11 @@
       }
     ],
     "summary": {
-      "signals": 1,
-      "debt": 1,
+      "signals": 0,
+      "debt": 0,
       "expectedTopology": 31,
       "generatorLimitations": 8,
-      "classifiedCandidates": 40
+      "classifiedCandidates": 39
     }
   }
 }

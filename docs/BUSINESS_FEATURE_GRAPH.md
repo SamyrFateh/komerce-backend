@@ -186,7 +186,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 13
 - interfaces exposed: 31
 - internal APIs: 6
-- dependencies (consumes): 10 — notifications, auth-identity, platform-ops, infrastructure, business-rules, economic-engine, sourcing, logistics, shared-cart, auth
+- dependencies (consumes): 11 — notifications, auth-identity, platform-ops, infrastructure, business-rules, economic-engine, sourcing, logistics, shared-cart, auth, orders
 - consumers: 11 — economic-engine, infrastructure, inventory, logistics, orders, platform-ops, recommendations, shared-cart, sourcing, unsold-resolution, admin-dashboard
 
 ### customs _(business-feature)_
@@ -410,7 +410,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 27
 - internal APIs: 29
 - dependencies (consumes): 18 — platform-ops, infrastructure, business-rules, wallet, economic-engine, logistics, catalog, purchasing, loyalty, payments, auth, auth-identity, customs, dashboard, documents, notifications, refunds, shared-cart
-- consumers: 17 — auth, customs, dashboard, documents, economic-engine, infrastructure, inventory, logistics, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet, admin-dashboard
+- consumers: 18 — auth, catalog, customs, dashboard, documents, economic-engine, infrastructure, inventory, logistics, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet, admin-dashboard
 
 ### payments _(business-feature)_
 
@@ -1297,6 +1297,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | catalog | logistics (`logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)`) | ✔ |
 | catalog | shared-cart (`shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)`) | ✔ |
 | catalog | auth (`auth`) | ✔ |
+| catalog | orders (`orders (actions panier depuis les surfaces produit boutique — preuve: b-catalog.js, render-product-card.js, b-modal-desktop-product.js, b-subcat.js, b-favs.js, b-modal-buybox-shared.js (+ tests) -> b-cart-core.js/b-cart.js, propriete orders-client canonicalFeature:orders)`) | ✔ |
 | customs | orders (`orders (persistence via order-mutation-service ? LOT11)`) | ✔ |
 | customs | logistics (`logistics (colis a classer)`) | ✔ |
 | customs | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
@@ -1486,11 +1487,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (1)
+### DETTE / DRIFT ACTIONNABLE (0)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> orders — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "orders"
+- none
 
 ### TOPOLOGIE ATTENDUE — hors dette (31)
 
@@ -1595,7 +1596,7 @@ Meta Graph monté : oui.
 | catalog | infrastructure | static-code | 34 | **DECLARED_AND_OBSERVED** |
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| catalog | orders | static-code | 12 | **OBSERVED_UNDECLARED** |
+| catalog | orders | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | catalog | platform-ops | static-code | 62 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 11 | **DECLARED_AND_OBSERVED** |
 | catalog | sourcing | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1762,7 +1763,6 @@ Meta Graph monté : oui.
 ### Observed undeclared dependencies
 
 - `auth-identity` → `logistics` (canaux: static-code)
-- `catalog` → `orders` (canaux: static-code)
 - `infrastructure` → `auth-identity` (canaux: static-code)
 - `infrastructure` → `auth-passkey` (canaux: static-code)
 - `infrastructure` → `business-rules` (canaux: static-code)
@@ -1846,11 +1846,11 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | NON_RUNTIME_TEST | 4 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
-| CROSS_FEATURE_DIRECT_IMPORT | 1 | boundary-remediation-required |
+| CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **18** | |
+| **TOTAL** | **17** | |
 
 ### Projection dependencies
 
@@ -1901,7 +1901,7 @@ Consommation réelle d'un service transversal métier — candidat `contract.con
 
 require() direct d'un fichier d'une autre business-feature — couture à casser AVANT déclaration.
 
-- `catalog` → `orders` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
+- _none_
 
 ### Business feature interfaces
 
