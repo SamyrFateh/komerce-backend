@@ -1975,7 +1975,7 @@ body:has(#k-page-scroll.k-pager-active) {
    entièrement dans le cadre ; le bas des torses absorbe la coupe. */
 @media (max-width: 899px) {
   .k-hero-figures {
-    background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');
+    background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
     background-size: auto 92%;
     background-position: 70% 45%;
   }
@@ -2981,7 +2981,7 @@ body:has(#k-page-scroll.k-pager-active) {
 
 /*
  * HERO ULTRA MOBILE — CANONIQUE COMPACT
- * Cible : 88–100 px de hauteur utile.
+ * Cible : 102–110 px de hauteur utile.
  * On conserve uniquement le fond chaud et le détourage canonique commun
  * aux trois marchés. Le K du téléphone remplace tout symbole additionnel.
  */
@@ -2991,7 +2991,7 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   .k-hero .k-hero-inner .k-hero-media {
-    height: clamp(88px, 24vw, 100px);
+    height: clamp(102px, 27.5vw, 110px);
     margin-top: 0;
     margin-bottom: 0;
     border-radius: 16px;
@@ -3000,7 +3000,7 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   .k-hero-media .k-hero-figures {
-    background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');
+    background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
     background-size: auto 92%;
     background-position: 70% 45%;
     -webkit-mask-image: none;

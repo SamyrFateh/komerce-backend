@@ -11,12 +11,12 @@ const heroBootstrap = fs.readFileSync(heroBootstrapPath, 'utf8');
 describe('hero ultra mobile contract', () => {
   test('reste strictement mobile et ultra compact', () => {
     expect(css).toContain('@media (max-width: 899px)');
-    expect(css).toContain('height: clamp(88px, 24vw, 100px);');
+    expect(css).toContain('height: clamp(102px, 27.5vw, 110px);');
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
   test('préserve les coiffures et le téléphone dans la boîte compacte', () => {
-    expect(css).toContain("background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');");
+    expect(css).toContain("background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');");
     expect(css).toContain('background-size: auto 92%;');
     expect(css).toContain('background-position: 70% 45%;');
     expect(css).toContain('-webkit-mask-image: none;');
