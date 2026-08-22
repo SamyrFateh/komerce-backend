@@ -1971,11 +1971,13 @@ body:has(#k-page-scroll.k-pager-active) {
     background-position: 80% 24%;
   }
 }
-/* Mobile : bandeau serré, têtes + téléphone + doigt. */
+/* Mobile : dérivé art-directed du même master. Les coiffures restent
+   entièrement dans le cadre ; le bas des torses absorbe la coupe. */
 @media (max-width: 899px) {
   .k-hero-figures {
-    background-size: auto 174%;
-    background-position: 82% 18%;
+    background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');
+    background-size: auto 100%;
+    background-position: 70% 0%;
   }
 }
 
@@ -2998,8 +3000,9 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   .k-hero-media .k-hero-figures {
-    background-size: auto 174%;
-    background-position: 82% 18%;
+    background-image: url('/images/komerce_hero_catalog_canonical_v4_mobile.webp');
+    background-size: auto 100%;
+    background-position: 70% 0%;
     -webkit-mask-image: none;
     mask-image: none;
   }
