@@ -1959,7 +1959,7 @@ body:has(#k-page-scroll.k-pager-active) {
 .k-hero-figures {
   position: absolute;
   inset: 0;
-  background-image: url('/images/komerce_hero_catalog_canonical_v3.webp');
+  background-image: url('/images/komerce_hero_catalog_canonical_v4.webp');
   background-repeat: no-repeat;
   -webkit-mask-image: none;
   mask-image: none;

@@ -26,7 +26,7 @@ describe('hero composition en calques (H1)', () => {
 
   test('le preload cible le WebP canonique unique', () => {
     expect(index).toMatch(
-      /<link rel="preload" as="image" href="\/images\/komerce_hero_catalog_canonical_v3\.webp" type="image\/webp"/
+      /<link rel="preload" as="image" href="\/images\/komerce_hero_catalog_canonical_v4\.webp" type="image\/webp"/
     );
     // Plus de preload des anciens webp
     expect(index).not.toMatch(/preload.*komerce_hero_desktop_panorama/);
