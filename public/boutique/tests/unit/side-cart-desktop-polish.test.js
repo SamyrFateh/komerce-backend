@@ -40,9 +40,10 @@ describe('side cart desktop polish', () => {
   it('ouvre la navigation sans barre de séparation et garde le seul trait actif', () => {
     const tabs = block('#k-cart-surface-switch.k-cart-tabs');
     expect(block('.k-side-cart')).toMatch(/border-left\s*:\s*0/);
+    expect(block('.k-side-cart')).toMatch(/background\s*:\s*var\(--sand\)/);
     expect(tabs).toMatch(/border\s*:\s*0/);
     expect(tabs).not.toMatch(/border-bottom/);
-    expect(tabs).toMatch(/background\s*:\s*var\(--white\)/);
+    expect(tabs).toMatch(/background\s*:\s*var\(--sand\)/);
     expect(tabs).toMatch(/box-shadow\s*:\s*none/);
     expect(css).toMatch(/k-tab-personal\.k-cart-tab--active::after[\s\S]*width:\s*32px[\s\S]*height:\s*2px/);
   });
@@ -50,7 +51,7 @@ describe('side cart desktop polish', () => {
   it('présente les articles comme des lignes ouvertes sans cartes', () => {
     const item = block('.k-sc-item');
     const snapshot = block('.k-cart-snapshot-item,\n  .k-cart-snapshot-item.is-cart-item-claimed');
-    expect(block('.k-sc-items')).toMatch(/background\s*:\s*var\(--white\)/);
+    expect(block('.k-sc-items')).toMatch(/background\s*:\s*var\(--sand\)/);
     expect(block('.k-sc-items')).toMatch(/gap\s*:\s*8px/);
     expect(item).toMatch(/padding\s*:\s*8px\s+0/);
     expect(item).toMatch(/border\s*:\s*0/);
@@ -59,6 +60,14 @@ describe('side cart desktop polish', () => {
     expect(block('.k-sc-item-img')).toMatch(/border\s*:\s*0/);
     expect(snapshot).toMatch(/border\s*:\s*0/);
     expect(snapshot).toMatch(/box-shadow\s*:\s*none/);
+  });
+
+  it('porte la signature Komerce sans réintroduire de contours', () => {
+    expect(css).toMatch(/k-cart-tab--active[\s\S]*color:\s*var\(--ocean-dark-deep\)/);
+    expect(css).toMatch(/k-tab-personal\.k-cart-tab--active::after[\s\S]*background:\s*var\(--cta-green\)/);
+    expect(block('.k-sc-item-price,\n  .k-cart-snapshot-item .k-cart-item-price')).toMatch(/color\s*:\s*var\(--coral\)/);
+    expect(block('.k-cart-item-select.is-checked')).toMatch(/background\s*:\s*var\(--cta-green\)/);
+    expect(block('.k-cart-item-select.is-checked::after')).toMatch(/border-color\s*:\s*var\(--white\)/);
   });
 
   it('ancre le side cart PDP en haut et neutralise le grossissement modal', () => {
