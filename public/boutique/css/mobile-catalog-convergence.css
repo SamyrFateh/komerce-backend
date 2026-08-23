@@ -35,8 +35,4 @@
   .k-card-name {
     font-weight: 500;
   }
-
-  .k-card-fav.liked {
-    box-shadow: 0 0 0 2px var(--coral-shadow-25);
-  }
 }
