@@ -23,8 +23,7 @@ describe('mobile catalog convergence', () => {
   test('renforce les accents sans reprendre l ownership racine des cartes', () => {
     expect(css).toContain('background: var(--cta-green);');
     expect(css).toMatch(/\.k-card-name\s*\{[^}]*font-weight:\s*500/s);
-    expect(css).toContain('.k-card-fav.liked');
     expect(css).not.toMatch(/\n\s*\.k-card\s*\{/);
-    expect(css).not.toMatch(/\n\s*\.k-card-fav\s*\{/);
+    expect(css).not.toContain('.k-card-fav');
   });
 });
