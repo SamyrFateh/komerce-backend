@@ -13588,7 +13588,7 @@
         "totalFiles": 61,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
-          "count": 14,
+          "count": 15,
           "files": [
             {
               "declared": "../css/cart.css",
@@ -13670,6 +13670,13 @@
             {
               "declared": "../tests/unit/b-mini-cart.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-mini-cart.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-tracking-loading-states.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-tracking-loading-states.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"

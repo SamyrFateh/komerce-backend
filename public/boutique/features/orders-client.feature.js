@@ -55,6 +55,7 @@ module.exports = {
     ],
     tests: [
       '../tests/unit/b-tracking.test.js',
+      '../tests/unit/b-tracking-loading-states.test.js',
       '../tests/unit/b-cart-core.test.js',
       '../tests/unit/b-cart.test.js',
       '../tests/unit/cart-public-api-boundary.test.js',
@@ -92,6 +93,9 @@ module.exports = {
     'le suivi ne modifie jamais le statut de commande',
     'la timeline reflète les statuts canoniques reçus du backend',
     'la recherche publique par référence ne charge ni document privé ni solde wallet',
+    'ouvrir Mes commandes sans identité affiche directement la recherche publique et ne déclenche ni appel privé aux commandes ni envoi d OTP',
+    'un 401 ou 403 après restauration d une identité affiche un état Session expirée distinct et la réidentification reste volontaire',
+    'un compte authentifié sans commande affiche un état vide honnête, distinct du parcours anonyme',
     'une commande authentifiée n\'affiche que les factures et remboursements téléchargeables, plus le solde wallet strictement positif',
     'la recherche d historique client partage le défaut téléphonique +269 avec l identité, sans demander les champs de profil inutiles à une simple consultation',
     'le suivi et l historique utilisent sur desktop une composition dédiée sans étirer le formulaire de recherche',

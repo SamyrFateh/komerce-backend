@@ -364,11 +364,30 @@ describe('renderTrackView', () => {
     await flush();
   });
 
-  it('affiche le mode recherche si aucune commande', async () => {
+  it('un visiteur anonyme voit directement la recherche publique sans appel privé ni OTP', async () => {
     document.body.innerHTML = '<div id="k-catalog-section"></div>';
-    apiGet.mockResolvedValue({ orders: [] });
+    restoreIdentity.mockResolvedValue(null);
+
     renderTrackView();
     await flush();
+
+    expect(document.getElementById('k-track-quick')).not.toBeNull();
+    expect(apiGet).not.toHaveBeenCalledWith('/api/orders?limit=20');
+    expect(apiPost).not.toHaveBeenCalledWith('/api/auth/otp/request', expect.anything());
+  });
+
+  it('affiche un état vide honnête si le compte identifié n’a aucune commande', async () => {
+    document.body.innerHTML = '<div id="k-catalog-section"></div>';
+    apiGet.mockResolvedValue({ orders: [] });
+
+    renderTrackView();
+    await flush();
+
+    expect(document.body.textContent).toContain("Vous n'avez encore aucune commande");
+    expect(document.getElementById('k-track-empty-search-btn')).not.toBeNull();
+    expect(document.getElementById('k-track-quick')).toBeNull();
+
+    document.getElementById('k-track-empty-search-btn').click();
     expect(document.getElementById('k-track-quick')).not.toBeNull();
   });
 
@@ -392,7 +411,7 @@ describe('renderTrackView', () => {
 
   // FIX 2026-07-10 : une panne technique n'est PLUS déguisée en mode recherche —
   // elle affiche un état erreur + Réessayer (avec fallback recherche proposé).
-  // La bascule directe en mode recherche reste le comportement du 401 (pas de session).
+  // Une session restaurée qui reçoit 401/403 a désormais son propre état honnête.
   it('panne technique de l\'appel API → état erreur + Réessayer (fallback recherche proposé)', async () => {
     document.body.innerHTML = '<div id="k-catalog-section"></div>';
     apiGet.mockRejectedValue(new Error('down'));
@@ -402,12 +421,23 @@ describe('renderTrackView', () => {
     expect(document.getElementById('k-track-search-fallback-btn')).not.toBeNull();
   });
 
-  it('401 (pas de session) → bascule en mode recherche', async () => {
+  it.each([401, 403])('%i après restauration d’identité → Session expirée, sans OTP automatique', async (status) => {
     document.body.innerHTML = '<div id="k-catalog-section"></div>';
-    apiGet.mockRejectedValue(Object.assign(new Error('HTTP 401'), { status: 401 }));
+    apiGet.mockRejectedValue(Object.assign(new Error('HTTP ' + status), { status }));
+
     renderTrackView();
     await flush();
-    expect(document.getElementById('k-track-quick')).not.toBeNull();
+
+    expect(document.body.textContent).toContain('Session expirée');
+    expect(document.getElementById('k-track-reauth-btn')).not.toBeNull();
+    expect(document.getElementById('k-track-reauth-btn').classList.contains('k-track-retry-btn')).toBe(true);
+    expect(document.getElementById('k-track-session-search-btn').classList.contains('k-track-btn--ghost')).toBe(true);
+    expect(apiPost).not.toHaveBeenCalledWith('/api/auth/otp/request', expect.anything());
+
+    document.getElementById('k-track-reauth-btn').click();
+    expect(document.getElementById('k-track-otp').classList.contains('u-hidden')).toBe(false);
+    expect(document.getElementById('k-track-quick').classList.contains('u-hidden')).toBe(true);
+    expect(apiPost).not.toHaveBeenCalledWith('/api/auth/otp/request', expect.anything());
   });
 });
 
