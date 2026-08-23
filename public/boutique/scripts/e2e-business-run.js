@@ -78,7 +78,7 @@ const ALL_SPECS = [
 
   // Phase 4 — Wallet lifecycle (le plus ambitieux)
   { id: 'F02', file: 'wallet-payment.spec.js',        label: 'Commande wallet 100%',       requires: ['auth', 'order', 'cancel'], phase: 'wallet' },
-  { id: 'F03', file: 'cancel-refund.spec.js',         label: 'Annulation + remboursement', requires: ['auth', 'cancel'], phase: 'wallet' },
+  { id: 'F03', file: 'cancel-refund.spec.js',         label: 'Annulation + remboursement', requires: ['auth', 'order', 'cancel'], phase: 'wallet' },
   { id: 'LIF', file: 'wallet-lifecycle.spec.js',      label: 'Cycle wallet complet',       requires: ['auth', 'order', 'cancel'], phase: 'wallet' },
 
   // Phase 5 — Admin
