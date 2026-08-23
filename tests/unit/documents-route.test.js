@@ -50,10 +50,13 @@ test('refuse une référence de commande invalide sans interroger la base', asyn
   expect(mockQuery).not.toHaveBeenCalled();
 });
 
-test('ne fournit aucun lien tant que le PDF n\'est pas disponible', async () => {
+test('fournit aussi une URL privée quand le PDF est encore pending', async () => {
   mockQuery.mockResolvedValueOnce({ rows: [{ id: ID, document_type: 'invoice', status: 'pending' }] });
   const res = await request(app()).get('/api/auth/me/documents');
-  expect(res.body.documents[0].download_url).toBeNull();
+  expect(res.body.documents[0]).toMatchObject({
+    status: 'pending',
+    download_url: `/api/auth/me/documents/${ID}/download`,
+  });
 });
 
 test('télécharge une facture appartenant au compte', async () => {
