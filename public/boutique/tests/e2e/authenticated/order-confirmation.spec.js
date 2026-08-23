@@ -38,14 +38,18 @@ const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
   openCheckout, selectRecipientOther,
 } = require('../helpers/boutique.helpers');
-const { cancelOrder } = require('../helpers/api.helpers');
+const { cancelOrder, assertMutantTargetSafe } = require('../helpers/api.helpers');
 
 test.describe('FLOW — Écran de confirmation post-commande (F04 partiel)', () => {
 
-  test.skip(
-    !process.env.ALLOW_ORDER_SUBMIT,
-    'Nécessite ALLOW_ORDER_SUBMIT=true — staging uniquement'
-  );
+  test.beforeAll(async () => {
+    await assertMutantTargetSafe();
+    if (!process.env.ALLOW_ORDER_SUBMIT) {
+      throw new Error(
+        '[R5] F04p nécessite ALLOW_ORDER_SUBMIT=true — staging uniquement. Ce test ne peut pas être skippé.'
+      );
+    }
+  });
 
   // Ce test soumet réellement une commande cash 'pending' — sans cleanup elle
   // reste orpheline sur le compte de test à chaque run. Même pattern que F01.
