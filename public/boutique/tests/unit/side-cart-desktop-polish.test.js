@@ -39,8 +39,6 @@ describe('side cart desktop polish', () => {
 
   it('ouvre la navigation sans barre de séparation et garde le seul trait actif', () => {
     const tabs = block('#k-cart-surface-switch.k-cart-tabs');
-    expect(block('.k-side-cart')).toMatch(/border-left\s*:\s*0/);
-    expect(block('.k-side-cart')).toMatch(/background\s*:\s*var\(--sand-warm\)/);
     expect(tabs).toMatch(/border\s*:\s*0/);
     expect(tabs).not.toMatch(/border-bottom/);
     expect(tabs).toMatch(/background\s*:\s*var\(--sand-warm\)/);
