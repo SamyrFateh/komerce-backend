@@ -26,7 +26,7 @@ module.exports = {
       'Product Detail Contract public',
       'état de sélection SKU partagé mobile/desktop',
       'rendu des catégories, sections, favoris et cartes produit',
-      'adaptations visuelles responsive de la découverte produit',
+      'adaptations visuelles desktop de la découverte produit',
     ],
     out: [
       'shell et layout globaux (platform-ops)',
@@ -69,7 +69,6 @@ module.exports = {
       '../css/categories.css',
       '../css/products.css',
       '../css/category-cutout-navigation.css',
-      '../css/mobile-catalog-convergence.css',
       '../css/category-cutout-navigation-desktop.css',
     ],
     assets: [
@@ -94,7 +93,6 @@ module.exports = {
       '../tests/unit/category-subcategory-continuity.test.js',
       '../tests/unit/category-cutout-assets-integrity.test.js',
       '../tests/unit/products.test.js',
-      '../tests/unit/mobile-catalog-convergence.test.js',
     ],
   },
 
@@ -131,7 +129,7 @@ module.exports = {
     'tout fichier js portant @domain catalog est listé dans ce manifeste ou modal-product',
     'mobile et desktop consomment le même Product Detail Contract',
     'aucun renderer ne reconstruit un stock par axe',
-    'les adaptations visuelles du catalogue ne deviennent jamais un shell applicatif global',
+    'les adaptations desktop du catalogue ne deviennent jamais un shell applicatif global',
     'les catégories restent sur une ligne et défilent horizontalement quand la largeur disponible ne suffit pas',
     'sur desktop premium, catégories et sous-catégories forment un stack compact de même largeur sans modifier le rail mobile',
     'les huit images du rail sont déclarées une seule fois dans shop-schema et partagent un format panoramique cohérent',

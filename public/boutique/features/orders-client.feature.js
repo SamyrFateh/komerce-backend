@@ -52,7 +52,6 @@ module.exports = {
     ],
     css: [
       '../css/cart.css',
-      '../css/mobile-cart-convergence.css',
     ],
     tests: [
       '../tests/unit/b-tracking.test.js',
@@ -61,7 +60,6 @@ module.exports = {
       '../tests/unit/b-cart.test.js',
       '../tests/unit/cart-public-api-boundary.test.js',
       '../tests/unit/b-mini-cart.test.js',
-      '../tests/unit/mobile-cart-convergence.test.js',
     ],
   },
 
