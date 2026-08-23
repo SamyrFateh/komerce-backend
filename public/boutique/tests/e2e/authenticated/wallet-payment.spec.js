@@ -10,7 +10,7 @@
  * @brief F02 — Commande payée 100% wallet → payment_status='paid' immédiat.
  *
  * Flux vérifié :
- *   1. Provisionner le wallet du compte de test.
+ *   1. Provisionner le wallet du compte de test via une session admin canonique.
  *   2. Ajouter un produit couvert par le solde.
  *   3. Checkout : cocher "Utiliser mon crédit".
  *   4. Soumettre → payment_status='paid' immédiat.
@@ -18,7 +18,9 @@
  *   6. Annuler en cleanup → remboursement + restauration stock.
  *
  * ⚠️ Ce test SOUMET puis ANNULE une vraie commande payée → staging uniquement.
- * Prérequis : ALLOW_ORDER_SUBMIT=true + ALLOW_ORDER_CANCEL=true + TEST_ADMIN_TOKEN.
+ * Prérequis : ALLOW_ORDER_SUBMIT=true + ALLOW_ORDER_CANCEL=true
+ *              + TEST_ADMIN_PASSWORD
+ *              (+ TEST_ADMIN_EMAIL optionnel, défaut admin@komerce.km).
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
@@ -28,29 +30,19 @@ const {
 } = require('../helpers/boutique.helpers');
 const {
   verifySession, verifyWalletBalance,
-  provisionTestWallet, assertMutantTargetSafe, cancelOrder,
+  assertMutantTargetSafe, cancelOrder,
 } = require('../helpers/api.helpers');
+const { provisionTestWalletViaAdmin } = require('../helpers/wallet-provision.helpers');
 
 test.describe('FLOW — Commande payée 100% wallet (F02)', () => {
-  let walletBefore;
   let createdOrderId = null;
 
-  test.beforeAll(async ({ browser }) => {
+  test.beforeAll(async () => {
     await assertMutantTargetSafe();
     if (!process.env.ALLOW_ORDER_SUBMIT || !process.env.ALLOW_ORDER_CANCEL) {
       throw new Error(
         '[R5] F02 nécessite ALLOW_ORDER_SUBMIT=true + ALLOW_ORDER_CANCEL=true — staging uniquement.'
       );
-    }
-
-    const page = await browser.newPage();
-    try {
-      await page.goto(BASE_URL);
-      walletBefore = await provisionTestWallet(page, 50_000);
-      // eslint-disable-next-line no-console
-      console.log(`[F02] Wallet provisionné : ${walletBefore.balance} KMF`);
-    } finally {
-      await page.close();
     }
   });
 
@@ -67,6 +59,8 @@ test.describe('FLOW — Commande payée 100% wallet (F02)', () => {
 
     const session = await verifySession(page);
     expect(session.authenticated, 'Session active requise').toBe(true);
+
+    const walletBefore = await provisionTestWalletViaAdmin(page, 50_000);
     expect(walletBefore.balance, '[R5] Solde wallet insuffisant après provisionnement').toBeGreaterThan(0);
     // eslint-disable-next-line no-console
     console.log(`[F02] Solde wallet avant : ${walletBefore.balance} KMF`);
