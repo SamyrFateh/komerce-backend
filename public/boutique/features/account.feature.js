@@ -64,6 +64,7 @@ module.exports = {
     tests: [
       '../tests/unit/b-komerce.test.js',
       '../tests/unit/b-komerce-nav-identity.test.js',
+      '../tests/unit/komerce-css-tokens.test.js',
     ],
   },
 

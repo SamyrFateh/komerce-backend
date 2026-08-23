@@ -11,9 +11,9 @@
  * @layer         test
  * @status        production
  * @owner         public/boutique/js/b-komerce.js
- * @purpose       Verrouille l'usage des tokens sémantiques pour l'action danger de Mon Komerce.
+ * @purpose       Verrouille les tokens sémantiques des actions primaire et danger de Mon Komerce.
  * @impact-areas  account, boutique-css-governance
- * @version       2026-08-lot6
+ * @version       2026-08-lot7
  */
 'use strict';
 
@@ -27,7 +27,21 @@ function dangerRule(css) {
   return match ? match[1] : null;
 }
 
-describe('Mon Komerce — contrat CSS danger', () => {
+function primaryRule(css) {
+  const match = css.match(/\.k-kmc-action-btn\s*\{([\s\S]*?)\}/);
+  return match ? match[1] : null;
+}
+
+describe('Mon Komerce — contrats CSS des actions', () => {
+  it('aligne l’action primaire sur le dégradé vert de Mes Partages', () => {
+    const css = fs.readFileSync(cssPath, 'utf8');
+    const rule = primaryRule(css);
+
+    expect(rule).not.toBeNull();
+    expect(rule).toContain('background: linear-gradient(135deg, var(--cta-green) 0%, var(--status-confirmed-text) 100%)');
+    expect(rule).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+  });
+
   it('utilise exclusivement les tokens danger sémantiques', () => {
     const css = fs.readFileSync(cssPath, 'utf8');
     const rule = dangerRule(css);
