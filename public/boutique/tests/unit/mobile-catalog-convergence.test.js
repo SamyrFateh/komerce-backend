@@ -20,8 +20,11 @@ describe('mobile catalog convergence', () => {
     expect(css).toMatch(/\.k-shelf-rail\s*\{[^}]*background:\s*var\(--white\)[^}]*box-shadow:\s*none/s);
   });
 
-  test('conserve les cartes sable mais retire contour et ombre', () => {
-    expect(css).toMatch(/\.k-card\s*\{[^}]*background:\s*var\(--sand\)[^}]*border:\s*0[^}]*box-shadow:\s*none/s);
+  test('renforce les accents sans reprendre l ownership racine des cartes', () => {
     expect(css).toContain('background: var(--cta-green);');
+    expect(css).toMatch(/\.k-card-name\s*\{[^}]*font-weight:\s*500/s);
+    expect(css).toContain('.k-card-fav.liked');
+    expect(css).not.toMatch(/\n\s*\.k-card\s*\{/);
+    expect(css).not.toMatch(/\n\s*\.k-card-fav\s*\{/);
   });
 });
