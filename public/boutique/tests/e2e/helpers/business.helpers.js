@@ -57,6 +57,19 @@ async function getPrivateDocuments(page) {
 
 /** Télécharge un document avec la session du contexte Playwright courant. */
 async function downloadPrivateDocument(page, downloadUrl) {
+  if (
+    typeof downloadUrl !== 'string' ||
+    !downloadUrl.startsWith('/api/auth/me/documents/') ||
+    !downloadUrl.endsWith('/download')
+  ) {
+    return {
+      status: 0,
+      contentType: '',
+      bytes: 0,
+      error: 'download_url document absent ou invalide',
+    };
+  }
+
   return page.evaluate(async (args) => {
     try {
       const resp = await fetch(new URL(args.path, args.base).href, { credentials: 'include' });
