@@ -10,8 +10,8 @@
  * @brief F02 — Commande payée 100% wallet → payment_status='paid' immédiat.
  *
  * Flux vérifié :
- *   1. Provisionner le wallet du compte de test via une session admin canonique.
- *   2. Ajouter un produit couvert par le solde.
+ *   1. Ouvrir un produit et lire son prix réel.
+ *   2. Provisionner le wallet du compte de test via une session admin canonique.
  *   3. Checkout : cocher "Utiliser mon crédit".
  *   4. Soumettre → payment_status='paid' immédiat.
  *   5. Vérifier le débit wallet.
@@ -60,24 +60,27 @@ test.describe('FLOW — Commande payée 100% wallet (F02)', () => {
     const session = await verifySession(page);
     expect(session.authenticated, 'Session active requise').toBe(true);
 
-    const walletBefore = await provisionTestWalletViaAdmin(page, 50_000);
-    expect(walletBefore.balance, '[R5] Solde wallet insuffisant après provisionnement').toBeGreaterThan(0);
-    // eslint-disable-next-line no-console
-    console.log(`[F02] Solde wallet avant : ${walletBefore.balance} KMF`);
-
     await waitForGrid(page);
     await openFirstCard(page);
 
     const priceText = await page.locator('#k-modal-price, .k-modal-price').first().textContent().catch(() => '');
     const priceMatch = priceText.match(/[\d\s]+/);
     const estimatedPrice = priceMatch ? parseInt(priceMatch[0].replace(/\s/g, ''), 10) : 0;
+    expect(estimatedPrice, '[R5] Le prix du produit doit être lisible dans la modale').toBeGreaterThan(0);
 
-    if (estimatedPrice > 0 && estimatedPrice > walletBefore.balance) {
-      throw new Error(
-        `[R5] Prix produit ~${estimatedPrice} KMF > solde ${walletBefore.balance} KMF — ` +
-        'augmenter le montant du provisionnement'
-      );
-    }
+    // Le provisionnement suit le catalogue réel, au lieu d'un plafond fixe de
+    // 50k qui rendait le test dépendant du premier produit affiché. La marge
+    // couvre les frais additionnels éventuels du checkout staging.
+    const targetBalance = Math.max(50_000, estimatedPrice + 100_000);
+    const walletBefore = await provisionTestWalletViaAdmin(page, targetBalance);
+    expect(
+      walletBefore.balance,
+      '[R5] Solde wallet insuffisant après provisionnement dynamique'
+    ).toBeGreaterThanOrEqual(targetBalance);
+    // eslint-disable-next-line no-console
+    console.log(
+      `[F02] Produit ~${estimatedPrice} KMF — wallet provisionné à ${walletBefore.balance} KMF`
+    );
 
     await addToCartFromModal(page);
     await openCheckout(page);
