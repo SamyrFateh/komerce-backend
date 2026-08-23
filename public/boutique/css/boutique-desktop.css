@@ -789,9 +789,9 @@
     width: 296px; /* libellés et contrôles restent lisibles sans retour artificiel */
     height: 100dvh;
     border-radius: 0;
-    background: var(--sand-warm);
-    /* Surface ouverte : le sable chaud différencie le panneau du catalogue
-       blanc ; aucun cadre ni halo ne redessine une boîte autour. */
+    background: var(--white);
+    /* Surface blanche ouverte : l'alignement et les accents fonctionnels
+       suffisent ; aucun cadre ni halo ne redessine une boîte autour. */
     border: none;
     box-shadow: none;
     overflow: hidden;

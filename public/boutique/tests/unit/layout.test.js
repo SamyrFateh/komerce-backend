@@ -16,4 +16,10 @@ describe('layout — hiérarchie des surfaces', () => {
     expect(css).toMatch(/html,\s*body\s*\{[^}]*background:\s*var\(--white\)/s);
     expect(css).toMatch(/#k-page-scroll,\s*#k-catalog-section\s*\{[^}]*background:\s*var\(--white\)/s);
   });
+
+  it('laisse le header desktop flotter sans filet ni ombre de coque', () => {
+    expect(css).toMatch(
+      /Header blanc fluide[\s\S]*?\.k-header\s*\{[^}]*background:\s*rgba\(255,255,255,\.94\)[^}]*border-bottom:\s*0[^}]*box-shadow:\s*none/s
+    );
+  });
 });

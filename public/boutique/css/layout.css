@@ -1104,12 +1104,13 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
 
-  /* Header glass effect (ex desktop-commerce-skeleton.css) */
+  /* Header blanc fluide : le contenu et le scroll portent la hiérarchie,
+     sans filet ni ombre de coque permanente. */
   .k-header {
     z-index: 220;
     background: rgba(255,255,255,.94);
-    border-bottom: 1px solid rgba(42,33,23,.08);
-    box-shadow: 0 4px 16px rgba(42,33,23,.06);
+    border-bottom: 0;
+    box-shadow: none;
     backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
   }

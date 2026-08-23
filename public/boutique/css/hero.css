@@ -535,9 +535,7 @@
 /* ── Premium desktop home — hero (rapatrié de b-home-premium-v1.js, Lot 3) ── */
 @media (min-width: 900px) {
   html.k-home-premium-v1 #k-hero-fixed-wrap {
-    background:
-      radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--ocean-bg-08) 66%, transparent), transparent 24%),
-      linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 55%, var(--white)) 100%);
+    background: var(--white);
   }
 
   html.k-home-premium-v1 .k-hero-media {
@@ -715,18 +713,18 @@
     padding-inline: 0;
   }
 
-  /* ── Carte panorama unique ── */
+  /* ── Panorama ouvert : la lumière structure, jamais un cadre ── */
   html.k-home-premium-v1 .k-hero-media {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
     height: clamp(190px, 14vw, 208px);
     margin: 0;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    box-shadow: 0 12px 34px var(--border-text-06);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
     position: relative;
-    background: var(--hero-bg);
+    background: transparent;
   }
 
   /* ── Image plein cadre ── */
@@ -735,7 +733,7 @@
     grid-row: 1;
     display: block;
     overflow: hidden;
-    border-radius: inherit;
+    border-radius: 0;
   }
 
   html.k-home-premium-v1 .k-hero-img {
@@ -1031,8 +1029,9 @@
   /* Fond premium rapatrié du wrap (perdu avec display:contents). */
   html.k-home-premium-v1 .k-hero {
     background:
-      radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--ocean-bg-08) 66%, transparent), transparent 24%),
-      linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 55%, var(--white)) 100%);
+      radial-gradient(circle at 76% 50%, var(--ocean-bg-08) 0%, transparent 30%),
+      radial-gradient(circle at 18% 58%, var(--coral-focus-08) 0%, transparent 26%),
+      var(--white);
   }
 
   /* Barre nav épinglée sous le header, sur tout le scroll catalogue.
