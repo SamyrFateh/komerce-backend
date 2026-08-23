@@ -52,6 +52,7 @@ module.exports = {
       '../css/tokens.css',
       '../css/reset.css',
       '../css/layout.css',
+      '../css/mobile-shell-convergence.css',
       '../css/boutique-desktop.css',
       '../css/interactions.css',
     ],
@@ -64,6 +65,7 @@ module.exports = {
       '../tests/unit/boutique-core.unit.test.js',
       '../tests/unit/boutique-desktop.test.js',
       '../tests/unit/layout.test.js',
+      '../tests/unit/mobile-shell-convergence.test.js',
     ],
   },
 
