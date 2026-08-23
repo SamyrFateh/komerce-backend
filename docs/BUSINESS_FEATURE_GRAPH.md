@@ -1557,7 +1557,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 864 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 168 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 169 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1689,7 +1689,7 @@ Meta Graph monté : oui.
 | notifications | infrastructure | static-code | 13 | **DECLARED_AND_OBSERVED** |
 | notifications | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | auth | static-code | 15 | **DECLARED_AND_OBSERVED** |
-| orders | auth-identity | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
+| orders | auth-identity | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | business-rules | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | orders | catalog | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | orders | customs | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1701,7 +1701,7 @@ Meta Graph monté : oui.
 | orders | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 7 | **DECLARED_AND_OBSERVED** |
-| orders | platform-ops | static-code | 37 | **DECLARED_AND_OBSERVED** |
+| orders | platform-ops | static-code | 38 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 7 | **DECLARED_AND_OBSERVED** |

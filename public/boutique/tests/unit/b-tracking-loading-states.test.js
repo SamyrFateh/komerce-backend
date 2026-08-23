@@ -14,7 +14,7 @@
  *   - /api/orders pending/reject → pas de loader infini
  *   - affichage fallback recherche ou erreur contrôlée
  *   - bouton Réessayer relance
- *   - 401 → bascule proprement vers le mode recherche (pas une panne)
+ *   - 401/403 après identité restaurée → état Session expirée distinct
  */
 
 jest.mock('../../js/b-utils.js', () => ({
@@ -31,6 +31,7 @@ jest.mock('../../js/b-identity.js', () => ({
 }));
 
 const { apiGet } = require('../../js/b-utils.js');
+const { restoreIdentity } = require('../../js/b-identity.js');
 const { renderTrackView } = require('../../js/b-tracking.js');
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -53,6 +54,7 @@ describe('b-tracking — états de chargement', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="k-catalog-section"></div>';
     apiGet.mockReset();
+    restoreIdentity.mockResolvedValue({ phone: '+2691234567' });
   });
 
   test('timeout /api/orders → état erreur contrôlé + Réessayer, pas de loader infini', async () => {
@@ -78,7 +80,7 @@ describe('b-tracking — états de chargement', () => {
     expect(el.querySelector('#k-track-retry-btn')).toBeTruthy();
   });
 
-  test('401 (pas de session) → bascule proprement en mode recherche, pas un écran d\'erreur', async () => {
+  test('401 après identité restaurée → état Session expirée, pas une panne réseau', async () => {
     apiGet.mockImplementation(() => Promise.reject(httpError(401)));
     renderTrackView();
     await flush(); await flush();
@@ -86,8 +88,8 @@ describe('b-tracking — états de chargement', () => {
     const el = trackEl();
     expect(el.querySelector('#k-track-retry-btn')).toBeFalsy();
     expect(el.textContent).not.toContain('Chargement de vos commandes');
-    // mode recherche rendu (champ/CTA de recherche présent)
-    expect(el.innerHTML.length).toBeGreaterThan(0);
+    expect(el.textContent).toContain('Session expirée');
+    expect(el.querySelector('#k-track-reauth-btn')).toBeTruthy();
   });
 
   test('bouton Réessayer relance et affiche les commandes au 2e essai', async () => {

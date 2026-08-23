@@ -55,6 +55,7 @@ module.exports = {
     ],
     tests: [
       '../tests/unit/b-tracking.test.js',
+      '../tests/unit/b-tracking-loading-states.test.js',
       '../tests/unit/b-cart-core.test.js',
       '../tests/unit/b-cart.test.js',
       '../tests/unit/cart-public-api-boundary.test.js',

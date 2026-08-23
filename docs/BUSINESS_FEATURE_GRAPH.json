@@ -16577,6 +16577,14 @@
       {
         "boutiqueManifest": "orders-client",
         "category": "tests",
+        "declared": "../tests/unit/b-tracking-loading-states.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-tracking-loading-states.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "orders-client",
+        "category": "tests",
         "declared": "../tests/unit/b-cart-core.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-cart-core.test.js",
         "exists": true,
@@ -22132,6 +22140,10 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/b-tracking.test.js",
                 "targetFile": "public/boutique/js/b-identity.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-tracking-loading-states.test.js",
+                "targetFile": "public/boutique/js/b-identity.js"
               }
             ]
           },
@@ -22948,6 +22960,10 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/b-tracking.test.js",
                 "targetFile": "public/boutique/js/b-nav.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-tracking-loading-states.test.js",
+                "targetFile": "public/boutique/js/b-utils.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-cart-core.test.js",
@@ -25662,7 +25678,7 @@
         "filesObserved": 864
       },
       "boutique": {
-        "filesObserved": 168,
+        "filesObserved": 169,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
