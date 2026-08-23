@@ -8,6 +8,8 @@
 .demo-flow__toolbar,
 .demo-flow__summary,
 .demo-flow__actions,
+.demo-flow__client-proof,
+.demo-flow__client-proof-actions,
 .demo-flow__invoice-actions {
   display: flex;
   align-items: center;
@@ -43,6 +45,13 @@
 .demo-flow__step.is-done { color: #166534; background: #ecfdf3; border-color: #86d3aa; }
 .demo-flow__step.is-current { color: #fff; background: #c45124; border-color: #c45124; font-weight: 800; }
 
+.demo-flow__client-proof { justify-content: space-between; margin-bottom: 16px; padding: 14px 16px; background: #ecfdf3; border: 1px solid #86d3aa; border-radius: var(--kmc-radius-md); }
+.demo-flow__client-proof h3 { margin: 0; color: #14532d; font-size: 15px; }
+.demo-flow__client-proof p { margin: 5px 0; color: #166534; font-weight: 700; overflow-wrap: anywhere; }
+.demo-flow__client-proof small { display: block; color: #3f5f4a; line-height: 1.4; }
+.demo-flow__client-proof-actions { justify-content: flex-end; flex-wrap: wrap; }
+.demo-flow__account-link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+
 .demo-flow__invoice-actions { margin-bottom: 16px; padding: 14px 16px; background: #fff; border: 1px solid var(--kmc-line); border-radius: var(--kmc-radius-md); flex-wrap: wrap; }
 .demo-flow__invoice-actions h3 { margin: 0 auto 0 0; font-size: 15px; }
 .demo-flow__link { color: #166534; font-weight: 750; }
@@ -60,6 +69,8 @@
 @media (max-width: 860px) {
   .demo-flow { padding: 18px 14px 28px; }
   .demo-flow__header, .demo-flow__summary { align-items: flex-start; }
+  .demo-flow__client-proof { align-items: flex-start; flex-direction: column; }
+  .demo-flow__client-proof-actions { justify-content: flex-start; }
   .demo-flow__summary { display: grid; }
   .demo-flow__actions { justify-content: flex-start; max-width: none; }
   .demo-flow__hint { text-align: left; }
@@ -70,6 +81,7 @@
   .demo-flow__header { gap: 10px; }
   .demo-flow__env { padding: 6px 8px; }
   .demo-flow__button { width: 100%; }
+  .demo-flow__client-proof-actions { width: 100%; }
   .demo-flow__invoice-actions { align-items: stretch; }
   .demo-flow__invoice-actions h3 { width: 100%; }
 }
