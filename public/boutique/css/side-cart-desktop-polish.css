@@ -20,9 +20,8 @@
     padding: 0 10px;
     gap: 0;
     border: 0;
-    border-bottom: 1px solid var(--border);
     border-radius: 0;
-    background: var(--white);
+    background: var(--sand-warm);
     box-shadow: none;
   }
 
@@ -46,7 +45,7 @@
 
   #k-cart-surface-switch .k-cart-tab--active,
   #k-cart-surface-switch[data-active="personal"] .k-tab-personal.k-cart-tab--active {
-    color: var(--text);
+    color: var(--ocean-dark-deep);
     background: transparent;
     border: 0;
     border-radius: 0;
@@ -64,7 +63,7 @@
     width: 32px;
     height: 2px;
     border-radius: 999px;
-    background: var(--text);
+    background: var(--cta-green);
     transform: translateX(-50%);
   }
 
@@ -96,35 +95,64 @@
     color: var(--text-muted);
   }
 
-  /* Liste d'articles : cartes sable sur la coque blanche, selon la même
-     hiérarchie que le catalogue et le drawer mobile. */
+  /* Liste d'articles ouverte : l'espace et l'alignement structurent la
+     lecture sur une coque sable chaude, sans cartes ni séparateurs. */
   .k-sc-items {
-    padding: 8px 10px 10px;
+    padding: 8px 12px 10px;
     gap: 8px;
-    background: var(--white);
+    background: var(--sand-warm);
   }
 
   .k-sc-item {
     align-items: center;
     gap: 10px;
-    padding: 8px;
-    border: 1px solid var(--item-card-border);
-    border-radius: 13px;
-    background: var(--sand);
+    padding: 8px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
   }
 
   .k-sc-item:hover {
-    background: var(--sand);
-    border-color: var(--stone-border);
+    background: transparent;
   }
 
   .k-sc-item-img {
     width: 52px;
     height: 52px;
-    border-radius: 10px;
-    background: var(--sand);
-    border: 1px solid var(--border-text-06);
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+  }
+
+  /* Même surface ouverte pour une ligne issue d'une liste partagée. */
+  .k-cart-snapshot-item,
+  .k-cart-snapshot-item.is-cart-item-claimed {
+    padding: 8px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .k-cart-snapshot-item .k-cart-item-img {
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+  }
+
+  .k-sc-item-price,
+  .k-cart-snapshot-item .k-cart-item-price {
+    color: var(--coral);
+  }
+
+  .k-cart-item-select.is-checked {
+    border-color: var(--cta-green);
+    background: var(--cta-green);
+  }
+
+  .k-cart-item-select.is-checked::after {
+    border-color: var(--white);
   }
 
   /* Parité exacte avec la ligne canonique panier/liste de cart.css. */
@@ -188,8 +216,14 @@
   .k-sc-header {
     padding: 10px 12px 12px;
     gap: 7px;
-    background: var(--white);
-    border-top: 1px solid var(--border-text-08);
+    background: var(--sand-warm);
+    border-top: 0;
+  }
+
+  #k-side-cart:has(.k-cart-tabs) .k-sc-title-bar:has(
+    .k-cart-snapshot-contributors
+  ) {
+    border-bottom: 0;
   }
 
   .k-sc-free-ship {
