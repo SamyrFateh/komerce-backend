@@ -317,6 +317,19 @@ describe('switchView', () => {
     expect(scrollPageToTop).toHaveBeenCalledWith('smooth');
   });
 
+  test('en desktop, quitter la boutique neutralise le spacer du header', () => {
+    mountViews();
+    const headerSpacer = document.createElement('div');
+    headerSpacer.id = 'k-header-spacer';
+    headerSpacer.style.height = '72px';
+    document.body.appendChild(headerSpacer);
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+
+    switchView('track');
+
+    expect(headerSpacer.style.height).toBe('0px');
+  });
+
   test('Lot 4 : bascule vers komerce -> body.k-view-komerce + #k-komerce-view.show', () => {
     mountViews();
     switchView('komerce');
@@ -392,11 +405,18 @@ describe('setupBnav', () => {
     expect(document.querySelector('[data-tab="komerce"]').classList.contains('active')).toBe(false);
   });
 
-  test('komerce:show active l’onglet seulement après identification', () => {
+  test('komerce:show active l’onglet lorsque Mon Komerce affiche son shell', () => {
     mountNavButtons();
     bus.emit('komerce:show');
     expect(document.querySelector('[data-tab="komerce"]').classList.contains('active')).toBe(true);
     expect(document.body.classList.contains('k-view-komerce')).toBe(true);
+  });
+
+  test('tab=shop revient sur la boutique', () => {
+    mountNavButtons();
+    setupBnav();
+    document.querySelector('[data-tab="shop"]').click();
+    expect(document.body.classList.contains('k-view-shop')).toBe(true);
   });
 
   test('active la classe "active" uniquement sur le bouton cliqué', () => {

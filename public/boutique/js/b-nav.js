@@ -282,8 +282,8 @@ export function setupBnav() {
     item.addEventListener('click', () => {
       const tab = item.dataset.tab;
       if (tab === 'komerce') {
-        // Une identification éventuelle s'ouvre sur un fond neutre : ne pas
-        // laisser visible une erreur de Suivi/Mes Partages sous la modal.
+        // Neutraliser d'abord la vue précédente : openMonKomerce() affiche
+        // ensuite son propre écran explicatif avant toute identification.
         activateNavTab(null);
         switchView('shop');
         openMonKomerce();

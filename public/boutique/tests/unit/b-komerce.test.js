@@ -12,7 +12,7 @@
  * @status        production
  * @owner         public/boutique/tests/unit/b-komerce.test.js
  * @purpose       Tests unitaires de openMonKomerce (Lot 4B, étendu Lot 5) :
- *                authentification à l'entrée, page unique sans sous-onglet,
+ *                écran explicatif avant authentification, page unique sans sous-onglet,
  *                bloc wallet, profil (champs persistés uniquement), retrait
  *                & sécurité (code informatif + autorisation nominative de
  *                retrait exceptionnel — états NONE/ACTIVE).
@@ -27,7 +27,7 @@
  * Module js/b-komerce.js — page unique Mon Komerce (Lot 4B).
  *
  * Couverture :
- *   openMonKomerce() : authentification à l'entrée, annulation OTP,
+ *   openMonKomerce() : shell sans OTP automatique, identification explicite,
  *     session valide, montage du shell unique, chargement des blocs.
  *   Bloc wallet : solde compact sans historique de mouvements.
  *   Bloc profil : champs réels (full_name, currency_pref), WhatsApp en
@@ -86,7 +86,7 @@ beforeEach(() => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Authentification à l'entrée
+// Identification explicite à l'entrée
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('openMonKomerce — authentification', () => {
@@ -98,19 +98,42 @@ describe('openMonKomerce — authentification', () => {
     expect(document.getElementById('k-komerce-view')).not.toBeNull();
   });
 
-  it('session absente : déclenche requireIdentity avant tout affichage', async () => {
-    requireIdentity.mockResolvedValue({ id: 1, phone: '+2691234567' });
+  it('session absente : ouvre le shell explicatif sans déclencher l\'OTP', async () => {
     await openMonKomerce();
     await flush();
-    expect(requireIdentity).toHaveBeenCalled();
-    expect(document.getElementById('k-komerce-view')).not.toBeNull();
+    const shell = document.getElementById('k-komerce-view');
+    expect(shell).not.toBeNull();
+    expect(shell.classList.contains('show')).toBe(true);
+    expect(shell.textContent).toContain('Identifiez-vous pour acc\u00e9der \u00e0 Mon Komerce');
+    expect(shell.querySelector('#k-kmc-identify')).not.toBeNull();
+    expect(requireIdentity).not.toHaveBeenCalled();
+    expect(apiGet).not.toHaveBeenCalled();
   });
 
-  it('OTP annulé : aucune coquille vide montée', async () => {
+  it('clic sur M\'identifier : déclenche requireIdentity puis charge Mon Komerce après succès', async () => {
+    requireIdentity.mockResolvedValue({ id: 1, phone: '+2691234567' });
+    await openMonKomerce();
+    document.getElementById('k-kmc-identify').click();
+    await flush(6);
+    expect(requireIdentity).toHaveBeenCalledWith({
+      reason: 'mon-komerce',
+      title: 'Acc\u00e9der \u00e0 Mon Komerce',
+    });
+    expect(apiGet).toHaveBeenCalledWith('/api/auth/me');
+    expect(document.getElementById('k-kmc-fullname')).not.toBeNull();
+  });
+
+  it('OTP annulé après le clic : conserve l\'écran explicatif et réactive le bouton', async () => {
     requireIdentity.mockResolvedValue(null); // annulation
     await openMonKomerce();
+    const btn = document.getElementById('k-kmc-identify');
+    btn.click();
     await flush();
-    expect(document.getElementById('k-komerce-view')).toBeNull();
+    expect(document.getElementById('k-komerce-view')).not.toBeNull();
+    expect(document.getElementById('k-kmc-identify')).toBe(btn);
+    expect(btn.disabled).toBe(false);
+    expect(btn.textContent).toBe('M\u2019identifier');
+    expect(apiGet).not.toHaveBeenCalled();
   });
 
   it('après succès OTP : aucune donnée perso rendue avant la réponse API', async () => {
@@ -118,7 +141,8 @@ describe('openMonKomerce — authentification', () => {
     let resolveGet;
     apiGet.mockReturnValue(new Promise(r => { resolveGet = r; }));
     requireIdentity.mockResolvedValue({ id: 1 });
-    openMonKomerce();
+    await openMonKomerce();
+    document.getElementById('k-kmc-identify').click();
     await flush();
     // Le shell est monté mais le formulaire profil n'est pas encore rendu :
     // le champ #k-kmc-fullname n'existe pas encore (état "Chargement…").
