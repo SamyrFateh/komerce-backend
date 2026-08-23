@@ -51,22 +51,13 @@
   }
 
   function renderReady(root, user) {
-    root.innerHTML = '';
-
-    const eyebrow = document.createElement('p');
-    eyebrow.className = 'canonical-eyebrow';
-    eyebrow.textContent = 'KOMERCE · ADMIN CANONICAL';
-
-    const title = document.createElement('h1');
-    title.textContent = 'Socle canonique prêt';
-
-    const message = document.createElement('p');
-    const identity = user && (user.first_name || user.name || user.email || user.role);
-    message.textContent = identity
-      ? `Session validée pour ${identity}. Aucun dashboard métier n’est encore monté.`
-      : 'Session validée. Aucun dashboard métier n’est encore monté.';
-
-    root.append(eyebrow, title, message);
+    if (!global.KomerceDemoOrderFlow) throw new Error('demo_order_flow_module_missing');
+    return global.KomerceDemoOrderFlow.mount({
+      root,
+      user,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+    });
   }
 
   async function boot() {
@@ -79,7 +70,7 @@
     return user;
   }
 
-  global.KomerceCanonicalAdmin = { boot, requireSession };
+  global.KomerceCanonicalAdmin = { boot, requireSession, renderReady };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {

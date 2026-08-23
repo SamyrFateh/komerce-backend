@@ -174,7 +174,7 @@
         "status": "production",
         "owner": "backend-core",
         "since": "2025-09",
-        "service": "Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, sans réutiliser les deux générations historiques de dashboards.",
+        "service": "Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.",
         "businessKind": "business-transversal",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -969,6 +969,13 @@
       {
         "feature": "auth-identity",
         "category": "tests",
+        "declared": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
         "declared": "tests/integration/admin-authz-probe.test.js",
         "resolvedPath": "tests/integration/admin-authz-probe.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1055,6 +1062,20 @@
         "category": "migrations",
         "declared": "migrations/134_webauthn_step_up.sql",
         "resolvedPath": "migrations/134_webauthn_step_up.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
+        "declared": "tests/e2e-api/auth-passkey.challenge-replay.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/auth-passkey.challenge-replay.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-passkey",
+        "category": "tests",
+        "declared": "tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2327,6 +2348,13 @@
       {
         "feature": "dashboard",
         "category": "routes",
+        "declared": "routes/admin/demo-order-flow.js",
+        "resolvedPath": "routes/admin/demo-order-flow.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
         "declared": "routes/admin/index.js",
         "resolvedPath": "routes/admin/index.js",
         "status": "resolved-in-technical-graph"
@@ -2460,6 +2488,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/css/demo-order-flow.css",
+        "resolvedPath": "public/dashboards/canonical/css/demo-order-flow.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/app.js",
         "resolvedPath": "public/dashboards/canonical/js/app.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2483,6 +2518,20 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/dashboard-renderer.js",
         "resolvedPath": "public/dashboards/canonical/js/dashboard-renderer.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/admin-context.js",
+        "resolvedPath": "public/dashboards/canonical/js/admin-context.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/demo-order-flow.js",
+        "resolvedPath": "public/dashboards/canonical/js/demo-order-flow.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3097,6 +3146,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/admin-demo-order-flow.test.js",
+        "resolvedPath": "tests/unit/admin-demo-order-flow.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/admin-facades-route.test.js",
         "resolvedPath": "tests/unit/admin-facades-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3148,6 +3204,20 @@
         "category": "tests",
         "declared": "tests/unit/canonical-dashboard-schema-renderer.test.js",
         "resolvedPath": "tests/unit/canonical-dashboard-schema-renderer.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-dashboard-admin-context.test.js",
+        "resolvedPath": "tests/unit/canonical-dashboard-admin-context.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-demo-order-flow.test.js",
+        "resolvedPath": "tests/unit/canonical-demo-order-flow.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6695,6 +6765,13 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/integration/test-harness/seed-helpers.js",
         "resolvedPath": "tests/integration/test-harness/seed-helpers.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7976,6 +8053,13 @@
       {
         "feature": "payments",
         "category": "tests",
+        "declared": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
         "declared": "tests/unit/payment-cash-confirm.test.js",
         "resolvedPath": "tests/unit/payment-cash-confirm.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9085,6 +9169,13 @@
         "declared": "css/wallet.css",
         "resolvedPath": "public/boutique/css/wallet.css",
         "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "wallet",
+        "category": "tests",
+        "declared": "tests/e2e-api/wallet.no-double-credit-concurrent.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/wallet.no-double-credit-concurrent.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "wallet",
@@ -10419,6 +10510,14 @@
         "method": "GET",
         "path": "/api/admin/dashboard",
         "routeFile": "routes/admin/dashboard.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/demo/orders/:orderId/timeline",
+        "method": "GET",
+        "path": "/api/admin/demo/orders/{id}/timeline",
+        "routeFile": "routes/admin/demo-order-flow.js",
         "status": "resolved-owned"
       },
       {
@@ -14353,6 +14452,12 @@
       },
       {
         "from": "dashboard",
+        "to": "notifications",
+        "raw": "notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
         "to": "recommendations",
         "raw": "recommendations",
         "resolved": true
@@ -14373,6 +14478,12 @@
         "from": "dashboard",
         "to": "decision-signals",
         "raw": "decision-signals (services/radar-queries.js — routes/admin-radar.js)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
+        "to": "market",
+        "raw": "market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)",
         "resolved": true
       },
       {
@@ -16048,6 +16159,14 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/products.test.js",
+        "resolvedPath": "public/boutique/tests/unit/products.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "checkout",
         "category": "js",
         "declared": "../js/b-checkout-render.js",
@@ -16672,6 +16791,22 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "platform-ops",
+        "category": "tests",
+        "declared": "../tests/unit/boutique-desktop.test.js",
+        "resolvedPath": "public/boutique/tests/unit/boutique-desktop.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "platform-ops",
+        "category": "tests",
+        "declared": "../tests/unit/layout.test.js",
+        "resolvedPath": "public/boutique/tests/unit/layout.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "recommendations",
         "category": "js",
         "declared": "../js/b-modal-suggestions.js",
@@ -16900,6 +17035,22 @@
         "category": "tests",
         "declared": "../tests/unit/shared-list-responsive-layout.test.js",
         "resolvedPath": "public/boutique/tests/unit/shared-list-responsive-layout.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "tests",
+        "declared": "../tests/unit/side-cart-desktop-polish.test.js",
+        "resolvedPath": "public/boutique/tests/unit/side-cart-desktop-polish.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "tests",
+        "declared": "../tests/unit/shared-list-side-cart.test.js",
+        "resolvedPath": "public/boutique/tests/unit/shared-list-side-cart.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17712,6 +17863,10 @@
               {
                 "sourceFileId": "routes/otp.js",
                 "targetFile": "utils/auth-session.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
               }
             ]
           }
@@ -17843,6 +17998,14 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+                "targetFile": "routes/pickup-secret.js"
+              },
+              {
                 "sourceFileId": "tests/integration/admin-authz-probe.test.js",
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
               },
@@ -17953,6 +18116,10 @@
               },
               {
                 "sourceFileId": "routes/auth-passkey.js",
+                "targetFile": "utils/auth-session.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js",
                 "targetFile": "utils/auth-session.js"
               }
             ]
@@ -18931,6 +19098,10 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/admin/demo-order-flow.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "routes/admin/partners.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -19167,6 +19338,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "routes/admin/demo-order-flow.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/admin/partners.js",
                 "targetFile": "db.js"
               },
@@ -19361,6 +19536,22 @@
               {
                 "sourceFileId": "tests/unit/hub-dashboard-route.test.js",
                 "targetFile": "utils/parcelSync.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
+        "to": "notifications",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin/demo-order-flow.js",
+                "targetFile": "services/client-notification-service.js"
               }
             ]
           }
@@ -20976,6 +21167,10 @@
               },
               {
                 "sourceFileId": "services/pickup-secret-service.js",
+                "targetFile": "services/pickup-authorization-service.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
                 "targetFile": "services/pickup-authorization-service.js"
               }
             ]
@@ -25456,10 +25651,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 852
+        "filesObserved": 864
       },
       "boutique": {
-        "filesObserved": 162,
+        "filesObserved": 167,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -26504,6 +26699,21 @@
       "lifecycleOwner": "shared-cart",
       "resolution": "multi-writer-resolved-by-classification-signal"
     },
+    "client_notifications": {
+      "writers": [
+        {
+          "feature": "notifications",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "dashboard"
+      ],
+      "lifecycleOwner": "notifications",
+      "resolution": "single-writer"
+    },
     "exchange_rates": {
       "writers": [
         {
@@ -26763,6 +26973,21 @@
       "lifecycleOwner": null,
       "resolution": "no-declared-writer"
     },
+    "transaction_documents": {
+      "writers": [
+        {
+          "feature": "documents",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "dashboard"
+      ],
+      "lifecycleOwner": "documents",
+      "resolution": "single-writer"
+    },
     "wallet_transactions": {
       "writers": [
         {
@@ -26821,19 +27046,6 @@
         "orders"
       ],
       "lifecycleOwner": "refunds",
-      "resolution": "single-writer"
-    },
-    "transaction_documents": {
-      "writers": [
-        {
-          "feature": "documents",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "documents",
       "resolution": "single-writer"
     },
     "charges": {
@@ -27267,19 +27479,6 @@
       "lifecycleOwner": "notifications",
       "resolution": "declared-table-owner"
     },
-    "client_notifications": {
-      "writers": [
-        {
-          "feature": "notifications",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "notifications",
-      "resolution": "single-writer"
-    },
     "notification_log": {
       "writers": [
         {
@@ -27629,7 +27828,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> logistics",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

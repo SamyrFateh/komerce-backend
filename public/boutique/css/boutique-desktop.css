@@ -789,13 +789,11 @@
     width: 296px; /* libellés et contrôles restent lisibles sans retour artificiel */
     height: 100dvh;
     border-radius: 0;
-    background: var(--surface-sand-94);
-    /* Coque unique et neutre : aucun code couleur panier/liste.
-       La séparation avec la boutique vient uniquement de la profondeur. */
+    background: var(--white);
+    /* Surface blanche ouverte : l'alignement et les accents fonctionnels
+       suffisent ; aucun cadre ni halo ne redessine une boîte autour. */
     border: none;
-    box-shadow:
-      -14px 0 32px rgba(42,33,23,.10),
-      -1px 0 0 var(--border-text-08);
+    box-shadow: none;
     overflow: hidden;
     z-index: 200;
     opacity: 0;
@@ -1401,7 +1399,7 @@
 /* ── Premium desktop home — side-cart + blocs éditoriaux (rapatrié de b-home-premium-v1.js, Lot 3) ── */
 @media (min-width: 900px) {
   html.k-home-premium-v1 .k-side-cart {
-    box-shadow: -14px 0 44px var(--border-text-08);
+    box-shadow: none;
   }
 
   html.k-home-premium-v1 .k-sc-btn-checkout { border-radius: 18px; }

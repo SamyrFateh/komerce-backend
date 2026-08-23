@@ -20,7 +20,7 @@ const {
   openCheckout,
   selectRecipientOther,
   openCartDrawer,
-  acceptConfirms,
+  clickKomerceConfirm,
 } = require('../helpers/boutique.helpers');
 
 test.describe('CONTRATS — Payloads frontend ↔ backend', () => {
@@ -133,8 +133,8 @@ test.describe('CONTRATS — Payloads frontend ↔ backend', () => {
 
     const shareBtn = page.locator('#k-cart-share, #k-sc-share').first();
     await expect(shareBtn).toBeVisible({ timeout: 10_000 });
-    acceptConfirms(page); // É5 — window.confirm avant création
     await shareBtn.click();
+    await clickKomerceConfirm(page);
     await page.waitForTimeout(3_000);
 
     await expect(page.locator('#k-sm-submit')).toHaveCount(0);

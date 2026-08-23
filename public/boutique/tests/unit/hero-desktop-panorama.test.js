@@ -69,9 +69,12 @@ describe('hero composition en calques (H1)', () => {
     expect(heroSection[0]).not.toMatch(/<source/);
   });
 
-  test('superpose le texte au panorama sans recreer un split 50/50', () => {
+  test('superpose le texte sur un panorama ouvert sans recreer un split 50/50', () => {
     expect(hero).toMatch(
-      /html\.k-home-premium-v1 \.k-hero-media\s*\{[^}]*grid-template-columns:\s*1fr[^}]*border-radius:\s*18px/s
+      /html\.k-home-premium-v1 \.k-hero-media\s*\{[^}]*grid-template-columns:\s*1fr[^}]*border:\s*0[^}]*border-radius:\s*0[^}]*box-shadow:\s*none[^}]*background:\s*transparent/s
+    );
+    expect(hero).toMatch(
+      /html\.k-home-premium-v1 \.k-hero\s*\{[^}]*var\(--ocean-bg-08\)[^}]*var\(--coral-focus-08\)[^}]*var\(--white\)/s
     );
     expect(hero).not.toMatch(/grid-template-columns:\s*1fr 1fr/);
   });

@@ -11,7 +11,7 @@
  *
  * Scénario :
  *   1. Ajouter une sélection au panier.
- *   2. Cliquer « Partager cette liste ».
+ *   2. Cliquer « Partager » puis confirmer « Créer la liste ».
  *   3. L'identité est vérifiée puis POST /api/shared-carts/from-cart-items est
  *      envoyé immédiatement, sans formulaire de configuration.
  *   4. Le token créé est posé dans sessionStorage['kmrc_share'].
@@ -28,7 +28,7 @@ const {
   openFirstCard,
   addToCartFromModal,
   openCartDrawer,
-  acceptConfirms,
+  clickKomerceConfirm,
 } = require('../helpers/boutique.helpers');
 const {
   verifySharedCart,
@@ -36,12 +36,17 @@ const {
   cancelAnyActiveSharedCart,
   spyOnApi,
 } = require('../helpers/api.helpers');
+const { assertRemoteMutantTargetSafe } = require('../helpers/environment.helpers');
 
 test.describe('FLOW — Liste partageable (créateur)', () => {
   test.skip(
     !process.env.ALLOW_GROUP_FLOW,
     'Flux liste désactivé (ALLOW_GROUP_FLOW non défini) — staging uniquement',
   );
+
+  test.beforeAll(async () => {
+    await assertRemoteMutantTargetSafe();
+  });
 
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL);
@@ -80,8 +85,8 @@ test.describe('FLOW — Liste partageable (créateur)', () => {
       'POST',
     );
 
-    acceptConfirms(page); // É5 — window.confirm avant création
     await shareBtn.click();
+    await clickKomerceConfirm(page); // É5/L7 — modale Komerce « Créer la liste »
 
     // Aucun formulaire de création ne doit apparaître.
     await expect(page.locator('#k-sm-submit')).toHaveCount(0);

@@ -46,7 +46,7 @@
   padding: 8px;
   border: 1px solid var(--item-card-border);
   border-radius: 13px;
-  background: var(--white);
+  background: var(--sand);
 }
 
 .k-cart-snapshot-item.is-cart-item-claimed {
@@ -501,13 +501,13 @@
   flex-direction: column;
   gap: 6px;
   padding: 8px 10px;
-  background: var(--sand);
+  background: var(--white);
 }
 
 /* Hiérarchie mobile : le contenu scrollable se détache du chrome blanc.
  * Pas de cadres supplémentaires — seulement des plans visuels lisibles. */
 .k-cart-drawer[data-mode="shared-list"] {
-  background: var(--sand);
+  background: var(--white);
 }
 
 .k-cart-drawer[data-mode="shared-list"] .k-cart-header,

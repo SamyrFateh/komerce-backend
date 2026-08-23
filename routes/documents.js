@@ -77,9 +77,12 @@ router.get('/', async (req, res, next) => {
     const documents = rows.map(row => ({
       ...row,
       amount_kmf: row.amount_kmf == null ? null : Number(row.amount_kmf),
-      download_url: row.status === 'available'
-        ? `/api/auth/me/documents/${row.id}/download`
-        : null,
+      // L'URL privée est stable dès que le snapshot documentaire existe.
+      // `status=pending` signifie seulement que le PDF n'est pas encore
+      // matérialisé : GET /:id/download appelle ensurePdf() à la demande.
+      // Ne jamais cacher cette URL, sinon aucun client ne peut déclencher le
+      // rendu lazy et le document reste bloqué indéfiniment en préparation.
+      download_url: `/api/auth/me/documents/${row.id}/download`,
     }));
     res.setHeader('Cache-Control', 'private, no-store');
     res.json({ documents, count: documents.length, limit, offset });

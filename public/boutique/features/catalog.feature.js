@@ -92,6 +92,7 @@ module.exports = {
       '../tests/unit/hero-desktop-panorama.test.js',
       '../tests/unit/category-subcategory-continuity.test.js',
       '../tests/unit/category-cutout-assets-integrity.test.js',
+      '../tests/unit/products.test.js',
     ],
   },
 

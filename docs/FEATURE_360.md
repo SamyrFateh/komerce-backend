@@ -8,19 +8,19 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **16**
 - Attention : **15**
 - Blocked : **0**
-- Business dependencies : **182**
+- Business dependencies : **183**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
 - Ontology gaps : **0**
-- Debt items (total) : **42**
-- Gate health — healthy : **15** · blocked : **0**
+- Debt items (total) : **43**
+- Gate health — healthy : **18** · blocked : **0**
 
 ## Gate findings — intégrité de projection
 
 - Source : `docs/GATE_FINDINGS.json` (version GF-2.1)
 - Sources de gates : **18** (0 en échec)
-- Findings : **54** total, **54** attribué(s), **0** sans attribution exploitable
+- Findings : **20** total, **20** attribué(s), **0** sans attribution exploitable
 - Fichiers non projetables : **0**
 - Fichiers multi-projetés : **0**
 
@@ -35,7 +35,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | business-rules | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | business_rules, business_rules_history | auth, infrastructure | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops | 0 |
 | catalog | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products, supplier_catalog_imports | auth, auth-identity, business-rules, economic-engine, infrastructure, logistics, notifications, orders, platform-ops, shared-cart, sourcing | admin-dashboard, economic-engine, infrastructure, logistics, orders, platform-ops, recommendations, shared-cart, sourcing | 0 |
 | customs | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | customs_categories, customs_shipment_parcels, customs_shipments | auth, documents, economic-engine, infrastructure, logistics, orders | admin-dashboard, dashboard, infrastructure, orders | 0 |
-| dashboard | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | order_incidents, partners | auth, auth-identity, business-rules, customs, decision-signals, documents, economic-engine, incident-management, infrastructure, logistics, orders, purchasing | admin-dashboard, economic-engine, infrastructure | 4 |
+| dashboard | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | order_incidents, partners | auth, auth-identity, business-rules, customs, decision-signals, documents, economic-engine, incident-management, infrastructure, logistics, notifications, orders, purchasing | admin-dashboard, economic-engine, infrastructure | 5 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | auth, business-rules, infrastructure, logistics | admin-dashboard, dashboard | 0 |
 | documents | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | invoices, transaction_documents | auth, infrastructure | admin-dashboard, auth-identity, customs, dashboard, orders, payments, refunds, wallet | 5 |
 | economic-engine | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_components, economic_snapshots, exchange_rates, finance_config, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_matrices_audit, pricing_strategies, pricing_strategy_history, risk_provisions | auth, catalog, dashboard, infrastructure, logistics, loyalty, orders | admin-dashboard, catalog, customs, dashboard, infrastructure, orders, platform-ops, sourcing | 1 |
@@ -46,7 +46,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | logistics | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | carriers, parcel_events, parcel_items, parcels, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, relais, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, incident-management, infrastructure, loyalty, notifications, orders, payments, purchasing, refunds | admin-dashboard, catalog, customs, dashboard, decision-signals, economic-engine, infrastructure, inventory, orders, payments, platform-ops, purchasing | 3 |
 | loyalty | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers | auth, auth-identity, infrastructure, notifications | economic-engine, logistics, orders, payments | 1 |
 | market | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | infrastructure | orders | 0 |
-| notifications | business-transversal | 🟢 HEALTHY | 🟡 ATTENTION | alerts, client_notifications, notification_log | auth, incident-management, infrastructure, platform-ops | auth, auth-identity, catalog, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart | 1 |
+| notifications | business-transversal | 🟢 HEALTHY | 🟡 ATTENTION | alerts, client_notifications, notification_log | auth, incident-management, infrastructure, platform-ops | auth, auth-identity, catalog, dashboard, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart | 1 |
 | orders | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_history, disputes, order_comments, order_item_cost_imputations, order_items, order_status_history, orders, recipients, sms_log | auth, auth-identity, business-rules, catalog, customs, documents, economic-engine, infrastructure, logistics, loyalty, market, notifications, payments, platform-ops, purchasing, refunds, shared-cart, wallet | admin-dashboard, catalog, customs, dashboard, economic-engine, infrastructure, inventory, logistics, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, wallet | 1 |
 | payments | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | cash_collections, cash_deposits, paypal_events_processed, stripe_events_processed | auth, business-rules, documents, incident-management, infrastructure, logistics, loyalty, notifications, orders, platform-ops, purchasing, refunds | admin-dashboard, infrastructure, logistics, orders | 0 |
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
@@ -168,7 +168,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - les routes de ce manifeste s'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc
 - la projection boutique de l identité protège le focus du dialogue et associe chaque erreur de validation au champ concerné
-- une seule autorisation nominative active par utilisateur, consultée au moment exact de la remise — jamais figée par commande
+- [object Object]
 - le nom autorisé n'est jamais exposé au relais : logistics ne reçoit que des champs normalisés via getActiveAuthorizationForUpdate, jamais authorized_given_names/authorized_family_name en clair
 
 **Owns** : `otp_codes`, `revoked_tokens`, `user_pickup_authorizations`, `users`
@@ -195,21 +195,18 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 5
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-identity.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-komerce-nav-identity.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-phone.js — 2 export(s) non consommé(s) :
+**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 2
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
   - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 18 fichier(s) déclaré(s), boutique: 5 fichier(s)
+**Implementation** : 19 fichier(s) déclaré(s), boutique: 5 fichier(s)
   - boutique : 3
   - migrations : 1
   - routes : 3
   - services : 3
-  - tests : 7
+  - tests : 8
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth-identity"]_
@@ -230,10 +227,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Authority** : backend-core — toute vérification WebAuthn passe exclusivement par @simplewebauthn/server ; aucune ré-implémentation crypto/CBOR locale.
 
 **Invariants** :
-- un challenge register/login est à usage unique — sa consommation est atomique (UPDATE ... WHERE consumed_at IS NULL RETURNING) et couvre rejeu + expiration
+- [object Object]
 - un challenge émis pour un user ne peut jamais être consommé au bénéfice d'un autre user
 - expectedOrigin et expectedRPID viennent exclusivement de la config serveur, jamais du client
-- une réponse register ne peut pas être vérifiée comme login, et inversement (ceremony_type strict)
+- [object Object]
 - requireUserVerification est vérifié par la lib, pas seulement demandé à l'authenticator
 - credential_id est unique (contrainte DB + vérification applicative avant insert)
 - une credential revoked_at non nul est inutilisable au login, sans exception
@@ -257,19 +254,16 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 4
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-enrollment.js — 4 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-login.js — 2 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-step-up.js — 2 export(s) non consommé(s) :
+**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
   - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 12 fichier(s) déclaré(s), boutique: 10 fichier(s)
+**Implementation** : 14 fichier(s) déclaré(s), boutique: 10 fichier(s)
   - migrations : 2
   - routes : 1
   - services : 3
-  - tests : 6
+  - tests : 8
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth-passkey"]_
 
@@ -393,15 +387,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 9
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-desktop-product.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-pager.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-product-open-contract.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-subcat.js — 2 export(s) non consommé(s) :
+**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
   - [gate:feature-classification-check] 🟠 RATIONALE-SHORT — rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives
 
 **Architectural debt** : _aucune_
@@ -472,7 +458,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Kind** : business-transversal  ·  **Status** : production
 
-**Service** : Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, sans réutiliser les deux générations historiques de dashboards.
+**Service** : Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.
 
 **Perimeter** :
 - _in_ :
@@ -481,6 +467,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - Legacy 1 : public/dashboards/admin/** — runtime actuel, gelé en maintenance corrective et rollback uniquement
   - Legacy 0 : public/dashboards/admin-legacy/** — génération antérieure deprecated, conservation historique/rollback
   - Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard
+  - AdminContext canonical — projection UI d'une autorité market déjà résolue côté serveur, jamais une source d'autorisation locale
   - auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis
 - _out_ :
   - mutations de données (chaque feature métier owns ses mutations)
@@ -501,35 +488,41 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - canonical/** ne référence ni n’importe aucun code ou CSS de admin/** ou admin-legacy/** ; les anciennes vues ne servent que de sources de besoins
 - /admin-next sert canonical pendant la construction ; les routes /admin/* restent sur Legacy 1 jusqu’au cutover explicitement validé
 - auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me
+- Komerce central et les partenaires pays partagent le même runtime canonical : aucune variante ou copie par marché
+- le rôle vertical ne donne jamais un scope pays ; toute autorité market est résolue côté serveur puis appliquée avant agrégation
+- un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client
+- market est l'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité
+- le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés
 
 **Owns** : `order_incidents`, `partners`
 **Writes (not owner)** : `basket_items` (writer-not-owner), `baskets` (writer-not-owner), `invoices` (writer-not-owner), `loyalty_rewards` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `sms_log` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
 
-**Exposes** : 0 internal API(s), 65 HTTP interface(s)
+**Exposes** : 0 internal API(s), 66 HTTP interface(s)
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
 **Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
 **Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
 
-**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 4
+**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 5
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
 **Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
-**Architectural debt** (4) :
+**Architectural debt** (5) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "inventory" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
+- `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "payments" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "recommendations" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 151 fichier(s) déclaré(s)
-  - dash : 90
+**Implementation** : 158 fichier(s) déclaré(s)
+  - dash : 93
   - migrations : 1
-  - routes : 16
+  - routes : 17
   - services : 10
-  - tests : 34
+  - tests : 37
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
@@ -940,7 +933,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport
 - le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)
 - un colis ne change de statut que via une sequence de scan validee
-- secret de retrait a usage unique
+- [object Object]
 - le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l'agent relais — comparaison aveugle uniquement
 - le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l'un ne bloque jamais l'autre
 
@@ -976,7 +969,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "economic-engine" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 83 fichier(s) déclaré(s)
+**Implementation** : 84 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 4
@@ -984,7 +977,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - migrations : 2
   - routes : 18
   - services : 16
-  - tests : 36
+  - tests : 37
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_
@@ -1169,7 +1162,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `setNotificationOutcomeListener` (services/notifications/internals.js) — resolved
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED)
-**Consumed by** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
+**Consumed by** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1177,8 +1170,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 1, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 1
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-notifications.js — 1 export(s) non consommé(s) :
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** (1) :
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement" — ne correspond à aucun nom de feature connu
@@ -1248,16 +1240,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:body-classes, check:imports, fail: 0, warn: 9
-  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ↳ Référencé en CSS : css/cart.css:2188, css/cart.css:2199 … — sélecteur legacy ou JS manquant
-  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ 0 erreur, 6 avertissement(s) — exit 0
-  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-cart.js — 3 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-checkout-render.js — 3 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-checkout.js — 2 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-mini-cart.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-tracking.js — 1 export(s) non consommé(s) :
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "dashboard" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
@@ -1292,6 +1275,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Invariants** :
 - [object Object]
+- [object Object]
 - aucun secret de paiement en dur dans le code
 - [object Object]
 
@@ -1313,12 +1297,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 36 fichier(s) déclaré(s), boutique: 3 fichier(s)
+**Implementation** : 37 fichier(s) déclaré(s), boutique: 3 fichier(s)
   - boutique : 2
   - migrations : 1
   - routes : 4
   - services : 11
-  - tests : 18
+  - tests : 19
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="payments"]_
 
@@ -1394,23 +1378,18 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:body-classes, check:imports, fail: 0, warn: 12
-  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ck-is-me                     0     0     0     ✔      ⚠ warning
-  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — k-order-body--recap          0     1     0     ·      ⚠ warning
-  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — k-view-komerce               0     1     0     ·      ⚠ warning
-  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-order-body--recap' retirée mais jamais ajoutée dans le JS ou HTML inline
+**Gate health** : 🟡 ATTENTION — gates: check:body-classes, fail: 0, warn: 7
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ↳ Référencé en CSS : css\cart.css:2188, css\cart.css:2199 … — sélecteur legacy ou JS manquant
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ 0 erreur, 6 avertissement(s) — exit 0
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-group' retirée mais jamais ajoutée dans le JS ou HTML inline
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-komerce' retirée mais jamais ajoutée dans le JS ou HTML inline
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-track' retirée mais jamais ajoutée dans le JS ou HTML inline
   - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-3] CSS utilise body.ck-is-me mais aucun JS ne gère cette classe
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-boutique-wow-style.js — 3 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-nav.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-scroll-owner.js — 2 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-utils.js — 2 export(s) non consommé(s) :
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 40 fichier(s) déclaré(s), boutique: 21 fichier(s)
+**Implementation** : 40 fichier(s) déclaré(s), boutique: 23 fichier(s)
   - boutique : 6
   - compositionRoots : 3
   - routes : 5
@@ -1608,11 +1587,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:breakpoints, check:imports, fail: 0, warn: 4
+**Gate health** : 🟡 ATTENTION — gates: check:breakpoints, fail: 0, warn: 1
   - [check:breakpoints] 🟠 TEXT-GATE-DIAGNOSTIC — Total : 2 violations dans 2 fichiers.
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-cart.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal.js — 7 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-share-cart.js — 4 export(s) non consommé(s) :
 
 **Architectural debt** : _aucune_
 
@@ -1766,19 +1742,17 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 2
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-wallet.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ✔ Aucun import fantôme ni cycle inconnu ni module manquant.
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "payments" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 10 fichier(s) déclaré(s), boutique: 3 fichier(s)
+**Implementation** : 11 fichier(s) déclaré(s), boutique: 3 fichier(s)
   - boutique : 2
   - migrations : 2
   - routes : 1
   - services : 2
-  - tests : 3
+  - tests : 4
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="wallet"]_
 

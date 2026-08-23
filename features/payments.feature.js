@@ -73,6 +73,7 @@ module.exports = {
       // E2E fonctionnel Feature First — couche C, contrat de la frontiere PayPal.
       // payments est PROPRIETAIRE ; orders, inventory, catalog, logistics traversees.
       'tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js',
+      'tests/e2e-api/payments.paypal-amount-currency.e2e.test.js',
       'tests/unit/payment-cash-confirm.test.js',
       'tests/unit/payment-paypal.test.js',
       'tests/unit/payment-status-validator.test.js',
@@ -201,6 +202,8 @@ module.exports = {
   invariants: [
     { statement: 'idempotence stricte sur tout webhook (Stripe, PayPal)',
       test: 'tests/invariants/payments.webhook-idempotency.test.js' },
+    { statement: 'une capture PayPal ne confirme la commande que si elle est COMPLETED, en EUR et conforme au montant figé de la commande',
+      test: 'tests/e2e-api/payments.paypal-amount-currency.e2e.test.js' },
     'aucun secret de paiement en dur dans le code',
     { statement: 'un paiement confirme ne peut etre confirme deux fois',
       test: 'tests/invariants/payments.no-double-confirm.test.js' },

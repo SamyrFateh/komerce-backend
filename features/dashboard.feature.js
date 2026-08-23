@@ -17,7 +17,7 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ──────────────────────────────────────────────────────
-  service: 'Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, sans réutiliser les deux générations historiques de dashboards.',
+  service: 'Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.',
 
   // ── Périmètre ──────────────────────────────────────────────────────────
   perimeter: {
@@ -27,6 +27,7 @@ module.exports = {
       'Legacy 1 : public/dashboards/admin/** — runtime actuel, gelé en maintenance corrective et rollback uniquement',
       'Legacy 0 : public/dashboards/admin-legacy/** — génération antérieure deprecated, conservation historique/rollback',
       'Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard',
+      'AdminContext canonical — projection UI d\'une autorité market déjà résolue côté serveur, jamais une source d\'autorisation locale',
       'auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis',
     ],
     out: [
@@ -57,7 +58,8 @@ module.exports = {
     'docs/design/DASHBOARD_REDESIGN.md',
     'docs/design/TOUR-DE-CONTROLE-DASHBOARDS.md',
     'docs/design/analyse-dashboard-pilotage.md',
-    'docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md',
+      'docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md',
+      'docs/contract/DASHBOARD_MARKET_SCOPE_2C.md',
     'docs/prompts/PROMPT_DASHBOARD_ECONOMIQUE_BOITES_FLECHES.md',
   ],
 
@@ -75,6 +77,7 @@ module.exports = {
       'baskets: W',
       'business_rules: R',
       'business_rules_history: R',
+      'client_notifications: R',
       'customs_effective_rates: R',
       'customs_shipments: R',
       'exchange_rates: R',
@@ -99,6 +102,7 @@ module.exports = {
       'signals: R',
       'sms_log: RW',
       'suppliers_stats: R',
+      'transaction_documents: R',
       'users: R',   // W-via auth-identity/user-mutation-service ? LOT12
       'wallet_transactions: W',
       'wallets: W',
@@ -114,6 +118,7 @@ module.exports = {
   contract: {
     exposes: [
       'GET /api/admin/dashboard',
+      'GET /api/admin/demo/orders/:orderId/timeline',
       'GET /api/dashboard/clients',
       'GET /api/dashboard/ops',
       'GET /api/dashboard/hub',
@@ -201,12 +206,14 @@ module.exports = {
       'auth-identity (mutations users via services/user-mutation-service.js ? LOT12)',
       'customs',
       'documents',
+      'notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)',
       'recommendations',
       'purchasing (repare les commandes sans purchase order — services/repair-ordered-without-purchase-orders.js, O7.3 provider purchasing)',
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, dashboard est
       // business-transversal (arbitrage 2026-07-29), consommations métier ordinaires.
       'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
       'decision-signals (services/radar-queries.js — routes/admin-radar.js)',
+      'market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)',
     ],
   },
 
@@ -272,6 +279,11 @@ module.exports = {
     'canonical/** ne référence ni n’importe aucun code ou CSS de admin/** ou admin-legacy/** ; les anciennes vues ne servent que de sources de besoins',
     '/admin-next sert canonical pendant la construction ; les routes /admin/* restent sur Legacy 1 jusqu’au cutover explicitement validé',
     'auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me',
+    'Komerce central et les partenaires pays partagent le même runtime canonical : aucune variante ou copie par marché',
+    'le rôle vertical ne donne jamais un scope pays ; toute autorité market est résolue côté serveur puis appliquée avant agrégation',
+    'un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client',
+      'market est l\'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité',
+    'le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés',
   ],
 
   // ── Vérification gouvernance ───────────────────────────────────────────
@@ -279,6 +291,8 @@ module.exports = {
     'npx jest tests/unit/canonical-dashboard-boundary.test.js --runInBand',
     'npx jest tests/unit/canonical-dashboard-primitives.test.js --runInBand',
     'npx jest tests/unit/canonical-dashboard-schema-renderer.test.js --runInBand',
+    'npx jest tests/unit/canonical-dashboard-admin-context.test.js --runInBand',
+    'npx jest tests/unit/admin-demo-order-flow.test.js tests/unit/canonical-demo-order-flow.test.js --runInBand',
     'npm run dashboards:360:check',
     'npm run map:check',
   ],
@@ -299,6 +313,7 @@ module.exports = {
     ],
     routes: [
       'routes/admin/dashboard.js',
+      'routes/admin/demo-order-flow.js',
       'routes/admin/index.js',
       'routes/admin/partners.js',
       'routes/admin/system.js',
@@ -325,10 +340,13 @@ module.exports = {
       'dashboards/canonical/index.html',
       'dashboards/canonical/css/base.css',
       'dashboards/canonical/css/renderer.css',
+      'dashboards/canonical/css/demo-order-flow.css',
       'dashboards/canonical/js/app.js',
       'dashboards/canonical/js/primitives.js',
       'dashboards/canonical/js/dashboard-schema.js',
       'dashboards/canonical/js/dashboard-renderer.js',
+      'dashboards/canonical/js/admin-context.js',
+      'dashboards/canonical/js/demo-order-flow.js',
 
       // ── Legacy 1 — admin actuel, gelé maintenance corrective ──────
       'dashboards/admin/index.html',
@@ -431,6 +449,7 @@ module.exports = {
       'tests/unit/admin-costing-full.test.js',
       'tests/unit/admin-dashboard-route.test.js',
       'tests/unit/admin-dashboard.test.js',
+      'tests/unit/admin-demo-order-flow.test.js',
       'tests/unit/admin-facades-route.test.js',
       'tests/unit/admin-loyalty.test.js',
       'tests/unit/admin-orders-route.test.js',
@@ -440,6 +459,8 @@ module.exports = {
       'tests/unit/canonical-dashboard-boundary.test.js',
       'tests/unit/canonical-dashboard-primitives.test.js',
       'tests/unit/canonical-dashboard-schema-renderer.test.js',
+      'tests/unit/canonical-dashboard-admin-context.test.js',
+      'tests/unit/canonical-demo-order-flow.test.js',
       'tests/unit/dashboard-cache.test.js',
       'tests/unit/dashboard-clients-route.test.js',
       'tests/unit/dashboard-control-tower.test.js',

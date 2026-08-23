@@ -89,6 +89,7 @@ module.exports = {
       'migrations/121_exceptional_pickup_authorization.sql',
     ],
       tests: [
+      'tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js',
       'tests/integration/admin-authz-probe.test.js',
       'tests/integration/otp-no-guest.test.js',
       // tests/unit/authkey-client.test.js retiré (O7.1) — suit services/authkey-client.js vers notifications.
@@ -224,7 +225,8 @@ module.exports = {
     },
     'les routes de ce manifeste s\'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc',
     'la projection boutique de l identité protège le focus du dialogue et associe chaque erreur de validation au champ concerné',
-    'une seule autorisation nominative active par utilisateur, consultée au moment exact de la remise — jamais figée par commande',
+    { statement: 'une seule autorisation nominative active par utilisateur, consultée au moment exact de la remise — jamais figée par commande',
+      test: 'tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js' },
     'le nom autorisé n\'est jamais exposé au relais : logistics ne reçoit que des champs normalisés via getActiveAuthorizationForUpdate, jamais authorized_given_names/authorized_family_name en clair',
   ],
 

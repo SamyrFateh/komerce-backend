@@ -11,6 +11,7 @@
  *   4. Wallet (F02, F03, lifecycle) — si ALLOW_ORDER_SUBMIT + ALLOW_ORDER_CANCEL
  *   5. Admin (F30) — si ALLOW_STATUS_CHANGE
  *   6. Robustesse (R1-R5) — toujours
+ *   7. Stress (S1-S9) — si ALLOW_ORDER_SUBMIT
  *
  * Usage :
  *   # Minimum (lecture seule, sûr même en prod)
@@ -88,8 +89,10 @@ const ALL_SPECS = [
   // Phase 7 — Robustesse
   { id: 'R*',  file: 'business-resilience.spec.js',   label: 'Robustesse business',        requires: ['auth'], phase: 'resilience' },
 
-  // Phase 8 — Stress tests
-  { id: 'S*',  file: 'stress-business.spec.js',       label: 'Stress : concurrence, gros panier, session', requires: ['auth'], phase: 'stress' },
+  // Phase 8 — Stress tests : le fichier contient S1/S3/S7 mutants et son
+  // beforeAll est fail-closed sans ALLOW_ORDER_SUBMIT. Ne jamais l'inclure
+  // dans le baseline lecture seule.
+  { id: 'S*',  file: 'stress-business.spec.js',       label: 'Stress : concurrence, gros panier, session', requires: ['auth', 'order'], phase: 'stress' },
 ];
 
 // ── Filtre selon les features activées ───────────────────────────────────

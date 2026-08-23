@@ -47,21 +47,21 @@
     "healthy": 16,
     "attention": 15,
     "blocked": 0,
-    "businessDependencies": 182,
+    "businessDependencies": 183,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 42,
-    "gateHealthy": 15,
+    "debtItemsTotal": 43,
+    "gateHealthy": 18,
     "gateBlocked": 0
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 54,
-    "attributedFindings": 54,
+    "totalFindings": 20,
+    "attributedFindings": 20,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -952,7 +952,10 @@
         },
         "les routes de ce manifeste s'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc",
         "la projection boutique de l identité protège le focus du dialogue et associe chaque erreur de validation au champ concerné",
-        "une seule autorisation nominative active par utilisateur, consultée au moment exact de la remise — jamais figée par commande",
+        {
+          "statement": "une seule autorisation nominative active par utilisateur, consultée au moment exact de la remise — jamais figée par commande",
+          "test": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js"
+        },
         "le nom autorisé n'est jamais exposé au relais : logistics ne reçoit que des champs normalisés via getActiveAuthorizationForUpdate, jamais authorized_given_names/authorized_family_name en clair"
       ],
       "implementation": {
@@ -1028,8 +1031,13 @@
             ]
           },
           "tests": {
-            "count": 7,
+            "count": 8,
             "files": [
+              {
+                "declared": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/admin-authz-probe.test.js",
                 "resolvedPath": "tests/integration/admin-authz-probe.test.js",
@@ -1078,7 +1086,7 @@
             ]
           }
         },
-        "totalFiles": 18,
+        "totalFiles": 19,
         "boutiqueManifest": "auth",
         "boutiqueFiles": {
           "count": 5,
@@ -1500,36 +1508,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 5,
+        "warnCount": 2,
         "gatesReporting": [
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-identity.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-komerce-nav-identity.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-phone.js — 2 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -1580,10 +1563,16 @@
       },
       "authority": "backend-core — toute vérification WebAuthn passe exclusivement par @simplewebauthn/server ; aucune ré-implémentation crypto/CBOR locale.",
       "invariants": [
-        "un challenge register/login est à usage unique — sa consommation est atomique (UPDATE ... WHERE consumed_at IS NULL RETURNING) et couvre rejeu + expiration",
+        {
+          "statement": "un challenge register/login est à usage unique — sa consommation est atomique (UPDATE ... WHERE consumed_at IS NULL RETURNING) et couvre rejeu + expiration",
+          "test": "tests/e2e-api/auth-passkey.challenge-replay.e2e.test.js"
+        },
         "un challenge émis pour un user ne peut jamais être consommé au bénéfice d'un autre user",
         "expectedOrigin et expectedRPID viennent exclusivement de la config serveur, jamais du client",
-        "une réponse register ne peut pas être vérifiée comme login, et inversement (ceremony_type strict)",
+        {
+          "statement": "une réponse register ne peut pas être vérifiée comme login, et inversement (ceremony_type strict)",
+          "test": "tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js"
+        },
         "requireUserVerification est vérifié par la lib, pas seulement demandé à l'authenticator",
         "credential_id est unique (contrainte DB + vérification applicative avant insert)",
         "une credential revoked_at non nul est inutilisable au login, sans exception",
@@ -1642,8 +1631,18 @@
             ]
           },
           "tests": {
-            "count": 6,
+            "count": 8,
             "files": [
+              {
+                "declared": "tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/auth-passkey.ceremony-separation.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/auth-passkey.challenge-replay.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/auth-passkey.challenge-replay.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/auth-passkey-management.test.js",
                 "resolvedPath": "tests/unit/auth-passkey-management.test.js",
@@ -1677,7 +1676,7 @@
             ]
           }
         },
-        "totalFiles": 12,
+        "totalFiles": 14,
         "boutiqueManifest": "auth-passkey",
         "boutiqueFiles": {
           "count": 10,
@@ -1894,36 +1893,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 4,
+        "warnCount": 1,
         "gatesReporting": [
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-passkey-enrollment.js — 4 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-passkey-login.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-passkey-step-up.js — 2 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -3795,76 +3769,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 9,
+        "warnCount": 1,
         "gatesReporting": [
-          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-desktop-product.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-pager.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-product-open-contract.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-subcat.js — 2 export(s) non consommé(s) :"
-          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -4315,7 +4224,7 @@
         "kind": "business-transversal",
         "status": "production"
       },
-      "service": "Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, sans réutiliser les deux générations historiques de dashboards.",
+      "service": "Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.",
       "perimeter": {
         "in": [
           "routes agrégées dashboard admin (KPIs, clients, opérations, hub, relais, radar, risques)",
@@ -4323,6 +4232,7 @@
           "Legacy 1 : public/dashboards/admin/** — runtime actuel, gelé en maintenance corrective et rollback uniquement",
           "Legacy 0 : public/dashboards/admin-legacy/** — génération antérieure deprecated, conservation historique/rollback",
           "Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard",
+          "AdminContext canonical — projection UI d'une autorité market déjà résolue côté serveur, jamais une source d'autorisation locale",
           "auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis"
         ],
         "out": [
@@ -4343,12 +4253,17 @@
         "Canonical public/dashboards/canonical/** est la seule cible de développement des quatre dashboards futurs : Pilotage, Commerce, Opérations, Finance",
         "canonical/** ne référence ni n’importe aucun code ou CSS de admin/** ou admin-legacy/** ; les anciennes vues ne servent que de sources de besoins",
         "/admin-next sert canonical pendant la construction ; les routes /admin/* restent sur Legacy 1 jusqu’au cutover explicitement validé",
-        "auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me"
+        "auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me",
+        "Komerce central et les partenaires pays partagent le même runtime canonical : aucune variante ou copie par marché",
+        "le rôle vertical ne donne jamais un scope pays ; toute autorité market est résolue côté serveur puis appliquée avant agrégation",
+        "un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client",
+        "market est l'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité",
+        "le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés"
       ],
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 90,
+            "count": 93,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -4716,6 +4631,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/demo-order-flow.css",
+                "resolvedPath": "public/dashboards/canonical/css/demo-order-flow.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/renderer.css",
                 "resolvedPath": "public/dashboards/canonical/css/renderer.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4723,6 +4643,11 @@
               {
                 "declared": "dashboards/canonical/index.html",
                 "resolvedPath": "public/dashboards/canonical/index.html",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/admin-context.js",
+                "resolvedPath": "public/dashboards/canonical/js/admin-context.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -4738,6 +4663,11 @@
               {
                 "declared": "dashboards/canonical/js/dashboard-schema.js",
                 "resolvedPath": "public/dashboards/canonical/js/dashboard-schema.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/demo-order-flow.js",
+                "resolvedPath": "public/dashboards/canonical/js/demo-order-flow.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -4813,7 +4743,7 @@
             ]
           },
           "routes": {
-            "count": 16,
+            "count": 17,
             "files": [
               {
                 "declared": "routes/admin-dashboard.js",
@@ -4839,6 +4769,11 @@
                 "declared": "routes/admin/dashboard.js",
                 "resolvedPath": "routes/admin/dashboard.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin/demo-order-flow.js",
+                "resolvedPath": "routes/admin/demo-order-flow.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "routes/admin/index.js",
@@ -4953,7 +4888,7 @@
             ]
           },
           "tests": {
-            "count": 34,
+            "count": 37,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -4973,6 +4908,11 @@
               {
                 "declared": "tests/unit/admin-dashboard.test.js",
                 "resolvedPath": "tests/unit/admin-dashboard.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-demo-order-flow.test.js",
+                "resolvedPath": "tests/unit/admin-demo-order-flow.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5001,6 +4941,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/canonical-dashboard-admin-context.test.js",
+                "resolvedPath": "tests/unit/canonical-dashboard-admin-context.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/canonical-dashboard-boundary.test.js",
                 "resolvedPath": "tests/unit/canonical-dashboard-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5013,6 +4958,11 @@
               {
                 "declared": "tests/unit/canonical-dashboard-schema-renderer.test.js",
                 "resolvedPath": "tests/unit/canonical-dashboard-schema-renderer.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-demo-order-flow.test.js",
+                "resolvedPath": "tests/unit/canonical-demo-order-flow.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5128,7 +5078,7 @@
             ]
           }
         },
-        "totalFiles": 151,
+        "totalFiles": 158,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -5260,6 +5210,10 @@
             "lifecycleOwner": "business-rules"
           },
           {
+            "table": "client_notifications",
+            "lifecycleOwner": "notifications"
+          },
+          {
             "table": "customs_effective_rates",
             "lifecycleOwner": null
           },
@@ -5302,6 +5256,10 @@
           {
             "table": "suppliers_stats",
             "lifecycleOwner": null
+          },
+          {
+            "table": "transaction_documents",
+            "lifecycleOwner": "documents"
           },
           {
             "table": "users",
@@ -5434,6 +5392,10 @@
             "lifecycleOwner": "business-rules"
           },
           {
+            "table": "client_notifications",
+            "lifecycleOwner": "notifications"
+          },
+          {
             "table": "customs_effective_rates",
             "lifecycleOwner": null
           },
@@ -5478,6 +5440,10 @@
             "lifecycleOwner": null
           },
           {
+            "table": "transaction_documents",
+            "lifecycleOwner": "documents"
+          },
+          {
             "table": "users",
             "lifecycleOwner": "auth-identity"
           }
@@ -5486,7 +5452,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 65
+          "count": 66
         }
       },
       "businessDependencies": [
@@ -5561,6 +5527,13 @@
           ]
         },
         {
+          "provider": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5612,9 +5585,10 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 4,
+        "declaredNotObserved": 5,
         "declaredNotObservedEvidence": [
           "inventory",
+          "market",
           "payments",
           "recommendations",
           "wallet"
@@ -5638,12 +5612,17 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 4,
+        "debtCount": 5,
         "debtItems": [
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
             "evidence": "contract.consumes déclare \"inventory\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          },
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"market\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
           },
           {
             "type": "DECLARED_NOT_OBSERVED",
@@ -10763,7 +10742,10 @@
         "la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport",
         "le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)",
         "un colis ne change de statut que via une sequence de scan validee",
-        "secret de retrait a usage unique",
+        {
+          "statement": "secret de retrait a usage unique, et une seule voie de remise peut gagner pour une commande",
+          "test": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js"
+        },
         "le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l'agent relais — comparaison aveugle uniquement",
         "le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l'un ne bloque jamais l'autre"
       ],
@@ -11025,8 +11007,13 @@
             ]
           },
           "tests": {
-            "count": 36,
+            "count": 37,
             "files": [
+              {
+                "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/test-harness/seed-helpers.js",
                 "resolvedPath": "tests/integration/test-harness/seed-helpers.js",
@@ -11230,7 +11217,7 @@
             ]
           }
         },
-        "totalFiles": 83,
+        "totalFiles": 84,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12986,6 +12973,13 @@
           ]
         },
         {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13063,22 +13057,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-notifications.js — 1 export(s) non consommé(s) :"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -14258,87 +14241,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 9,
-        "gatesReporting": [
-          "check:body-classes",
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "↳ Référencé en CSS : css/cart.css:2188, css/cart.css:2199 … — sélecteur legacy ou JS manquant"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ 0 erreur, 6 avertissement(s) — exit 0"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-cart.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-checkout-render.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-checkout.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-mini-cart.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-tracking.js — 1 export(s) non consommé(s) :"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -14385,6 +14292,10 @@
         {
           "statement": "idempotence stricte sur tout webhook (Stripe, PayPal)",
           "test": "tests/invariants/payments.webhook-idempotency.test.js"
+        },
+        {
+          "statement": "une capture PayPal ne confirme la commande que si elle est COMPLETED, en EUR et conforme au montant figé de la commande",
+          "test": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js"
         },
         "aucun secret de paiement en dur dans le code",
         {
@@ -14505,8 +14416,13 @@
             ]
           },
           "tests": {
-            "count": 18,
+            "count": 19,
             "files": [
+              {
+                "declared": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
@@ -14600,7 +14516,7 @@
             ]
           }
         },
-        "totalFiles": 36,
+        "totalFiles": 37,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 3,
@@ -15336,7 +15252,7 @@
         "totalFiles": 40,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
-          "count": 21,
+          "count": 23,
           "files": [
             {
               "declared": "../css/boutique-desktop.css",
@@ -15481,6 +15397,20 @@
             {
               "declared": "../tests/unit/boutique-core.unit.test.js",
               "resolvedPath": "public/boutique/tests/unit/boutique-core.unit.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/boutique-desktop.test.js",
+              "resolvedPath": "public/boutique/tests/unit/boutique-desktop.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/layout.test.js",
+              "resolvedPath": "public/boutique/tests/unit/layout.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -15887,10 +15817,9 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 12,
+        "warnCount": 7,
         "gatesReporting": [
-          "check:body-classes",
-          "check:imports"
+          "check:body-classes"
         ],
         "findings": [
           {
@@ -15899,7 +15828,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "ck-is-me                     0     0     0     ✔      ⚠ warning"
+            "message": "↳ Référencé en CSS : css\\cart.css:2188, css\\cart.css:2199 … — sélecteur legacy ou JS manquant"
           },
           {
             "gate": "check:body-classes",
@@ -15907,7 +15836,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "k-order-body--recap          0     1     0     ·      ⚠ warning"
+            "message": "⚠ 0 erreur, 6 avertissement(s) — exit 0"
           },
           {
             "gate": "check:body-classes",
@@ -15915,15 +15844,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "k-view-komerce               0     1     0     ·      ⚠ warning"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-order-body--recap' retirée mais jamais ajoutée dans le JS ou HTML inline"
+            "message": "⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline"
           },
           {
             "gate": "check:body-classes",
@@ -15956,38 +15877,6 @@
             "verdict": "warn",
             "file": null,
             "message": "⚠ [B-3] CSS utilise body.ck-is-me mais aucun JS ne gère cette classe"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-boutique-wow-style.js — 3 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-nav.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-scroll-owner.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-utils.js — 2 export(s) non consommé(s) :"
           }
         ]
       },
@@ -17718,10 +17607,9 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 4,
+        "warnCount": 1,
         "gatesReporting": [
-          "check:breakpoints",
-          "check:imports"
+          "check:breakpoints"
         ],
         "findings": [
           {
@@ -17731,30 +17619,6 @@
             "verdict": "warn",
             "file": null,
             "message": "Total : 2 violations dans 2 fichiers."
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal-cart.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-modal.js — 7 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-share-cart.js — 4 export(s) non consommé(s) :"
           }
         ]
       },
@@ -18385,8 +18249,13 @@
             ]
           },
           "tests": {
-            "count": 3,
+            "count": 4,
             "files": [
+              {
+                "declared": "tests/e2e-api/wallet.no-double-credit-concurrent.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/wallet.no-double-credit-concurrent.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/store-credits.test.js",
                 "resolvedPath": "tests/unit/store-credits.test.js",
@@ -18405,7 +18274,7 @@
             ]
           }
         },
-        "totalFiles": 10,
+        "totalFiles": 11,
         "boutiqueManifest": "wallet",
         "boutiqueFiles": {
           "count": 3,
@@ -18657,30 +18526,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 2,
-        "gatesReporting": [
-          "check:imports"
-        ],
-        "findings": [
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-wallet.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant."
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,

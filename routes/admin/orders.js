@@ -69,10 +69,12 @@ router.get('/orders', ...guard, async (req, res, next) => {
          u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
          r.name AS relais_name, r.zone AS relais_zone,
          r.island AS relais_island,
+         m.code AS market_code,
          o.destination_island
        FROM orders o
        LEFT JOIN users    u ON u.id = o.user_id
        LEFT JOIN relais   r ON r.id = o.relais_id
+       LEFT JOIN markets  m ON m.id = o.market_id
        LEFT JOIN recipients rc ON rc.id = o.recipient_id
        WHERE ${where}
        ORDER BY o.id, o.created_at DESC

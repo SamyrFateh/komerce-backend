@@ -794,13 +794,12 @@
     width: 296px; /* libellés et contrôles restent lisibles sans retour artificiel */
     height: 100dvh;
     border-radius: 0;
-    background: var(--surface-sand-94);
+    background: var(--white);
     /* Coque unique et neutre : aucun code couleur panier/liste.
-       La séparation avec la boutique vient uniquement de la profondeur. */
+       La séparation avec la boutique vient d'un cadre continu, sans halo. */
     border: none;
-    box-shadow:
-      -14px 0 32px rgba(42,33,23,.10),
-      -1px 0 0 var(--border-text-08);
+    border-left: 1px solid var(--border);
+    box-shadow: none;
     overflow: hidden;
     z-index: 200;
     opacity: 0;
@@ -1406,7 +1405,7 @@
 /* ── Premium desktop home — side-cart + blocs éditoriaux (rapatrié de b-home-premium-v1.js, Lot 3) ── */
 @media (min-width: 900px) {
   html.k-home-premium-v1 .k-side-cart {
-    box-shadow: -14px 0 44px var(--border-text-08);
+    box-shadow: none;
   }
 
   html.k-home-premium-v1 .k-sc-btn-checkout { border-radius: 18px; }
@@ -1483,8 +1482,9 @@
     padding: 0 10px;
     gap: 0;
     border: 0;
+    border-bottom: 1px solid var(--border);
     border-radius: 0;
-    background: transparent;
+    background: var(--white);
     box-shadow: none;
   }
 
@@ -1558,28 +1558,27 @@
     color: var(--text-muted);
   }
 
-  /* Liste d'articles : une seule colonne de lecture, séparée par l'espace et
-     un trait fin. Les contrôles restent inchangés fonctionnellement. */
+  /* Liste d'articles : cartes sable sur la coque blanche, selon la même
+     hiérarchie que le catalogue et le drawer mobile. */
   .k-sc-items {
-    padding: 6px 10px 10px;
-    gap: 0;
+    padding: 8px 10px 10px;
+    gap: 8px;
     background: var(--white);
   }
 
   .k-sc-item {
     align-items: center;
     gap: 10px;
-    padding: 10px 2px;
-    border: 0;
-    border-bottom: 1px solid var(--border-text-06);
-    border-radius: 0;
-    background: transparent;
+    padding: 8px;
+    border: 1px solid var(--item-card-border);
+    border-radius: 13px;
+    background: var(--sand);
     box-shadow: none;
   }
 
   .k-sc-item:hover {
     background: var(--sand);
-    border-color: var(--border-text-06);
+    border-color: var(--stone-border);
   }
 
   .k-sc-item-img {
@@ -1617,7 +1616,7 @@
   .k-side-cart--in-modal .k-sc-item {
     align-items: center;
     gap: 10px;
-    padding: 10px 2px;
+    padding: 8px;
   }
 
   .k-side-cart--in-modal .k-sc-item-img {

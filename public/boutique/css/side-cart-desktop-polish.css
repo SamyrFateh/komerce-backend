@@ -13,13 +13,15 @@
   /* Navigation Panier / Liste : même grammaire que le mobile.
      Deux labels sur une surface ouverte ; seul l'actif reçoit un trait fin. */
   #k-cart-surface-switch.k-cart-tabs {
+    --k-side-cart-bar-h: 68px;
     position: relative;
-    min-height: 52px;
+    min-height: var(--k-side-cart-bar-h);
+    height: var(--k-side-cart-bar-h);
     padding: 0 10px;
     gap: 0;
     border: 0;
     border-radius: 0;
-    background: transparent;
+    background: var(--white);
     box-shadow: none;
   }
 
@@ -29,7 +31,7 @@
 
   #k-cart-surface-switch .k-cart-tab {
     position: relative;
-    height: 52px;
+    height: var(--k-side-cart-bar-h);
     padding: 0 10px;
     border: 0;
     border-radius: 0;
@@ -43,7 +45,7 @@
 
   #k-cart-surface-switch .k-cart-tab--active,
   #k-cart-surface-switch[data-active="personal"] .k-tab-personal.k-cart-tab--active {
-    color: var(--text);
+    color: var(--ocean-dark-deep);
     background: transparent;
     border: 0;
     border-radius: 0;
@@ -61,14 +63,14 @@
     width: 32px;
     height: 2px;
     border-radius: 999px;
-    background: var(--text);
+    background: var(--cta-green);
     transform: translateX(-50%);
   }
 
   #k-cart-surface-switch .k-cart-tab-group {
     position: relative;
     min-width: 0;
-    height: 52px;
+    height: var(--k-side-cart-bar-h);
   }
 
   #k-cart-surface-switch .k-cart-tab-group--active {
@@ -89,40 +91,68 @@
   }
 
   #k-cart-surface-switch .k-cart-tab-exit {
-    height: 52px;
+    height: var(--k-side-cart-bar-h);
     color: var(--text-muted);
   }
 
-  /* Liste d'articles : une seule colonne de lecture, séparée par l'espace et
-     un trait fin. Les contrôles restent inchangés fonctionnellement. */
+  /* Liste d'articles ouverte : l'espace et l'alignement structurent la
+     lecture sur une toile blanche, sans cartes ni séparateurs. */
   .k-sc-items {
-    padding: 6px 10px 10px;
-    gap: 0;
+    padding: 8px 12px 10px;
+    gap: 8px;
     background: var(--white);
   }
 
   .k-sc-item {
     align-items: center;
     gap: 10px;
-    padding: 10px 2px;
+    padding: 8px 0;
     border: 0;
-    border-bottom: 1px solid var(--border-text-06);
     border-radius: 0;
     background: transparent;
     box-shadow: none;
   }
 
   .k-sc-item:hover {
-    background: var(--sand);
-    border-color: var(--border-text-06);
+    background: transparent;
   }
 
   .k-sc-item-img {
     width: 52px;
     height: 52px;
-    border-radius: 10px;
-    background: var(--sand);
-    border: 1px solid var(--border-text-06);
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+  }
+
+  /* Même surface ouverte pour une ligne issue d'une liste partagée. */
+  .k-cart-snapshot-item,
+  .k-cart-snapshot-item.is-cart-item-claimed {
+    padding: 8px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .k-cart-snapshot-item .k-cart-item-img {
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+  }
+
+  .k-sc-item-price,
+  .k-cart-snapshot-item .k-cart-item-price {
+    color: var(--coral);
+  }
+
+  .k-cart-item-select.is-checked {
+    border-color: var(--cta-green);
+    background: var(--cta-green);
+  }
+
+  .k-cart-item-select.is-checked::after {
+    border-color: var(--white);
   }
 
   /* Parité exacte avec la ligne canonique panier/liste de cart.css. */
@@ -152,7 +182,7 @@
   .k-side-cart--in-modal .k-sc-item {
     align-items: center;
     gap: 10px;
-    padding: 10px 2px;
+    padding: 8px;
   }
 
   .k-side-cart--in-modal .k-sc-item-img {
@@ -187,7 +217,13 @@
     padding: 10px 12px 12px;
     gap: 7px;
     background: var(--white);
-    border-top: 1px solid var(--border-text-08);
+    border-top: 0;
+  }
+
+  #k-side-cart:has(.k-cart-tabs) .k-sc-title-bar:has(
+    .k-cart-snapshot-contributors
+  ) {
+    border-bottom: 0;
   }
 
   .k-sc-free-ship {
@@ -215,5 +251,11 @@
     border-color: transparent;
     background: transparent;
     color: var(--coral);
+  }
+}
+
+@media (min-width: 1200px) {
+  #k-cart-surface-switch.k-cart-tabs {
+    --k-side-cart-bar-h: 72px;
   }
 }

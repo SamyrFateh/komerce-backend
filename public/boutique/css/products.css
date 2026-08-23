@@ -15,7 +15,7 @@
 
 /* ── CARTE ───────────────────────────────────────────────────── */
 .k-card {
-  background: var(--white);
+  background: var(--sand);
   border-radius: 14px;
   border: 1px solid var(--border);
   overflow: hidden;
@@ -788,14 +788,14 @@
   /* PALETTE-FIX-01 : ocean au lieu de rgba(42,62,44,…) / rgba(31,48,36,…) */
   .k-card {
     border-radius: 18px;
-    border: 1px solid rgba(100,175,90, .08);
-    background: var(--white);
-    box-shadow: 0 5px 16px rgba(100,175,90, .05);
+    border: 1px solid var(--border);
+    background: var(--sand);
+    box-shadow: 0 1px 0 var(--border-text-06);
   }
 
   .k-card:hover {
-    border-color: rgba(198,168,93,.32);
-    box-shadow: 0 12px 28px rgba(100,175,90, .10);
+    border-color: var(--stone-border);
+    box-shadow: 0 6px 18px var(--border-text-08);
   }
 }
 
