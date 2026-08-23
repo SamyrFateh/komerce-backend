@@ -71,17 +71,68 @@ describe('closeCart', () => {
   test('ferme le panier open : statut closed + event cart_closed', async () => {
     const cart = makeCart({ status: 'open' });
     const closed = { ...cart, status: 'closed', closed_at: '2026-08-01T00:00:00Z' };
-    const client = mockWithTransaction([OK, { rows: [cart] }, { rows: [closed] }, OK, OK]);
+    // Séquence : BEGIN, SELECT cart FOR UPDATE, SELECT progress (items_count/
+    // claimed_count — demande produit 22-08-2026), UPDATE, addEvent, COMMIT.
+    const client = mockWithTransaction([
+      OK, { rows: [cart] }, { rows: [{ items_count: 3, claimed_count: 3 }] },
+      { rows: [closed] }, OK, OK,
+    ]);
 
     const result = await closeCart('cart-001', 'user-001');
 
     expect(result.status).toBe('closed');
-    const updateCall = client._calls[2];
+    const progressCall = client._calls[2];
+    expect(progressCall.sql).toMatch(/shared_cart_items/);
+    const updateCall = client._calls[3];
     expect(updateCall.sql).toMatch(/UPDATE shared_carts/);
     expect(updateCall.sql).toMatch(/status = 'closed'/);
-    const eventCall = client._calls[3];
+    const eventCall = client._calls[4];
     expect(eventCall.sql).toMatch(/INSERT INTO shared_cart_events/);
     expect(eventCall.params[1]).toBe('cart_closed');
+  });
+
+  // Demande produit 22-08-2026 — clôture possible UNIQUEMENT si tous les
+  // articles sont réclamés.
+  test('liste vide (0 article) : throw shared_cart_empty, jamais UPDATE', async () => {
+    const cart = makeCart({ status: 'open' });
+    const client = mockWithTransaction([
+      OK, { rows: [cart] }, { rows: [{ items_count: 0, claimed_count: 0 }] },
+    ]);
+
+    await expect(closeCart('cart-001', 'user-001')).rejects.toMatchObject({
+      message: 'Cette liste ne contient aucun article.',
+      status: 400,
+      code: 'shared_cart_empty',
+    });
+    // Aucun appel au-delà de la requête de progression — jamais un UPDATE.
+    expect(client._calls).toHaveLength(4); // ... + ROLLBACK (withTransaction mock)
+  });
+
+  test('articles restants (2/3 réclamés) : throw shared_cart_not_fully_claimed avec le compte exact, jamais UPDATE', async () => {
+    const cart = makeCart({ status: 'open' });
+    const client = mockWithTransaction([
+      OK, { rows: [cart] }, { rows: [{ items_count: 3, claimed_count: 2 }] },
+    ]);
+
+    await expect(closeCart('cart-001', 'user-001')).rejects.toMatchObject({
+      message: expect.stringContaining('1 article'),
+      status: 409,
+      code: 'shared_cart_not_fully_claimed',
+    });
+    expect(client._calls).toHaveLength(4); // ... + ROLLBACK (withTransaction mock)
+  });
+
+  test('vérification de progression exécutée DANS la même transaction que le verrou FOR UPDATE — jamais une lecture hors transaction', async () => {
+    const cart = makeCart({ status: 'open' });
+    const client = mockWithTransaction([
+      OK, { rows: [cart] }, { rows: [{ items_count: 1, claimed_count: 0 }] },
+    ]);
+
+    await expect(closeCart('cart-001', 'user-001')).rejects.toBeDefined();
+
+    // La requête SELECT cart porte bien FOR UPDATE (verrou posé avant la
+    // vérification de progression, jamais une fenêtre de lecture non verrouillée).
+    expect(client._calls[1].sql).toMatch(/FOR UPDATE/);
   });
 });
 

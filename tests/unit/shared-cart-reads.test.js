@@ -109,7 +109,7 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
 
   it('getSharedCartPublic is_creator=false quand viewerUserId ne correspond pas, cart.id jamais exposé', async () => {
     const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
-    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: [] });
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
 
     const result = await getSharedCartForPublic('tok-1', 'user-autre-visiteur');
 
@@ -157,7 +157,7 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     const items = [
       { id: 'sci-1', name: 'Riz', image: null, quantity: 2, unit_price_kmf: 1000, line_total_kmf: 2000, claimed: true, buyer_full_name: 'Karim Ali' },
     ];
-    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: items });
 
     // Participant (viewerUserId absent ou différent de l'organisateur).
     const result = await getSharedCartForPublic('tok-1', 'user-autre-visiteur');
@@ -207,7 +207,7 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     const items = [
       { id: 'sci-1', name: 'Riz', image: null, quantity: 2, unit_price_kmf: 1000, line_total_kmf: 2000, claimed: true, buyer_user_id: 'user-karim', buyer_full_name: 'Karim Ali' },
     ];
-    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: items });
 
     const result = await getSharedCartForPublic('tok-1', 'user-autre-visiteur');
 
@@ -252,6 +252,61 @@ describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
     expect(result.cart.total_kmf).toBe(1000);
     expect(result.items[0].claimed_by_order_id).toBe('order-1');
     expect(result.claimed_count).toBe(1);
+  });
+
+  // Demande produit 22-08-2026 — le bouton "Sauvegarder cette liste" doit
+  // être correct dès le premier affichage (pas seulement après un clic
+  // redondant), pour un visiteur qui a déjà sauvegardé cette liste lors
+  // d'une session antérieure.
+  describe('already_saved — statut de sauvegarde au chargement initial', () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: null, status: 'open', created_at: '2026-01-01', organizer_user_id: 'user-organizer' };
+
+    it('participant ayant déjà sauvegardé (session antérieure) : already_saved=true, jamais besoin d\'un clic redondant', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [cart] })
+        .mockResolvedValueOnce({ rows: [{ x: 1 }] }) // shared_cart_saved_access : une ligne = déjà sauvegardé
+        .mockResolvedValueOnce({ rows: [] });
+
+      const result = await getSharedCartForPublic('tok-1', 'user-participant');
+
+      expect(result.cart.already_saved).toBe(true);
+      const [, params] = db.query.mock.calls[1];
+      expect(params).toEqual(['user-participant', 'cart-1']);
+    });
+
+    it('participant n\'ayant jamais sauvegardé : already_saved=false', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [cart] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const result = await getSharedCartForPublic('tok-1', 'user-participant');
+
+      expect(result.cart.already_saved).toBe(false);
+    });
+
+    it('créateur : jamais de requête already_saved (ne sauvegarde jamais sa propre liste, même gating que showSaveAction côté frontend)', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [cart] })
+        .mockResolvedValueOnce({ rows: [] }); // items uniquement — pas de 3e appel
+
+      const result = await getSharedCartForPublic('tok-1', 'user-organizer');
+
+      expect(result.is_creator).toBe(true);
+      expect(result.cart.already_saved).toBe(false);
+      expect(db.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('visiteur anonyme (aucun viewerUserId) : jamais de requête already_saved, false par défaut', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [cart] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const result = await getSharedCartForPublic('tok-1');
+
+      expect(result.cart.already_saved).toBe(false);
+      expect(db.query).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('listMySharedCarts agrège total_kmf/items_count/claimed_count par liste', async () => {

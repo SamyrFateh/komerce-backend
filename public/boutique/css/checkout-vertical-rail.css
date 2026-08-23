@@ -475,8 +475,14 @@
   width: 18px;
   height: 18px;
   margin: 0;
-  accent-color: var(--text);
+  accent-color: var(--cta-green);
   cursor: pointer;
+  /* Plus en évidence sans agrandir (demande 22-08-2026) : var(--text)
+     (gris neutre) se distinguait à peine du reste de la ligne. Anneau
+     permanent, pas seulement au focus, pour rester repérable même sans
+     interaction clavier. */
+  box-shadow: 0 0 0 1.5px var(--cta-green);
+  border-radius: 3px;
 }
 
 .ck-recap-item-select:focus-visible {

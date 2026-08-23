@@ -700,6 +700,17 @@
 .k-snap-link:hover { background: var(--sand); color: var(--text); text-decoration: none; }
 .k-snap-link:disabled { opacity: .6; cursor: default; }
 
+/* Clôture pas encore possible (articles restants) — demande produit
+   22-08-2026. Reste cliquable (voir b-cart.js pour la raison : un
+   disabled natif bloquerait le onclick et son toast explicatif), donc
+   une opacité seule ne suffit pas à signaler "pas une action normale" ;
+   le curseur not-allowed complète le signal sans dépendre de :disabled. */
+.k-snap-link--not-ready {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.k-snap-link--not-ready:hover { background: none; }
+
 /* -- Drawer mobile — désactive le grid natif du footer panier personnel
  * en mode liste (grid-template 1fr/auto/1fr responsable de l'empilement
  * 3-colonnes vu sur capture terrain) et relègue #k-cart-continue (natif,

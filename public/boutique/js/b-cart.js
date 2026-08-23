@@ -1067,6 +1067,14 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       closeBtn.type = 'button';
       closeBtn.textContent = context.readOnly ? 'Liste clôturée' : 'Clôturer la liste';
       closeBtn.disabled = !!context.readOnly;
+      // Demande produit 22-08-2026 : jamais context.readOnly (déjà géré
+      // ci-dessus par .disabled natif), mais "pas encore tout réclamé" —
+      // le bouton reste CLIQUABLE (disabled natif bloquerait le onclick,
+      // supprimant le toast explicatif de handleCloseClick ; même principe
+      // que le correctif focus-variante plus tôt ce soir : toujours un
+      // signal, jamais un blocage muet). Atténuation visuelle seule via
+      // cette classe.
+      closeBtn.classList.toggle('k-snap-link--not-ready', !context.readOnly && !context.allClaimed);
       closeBtn.onclick = () => actions.onClose();
       secondaryRow.appendChild(closeBtn);
     }
@@ -1179,6 +1187,7 @@ import { isSharedListSurfaceActive, hasOpenSharedListInSlot, renderSharedListInC
       closeBtn.type = 'button';
       closeBtn.textContent = context.readOnly ? 'Liste clôturée' : 'Clôturer la liste';
       closeBtn.disabled = !!context.readOnly;
+      closeBtn.classList.toggle('k-snap-link--not-ready', !context.readOnly && !context.allClaimed);
       closeBtn.onclick = () => actions.onClose();
       secondaryRow.appendChild(closeBtn);
     }

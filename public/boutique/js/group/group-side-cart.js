@@ -462,6 +462,13 @@ export function activateSharedListContext(data, token, { silent = false } = {}) 
     title: cart.title || null,
     message: cart.message || null,
     items,
+    // Demande produit 22-08-2026 — vérité serveur, persistante entre
+    // sessions (table shared_cart_saved_access). Combinée avec
+    // savedListTokensThisSession dans buildSnapshotRenderContext() : cette
+    // dernière reste utile pour le retour immédiat juste après un clic
+    // Sauvegarder dans LA session courante, avant qu'un rechargement de
+    // page ne revienne re-consulter cette valeur serveur.
+    alreadySaved: !!cart.already_saved,
   };
   // Mandat cohérence post-LOT 13, §3 — la sélection locale ne doit
   // jamais survivre à un changement de liste (nouveau token). Sur un
@@ -718,8 +725,6 @@ function checkoutContext() {
  * qu'un confort d'affichage immédiat, jamais consulté pour une décision
  * métier.
  */
-const savedListTokensThisSession = state.savedListTokensThisSession;
-
 /**
  * Sauvegarde explicite d'une liste reçue (destinataire uniquement — le
  * créateur voit déjà sa liste dans « Créées par moi »). POST
@@ -734,7 +739,14 @@ async function handleSaveList() {
   if (!token) return;
   try {
     const result = await saveSharedCart(token);
-    savedListTokensThisSession.add(token);
+    // Lecture LIVE de state.savedListTokensThisSession — jamais une
+    // référence capturée une fois au chargement du module (bug trouvé
+    // 22-08-2026 en testant already_saved : une capture au chargement
+    // désynchronise silencieusement de state dès que ce dernier est
+    // réinitialisé ailleurs, ex. reset de session — la vérité de session
+    // devient alors invisible au prochain rendu, même après une
+    // sauvegarde réussie).
+    state.savedListTokensThisSession.add(token);
     showToast(
       result.already_saved ? 'Cette liste est déjà dans vos listes.' : 'Liste ajoutée à vos listes.',
       'success'
@@ -798,8 +810,22 @@ function buildSnapshotRenderContext() {
     // condition).
     allAvailableSelected: availableItems().length > 0 &&
       availableItems().every((it) => selectedItemIds.has(String(it.id))),
+    // Demande produit 22-08-2026 — clôture possible UNIQUEMENT si tous les
+    // articles sont réclamés. Même source que availableItems() (le filtre
+    // qui gouverne déjà la sélection ci-dessus), pas un second calcul
+    // divergent. length > 0 exclu explicitement : une liste VIDE aurait
+    // sinon availableItems().length === 0 par coïncidence (rien à
+    // réclamer ≠ tout réclamé) — même distinction que le garde serveur
+    // (shared-cart-lifecycle.js, shared_cart_empty).
+    allClaimed: (state.sharedListContext.items || []).length > 0
+      && availableItems().length === 0,
     showSaveAction,
-    saved: showSaveAction && savedListTokensThisSession.has(ctx.token),
+    // Demande produit 22-08-2026 — combine la vérité serveur (persistante
+    // entre sessions, cart.already_saved) et le retour immédiat de la
+    // session courante (savedListTokensThisSession, juste après un clic
+    // Sauvegarder, avant tout rechargement qui consulterait la valeur
+    // serveur). L'un ou l'autre suffit à considérer la liste sauvegardée.
+    saved: showSaveAction && (ctx.alreadySaved || state.savedListTokensThisSession.has(ctx.token)),
   };
 }
 
@@ -1192,6 +1218,26 @@ function handleOpenItemProduct(itemId) {
 
 async function handleCloseClick() {
   if (!state.sharedListContext.isCreator || isReadOnly()) return;
+
+  // Demande produit 22-08-2026 : clôture possible UNIQUEMENT si tous les
+  // articles sont réclamés — jamais abandonner des articles encore
+  // disponibles. Même source de vérité que availableItems() (le filtre
+  // qui gouverne déjà la sélection dans ce même tiroir), pas un second
+  // calcul divergent. Vérification CLIENT ici (évite d'ouvrir une
+  // confirmation pour rien) — le serveur (shared-cart-lifecycle.js)
+  // revérifie dans la même transaction, jamais une confiance aveugle au
+  // seul état client.
+  const remaining = availableItems().length;
+  if (remaining > 0) {
+    showToast(
+      remaining === 1
+        ? 'Impossible de clôturer : 1 article est encore disponible.'
+        : `Impossible de clôturer : ${remaining} articles sont encore disponibles.`,
+      'info'
+    );
+    return;
+  }
+
   // L7 (mandat §11/§12, renommé §8 mandat cohérence post-LOT 13) — É9 : la
   // liste est figée depuis sa PUBLICATION, pas depuis sa clôture. Le
   // message porte sur ce qui change réellement : la fin des achats.
@@ -1200,7 +1246,7 @@ async function handleCloseClick() {
   // métier irréversible, pour lever l'ambiguïté.
   const ok = await showKomerceConfirm({
     title: 'Clôturer cette liste ?',
-    body: 'Les nouveaux achats ne seront plus possibles.',
+    body: 'Tous les articles ont été achetés. Cette action est définitive.',
     confirmLabel: 'Clôturer la liste',
     danger: true,
   });
@@ -1222,6 +1268,17 @@ async function handleCloseClick() {
     clearSharedListContext();
     showToast('Liste clôturée.', 'success');
   } catch (err) {
+    // Fenêtre de course résiduelle (mandat cohérence, même esprit que
+    // handleSharedListPurchaseConflict pour l'achat) : le check client
+    // ci-dessus a pu lire un état déjà périmé si un article a été libéré
+    // (annulation d'une commande, cf. bloc 5b order-status-machine.js)
+    // entre notre lecture et l'appel serveur. Message clair plutôt que
+    // l'erreur générique brute, et rafraîchit pour refléter l'état réel.
+    if (err.code === 'shared_cart_not_fully_claimed') {
+      showToast('Un article s\u2019est libéré entre-temps — clôture annulée.', 'info');
+      await refreshSharedListContext();
+      return;
+    }
     showToast(`Erreur : ${err.message}`, 'error');
   }
 }

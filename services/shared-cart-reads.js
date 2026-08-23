@@ -121,6 +121,24 @@ async function getSharedCartForPublic(token, viewerUserId) {
   const isCreator = Boolean(viewerUserId)
     && String(viewerUserId) === String(cart.organizer_user_id);
 
+  // Demande produit 22-08-2026 — le bouton "Sauvegarder cette liste" doit
+  // être grisé/masqué DÈS le premier affichage pour un visiteur qui a déjà
+  // sauvegardé cette liste lors d'une session antérieure, pas seulement
+  // après un clic redondant (services/shared-cart-library.js#saveShared
+  // CartForUser renvoie déjà already_saved, mais uniquement à l'action
+  // POST /save — jamais consulté ici, au chargement initial). Non pertinent
+  // pour le créateur (ne sauvegarde jamais sa propre liste, même gating que
+  // showSaveAction côté frontend) — aucune requête si isCreator ou visiteur
+  // anonyme.
+  let alreadySaved = false;
+  if (!isCreator && viewerUserId) {
+    const { rows: savedRows } = await db.query(
+      `SELECT 1 FROM shared_cart_saved_access WHERE user_id = $1 AND shared_cart_id = $2`,
+      [viewerUserId, cart.id]
+    );
+    alreadySaved = savedRows.length > 0;
+  }
+
   // L'identité de l'acheteur (buyer_full_name) n'est jamais nécessaire ni
   // lue pour un viewer non-créateur : la jointure orders/users ci-dessous
   // n'est faite que côté requête (coût négligeable, LEFT JOIN), mais le
@@ -168,6 +186,7 @@ async function getSharedCartForPublic(token, viewerUserId) {
       status: cart.status,
       created_at: cart.created_at,
       creator_first_name: creatorFirstName,
+      already_saved: alreadySaved,
     },
     items: items.map((item) => ({
       id: item.id,

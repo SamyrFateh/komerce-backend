@@ -85,6 +85,7 @@ const { isDesktop } = require('../../js/b-scroll-owner.js');
 const {
   getSharedCartPublic,
   closeCart,
+  saveSharedCart,
 } = require('../../js/group/group-api.js');
 const { checkoutSharedListSelection } = require('../../js/group/group-checkout-adapter.js');
 
@@ -152,6 +153,21 @@ function payload(overrides = {}) {
     ],
     is_creator: false,
   }, overrides);
+}
+
+// Demande produit 22-08-2026 — onClose() refuse désormais toute liste dont
+// au moins un article reste disponible (voir handleCloseClick). Les tests
+// du flux de fermeture (onClose — fermeture d'une liste, plus bas) testent
+// le SUCCÈS/ÉCHEC de l'appel API après confirmation, pas la nouvelle garde
+// elle-même (couverte séparément) — ils ont donc besoin d'une liste
+// entièrement réclamée pour atteindre la modale de confirmation.
+function fullyClaimedPayload(overrides = {}) {
+  return payload(Object.assign({
+    items: [
+      { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 2, claimed: true },
+      { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: true },
+    ],
+  }, overrides));
 }
 
 beforeEach(() => {
@@ -326,6 +342,48 @@ describe('group-side-cart — adaptation du payload (contrat contextuel)', () =>
     activateSharedListContext(payload({ is_creator: true }), 'tok-1');
     [context] = renderCartSnapshot.mock.calls.at(-1);
     expect(context.showSaveAction).toBe(false);
+  });
+
+  // Demande produit 22-08-2026 — already_saved (vérité serveur,
+  // shared_cart_saved_access) doit rendre le bouton correct DÈS le
+  // premier affichage, sans dépendre d'un clic dans la session courante.
+  describe('saved — combine la vérité serveur (already_saved) et le retour immédiat de session', () => {
+    it('cart.already_saved=true (session antérieure, jamais cliqué dans CETTE session) : saved=true dès le premier rendu', () => {
+      activateSharedListContext(
+        payload({ is_creator: false, cart: { ...payload().cart, already_saved: true } }),
+        'tok-1'
+      );
+      const [context] = renderCartSnapshot.mock.calls.at(-1);
+
+      expect(context.saved).toBe(true);
+      // Preuve que ça vient bien du serveur, pas d'un clic local : le Set
+      // de session reste vide.
+      expect(state.savedListTokensThisSession.has('tok-1')).toBe(false);
+    });
+
+    it('cart.already_saved=false mais déjà cliqué "Sauvegarder" dans cette session : saved=true au rendu suivant (mécanisme de session existant, non régressé)', async () => {
+      saveSharedCart.mockResolvedValueOnce({ already_saved: false });
+      activateSharedListContext(
+        payload({ is_creator: false, cart: { ...payload().cart, already_saved: false } }),
+        'tok-1'
+      );
+      const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+      await actions.onSave();
+      const [context] = renderCartSnapshot.mock.calls.at(-1);
+
+      expect(context.saved).toBe(true);
+    });
+
+    it('ni l\'un ni l\'autre : saved=false', () => {
+      activateSharedListContext(
+        payload({ is_creator: false, cart: { ...payload().cart, already_saved: false } }),
+        'tok-1'
+      );
+      const [context] = renderCartSnapshot.mock.calls.at(-1);
+
+      expect(context.saved).toBe(false);
+    });
   });
 });
 
@@ -694,7 +752,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     });
 
     it('après succès API, démonte intégralement le contexte (token=null, cartSurface=personal), jamais un simple refresh', async () => {
-      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      activateSharedListContext(fullyClaimedPayload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
       const closePromise = actions.onClose();
@@ -715,7 +773,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     });
 
     it('après fermeture, le prochain openCart (isSharedListSurfaceActive) revient au panier personnel', async () => {
-      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      activateSharedListContext(fullyClaimedPayload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
       const closePromise = actions.onClose();
@@ -730,7 +788,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     });
 
     it("après fermeture, reopenSharedListCart() (drawer mobile) ne réaffiche pas la liste fermée — no-op car isActiveContext() est faux", async () => {
-      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      activateSharedListContext(fullyClaimedPayload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
       const closePromise = actions.onClose();
       clickKomerceConfirm(true);
@@ -744,7 +802,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     });
 
     it('après fermeture, le contexte organisateur retombe (isCreator réinitialisé, plus de liste active)', async () => {
-      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      activateSharedListContext(fullyClaimedPayload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
       const closePromise = actions.onClose();
@@ -755,7 +813,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
     });
 
     it('confirmation refusée par l\'utilisateur : aucun appel API, contexte inchangé', async () => {
-      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      activateSharedListContext(fullyClaimedPayload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
       const closePromise = actions.onClose();
@@ -779,7 +837,7 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
 
     it('erreur API : le contexte reste actif (pas de démontage sur échec), toast d\'erreur affiché', async () => {
       closeCart.mockRejectedValueOnce(new Error('boom'));
-      activateSharedListContext(payload({ is_creator: true }), 'tok-1');
+      activateSharedListContext(fullyClaimedPayload({ is_creator: true }), 'tok-1');
       const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
 
       const closePromise = actions.onClose();
@@ -789,6 +847,79 @@ describe('group-side-cart — transmission du contexte à b-cart.js', () => {
       expect(state.sharedListContext.token).toBe('tok-1');
       expect(state.cartSurface).toBe('shared-list');
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('boom'), 'error');
+    });
+
+    // Demande produit 22-08-2026 — clôture possible UNIQUEMENT si tous
+    // les articles sont réclamés.
+    describe('garde : clôture refusée tant que des articles restent disponibles', () => {
+      it('1 article encore disponible : aucune modale, aucun appel API, toast informatif singulier', async () => {
+        activateSharedListContext(payload({ is_creator: true }), 'tok-1'); // 1 claimed, 1 non-claimed
+        const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+        await actions.onClose();
+
+        expect(document.querySelector('.k-confirm-overlay')).toBeNull();
+        expect(closeCart).not.toHaveBeenCalled();
+        expect(showToast).toHaveBeenCalledWith(
+          expect.stringContaining('1 article'),
+          'info'
+        );
+        // Le contexte reste intact — aucune tentative de fermeture n'a été faite.
+        expect(state.sharedListContext.token).toBe('tok-1');
+      });
+
+      it('plusieurs articles disponibles : toast au pluriel', async () => {
+        activateSharedListContext(payload({
+          is_creator: true,
+          items: [
+            { id: 'i1', product_id: 'p1', name: 'Riz', unit_price_kmf: 1000, quantity: 2, claimed: false },
+            { id: 'i2', product_id: 'p2', name: 'Huile', unit_price_kmf: 3000, quantity: 1, claimed: false },
+          ],
+        }), 'tok-1');
+        const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+        await actions.onClose();
+
+        expect(showToast).toHaveBeenCalledWith(
+          expect.stringContaining('2 articles'),
+          'info'
+        );
+      });
+
+      it('tous les articles réclamés : la modale de confirmation s\'ouvre normalement', async () => {
+        activateSharedListContext(fullyClaimedPayload({ is_creator: true }), 'tok-1');
+        const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+        const closePromise = actions.onClose();
+        // N'aurait pas trouvé la modale (throw) si la garde avait bloqué à tort.
+        clickKomerceConfirm(true);
+        await closePromise;
+
+        expect(closeCart).toHaveBeenCalledWith('sc1');
+      });
+
+      it('course serveur : le client pensait tout réclamé, le serveur refuse (shared_cart_not_fully_claimed) — message clair, contexte rafraîchi, pas l\'erreur brute', async () => {
+        const raceErr = new Error('Impossible de clôturer : 1 article(s) encore disponible(s).');
+        raceErr.code = 'shared_cart_not_fully_claimed';
+        closeCart.mockRejectedValueOnce(raceErr);
+        getSharedCartPublic.mockResolvedValueOnce(fullyClaimedPayload({ is_creator: true }));
+        activateSharedListContext(fullyClaimedPayload({ is_creator: true }), 'tok-1');
+        const [, , actions] = renderCartSnapshot.mock.calls.at(-1);
+
+        const closePromise = actions.onClose();
+        clickKomerceConfirm(true);
+        await closePromise;
+
+        expect(showToast).toHaveBeenCalledWith(
+          expect.stringContaining('libéré'),
+          'info'
+        );
+        // Contexte toujours actif (pas de démontage sur ce type d'échec,
+        // contrairement au succès) — même esprit que le test "erreur API"
+        // ci-dessus, mais avec un rafraîchissement en plus.
+        expect(state.sharedListContext.token).toBe('tok-1');
+        expect(getSharedCartPublic).toHaveBeenCalled();
+      });
     });
   });
 });

@@ -29,7 +29,10 @@
  * partagée elle-même n'orchestre plus aucun paiement.
  *
  * Il ne reste que 2 transitions, toutes deux déclenchées par le créateur :
- *   OPEN            → CLOSED     (close)
+ *   OPEN            → CLOSED     (close — UNIQUEMENT si tous les articles
+ *                                  sont réclamés, demande produit 22-08-2026 :
+ *                                  jamais de clôture prématurée abandonnant
+ *                                  des articles encore disponibles)
  *   OPEN ou CLOSED  → CANCELLED  (cancel)
  *
  * cancelSharedCart n'effectue aucun remboursement : aucune contribution
@@ -39,6 +42,13 @@
  */
 
 const { withTransaction, addEvent } = require('./shared-cart-internals');
+
+function httpError(message, status = 400, code = null) {
+  const e = new Error(message);
+  e.status = status;
+  if (code) e.code = code;
+  return e;
+}
 
 async function closeCart(sharedCartId, userId) {
   return withTransaction(async (client) => {
@@ -51,6 +61,33 @@ async function closeCart(sharedCartId, userId) {
 
     if (cart.status !== 'open') {
       throw new Error(`Impossible de fermer un panier au statut ${cart.status}`);
+    }
+
+    // Demande produit 22-08-2026 : la clôture n'est possible QUE lorsque
+    // tous les articles ont été réclamés — jamais une clôture prématurée
+    // qui abandonnerait des articles encore disponibles. Même formule que
+    // services/shared-cart-reads.js (Mandat §11 — unités réclamées, pas
+    // lignes : une ligne quantity>1 sous-représenterait sinon le compte).
+    // Vérifié dans la MÊME transaction (FOR UPDATE ci-dessus verrouille
+    // déjà la liste) pour éviter toute fenêtre entre lecture et clôture.
+    const { rows: [progress] } = await client.query(
+      `SELECT
+         COALESCE(SUM(sci.quantity), 0)::int AS items_count,
+         COALESCE(SUM(sci.quantity) FILTER (WHERE oi.id IS NOT NULL), 0)::int AS claimed_count
+       FROM shared_cart_items sci
+       LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
+       WHERE sci.shared_cart_id = $1`,
+      [sharedCartId]
+    );
+    if (progress.items_count === 0) {
+      throw httpError('Cette liste ne contient aucun article.', 400, 'shared_cart_empty');
+    }
+    if (progress.claimed_count < progress.items_count) {
+      throw httpError(
+        `Impossible de clôturer : ${progress.items_count - progress.claimed_count} article(s) encore disponible(s).`,
+        409,
+        'shared_cart_not_fully_claimed'
+      );
     }
 
     const { rows: [updated] } = await client.query(
