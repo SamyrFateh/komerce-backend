@@ -41,7 +41,7 @@ describe('side cart desktop polish', () => {
     const tabs = block('#k-cart-surface-switch.k-cart-tabs');
     expect(tabs).toMatch(/border\s*:\s*0/);
     expect(tabs).not.toMatch(/border-bottom/);
-    expect(tabs).toMatch(/background\s*:\s*var\(--sand-warm\)/);
+    expect(tabs).toMatch(/background\s*:\s*var\(--white\)/);
     expect(tabs).toMatch(/box-shadow\s*:\s*none/);
     expect(css).toMatch(/k-tab-personal\.k-cart-tab--active::after[\s\S]*width:\s*32px[\s\S]*height:\s*2px/);
   });
@@ -49,7 +49,7 @@ describe('side cart desktop polish', () => {
   it('présente les articles comme des lignes ouvertes sans cartes', () => {
     const item = block('.k-sc-item');
     const snapshot = block('.k-cart-snapshot-item,\n  .k-cart-snapshot-item.is-cart-item-claimed');
-    expect(block('.k-sc-items')).toMatch(/background\s*:\s*var\(--sand-warm\)/);
+    expect(block('.k-sc-items')).toMatch(/background\s*:\s*var\(--white\)/);
     expect(block('.k-sc-items')).toMatch(/gap\s*:\s*8px/);
     expect(item).toMatch(/padding\s*:\s*8px\s+0/);
     expect(item).toMatch(/border\s*:\s*0/);
