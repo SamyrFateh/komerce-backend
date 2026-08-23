@@ -37,22 +37,28 @@ describe('side cart desktop polish', () => {
     expect(css).toMatch(/@media\s*\(min-width:\s*1200px\)[\s\S]*--k-side-cart-bar-h\s*:\s*72px/);
   });
 
-  it('retire la capsule desktop autour des tabs et garde un trait actif', () => {
+  it('ouvre la navigation sans barre de séparation et garde le seul trait actif', () => {
     const tabs = block('#k-cart-surface-switch.k-cart-tabs');
+    expect(block('.k-side-cart')).toMatch(/border-left\s*:\s*0/);
     expect(tabs).toMatch(/border\s*:\s*0/);
-    expect(tabs).toMatch(/border-bottom\s*:\s*1px\s+solid\s+var\(--border\)/);
+    expect(tabs).not.toMatch(/border-bottom/);
     expect(tabs).toMatch(/background\s*:\s*var\(--white\)/);
     expect(tabs).toMatch(/box-shadow\s*:\s*none/);
     expect(css).toMatch(/k-tab-personal\.k-cart-tab--active::after[\s\S]*width:\s*32px[\s\S]*height:\s*2px/);
   });
 
-  it('place les lignes sable sur la coque blanche', () => {
+  it('présente les articles comme des lignes ouvertes sans cartes', () => {
     const item = block('.k-sc-item');
+    const snapshot = block('.k-cart-snapshot-item,\n  .k-cart-snapshot-item.is-cart-item-claimed');
     expect(block('.k-sc-items')).toMatch(/background\s*:\s*var\(--white\)/);
     expect(block('.k-sc-items')).toMatch(/gap\s*:\s*8px/);
-    expect(item).toMatch(/border\s*:\s*1px\s+solid\s+var\(--item-card-border\)/);
-    expect(item).toMatch(/border-radius\s*:\s*13px/);
-    expect(item).toMatch(/background\s*:\s*var\(--sand\)/);
+    expect(item).toMatch(/padding\s*:\s*8px\s+0/);
+    expect(item).toMatch(/border\s*:\s*0/);
+    expect(item).toMatch(/border-radius\s*:\s*0/);
+    expect(item).toMatch(/background\s*:\s*transparent/);
+    expect(block('.k-sc-item-img')).toMatch(/border\s*:\s*0/);
+    expect(snapshot).toMatch(/border\s*:\s*0/);
+    expect(snapshot).toMatch(/box-shadow\s*:\s*none/);
   });
 
   it('ancre le side cart PDP en haut et neutralise le grossissement modal', () => {
@@ -63,7 +69,8 @@ describe('side cart desktop polish', () => {
     expect(block('.k-side-cart--in-modal .k-sc-item-name')).toMatch(/font-size\s*:\s*12px/);
   });
 
-  it('rend les actions secondaires du footer discrètes', () => {
+  it('rend le footer et ses actions secondaires discrets', () => {
+    expect(block('.k-sc-header')).toMatch(/border-top\s*:\s*0/);
     expect(block('.k-sc-free-ship')).toMatch(/background\s*:\s*transparent/);
     expect(block('.k-sc-clear')).toMatch(/border\s*:\s*0/);
     expect(block('.k-sc-clear')).toMatch(/width\s*:\s*auto/);
