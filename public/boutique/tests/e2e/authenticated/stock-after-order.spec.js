@@ -9,11 +9,14 @@
  * @feature orders, inventory
  * @brief F07 — Le stock d'un produit est décrémenté après paiement wallet.
  *
- * Le test provisionne explicitement le wallet staging, soumet une vraie
- * commande payée, vérifie le delta de stock puis annule la commande pour
- * restaurer stock + wallet. Aucun skip conditionnel sur le solde.
+ * Le test provisionne explicitement le wallet staging via une session admin
+ * canonique, soumet une vraie commande payée, vérifie le delta de stock puis
+ * annule la commande pour restaurer stock + wallet. Aucun skip conditionnel
+ * sur le solde.
  *
- * Prérequis : ALLOW_ORDER_SUBMIT=true + ALLOW_ORDER_CANCEL=true + TEST_ADMIN_TOKEN.
+ * Prérequis : ALLOW_ORDER_SUBMIT=true + ALLOW_ORDER_CANCEL=true
+ *              + TEST_ADMIN_PASSWORD
+ *              (+ TEST_ADMIN_EMAIL optionnel, défaut admin@komerce.km).
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
@@ -24,9 +27,9 @@ const {
 const { getProductStock } = require('../helpers/business.helpers');
 const {
   cancelOrder,
-  provisionTestWallet,
   assertMutantTargetSafe,
 } = require('../helpers/api.helpers');
+const { provisionTestWalletViaAdmin } = require('../helpers/wallet-provision.helpers');
 
 test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
   let createdOrderId = null;
@@ -77,7 +80,7 @@ test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
 
     // Provisionner juste au-dessus du prix du produit, avec un plancher de 50k.
     const targetBalance = Math.max(50_000, Number(before.price_kmf || 0) + 5_000);
-    const walletBefore = await provisionTestWallet(page, targetBalance);
+    const walletBefore = await provisionTestWalletViaAdmin(page, targetBalance);
     expect(walletBefore.balance).toBeGreaterThanOrEqual(Number(before.price_kmf || 0));
 
     await card.click();
