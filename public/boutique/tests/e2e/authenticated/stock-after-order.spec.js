@@ -7,12 +7,19 @@
 /**
  * @e2e   authenticated/stock-after-order.spec.js
  * @feature orders, inventory
- * @brief F07 — Le stock d'un produit est décrémenté après paiement wallet.
+ * @brief F07 — Le stock de l'unité vendable réellement achetée est décrémenté
+ *        après paiement wallet.
  *
- * Le test provisionne explicitement le wallet staging via une session admin
- * canonique, soumet une vraie commande payée, vérifie le delta de stock puis
- * annule la commande pour restaurer stock + wallet. Aucun skip conditionnel
- * sur le solde.
+ * Le test respecte les deux moteurs de stock canoniques :
+ *   - SKU              → product_skus.stock de la sellable unit exacte ;
+ *   - SIMPLE / legacy  → products.stock.
+ *
+ * Pour un produit SKU, products.stock est un champ legacy et DOIT rester
+ * inchangé : le test vérifie explicitement cette non-mutation.
+ *
+ * Le test provisionne le wallet staging via une session admin canonique,
+ * soumet une vraie commande payée, vérifie le delta de stock puis annule la
+ * commande pour restaurer stock + wallet.
  *
  * Prérequis : ALLOW_ORDER_SUBMIT=true + ALLOW_ORDER_CANCEL=true
  *              + TEST_ADMIN_PASSWORD
@@ -28,8 +35,61 @@ const { getProductStock } = require('../helpers/business.helpers');
 const {
   cancelOrder,
   assertMutantTargetSafe,
+  getClientCart,
+  verifyOrder,
 } = require('../helpers/api.helpers');
 const { provisionTestWalletViaAdmin } = require('../helpers/wallet-provision.helpers');
+
+const API_BASE = BASE_URL.replace('/boutique/', '');
+
+/**
+ * Lit le Product Detail Contract public et retourne le stock canonique de
+ * l'unité SKU sélectionnée. Pour un produit non-SKU, le caller utilise
+ * products.stock via getProductStock().
+ */
+async function getSkuInventorySnapshot(page, productId, skuId) {
+  return page.evaluate(async (args) => {
+    try {
+      const resp = await fetch(new URL(`/api/products/${args.productId}/detail`, args.base).href);
+      if (!resp.ok) return null;
+      const detail = await resp.json();
+      if (detail.inventory_model !== 'SKU') {
+        return { inventory_model: detail.inventory_model || null, unit: null };
+      }
+      if (!args.skuId) {
+        return { inventory_model: 'SKU', unit: null, error: 'sku_id absent' };
+      }
+      const unit = (detail.sellable_units || []).find(
+        (candidate) => String(candidate.sku_id) === String(args.skuId)
+      );
+      if (!unit) {
+        return { inventory_model: 'SKU', unit: null, error: `sellable unit ${args.skuId} introuvable` };
+      }
+      return {
+        inventory_model: 'SKU',
+        unit: {
+          sku_id: unit.sku_id,
+          sku: unit.sku || null,
+          stock: Number(unit.available_quantity),
+          price_kmf: Number(unit.price_kmf || 0),
+        },
+      };
+    } catch (e) {
+      return { inventory_model: null, unit: null, error: e.message };
+    }
+  }, { productId, skuId, base: API_BASE });
+}
+
+function cartLineProductId(item) {
+  return item?.product?.id ?? item?.id ?? null;
+}
+
+function cartLineSkuId(item) {
+  return item?.sku_id
+    ?? item?.product?.sku_id
+    ?? item?.product?.selected_sku_id
+    ?? null;
+}
 
 test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
   let createdOrderId = null;
@@ -55,38 +115,62 @@ test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
     await page.goto(BASE_URL);
     await waitForGrid(page);
 
-    // Trouver un produit réellement suivi en stock.
-    const cards = page.locator('#k-grid .k-promo-card, #k-grid .k-card');
-    const count = await cards.count();
-    let selected = null;
+    // Prendre une ligne réellement achetable via la modale. La modale résout
+    // elle-même une sellable unit AVAILABLE pour les produits SKU.
+    const card = page.locator('#k-grid .k-promo-card, #k-grid .k-card').first();
+    const productId = await card.getAttribute('data-id');
+    expect(productId, 'La première carte doit exposer data-id').toBeTruthy();
 
-    for (let i = 0; i < Math.min(count, 12); i += 1) {
-      const card = cards.nth(i);
-      const productId = await card.getAttribute('data-id');
-      if (!productId) continue;
-      const product = await getProductStock(page, productId);
-      if (!product) continue;
-      if (product.stock !== null && product.stock !== undefined && product.stock > 0) {
-        selected = { card, productId, product };
-        break;
-      }
-    }
-
-    expect(selected, 'F07 nécessite au moins un produit avec stock fini > 0').toBeTruthy();
-
-    const { card, productId, product: before } = selected;
-    // eslint-disable-next-line no-console
-    console.log(`[F07] Produit "${before.name}" (${productId}) — stock avant : ${before.stock}`);
-
-    // Provisionner juste au-dessus du prix du produit, avec un plancher de 50k.
-    const targetBalance = Math.max(50_000, Number(before.price_kmf || 0) + 5_000);
-    const walletBefore = await provisionTestWalletViaAdmin(page, targetBalance);
-    expect(walletBefore.balance).toBeGreaterThanOrEqual(Number(before.price_kmf || 0));
+    const parentBefore = await getProductStock(page, productId);
+    expect(parentBefore, 'Le produit doit être accessible via l\'API publique').not.toBeNull();
 
     await card.click();
     await page.waitForSelector('#k-modal-overlay.open, .k-modal-overlay.open', { timeout: 6_000 });
     await expect(page.locator('#k-modal-name')).not.toBeEmpty({ timeout: 5_000 });
     await addToCartFromModal(page);
+
+    // Identifier l'unité exacte ajoutée : le frontend persiste sku_id dans le
+    // snapshot produit de la ligne panier pour les produits SKU.
+    const cart = await getClientCart(page);
+    const cartLine = cart.find(
+      (item) => String(cartLineProductId(item)) === String(productId)
+    );
+    expect(cartLine, 'La ligne ajoutée doit exister dans le panier').toBeTruthy();
+
+    const selectedSkuId = cartLineSkuId(cartLine);
+    const skuBefore = await getSkuInventorySnapshot(page, productId, selectedSkuId);
+    expect(skuBefore, 'Le Product Detail Contract doit être accessible').not.toBeNull();
+
+    const isSku = skuBefore.inventory_model === 'SKU';
+    let stockBefore;
+    let unitPrice;
+
+    if (isSku) {
+      expect(selectedSkuId, 'Un produit SKU doit porter le sku_id sélectionné dans le panier').toBeTruthy();
+      expect(skuBefore.unit, skuBefore.error || 'Sellable unit SKU introuvable').toBeTruthy();
+      expect(skuBefore.unit.stock, 'Le SKU choisi doit avoir du stock').toBeGreaterThan(0);
+      stockBefore = skuBefore.unit.stock;
+      unitPrice = skuBefore.unit.price_kmf;
+      // eslint-disable-next-line no-console
+      console.log(
+        `[F07] SKU "${parentBefore.name}" (${productId}) sku=${selectedSkuId} — stock avant : ${stockBefore} ; parent legacy=${parentBefore.stock}`
+      );
+    } else {
+      expect(
+        parentBefore.stock,
+        `F07 nécessite un stock suivi pour le produit ${skuBefore.inventory_model || 'legacy'}`
+      ).not.toBeNull();
+      expect(parentBefore.stock).toBeGreaterThan(0);
+      stockBefore = parentBefore.stock;
+      unitPrice = Number(parentBefore.price_kmf || 0);
+      // eslint-disable-next-line no-console
+      console.log(`[F07] Produit legacy "${parentBefore.name}" (${productId}) — stock avant : ${stockBefore}`);
+    }
+
+    // Prix réel de l'unité + marge pour transport/frais éventuels.
+    const targetBalance = Math.max(100_000, Number(unitPrice || 0) + 100_000);
+    const walletBefore = await provisionTestWalletViaAdmin(page, targetBalance);
+    expect(walletBefore.balance).toBeGreaterThanOrEqual(Number(unitPrice || 0));
 
     await openCheckout(page);
     await selectRecipientOther(page);
@@ -132,15 +216,48 @@ test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
     expect(orderBody.order.total_kmf, 'Wallet 100% → reste à payer nul').toBe(0);
     expect(orderBody.order.payment_status, 'Wallet 100% → paiement confirmé').toBe('paid');
 
-    await page.waitForTimeout(1_000);
-    const after = await getProductStock(page, productId);
-    expect(after, 'Le produit doit toujours être accessible').not.toBeNull();
+    // Vérifier que l'order_item référence exactement le SKU sélectionné.
+    const persisted = await verifyOrder(page, createdOrderId);
+    expect(persisted.exists, 'La commande créée doit être relisible').toBe(true);
+    const persistedItem = (persisted.items || []).find(
+      (item) => String(item.product_id) === String(productId)
+    );
+    expect(persistedItem, 'La commande doit contenir le produit testé').toBeTruthy();
+    if (isSku) {
+      expect(
+        String(persistedItem.sku_id),
+        'order_items.sku_id doit être le SKU réellement sélectionné'
+      ).toBe(String(selectedSkuId));
+    }
 
-    // eslint-disable-next-line no-console
-    console.log(`[F07] Stock après : ${after.stock} (attendu : ${before.stock - 1})`);
-    expect(
-      after.stock,
-      `Le stock doit avoir diminué de 1 (avant=${before.stock}, après=${after.stock})`
-    ).toBe(before.stock - 1);
+    await page.waitForTimeout(500);
+
+    if (isSku) {
+      const skuAfter = await getSkuInventorySnapshot(page, productId, selectedSkuId);
+      expect(skuAfter?.unit, 'Le SKU doit toujours être exposé après commande').toBeTruthy();
+      // eslint-disable-next-line no-console
+      console.log(`[F07] Stock SKU après : ${skuAfter.unit.stock} (attendu : ${stockBefore - 1})`);
+      expect(
+        skuAfter.unit.stock,
+        `Le stock SKU doit avoir diminué de 1 (avant=${stockBefore}, après=${skuAfter.unit.stock})`
+      ).toBe(stockBefore - 1);
+
+      // Doctrine SKU : le parent legacy n'est jamais écrit.
+      const parentAfter = await getProductStock(page, productId);
+      expect(parentAfter, 'Le produit parent doit rester accessible').not.toBeNull();
+      expect(
+        parentAfter.stock,
+        'inventory_model=SKU → products.stock legacy doit rester inchangé'
+      ).toBe(parentBefore.stock);
+    } else {
+      const parentAfter = await getProductStock(page, productId);
+      expect(parentAfter, 'Le produit doit toujours être accessible').not.toBeNull();
+      // eslint-disable-next-line no-console
+      console.log(`[F07] Stock legacy après : ${parentAfter.stock} (attendu : ${stockBefore - 1})`);
+      expect(
+        parentAfter.stock,
+        `Le stock produit doit avoir diminué de 1 (avant=${stockBefore}, après=${parentAfter.stock})`
+      ).toBe(stockBefore - 1);
+    }
   });
 });
