@@ -27,6 +27,16 @@ describe('side cart desktop polish', () => {
     expect(block('.k-sc-item-price')).toMatch(/font-weight\s*:\s*850/);
   });
 
+  it('aligne la barre des tabs sur la hauteur responsive du header desktop', () => {
+    const tabs = block('#k-cart-surface-switch.k-cart-tabs');
+    expect(tabs).toMatch(/--k-side-cart-bar-h\s*:\s*68px/);
+    expect(tabs).toMatch(/height\s*:\s*var\(--k-side-cart-bar-h\)/);
+    expect(block('#k-cart-surface-switch .k-cart-tab')).toMatch(/height\s*:\s*var\(--k-side-cart-bar-h\)/);
+    expect(block('#k-cart-surface-switch .k-cart-tab-group')).toMatch(/height\s*:\s*var\(--k-side-cart-bar-h\)/);
+    expect(block('#k-cart-surface-switch .k-cart-tab-exit')).toMatch(/height\s*:\s*var\(--k-side-cart-bar-h\)/);
+    expect(css).toMatch(/@media\s*\(min-width:\s*1200px\)[\s\S]*--k-side-cart-bar-h\s*:\s*72px/);
+  });
+
   it('retire la capsule desktop autour des tabs et garde un trait actif', () => {
     const tabs = block('#k-cart-surface-switch.k-cart-tabs');
     expect(tabs).toMatch(/border\s*:\s*0/);
