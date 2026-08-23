@@ -57,6 +57,8 @@ module.exports = {
       '../tests/unit/shared-cart-surface-api.test.js',
       '../tests/unit/shared-cart-library-api.test.js',
       '../tests/unit/shared-list-responsive-layout.test.js',
+      '../tests/unit/side-cart-desktop-polish.test.js',
+      '../tests/unit/shared-list-side-cart.test.js',
       '../tests/e2e/authenticated/group-shared-list.spec.js',
     ],
   },
