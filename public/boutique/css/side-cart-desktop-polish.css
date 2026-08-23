@@ -10,13 +10,6 @@
  */
 
 @media (min-width: 900px) {
-  /* Surface ouverte : le panneau se distingue par son placement et ses
-     alignements, jamais par un cadre vertical. */
-  .k-side-cart {
-    border-left: 0;
-    background: var(--sand-warm);
-  }
-
   /* Navigation Panier / Liste : même grammaire que le mobile.
      Deux labels sur une surface ouverte ; seul l'actif reçoit un trait fin. */
   #k-cart-surface-switch.k-cart-tabs {
