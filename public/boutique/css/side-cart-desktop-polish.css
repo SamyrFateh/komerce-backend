@@ -13,8 +13,10 @@
   /* Navigation Panier / Liste : même grammaire que le mobile.
      Deux labels sur une surface ouverte ; seul l'actif reçoit un trait fin. */
   #k-cart-surface-switch.k-cart-tabs {
+    --k-side-cart-bar-h: 68px;
     position: relative;
-    min-height: 52px;
+    min-height: var(--k-side-cart-bar-h);
+    height: var(--k-side-cart-bar-h);
     padding: 0 10px;
     gap: 0;
     border: 0;
@@ -30,7 +32,7 @@
 
   #k-cart-surface-switch .k-cart-tab {
     position: relative;
-    height: 52px;
+    height: var(--k-side-cart-bar-h);
     padding: 0 10px;
     border: 0;
     border-radius: 0;
@@ -69,7 +71,7 @@
   #k-cart-surface-switch .k-cart-tab-group {
     position: relative;
     min-width: 0;
-    height: 52px;
+    height: var(--k-side-cart-bar-h);
   }
 
   #k-cart-surface-switch .k-cart-tab-group--active {
@@ -90,7 +92,7 @@
   }
 
   #k-cart-surface-switch .k-cart-tab-exit {
-    height: 52px;
+    height: var(--k-side-cart-bar-h);
     color: var(--text-muted);
   }
 
@@ -215,5 +217,11 @@
     border-color: transparent;
     background: transparent;
     color: var(--coral);
+  }
+}
+
+@media (min-width: 1200px) {
+  #k-cart-surface-switch.k-cart-tabs {
+    --k-side-cart-bar-h: 72px;
   }
 }
