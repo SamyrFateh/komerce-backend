@@ -113,6 +113,11 @@ test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
 
   test('F07 — Stock décrémenté d\'exactement la quantité commandée', async ({ page }) => {
     await page.goto(BASE_URL);
+
+    // F07 doit être déterministe : aucune ligne panier résiduelle d'un run
+    // précédent ne peut participer à la commande testée.
+    await page.evaluate(() => localStorage.removeItem('kmrc_cart'));
+    await page.reload();
     await waitForGrid(page);
 
     // Prendre une ligne réellement achetable via la modale. La modale résout
@@ -132,10 +137,12 @@ test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
     // Identifier l'unité exacte ajoutée : le frontend persiste sku_id dans le
     // snapshot produit de la ligne panier pour les produits SKU.
     const cart = await getClientCart(page);
-    const cartLine = cart.find(
-      (item) => String(cartLineProductId(item)) === String(productId)
-    );
-    expect(cartLine, 'La ligne ajoutée doit exister dans le panier').toBeTruthy();
+    expect(cart, 'F07 doit soumettre exactement une ligne panier').toHaveLength(1);
+    const cartLine = cart[0];
+    expect(
+      String(cartLineProductId(cartLine)),
+      'La ligne panier unique doit être le produit testé'
+    ).toBe(String(productId));
 
     const selectedSkuId = cartLineSkuId(cartLine);
     const skuBefore = await getSkuInventorySnapshot(page, productId, selectedSkuId);
@@ -216,21 +223,14 @@ test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
     expect(orderBody.order.total_kmf, 'Wallet 100% → reste à payer nul').toBe(0);
     expect(orderBody.order.payment_status, 'Wallet 100% → paiement confirmé').toBe('paid');
 
-    // Vérifier que l'order_item référence exactement le SKU sélectionné.
+    // Le contrat GET /api/orders/:id n'expose volontairement pas product_id
+    // ni sku_id dans items. On vérifie donc seulement que la commande payée
+    // est relisible et qu'elle contient exactement la ligne unique soumise.
+    // L'identité de l'unité vendable est ensuite prouvée par le delta du stock
+    // canonique mesuré sur product_skus (SKU) ou products (legacy).
     const persisted = await verifyOrder(page, createdOrderId);
     expect(persisted.exists, 'La commande créée doit être relisible').toBe(true);
-    const persistedItem = (persisted.items || []).find(
-      (item) => String(item.product_id) === String(productId)
-    );
-    expect(persistedItem, 'La commande doit contenir le produit testé').toBeTruthy();
-    if (isSku) {
-      expect(
-        String(persistedItem.sku_id),
-        'order_items.sku_id doit être le SKU réellement sélectionné'
-      ).toBe(String(selectedSkuId));
-    }
-
-    await page.waitForTimeout(500);
+    expect(persisted.items, 'La commande persistée doit contenir une ligne').toHaveLength(1);
 
     if (isSku) {
       const skuAfter = await getSkuInventorySnapshot(page, productId, selectedSkuId);
