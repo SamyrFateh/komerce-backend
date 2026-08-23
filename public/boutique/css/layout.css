@@ -7,12 +7,12 @@
 /* ── Fond global boutique ───────────────────────────────────── */
 html,
 body {
-  background: var(--page-bg);
+  background: var(--white);
 }
 
 #k-page-scroll,
 #k-catalog-section {
-  background: var(--page-bg);
+  background: var(--white);
 }
 
 /* ── HERO FIXED WRAP — mobile : fixe en haut sous le header ─── */

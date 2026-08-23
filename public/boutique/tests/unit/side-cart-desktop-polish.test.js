@@ -1,5 +1,11 @@
 'use strict';
 
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
 const fs = require('fs');
 const path = require('path');
 
@@ -24,17 +30,19 @@ describe('side cart desktop polish', () => {
   it('retire la capsule desktop autour des tabs et garde un trait actif', () => {
     const tabs = block('#k-cart-surface-switch.k-cart-tabs');
     expect(tabs).toMatch(/border\s*:\s*0/);
-    expect(tabs).toMatch(/background\s*:\s*transparent/);
+    expect(tabs).toMatch(/border-bottom\s*:\s*1px\s+solid\s+var\(--border\)/);
+    expect(tabs).toMatch(/background\s*:\s*var\(--white\)/);
     expect(tabs).toMatch(/box-shadow\s*:\s*none/);
     expect(css).toMatch(/k-tab-personal\.k-cart-tab--active::after[\s\S]*width:\s*32px[\s\S]*height:\s*2px/);
   });
 
-  it('aplatit les lignes articles sans retirer leur séparation', () => {
+  it('place les lignes sable sur la coque blanche', () => {
     const item = block('.k-sc-item');
-    expect(item).toMatch(/border\s*:\s*0/);
-    expect(item).toMatch(/border-bottom\s*:\s*1px\s+solid\s+var\(--border-text-06\)/);
-    expect(item).toMatch(/border-radius\s*:\s*0/);
-    expect(item).toMatch(/background\s*:\s*transparent/);
+    expect(block('.k-sc-items')).toMatch(/background\s*:\s*var\(--white\)/);
+    expect(block('.k-sc-items')).toMatch(/gap\s*:\s*8px/);
+    expect(item).toMatch(/border\s*:\s*1px\s+solid\s+var\(--item-card-border\)/);
+    expect(item).toMatch(/border-radius\s*:\s*13px/);
+    expect(item).toMatch(/background\s*:\s*var\(--sand\)/);
   });
 
   it('ancre le side cart PDP en haut et neutralise le grossissement modal', () => {

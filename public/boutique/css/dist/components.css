@@ -1431,7 +1431,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 
 /* ── CARTE ───────────────────────────────────────────────────── */
 .k-card {
-  background: var(--white);
+  background: var(--sand);
   border-radius: 14px;
   border: 1px solid var(--border);
   overflow: hidden;
@@ -2204,14 +2204,14 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* PALETTE-FIX-01 : ocean au lieu de rgba(42,62,44,…) / rgba(31,48,36,…) */
   .k-card {
     border-radius: 18px;
-    border: 1px solid rgba(100,175,90, .08);
-    background: var(--white);
-    box-shadow: 0 5px 16px rgba(100,175,90, .05);
+    border: 1px solid var(--border);
+    background: var(--sand);
+    box-shadow: 0 1px 0 var(--border-text-06);
   }
 
   .k-card:hover {
-    border-color: rgba(198,168,93,.32);
-    box-shadow: 0 12px 28px rgba(100,175,90, .10);
+    border-color: var(--stone-border);
+    box-shadow: 0 6px 18px var(--border-text-08);
   }
 }
 
@@ -7464,7 +7464,7 @@ body.cart-open .k-hero { pointer-events: none; }
   position: fixed; top: 0; right: 0; bottom: 0;
   width: 100%; max-width: 400px; z-index: 1150;
   background: var(--white);
-  box-shadow: -12px 0 32px rgba(44,34,24,.08);
+  box-shadow: -1px 0 0 var(--border);
   display: grid;
   grid-template-rows: auto 1fr auto;
   transform: translateX(100%);
@@ -7551,7 +7551,7 @@ body.cart-open .k-hero { pointer-events: none; }
 }
 
 /* Corps scrollable — 1fr dans la grid (footer jamais recouvert) */
-.k-cart-body { overflow-y: auto; min-height: 0; padding: 10px 10px 14px; scrollbar-width: thin; }
+.k-cart-body { overflow-y: auto; min-height: 0; padding: 10px 10px 14px; background: var(--white); scrollbar-width: thin; }
 
 /* Panier vide */
 .k-cart-empty { text-align: center; padding: 48px 24px 60px; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 14px; }
@@ -7580,8 +7580,8 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-continue-shop:hover { background: var(--sand); border-style: solid; color: var(--text); }
 
 /* -- ITEMS --------------------------------------------------- */
-/* Mockup 2026-08 : grid 52px/1fr/auto, min-height 70px, card blanche
-   avec ombre légère. Image 52px. Prix encre sombre (plus de corail).
+/* Mockup 2026-08 : grid 52px/1fr/auto, min-height 70px, carte sable
+   sur toile blanche. Image 52px. Prix encre sombre (plus de corail).
    Stepper compact : grid 26px×3 dans pill. */
 .k-cart-item {
   display: grid;
@@ -7593,11 +7593,11 @@ body.cart-open .k-hero { pointer-events: none; }
   padding: 8px;
   border: 1px solid var(--item-card-border);
   border-radius: 13px;
-  background: var(--white);
-  box-shadow: 0 2px 6px rgba(45,36,25,.025);
+  background: var(--sand);
+  box-shadow: none;
   animation: fadeIn .3s; transition: box-shadow .2s ease;
 }
-.k-cart-item:hover { box-shadow: 0 4px 12px rgba(45,36,25,.06); }
+.k-cart-item:hover { border-color: var(--stone-border); box-shadow: none; }
 .k-cart-item.new-item { animation: newItemSlide .42s cubic-bezier(.34,1.56,.64,1); }
 
 /* Image 52px — fond dégradé chaud, border subtile */
@@ -7690,8 +7690,8 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-footer {
   padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--footer-separator);
-  background: rgba(255,253,249,.98);
-  box-shadow: 0 -9px 24px rgba(42,33,23,.06);
+  background: var(--white);
+  box-shadow: none;
 }
 
 /* Résumé : "4 articles" muted à gauche, total serif grand à droite */
@@ -10639,7 +10639,7 @@ body.cart-open  #k-section-index { display:none; }
   padding: 8px;
   border: 1px solid var(--item-card-border);
   border-radius: 13px;
-  background: var(--white);
+  background: var(--sand);
 }
 
 .k-cart-snapshot-item.is-cart-item-claimed {
@@ -11094,13 +11094,13 @@ body.cart-open  #k-section-index { display:none; }
   flex-direction: column;
   gap: 6px;
   padding: 8px 10px;
-  background: var(--sand);
+  background: var(--white);
 }
 
 /* Hiérarchie mobile : le contenu scrollable se détache du chrome blanc.
  * Pas de cadres supplémentaires — seulement des plans visuels lisibles. */
 .k-cart-drawer[data-mode="shared-list"] {
-  background: var(--sand);
+  background: var(--white);
 }
 
 .k-cart-drawer[data-mode="shared-list"] .k-cart-header,
@@ -14050,6 +14050,28 @@ body.k-id-scroll-lock { overflow: hidden; }
     display: grid;
     grid-template-columns: repeat(3, minmax(0,1fr));
     gap: 10px;
+  }
+
+  /* Rail transverse (checkout de liste partagée, 22-08-2026) — frère de
+     .ck-checkout-layout dans le DOM (jamais enfant de .ck-checkout-primary,
+     cf. b-checkout.js#_renderCheckoutSuggestionsShelf), donc il n'hérite
+     PAS automatiquement du centrage/largeur max de .ck-checkout-layout.
+     Même traitement ici pour rester visuellement aligné avec les deux
+     colonnes au-dessus, plutôt que de déborder sur toute la largeur du
+     body (--ck-desktop-max peut être < 100vw sur grand écran). */
+  .ck-checkout-suggestions--transverse {
+    width: min(var(--ck-desktop-max), 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Jusqu'à 6 cartes (limite déjà demandée au backend, cf. limit=6 dans
+     _renderCheckoutSuggestionsShelf) — la pleine largeur transverse permet
+     d'en montrer plus que les 3 fixes du rail imbriqué dans la colonne
+     gauche. minmax(150px, 1fr) laisse le nombre de colonnes s'ajuster
+     naturellement à la largeur réelle plutôt qu'un compte figé. */
+  .ck-checkout-suggestions--transverse .ck-checkout-recent-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 
   .ck-checkout-recent-card {

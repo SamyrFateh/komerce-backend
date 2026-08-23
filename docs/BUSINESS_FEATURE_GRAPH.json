@@ -16159,6 +16159,14 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/products.test.js",
+        "resolvedPath": "public/boutique/tests/unit/products.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "checkout",
         "category": "js",
         "declared": "../js/b-checkout-render.js",
@@ -16783,6 +16791,22 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "platform-ops",
+        "category": "tests",
+        "declared": "../tests/unit/boutique-desktop.test.js",
+        "resolvedPath": "public/boutique/tests/unit/boutique-desktop.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "platform-ops",
+        "category": "tests",
+        "declared": "../tests/unit/layout.test.js",
+        "resolvedPath": "public/boutique/tests/unit/layout.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "recommendations",
         "category": "js",
         "declared": "../js/b-modal-suggestions.js",
@@ -17011,6 +17035,22 @@
         "category": "tests",
         "declared": "../tests/unit/shared-list-responsive-layout.test.js",
         "resolvedPath": "public/boutique/tests/unit/shared-list-responsive-layout.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "tests",
+        "declared": "../tests/unit/side-cart-desktop-polish.test.js",
+        "resolvedPath": "public/boutique/tests/unit/side-cart-desktop-polish.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "tests",
+        "declared": "../tests/unit/shared-list-side-cart.test.js",
+        "resolvedPath": "public/boutique/tests/unit/shared-list-side-cart.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -25614,7 +25654,7 @@
         "filesObserved": 864
       },
       "boutique": {
-        "filesObserved": 162,
+        "filesObserved": 167,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {

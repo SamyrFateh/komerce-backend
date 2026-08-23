@@ -15252,7 +15252,7 @@
         "totalFiles": 40,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
-          "count": 21,
+          "count": 23,
           "files": [
             {
               "declared": "../css/boutique-desktop.css",
@@ -15397,6 +15397,20 @@
             {
               "declared": "../tests/unit/boutique-core.unit.test.js",
               "resolvedPath": "public/boutique/tests/unit/boutique-core.unit.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/boutique-desktop.test.js",
+              "resolvedPath": "public/boutique/tests/unit/boutique-desktop.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/layout.test.js",
+              "resolvedPath": "public/boutique/tests/unit/layout.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"

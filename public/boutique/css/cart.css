@@ -28,7 +28,7 @@ body.cart-open .k-hero { pointer-events: none; }
   position: fixed; top: 0; right: 0; bottom: 0;
   width: 100%; max-width: 400px; z-index: 1150;
   background: var(--white);
-  box-shadow: -12px 0 32px rgba(44,34,24,.08);
+  box-shadow: -1px 0 0 var(--border);
   display: grid;
   grid-template-rows: auto 1fr auto;
   transform: translateX(100%);
@@ -115,7 +115,7 @@ body.cart-open .k-hero { pointer-events: none; }
 }
 
 /* Corps scrollable — 1fr dans la grid (footer jamais recouvert) */
-.k-cart-body { overflow-y: auto; min-height: 0; padding: 10px 10px 14px; scrollbar-width: thin; }
+.k-cart-body { overflow-y: auto; min-height: 0; padding: 10px 10px 14px; background: var(--white); scrollbar-width: thin; }
 
 /* Panier vide */
 .k-cart-empty { text-align: center; padding: 48px 24px 60px; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 14px; }
@@ -144,8 +144,8 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-continue-shop:hover { background: var(--sand); border-style: solid; color: var(--text); }
 
 /* -- ITEMS --------------------------------------------------- */
-/* Mockup 2026-08 : grid 52px/1fr/auto, min-height 70px, card blanche
-   avec ombre légère. Image 52px. Prix encre sombre (plus de corail).
+/* Mockup 2026-08 : grid 52px/1fr/auto, min-height 70px, carte sable
+   sur toile blanche. Image 52px. Prix encre sombre (plus de corail).
    Stepper compact : grid 26px×3 dans pill. */
 .k-cart-item {
   display: grid;
@@ -157,11 +157,11 @@ body.cart-open .k-hero { pointer-events: none; }
   padding: 8px;
   border: 1px solid var(--item-card-border);
   border-radius: 13px;
-  background: var(--white);
-  box-shadow: 0 2px 6px rgba(45,36,25,.025);
+  background: var(--sand);
+  box-shadow: none;
   animation: fadeIn .3s; transition: box-shadow .2s ease;
 }
-.k-cart-item:hover { box-shadow: 0 4px 12px rgba(45,36,25,.06); }
+.k-cart-item:hover { border-color: var(--stone-border); box-shadow: none; }
 .k-cart-item.new-item { animation: newItemSlide .42s cubic-bezier(.34,1.56,.64,1); }
 
 /* Image 52px — fond dégradé chaud, border subtile */
@@ -254,8 +254,8 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-footer {
   padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--footer-separator);
-  background: rgba(255,253,249,.98);
-  box-shadow: 0 -9px 24px rgba(42,33,23,.06);
+  background: var(--white);
+  box-shadow: none;
 }
 
 /* Résumé : "4 articles" muted à gauche, total serif grand à droite */
