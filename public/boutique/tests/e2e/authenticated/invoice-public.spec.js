@@ -71,16 +71,23 @@ test.describe('FLOW — Facture privée dans Mon Komerce (F05)', () => {
     expect(privateResult.bytes).toBeGreaterThan(500);
 
     // ── 4. La même URL ne fonctionne pas sans session ──
+    // On utilise l'API request du BrowserContext, pas une page : cela élimine
+    // CORS, scripts Boutique, localStorage et service workers du diagnostic.
     const anonContext = await page.context().browser().newContext();
-    const anonPage = await anonContext.newPage();
 
     try {
-      // about:blank → fetch cross-origin serait masqué par CORS et donnerait
-      // status=0. On place d'abord le contexte ANONYME sur la même origine :
-      // aucun storageState/cookie n'est copié, mais le 401/403 devient observable.
-      await anonPage.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
-      const anonymousResult = await downloadPrivateDocument(anonPage, invoice.download_url);
-      expect([401, 403]).toContain(anonymousResult.status);
+      // Défense explicite : ce contexte ne doit porter aucun cookie de session.
+      await anonContext.clearCookies();
+      expect(await anonContext.cookies(), 'Le contexte anonyme doit être sans cookie').toHaveLength(0);
+
+      const downloadAbsoluteUrl = new URL(invoice.download_url, BASE_URL).href;
+      const anonymousResponse = await anonContext.request.get(downloadAbsoluteUrl, {
+        maxRedirects: 0,
+      });
+
+      // eslint-disable-next-line no-console
+      console.log(`[F05] Accès anonyme à la facture → ${anonymousResponse.status()}`);
+      expect([401, 403]).toContain(anonymousResponse.status());
     } finally {
       await anonContext.close();
     }
