@@ -158,6 +158,35 @@
         progress.append(item);
       });
 
+      const clientProof = node(doc, 'section', 'demo-flow__client-proof');
+      const clientProofCopy = node(doc, 'div', 'demo-flow__client-proof-copy');
+      clientProofCopy.append(
+        node(doc, 'h3', '', 'Vérification côté client réel'),
+        node(
+          doc,
+          'p',
+          '',
+          `Compte test : ${order.customer_email || order.customer_phone || order.customer_name || 'identité client non renseignée'}`
+        ),
+        node(
+          doc,
+          'small',
+          '',
+          'Utiliser le mobile de test ou une seconde session navigateur : aucune impersonation admin.'
+        )
+      );
+      const clientProofActions = node(doc, 'div', 'demo-flow__client-proof-actions');
+      const accountLink = node(doc, 'a', 'demo-flow__button demo-flow__button--secondary demo-flow__account-link', 'Ouvrir Mon Komerce');
+      accountLink.href = '/boutique/?tab=komerce';
+      accountLink.target = '_blank';
+      accountLink.rel = 'noopener';
+      const ordersLink = node(doc, 'a', 'demo-flow__button demo-flow__button--secondary demo-flow__account-link', 'Ouvrir Commandes');
+      ordersLink.href = '/boutique/?tab=track';
+      ordersLink.target = '_blank';
+      ordersLink.rel = 'noopener';
+      clientProofActions.append(accountLink, ordersLink);
+      clientProof.append(clientProofCopy, clientProofActions);
+
       const grids = node(doc, 'div', 'demo-flow__grid');
       const notifications = panel('Notifications client', trace.notifications, item => {
         const row = node(doc, 'article', 'demo-flow__row');
@@ -211,7 +240,7 @@
       }
 
       grids.append(notifications, documents, history);
-      content.append(summary, progress, invoiceActions, grids);
+      content.append(summary, progress, clientProof, invoiceActions, grids);
 
       refreshTrace.addEventListener('click', () => loadTrace(selectedId));
       advance.addEventListener('click', async () => {

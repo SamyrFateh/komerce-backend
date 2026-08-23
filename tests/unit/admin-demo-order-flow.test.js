@@ -56,8 +56,15 @@ test('retourne 404 quand la commande est absente', async () => {
   expect(mockReconcile).not.toHaveBeenCalled();
 });
 
-test('renvoie la trace métier complète et réconcilie les notifications', async () => {
-  const order = { id: ORDER_ID, reference: 'CMD-42', user_id: 'client-1', status: 'shipped' };
+test('renvoie la trace métier complète, l’identité client et réconcilie les notifications', async () => {
+  const order = {
+    id: ORDER_ID,
+    reference: 'CMD-42',
+    user_id: 'client-1',
+    customer_email: 'amina@example.test',
+    customer_phone: '+2693000000',
+    status: 'shipped',
+  };
   mockQuery
     .mockResolvedValueOnce({ rows: [order] })
     .mockResolvedValueOnce({ rows: [{ id: 'h1', status: 'shipped' }] })
@@ -70,6 +77,8 @@ test('renvoie la trace métier complète et réconcilie les notifications', asyn
 
   expect(response.status).toBe(200);
   expect(mockReconcile).toHaveBeenCalledWith('client-1');
+  expect(mockQuery.mock.calls[0][0]).toContain('u.email AS customer_email');
+  expect(mockQuery.mock.calls[0][0]).toContain('u.phone AS customer_phone');
   expect(response.body).toEqual({
     order,
     history: [{ id: 'h1', status: 'shipped' }],

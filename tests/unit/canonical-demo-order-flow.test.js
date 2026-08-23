@@ -23,6 +23,8 @@ function trace(overrides = {}) {
       payment_status: 'paid',
       total_kmf: 12500,
       customer_name: 'Amina',
+      customer_email: 'amina@example.test',
+      customer_phone: '+2693000000',
       market_code: 'KM',
       ...overrides,
     },
@@ -137,6 +139,11 @@ test('monte le cockpit, charge une commande et affiche les traces', async () => 
   expect(root.textContent).toContain('CMD-42');
   expect(root.textContent).toContain('Notifications client');
   expect(root.textContent).toContain('Facture FAC-1');
+  expect(root.textContent).toContain('Vérification côté client réel');
+  expect(root.textContent).toContain('amina@example.test');
+  expect(root.textContent).toContain('aucune impersonation admin');
+  expect(root.querySelector('a[href="/boutique/?tab=komerce"]')).not.toBeNull();
+  expect(root.querySelector('a[href="/boutique/?tab=track"]')).not.toBeNull();
   expect(root.querySelector('a[href="/api/invoices/' + ORDER_ID + '"]')).not.toBeNull();
 });
 
@@ -239,6 +246,21 @@ test('couvre les fallbacks d’affichage et les commandes de rafraîchissement',
   await mounted.loadTrace('');
   await mounted.loadTrace(ORDER_ID);
   expect(root.textContent).toContain('Trace indisponible');
+});
+
+test('identifie le compte client par téléphone, nom puis repli explicite', async () => {
+  for (const [overrides, expected] of [
+    [{ customer_email: null }, '+2693000000'],
+    [{ customer_email: null, customer_phone: null }, 'Amina'],
+    [{ customer_email: null, customer_phone: null, customer_name: null }, 'identité client non renseignée'],
+  ]) {
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce(response({ orders: [{ id: ORDER_ID, reference: 'CMD-42', status: 'confirmed' }] }))
+      .mockResolvedValueOnce(response(trace(overrides)));
+    const { root } = setup(fetchMock);
+    await settle();
+    expect(root.textContent).toContain(`Compte test : ${expected}`);
+  }
 });
 
 test('couvre les identités de repli et le rafraîchissement après retrait', async () => {

@@ -38,6 +38,8 @@ router.get('/demo/orders/:orderId/timeline', ...guard, async (req, res, next) =>
       `SELECT o.id, o.reference, o.user_id, o.market_id, o.status,
               o.payment_status, o.payment_mode, o.total_kmf, o.created_at,
               u.full_name AS customer_name,
+              u.email AS customer_email,
+              u.phone AS customer_phone,
               r.name AS relais_name,
               m.code AS market_code
          FROM orders o
