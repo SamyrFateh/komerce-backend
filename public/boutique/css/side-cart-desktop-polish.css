@@ -14,6 +14,7 @@
      alignements, jamais par un cadre vertical. */
   .k-side-cart {
     border-left: 0;
+    background: var(--sand);
   }
 
   /* Navigation Panier / Liste : même grammaire que le mobile.
@@ -27,7 +28,7 @@
     gap: 0;
     border: 0;
     border-radius: 0;
-    background: var(--white);
+    background: var(--sand);
     box-shadow: none;
   }
 
@@ -51,7 +52,7 @@
 
   #k-cart-surface-switch .k-cart-tab--active,
   #k-cart-surface-switch[data-active="personal"] .k-tab-personal.k-cart-tab--active {
-    color: var(--text);
+    color: var(--ocean-dark-deep);
     background: transparent;
     border: 0;
     border-radius: 0;
@@ -69,7 +70,7 @@
     width: 32px;
     height: 2px;
     border-radius: 999px;
-    background: var(--text);
+    background: var(--cta-green);
     transform: translateX(-50%);
   }
 
@@ -106,7 +107,7 @@
   .k-sc-items {
     padding: 8px 12px 10px;
     gap: 8px;
-    background: var(--white);
+    background: var(--sand);
   }
 
   .k-sc-item {
@@ -128,7 +129,7 @@
     height: 52px;
     border: 0;
     border-radius: 0;
-    background: transparent;
+    background: var(--white);
   }
 
   /* Même surface ouverte pour une ligne issue d'une liste partagée. */
@@ -144,7 +145,21 @@
   .k-cart-snapshot-item .k-cart-item-img {
     border: 0;
     border-radius: 0;
-    background: transparent;
+    background: var(--white);
+  }
+
+  .k-sc-item-price,
+  .k-cart-snapshot-item .k-cart-item-price {
+    color: var(--coral);
+  }
+
+  .k-cart-item-select.is-checked {
+    border-color: var(--cta-green);
+    background: var(--cta-green);
+  }
+
+  .k-cart-item-select.is-checked::after {
+    border-color: var(--white);
   }
 
   /* Parité exacte avec la ligne canonique panier/liste de cart.css. */
@@ -208,7 +223,7 @@
   .k-sc-header {
     padding: 10px 12px 12px;
     gap: 7px;
-    background: var(--white);
+    background: var(--sand);
     border-top: 0;
   }
 
