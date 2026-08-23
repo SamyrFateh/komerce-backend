@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         css
  * @owner         public/boutique/css/products.css
- * @purpose       Prolonge sur mobile la toile blanche fluide desktop : hero ouvert, rail sans filet, cartes sable sans contour permanent et accents fonctionnels conservés.
+ * @purpose       Prolonge sur mobile la toile blanche fluide desktop : hero ouvert, rail sans filet et accents catalogue plus lisibles sans reprendre l'ownership des cartes produit.
  * @impact-areas  mobile, hero, category-navigation, product-cards
  * @version       2026-08
  */
@@ -32,18 +32,8 @@
     background: var(--cta-green);
   }
 
-  .k-card {
-    background: var(--sand);
-    border: 0;
-    box-shadow: none;
-  }
-
   .k-card-name {
     font-weight: 500;
-  }
-
-  .k-card-fav {
-    box-shadow: none;
   }
 
   .k-card-fav.liked {
