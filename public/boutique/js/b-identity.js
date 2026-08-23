@@ -74,10 +74,25 @@ function maskPhone(phone) {
   return v.slice(0, 4) + '••••' + v.slice(-2);
 }
 
-function reasonText(reason) {
+/**
+ * Sous-titre affiché en tête de la modale d'identité (.k-id-sub),
+ * expliquant POURQUOI l'identification est demandée — persistant sur
+ * toutes les étapes (recap/téléphone/OTP). Bug signalé 22-08-2026 :
+ * l'OTP se déclenchait sans que l'utilisateur comprenne pourquoi, pour
+ * tout reason ne matchant aucun des patterns ci-dessous — retombait sur
+ * un message générique correct mais non spécifique. Exportée pour rester
+ * testable seule plutôt que de mocker toute la chaîne requireIdentity ->
+ * passkey (échec) -> openIdentityModal juste pour vérifier une chaîne
+ * de caractères.
+ */
+export function reasonText(reason) {
   if (/groupe|panier/i.test(reason || ''))   return 'Confirmez votre WhatsApp pour sécuriser votre panier groupe.';
+  if (/créer cette liste|creer cette liste/i.test(reason || '')) return 'Confirmez votre WhatsApp pour créer et partager votre liste.';
   if (/commande|checkout/i.test(reason || '')) return 'Vous allez recevoir un code sur WhatsApp pour votre commande.';
   if (/particip/i.test(reason || ''))        return 'Confirmez votre WhatsApp pour retrouver votre participation.';
+  if (/retrouver vos listes|listes partagées/i.test(reason || '')) return 'Confirmez votre WhatsApp pour retrouver vos listes créées ou reçues.';
+  if (/mon-komerce/i.test(reason || ''))     return 'Confirmez votre WhatsApp pour accéder à votre compte Mon Komerce.';
+  if (/porte-monnaie/i.test(reason || ''))   return 'Confirmez votre WhatsApp pour accéder à votre porte-monnaie.';
   return 'Confirmez votre WhatsApp pour continuer en sécurité.';
 }
 

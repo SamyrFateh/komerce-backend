@@ -69,6 +69,7 @@ const {
   restoreIdentity,
   requireIdentity,
   bindChangeIdentity,
+  reasonText,
 } = require('../../js/b-identity.js');
 
 async function tick(ms) {
@@ -688,5 +689,38 @@ describe('bindChangeIdentity', () => {
   it('ne fait rien si le sélecteur ne correspond à aucun élément', () => {
     document.body.innerHTML = '<div id="host"></div>';
     expect(() => bindChangeIdentity(document.getElementById('host'), '.absent', jest.fn())).not.toThrow();
+  });
+});
+
+// ── reasonText — bug signalé 22-08-2026 : l'OTP se déclenchait sans
+// explication pour tout reason ne matchant aucun pattern connu (retombait
+// sur un message générique correct mais non spécifique). Un test par
+// reason RÉELLEMENT utilisé dans le dépôt (grep exhaustif sur tous les
+// appels requireIdentity/openIdentityModal, pas des chaînes inventées) —
+// pour qu'un futur appelant avec un nouveau reason générique casse un
+// test plutôt que de découvrir le trou en production.
+describe('reasonText — sous-titre explicatif de la modale d\'identité', () => {
+  it.each([
+    ['sécuriser votre panier groupe', /panier groupe/, 'b-share-cart.js (groupe)'],
+    ['créer cette liste', /créer et partager votre liste/, 'b-share-cart.js'],
+    ['valider votre commande', /code sur WhatsApp pour votre commande/, 'b-checkout.js'],
+    ['retrouver vos listes partagées', /retrouver vos listes créées ou reçues/, 'b-tracking.js'],
+    ['mon-komerce', /compte Mon Komerce/, 'b-komerce.js'],
+    ['porte-monnaie', /porte-monnaie/, 'b-wallet.js'],
+  ])('reason=%j (%s) → sous-titre spécifique, jamais le générique', (reason, expected) => {
+    const text = reasonText(reason);
+    expect(text).toMatch(expected);
+    expect(text).not.toBe('Confirmez votre WhatsApp pour continuer en sécurité.');
+  });
+
+  it('reason inconnu (changer d\'identité/de numéro) : générique assumé, pas un oubli', () => {
+    expect(reasonText('changer d\u2019identité')).toBe('Confirmez votre WhatsApp pour continuer en sécurité.');
+    expect(reasonText('changer de num\u00e9ro')).toBe('Confirmez votre WhatsApp pour continuer en sécurité.');
+  });
+
+  it('reason absent/vide : jamais une exception, repli générique', () => {
+    expect(() => reasonText(undefined)).not.toThrow();
+    expect(reasonText(undefined)).toBe('Confirmez votre WhatsApp pour continuer en sécurité.');
+    expect(reasonText('')).toBe('Confirmez votre WhatsApp pour continuer en sécurité.');
   });
 });

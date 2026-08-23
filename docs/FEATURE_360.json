@@ -1520,7 +1520,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "⚠ js/b-identity.js — 1 export(s) non consommé(s) :"
+            "message": "⚠ js/b-identity.js — 2 export(s) non consommé(s) :"
           },
           {
             "gate": "check:imports",
