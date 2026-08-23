@@ -353,13 +353,24 @@ export function renderTrackView() {
   el.innerHTML = '<div class="k-track-loading"><div class="k-track-loading-spin"></div><p>Chargement de vos commandes…</p></div>';
 
   (async () => {
-    // FIX 2026-07-10 : distinguer les échecs.
-    //   401/403 (pas de session) → mode recherche par référence (comportement voulu)
-    //   timeout / 5xx / réseau   → état erreur + Réessayer (avant : loader infini
-    //                              possible si la requête pendait, ou bascule
-    //                              trompeuse en mode recherche sur panne backend)
+    // Un visiteur jamais identifié obtient immédiatement le parcours public
+    // par référence. La route privée des commandes ne part qu'après restauration
+    // d'une identité, jamais comme sonde anonyme vouée à répondre 401.
+    const identity = await restoreIdentity();
+    if (!identity) {
+      renderTrackViewSearchMode(el);
+      return;
+    }
+
     let ordersErr = null;
     const ordersResult = await apiGet('/api/orders?limit=20').catch((e) => { ordersErr = e; return null; });
+
+    // L'identité existait au moment de l'appel : un 401/403 signifie donc une
+    // session expirée, distincte de la toute première visite.
+    if (ordersErr && (ordersErr.status === 401 || ordersErr.status === 403)) {
+      renderTrackSessionExpired(el);
+      return;
+    }
 
     if (ordersErr && ordersErr.status !== 401 && ordersErr.status !== 403) {
       renderTrackError(el, ordersErr);
@@ -371,7 +382,7 @@ export function renderTrackView() {
       : (ordersResult?.orders || []);
 
     if (!orders.length) {
-      renderTrackViewSearchMode(el);
+      renderTrackNoOrders(el);
       return;
     }
 
@@ -381,6 +392,38 @@ export function renderTrackView() {
     // Filet ultime : jamais de "Chargement…" résiduel.
     console.warn('[tracking] render:', e);
     renderTrackError(el, e);
+  });
+}
+
+function renderTrackSessionExpired(el) {
+  el.innerHTML =
+    '<div class="k-track-error k-track-auth-required">' +
+      '<div class="k-track-error-icon">🔐</div>' +
+      '<div class="k-track-error-title">Session expirée</div>' +
+      '<div class="k-track-error-sub">Identifiez-vous pour retrouver tout votre historique, ou recherchez une commande avec sa référence.</div>' +
+      '<button class="k-track-retry-btn" id="k-track-reauth-btn">M\'identifier</button>' +
+      '<button class="k-track-btn k-track-btn--ghost k-track-search-fallback-btn" id="k-track-session-search-btn">🔎 Rechercher par référence</button>' +
+    '</div>';
+
+  el.querySelector('#k-track-reauth-btn')?.addEventListener('click', () => {
+    renderTrackViewSearchMode(el, { startWithHistory: true });
+  });
+  el.querySelector('#k-track-session-search-btn')?.addEventListener('click', () => {
+    renderTrackViewSearchMode(el);
+  });
+}
+
+function renderTrackNoOrders(el) {
+  el.innerHTML =
+    '<div class="k-track-error k-track-orders-empty">' +
+      '<div class="k-track-error-icon">📦</div>' +
+      '<div class="k-track-error-title">Vous n\'avez encore aucune commande</div>' +
+      '<div class="k-track-error-sub">Vos prochaines commandes apparaîtront ici. Vous pouvez aussi retrouver un achat avec sa référence.</div>' +
+      '<button class="k-track-retry-btn" id="k-track-empty-search-btn">🔎 Rechercher par référence</button>' +
+    '</div>';
+
+  el.querySelector('#k-track-empty-search-btn')?.addEventListener('click', () => {
+    renderTrackViewSearchMode(el);
   });
 }
 
@@ -595,13 +638,13 @@ function renderTrackError(el, err) {
       '<div class="k-track-error-title">' + (isTimeout ? 'Le suivi met trop de temps à répondre' : 'Impossible de charger vos commandes') + '</div>' +
       '<div class="k-track-error-sub">Vérifiez votre connexion puis réessayez, ou recherchez une commande par sa référence.</div>' +
       '<button class="k-track-retry-btn" id="k-track-retry-btn">🔄 Réessayer</button>' +
-      '<button class="k-track-search-fallback-btn" id="k-track-search-fallback-btn">🔎 Rechercher par référence</button>' +
+      '<button class="k-track-btn k-track-btn--ghost k-track-search-fallback-btn" id="k-track-search-fallback-btn">🔎 Rechercher par référence</button>' +
     '</div>';
   el.querySelector('#k-track-retry-btn')?.addEventListener('click', () => renderTrackView());
   el.querySelector('#k-track-search-fallback-btn')?.addEventListener('click', () => renderTrackViewSearchMode(el));
 }
 
-export function renderTrackViewSearchMode(el) {
+export function renderTrackViewSearchMode(el, { startWithHistory = false } = {}) {
   const otpState = { phone: '' };
 
   el.innerHTML = `
@@ -696,6 +739,11 @@ export function renderTrackViewSearchMode(el) {
   if (otpSel) otpSel.className = 'k-track-country';
   const otpInput = el.querySelector('#k-otp-phone');
   if (otpInput) otpInput.className = 'k-track-input k-track-input--phone';
+
+  if (startWithHistory) {
+    el.querySelector('#k-track-quick')?.classList.add('u-hidden');
+    el.querySelector('#k-track-otp')?.classList.remove('u-hidden');
+  }
 
   function getFullPhone() {
     const code = el.querySelector('#k-otp-country')?.value || DEFAULT_IDENTITY_PHONE_CODE;
