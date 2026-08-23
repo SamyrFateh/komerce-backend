@@ -1269,7 +1269,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "dashboard" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 61 fichier(s) déclaré(s), boutique: 14 fichier(s)
+**Implementation** : 61 fichier(s) déclaré(s), boutique: 15 fichier(s)
   - boutique : 3
   - routes : 12
   - services : 12
