@@ -11,11 +11,11 @@
  *
  * Flux vérifié :
  *   1. Lister les documents du compte (GET /api/auth/me/documents)
- *   2. Télécharger une facture avec la session et vérifier le PDF
+ *   2. Télécharger une facture disponible avec la session et vérifier le PDF
  *   3. Vérifier que la même URL est refusée dans un contexte anonyme
  *
- * Ce test est READ-ONLY. Si aucune commande payée n'existe sur le compte de
- * test, le test passe en skip — il ne force pas de paiement.
+ * Ce test est READ-ONLY. Si aucune facture disponible n'existe sur le compte
+ * de test, le test passe en skip — il ne force pas de paiement ni de génération.
  *
  * Pour un test garanti, enchaîner F02 (commande wallet 100%) puis F05.
  */
@@ -37,13 +37,31 @@ test.describe('FLOW — Facture privée dans Mon Komerce (F05)', () => {
     // ── 2. Lister les documents du compte ──
     const listed = await getPrivateDocuments(page);
     expect(listed.status).toBe(200);
-    const invoice = listed.documents.find((doc) => doc.document_type === 'invoice');
+
+    // Le contrat documents ne fournit download_url que pour status=available.
+    // Une facture pending n'est PAS un document téléchargeable et ne doit jamais
+    // être passée au helper de téléchargement (new URL(null, base) viserait une
+    // route HTML sans rapport avec le document et produirait un faux diagnostic).
+    const invoice = listed.documents.find(
+      (doc) =>
+        doc.document_type === 'invoice' &&
+        doc.status === 'available' &&
+        typeof doc.download_url === 'string' &&
+        doc.download_url.startsWith('/api/auth/me/documents/')
+    );
+
     if (!invoice) {
+      const invoiceCount = listed.documents.filter((doc) => doc.document_type === 'invoice').length;
       // eslint-disable-next-line no-console
-      console.log('[F05] Aucune facture disponible — skip (enchaîner F02 d\'abord pour tester)');
+      console.log(
+        `[F05] ${invoiceCount} facture(s) listée(s), aucune disponible au téléchargement — skip ` +
+        '(enchaîner F02 d\'abord pour tester)'
+      );
       test.skip();
       return;
     }
+
+    expect(invoice.download_url, 'Une facture available doit exposer download_url').toBeTruthy();
 
     // ── 3. Télécharger avec la session ──
     const privateResult = await downloadPrivateDocument(page, invoice.download_url);
