@@ -15567,6 +15567,14 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "account",
+        "category": "tests",
+        "declared": "../tests/unit/komerce-css-tokens.test.js",
+        "resolvedPath": "public/boutique/tests/unit/komerce-css-tokens.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "auth",
         "category": "js",
         "declared": "../js/b-identity.js",
@@ -25654,7 +25662,7 @@
         "filesObserved": 864
       },
       "boutique": {
-        "filesObserved": 167,
+        "filesObserved": 168,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
