@@ -10,6 +10,12 @@
  */
 
 @media (min-width: 900px) {
+  /* Surface ouverte : le panneau se distingue par son placement et ses
+     alignements, jamais par un cadre vertical. */
+  .k-side-cart {
+    border-left: 0;
+  }
+
   /* Navigation Panier / Liste : même grammaire que le mobile.
      Deux labels sur une surface ouverte ; seul l'actif reçoit un trait fin. */
   #k-cart-surface-switch.k-cart-tabs {
@@ -20,7 +26,6 @@
     padding: 0 10px;
     gap: 0;
     border: 0;
-    border-bottom: 1px solid var(--border);
     border-radius: 0;
     background: var(--white);
     box-shadow: none;
@@ -99,7 +104,7 @@
   /* Liste d'articles : cartes sable sur la coque blanche, selon la même
      hiérarchie que le catalogue et le drawer mobile. */
   .k-sc-items {
-    padding: 8px 10px 10px;
+    padding: 8px 12px 10px;
     gap: 8px;
     background: var(--white);
   }
@@ -107,24 +112,39 @@
   .k-sc-item {
     align-items: center;
     gap: 10px;
-    padding: 8px;
-    border: 1px solid var(--item-card-border);
-    border-radius: 13px;
-    background: var(--sand);
+    padding: 8px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
   }
 
   .k-sc-item:hover {
-    background: var(--sand);
-    border-color: var(--stone-border);
+    background: transparent;
   }
 
   .k-sc-item-img {
     width: 52px;
     height: 52px;
-    border-radius: 10px;
-    background: var(--sand);
-    border: 1px solid var(--border-text-06);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  /* Même surface ouverte pour une ligne issue d'une liste partagée. */
+  .k-cart-snapshot-item,
+  .k-cart-snapshot-item.is-cart-item-claimed {
+    padding: 8px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .k-cart-snapshot-item .k-cart-item-img {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
   /* Parité exacte avec la ligne canonique panier/liste de cart.css. */
@@ -189,7 +209,13 @@
     padding: 10px 12px 12px;
     gap: 7px;
     background: var(--white);
-    border-top: 1px solid var(--border-text-08);
+    border-top: 0;
+  }
+
+  #k-side-cart:has(.k-cart-tabs) .k-sc-title-bar:has(
+    .k-cart-snapshot-contributors
+  ) {
+    border-bottom: 0;
   }
 
   .k-sc-free-ship {
