@@ -29,6 +29,13 @@ describe('continuité catégories et sous-catégories desktop', () => {
     );
   });
 
+  test('laisse le rail principal respirer sans filet structurel', () => {
+    expect(desktopShelf).toMatch(
+      /html\.k-home-premium-v1 \.k-shelf-rail,[\s\S]*?\.k-shelf-rail\s*\{[^}]*background:\s*var\(--white\)[^}]*border:\s*0[^}]*box-shadow:\s*none/s
+    );
+    expect(desktopShelf).not.toMatch(/border-bottom:\s*1px\s+solid\s+var\(--border-text-06\)/);
+  });
+
   test('prolonge la catégorie active par un sous-rail horizontal compact', () => {
     expect(desktop).toMatch(
       /html\.k-home-premium-v1 #k-subcats-wrap\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)[^}]*max-width:\s*1680px/s
