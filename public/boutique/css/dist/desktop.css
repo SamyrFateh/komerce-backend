@@ -794,13 +794,12 @@
     width: 296px; /* libellés et contrôles restent lisibles sans retour artificiel */
     height: 100dvh;
     border-radius: 0;
-    background: var(--surface-sand-94);
+    background: var(--white);
     /* Coque unique et neutre : aucun code couleur panier/liste.
-       La séparation avec la boutique vient uniquement de la profondeur. */
+       La séparation avec la boutique vient d'un cadre continu, sans halo. */
     border: none;
-    box-shadow:
-      -14px 0 32px rgba(42,33,23,.10),
-      -1px 0 0 var(--border-text-08);
+    border-left: 1px solid var(--border);
+    box-shadow: none;
     overflow: hidden;
     z-index: 200;
     opacity: 0;
@@ -1406,7 +1405,7 @@
 /* ── Premium desktop home — side-cart + blocs éditoriaux (rapatrié de b-home-premium-v1.js, Lot 3) ── */
 @media (min-width: 900px) {
   html.k-home-premium-v1 .k-side-cart {
-    box-shadow: -14px 0 44px var(--border-text-08);
+    box-shadow: none;
   }
 
   html.k-home-premium-v1 .k-sc-btn-checkout { border-radius: 18px; }
@@ -1475,18 +1474,6 @@
  */
 
 @media (min-width: 900px) {
-  /* Coque continue : même toile blanche du header au footer, séparée du
-     catalogue par un trait franc plutôt que par une ombre diffuse. */
-  .k-side-cart:not(.k-side-cart--in-modal) {
-    background: var(--white);
-    border-left: 1px solid var(--border);
-    box-shadow: none;
-  }
-
-  html.k-home-premium-v1 .k-side-cart:not(.k-side-cart--in-modal) {
-    box-shadow: none;
-  }
-
   /* Navigation Panier / Liste : même grammaire que le mobile.
      Deux labels sur une surface ouverte ; seul l'actif reçoit un trait fin. */
   #k-cart-surface-switch.k-cart-tabs {

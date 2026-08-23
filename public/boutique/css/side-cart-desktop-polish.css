@@ -10,18 +10,6 @@
  */
 
 @media (min-width: 900px) {
-  /* Coque continue : même toile blanche du header au footer, séparée du
-     catalogue par un trait franc plutôt que par une ombre diffuse. */
-  .k-side-cart:not(.k-side-cart--in-modal) {
-    background: var(--white);
-    border-left: 1px solid var(--border);
-    box-shadow: none;
-  }
-
-  html.k-home-premium-v1 .k-side-cart:not(.k-side-cart--in-modal) {
-    box-shadow: none;
-  }
-
   /* Navigation Panier / Liste : même grammaire que le mobile.
      Deux labels sur une surface ouverte ; seul l'actif reçoit un trait fin. */
   #k-cart-surface-switch.k-cart-tabs {

@@ -62,6 +62,7 @@ module.exports = {
       '../tests/unit/b-bus.test.js',
       '../tests/unit/b-nav.test.js',
       '../tests/unit/boutique-core.unit.test.js',
+      '../tests/unit/boutique-desktop.test.js',
       '../tests/unit/layout.test.js',
     ],
   },

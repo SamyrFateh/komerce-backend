@@ -45,13 +45,6 @@ describe('side cart desktop polish', () => {
     expect(item).toMatch(/background\s*:\s*var\(--sand\)/);
   });
 
-  it('forme un cadre desktop continu sans ombre diffuse', () => {
-    const shell = block('.k-side-cart:not(.k-side-cart--in-modal)');
-    expect(shell).toMatch(/background\s*:\s*var\(--white\)/);
-    expect(shell).toMatch(/border-left\s*:\s*1px\s+solid\s+var\(--border\)/);
-    expect(shell).toMatch(/box-shadow\s*:\s*none/);
-  });
-
   it('ancre le side cart PDP en haut et neutralise le grossissement modal', () => {
     const slot = block('#k-modal .k-modal-cart-slot');
     expect(slot).toMatch(/justify-content\s*:\s*flex-start/);
