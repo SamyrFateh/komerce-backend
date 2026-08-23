@@ -1,0 +1,52 @@
+/**
+ * @komerce-arch-lite
+ * @role          mobile-catalog-visual-convergence
+ * @domain        catalog
+ * @layer         css
+ * @owner         public/boutique/css/products.css
+ * @purpose       Prolonge sur mobile la toile blanche fluide desktop : hero ouvert, rail sans filet, cartes sable sans contour permanent et accents fonctionnels conservés.
+ * @impact-areas  mobile, hero, category-navigation, product-cards
+ * @version       2026-08
+ */
+
+@media (max-width: 899px) {
+  #k-hero-fixed-wrap > .k-hero {
+    background:
+      radial-gradient(circle at 78% 48%, var(--ocean-bg-08) 0%, transparent 34%),
+      radial-gradient(circle at 18% 62%, var(--coral-focus-08) 0%, transparent 30%),
+      var(--white);
+  }
+
+  .k-hero .k-hero-inner .k-hero-media {
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .k-shelf-rail {
+    background: var(--white);
+    box-shadow: none;
+  }
+
+  .k-cat-cutout.active .k-chip-label::after {
+    background: var(--cta-green);
+  }
+
+  .k-card {
+    background: var(--sand);
+    border: 0;
+    box-shadow: none;
+  }
+
+  .k-card-name {
+    font-weight: 500;
+  }
+
+  .k-card-fav {
+    box-shadow: none;
+  }
+
+  .k-card-fav.liked {
+    box-shadow: 0 0 0 2px var(--coral-shadow-25);
+  }
+}
