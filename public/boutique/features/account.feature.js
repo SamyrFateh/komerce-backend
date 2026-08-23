@@ -34,7 +34,7 @@ module.exports = {
 
   perimeter: {
     in: [
-      "point d'entrée protégé de Mon Komerce avec restauration de la vue après authentification",
+      "point d'entrée protégé de Mon Komerce avec écran explicatif avant toute authentification et restauration de la vue après authentification",
       "page unique sans vue d'ensemble ni sous-navigation interne",
       "bloc Mes documents prioritaire : factures et remboursements téléchargés sous session lorsque leur PDF est disponible",
       "bloc wallet compact utilisant la vérité canonique du solde et de son échéance, sans historique de mouvements",
@@ -97,7 +97,8 @@ module.exports = {
     "Suivi reste un espace autonome consacré aux achats",
     "les documents essentiels précèdent le wallet compact sans sous-onglet et ne sont jamais liés depuis WhatsApp",
     "Mon Komerce n'affiche aucun mouvement wallet, reçu de retrait, document douane ou document technique dans Mes documents",
-    "avant une identification Mon Komerce, la navigation revient sur un fond Boutique neutre ; une erreur Suivi ou Mes Partages ne reste jamais exposée sous la modale",
+    "avant une identification, Mon Komerce affiche son propre écran explicatif neutre ; une erreur Suivi ou Mes Partages ne reste jamais exposée sous la modale",
+    "ouvrir Mon Komerce sans session affiche son shell mais ne déclenche jamais requireIdentity ni l'envoi d'un OTP avant un clic explicite sur M'identifier",
     "la navigation affiche une tête neutre non genrée et le prénom uniquement après confirmation de la session authentifiée",
   ],
 

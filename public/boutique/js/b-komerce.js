@@ -19,7 +19,8 @@
  * @brief Mon Komerce — page personnelle unique (Lot 4B, étendue Lot 5).
  *
  * Doctrine : Mon Komerce est une seule page, sans sous-onglet, sans menu
- * secondaire. L'authentification intervient à l'entrée, une seule fois.
+ * secondaire. Sans session, la page explique pourquoi s'identifier et ne
+ * déclenche l'authentification qu'après un clic explicite.
  *
  *   Mes documents essentiels (factures et remboursements)
  *   Mon wallet (solde compact, sans historique de mouvements)
@@ -150,6 +151,53 @@ function renderSessionExpired() {
       else { btn.disabled = false; btn.textContent = '\ud83d\udcf2 M\u2019identifier'; }
     });
   }
+}
+
+function focusRequestedBlock(focus) {
+  if (focus !== 'wallet') return;
+  requestAnimationFrame(() => {
+    document.getElementById('k-kmc-wallet-block')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+function renderIdentityRequired({ focus = null } = {}) {
+  const documentsBlock = document.getElementById('k-kmc-documents-block');
+  const walletBlock  = document.getElementById('k-kmc-wallet-block');
+  const profileBlock = document.getElementById('k-kmc-profile-block');
+  const secBlock     = document.getElementById('k-kmc-security-block');
+  const blocks = [documentsBlock, walletBlock, profileBlock, secBlock];
+
+  blocks.forEach((block) => {
+    if (!block) return;
+    block.replaceChildren();
+    block.hidden = block !== documentsBlock;
+  });
+
+  if (!documentsBlock) return;
+  documentsBlock.innerHTML = /* LOT4B_STATIC_IDENTITY_REQUIRED */
+    '<div class="k-kmc-empty">' +
+      '<div class="k-kmc-empty-icon">\ud83d\udd10</div>' +
+      '<div class="k-kmc-empty-title">Identifiez-vous pour acc\u00e9der \u00e0 Mon Komerce</div>' +
+      '<div class="k-kmc-empty-sub">Retrouvez vos documents, votre wallet et vos informations personnelles.</div>' +
+      '<button class="k-kmc-action-btn" id="k-kmc-identify">M\u2019identifier</button>' +
+    '</div>';
+
+  documentsBlock.querySelector('#k-kmc-identify')?.addEventListener('click', async () => {
+    const btn = documentsBlock.querySelector('#k-kmc-identify');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = '\u23f3 Identification\u2026';
+
+    const user = await requireIdentity({ reason: 'mon-komerce', title: 'Acc\u00e9der \u00e0 Mon Komerce' });
+    if (user) {
+      _loadAndRender(++_renderSeq);
+      focusRequestedBlock(focus);
+      return;
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'M\u2019identifier';
+  });
 }
 
 // ── Bloc wallet compact ───────────────────────────────────────────────────────
@@ -549,6 +597,8 @@ async function _loadAndRender(seq) {
   const secBlock     = document.getElementById('k-kmc-security-block');
   if (!walletBlock || !documentsBlock || !profileBlock || !secBlock) return;
 
+  [walletBlock, documentsBlock, profileBlock, secBlock].forEach((block) => { block.hidden = false; });
+
   renderBlockLoading(documentsBlock);
   renderBlockLoading(walletBlock);
   renderBlockLoading(profileBlock);
@@ -579,8 +629,8 @@ async function _loadAndRender(seq) {
 
 /**
  * Ouvre Mon Komerce.
- * - Authentifie l'utilisateur à l'entrée (OTP si nécessaire).
- * - Si l'OTP est annulé, n'affiche rien et conserve la vue précédente.
+ * - Ouvre toujours le shell avant de vérifier l'identité.
+ * - Sans session, affiche une explication et attend un clic explicite avant OTP.
  * - Émet 'komerce:show' pour que b-nav.js synchronise la navigation.
  * - Si focus='wallet', positionne le viewport sur le bloc wallet.
  *
@@ -588,27 +638,24 @@ async function _loadAndRender(seq) {
  * @param {string|null} [opts.focus] 'wallet' pour scroller sur le wallet
  */
 export async function openMonKomerce({ focus = null } = {}) {
-  // 1. Vérifier ou obtenir l'identité
-  let identity = getCurrentIdentity();
-  if (!identity) {
-    identity = await requireIdentity({ reason: 'mon-komerce', title: 'Acc\u00e9der \u00e0 Mon Komerce' });
-    if (!identity) return; // OTP annulé → conserver la vue précédente
-  }
-
-  // 2. Synchroniser la navigation (b-nav.js écoute 'komerce:show')
-  bus.emit('komerce:show');
-
-  // 3. Monter le shell
+  // 1. Monter et afficher le shell sans provoquer d'effet de bord d'authentification.
   const el = ensureShell();
   el.classList.add('show');
 
-  // 4. Charger et afficher le contenu
+  // 2. Synchroniser la navigation (b-nav.js écoute 'komerce:show').
+  bus.emit('komerce:show');
+
+  // 3. Une première visite reste informative jusqu'au clic « M'identifier ».
+  const identity = getCurrentIdentity();
+  if (!identity) {
+    ++_renderSeq; // invalide un éventuel rendu authentifié encore en vol
+    renderIdentityRequired({ focus });
+    return;
+  }
+
+  // 4. Une session locale présente autorise la vérification serveur et le rendu.
   _loadAndRender(++_renderSeq);
 
   // 5. Positionner sur le bloc demandé si nécessaire
-  if (focus === 'wallet') {
-    requestAnimationFrame(() => {
-      document.getElementById('k-kmc-wallet-block')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  }
+  focusRequestedBlock(focus);
 }
