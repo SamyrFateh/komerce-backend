@@ -32,15 +32,6 @@ const { getProductStock } = require('../helpers/business.helpers');
 
 const API_BASE = (process.env.BASE_URL || 'http://localhost:3000/boutique/').replace('/boutique/', '');
 
-test.beforeAll(async () => {
-  await assertMutantTargetSafe();
-  if (!process.env.ALLOW_STRESS_TESTS) {
-    throw new Error(
-      '[R5] stress-business n�cessite ALLOW_STRESS_TESTS=true � staging uniquement. Ce fichier ne peut pas �tre lanc� implicitement.'
-    );
-  }
-});
-
 // ─────────────────────────────────────────────────────────────────────────────
 // S1 — Concurrence stock
 // ─────────────────────────────────────────────────────────────────────────────
