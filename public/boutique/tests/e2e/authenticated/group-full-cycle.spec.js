@@ -25,7 +25,7 @@ const {
   openFirstCard,
   addToCartFromModal,
   openCartDrawer,
-  acceptConfirms,
+  clickKomerceConfirm,
 } = require('../helpers/boutique.helpers');
 const {
   verifySharedCart,
@@ -35,12 +35,17 @@ const {
   spyOnApi,
 } = require('../helpers/api.helpers');
 const { getSharePageUrl } = require('../helpers/business.helpers');
+const { assertRemoteMutantTargetSafe } = require('../helpers/environment.helpers');
 
 test.describe('FLOW — Liste partageable, découverte publique (F21)', () => {
   test.skip(
     !process.env.ALLOW_GROUP_FLOW,
     'F21 nécessite ALLOW_GROUP_FLOW=true — staging uniquement',
   );
+
+  test.beforeAll(async () => {
+    await assertRemoteMutantTargetSafe();
+  });
 
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL);
@@ -78,8 +83,8 @@ test.describe('FLOW — Liste partageable, découverte publique (F21)', () => {
       'POST',
     );
 
-    acceptConfirms(page); // É5 — window.confirm avant création
     await shareBtn.click();
+    await clickKomerceConfirm(page); // É5/L7 — modale Komerce « Créer la liste »
 
     await expect(page.locator('#k-sm-submit')).toHaveCount(0);
     await expect(page.locator('#k-sm-title-f')).toHaveCount(0);

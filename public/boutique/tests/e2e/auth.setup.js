@@ -30,18 +30,21 @@
  * Sélecteurs basés sur js/b-identity.js (gate OTP) — à ajuster si l'UI change :
  *   step "phone" → input téléphone + CTA envoi
  *   step "otp"   → 6 cases .k-id-otp-box + #k-id-otp-cta
- * Le succès se matérialise par la pose du cookie httpOnly `kmrc_jwt` par le
- * backend (voir js/b-identity.js), qu'on ne peut pas lire depuis le JS client
- * mais dont la présence peut être vérifiée via `context.cookies()`.
+ * Le succès se matérialise par la pose du cookie httpOnly d'auth actif par le
+ * backend : `kmrc_jwt` en development/test, `__Host-kmrc_jwt` en
+ * staging/production (source canonique : utils/auth-cookie.js). Sa présence
+ * peut être vérifiée via `context.cookies()` sans exposer sa valeur au JS client.
  */
 'use strict';
 const { test: setup, expect } = require('@playwright/test');
 const path = require('path');
+const { getAuthCookieName } = require('../../../../utils/auth-cookie');
 
 const authFile = path.join(__dirname, '..', '..', 'playwright', '.auth', 'user.json');
 
 const TEST_ACCOUNT_PHONE = process.env.TEST_ACCOUNT_PHONE;
 const TEST_ACCOUNT_OTP = process.env.TEST_ACCOUNT_OTP;
+const AUTH_COOKIE_NAME = getAuthCookieName();
 
 setup('authentifie le compte de test et sauvegarde la session', async ({ page, baseURL }) => {
   setup.skip(
@@ -150,9 +153,9 @@ setup('authentifie le compte de test et sauvegarde la session', async ({ page, b
       .poll(
         async () => {
           const cookies = await page.context().cookies();
-          return cookies.some((c) => c.name === 'kmrc_jwt');
+          return cookies.some((c) => c.name === AUTH_COOKIE_NAME);
         },
-        { message: 'le cookie de session kmrc_jwt doit être posé après OTP', timeout: 10_000 }
+        { message: `le cookie de session ${AUTH_COOKIE_NAME} doit être posé après OTP`, timeout: 10_000 }
       )
       .toBe(true),
     otpErrWatch,
