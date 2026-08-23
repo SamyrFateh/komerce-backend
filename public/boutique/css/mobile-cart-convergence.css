@@ -1,0 +1,108 @@
+/**
+ * @komerce-arch-lite
+ * @role          mobile-cart-visual-convergence
+ * @domain        boutique
+ * @layer         css
+ * @owner         public/boutique/css/cart.css
+ * @purpose       Donne au drawer panier mobile la même hiérarchie ouverte que le desktop récent, sans modifier le checkout ni la surface liste partagée.
+ * @impact-areas  mobile, cart-drawer, cart-items, cart-footer
+ * @version       2026-08
+ */
+
+@media (max-width: 899px) {
+  .k-cart-drawer {
+    background: var(--white);
+    border: 0;
+    box-shadow: none;
+  }
+
+  .k-cart-header {
+    min-height: 56px;
+    padding: 10px 14px;
+    border-bottom: 0;
+    background: var(--white);
+  }
+
+  #k-cart-header-title {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -.01em;
+  }
+
+  #k-cart-close {
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 18px;
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-body {
+    padding: 10px 10px 16px;
+    background: var(--white);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item {
+    padding: 9px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--sand);
+    box-shadow: none;
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item:hover {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item-name {
+    font-weight: 600;
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item-price {
+    color: var(--coral);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item-qty {
+    border-color: var(--border-text-15);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item-qty .k-qty-ctrl:last-child {
+    color: var(--cta-green-dark, var(--cta-green));
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-footer {
+    border-top: 0;
+    background: rgba(255,255,255,.98);
+    box-shadow: 0 -8px 24px var(--border-text-06);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-recap-val {
+    font-size: 24px;
+    font-weight: 500;
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-share {
+    border-color: var(--cta-green);
+    background: transparent;
+    color: var(--cta-green-dark, var(--cta-green));
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-share:hover,
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-share:active {
+    background: var(--cta-green);
+    color: var(--white);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-clear {
+    border-color: transparent;
+    background: transparent;
+    color: var(--text-muted);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-clear:hover,
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-clear:active {
+    background: transparent;
+    color: var(--coral);
+  }
+}

@@ -1,0 +1,49 @@
+/**
+ * @komerce-arch-lite
+ * @role          mobile-shell-visual-convergence
+ * @domain        boutique
+ * @layer         css
+ * @owner         public/boutique/css/layout.css
+ * @purpose       Aligne le shell mobile sur la toile blanche fluide desktop : header et bottom-nav ouverts, recherche matérialisée sans filet permanent.
+ * @impact-areas  mobile, header, search, bottom-nav
+ * @version       2026-08
+ */
+
+@media (max-width: 899px) {
+  .k-header {
+    background: rgba(255,255,255,.96);
+    border-bottom: 0;
+    box-shadow: none;
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+
+  .k-search {
+    background: var(--surface-sand-97);
+    border: 1px solid var(--border-text-08);
+    box-shadow: none;
+  }
+
+  .k-search:focus-within {
+    background: var(--white);
+    border-color: rgba(42,122,62,.30);
+    box-shadow: 0 0 0 3px rgba(100,175,90,.08);
+  }
+
+  .k-bnav {
+    background: rgba(255,255,255,.96);
+    border-top: 0;
+    box-shadow: 0 -8px 24px var(--border-text-06);
+  }
+
+  .k-bnav-btn.active,
+  .k-bnav-item.active {
+    color: var(--ocean-dark-deep);
+    font-weight: 800;
+  }
+
+  .k-bnav-btn.active svg,
+  .k-bnav-item.active svg {
+    stroke-width: 2.4;
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "paths": [
+    "core/",
+    "bootstrap/",
+    "middleware/",
+    "db/",
+    "db.js",
+    "public/boutique/css/mobile-shell-convergence.css",
+    "public/boutique/css/mobile-catalog-convergence.css",
+    "public/boutique/css/mobile-cart-convergence.css"
+  ]
+}
