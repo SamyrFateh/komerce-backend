@@ -789,11 +789,10 @@
     width: 296px; /* libellés et contrôles restent lisibles sans retour artificiel */
     height: 100dvh;
     border-radius: 0;
-    background: var(--white);
-    /* Coque unique et neutre : aucun code couleur panier/liste.
-       La séparation avec la boutique vient d'un cadre continu, sans halo. */
+    background: var(--sand-warm);
+    /* Surface ouverte : le sable chaud différencie le panneau du catalogue
+       blanc ; aucun cadre ni halo ne redessine une boîte autour. */
     border: none;
-    border-left: 1px solid var(--border);
     box-shadow: none;
     overflow: hidden;
     z-index: 200;
