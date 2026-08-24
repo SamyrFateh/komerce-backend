@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, demo-order-flow
- * @used-by       /admin-next, /admin/pilotage-v2
+ * @depends       canonical admin-context, pilotage, commerce, demo-order-flow
+ * @used-by       /admin-next, /admin-next/commerce, /admin/pilotage-v2
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -24,6 +24,7 @@
   const ALLOWED_ROLES = new Set(['admin', 'finance', 'sourcing', 'hub', 'relais', 'support']);
   const SURFACES = Object.freeze({
     PILOTAGE: 'pilotage',
+    COMMERCE: 'commerce',
     DEMO: 'demo',
   });
 
@@ -79,6 +80,7 @@
 
   function surfaceForPath(pathname) {
     if (pathname === '/admin-next/demo') return SURFACES.DEMO;
+    if (pathname === '/admin-next/commerce') return SURFACES.COMMERCE;
     return SURFACES.PILOTAGE;
   }
 
@@ -153,7 +155,7 @@
     const copy = doc.createElement('div');
     copy.className = 'kmc-market-context-copy';
     copy.appendChild(textNode(doc, 'span', 'kmc-market-context-kicker', 'PÉRIMÈTRE'));
-    copy.appendChild(textNode(doc, 'strong', 'kmc-market-context-title', 'Vue de pilotage'));
+    copy.appendChild(textNode(doc, 'strong', 'kmc-market-context-title', options.title || 'Vue de pilotage'));
     const description = textNode(doc, 'span', 'kmc-market-context-description', scopeDescription(initialMarket));
     copy.appendChild(description);
 
@@ -226,27 +228,62 @@
     });
   }
 
-  function renderPilotageShell(root, user, adminContext) {
+  function renderCommerce(root, user, adminContext, requestedMarket) {
+    if (!global.KomerceCanonicalCommerce) throw new Error('canonical_commerce_module_missing');
+    return global.KomerceCanonicalCommerce.mount({
+      root,
+      user,
+      adminContext,
+      requestedMarket,
+      contextContract: global.KomerceAdminContext,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      renderer: global.KomerceDashboardRenderer,
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
+  function renderMarketSurfaceShell(root, user, adminContext, options) {
     if (!root || typeof root.replaceChildren !== 'function' || typeof root.appendChild !== 'function') {
       throw new Error('canonical_admin_shell_root_missing');
+    }
+    if (!options || typeof options.render !== 'function' || !options.surface) {
+      throw new Error('canonical_admin_shell_surface_missing');
     }
 
     root.className = 'kmc-admin-shell';
     root.replaceChildren();
 
     const surface = global.document.createElement('div');
-    surface.setAttribute('data-canonical-surface', 'pilotage');
+    surface.setAttribute('data-canonical-surface', options.surface);
 
     const selector = mountMarketSelector({
       document: global.document,
       container: root,
       adminContext,
       contextContract: global.KomerceAdminContext,
-      onChange: requestedMarket => renderPilotage(surface, user, adminContext, requestedMarket),
+      title: options.title,
+      onChange: requestedMarket => options.render(surface, user, adminContext, requestedMarket),
     });
 
     root.appendChild(surface);
-    return renderPilotage(surface, user, adminContext, selector.initialMarket);
+    return options.render(surface, user, adminContext, selector.initialMarket);
+  }
+
+  function renderPilotageShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'pilotage',
+      title: 'Vue de pilotage',
+      render: renderPilotage,
+    });
+  }
+
+  function renderCommerceShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'commerce',
+      title: 'Vue Commerce',
+      render: renderCommerce,
+    });
   }
 
   function renderDemo(root, user) {
@@ -262,6 +299,7 @@
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
+    if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
     return renderPilotageShell(root, user, adminContext);
   }
 
@@ -288,7 +326,10 @@
     initialRequestedMarket,
     mountMarketSelector,
     renderPilotage,
+    renderCommerce,
+    renderMarketSurfaceShell,
     renderPilotageShell,
+    renderCommerceShell,
     renderDemo,
     renderReady,
   };
