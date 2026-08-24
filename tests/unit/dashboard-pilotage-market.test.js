@@ -9,19 +9,19 @@
 const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
-const metricNames = [
+const mockMetricNames = [
   'getCAEncaisse', 'getCmdsActives', 'getMargeConsolidee', 'getAlertesCritiques',
   'getTauxCompletudeCouts', 'getCoutReel', 'getCmdsCoutIncompletCount',
   'getCoutMoyParCmd', 'getCmdsAujourdhui', 'getColisEnTransit',
   'getDisponiblesRelais', 'getRetardsCritiques', 'getTauxCompletudeScans',
 ];
 
-const metricMocks = Object.fromEntries(metricNames.map(name => [
+const mockMetricFunctions = Object.fromEntries(mockMetricNames.map(name => [
   name,
   jest.fn(async filters => ({ key: name, label: name, value: 1, unit: 'count', filters })),
 ]));
 
-jest.mock('../../services/dashboard-metrics', () => metricMocks);
+jest.mock('../../services/dashboard-metrics', () => mockMetricFunctions);
 
 jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn() })),
@@ -50,9 +50,9 @@ describe('dashboard-pilotage-market', () => {
   test('injecte le même scope marché dans toutes les métriques', async () => {
     const result = await pilotage.buildMarketPilotage(filters, market);
 
-    for (const name of metricNames) {
-      expect(metricMocks[name]).toHaveBeenCalledTimes(1);
-      expect(metricMocks[name]).toHaveBeenCalledWith(filters);
+    for (const name of mockMetricNames) {
+      expect(mockMetricFunctions[name]).toHaveBeenCalledTimes(1);
+      expect(mockMetricFunctions[name]).toHaveBeenCalledWith(filters);
     }
 
     expect(result.scope).toEqual({
