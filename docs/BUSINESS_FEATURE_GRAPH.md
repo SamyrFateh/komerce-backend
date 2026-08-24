@@ -385,15 +385,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Projeter une information essentielle dans l application avec acquittement propriétaire ; conserver les canaux sortants historiques séparés et best-effort.
 
-- tests: 18
+- tests: 19
 - migrations: 6
 - utils: 2
-- services: 12
+- services: 13
 - routes: 4
 - tables owned (lifecycle): 3 — `client_notifications`, `alerts`, `notification_log`
 - tables written: 3
 - interfaces exposed: 6
-- internal APIs: 8
+- internal APIs: 9
 - dependencies (consumes): 5 — incident-management, platform-ops, infrastructure, auth, toutes les features emettrices
 - consumers: 12 — auth, auth-identity, catalog, dashboard, incident-management, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart
 
@@ -1231,6 +1231,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `sendOtpMessage / sendMagicLink` | `services/notifications/otp-auth.js` | notifications | resolved |
 | `notifyLoyaltyEarned` | `services/notifications/loyalty.js` | notifications | resolved |
 | `notifyText` | `services/notifications/misc.js` | notifications | resolved |
+| `buildRelayMapUrl / formatRelayPoint / appendRelayLocation` | `services/notifications/relay-location.js` | notifications | resolved |
 | `emitOrderMilestone / emitExceptional / resolveOrderMilestones` | `services/client-notification-service.js` | notifications | resolved |
 | `transitionOrderStatus` | `services/order-status-machine.js` | orders | resolved |
 | `markPaid` | `services/payment-service.js` | orders | resolved |
@@ -1556,7 +1557,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 864 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 866 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 169 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1674,7 +1675,7 @@ Meta Graph monté : oui.
 | logistics | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | infrastructure | static-code | 72 | **DECLARED_AND_OBSERVED** |
 | logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| logistics | notifications | static-code | 11 | **DECLARED_AND_OBSERVED** |
+| logistics | notifications | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | logistics | orders | static-code | 21 | **DECLARED_AND_OBSERVED** |
 | logistics | payments | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | logistics | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
