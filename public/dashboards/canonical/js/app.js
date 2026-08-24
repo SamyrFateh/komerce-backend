@@ -4,8 +4,8 @@
  * @domain        admin-dashboard
  * @layer         ui-entrypoint
  * @criticality   medium
- * @inputs        user_session, server_resolved_admin_context, url_path
- * @outputs       canonical_admin_boot_state
+ * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
+ * @outputs       canonical_admin_boot_state, canonical_market_selection
  * @depends       canonical admin-context, pilotage, demo-order-flow
  * @used-by       /admin-next, /admin/pilotage-v2
  * @db-read       none
@@ -82,18 +82,171 @@
     return SURFACES.PILOTAGE;
   }
 
-  function renderPilotage(root, user, adminContext) {
+  function marketDisplayName(code) {
+    try {
+      if (global.Intl && typeof global.Intl.DisplayNames === 'function') {
+        const displayNames = new global.Intl.DisplayNames(['fr'], { type: 'region' });
+        const name = displayNames.of(code);
+        if (name && name !== code) return `${code} · ${name}`;
+      }
+    } catch (_) {
+      // Le code ISO reste une représentation stable si Intl.DisplayNames est indisponible.
+    }
+    return code;
+  }
+
+  function marketChoices(adminContext) {
+    const access = adminContext && adminContext.access;
+    if (!access || !Array.isArray(access.allowedMarkets)) {
+      throw new Error('canonical_market_selector_context_missing');
+    }
+
+    const choices = [];
+    if (access.mode === 'global') {
+      choices.push(Object.freeze({ value: '', marketCode: null, label: 'Global · Tous les marchés' }));
+    }
+    access.allowedMarkets.forEach(code => {
+      choices.push(Object.freeze({ value: code, marketCode: code, label: marketDisplayName(code) }));
+    });
+    return Object.freeze(choices);
+  }
+
+  function initialRequestedMarket(adminContext, contextContract) {
+    if (!contextContract || typeof contextContract.resolveMarketView !== 'function') {
+      throw new Error('canonical_market_selector_contract_missing');
+    }
+    return contextContract.resolveMarketView(adminContext).marketCode;
+  }
+
+  function textNode(doc, tagName, className, value) {
+    const node = doc.createElement(tagName);
+    if (className) node.className = className;
+    node.textContent = value;
+    return node;
+  }
+
+  function scopeDescription(marketCode) {
+    return marketCode === null
+      ? 'Consolidé Komerce · tous les marchés actifs autorisés'
+      : `Données chargées côté serveur pour ${marketDisplayName(marketCode)}`;
+  }
+
+  function mountMarketSelector(options) {
+    const doc = options.document;
+    const container = options.container;
+    const adminContext = options.adminContext;
+    const contextContract = options.contextContract;
+    const onChange = options.onChange;
+
+    if (!doc || typeof doc.createElement !== 'function') throw new Error('canonical_market_selector_document_missing');
+    if (!container || typeof container.appendChild !== 'function') throw new Error('canonical_market_selector_container_missing');
+    if (typeof onChange !== 'function') throw new Error('canonical_market_selector_onchange_missing');
+
+    const initialMarket = initialRequestedMarket(adminContext, contextContract);
+    const choices = marketChoices(adminContext);
+    let selectedMarket = initialMarket;
+
+    const bar = doc.createElement('section');
+    bar.className = 'kmc-market-context';
+    bar.setAttribute('aria-label', 'Périmètre de données');
+
+    const copy = doc.createElement('div');
+    copy.className = 'kmc-market-context-copy';
+    copy.appendChild(textNode(doc, 'span', 'kmc-market-context-kicker', 'PÉRIMÈTRE'));
+    copy.appendChild(textNode(doc, 'strong', 'kmc-market-context-title', 'Vue de pilotage'));
+    const description = textNode(doc, 'span', 'kmc-market-context-description', scopeDescription(initialMarket));
+    copy.appendChild(description);
+
+    const field = doc.createElement('label');
+    field.className = 'kmc-market-context-field';
+    field.appendChild(textNode(doc, 'span', 'kmc-market-context-label', 'Marché'));
+
+    const select = doc.createElement('select');
+    select.className = 'kmc-market-context-select';
+    select.setAttribute('aria-label', 'Sélectionner le périmètre marché');
+
+    choices.forEach(choice => {
+      const option = doc.createElement('option');
+      option.value = choice.value;
+      option.textContent = choice.label;
+      select.appendChild(option);
+    });
+    select.value = initialMarket || '';
+
+    select.addEventListener('change', async () => {
+      const previousMarket = selectedMarket;
+      let resolved;
+      try {
+        const requestedMarket = select.value || null;
+        resolved = contextContract.resolveMarketView(adminContext, requestedMarket);
+      } catch (error) {
+        select.value = previousMarket || '';
+        console.error('[canonical-admin] market selection rejected', error);
+        return;
+      }
+
+      select.disabled = true;
+      try {
+        await onChange(resolved.marketCode);
+        selectedMarket = resolved.marketCode;
+        description.textContent = scopeDescription(selectedMarket);
+      } catch (error) {
+        select.value = previousMarket || '';
+        console.error('[canonical-admin] market reload failed', error);
+      } finally {
+        select.disabled = false;
+      }
+    });
+
+    field.appendChild(select);
+    bar.appendChild(copy);
+    bar.appendChild(field);
+    container.appendChild(bar);
+
+    return Object.freeze({
+      element: bar,
+      select,
+      initialMarket,
+      choices,
+    });
+  }
+
+  function renderPilotage(root, user, adminContext, requestedMarket) {
     if (!global.KomerceCanonicalPilotage) throw new Error('canonical_pilotage_module_missing');
     return global.KomerceCanonicalPilotage.mount({
       root,
       user,
       adminContext,
+      requestedMarket,
       contextContract: global.KomerceAdminContext,
       document: global.document,
       fetch: global.fetch.bind(global),
       renderer: global.KomerceDashboardRenderer,
       ui: global.KomerceCanonicalUI,
     });
+  }
+
+  function renderPilotageShell(root, user, adminContext) {
+    if (!root || typeof root.replaceChildren !== 'function' || typeof root.appendChild !== 'function') {
+      throw new Error('canonical_admin_shell_root_missing');
+    }
+
+    root.className = 'kmc-admin-shell';
+    root.replaceChildren();
+
+    const surface = global.document.createElement('div');
+    surface.setAttribute('data-canonical-surface', 'pilotage');
+
+    const selector = mountMarketSelector({
+      document: global.document,
+      container: root,
+      adminContext,
+      contextContract: global.KomerceAdminContext,
+      onChange: requestedMarket => renderPilotage(surface, user, adminContext, requestedMarket),
+    });
+
+    root.appendChild(surface);
+    return renderPilotage(surface, user, adminContext, selector.initialMarket);
   }
 
   function renderDemo(root, user) {
@@ -109,7 +262,7 @@
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
-    return renderPilotage(root, user, adminContext);
+    return renderPilotageShell(root, user, adminContext);
   }
 
   async function boot() {
@@ -130,7 +283,12 @@
     requireSession,
     requireAdminContext,
     surfaceForPath,
+    marketDisplayName,
+    marketChoices,
+    initialRequestedMarket,
+    mountMarketSelector,
     renderPilotage,
+    renderPilotageShell,
     renderDemo,
     renderReady,
   };

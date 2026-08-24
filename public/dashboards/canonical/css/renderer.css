@@ -1,7 +1,91 @@
 /* LOT 2B-CANON — layout du renderer DashboardSchema. Aucun sélecteur legacy. */
+.kmc-admin-shell {
+  min-height: 100vh;
+}
+
+.kmc-market-context {
+  width: min(1440px, calc(100% - 32px));
+  margin: 20px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 14px 12px 16px;
+  background: var(--kmc-card);
+  border: 1px solid var(--kmc-line);
+  border-radius: var(--kmc-radius-md);
+  box-shadow: var(--kmc-shadow-card);
+}
+
+.kmc-market-context-copy {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  column-gap: 10px;
+  row-gap: 2px;
+}
+
+.kmc-market-context-kicker,
+.kmc-market-context-label {
+  color: var(--kmc-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kmc-market-context-kicker {
+  color: var(--kmc-warning);
+}
+
+.kmc-market-context-title {
+  color: var(--kmc-navy);
+  font-size: 13px;
+}
+
+.kmc-market-context-description {
+  grid-column: 1 / -1;
+  color: var(--kmc-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.kmc-market-context-field {
+  flex: 0 0 min(310px, 42vw);
+  display: grid;
+  gap: 5px;
+}
+
+.kmc-market-context-select {
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 34px 7px 10px;
+  color: var(--kmc-navy);
+  background: var(--kmc-card);
+  border: 1px solid var(--kmc-line-strong);
+  border-radius: var(--kmc-radius-sm);
+  font-weight: 700;
+  outline: none;
+}
+
+.kmc-market-context-select:hover {
+  border-color: var(--kmc-navy);
+}
+
+.kmc-market-context-select:focus-visible {
+  border-color: var(--kmc-navy);
+  box-shadow: 0 0 0 3px rgb(15 26 46 / 0.1);
+}
+
+.kmc-market-context-select:disabled {
+  cursor: progress;
+  opacity: 0.62;
+}
+
 .kmc-dashboard {
   width: min(1440px, calc(100% - 32px));
-  margin: 28px auto 64px;
+  margin: 20px auto 64px;
   display: grid;
   gap: 18px;
 }
@@ -68,9 +152,21 @@
 }
 
 @media (max-width: 720px) {
+  .kmc-market-context {
+    width: min(100% - 24px, 1440px);
+    margin-top: 12px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .kmc-market-context-field {
+    flex-basis: auto;
+  }
+
   .kmc-dashboard {
     width: min(100% - 24px, 1440px);
-    margin-top: 18px;
+    margin-top: 14px;
     gap: 14px;
   }
 
