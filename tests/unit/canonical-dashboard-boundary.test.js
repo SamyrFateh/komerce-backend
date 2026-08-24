@@ -46,11 +46,12 @@ function fakeRes() {
 }
 
 describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
-  test('le runtime canonical physique contient désormais le premier Pilotage', () => {
+  test('le runtime canonical physique contient Pilotage et Commerce', () => {
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'index.html'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'css', 'base.css'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'app.js'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'pilotage.js'))).toBe(true);
+    expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'commerce.js'))).toBe(true);
   });
 
   test('canonical ne référence jamais admin/** ni admin-legacy/**', () => {
@@ -59,7 +60,7 @@ describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
       /\/dashboards\/admin(?:-legacy)?\//,
       /\.\.\/admin(?:-legacy)?\//,
       /\.\.\/\.\.\/admin(?:-legacy)?\//,
-      /\b(?:PilotageView|SanteView|ControlTowerView|ProblemsView)\b/,
+      /\b(?:PilotageView|SalesView|SanteView|ControlTowerView|ProblemsView)\b/,
     ];
 
     const violations = [];
@@ -75,12 +76,12 @@ describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
     expect(violations).toEqual([]);
   });
 
-  test('les surfaces LOT 2C servent canonical sans détourner /admin/pilotage', () => {
+  test('les surfaces Canonical servent le runtime neuf sans détourner /admin/pilotage', () => {
     const app = fakeApp();
     mountHtmlRoutes(app, ROOT);
     const canonicalPath = path.join(ROOT, 'public', 'dashboards', 'canonical', 'index.html');
 
-    for (const routePath of ['/admin-next', '/admin-next/demo', '/admin/pilotage-v2']) {
+    for (const routePath of ['/admin-next', '/admin-next/commerce', '/admin-next/demo', '/admin/pilotage-v2']) {
       const canonicalRes = fakeRes();
       app._routes[routePath]({}, canonicalRes);
       expect(canonicalRes.sendFile).toHaveBeenCalledWith(canonicalPath, expect.any(Function));
