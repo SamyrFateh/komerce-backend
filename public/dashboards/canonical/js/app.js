@@ -7,7 +7,7 @@
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
  * @depends       canonical admin-context, pilotage, commerce, operations, finance, demo-order-flow
- * @used-by       /admin-next, /admin-next/commerce, /admin-next/operations, /admin-next/finance, /admin/pilotage-v2
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -81,10 +81,11 @@
   }
 
   function surfaceForPath(pathname) {
-    if (pathname === '/admin-next/demo') return SURFACES.DEMO;
-    if (pathname === '/admin-next/commerce') return SURFACES.COMMERCE;
-    if (pathname === '/admin-next/operations') return SURFACES.OPERATIONS;
-    if (pathname === '/admin-next/finance') return SURFACES.FINANCE;
+    const path = String(pathname || '');
+    if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
+    if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
+    if (path === '/admin/operations' || path === '/admin-next/operations') return SURFACES.OPERATIONS;
+    if (path === '/admin/finance' || path === '/admin-next/finance') return SURFACES.FINANCE;
     return SURFACES.PILOTAGE;
   }
 
