@@ -1,0 +1,100 @@
+name: Finance contract refresh one-shot
+
+on:
+  push:
+    branches:
+      - ci/canonical-finance-2f-artifact
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-finance-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-finance-2f
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Add Finance routes to contract generator
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/contract-generate.js')
+          s = p.read_text()
+
+          route_anchor = "  // LOT 2E — Canonical Operations global + market-scoped\n  { prefix: '/api/admin/dashboard/operations', method: 'get', schema: null },\n  { prefix: '/api/admin/dashboard/operations/market/{marketCode}', method: 'get', schema: null },\n"
+          route_insert = route_anchor + "  // LOT 2F — Canonical Finance global + market-scoped\n  { prefix: '/api/admin/dashboard/finance', method: 'get', schema: null },\n  { prefix: '/api/admin/dashboard/finance/market/{marketCode}', method: 'get', schema: null },\n"
+          if "'/api/admin/dashboard/finance'" not in s:
+              if route_anchor not in s:
+                  raise SystemExit('Finance route anchor not found')
+              s = s.replace(route_anchor, route_insert, 1)
+
+          response_anchor = "const KNOWN_RESPONSES = {\n  // LOT 2E — réponses Operations consommées par Canonical.\n"
+          finance_response = "const KNOWN_RESPONSES = {\n  // LOT 2F — réponses Finance consommées par Canonical.\n  '/api/admin/dashboard/finance': {\n    get: { fields: ['scope','period','kpis','payment_mix','refunds','incomplete_cost_orders','data_quality'], source: 'test' }\n  },\n  '/api/admin/dashboard/finance/market/{marketCode}': {\n    get: { fields: ['scope','period','kpis','payment_mix','refunds','incomplete_cost_orders','data_quality'], source: 'test' }\n  },\n  // LOT 2E — réponses Operations consommées par Canonical.\n"
+          if "// LOT 2F — réponses Finance consommées par Canonical." not in s:
+              if response_anchor not in s:
+                  raise SystemExit('Finance response anchor not found')
+              s = s.replace(response_anchor, finance_response, 1)
+
+          p.write_text(s)
+          PY
+
+      - name: Generate and verify canonical contract
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          node scripts/contract-check.js
+          npx jest --config jest.unit.config.js --runInBand --forceExit --detectOpenHandles \
+            tests/unit/admin-dashboard-finance-route.test.js \
+            tests/unit/canonical-finance.test.js \
+            tests/unit/dashboard-finance-canonical.test.js \
+            tests/unit/canonical-dashboard-boundary.test.js
+
+      - name: Commit generated Finance contract to PR 930 branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/contract-generate.js docs/_generated/route-registry.json docs/contract/openapi.json docs/contract/DEBT.md
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No contract changes to commit"
+            exit 1
+          fi
+          git commit -m "chore(contract): refresh Finance dashboard routes"
+          git push origin HEAD:feat/canonical-finance-2f
