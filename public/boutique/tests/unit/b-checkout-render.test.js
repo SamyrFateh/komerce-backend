@@ -29,6 +29,7 @@ const {
   buildIdentityRecapDOM,
   applyIdentityToCard,
   renderCheckoutRecentProducts,
+  buildRelayMapUrl,
 } = require('../../js/b-checkout-render.js');
 const { fmt } = require('../../js/b-utils.js');
 
@@ -228,6 +229,22 @@ describe('renderRelaisForIle', () => {
     renderRelaisForIle(listEl, [{ id: '1', name: 'R1' }], {}, jest.fn(), jest.fn());
     renderRelaisForIle(listEl, [{ id: '2', name: 'R2' }], {}, jest.fn(), jest.fn());
     expect(listEl.querySelectorAll('.ck-relais-item').length).toBe(1);
+  });
+});
+
+describe('buildRelayMapUrl', () => {
+  it('encode le nom et l adresse publics du relais', () => {
+    expect(buildRelayMapUrl({ name: 'Relais Moroni', address: 'Volo-Volo' }))
+      .toBe('https://www.google.com/maps/search/?api=1&query=Relais%20Moroni%2C%20Volo-Volo');
+  });
+
+  it('accepte les alias API et nettoie les espaces', () => {
+    expect(buildRelayMapUrl({ nom: '  Relais   A ', adresse: ' Moroni ' }))
+      .toContain('query=Relais%20A%2C%20Moroni');
+  });
+
+  it('ne fabrique aucun lien sans localisation exploitable', () => {
+    expect(buildRelayMapUrl({})).toBeNull();
   });
 });
 
