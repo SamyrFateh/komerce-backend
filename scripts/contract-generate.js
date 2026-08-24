@@ -181,6 +181,9 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/pickup/collect',      method: 'post',   schema: null },
   // ADMIN — surfaces dashboards
   // LOT 2C — Canonical AdminContext + Pilotage market-scoped
+  // LOT 2D — Canonical Commerce global + market-scoped
+  { prefix: '/api/admin/dashboard/commerce', method: 'get', schema: null },
+  { prefix: '/api/admin/dashboard/commerce/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -200,6 +203,13 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 2D — réponses Commerce consommées par Canonical.
+  '/api/admin/dashboard/commerce': {
+    get: { fields: ['scope','period','kpis','top_products','categories','funnel','data_quality'], source: 'test' }
+  },
+  '/api/admin/dashboard/commerce/market/{marketCode}': {
+    get: { fields: ['scope','period','kpis','top_products','categories','funnel','data_quality'], source: 'test' }
+  },
   // LOT 2C — réponses consommées par Canonical et couvertes par tests.
   '/api/admin/dashboard/context': {
     get: { fields: ['actor','access'], source: 'test' }
