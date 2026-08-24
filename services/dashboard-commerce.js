@@ -188,7 +188,8 @@ async function buildCommerce(query = {}, options = {}) {
     funnel: Object.freeze(funnel),
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),
-      scope_enforced: Boolean(market),
+      scope_enforced: true,
+      scope_mode: market ? 'market' : 'global',
       source_tables: Object.freeze([
         'orders',
         'order_items',
