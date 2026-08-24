@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, url_path
  * @outputs       canonical_admin_boot_state
- * @depends       none
- * @used-by       /admin-next
+ * @depends       canonical pilotage, demo-order-flow
+ * @used-by       /admin-next, /admin/pilotage-v2
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -22,6 +22,10 @@
   'use strict';
 
   const ALLOWED_ROLES = new Set(['admin', 'finance', 'sourcing', 'hub', 'relais', 'support']);
+  const SURFACES = Object.freeze({
+    PILOTAGE: 'pilotage',
+    DEMO: 'demo',
+  });
 
   function loginUrl() {
     const next = global.location.pathname + global.location.search + global.location.hash;
@@ -29,7 +33,6 @@
   }
 
   async function requireSession() {
-    // Bootstrap session volontairement local : aucun import depuis les générations legacy.
     const response = await global.fetch('/api/auth/me', {
       method: 'GET',
       credentials: 'include',
@@ -50,7 +53,24 @@
     return user;
   }
 
-  function renderReady(root, user) {
+  function surfaceForPath(pathname) {
+    if (pathname === '/admin-next/demo') return SURFACES.DEMO;
+    return SURFACES.PILOTAGE;
+  }
+
+  function renderPilotage(root, user) {
+    if (!global.KomerceCanonicalPilotage) throw new Error('canonical_pilotage_module_missing');
+    return global.KomerceCanonicalPilotage.mount({
+      root,
+      user,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      renderer: global.KomerceDashboardRenderer,
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
+  function renderDemo(root, user) {
     if (!global.KomerceDemoOrderFlow) throw new Error('demo_order_flow_module_missing');
     return global.KomerceDemoOrderFlow.mount({
       root,
@@ -60,17 +80,31 @@
     });
   }
 
+  function renderReady(root, user) {
+    const surface = surfaceForPath(global.location.pathname);
+    if (surface === SURFACES.DEMO) return renderDemo(root, user);
+    return renderPilotage(root, user);
+  }
+
   async function boot() {
     const root = document.getElementById('canonical-admin-root');
     if (!root) throw new Error('canonical_admin_root_missing');
 
     const user = await requireSession();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
-    renderReady(root, user);
+    await renderReady(root, user);
     return user;
   }
 
-  global.KomerceCanonicalAdmin = { boot, requireSession, renderReady };
+  global.KomerceCanonicalAdmin = {
+    SURFACES,
+    boot,
+    requireSession,
+    surfaceForPath,
+    renderPilotage,
+    renderDemo,
+    renderReady,
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
