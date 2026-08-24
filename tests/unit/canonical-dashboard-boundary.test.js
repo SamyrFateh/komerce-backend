@@ -46,10 +46,11 @@ function fakeRes() {
 }
 
 describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
-  test('le socle canonical existe comme runtime physique autonome', () => {
+  test('le runtime canonical physique contient désormais le premier Pilotage', () => {
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'index.html'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'css', 'base.css'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'app.js'))).toBe(true);
+    expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'pilotage.js'))).toBe(true);
   });
 
   test('canonical ne référence jamais admin/** ni admin-legacy/**', () => {
@@ -74,16 +75,16 @@ describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
     expect(violations).toEqual([]);
   });
 
-  test('/admin-next sert canonical sans détourner les routes /admin/* historiques', () => {
+  test('les surfaces LOT 2C servent canonical sans détourner /admin/pilotage', () => {
     const app = fakeApp();
     mountHtmlRoutes(app, ROOT);
+    const canonicalPath = path.join(ROOT, 'public', 'dashboards', 'canonical', 'index.html');
 
-    const canonicalRes = fakeRes();
-    app._routes['/admin-next']({}, canonicalRes);
-    expect(canonicalRes.sendFile).toHaveBeenCalledWith(
-      path.join(ROOT, 'public', 'dashboards', 'canonical', 'index.html'),
-      expect.any(Function)
-    );
+    for (const routePath of ['/admin-next', '/admin-next/demo', '/admin/pilotage-v2']) {
+      const canonicalRes = fakeRes();
+      app._routes[routePath]({}, canonicalRes);
+      expect(canonicalRes.sendFile).toHaveBeenCalledWith(canonicalPath, expect.any(Function));
+    }
 
     const legacyCurrentRes = fakeRes();
     app._routes['/admin/pilotage']({}, legacyCurrentRes);
@@ -93,7 +94,7 @@ describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
     );
   });
 
-  test('l’entrypoint canonical n’embarque aucune API métier au reset', () => {
+  test('l’entrypoint canonical garde uniquement le bootstrap auth comme API littérale', () => {
     const appSource = fs.readFileSync(path.join(CANONICAL_ROOT, 'js', 'app.js'), 'utf8');
     const apiPaths = [...appSource.matchAll(/['"](\/api\/[^'"]+)['"]/g)].map(match => match[1]);
     expect(apiPaths).toEqual(['/api/auth/me']);
