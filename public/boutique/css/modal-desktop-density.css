@@ -1,0 +1,53 @@
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — modal-desktop-density.css
+   Desktop PDP density pass (2026-08).
+
+   Objectif : corriger la sensation de page vide sans réintroduire de cartes,
+   séparateurs ou cadres décoratifs. La densité vient de la géométrie :
+   buybox plus large, side-cart légèrement plus compact et média un peu plus
+   présent. Mobile reste strictement inchangé.
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1200px) {
+  /* Le side-cart reste lisible mais rend quelques pixels au produit. */
+  #k-modal .k-modal-body {
+    grid-template-columns: minmax(0, 1fr) 288px;
+  }
+
+  /* Desktop large : réduire le déséquilibre "grand vide média / buybox étroite".
+     La piste droite devient réellement confortable sans casser ProductMedia. */
+  #k-modal .k-modal-product-zone {
+    grid-template-columns: minmax(0, 1fr) minmax(440px, 500px);
+    gap: 18px;
+    padding: 16px 18px;
+  }
+
+  /* Une buybox plus large n'a pas besoin des gros paddings historiques. */
+  #k-modal .k-modal-product-zone .k-modal-details {
+    padding-inline: clamp(18px, 1.45vw, 26px);
+  }
+
+  #k-modal .k-modal-buybox > .k-modal-configurator {
+    padding-inline: clamp(18px, 1.45vw, 26px);
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-long-details {
+    padding-inline: clamp(18px, 1.45vw, 26px);
+  }
+
+  /* Les assets catalogue contiennent souvent une marge interne importante.
+     Un zoom optique léger rend le produit plus présent sans modifier le DOM
+     ni le comportement du carousel. Overflow reste borné par img-wrap. */
+  #k-modal .k-modal-product-zone .k-modal-slide {
+    transform: scale(1.08);
+    transform-origin: center center;
+  }
+}
+
+@media (min-width: 1600px) {
+  /* Sur très grands écrans, éviter que la nouvelle largeur soit absorbée
+     uniquement par ProductMedia : la buybox gagne encore un peu de présence. */
+  #k-modal .k-modal-product-zone {
+    grid-template-columns: minmax(0, 1fr) minmax(470px, 520px);
+  }
+}
