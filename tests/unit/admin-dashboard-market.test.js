@@ -33,6 +33,7 @@ jest.mock('../../middleware/require-market-scope', () => ({
 }));
 
 jest.mock('../../middleware/require-dashboard-global-authority', () => ({
+  hasDashboardGlobalAuthority: jest.fn(async () => mockGlobalAllowed),
   requireDashboardGlobalAuthority: (req, res, next) => {
     if (!mockGlobalAllowed) {
       return res.status(403).json({
@@ -43,6 +44,18 @@ jest.mock('../../middleware/require-dashboard-global-authority', () => ({
     req.dashboardGlobalAuthority = true;
     next();
   },
+}));
+
+const mockResolveAdminContext = jest.fn();
+class MockDashboardAccessDeniedError extends Error {
+  constructor() {
+    super('dashboard_access_denied');
+    this.code = 'dashboard_access_denied';
+  }
+}
+jest.mock('../../services/dashboard-admin-context', () => ({
+  DashboardAccessDeniedError: MockDashboardAccessDeniedError,
+  resolveDashboardAdminContext: (...args) => mockResolveAdminContext(...args),
 }));
 
 const mockQuery = jest.fn();
@@ -76,6 +89,15 @@ beforeEach(() => {
   mockCurrentUser = { id: 'admin-1', role: 'admin' };
   mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
+  mockResolveAdminContext.mockResolvedValue({
+    actor: { id: 'admin-1', role: 'admin' },
+    access: {
+      mode: 'market',
+      allowedMarkets: ['CM'],
+      defaultMarket: 'CM',
+      capabilities: ['pilotage.read', 'dashboard.market.read'],
+    },
+  });
   mockQuery.mockImplementation(async (sql, params) => {
     if (String(sql).includes('FROM markets') && params[0] === 'CM') {
       return { rows: [{ id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF' }] };
@@ -89,6 +111,31 @@ beforeEach(() => {
     scope: { mode: 'market', market: { code: market.code } },
     received_filters: filters,
   }));
+});
+
+describe('GET /api/admin/dashboard/context', () => {
+  test('retourne uniquement la projection d’autorité serveur et no-store', async () => {
+    const res = await request(makeApp()).get('/api/admin/dashboard/context');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('private');
+    expect(res.headers['cache-control']).toContain('no-store');
+    expect(mockResolveAdminContext).toHaveBeenCalledWith(mockCurrentUser);
+    expect(res.body.access).toEqual(expect.objectContaining({
+      mode: 'market',
+      allowedMarkets: ['CM'],
+      defaultMarket: 'CM',
+    }));
+    expect(JSON.stringify(res.body)).not.toContain('market_id');
+  });
+
+  test('zéro autorité dashboard renvoie 403, même pour role=admin', async () => {
+    mockResolveAdminContext.mockRejectedValueOnce(new MockDashboardAccessDeniedError());
+    const res = await request(makeApp()).get('/api/admin/dashboard/context');
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('dashboard_access_denied');
+  });
 });
 
 describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
@@ -115,7 +162,9 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     expect(res.body.code).toBe('market_not_found');
   });
 
-  test('un admin sans grant sur le marché résolu reçoit 403', async () => {
+  test('un admin sans grant market ni global reçoit 403', async () => {
+    mockAllowedMarkets = new Set();
+    mockGlobalAllowed = false;
     const res = await request(makeApp()).get('/api/admin/dashboard/unified/market/CG');
     expect(res.status).toBe(403);
     expect(res.body.code).toBe('market_scope_denied');
@@ -139,6 +188,16 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
       status: 'confirmed',
       market_id: 'market-cm-id',
     });
+  });
+
+  test('un grant global explicite autorise le drill d’un marché actif sans grant operator_market_scopes', async () => {
+    mockAllowedMarkets = new Set();
+    mockGlobalAllowed = true;
+    const res = await request(makeApp()).get('/api/admin/dashboard/unified/market/CG');
+
+    expect(res.status).toBe(200);
+    expect(mockBuildMarketPilotage).toHaveBeenCalledTimes(1);
+    expect(mockBuildMarketPilotage.mock.calls[0][1].code).toBe('CG');
   });
 });
 
