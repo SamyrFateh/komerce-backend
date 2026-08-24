@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, operations, finance, order-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/orders/:reference, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -27,6 +27,7 @@
     COMMERCE: 'commerce',
     OPERATIONS: 'operations',
     FINANCE: 'finance',
+    ORDER_360: 'order-360',
     DEMO: 'demo',
   });
 
@@ -82,6 +83,7 @@
 
   function surfaceForPath(pathname) {
     const path = String(pathname || '');
+    if (/^\/admin\/orders\/[^/]+$/.test(path)) return SURFACES.ORDER_360;
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
     if (path === '/admin/operations' || path === '/admin-next/operations') return SURFACES.OPERATIONS;
@@ -96,17 +98,13 @@
         const name = displayNames.of(code);
         if (name && name !== code) return `${code} · ${name}`;
       }
-    } catch (_) {
-      // Le code ISO reste une représentation stable si Intl.DisplayNames est indisponible.
-    }
+    } catch (_) {}
     return code;
   }
 
   function marketChoices(adminContext) {
     const access = adminContext && adminContext.access;
-    if (!access || !Array.isArray(access.allowedMarkets)) {
-      throw new Error('canonical_market_selector_context_missing');
-    }
+    if (!access || !Array.isArray(access.allowedMarkets)) throw new Error('canonical_market_selector_context_missing');
 
     const choices = [];
     if (access.mode === 'global') {
@@ -210,12 +208,7 @@
     bar.appendChild(field);
     container.appendChild(bar);
 
-    return Object.freeze({
-      element: bar,
-      select,
-      initialMarket,
-      choices,
-    });
+    return Object.freeze({ element: bar, select, initialMarket, choices });
   }
 
   function canonicalMount(moduleApi, errorCode, root, user, adminContext, requestedMarket) {
@@ -249,6 +242,18 @@
     return canonicalMount(global.KomerceCanonicalFinance, 'canonical_finance_module_missing', root, user, adminContext, requestedMarket);
   }
 
+  function renderOrder360(root, user) {
+    if (!global.KomerceCanonicalOrder360) throw new Error('canonical_order_360_module_missing');
+    return global.KomerceCanonicalOrder360.mount({
+      root,
+      user,
+      pathname: global.location.pathname,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
   function renderMarketSurfaceShell(root, user, adminContext, options) {
     if (!root || typeof root.replaceChildren !== 'function' || typeof root.appendChild !== 'function') {
       throw new Error('canonical_admin_shell_root_missing');
@@ -277,49 +282,29 @@
   }
 
   function renderPilotageShell(root, user, adminContext) {
-    return renderMarketSurfaceShell(root, user, adminContext, {
-      surface: 'pilotage',
-      title: 'Vue de pilotage',
-      render: renderPilotage,
-    });
+    return renderMarketSurfaceShell(root, user, adminContext, { surface: 'pilotage', title: 'Vue de pilotage', render: renderPilotage });
   }
 
   function renderCommerceShell(root, user, adminContext) {
-    return renderMarketSurfaceShell(root, user, adminContext, {
-      surface: 'commerce',
-      title: 'Vue Commerce',
-      render: renderCommerce,
-    });
+    return renderMarketSurfaceShell(root, user, adminContext, { surface: 'commerce', title: 'Vue Commerce', render: renderCommerce });
   }
 
   function renderOperationsShell(root, user, adminContext) {
-    return renderMarketSurfaceShell(root, user, adminContext, {
-      surface: 'operations',
-      title: 'Vue Opérations',
-      render: renderOperations,
-    });
+    return renderMarketSurfaceShell(root, user, adminContext, { surface: 'operations', title: 'Vue Opérations', render: renderOperations });
   }
 
   function renderFinanceShell(root, user, adminContext) {
-    return renderMarketSurfaceShell(root, user, adminContext, {
-      surface: 'finance',
-      title: 'Vue Finance',
-      render: renderFinance,
-    });
+    return renderMarketSurfaceShell(root, user, adminContext, { surface: 'finance', title: 'Vue Finance', render: renderFinance });
   }
 
   function renderDemo(root, user) {
     if (!global.KomerceDemoOrderFlow) throw new Error('demo_order_flow_module_missing');
-    return global.KomerceDemoOrderFlow.mount({
-      root,
-      user,
-      document: global.document,
-      fetch: global.fetch.bind(global),
-    });
+    return global.KomerceDemoOrderFlow.mount({ root, user, document: global.document, fetch: global.fetch.bind(global) });
   }
 
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
+    if (surface === SURFACES.ORDER_360) return renderOrder360(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
@@ -353,6 +338,7 @@
     renderCommerce,
     renderOperations,
     renderFinance,
+    renderOrder360,
     renderMarketSurfaceShell,
     renderPilotageShell,
     renderCommerceShell,
@@ -365,16 +351,12 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       boot().catch(err => {
-        if (err.message !== 'unauthorized' && err.message !== 'forbidden') {
-          console.error('[canonical-admin] bootstrap failed', err);
-        }
+        if (err.message !== 'unauthorized' && err.message !== 'forbidden') console.error('[canonical-admin] bootstrap failed', err);
       });
     }, { once: true });
   } else {
     boot().catch(err => {
-      if (err.message !== 'unauthorized' && err.message !== 'forbidden') {
-        console.error('[canonical-admin] bootstrap failed', err);
-      }
+      if (err.message !== 'unauthorized' && err.message !== 'forbidden') console.error('[canonical-admin] bootstrap failed', err);
     });
   }
 })(window);
