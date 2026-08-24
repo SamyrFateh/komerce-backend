@@ -41,7 +41,7 @@ const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { generateShipmentRef } = require('../utils/reference');
 const PDFDocument = require('pdfkit');
-const { notifyText } = require('../services/notification-service'); // ZG-1: remplace sendSMS
+const { notifyText, appendRelayLocation } = require('../services/notification-service'); // ZG-1: remplace sendSMS
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const QRCode = require('qrcode');
 const { validate } = require('../middleware/validate');
@@ -129,11 +129,13 @@ router.patch('/shipments/:id', ...adminOnly, validate(logistics.updateShipment),
       // SMS per parcel (R1: 1 SMS per available parcel)
       const smsTargets = shipmentParcels.filter(sp => sp.phone);
       Promise.all(
-        smsTargets.map(sp => notifyText(
-          sp.phone,
-          `Komerce · Colis ${sp.parcel_ref || sp.order_ref} disponible au ${sp.relais_name} (${sp.relais_addr}).`,
-          'available', null
-        ))
+        smsTargets.map(sp => {
+          const message = appendRelayLocation(
+            `Komerce · Colis ${sp.parcel_ref || sp.order_ref} disponible au ${sp.relais_name} (${sp.relais_addr}).`,
+            { name: sp.relais_name, address: sp.relais_addr },
+          );
+          return notifyText(sp.phone, message, 'available', null);
+        })
       ).catch(err => log.error({ err }, 'Notification parcel batch error'));
     }
 
