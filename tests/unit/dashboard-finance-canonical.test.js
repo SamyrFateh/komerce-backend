@@ -9,19 +9,19 @@
 const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
-const metric = key => ({ key, label: key, value: 1, unit: 'count', data_quality: {} });
-const mocks = {
-  getCAEncaisse: jest.fn(async () => metric('ca_encaisse')),
-  getCoutReel: jest.fn(async () => metric('cout_reel')),
-  getMargeConsolidee: jest.fn(async () => metric('marge_consolidee')),
-  getTauxCompletudeCouts: jest.fn(async () => metric('taux_completude_couts')),
-  getCmdsCoutIncompletCount: jest.fn(async () => metric('cmds_cout_incomplet')),
-  getPaiementsEnAttente: jest.fn(async () => metric('paiements_en_attente')),
+const mockMetric = key => ({ key, label: key, value: 1, unit: 'count', data_quality: {} });
+const mockMetrics = {
+  getCAEncaisse: jest.fn(async () => mockMetric('ca_encaisse')),
+  getCoutReel: jest.fn(async () => mockMetric('cout_reel')),
+  getMargeConsolidee: jest.fn(async () => mockMetric('marge_consolidee')),
+  getTauxCompletudeCouts: jest.fn(async () => mockMetric('taux_completude_couts')),
+  getCmdsCoutIncompletCount: jest.fn(async () => mockMetric('cmds_cout_incomplet')),
+  getPaiementsEnAttente: jest.fn(async () => mockMetric('paiements_en_attente')),
   getCmdsCoutIncompletIds: jest.fn(async () => [
     { reference: 'CMD-1', status: 'confirmed', payment_status: 'paid', total_kmf: '1000', created_at: '2026-08-20T00:00:00.000Z' },
   ]),
 };
-jest.mock('../../services/dashboard-metrics', () => mocks);
+jest.mock('../../services/dashboard-metrics', () => mockMetrics);
 
 const finance = require('../../services/dashboard-finance-canonical');
 
@@ -52,16 +52,16 @@ test('Finance market injecte le market_id serveur dans tous les SSOT de commande
   );
 
   for (const fn of [
-    mocks.getCAEncaisse,
-    mocks.getCoutReel,
-    mocks.getMargeConsolidee,
-    mocks.getTauxCompletudeCouts,
-    mocks.getCmdsCoutIncompletCount,
-    mocks.getPaiementsEnAttente,
+    mockMetrics.getCAEncaisse,
+    mockMetrics.getCoutReel,
+    mockMetrics.getMargeConsolidee,
+    mockMetrics.getTauxCompletudeCouts,
+    mockMetrics.getCmdsCoutIncompletCount,
+    mockMetrics.getPaiementsEnAttente,
   ]) {
     expect(fn).toHaveBeenCalledWith(expect.objectContaining({ market_id: 'market-cm-id' }));
   }
-  expect(mocks.getCmdsCoutIncompletIds).toHaveBeenCalledWith(
+  expect(mockMetrics.getCmdsCoutIncompletIds).toHaveBeenCalledWith(
     expect.objectContaining({ market_id: 'market-cm-id' }),
     { limit: 20 }
   );
