@@ -51,6 +51,9 @@ jest.mock('../../utils/parcelSync', () => ({
 const mockNotifyText = jest.fn().mockResolvedValue({});
 jest.mock('../../services/notification-service', () => ({
   notifyText: (...args) => mockNotifyText(...args),
+  appendRelayLocation: (...args) => (
+    jest.requireActual('../../services/notifications/relay-location').appendRelayLocation(...args)
+  ),
 }));
 
 const mockLogParcelEvent = jest.fn().mockResolvedValue({});
@@ -180,6 +183,7 @@ describe('PATCH /api/logistics/shipments/:id', () => {
     await new Promise(r => setImmediate(r));
     expect(mockNotifyText).toHaveBeenCalledTimes(1); // seul P1 a un téléphone
     expect(mockNotifyText).toHaveBeenCalledWith('321000', expect.stringContaining('REF1'), 'available', null);
+    expect(mockNotifyText.mock.calls[0][1]).toContain('https://www.google.com/maps/search/?api=1&query=');
   });
 });
 
