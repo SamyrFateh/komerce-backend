@@ -84,7 +84,11 @@ for (const [name, file] of outputs) {
   const chunks = [];
   for (let i = 0; i < encoded.length; i += chunkSize) chunks.push(encoded.slice(i, i + chunkSize));
   console.log(`FC2F_META|${name}|${raw.length}|${sha256}|${chunks.length}`);
-  chunks.forEach((chunk, index) => console.log(`FC2F_DATA|${name}|${index + 1}|${chunks.length}|${chunk}`));
+  chunks.forEach((chunk, index) => {
+    const chunkSha = crypto.createHash('sha256').update(chunk, 'utf8').digest('hex');
+    console.log(`FC2F_CHUNK|${name}|${index + 1}|${chunks.length}|${chunk.length}|${chunkSha}`);
+    console.log(`FC2F_DATA|${name}|${index + 1}|${chunks.length}|${chunk}`);
+  });
 }
 
 console.log('✅ Finance contract generated and encoded.');
