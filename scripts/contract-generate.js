@@ -187,6 +187,9 @@ const ROUTE_SCHEMA_MAP = [
   // LOT 2E — Canonical Operations global + market-scoped
   { prefix: '/api/admin/dashboard/operations', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/operations/market/{marketCode}', method: 'get', schema: null },
+  // LOT 2F — Canonical Finance global + market-scoped
+  { prefix: '/api/admin/dashboard/finance', method: 'get', schema: null },
+  { prefix: '/api/admin/dashboard/finance/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -206,6 +209,13 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 2F — réponses Finance consommées par Canonical.
+  '/api/admin/dashboard/finance': {
+    get: { fields: ['scope','period','kpis','payment_mix','refunds','incomplete_cost_orders','data_quality'], source: 'test' }
+  },
+  '/api/admin/dashboard/finance/market/{marketCode}': {
+    get: { fields: ['scope','period','kpis','payment_mix','refunds','incomplete_cost_orders','data_quality'], source: 'test' }
+  },
   // LOT 2E — réponses Operations consommées par Canonical.
   '/api/admin/dashboard/operations': {
     get: { fields: ['scope','kpis','active_orders','critical_delays','signals','data_quality'], source: 'test' }

@@ -5,8 +5,8 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_admin, requested_market_code, dashboard_filters
- * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, authorized_market_operations_projection, global_dashboard_gate, canonical_admin_context
- * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-admin-context
+ * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, authorized_market_operations_projection, authorized_market_finance_projection, global_dashboard_gate, canonical_admin_context
+ * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, dashboard_global_access_grants
  * @db-write      none
@@ -33,6 +33,7 @@ const {
 const pilotage = require('../services/dashboard-pilotage-market');
 const commerce = require('../services/dashboard-commerce');
 const operations = require('../services/dashboard-operations');
+const finance = require('../services/dashboard-finance-canonical');
 const log = require('../utils/logger').child({ module: 'admin-dashboard-market' });
 
 const router = express.Router();
@@ -85,7 +86,6 @@ function parseFilters(req) {
     cost_status: req.query.cost_status || null,
     channel: req.query.channel || null,
     origin: req.query.origin || null,
-    // Autorité : injectée depuis la ressource marché résolue côté serveur.
     market_id: req.dashboardMarket.id,
   };
 }
@@ -191,10 +191,26 @@ router.get(
   }
 );
 
-// IMPORTANT : ce router est monté AVANT routes/admin-dashboard.js dans
-// bootstrap/api-routes.js. Tout chemin global non consommé ci-dessus doit
-// franchir ce verrou. Le rôle admin ne suffit jamais : seul un grant actif
-// dashboard_global_access_grants autorise la vue multi-market.
+router.get(
+  '/finance/market/:marketCode',
+  authenticate,
+  requireAdmin,
+  rejectClientMarketId,
+  resolveRequestedMarket,
+  attachAuthorizedMarkets,
+  requireDashboardMarketRead,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await finance.buildFinance(req.query, { market: req.dashboardMarket });
+      res.json(payload);
+    } catch (err) {
+      log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] finance market error');
+      next(err);
+    }
+  }
+);
+
 router.use(
   authenticate,
   requireAdmin,
@@ -226,6 +242,21 @@ router.get(
       res.json(payload);
     } catch (err) {
       log.error({ err }, '[admin-dashboard-market] operations global error');
+      next(err);
+    }
+  }
+);
+
+router.get(
+  '/finance',
+  rejectClientMarketId,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await finance.buildFinance(req.query);
+      res.json(payload);
+    } catch (err) {
+      log.error({ err }, '[admin-dashboard-market] finance global error');
       next(err);
     }
   }

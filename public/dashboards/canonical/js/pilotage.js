@@ -51,7 +51,7 @@
       {
         id: 'vues-decision',
         title: 'Vues de décision',
-        description: 'Les trois angles canoniques déjà alimentés par le backend.',
+        description: 'Les angles canoniques déjà alimentés par le backend.',
         type: 'table',
         source: 'pilotage.views',
         columns: [
@@ -77,6 +77,7 @@
     drill: [
       { id: 'commerce-canonical', label: 'Commerce', href: '/admin-next/commerce' },
       { id: 'operations-canonical', label: 'Opérations', href: '/admin-next/operations' },
+      { id: 'finance-canonical', label: 'Finance', href: '/admin-next/finance' },
       { id: 'demo-staging', label: 'Cockpit commande · staging', href: '/admin-next/demo' },
       { id: 'pilotage-legacy', label: 'Témoin Pilotage historique', href: '/admin/pilotage' },
     ],

@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, demo-order-flow
- * @used-by       /admin-next, /admin-next/commerce, /admin-next/operations, /admin/pilotage-v2
+ * @depends       canonical admin-context, pilotage, commerce, operations, finance, demo-order-flow
+ * @used-by       /admin-next, /admin-next/commerce, /admin-next/operations, /admin-next/finance, /admin/pilotage-v2
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -26,6 +26,7 @@
     PILOTAGE: 'pilotage',
     COMMERCE: 'commerce',
     OPERATIONS: 'operations',
+    FINANCE: 'finance',
     DEMO: 'demo',
   });
 
@@ -83,6 +84,7 @@
     if (pathname === '/admin-next/demo') return SURFACES.DEMO;
     if (pathname === '/admin-next/commerce') return SURFACES.COMMERCE;
     if (pathname === '/admin-next/operations') return SURFACES.OPERATIONS;
+    if (pathname === '/admin-next/finance') return SURFACES.FINANCE;
     return SURFACES.PILOTAGE;
   }
 
@@ -242,6 +244,10 @@
     return canonicalMount(global.KomerceCanonicalOperations, 'canonical_operations_module_missing', root, user, adminContext, requestedMarket);
   }
 
+  function renderFinance(root, user, adminContext, requestedMarket) {
+    return canonicalMount(global.KomerceCanonicalFinance, 'canonical_finance_module_missing', root, user, adminContext, requestedMarket);
+  }
+
   function renderMarketSurfaceShell(root, user, adminContext, options) {
     if (!root || typeof root.replaceChildren !== 'function' || typeof root.appendChild !== 'function') {
       throw new Error('canonical_admin_shell_root_missing');
@@ -293,6 +299,14 @@
     });
   }
 
+  function renderFinanceShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'finance',
+      title: 'Vue Finance',
+      render: renderFinance,
+    });
+  }
+
   function renderDemo(root, user) {
     if (!global.KomerceDemoOrderFlow) throw new Error('demo_order_flow_module_missing');
     return global.KomerceDemoOrderFlow.mount({
@@ -308,6 +322,7 @@
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
+    if (surface === SURFACES.FINANCE) return renderFinanceShell(root, user, adminContext);
     return renderPilotageShell(root, user, adminContext);
   }
 
@@ -336,10 +351,12 @@
     renderPilotage,
     renderCommerce,
     renderOperations,
+    renderFinance,
     renderMarketSurfaceShell,
     renderPilotageShell,
     renderCommerceShell,
     renderOperationsShell,
+    renderFinanceShell,
     renderDemo,
     renderReady,
   };

@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 18,
-    "total_routes": 439,
+    "total_routes": 441,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -4757,6 +4757,69 @@
         }
       }
     },
+    "/api/admin/dashboard/finance/market/{marketCode}": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/finance/market/{marketCode}",
+        "x-route-file": "routes/admin-dashboard-market.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "period": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "kpis": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "payment_mix": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "refunds": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "incomplete_cost_orders": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/dashboard/commerce": {
       "get": {
         "summary": "GET /api/admin/dashboard/commerce",
@@ -4841,6 +4904,59 @@
                       "x-observed": true
                     },
                     "signals": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/finance": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/finance",
+        "x-route-file": "routes/admin-dashboard-market.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "period": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "kpis": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "payment_mix": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "refunds": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "incomplete_cost_orders": {
                       "type": "string",
                       "x-observed": true
                     },

@@ -45,13 +45,14 @@ function fakeRes() {
 }
 
 describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
-  test('le runtime canonical physique contient Pilotage, Commerce et Operations', () => {
+  test('le runtime canonical physique contient Pilotage, Commerce, Operations et Finance', () => {
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'index.html'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'css', 'base.css'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'app.js'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'pilotage.js'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'commerce.js'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'operations.js'))).toBe(true);
+    expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'finance.js'))).toBe(true);
   });
 
   test('canonical ne référence jamais admin/** ni admin-legacy/**', () => {
@@ -60,7 +61,7 @@ describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
       /\/dashboards\/admin(?:-legacy)?\//,
       /\.\.\/admin(?:-legacy)?\//,
       /\.\.\/\.\.\/admin(?:-legacy)?\//,
-      /\b(?:PilotageView|SalesView|OrdersLogisticsView|SanteView|ControlTowerView|ProblemsView)\b/,
+      /\b(?:PilotageView|SalesView|OrdersLogisticsView|FinanceView|PilotageFinView|SanteView|ControlTowerView|ProblemsView)\b/,
     ];
 
     const violations = [];
@@ -83,6 +84,7 @@ describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
       '/admin-next',
       '/admin-next/commerce',
       '/admin-next/operations',
+      '/admin-next/finance',
       '/admin-next/demo',
       '/admin/pilotage-v2',
     ]) {

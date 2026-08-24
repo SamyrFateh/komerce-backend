@@ -83,14 +83,15 @@ function mountHtmlRoutes(app, rootDir) {
   });
 
   // ── Admin canonical greenfield ─────────────────────────────────────────
-  // Même runtime pour Pilotage, Commerce, Opérations et le cockpit staging.
-  // Les routes historiques /admin/* restent intactes tant que la preuve de
-  // remplacement n'est pas faite.
+  // Même runtime pour Pilotage, Commerce, Opérations, Finance et le cockpit
+  // staging. Les routes historiques /admin/* restent intactes tant que la
+  // preuve de remplacement n'est pas faite.
   const canonicalAdminPath = path.join(publicDir, 'dashboards', 'canonical', 'index.html');
   [
     '/admin-next',
     '/admin-next/commerce',
     '/admin-next/operations',
+    '/admin-next/finance',
     '/admin-next/demo',
     '/admin/pilotage-v2',
   ].forEach(routePath => {
@@ -126,7 +127,6 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/sante',
     '/admin/shared-carts',
     '/admin/economic-flow',
-    // ── Vues manquantes (absentes du legacy → fallback boutique) ──
     '/admin/accounting',
     '/admin/settings',
     '/admin/simulator',
@@ -138,7 +138,6 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // ── Raccourci portail de pilotage ───────────────────────────────────────
   ['/portail', '/pilotage'].forEach(routePath => {
     app.get(routePath, (req, res) => {
       sendHtml(res, path.join(publicDir, 'dashboards', 'admin', 'portal-pilotage.html'));
