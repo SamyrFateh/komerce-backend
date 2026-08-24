@@ -33,7 +33,7 @@ function fakeApp() {
 }
 
 function fakeRes() {
-  const res = {
+  return {
     headersSent: false,
     setHeader: jest.fn(),
     sendFile: jest.fn(),
@@ -42,16 +42,16 @@ function fakeRes() {
     send: jest.fn(),
     json: jest.fn(),
   };
-  return res;
 }
 
 describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
-  test('le runtime canonical physique contient Pilotage et Commerce', () => {
+  test('le runtime canonical physique contient Pilotage, Commerce et Operations', () => {
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'index.html'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'css', 'base.css'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'app.js'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'pilotage.js'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'commerce.js'))).toBe(true);
+    expect(fs.existsSync(path.join(CANONICAL_ROOT, 'js', 'operations.js'))).toBe(true);
   });
 
   test('canonical ne référence jamais admin/** ni admin-legacy/**', () => {
@@ -60,16 +60,14 @@ describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
       /\/dashboards\/admin(?:-legacy)?\//,
       /\.\.\/admin(?:-legacy)?\//,
       /\.\.\/\.\.\/admin(?:-legacy)?\//,
-      /\b(?:PilotageView|SalesView|SanteView|ControlTowerView|ProblemsView)\b/,
+      /\b(?:PilotageView|SalesView|OrdersLogisticsView|SanteView|ControlTowerView|ProblemsView)\b/,
     ];
 
     const violations = [];
     for (const file of sourceFiles) {
       const content = fs.readFileSync(file, 'utf8');
       for (const rule of forbidden) {
-        if (rule.test(content)) {
-          violations.push(`${path.relative(ROOT, file)} -> ${rule}`);
-        }
+        if (rule.test(content)) violations.push(`${path.relative(ROOT, file)} -> ${rule}`);
       }
     }
 
@@ -81,7 +79,13 @@ describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
     mountHtmlRoutes(app, ROOT);
     const canonicalPath = path.join(ROOT, 'public', 'dashboards', 'canonical', 'index.html');
 
-    for (const routePath of ['/admin-next', '/admin-next/commerce', '/admin-next/demo', '/admin/pilotage-v2']) {
+    for (const routePath of [
+      '/admin-next',
+      '/admin-next/commerce',
+      '/admin-next/operations',
+      '/admin-next/demo',
+      '/admin/pilotage-v2',
+    ]) {
       const canonicalRes = fakeRes();
       app._routes[routePath]({}, canonicalRes);
       expect(canonicalRes.sendFile).toHaveBeenCalledWith(canonicalPath, expect.any(Function));

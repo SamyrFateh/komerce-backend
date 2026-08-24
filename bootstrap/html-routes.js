@@ -83,11 +83,17 @@ function mountHtmlRoutes(app, rootDir) {
   });
 
   // ── Admin canonical greenfield ─────────────────────────────────────────
-  // Même runtime pour Pilotage, Commerce et le cockpit staging. Les routes
-  // historiques /admin/* restent intactes tant que la preuve de remplacement
-  // n'est pas faite.
+  // Même runtime pour Pilotage, Commerce, Opérations et le cockpit staging.
+  // Les routes historiques /admin/* restent intactes tant que la preuve de
+  // remplacement n'est pas faite.
   const canonicalAdminPath = path.join(publicDir, 'dashboards', 'canonical', 'index.html');
-  ['/admin-next', '/admin-next/commerce', '/admin-next/demo', '/admin/pilotage-v2'].forEach(routePath => {
+  [
+    '/admin-next',
+    '/admin-next/commerce',
+    '/admin-next/operations',
+    '/admin-next/demo',
+    '/admin/pilotage-v2',
+  ].forEach(routePath => {
     app.get(routePath, (req, res) => {
       sendHtml(res, canonicalAdminPath);
     });

@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, demo-order-flow
- * @used-by       /admin-next, /admin-next/commerce, /admin/pilotage-v2
+ * @depends       canonical admin-context, pilotage, commerce, operations, demo-order-flow
+ * @used-by       /admin-next, /admin-next/commerce, /admin-next/operations, /admin/pilotage-v2
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -25,6 +25,7 @@
   const SURFACES = Object.freeze({
     PILOTAGE: 'pilotage',
     COMMERCE: 'commerce',
+    OPERATIONS: 'operations',
     DEMO: 'demo',
   });
 
@@ -81,6 +82,7 @@
   function surfaceForPath(pathname) {
     if (pathname === '/admin-next/demo') return SURFACES.DEMO;
     if (pathname === '/admin-next/commerce') return SURFACES.COMMERCE;
+    if (pathname === '/admin-next/operations') return SURFACES.OPERATIONS;
     return SURFACES.PILOTAGE;
   }
 
@@ -213,9 +215,9 @@
     });
   }
 
-  function renderPilotage(root, user, adminContext, requestedMarket) {
-    if (!global.KomerceCanonicalPilotage) throw new Error('canonical_pilotage_module_missing');
-    return global.KomerceCanonicalPilotage.mount({
+  function canonicalMount(moduleApi, errorCode, root, user, adminContext, requestedMarket) {
+    if (!moduleApi) throw new Error(errorCode);
+    return moduleApi.mount({
       root,
       user,
       adminContext,
@@ -228,19 +230,16 @@
     });
   }
 
+  function renderPilotage(root, user, adminContext, requestedMarket) {
+    return canonicalMount(global.KomerceCanonicalPilotage, 'canonical_pilotage_module_missing', root, user, adminContext, requestedMarket);
+  }
+
   function renderCommerce(root, user, adminContext, requestedMarket) {
-    if (!global.KomerceCanonicalCommerce) throw new Error('canonical_commerce_module_missing');
-    return global.KomerceCanonicalCommerce.mount({
-      root,
-      user,
-      adminContext,
-      requestedMarket,
-      contextContract: global.KomerceAdminContext,
-      document: global.document,
-      fetch: global.fetch.bind(global),
-      renderer: global.KomerceDashboardRenderer,
-      ui: global.KomerceCanonicalUI,
-    });
+    return canonicalMount(global.KomerceCanonicalCommerce, 'canonical_commerce_module_missing', root, user, adminContext, requestedMarket);
+  }
+
+  function renderOperations(root, user, adminContext, requestedMarket) {
+    return canonicalMount(global.KomerceCanonicalOperations, 'canonical_operations_module_missing', root, user, adminContext, requestedMarket);
   }
 
   function renderMarketSurfaceShell(root, user, adminContext, options) {
@@ -286,6 +285,14 @@
     });
   }
 
+  function renderOperationsShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'operations',
+      title: 'Vue Opérations',
+      render: renderOperations,
+    });
+  }
+
   function renderDemo(root, user) {
     if (!global.KomerceDemoOrderFlow) throw new Error('demo_order_flow_module_missing');
     return global.KomerceDemoOrderFlow.mount({
@@ -300,6 +307,7 @@
     const surface = surfaceForPath(global.location.pathname);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
+    if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
     return renderPilotageShell(root, user, adminContext);
   }
 
@@ -327,9 +335,11 @@
     mountMarketSelector,
     renderPilotage,
     renderCommerce,
+    renderOperations,
     renderMarketSurfaceShell,
     renderPilotageShell,
     renderCommerceShell,
+    renderOperationsShell,
     renderDemo,
     renderReady,
   };
