@@ -71,7 +71,7 @@ function loadCanonicalApp() {
   global.document = document;
   global.window = {
     location: {
-      pathname: '/admin-next',
+      pathname: '/admin/pilotage',
       search: '',
       hash: '',
       replace,
@@ -148,6 +148,21 @@ describe('canonical admin app — server AdminContext bootstrap', () => {
     await expect(env.api.requireAdminContext()).rejects.toThrow('forbidden');
     expect(env.replace).toHaveBeenCalledWith('/');
     expect(env.validateAdminContext).not.toHaveBeenCalled();
+  });
+
+  test('surfaceForPath reconnaît les URLs stables et les aliases de construction', () => {
+    const env = loadCanonicalApp();
+
+    expect(env.api.surfaceForPath('/admin')).toBe(env.api.SURFACES.PILOTAGE);
+    expect(env.api.surfaceForPath('/admin/pilotage')).toBe(env.api.SURFACES.PILOTAGE);
+    expect(env.api.surfaceForPath('/admin/commerce')).toBe(env.api.SURFACES.COMMERCE);
+    expect(env.api.surfaceForPath('/admin/operations')).toBe(env.api.SURFACES.OPERATIONS);
+    expect(env.api.surfaceForPath('/admin/finance')).toBe(env.api.SURFACES.FINANCE);
+    expect(env.api.surfaceForPath('/admin/demo')).toBe(env.api.SURFACES.DEMO);
+    expect(env.api.surfaceForPath('/admin-next/commerce')).toBe(env.api.SURFACES.COMMERCE);
+    expect(env.api.surfaceForPath('/admin-next/operations')).toBe(env.api.SURFACES.OPERATIONS);
+    expect(env.api.surfaceForPath('/admin-next/finance')).toBe(env.api.SURFACES.FINANCE);
+    expect(env.api.surfaceForPath('/admin-next/demo')).toBe(env.api.SURFACES.DEMO);
   });
 
   test('renderPilotage transmet le contexte et le marché demandé au module Pilotage', async () => {
