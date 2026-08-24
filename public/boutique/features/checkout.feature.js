@@ -39,6 +39,7 @@ module.exports = {
     in:  [
       'fichiers js/* annotes @domain checkout',
       'présentation responsive du tunnel checkout',
+      'localisation cartographique du relais sélectionné avant confirmation de la commande',
       'projection desktop des produits récemment consultés sous le récapitulatif du panier personnel',
       'projection desktop de suggestions (moteur recommendations) sous le récapitulatif d\'un checkout de liste partagée — freeze produit 22-08-2026',
     ],
@@ -101,6 +102,7 @@ module.exports = {
     'le rail de suggestions (checkout de liste partagée, freeze 22-08-2026) ne modifie JAMAIS CheckoutSelection.items ni le récapitulatif figé affiché — tout ajout va exclusivement dans state.cart (panier personnel, entité séparée), jamais fusionné avec la liste payée. Toast distinct ("Ajouté à votre panier personnel") pour ne jamais laisser croire à une modification de la liste figée',
     'le rail de suggestions du checkout de liste partagée échoue silencieusement (jamais un throw, jamais un état de chargement bloquant) — une suggestion indisponible ne doit jamais dégrader le reste du tunnel checkout',
     'les CTA de récapitulatif et de paiement utilisent l accent commerce ; le chrome reste neutre et les couleurs propres aux moyens de paiement sont préservées',
+    'le relais sélectionné expose avant confirmation un lien cartographique discret ; son activation ne change jamais le relais et n ouvre jamais le picker',
   ],
 
 };
