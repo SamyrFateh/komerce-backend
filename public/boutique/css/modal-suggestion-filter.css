@@ -1,0 +1,21 @@
+/**
+ * @komerce-arch-lite
+ * @role          modal-suggestion-filter-style
+ * @domain        recommendations
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-modal-suggestions.js
+ * @purpose       Rend effectif le filtrage visuel des cartes de suggestions par sous-catégorie.
+ * @impact-areas  product-modal, recommendations, subcategory-filter
+ * @version       2026-08
+ */
+
+/*
+ * Le moteur de filtre JS pose correctement .subcat-hidden sur les cartes.
+ * Dans modal-product.css, la règle historique `.k-sug-card.subcat-hidden`
+ * avait la même spécificité que `.k-sug-grid .k-sug-card`, déclarée ensuite
+ * avec `display:flex`; la cascade réaffichait donc les cartes filtrées.
+ * Ce propriétaire tardif rend l'état hidden explicite dans le contexte rail.
+ */
+#k-modal .k-sug-grid .k-sug-card.subcat-hidden {
+  display: none;
+}
