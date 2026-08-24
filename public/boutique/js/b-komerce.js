@@ -33,7 +33,7 @@
  */
 
 import { apiGet, apiPut, apiDelete, apiDownload } from './b-utils.js';
-import { getCurrentIdentity, requireIdentity } from './b-identity.js';
+import { getCurrentIdentity, requireIdentity, restoreIdentity } from './b-identity.js';
 import { bus } from './b-bus.js';
 import { loadPasskeySecurity } from './b-passkey-security.js';
 import { withStepUpRetry } from './b-passkey-step-up.js';
@@ -646,7 +646,7 @@ export async function openMonKomerce({ focus = null } = {}) {
   bus.emit('komerce:show');
 
   // 3. Une première visite reste informative jusqu'au clic « M'identifier ».
-  const identity = getCurrentIdentity();
+  const identity = getCurrentIdentity() || await restoreIdentity();
   if (!identity) {
     ++_renderSeq; // invalide un éventuel rendu authentifié encore en vol
     renderIdentityRequired({ focus });
