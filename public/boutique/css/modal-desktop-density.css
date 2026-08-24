@@ -6,6 +6,9 @@
    séparateurs ou cadres décoratifs. La densité vient de la géométrie :
    buybox plus large, side-cart légèrement plus compact et média un peu plus
    présent. Mobile reste strictement inchangé.
+
+   Gouvernance responsive : seuls les breakpoints canoniques 900/1200 sont
+   autorisés. Toute la calibration desktop large vit donc sous 1200px.
    ═══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 1200px) {
@@ -14,10 +17,11 @@
     grid-template-columns: minmax(0, 1fr) 288px;
   }
 
-  /* Desktop large : réduire le déséquilibre "grand vide média / buybox étroite".
-     La piste droite devient réellement confortable sans casser ProductMedia. */
+  /* Réduire le déséquilibre "grand vide média / buybox étroite".
+     La piste droite gagne assez de présence pour les grands écrans sans
+     introduire un breakpoint supplémentaire hors contrat. */
   #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 1fr) minmax(440px, 500px);
+    grid-template-columns: minmax(0, 1fr) minmax(460px, 520px);
     gap: 18px;
     padding: 16px 18px;
   }
@@ -41,13 +45,5 @@
   #k-modal .k-modal-product-zone .k-modal-slide {
     transform: scale(1.08);
     transform-origin: center center;
-  }
-}
-
-@media (min-width: 1600px) {
-  /* Sur très grands écrans, éviter que la nouvelle largeur soit absorbée
-     uniquement par ProductMedia : la buybox gagne encore un peu de présence. */
-  #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 1fr) minmax(470px, 520px);
   }
 }
