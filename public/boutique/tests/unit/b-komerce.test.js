@@ -50,6 +50,7 @@ jest.mock('../../js/b-utils.js', () => ({
 jest.mock('../../js/b-identity.js', () => ({
   requireIdentity:   jest.fn(),
   getCurrentIdentity: jest.fn(),
+  restoreIdentity:     jest.fn(),
 }));
 jest.mock('../../js/b-bus.js', () => {
   const listeners = {};
@@ -63,7 +64,7 @@ jest.mock('../../js/b-bus.js', () => {
 });
 
 const { apiGet, apiPut, apiDelete, apiDownload } = require('../../js/b-utils.js');
-const { requireIdentity, getCurrentIdentity } = require('../../js/b-identity.js');
+const { requireIdentity, getCurrentIdentity, restoreIdentity } = require('../../js/b-identity.js');
 const { openMonKomerce }                 = require('../../js/b-komerce.js');
 const { flush, submitForm }               = require('./helpers/boutiqueTestKit');
 
@@ -81,6 +82,7 @@ beforeEach(() => {
   document.body.innerHTML = '';
   jest.clearAllMocks();
   getCurrentIdentity.mockReturnValue(null);
+  restoreIdentity.mockResolvedValue(null);
   requireIdentity.mockResolvedValue(null);
   mockApiGetDefaults();
 });
@@ -96,6 +98,19 @@ describe('openMonKomerce — authentification', () => {
     await flush();
     expect(requireIdentity).not.toHaveBeenCalled();
     expect(document.getElementById('k-komerce-view')).not.toBeNull();
+  });
+
+  it('session serveur restaurable : ouvre Mon Komerce sans redemander OTP', async () => {
+    getCurrentIdentity.mockReturnValue(null);
+    restoreIdentity.mockResolvedValue({ id: 1, phone: '+2691234567' });
+
+    await openMonKomerce();
+    await flush();
+
+    expect(restoreIdentity).toHaveBeenCalledTimes(1);
+    expect(requireIdentity).not.toHaveBeenCalled();
+    expect(apiGet).toHaveBeenCalledWith('/api/auth/me');
+    expect(document.getElementById('k-kmc-wallet-block').hidden).toBe(false);
   });
 
   it('session absente : ouvre le shell explicatif sans déclencher l\'OTP', async () => {
