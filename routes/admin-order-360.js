@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          canonical-order-360-route
- * @domain        dashboard
+ * @domain        admin-dashboard
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_admin, order_reference
