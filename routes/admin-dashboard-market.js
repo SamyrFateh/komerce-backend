@@ -5,8 +5,8 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_admin, requested_market_code, dashboard_filters
- * @outputs       authorized_market_pilotage_projection, global_dashboard_gate, canonical_admin_context
- * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-admin-context
+ * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, global_dashboard_gate, canonical_admin_context
+ * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-admin-context
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, dashboard_global_access_grants
  * @db-write      none
@@ -31,6 +31,7 @@ const {
   resolveDashboardAdminContext,
 } = require('../services/dashboard-admin-context');
 const pilotage = require('../services/dashboard-pilotage-market');
+const commerce = require('../services/dashboard-commerce');
 const log = require('../utils/logger').child({ module: 'admin-dashboard-market' });
 
 const router = express.Router();
@@ -157,6 +158,26 @@ router.get(
   }
 );
 
+router.get(
+  '/commerce/market/:marketCode',
+  authenticate,
+  requireAdmin,
+  rejectClientMarketId,
+  resolveRequestedMarket,
+  attachAuthorizedMarkets,
+  requireDashboardMarketRead,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await commerce.buildCommerce(req.query, { market: req.dashboardMarket });
+      res.json(payload);
+    } catch (err) {
+      log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] commerce market error');
+      next(err);
+    }
+  }
+);
+
 // IMPORTANT : ce router est monté AVANT routes/admin-dashboard.js dans
 // bootstrap/api-routes.js. Toute requête /api/admin/dashboard/* qui n'a pas
 // été consommée par les routes context/market-scoped ci-dessus traverse donc
@@ -169,6 +190,21 @@ router.use(
   authenticate,
   requireAdmin,
   requireDashboardGlobalAuthority
+);
+
+router.get(
+  '/commerce',
+  rejectClientMarketId,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await commerce.buildCommerce(req.query);
+      res.json(payload);
+    } catch (err) {
+      log.error({ err }, '[admin-dashboard-market] commerce global error');
+      next(err);
+    }
+  }
 );
 
 module.exports = router;
