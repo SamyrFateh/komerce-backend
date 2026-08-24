@@ -85,6 +85,14 @@ jest.mock('../../js/b-identity.js', () => ({
 jest.mock('../../js/b-checkout-render.js', () => ({
   renderFulfillmentSelector: jest.fn(),
   setCheckoutConfirmButton: jest.fn(),
+  buildRelayMapUrl: jest.fn((relay = {}) => {
+    const query = [relay.name || relay.nom, relay.address || relay.adresse || relay.location]
+      .filter(Boolean)
+      .join(', ');
+    return query
+      ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query)
+      : null;
+  }),
   buildOrderSuccessDOM: jest.fn(() => ({ copyBtn: null, closeBtn: null, trackBtn: null })),
   buildIdentityRecapDOM: jest.fn(() => {
     let el = global.document.createElement('div');
@@ -96,7 +104,19 @@ jest.mock('../../js/b-checkout-render.js', () => ({
   renderStepHeader: jest.fn(({ state: stepState, label, sublabel, onChange }) => {
     const el = global.document.createElement('div');
     el.className = 'ck-step-header ck-step-header--' + stepState;
-    el.textContent = [label, sublabel].filter(Boolean).join(' ');
+    const text = global.document.createElement('span');
+    text.className = 'ck-step-header-text';
+    const title = global.document.createElement('span');
+    title.className = 'ck-step-header-label';
+    title.textContent = label;
+    text.appendChild(title);
+    if (sublabel) {
+      const subtitle = global.document.createElement('span');
+      subtitle.className = 'ck-step-header-sublabel';
+      subtitle.textContent = sublabel;
+      text.appendChild(subtitle);
+    }
+    el.appendChild(text);
     if (onChange) el.addEventListener('click', onChange);
     return el;
   }),
@@ -1311,6 +1331,16 @@ describe('b-checkout', () => {
       expect(summary).not.toBeNull();
       expect(summary.textContent).toContain('Relais Anjouan');
       expect(state.orderData.selectedIsland).toBe('Ndzouani');
+      const mapLink = summary.querySelector('.ck-relais-map-link');
+      expect(mapLink).not.toBeNull();
+      expect(mapLink.textContent).toBe('📍 Localiser ce relais');
+      expect(mapLink.href).toContain('query=Relais%20Anjouan%2C%20Mutsamudu');
+      expect(mapLink.target).toBe('_blank');
+      expect(mapLink.rel).toBe('noopener');
+
+      mapLink.addEventListener('click', event => event.preventDefault(), { once: true });
+      mapLink.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      expect(document.querySelector('.ck-relais-overlay')).toBeNull();
     });
 
     it('aucun relais renvoyé par l\'API → message "Aucun relais disponible"', async () => {
@@ -1366,6 +1396,8 @@ describe('b-checkout', () => {
 
       expect(state.orderData.selectedRelaisName).toBe('Relais Moroni');
       expect(dom.orderBody.querySelector('#ck-relais-summary').textContent).toContain('Relais Moroni');
+      expect(dom.orderBody.querySelector('.ck-relais-map-link').href)
+        .toContain('query=Relais%20Moroni%2C%20Moroni');
       expect(dom.orderModal.querySelector('.k-order-modal').inert).toBe(false);
     });
   });
