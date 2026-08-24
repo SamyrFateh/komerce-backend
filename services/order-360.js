@@ -177,18 +177,22 @@ async function loadOrder360(order) {
     parcelItemsByParcel.set(row.parcel_id, bucket);
   }
 
-  const parcels = parcelsResult.rows.map(row => Object.freeze({
-    reference: row.reference,
-    tracking_number: row.tracking_number || null,
-    status: row.status,
-    type: row.type || null,
-    weight_kg: row.weight_kg == null ? null : Number(row.weight_kg),
-    created_at: row.created_at,
-    prepared_at: row.prepared_at,
-    shipped_at: row.shipped_at,
-    updated_at: row.updated_at,
-    items: Object.freeze(parcelItemsByParcel.get(row.id) || []),
-  }));
+  const parcels = parcelsResult.rows.map(row => {
+    const parcelItems = parcelItemsByParcel.get(row.id) || [];
+    return Object.freeze({
+      reference: row.reference,
+      tracking_number: row.tracking_number || null,
+      status: row.status,
+      type: row.type || null,
+      weight_kg: row.weight_kg == null ? null : Number(row.weight_kg),
+      items_quantity: parcelItems.reduce((sum, item) => sum + item.quantity, 0),
+      created_at: row.created_at,
+      prepared_at: row.prepared_at,
+      shipped_at: row.shipped_at,
+      updated_at: row.updated_at,
+      items: Object.freeze(parcelItems),
+    });
+  });
 
   const items = itemsResult.rows.map(row => Object.freeze({
     product_name: row.product_name || null,
