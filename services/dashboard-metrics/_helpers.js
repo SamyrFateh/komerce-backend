@@ -13,24 +13,17 @@
  * @db-txn        @none
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  dashboard, admin-dashboard
- * @version       2026-06
+ * @version       2026-08
  */
 
 /**
- * KOMERCE — Dashboard Metrics — Helpers & constantes (Lot C3)
+ * KOMERCE — Dashboard Metrics — Helpers & constantes (Lot C3 / LOT 2C MarketScope)
  * ════════════════════════════════════════════════════════════════════════
  *
- * Extrait de services/dashboard-metrics.js (1081L) — Lot B/C Refacto.
- * Contient les briques communes utilisées par tous les groupes de KPIs :
- * filtres SQL, période antérieure, delta, format KPI standard.
- *
- * INVARIANTS GARANTIS (doctrine globale, voir index.js) :
- *   INV-1 : ca_encaisse == ca_vendu (memes filtres)
- *   INV-2 : cmds_actives identique sur Tour de controle et Logistique
- *   INV-3 : colis_transit identique
- *   INV-4 : taux_completude_couts coherent avec cmds_cout_incomplet
- *   INV-5 : cmds_creees_workspace ⊂ cmds_creees
- *   INV-6 : marge hierarchy : items_actual ≤ items_partial ≤ items_estimated
+ * Les filtres de requête historiques restent inchangés. `market_id` est une
+ * extension INTERNE : il n'est jamais lu depuis req.query par les routes
+ * dashboard. Il est injecté uniquement après résolution + autorisation
+ * serveur du marché ciblé.
  */
 
 'use strict';
@@ -47,7 +40,6 @@ const TRANSIT_PARCEL_STATUSES = Object.freeze([
 
 const EXCLUDED_FROM_REVENUE = Object.freeze(['cancelled', 'refunded']);
 
-// Cost types attendus pour qu'une commande soit 'actual'
 const EXPECTED_VARIABLE_COSTS = Object.freeze([
   'product_purchase', 'freight', 'customs', 'local_distribution', 'relay',
 ]);
@@ -61,8 +53,8 @@ const EXPECTED_PAYMENT_COSTS = Object.freeze(['payment']);
 // ═══════════════════════════════════════════════════════════════════════
 
 function buildFiltersClause(filters = {}, orderAlias = 'o') {
-  // AUD-07: orderAlias is an internal constant ('o', 'ord', etc.), never from user input.
-  // All filter values are bound via $N params — no SQL injection risk.
+  // AUD-07: orderAlias est une constante interne, jamais une entrée client.
+  // Toutes les valeurs sont bindées via $N.
   const where = ['1=1'];
   const params = [];
   let i = 1;
@@ -92,14 +84,59 @@ function buildFiltersClause(filters = {}, orderAlias = 'o') {
     params.push(filters.payment_status);
   }
 
+  // LOT 2C — filtre d'autorité injecté par le serveur seulement.
+  if (filters.market_id) {
+    where.push(`${orderAlias}.market_id = $${i++}`);
+    params.push(filters.market_id);
+  }
+
   return { where: where.join(' AND '), params, nextParamIndex: i };
 }
 
 /**
- * Calcule la periode anterieure de meme duree pour comparaison delta.
- * Si filters.from = 2026-04-01 et filters.to = 2026-04-30,
- * retourne { from: 2026-03-02, to: 2026-04-01 } (29 jours avant).
+ * Construit le prédicat de rattachement d'un signal à un marché sans jamais
+ * supposer qu'un signal global appartient au marché demandé.
+ *
+ * Seuls les signaux dont l'entité peut être reliée à orders.market_id sont
+ * admis dans une vue market-scoped : order, parcel, cash_collection.
+ * Les signaux produit / plateforme restent donc invisibles aux opérateurs pays
+ * tant qu'ils ne portent pas une preuve de rattachement marché canonique.
  */
+function buildSignalMarketClause(filters = {}, signalAlias = 's', startParamIndex = 1) {
+  if (!filters.market_id) {
+    return { where: '1=1', params: [], nextParamIndex: startParamIndex };
+  }
+
+  const marketParam = `$${startParamIndex}`;
+  const where = `(
+    (${signalAlias}.entity_type = 'order' AND EXISTS (
+      SELECT 1 FROM orders scope_o
+      WHERE scope_o.id::text = ${signalAlias}.entity_id::text
+        AND scope_o.market_id = ${marketParam}
+    ))
+    OR (${signalAlias}.entity_type = 'parcel' AND EXISTS (
+      SELECT 1
+      FROM parcels scope_p
+      JOIN orders scope_o ON scope_o.id = scope_p.order_id
+      WHERE scope_p.id::text = ${signalAlias}.entity_id::text
+        AND scope_o.market_id = ${marketParam}
+    ))
+    OR (${signalAlias}.entity_type = 'cash_collection' AND EXISTS (
+      SELECT 1
+      FROM cash_collections scope_c
+      JOIN orders scope_o ON scope_o.id = scope_c.order_id
+      WHERE scope_c.id::text = ${signalAlias}.entity_id::text
+        AND scope_o.market_id = ${marketParam}
+    ))
+  )`;
+
+  return {
+    where,
+    params: [filters.market_id],
+    nextParamIndex: startParamIndex + 1,
+  };
+}
+
 function buildPreviousPeriod(filters) {
   if (!filters.from || !filters.to) return null;
 
@@ -117,9 +154,6 @@ function buildPreviousPeriod(filters) {
   };
 }
 
-/**
- * Calcule un delta entre valeur courante et anterieure.
- */
 function computeDelta(currentValue, previousValue, vsPeriodLabel) {
   if (previousValue == null || previousValue === 0) {
     return {
@@ -143,9 +177,6 @@ function computeDelta(currentValue, previousValue, vsPeriodLabel) {
 
 function _round(n) { return n != null && !isNaN(n) ? Math.round(Number(n)) : null; }
 
-/**
- * Format standardise pour un KPI.
- */
 function makeKpi(key, label, value, unit, options = {}) {
   return {
     key,
@@ -165,6 +196,7 @@ function makeKpi(key, label, value, unit, options = {}) {
 
 module.exports = {
   buildFiltersClause,
+  buildSignalMarketClause,
   buildPreviousPeriod,
   computeDelta,
   makeKpi,
