@@ -113,16 +113,27 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/operations',
     '/admin/finance',
     '/admin/demo',
-    // Aliases de construction conservés pendant la fenêtre de cutover.
-    '/admin-next',
-    '/admin-next/commerce',
-    '/admin-next/operations',
-    '/admin-next/finance',
-    '/admin-next/demo',
-    '/admin/pilotage-v2',
   ].forEach(routePath => {
     app.get(routePath, (req, res) => {
       sendCanonicalAdmin(res);
+    });
+  });
+
+  // Les URLs de construction restent des aliases temporaires mais ne créent
+  // plus une seconde URL produit : elles ramènent systématiquement vers le
+  // pathname stable correspondant.
+  const CANONICAL_BUILD_ALIASES = Object.freeze({
+    '/admin-next': '/admin/pilotage',
+    '/admin-next/commerce': '/admin/commerce',
+    '/admin-next/operations': '/admin/operations',
+    '/admin-next/finance': '/admin/finance',
+    '/admin-next/demo': '/admin/demo',
+    '/admin/pilotage-v2': '/admin/pilotage',
+  });
+
+  Object.entries(CANONICAL_BUILD_ALIASES).forEach(([routePath, stablePath]) => {
+    app.get(routePath, (req, res) => {
+      res.redirect(302, stablePath);
     });
   });
 
