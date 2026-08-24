@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          dashboard-pilotage-market-aggregate
- * @domain        dashboard
+ * @domain        admin-dashboard
  * @layer         service
  * @criticality   high
  * @inputs        server_resolved_market, dashboard_filters
