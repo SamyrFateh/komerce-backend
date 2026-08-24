@@ -82,12 +82,38 @@ function mountHtmlRoutes(app, rootDir) {
     redirectToGroup(res, req.query.p || req.query.token || req.query.share);
   });
 
-  // ── Admin canonical greenfield ─────────────────────────────────────────
-  // Même runtime pour Pilotage, Commerce, Opérations, Finance et le cockpit
-  // staging. Les routes historiques /admin/* restent intactes tant que la
-  // preuve de remplacement n'est pas faite.
+  // ── Admin Canonical — LOT 2-CUTOVER ────────────────────────────────────
+  // Les quatre dashboards prouvés prennent leurs URLs stables. Les anciennes
+  // capacités qui n'ont pas encore d'équivalent Canonical restent servies par
+  // Legacy 1 : le cutover est additif, jamais destructif.
   const canonicalAdminPath = path.join(publicDir, 'dashboards', 'canonical', 'index.html');
+  const legacyAdminPath = path.join(publicDir, 'dashboards', 'admin', 'index.html');
+
+  function sendCanonicalAdmin(res) {
+    res.setHeader('X-Admin-Generation', 'canonical');
+    sendHtml(res, canonicalAdminPath);
+  }
+
+  function sendLegacyAdmin(res) {
+    res.setHeader('X-Admin-Generation', 'legacy-1');
+    sendHtml(res, legacyAdminPath);
+  }
+
+  // Pilotage est la seule URL stable qui entrait déjà en collision avec
+  // Legacy 1. `?legacy=1` fournit donc un rollback immédiat sans modifier le
+  // pathname vu par le routeur SPA historique.
+  app.get('/admin/pilotage', (req, res) => {
+    if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+    sendCanonicalAdmin(res);
+  });
+
   [
+    '/admin',
+    '/admin/commerce',
+    '/admin/operations',
+    '/admin/finance',
+    '/admin/demo',
+    // Aliases de construction conservés pendant la fenêtre de cutover.
     '/admin-next',
     '/admin-next/commerce',
     '/admin-next/operations',
@@ -96,12 +122,13 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/pilotage-v2',
   ].forEach(routePath => {
     app.get(routePath, (req, res) => {
-      sendHtml(res, canonicalAdminPath);
+      sendCanonicalAdmin(res);
     });
   });
 
+  // Legacy 1 reste accessible pour toutes les capacités non encore remplacées
+  // par un Workspace / Entity 360 / Action Center Canonical.
   const ADMIN_DASHBOARD_PATHS = [
-    '/admin/pilotage',
     '/admin/control-tower',
     '/admin/costing',
     '/admin/orders-logistics',
@@ -134,7 +161,7 @@ function mountHtmlRoutes(app, rootDir) {
 
   ADMIN_DASHBOARD_PATHS.forEach(routePath => {
     app.get(routePath, (req, res) => {
-      sendHtml(res, path.join(publicDir, 'dashboards', 'admin', 'index.html'));
+      sendLegacyAdmin(res);
     });
   });
 
