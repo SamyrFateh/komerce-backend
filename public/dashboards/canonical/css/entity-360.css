@@ -1,0 +1,76 @@
+.kmc-entity-shell {
+  width: min(1440px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 48px;
+}
+
+.kmc-entity-header {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.kmc-entity-kicker {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kmc-muted, #64748b);
+}
+
+.kmc-entity-title {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1;
+}
+
+.kmc-entity-subtitle {
+  margin: 0;
+  color: var(--kmc-muted, #64748b);
+}
+
+.kmc-entity-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.kmc-entity-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  color: inherit;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(255,255,255,.78);
+}
+
+.kmc-entity-nav-link:hover,
+.kmc-entity-nav-link:focus-visible {
+  border-color: currentColor;
+}
+
+.kmc-entity-metrics {
+  margin-bottom: 20px;
+}
+
+.kmc-entity-shell > .kmc-section,
+.kmc-entity-shell > section {
+  margin-top: 18px;
+}
+
+@media (max-width: 720px) {
+  .kmc-entity-shell {
+    width: min(100% - 24px, 1440px);
+    padding-top: 16px;
+  }
+
+  .kmc-entity-nav {
+    gap: 8px;
+  }
+}
