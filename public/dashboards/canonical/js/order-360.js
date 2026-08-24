@@ -167,7 +167,7 @@
         tracking: row.tracking_number,
         status: row.status,
         poids: row.weight_kg == null ? '—' : `${formatNumber(row.weight_kg, 2)} kg`,
-        articles: formatNumber((row.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0)),
+        articles: formatNumber(row.items_quantity),
         expedie: formatDate(row.shipped_at),
       })),
       emptyText: 'Aucun colis actif.',
