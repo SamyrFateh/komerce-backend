@@ -1370,6 +1370,35 @@ CREATE VIEW public.customs_taux_mensuel AS
 
 
 --
+-- Name: dashboard_global_access_grants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dashboard_global_access_grants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    granted_by uuid,
+    reason text,
+    revoked_at timestamp with time zone,
+    revoked_by uuid
+);
+
+
+--
+-- Name: TABLE dashboard_global_access_grants; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.dashboard_global_access_grants IS 'Historique des grants autorisant le contexte dashboard global Komerce. Jamais dérivé du rôle admin ni de l absence de operator_market_scopes.';
+
+
+--
+-- Name: COLUMN dashboard_global_access_grants.revoked_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.dashboard_global_access_grants.revoked_at IS 'NULL = grant global actif. Révocation historisée par UPDATE, jamais DELETE.';
+
+
+--
 -- Name: disputes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1807,7 +1836,8 @@ CREATE TABLE public.invoices (
     pdf_sha256 text,
     pdf_filename text,
     pdf_generated_at timestamp with time zone,
-    template_version text DEFAULT '2026-08-v1'::text NOT NULL
+    template_version text DEFAULT '2026-08-v1'::text NOT NULL,
+    total_eur numeric(10,2)
 );
 
 
@@ -1816,6 +1846,13 @@ CREATE TABLE public.invoices (
 --
 
 COMMENT ON COLUMN public.invoices.public_token IS 'DEPRECATED 2026-08: aucune route publique; téléchargement authentifié uniquement';
+
+
+--
+-- Name: COLUMN invoices.total_eur; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.total_eur IS 'Montant en EUR — snapshot de orders.total_eur au moment de l''émission. Affiché sur la facture UNIQUEMENT si payment_mode = stripe_eur ou paypal_eur (P4, freeze 22-08-2026) ; sinon total_kmf fait foi. NULL pour les factures antérieures à cette migration — aucun backfill fabriqué.';
 
 
 --
@@ -5484,6 +5521,14 @@ ALTER TABLE ONLY public.customs_shipments
 
 
 --
+-- Name: dashboard_global_access_grants dashboard_global_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dashboard_global_access_grants
+    ADD CONSTRAINT dashboard_global_access_grants_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: disputes disputes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6721,6 +6766,13 @@ CREATE INDEX idx_customs_shipments_supplier ON public.customs_shipments USING bt
 --
 
 CREATE INDEX idx_customs_statut ON public.customs_history USING btree (statut) WHERE (statut IS NOT NULL);
+
+
+--
+-- Name: idx_dashboard_global_access_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_dashboard_global_access_user ON public.dashboard_global_access_grants USING btree (user_id) WHERE (revoked_at IS NULL);
 
 
 --
@@ -8446,6 +8498,13 @@ CREATE UNIQUE INDEX shared_carts_one_open_per_organizer ON public.shared_carts U
 
 
 --
+-- Name: uniq_active_dashboard_global_access; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_active_dashboard_global_access ON public.dashboard_global_access_grants USING btree (user_id) WHERE (revoked_at IS NULL);
+
+
+--
 -- Name: uniq_active_operator_scope; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8981,6 +9040,30 @@ ALTER TABLE ONLY public.customs_shipments
 
 ALTER TABLE ONLY public.customs_shipments
     ADD CONSTRAINT customs_shipments_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.partners(id) ON DELETE SET NULL;
+
+
+--
+-- Name: dashboard_global_access_grants dashboard_global_access_grants_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dashboard_global_access_grants
+    ADD CONSTRAINT dashboard_global_access_grants_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id);
+
+
+--
+-- Name: dashboard_global_access_grants dashboard_global_access_grants_revoked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dashboard_global_access_grants
+    ADD CONSTRAINT dashboard_global_access_grants_revoked_by_fkey FOREIGN KEY (revoked_by) REFERENCES public.users(id);
+
+
+--
+-- Name: dashboard_global_access_grants dashboard_global_access_grants_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dashboard_global_access_grants
+    ADD CONSTRAINT dashboard_global_access_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
