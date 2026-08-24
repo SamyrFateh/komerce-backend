@@ -95,22 +95,23 @@ describe('LOT 2-CUTOVER — frontière Legacy / Canonical', () => {
     }
   });
 
-  test('les aliases de construction restent disponibles pendant la fenêtre de cutover', () => {
+  test('les aliases de construction convergent vers les URLs stables', () => {
     const app = fakeApp();
     mountHtmlRoutes(app, ROOT);
-    const canonicalPath = path.join(ROOT, 'public', 'dashboards', 'canonical', 'index.html');
+    const expected = {
+      '/admin-next': '/admin/pilotage',
+      '/admin-next/commerce': '/admin/commerce',
+      '/admin-next/operations': '/admin/operations',
+      '/admin-next/finance': '/admin/finance',
+      '/admin-next/demo': '/admin/demo',
+      '/admin/pilotage-v2': '/admin/pilotage',
+    };
 
-    for (const routePath of [
-      '/admin-next',
-      '/admin-next/commerce',
-      '/admin-next/operations',
-      '/admin-next/finance',
-      '/admin-next/demo',
-      '/admin/pilotage-v2',
-    ]) {
-      const canonicalRes = fakeRes();
-      app._routes[routePath]({ query: {} }, canonicalRes);
-      expect(canonicalRes.sendFile).toHaveBeenCalledWith(canonicalPath, expect.any(Function));
+    for (const [routePath, stablePath] of Object.entries(expected)) {
+      const res = fakeRes();
+      app._routes[routePath]({ query: {} }, res);
+      expect(res.redirect).toHaveBeenCalledWith(302, stablePath);
+      expect(res.sendFile).not.toHaveBeenCalled();
     }
   });
 
