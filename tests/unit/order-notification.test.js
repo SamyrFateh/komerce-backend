@@ -291,6 +291,21 @@ describe('notifyStatusChange', () => {
     expect(mockWaOrderDelivered).toHaveBeenCalledWith(expect.objectContaining({ relayPoint: 'votre point relais' }));
   });
 
+  it('ajoute la localisation au même template WhatsApp pour "delivered"', async () => {
+    mockPickRecipients.mockReturnValueOnce([{ phone: '+269111', role: 'payer' }]);
+    mockWaOrderDelivered.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
+
+    await notifyStatusChange({
+      ...order,
+      relais_address: 'Volo-Volo, Grande Comore',
+    }, 'delivered');
+
+    expect(mockWaOrderDelivered).toHaveBeenCalledTimes(1);
+    expect(mockWaOrderDelivered).toHaveBeenCalledWith(expect.objectContaining({
+      relayPoint: expect.stringContaining('https://www.google.com/maps/search/?api=1&query='),
+    }));
+  });
+
   it('"collected" utilise le même template (waOrderDelivered) que "delivered"', async () => {
     mockPickRecipients.mockReturnValueOnce([{ phone: '+269111', role: 'beneficiary' }]);
     mockWaOrderDelivered.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
