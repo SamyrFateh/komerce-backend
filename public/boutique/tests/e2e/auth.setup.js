@@ -27,7 +27,8 @@
  * Ce setup ne doit JAMAIS tourner contre la production publique avec un
  * compte réel : réserver ce projet à staging ou à un compte de test dédié.
  *
- * Sélecteurs basés sur js/b-identity.js (gate OTP) — à ajuster si l'UI change :
+ * Sélecteurs basés sur js/b-komerce.js + js/b-identity.js :
+ *   onglet Mon Komerce → écran explicatif → #k-kmc-identify
  *   step "phone" → input téléphone + CTA envoi
  *   step "otp"   → 6 cases .k-id-otp-box + #k-id-otp-cta
  * Le succès se matérialise par la pose du cookie httpOnly d'auth actif par le
@@ -67,14 +68,14 @@ setup('authentifie le compte de test et sauvegarde la session', async ({ page, b
 
   await page.goto(baseURL);
 
-  // Ouvre le gate d'identité : l'onglet "komerce" (ex-"wallet", consolidé sous
-  // le bouton "Mon Komerce" — data-tab="komerce") ouvre désormais DIRECTEMENT
-  // la modale d'identité ("Accéder à Mon Komerce") quand non authentifié — il
-  // n'y a plus d'étape intermédiaire "vue wallet + bouton #k-wlt-auth-btn"
-  // (celle-ci a été retirée de js/b-komerce.js / js/b-wallet.js). Vérifié en
-  // observant le DOM réel : le clic sur l'onglet fait apparaître directement
-  // le dialog #k-id-step-phone.
+  // Mon Komerce n'ouvre plus l'OTP automatiquement pour un visiteur non
+  // identifié. Le premier écran explique ce qui sera accessible puis attend
+  // un clic explicite sur "M’identifier" (#k-kmc-identify). Ce contrat UX est
+  // volontaire : le setup doit suivre le même parcours qu'un utilisateur réel.
   await page.locator('[data-tab="komerce"]').first().click();
+  const identifyBtn = page.locator('#k-kmc-identify');
+  await expect(identifyBtn).toBeVisible({ timeout: 10_000 });
+  await identifyBtn.click();
 
   // ── Étape téléphone ──────────────────────────────────────────────────────
   // Le formulaire a 3 champs distincts (voir b-identity.js:437-452, ordre DOM

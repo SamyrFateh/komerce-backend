@@ -11,7 +11,7 @@
  *   4. Wallet (F02, F03, lifecycle) — si ALLOW_ORDER_SUBMIT + ALLOW_ORDER_CANCEL
  *   5. Admin (F30) — si ALLOW_STATUS_CHANGE
  *   6. Robustesse (R1-R5) — toujours
- *   7. Stress (S1-S9) — si ALLOW_ORDER_SUBMIT
+ *   7. Stress (S1-S9) — seulement si ALLOW_STRESS_TESTS + ALLOW_ORDER_SUBMIT
  *
  * Usage :
  *   # Minimum (lecture seule, sûr même en prod)
@@ -23,6 +23,7 @@
  *   TEST_ACCOUNT_PHONE=3211234 TEST_ACCOUNT_OTP=123456 \
  *   ALLOW_ORDER_SUBMIT=true ALLOW_ORDER_CANCEL=true \
  *   ALLOW_GROUP_FLOW=true ALLOW_STATUS_CHANGE=true \
+ *   ALLOW_STRESS_TESTS=true \
  *   KOMERCE_ENV=staging BASE_URL=https://komerce.co/boutique/ \
  *   node scripts/e2e-business-run.js
  *
@@ -55,6 +56,7 @@ const HAS_ORDER = !!process.env.ALLOW_ORDER_SUBMIT;
 const HAS_CANCEL = !!process.env.ALLOW_ORDER_CANCEL;
 const HAS_GROUP = !!process.env.ALLOW_GROUP_FLOW;
 const HAS_STATUS = !!process.env.ALLOW_STATUS_CHANGE;
+const HAS_STRESS = !!process.env.ALLOW_STRESS_TESTS;
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000/boutique/';
 
 // ── Matrice de tests dans l'ordre recommandé ─────────────────────────────
@@ -71,12 +73,12 @@ const ALL_SPECS = [
 
   // Phase 3 — Commandes
   { id: 'F01', file: 'order-flow.spec.js',            label: 'Commande cash complète',     requires: ['auth'], phase: 'order' },
-  { id: 'F07', file: 'stock-after-order.spec.js',     label: 'Stock décrémenté',           requires: ['auth', 'order'], phase: 'order' },
+  { id: 'F07', file: 'stock-after-order.spec.js',     label: 'Stock décrémenté',           requires: ['auth', 'order', 'cancel'], phase: 'order' },
   { id: 'F04p', file: 'order-confirmation.spec.js',   label: 'Écran confirmation',         requires: ['auth', 'order'], phase: 'order' },
 
   // Phase 4 — Wallet lifecycle (le plus ambitieux)
-  { id: 'F02', file: 'wallet-payment.spec.js',        label: 'Commande wallet 100%',       requires: ['auth', 'order'], phase: 'wallet' },
-  { id: 'F03', file: 'cancel-refund.spec.js',         label: 'Annulation + remboursement', requires: ['auth', 'cancel'], phase: 'wallet' },
+  { id: 'F02', file: 'wallet-payment.spec.js',        label: 'Commande wallet 100%',       requires: ['auth', 'order', 'cancel'], phase: 'wallet' },
+  { id: 'F03', file: 'cancel-refund.spec.js',         label: 'Annulation + remboursement', requires: ['auth', 'order', 'cancel'], phase: 'wallet' },
   { id: 'LIF', file: 'wallet-lifecycle.spec.js',      label: 'Cycle wallet complet',       requires: ['auth', 'order', 'cancel'], phase: 'wallet' },
 
   // Phase 5 — Admin
@@ -89,10 +91,9 @@ const ALL_SPECS = [
   // Phase 7 — Robustesse
   { id: 'R*',  file: 'business-resilience.spec.js',   label: 'Robustesse business',        requires: ['auth'], phase: 'resilience' },
 
-  // Phase 8 — Stress tests : le fichier contient S1/S3/S7 mutants et son
-  // beforeAll est fail-closed sans ALLOW_ORDER_SUBMIT. Ne jamais l'inclure
-  // dans le baseline lecture seule.
-  { id: 'S*',  file: 'stress-business.spec.js',       label: 'Stress : concurrence, gros panier, session', requires: ['auth', 'order'], phase: 'stress' },
+  // Phase 8 — Stress explicite : jamais activé implicitement par `order`.
+  // Plusieurs scénarios soumettent de vraies commandes ; ce lot reste le dernier cran.
+  { id: 'S*',  file: 'stress-business.spec.js',       label: 'Stress : concurrence, gros panier, session', requires: ['auth', 'order', 'stress'], phase: 'stress' },
 ];
 
 // ── Filtre selon les features activées ───────────────────────────────────
@@ -102,6 +103,7 @@ const CAPABILITY_MAP = {
   cancel: HAS_CANCEL,
   group:  HAS_GROUP,
   status: HAS_STATUS,
+  stress: HAS_STRESS,
 };
 
 function canRun(spec) {
@@ -119,6 +121,7 @@ console.log(`  ${c.dim}Order   :${c.reset} ${HAS_ORDER ? `${c.green}✓${c.reset
 console.log(`  ${c.dim}Cancel  :${c.reset} ${HAS_CANCEL ? `${c.green}✓${c.reset}` : `${c.dim}—${c.reset}`}`);
 console.log(`  ${c.dim}Group   :${c.reset} ${HAS_GROUP ? `${c.green}✓${c.reset}` : `${c.dim}—${c.reset}`}`);
 console.log(`  ${c.dim}Status  :${c.reset} ${HAS_STATUS ? `${c.green}✓${c.reset}` : `${c.dim}—${c.reset}`}`);
+console.log(`  ${c.dim}Stress  :${c.reset} ${HAS_STRESS ? `${c.green}✓${c.reset}` : `${c.dim}—${c.reset}`}`);
 
 if (!HAS_AUTH) {
   console.log(`\n  ${c.red}${c.bold}⛔ Impossible de lancer sans TEST_ACCOUNT_PHONE + TEST_ACCOUNT_OTP${c.reset}\n`);
@@ -174,7 +177,6 @@ for (const spec of runnable) {
     console.log(`${label} ${c.green}✓ OK${c.reset} ${c.dim}(${dur}s)${c.reset}`);
   } catch (err) {
     const dur = ((Date.now() - start) / 1000).toFixed(1);
-    // Extraire la dernière ligne d'erreur
     const stderr = (err.stderr || '').toString().trim().split('\n').pop();
     results.push({ ...spec, status: 'fail', duration: dur, error: stderr });
     console.log(`${label} ${c.red}✗ FAIL${c.reset} ${c.dim}(${dur}s)${c.reset}`);
