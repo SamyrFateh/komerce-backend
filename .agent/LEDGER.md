@@ -110,3 +110,12 @@ Clos pour le périmètre indiscutable :
 - Le chargement sans session reste silencieux et ne déclenche jamais l'OTP.
 - Aucun envoi WhatsApp métier n'est réintroduit.
 - Les nouvelles factures utilisent le HTML canonique avec le vrai logo Komerce et la version `2026-08-html-logo-v2` ; les PDF déjà émis restent immuables.
+
+## Localisation du relais avant confirmation — 2026-08-24
+
+- Le récapitulatif du relais sélectionné dans le checkout expose un lien compact « 📍 Localiser ce relais » avant toute confirmation ou tout paiement.
+- Le lien recherche dans Google Maps le nom et l'adresse publics déjà fournis par l'API relais ; aucune géolocalisation client ni permission navigateur n'est demandée.
+- Son activation ouvre un nouvel onglet, ne change jamais le relais et n'ouvre pas le picker « Changer ».
+- Le lien suit immédiatement un changement de relais et reste absent lorsque le relais ne fournit aucune donnée de localisation exploitable.
+- Aucun contrat de commande, paiement, OTP ou notification n'est modifié.
+- Tests checkout ciblés : 148/148 verts ; cartes, ownership, projections et gardes CSS sans régression.
