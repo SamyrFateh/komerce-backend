@@ -80,6 +80,7 @@ describe('_loadOrderFromParcel', () => {
     const result = await _loadOrderFromParcel('parcel-1');
 
     expect(result).toEqual({ id: 'order-1', reference: 'CMD-1' });
+    expect(mockDbQuery.mock.calls[0][0]).toMatch(/rel\.address\s+AS relais_address/);
   });
 
   it('renvoie null si aucune ligne', async () => {
