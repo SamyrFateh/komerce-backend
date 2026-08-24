@@ -46,7 +46,7 @@
  */
 
 const db = require('../db');
-const { notifyText } = require('./notification-service');
+const { notifyText, appendRelayLocation } = require('./notification-service');
 const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../utils/parcelSync');
 const { transitionOrderStatus } = require('./order-status-machine');
 const { resolveQrCollection } = require('./qr-collection-core');
@@ -441,8 +441,12 @@ async function _notifyPostScan(step, order_id, reference) {
         const masked = o.pickup_secret_last4
           ? ('•••-•' + o.pickup_secret_last4.slice(0, 2) + '-' + o.pickup_secret_last4.slice(2))
           : '••••••••';
-        notifyText(o.pickup_code_phone,
+        const message = appendRelayLocation(
           `Komerce · Bonjour ${o.pickup_code_name || 'client'}, votre colis est disponible au ${o.relais_name} (${o.relais_address}). Code de retrait (${masked}) : consultez-le dans l'app pour le voir en entier.`,
+          { name: o.relais_name, address: o.relais_address },
+        );
+        notifyText(o.pickup_code_phone,
+          message,
           'available', order_id
         ).catch(err => log.error({ err }, 'Notification available error'));
         return true;
