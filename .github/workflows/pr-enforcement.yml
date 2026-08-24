@@ -35,7 +35,7 @@ jobs:
       boutique_unit: ${{ steps.scope.outputs.boutique_unit }}
       boutique_package: ${{ steps.scope.outputs.boutique_package }}
       governance: ${{ steps.scope.outputs.governance }}
-      governance_files: ${{ steps.scope.outputs.govenance_files }}
+      governance_files: ${{ steps.scope.outputs.governance_files }}
     steps:
       - uses: actions/checkout@v4
         with:
