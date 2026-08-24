@@ -17,7 +17,7 @@ function payloadFixture() {
       { key: 'ca_encaisse', value: 120000, unit: 'KMF', data_quality: {} },
       { key: 'cmds_creees', value: 12, unit: 'count', data_quality: {} },
       { key: 'panier_moyen', value: 10000, unit: 'KMF', data_quality: {} },
-      { key: 'marge_consolidee', value: 18.5, unit: '%', data_quality: {} },
+      { key: 'marge_consolidee', value: 24500, unit: 'KMF', data_quality: {} },
     ],
     top_products: [
       { name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000 },
@@ -77,6 +77,7 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
 
     expect(sources['commerce.metrics']['ca-encaisse'].value).toContain('KMF');
     expect(sources['commerce.metrics']['commandes'].value).toBe('12');
+    expect(sources['commerce.metrics'].marge.value).toContain('KMF');
     expect(sources['commerce.top-products'][0]).toEqual({
       produit: 'Téléphone',
       categorie: 'Électronique',
