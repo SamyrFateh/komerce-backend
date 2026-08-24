@@ -6,10 +6,8 @@ on:
       - main
     types: [opened, synchronize, reopened, ready_for_review]
 
-# TEMP LOT 3A: write requis uniquement pour le refresh contractuel one-shot.
-# Restauré à contents: read dès que les artefacts générés sont poussés.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: pr-enforcement-${{ github.event.pull_request.number }}
@@ -43,6 +41,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
+      # CI FAST-4 : le classifier a besoin des deux arbres, pas de tout l'historique.
       - name: Fetch PR base commit only
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -57,6 +56,8 @@ jobs:
   backend:
     name: Backend gates
     needs: changes
+    # CI FAST-2 : le Golden partage ce runner avec Backend. Un changement du
+    # harnais Golden seul ouvre ce job sans exécuter les gates backend inutiles.
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.golden == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -69,75 +70,6 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-
-      - name: One-shot refresh Canonical Order 360 contract
-        if: needs.changes.outputs.backend == 'true'
-        env:
-          NODE_ENV: test
-          DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
-          ADMIN_PASSWORD: ci-dummy
-          STRIPE_WEBHOOK_SECRET: whsec_dummy
-          QR_SECRET: ci-dummy
-          JWT_SECRET: ci-dummy
-          SESSION_SECRET: ci-dummy
-          INTERNAL_API_KEY: ci-dummy
-          STRIPE_SECRET_KEY: sk_test_dummy
-          JWT_EXPIRES: 7d
-          APP_URL: http://localhost
-          PUBLIC_URL: http://localhost
-          PUBLIC_BASE_URL: http://localhost
-          ADMIN_RESET_KEY: ci-dummy
-          INVOICE_PUBLIC_LINK_SECRET: ci-dummy
-          AUTHKEY_API_KEY: ci-dummy
-          PAYPAL_CLIENT_ID: ci-dummy
-          PAYPAL_CLIENT_SECRET: ci-dummy
-          PAYPAL_WEBHOOK_ID: ci-dummy
-          META_WA_TOKEN: ci-dummy
-          META_WA_PHONE_NUMBER_ID: ci-dummy
-          META_WA_APP_SECRET: ci-dummy
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          p = Path('scripts/contract-generate.js')
-          s = p.read_text()
-
-          route_marker = "  { prefix: '/api/admin/dashboard/finance/market/{marketCode}', method: 'get', schema: null },\n"
-          route_block = """  // LOT 3A — Canonical Order 360
-  { prefix: '/api/admin/entities/orders/{orderReference}', method: 'get', schema: null },
-"""
-          if route_block not in s:
-              if route_marker not in s:
-                  raise SystemExit('Finance route marker not found')
-              s = s.replace(route_marker, route_marker + route_block, 1)
-
-          response_marker = "const KNOWN_RESPONSES = {\n"
-          response_block = """  // LOT 3A — réponse Order 360 consommée par Canonical.
-  '/api/admin/entities/orders/{orderReference}': {
-    get: { fields: ['order','summary','items','parcels','history','scans','incidents','comments','notifications','invoices','documents','data_quality'], source: 'test' }
-  },
-"""
-          if response_block not in s:
-              if response_marker not in s:
-                  raise SystemExit('KNOWN_RESPONSES marker not found')
-              s = s.replace(response_marker, response_marker + response_block, 1)
-
-          p.write_text(s)
-          PY
-
-          node scripts/gen-route-registry.js
-          npm run contract:generate
-          node scripts/contract-check.js
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/contract-generate.js docs/_generated/route-registry.json docs/contract/openapi.json
-          if git diff --cached --quiet; then
-            echo "No contract refresh needed"
-          else
-            git commit -m "chore(contract): refresh Order 360 route"
-            git push origin HEAD:${{ github.event.pull_request.head.ref }}
-          fi
 
       - name: Quality gate
         if: needs.changes.outputs.backend == 'true'
@@ -179,6 +111,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
+      # schema-freshness doit retrouver le dernier commit ayant réellement
+      # touché le dump. Un seul fetch rend le checkout non-shallow en ne
+      # récupérant que l'historique des branches head+base, sans blobs/tags.
       - name: Fetch PR history for migration/schema gates
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
@@ -187,6 +122,7 @@ jobs:
           git fetch --no-tags --filter=blob:none --unshallow origin \
             "+refs/heads/${HEAD_REF}:refs/remotes/origin/${HEAD_REF}" \
             "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+      # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
       - name: Migration immutability
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -211,6 +147,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
+      # Seul le sanitize diff a besoin du commit de base ; CSS/HTML/tests n'en ont pas besoin.
       - name: Fetch PR base commit for sanitize diff
         if: needs.changes.outputs.boutique_js == 'true'
         env:
@@ -286,6 +223,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+      # Gates pure-Node : le runner fournit déjà Node >=20, aucun setup/npm ci requis.
+      # Mode --check uniquement : ne jamais generer (--write) en CI. Le git diff
+      # final prouve l'absence de mutation, donc l'absence de faux-rouge d'artefact.
       - name: Feature slice guard
         run: node scripts/feature-guard.js --strict
       - name: Business graph reconstructible and fresh
