@@ -75,6 +75,7 @@
       },
     ],
     drill: [
+      { id: 'commerce-canonical', label: 'Commerce', href: '/admin-next/commerce' },
       { id: 'demo-staging', label: 'Cockpit commande · staging', href: '/admin-next/demo' },
       { id: 'pilotage-legacy', label: 'Témoin Pilotage historique', href: '/admin/pilotage' },
     ],
