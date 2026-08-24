@@ -49,6 +49,14 @@ jest.mock('../../js/b-checkout-render.js', () => ({
   setCheckoutConfirmButton: jest.fn((btn, main, sub) => {
     if (btn) btn.dataset.subText = sub || '';
   }),
+  buildRelayMapUrl: jest.fn((relay = {}) => {
+    const query = [relay.name || relay.nom, relay.address || relay.adresse || relay.location]
+      .filter(Boolean)
+      .join(', ');
+    return query
+      ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query)
+      : null;
+  }),
   buildOrderSuccessDOM: jest.fn(() => ({ copyBtn: null, closeBtn: null, trackBtn: null })),
   buildIdentityRecapDOM: jest.fn(() => {
     const el = global.document.createElement('div');
@@ -60,7 +68,10 @@ jest.mock('../../js/b-checkout-render.js', () => ({
   renderStepHeader: jest.fn(({ state: stepState, label, sublabel, onChange }) => {
     const el = global.document.createElement('div');
     el.className = 'ck-step-header ck-step-header--' + stepState;
-    el.textContent = [label, sublabel].filter(Boolean).join(' ');
+    const text = global.document.createElement('span');
+    text.className = 'ck-step-header-text';
+    text.textContent = [label, sublabel].filter(Boolean).join(' ');
+    el.appendChild(text);
     if (onChange) el.addEventListener('click', onChange);
     return el;
   }),
