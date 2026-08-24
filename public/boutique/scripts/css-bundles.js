@@ -29,7 +29,7 @@ const BUNDLES = [
     out: 'components.css',
     files: ['categories', 'category-cutout-navigation', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
             'modal-desktop-density', 'modal-mobile-canonical', 'modal-enriched-content', 'modal-cart-sku-guard',
-            'cart', 'interactions', 'modal-mobile-suggestion-actions', 'modal-product-polish', 'modal-suggestion-filter', 'hero-cart-proxy',
+            'cart', 'interactions', 'modal-mobile-suggestion-actions', 'modal-product-polish', 'modal-suggestion-filter', 'modal-suggestion-card-polish', 'hero-cart-proxy',
             'shared-list-side-cart', 'shared-list-side-cart-responsive', 'shared-list-library-remove',
             'shared-list-lists-tab',
             'share-cart', 'identity', 'paypal', 'wallet', 'komerce', 'notifications', 'checkout-vertical-rail',
