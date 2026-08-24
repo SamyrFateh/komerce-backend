@@ -5,16 +5,34 @@ Ce répertoire est la seule cible de nouveau développement pour l'admin Komerce
 ## Frontière
 
 - `../admin-legacy/**` : Legacy 0, deprecated.
-- `../admin/**` : Legacy 1, runtime historique encore servi, maintenance corrective uniquement.
-- `./**` : génération canonical.
+- `../admin/**` : Legacy 1, rollback et capacités non encore reconstruites uniquement.
+- `./**` : génération Canonical, runtime courant des quatre dashboards.
 
-Le code canonical ne doit importer ni référencer du JavaScript, du CSS ou des vues des deux générations legacy.
+Le code Canonical ne doit importer ni référencer du JavaScript, du CSS ou des vues des deux générations legacy.
 
 Les anciennes vues restent des témoins fonctionnels : leurs besoins légitimes sont réexprimés à partir des API, agrégateurs et services canoniques.
 
-Route de construction : `/admin-next`.
+## LOT 2-CUTOVER — routes stables
 
-Les routes `/admin/*` ne basculent vers ce runtime qu'après preuve explicite de remplacement.
+Les quatre dashboards prouvés sont désormais servis par les URLs admin stables :
+
+- `/admin` et `/admin/pilotage` → Pilotage Canonical ;
+- `/admin/commerce` → Commerce Canonical ;
+- `/admin/operations` → Opérations Canonical ;
+- `/admin/finance` → Finance Canonical ;
+- `/admin/demo` → cockpit commande staging.
+
+Les aliases `/admin-next/**` et `/admin/pilotage-v2` restent disponibles pendant la fenêtre de cutover.
+
+Le cutover est **additif** : les anciennes capacités qui n'ont pas encore d'équivalent Workspace / Entity 360 / Action Center continuent d'être servies par Legacy 1 sur leurs URLs historiques. Elles ne sont ni supprimées ni masquées.
+
+Pilotage est la seule URL qui entrait directement en collision avec Legacy 1. Son rollback immédiat est donc :
+
+`/admin/pilotage?legacy=1`
+
+Le serveur conserve le pathname `/admin/pilotage`, ce qui permet au routeur SPA Legacy 1 de retrouver exactement `PilotageView` sans modifier son code.
+
+Contrat de cutover : `docs/contract/DASHBOARD_CUTOVER_2.md`.
 
 ## Primitives V1 — LOT 2A-CANON
 
@@ -23,7 +41,7 @@ La liste est volontairement fermée :
 - `UIState`
 - `FilterBar`
 - `Section`
-- `MetricStrip`
+- `MetricStrip/KPI`
 - `AlertPanel`
 - `DataTable`
 - `ChartPanel`
@@ -57,8 +75,6 @@ Le renderer ne contient ni `fetch`, ni endpoint API, ni moteur graphique. Il dé
 
 `FilterBar → MetricStrip → AlertPanel → Sections → Drill`.
 
-Le futur LOT 2C-CANON devra donc assembler les sources de Pilotage avant d'appeler le renderer ; il ne devra pas créer un shell ou un renderer parallèle.
-
 ## AdminContext + MarketScope — prérequis LOT 2C-CANON
 
 `js/admin-context.js` formalise la projection UI d'une autorité déjà résolue par le serveur. Il ne lit ni query string, ni stockage local, ni endpoint et ne déduit jamais un scope depuis le rôle.
@@ -68,6 +84,6 @@ Le futur LOT 2C-CANON devra donc assembler les sources de Pilotage avant d'appel
 - `allowedMarkets` : ensemble de navigation autorisé, jamais une liste fabriquée par le client ;
 - `capabilities` : adaptation fonctionnelle de l'interface, jamais remplacement de l'autorisation backend.
 
-Chaque future source de Pilotage devra appliquer `requireMarketScope` côté serveur avant agrégation. Le filtre pays du `DashboardSchema` n'est qu'un contrôle de présentation.
+Chaque source market-scoped applique `requireMarketScope` côté serveur avant agrégation. Le filtre pays du `DashboardSchema` n'est qu'un contrôle de présentation.
 
 Contrat complet : `docs/contract/DASHBOARD_MARKET_SCOPE_2C.md`.
