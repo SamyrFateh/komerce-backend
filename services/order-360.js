@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          canonical-order-360-service
- * @domain        dashboard
+ * @domain        admin-dashboard
  * @layer         service
  * @criticality   high
  * @inputs        server_resolved_order
