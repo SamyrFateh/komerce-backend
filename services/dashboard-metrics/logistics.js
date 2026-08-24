@@ -11,18 +11,13 @@
  * @db-read       orders, parcels
  * @db-write      (none)
  * @db-txn        @none
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      server_market_scope_is_authority
  * @impact-areas  dashboard, admin-dashboard, orders-logistics
- * @version       2026-06
+ * @version       2026-08
  */
 
 /**
- * KOMERCE — Dashboard Metrics — Logistics (7 KPIs + 1 alias) — Lot C3
- * ════════════════════════════════════════════════════════════════════════
- * Extrait de services/dashboard-metrics.js (1081L) — Lot B/C Refacto.
- *
- * getColisTransit est un alias de getColisEnTransit (INV-3) —
- * dependance volontaire vers control-tower.js, pas de duplication SQL.
+ * KOMERCE — Dashboard Metrics — Logistics (7 KPIs + 1 alias)
  */
 
 'use strict';
@@ -31,33 +26,34 @@ const db = require('../../db');
 const { buildFiltersClause, computeDelta, makeKpi } = require('./_helpers');
 const { getColisEnTransit } = require('./control-tower');
 
-// ═══════════════════════════════════════════════════════════════════════
-// LOGISTICS — 8 KPIs (alias + nouveaux)
-// ═══════════════════════════════════════════════════════════════════════
-
 async function getCmdsAujourdhui(filters = {}) {
+  // Historiquement ce KPI ignore from/to/island/etc. car il signifie strictement
+  // "aujourd'hui". LOT 2C lui ajoute uniquement le scope d'autorité marché.
+  const scopeFilters = filters.market_id ? { market_id: filters.market_id } : {};
+  const { where, params } = buildFiltersClause(scopeFilters);
+
   const sql = `
     SELECT COUNT(*)::int AS value
     FROM orders o
-    WHERE o.created_at >= CURRENT_DATE
+    WHERE ${where}
+      AND o.created_at >= CURRENT_DATE
       AND o.created_at < CURRENT_DATE + INTERVAL '1 day'
   `;
-  const r = await db.query(sql);
+  const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
 
-  // Delta vs hier
   const ySql = `
     SELECT COUNT(*)::int AS value
     FROM orders o
-    WHERE o.created_at >= CURRENT_DATE - INTERVAL '1 day'
+    WHERE ${where}
+      AND o.created_at >= CURRENT_DATE - INTERVAL '1 day'
       AND o.created_at < CURRENT_DATE
   `;
-  const yR = await db.query(ySql);
+  const yR = await db.query(ySql, params);
   const delta = computeDelta(value, Number(yR.rows[0].value), 'hier');
 
   return makeKpi('cmds_aujourdhui', 'Commandes aujourd\'hui', value, 'count', { delta });
 }
-
 
 async function getPaiementsEnAttente(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
@@ -76,7 +72,6 @@ async function getPaiementsEnAttente(filters = {}) {
   });
 }
 
-
 async function getColisPreparation(filters = {}) {
   const { where, params } = buildFiltersClause(filters, 'o');
   const sql = `
@@ -91,7 +86,6 @@ async function getColisPreparation(filters = {}) {
   return makeKpi('colis_preparation', 'Colis préparation', value, 'count');
 }
 
-// Alias pour INV-3
 async function getColisTransit(filters) { return getColisEnTransit(filters); }
 
 async function getDisponiblesRelais(filters = {}) {
@@ -109,7 +103,6 @@ async function getDisponiblesRelais(filters = {}) {
     drillTo: '/admin/orders-logistics?parcel_status=available',
   });
 }
-
 
 async function getRetardsCritiques(filters = {}) {
   const { where, params } = buildFiltersClause(filters, 'o');
@@ -130,9 +123,7 @@ async function getRetardsCritiques(filters = {}) {
   });
 }
 
-
 async function getTauxCollecteRelais(filters = {}) {
-  // Ratio collected / (available + collected) sur la periode
   const { where, params } = buildFiltersClause(filters, 'o');
   const sql = `
     SELECT
@@ -153,11 +144,6 @@ async function getTauxCollecteRelais(filters = {}) {
     completeness: total > 0 ? 'complete' : 'provisional',
   });
 }
-
-// ═══════════════════════════════════════════════════════════════════════
-// WORKSPACES — 8 KPIs
-// ═══════════════════════════════════════════════════════════════════════
-
 
 module.exports = {
   getCmdsAujourdhui,
