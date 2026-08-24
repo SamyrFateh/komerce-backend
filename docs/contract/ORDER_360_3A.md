@@ -24,6 +24,8 @@ La référence métier reste lisible dans l’URL. Les UUID internes ne sont pas
 GET /api/admin/entities/orders/:orderReference
 ```
 
+Cette route fait partie du contrat HTTP bloquant : elle doit être déclarée dans `scripts/contract-generate.js`, projetée dans le route-registry et présente dans `docs/contract/openapi.json` avant merge.
+
 Chaîne d’autorité :
 
 ```text
