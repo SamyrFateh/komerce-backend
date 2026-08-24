@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 18,
-    "total_routes": 437,
+    "total_routes": 439,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -4698,6 +4698,65 @@
         }
       }
     },
+    "/api/admin/dashboard/operations/market/{marketCode}": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/operations/market/{marketCode}",
+        "x-route-file": "routes/admin-dashboard-market.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "kpis": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "active_orders": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "critical_delays": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "signals": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/dashboard/commerce": {
       "get": {
         "summary": "GET /api/admin/dashboard/commerce",
@@ -4733,6 +4792,55 @@
                       "x-observed": true
                     },
                     "funnel": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/operations": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/operations",
+        "x-route-file": "routes/admin-dashboard-market.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "kpis": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "active_orders": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "critical_delays": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "signals": {
                       "type": "string",
                       "x-observed": true
                     },

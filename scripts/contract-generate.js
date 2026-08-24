@@ -184,6 +184,9 @@ const ROUTE_SCHEMA_MAP = [
   // LOT 2D — Canonical Commerce global + market-scoped
   { prefix: '/api/admin/dashboard/commerce', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/commerce/market/{marketCode}', method: 'get', schema: null },
+  // LOT 2E — Canonical Operations global + market-scoped
+  { prefix: '/api/admin/dashboard/operations', method: 'get', schema: null },
+  { prefix: '/api/admin/dashboard/operations/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -203,6 +206,13 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 2E — réponses Operations consommées par Canonical.
+  '/api/admin/dashboard/operations': {
+    get: { fields: ['scope','kpis','active_orders','critical_delays','signals','data_quality'], source: 'test' }
+  },
+  '/api/admin/dashboard/operations/market/{marketCode}': {
+    get: { fields: ['scope','kpis','active_orders','critical_delays','signals','data_quality'], source: 'test' }
+  },
   // LOT 2D — réponses Commerce consommées par Canonical.
   '/api/admin/dashboard/commerce': {
     get: { fields: ['scope','period','kpis','top_products','categories','funnel','data_quality'], source: 'test' }
