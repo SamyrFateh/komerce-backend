@@ -1,6 +1,6 @@
 # Doctrine des notifications client Komerce
 
-> **Version** : 2026-08 — information essentielle dans l'application, sans transport WhatsApp métier.
+> **Version** : 2026-08 — information essentielle dans l'application, canal WhatsApp utilitaire strictement borné.
 
 ## Principe
 
@@ -46,14 +46,15 @@ Une exception sans action ou simple détail technique ne devient pas une notific
 - Sans notification réelle, aucun conteneur de bandeau n'est monté et le header conserve sa géométrie canonique.
 - Avec un message réel, le bandeau flotte sous la navigation sur desktop comme mobile sans réserver d'espace dans le header ou le hero ; il disparaît après acquittement.
 - L'application visible rafraîchit au plus une fois par minute ; ce polling ne crée aucun nouvel événement.
-- Aucun document, lien documentaire ou notification métier n'est envoyé par WhatsApp.
+- Aucun document ni lien documentaire n'est envoyé par WhatsApp.
+- Le message WhatsApp existant « colis disponible » peut contenir un unique lien cartographique calculé depuis le nom et l'adresse publics du relais. Ce lien n'ajoute aucun message, ne révèle aucune donnée client et ne bloque jamais la transition métier.
 - Les animations respectent `prefers-reduced-motion`.
 
 ## Hors périmètre
 
 - remplacement ou contournement de l'OTP ;
 - push navigateur ou natif ;
-- email, SMS et WhatsApp métier ;
+- nouvelle campagne email, SMS ou WhatsApp, et toute duplication du jalon « disponible » ;
 - centre bavard listant tous les mouvements ;
 - compteur artificiel destiné à augmenter l'engagement.
 
