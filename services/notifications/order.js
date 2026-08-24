@@ -25,6 +25,7 @@ const {
   _alertNotificationFailure, logNotification,
   firstName, formatAmount, pickPhone, pickRecipients,
 } = require('./internals');
+const { formatRelayPoint } = require('./relay-location');
 
 async function notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText) {
   const recipients = pickRecipients(order, 'order_created');
@@ -175,9 +176,12 @@ async function notifyStatusChange(order, newStatus) {
         orderRef: order.reference,
       };
 
-      // Pour shipped/delivered/collected, ajouter le point relais
+      // Le jalon « disponible » transporte le même message, enrichi d'un
+      // lien cartographique. Aucun second WhatsApp n'est émis.
       if (newStatus === 'shipped' || newStatus === 'delivered' || newStatus === 'collected') {
-        params.relayPoint = order.relais_name || 'votre point relais';
+        params.relayPoint = newStatus === 'delivered'
+          ? formatRelayPoint({ name: order.relais_name, address: order.relais_address })
+          : (order.relais_name || 'votre point relais');
       }
 
       const result = await entry.fn(params);

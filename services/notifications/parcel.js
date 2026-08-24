@@ -40,6 +40,7 @@ async function _loadOrderFromParcel(parcelId) {
          r.full_name   AS recipient_name,
          o.total_kmf,
          rel.name      AS relais_name,
+         rel.address   AS relais_address,
          p.reference AS parcel_reference
        FROM parcels p
        LEFT JOIN orders o   ON o.id = p.order_id

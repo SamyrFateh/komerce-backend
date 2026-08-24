@@ -67,6 +67,7 @@ module.exports = {
       'tests/unit/parcel-notification.test.js',
       'tests/unit/client-notification-service.test.js',
       'tests/unit/client-notifications-route.test.js',
+      'tests/unit/relay-location.test.js',
     ],
     migrations: [
       'migrations/022b_sms_queue.sql',
@@ -95,6 +96,7 @@ module.exports = {
       'services/notifications/otp-auth.js',      // sendOtpMessage, sendMagicLink
       'services/notifications/loyalty.js',       // notifyLoyaltyEarned
       'services/notifications/misc.js',          // notifyText
+      'services/notifications/relay-location.js', // lien cartographique du relais, sans géocodeur
       'services/alert-engine.js',
       'services/client-notification-service.js',
     ],
@@ -162,6 +164,7 @@ module.exports = {
       { fn: 'sendOtpMessage / sendMagicLink', file: 'services/notifications/otp-auth.js' },
       { fn: 'notifyLoyaltyEarned', file: 'services/notifications/loyalty.js' },
       { fn: 'notifyText',    file: 'services/notifications/misc.js' },
+      { fn: 'buildRelayMapUrl / formatRelayPoint / appendRelayLocation', file: 'services/notifications/relay-location.js' },
       { fn: 'emitOrderMilestone / emitExceptional / resolveOrderMilestones', file: 'services/client-notification-service.js' },
     ],
     consumes: [
@@ -205,6 +208,7 @@ module.exports = {
     'la lecture réconcilie une émission manquée depuis la vérité métier sans créer de doublon',
     'un jalon plus récent résout le jalon précédent de la même commande sans créer un message pour in_transit',
     'une exception exige une clé order.exception.* et un déclencheur métier confirmé',
+    'le WhatsApp de disponibilité peut enrichir son message existant d un unique lien cartographique dérivé du nom et de l adresse publics du relais ; aucun second message n est émis',
   ],
 
   // ── Classification ────────────────────────────────────────────────────────

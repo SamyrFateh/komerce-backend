@@ -7324,6 +7324,13 @@
       },
       {
         "feature": "notifications",
+        "category": "tests",
+        "declared": "tests/unit/relay-location.test.js",
+        "resolvedPath": "tests/unit/relay-location.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "notifications",
         "category": "migrations",
         "declared": "migrations/022b_sms_queue.sql",
         "resolvedPath": "migrations/022b_sms_queue.sql",
@@ -7447,6 +7454,13 @@
         "declared": "services/notifications/misc.js",
         "resolvedPath": "services/notifications/misc.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "notifications",
+        "category": "services",
+        "declared": "services/notifications/relay-location.js",
+        "resolvedPath": "services/notifications/relay-location.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "notifications",
@@ -13954,6 +13968,12 @@
         "feature": "notifications",
         "fn": "notifyText",
         "file": "services/notifications/misc.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "notifications",
+        "fn": "buildRelayMapUrl / formatRelayPoint / appendRelayLocation",
+        "file": "services/notifications/relay-location.js",
         "status": "resolved"
       },
       {
@@ -21624,6 +21644,10 @@
               {
                 "sourceFileId": "tests/unit/scan-operations.test.js",
                 "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/scan-operations.test.js",
+                "targetFile": "services/notifications/relay-location.js"
               }
             ]
           }
@@ -25675,7 +25699,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 864
+        "filesObserved": 866
       },
       "boutique": {
         "filesObserved": 169,

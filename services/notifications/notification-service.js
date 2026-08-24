@@ -41,6 +41,7 @@ const { _loadOrderFromParcel, notifyParcelScan, notifyParcelCreated } = require(
 const { sendOtpMessage, sendMagicLink } = require('./otp-auth');
 const { notifyLoyaltyEarned } = require('./loyalty');
 const { notifyText } = require('./misc');
+const { buildRelayMapUrl, formatRelayPoint, appendRelayLocation } = require('./relay-location');
 
 module.exports = {
   // Flux commande
@@ -59,6 +60,11 @@ module.exports = {
 
   // ZG-1 — texte libre
   notifyText,
+
+  // Localisation utilitaire du relais dans le jalon WhatsApp « disponible »
+  buildRelayMapUrl,
+  formatRelayPoint,
+  appendRelayLocation,
 
   // Fidélité
   notifyLoyaltyEarned,

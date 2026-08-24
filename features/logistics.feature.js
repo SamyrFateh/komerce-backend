@@ -366,6 +366,7 @@ module.exports = {
       test: 'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js' },
     'le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l\'agent relais — comparaison aveugle uniquement',
     'le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l\'un ne bloque jamais l\'autre',
+    'le jalon disponible au relais transmet à notifications le nom et l adresse publics nécessaires au lien de localisation, sans géocodage bloquant',
   ],
 
 };

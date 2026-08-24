@@ -35,7 +35,7 @@ jest.mock('../../services/pickup-secret-service', () => ({
 
 const db                       = require('../../db');
 const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../../utils/parcelSync');
-const { notifyText }           = require('../../services/notification-service');
+const { notifyText, appendRelayLocation } = require('../../services/notification-service');
 const { transitionOrderStatus } = require('../../services/order-status-machine');
 const scanOps                  = require('../../services/scan-operations');
 
@@ -55,6 +55,9 @@ beforeEach(() => {
   jest.clearAllMocks();
   safeSyncScanToParcels.mockResolvedValue({ synced: true });
   notifyText.mockResolvedValue(true);
+  appendRelayLocation.mockImplementation(
+    (...args) => require('../../services/notifications/relay-location').appendRelayLocation(...args),
+  );
   transitionOrderStatus.mockResolvedValue({ success: true });
 });
 
@@ -209,6 +212,7 @@ describe('recordScan', () => {
 
     expect(result.body.sms_triggered).toBe(true);
     expect(notifyText).toHaveBeenCalledWith('+269333333', expect.stringContaining('disponible'), 'available', 'o1');
+    expect(notifyText.mock.calls[0][1]).toContain('https://www.google.com/maps/search/?api=1&query=');
     const recipientQuery = db.query.mock.calls[1][0];
     expect(recipientQuery).toMatch(/pickup_code_recipient_user_id/);
     expect(recipientQuery).toMatch(/COALESCE\(pcu\.phone, rc\.phone\)/);
