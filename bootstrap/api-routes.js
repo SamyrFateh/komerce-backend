@@ -126,6 +126,8 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   // Les services repair-collective-*.js et la route /api/admin/collective ne sont plus montés.
 
   app.use('/api/admin/risk-provisions',    adminRiskProvisionsRouter);
+  // LOT 2C — route Pilotage market-scoped montée avant l'agrégateur global historique.
+  app.use('/api/admin/dashboard',   require('../routes/admin-dashboard-market'));
   app.use('/api/admin/dashboard',   require('../routes/admin-dashboard'));
   app.use('/api/admin/costing',     require('../routes/admin-costing'));
   app.use('/api/admin',      catalogApprovalRouter);
