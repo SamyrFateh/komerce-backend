@@ -180,6 +180,9 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/pickup/verify',       method: 'post',   schema: null },
   { prefix: '/api/pickup/collect',      method: 'post',   schema: null },
   // ADMIN — surfaces dashboards
+  // LOT 2C — Canonical AdminContext + Pilotage market-scoped
+  { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
+  { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
   { prefix: '/api/admin/costing/products', method: 'get', schema: null },
   { prefix: '/api/admin/costing/relais',   method: 'get', schema: null },
@@ -197,6 +200,13 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 2C — réponses consommées par Canonical et couvertes par tests.
+  '/api/admin/dashboard/context': {
+    get: { fields: ['actor','access'], source: 'test' }
+  },
+  '/api/admin/dashboard/unified/market/{marketCode}': {
+    get: { fields: ['scope','kpis_global','view_blocks','economic_flow','principles','system_alerts','data_quality'], source: 'test' }
+  },
   // AUTH-2/AUTH-4 — WebAuthn option shapes come from services/webauthn-service.js.
   '/api/auth/passkey/register/options': { post: { fields: ['challenge','rp','user','pubKeyCredParams','timeout','attestation','excludeCredentials','authenticatorSelection','extensions'], source: 'service-read' } },
   '/api/auth/passkey/register/verify':  { post: { fields: ['verified'], source: 'route-read' } },

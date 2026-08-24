@@ -4,15 +4,15 @@
  * @domain        admin-dashboard
  * @layer         ui-entrypoint
  * @criticality   medium
- * @inputs        user_session, url_path
+ * @inputs        user_session, server_resolved_admin_context, url_path
  * @outputs       canonical_admin_boot_state
- * @depends       canonical pilotage, demo-order-flow
+ * @depends       canonical admin-context, pilotage, demo-order-flow
  * @used-by       /admin-next, /admin/pilotage-v2
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      canonical_admin_no_legacy_imports
- * @impact-areas  admin-dashboard
+ * @doctrine      canonical_admin_no_legacy_imports, server_market_scope_is_authority
+ * @impact-areas  admin-dashboard, market-authorization
  * @version       2026-08
  */
 
@@ -53,16 +53,42 @@
     return user;
   }
 
+  async function requireAdminContext() {
+    const response = await global.fetch('/api/admin/dashboard/context', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (response.status === 401) {
+      global.location.replace(loginUrl());
+      throw new Error('unauthorized');
+    }
+    if (!response.ok) {
+      if (response.status === 403) global.location.replace('/');
+      throw new Error(response.status === 403 ? 'forbidden' : 'admin_context_unavailable');
+    }
+
+    if (!global.KomerceAdminContext || typeof global.KomerceAdminContext.validateAdminContext !== 'function') {
+      throw new Error('canonical_admin_context_contract_missing');
+    }
+
+    const rawContext = await response.json();
+    return global.KomerceAdminContext.validateAdminContext(rawContext);
+  }
+
   function surfaceForPath(pathname) {
     if (pathname === '/admin-next/demo') return SURFACES.DEMO;
     return SURFACES.PILOTAGE;
   }
 
-  function renderPilotage(root, user) {
+  function renderPilotage(root, user, adminContext) {
     if (!global.KomerceCanonicalPilotage) throw new Error('canonical_pilotage_module_missing');
     return global.KomerceCanonicalPilotage.mount({
       root,
       user,
+      adminContext,
+      contextContract: global.KomerceAdminContext,
       document: global.document,
       fetch: global.fetch.bind(global),
       renderer: global.KomerceDashboardRenderer,
@@ -80,10 +106,10 @@
     });
   }
 
-  function renderReady(root, user) {
+  function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
-    return renderPilotage(root, user);
+    return renderPilotage(root, user, adminContext);
   }
 
   async function boot() {
@@ -91,8 +117,10 @@
     if (!root) throw new Error('canonical_admin_root_missing');
 
     const user = await requireSession();
+    const adminContext = await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
-    await renderReady(root, user);
+    global.KOMERCE_CANONICAL_ADMIN_CONTEXT = adminContext;
+    await renderReady(root, user, adminContext);
     return user;
   }
 
@@ -100,6 +128,7 @@
     SURFACES,
     boot,
     requireSession,
+    requireAdminContext,
     surfaceForPath,
     renderPilotage,
     renderDemo,

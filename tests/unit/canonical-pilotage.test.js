@@ -7,6 +7,7 @@
 'use strict';
 
 const schemaContract = require('../../public/dashboards/canonical/js/dashboard-schema');
+const adminContextContract = require('../../public/dashboards/canonical/js/admin-context');
 const pilotage = require('../../public/dashboards/canonical/js/pilotage');
 
 function payloadFixture() {
@@ -30,6 +31,30 @@ function payloadFixture() {
     ],
     economic_flow: {
       stages: [{ label: 'Commande', url: '/admin/orders-logistics' }],
+    },
+  };
+}
+
+function globalContext() {
+  return {
+    actor: { id: 'hq-admin', role: 'admin' },
+    access: {
+      mode: 'global',
+      allowedMarkets: ['CM', 'CG', 'KM'],
+      defaultMarket: null,
+      capabilities: ['pilotage.read', 'dashboard.market.read', 'dashboard.global.read'],
+    },
+  };
+}
+
+function marketContext() {
+  return {
+    actor: { id: 'operator-cm', role: 'admin' },
+    access: {
+      mode: 'market',
+      allowedMarkets: ['CM'],
+      defaultMarket: 'CM',
+      capabilities: ['pilotage.read', 'dashboard.market.read'],
     },
   };
 }
@@ -64,7 +89,18 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
     });
   });
 
-  test('mount charge la source canonique puis rend le dashboard', async () => {
+  test('l’endpoint est résolu uniquement depuis AdminContext validé', () => {
+    expect(pilotage.endpointForContext(globalContext(), adminContextContract))
+      .toBe('/api/admin/dashboard/unified');
+    expect(pilotage.endpointForContext(marketContext(), adminContextContract))
+      .toBe('/api/admin/dashboard/unified/market/CM');
+    expect(pilotage.endpointForContext(globalContext(), adminContextContract, 'CG'))
+      .toBe('/api/admin/dashboard/unified/market/CG');
+    expect(() => pilotage.endpointForContext(marketContext(), adminContextContract, 'CG'))
+      .toThrow(/autorisés par le serveur/);
+  });
+
+  test('mount global charge la source globale autorisée puis rend le dashboard', async () => {
     const root = {};
     const render = jest.fn();
     const renderer = { createRenderer: jest.fn(() => ({ render })) };
@@ -73,12 +109,21 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       json: jest.fn().mockResolvedValue(payloadFixture()),
     });
 
-    await pilotage.mount({ root, document: {}, ui: {}, fetch, renderer });
+    const result = await pilotage.mount({
+      root,
+      document: {},
+      ui: {},
+      fetch,
+      renderer,
+      adminContext: globalContext(),
+      contextContract: adminContextContract,
+    });
 
     expect(fetch).toHaveBeenCalledWith('/api/admin/dashboard/unified', expect.objectContaining({
       method: 'GET',
       credentials: 'include',
     }));
+    expect(result.endpoint).toBe('/api/admin/dashboard/unified');
     expect(root.className).toBe('');
     expect(render).toHaveBeenNthCalledWith(1, root, pilotage.PILOTAGE_SCHEMA, expect.objectContaining({ state: 'loading' }));
     expect(render).toHaveBeenNthCalledWith(2, root, pilotage.PILOTAGE_SCHEMA, expect.objectContaining({
@@ -86,7 +131,31 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
     }));
   });
 
-  test('mount rend l’état erreur si /unified échoue', async () => {
+  test('mount market ne charge jamais l’agrégat global puis filtre côté client', async () => {
+    const root = {};
+    const render = jest.fn();
+    const renderer = { createRenderer: jest.fn(() => ({ render })) };
+    const fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(payloadFixture()),
+    });
+
+    const result = await pilotage.mount({
+      root,
+      document: {},
+      ui: {},
+      fetch,
+      renderer,
+      adminContext: marketContext(),
+      contextContract: adminContextContract,
+    });
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith('/api/admin/dashboard/unified/market/CM', expect.any(Object));
+    expect(result.endpoint).toBe('/api/admin/dashboard/unified/market/CM');
+  });
+
+  test('mount rend l’état erreur si la source autorisée échoue', async () => {
     const root = {};
     const render = jest.fn();
     const renderer = { createRenderer: jest.fn(() => ({ render })) };
@@ -96,8 +165,15 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       json: jest.fn().mockResolvedValue({ error: 'dashboard indisponible' }),
     });
 
-    await expect(pilotage.mount({ root, document: {}, ui: {}, fetch, renderer }))
-      .rejects.toThrow('dashboard indisponible');
+    await expect(pilotage.mount({
+      root,
+      document: {},
+      ui: {},
+      fetch,
+      renderer,
+      adminContext: globalContext(),
+      contextContract: adminContextContract,
+    })).rejects.toThrow('dashboard indisponible');
 
     expect(root.className).toBe('');
     expect(render).toHaveBeenLastCalledWith(root, pilotage.PILOTAGE_SCHEMA, expect.objectContaining({
