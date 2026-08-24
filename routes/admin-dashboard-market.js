@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          dashboard-market-scoped-route
- * @domain        dashboard
+ * @domain        admin-dashboard
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_admin, requested_market_code, dashboard_filters
@@ -75,7 +75,6 @@ function parseFilters(req) {
     cost_status: req.query.cost_status || null,
     channel: req.query.channel || null,
     origin: req.query.origin || null,
-    // Autorité : injectée depuis la ressource marché résolue côté serveur.
     market_id: req.dashboardMarket.id,
   };
 }
@@ -90,8 +89,6 @@ router.get(
   requireMarketScope(req => req.dashboardMarket && req.dashboardMarket.id),
   async (req, res, next) => {
     try {
-      // Pas de dashboard-cache partagé ici : tant que la clé de cache globale
-      // n'encode pas un scope serveur, la route scopée reste fail-closed/no-store.
       res.set('Cache-Control', 'private, no-store');
       const filters = parseFilters(req);
       const payload = await pilotage.buildMarketPilotage(filters, req.dashboardMarket);
