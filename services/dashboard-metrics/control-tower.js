@@ -8,34 +8,26 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, ./_helpers
  * @used-by       services/dashboard-metrics/index.js
- * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, orders, parcels, scan_events, signals
+ * @db-read       cash_collections, order_item_cost_imputations, order_item_real_cost_allocations, orders, parcels, scan_events, signals
  * @db-write      (none)
  * @db-txn        @none
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      server_market_scope_is_authority
  * @impact-areas  dashboard, admin-dashboard
- * @version       2026-06
+ * @version       2026-08
  */
 
 /**
- * KOMERCE — Dashboard Metrics — Tour de contrôle (8 KPIs) — Lot C3
- * ════════════════════════════════════════════════════════════════════════
- * Extrait de services/dashboard-metrics.js (1081L) — Lot B/C Refacto.
- * cmds_actives = status IN (confirmed, ordered, preparation, shipped, in_transit, available)
- *   (PAS pending, PAS collected, PAS cancelled, PAS refunded)
+ * KOMERCE — Dashboard Metrics — Tour de contrôle (8 KPIs)
  */
 
 'use strict';
 
 const db = require('../../db');
 const {
-  buildFiltersClause, buildPreviousPeriod, computeDelta, makeKpi,
+  buildFiltersClause, buildSignalMarketClause, buildPreviousPeriod, computeDelta, makeKpi,
   ACTIVE_ORDER_STATUSES, TRANSIT_PARCEL_STATUSES,
   EXPECTED_VARIABLE_COSTS, EXPECTED_FIXED_COSTS, EXPECTED_PAYMENT_COSTS,
 } = require('./_helpers');
-
-// ═══════════════════════════════════════════════════════════════════════
-// TOUR DE CONTROLE — 8 KPIs
-// ═══════════════════════════════════════════════════════════════════════
 
 async function getCAEncaisse(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
@@ -51,7 +43,6 @@ async function getCAEncaisse(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
   const itemsTotal = Number(r.rows[0].items_total) || 0;
 
-  // Delta vs periode anterieure
   let delta = null;
   const prev = buildPreviousPeriod(filters);
   if (prev) {
@@ -76,10 +67,9 @@ async function getCAEncaisse(filters = {}) {
   });
 }
 
-
 async function getCmdsCreees(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
-  const sql = `SELECT COUNT(*)::int AS value FROM orders o WHERE ${where}`; // quality-disable N2-SQL-INJECTION — where is parameterized via buildFiltersClause
+  const sql = `SELECT COUNT(*)::int AS value FROM orders o WHERE ${where}`; // quality-disable N2-SQL-INJECTION
   const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
 
@@ -97,12 +87,7 @@ async function getCmdsCreees(filters = {}) {
   });
 }
 
-
 async function getCmdsActives(filters = {}) {
-  // Definition canonique : status IN (confirmed, ordered, preparation, shipped, in_transit, available)
-  // PAS pending (paiement non valide)
-  // PAS collected (livre)
-  // PAS cancelled, refunded
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     SELECT COUNT(*)::int AS value
@@ -118,10 +103,7 @@ async function getCmdsActives(filters = {}) {
   });
 }
 
-
 async function getColisEnTransit(filters = {}) {
-  // colis transit : shipped | in_transit | arrived
-  // Filtres orders applicables si parcel.order_id pertinent
   const { where, params } = buildFiltersClause(filters, 'o');
   const sql = `
     SELECT COUNT(DISTINCT p.id)::int AS value
@@ -138,21 +120,30 @@ async function getColisEnTransit(filters = {}) {
   });
 }
 
-
 async function getAlertesCritiques(filters = {}) {
-  // Signaux non resolus, severity critical ou urgent
-  // Table: signals (severity: urgent|critical|warning, status: open|acknowledged|snoozed|resolved)
+  const params = [];
+  const temporal = [];
+
+  if (filters.from) {
+    params.push(filters.from);
+    temporal.push(`s.created_at >= $${params.length}`);
+  }
+  if (filters.to) {
+    params.push(filters.to);
+    temporal.push(`s.created_at <= $${params.length}`);
+  }
+
+  const marketScope = buildSignalMarketClause(filters, 's', params.length + 1);
+  params.push(...marketScope.params);
+
   const sql = `
     SELECT COUNT(*)::int AS value
-    FROM signals
-    WHERE severity IN ('critical', 'urgent')
-      AND status IN ('open', 'acknowledged', 'snoozed')
-      ${filters.from ? 'AND created_at >= $1' : ''}
-      ${filters.to   ? `AND created_at <= $${filters.from ? 2 : 1}` : ''}
+    FROM signals s
+    WHERE s.severity IN ('critical', 'urgent')
+      AND s.status IN ('open', 'acknowledged', 'snoozed')
+      ${temporal.length ? `AND ${temporal.join(' AND ')}` : ''}
+      AND ${marketScope.where}
   `;
-  const params = [];
-  if (filters.from) params.push(filters.from);
-  if (filters.to)   params.push(filters.to);
 
   const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
@@ -163,9 +154,7 @@ async function getAlertesCritiques(filters = {}) {
   });
 }
 
-
 async function getCmdsBloquees(filters = {}) {
-  // Commandes payees mais bloquees (paid_but_stock_blocked dans notes)
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     SELECT COUNT(*)::int AS value
@@ -184,10 +173,7 @@ async function getCmdsBloquees(filters = {}) {
   });
 }
 
-
 async function getTauxCompletudeScans(filters = {}) {
-  // Ratio parcels avec >=1 scan / parcels in transit ou apres
-  // Table: scan_events (colonne parcel_id — pas de order_id direct)
   const { where, params } = buildFiltersClause(filters, 'o');
   const sql = `
     WITH transit_parcels AS (
@@ -216,9 +202,7 @@ async function getTauxCompletudeScans(filters = {}) {
   });
 }
 
-
 async function getTauxCompletudeCouts(filters = {}) {
-  // Ratio cmds avec cost_status='actual' / total cmds
   const { where, params } = buildFiltersClause(filters);
   const sql = `
     WITH order_set AS (
@@ -256,12 +240,6 @@ async function getTauxCompletudeCouts(filters = {}) {
     drillTo: '/admin/costing?cost_status=incomplete',
   });
 }
-
-// ═══════════════════════════════════════════════════════════════════════
-// COSTING — 8 KPIs
-// ═══════════════════════════════════════════════════════════════════════
-
-// CA vendu = alias semantique de ca_encaisse (INV-1)
 
 module.exports = {
   getCAEncaisse,
