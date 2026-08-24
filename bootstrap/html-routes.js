@@ -82,6 +82,10 @@ function mountHtmlRoutes(app, rootDir) {
     redirectToGroup(res, req.query.p || req.query.token || req.query.share);
   });
 
+  // ── Admin Canonical — LOT 2-CUTOVER ────────────────────────────────────
+  // Les quatre dashboards prouvés prennent leurs URLs stables. Les anciennes
+  // capacités qui n'ont pas encore d'équivalent Canonical restent servies par
+  // Legacy 1 : le cutover est additif, jamais destructif.
   const canonicalAdminPath = path.join(publicDir, 'dashboards', 'canonical', 'index.html');
   const legacyAdminPath = path.join(publicDir, 'dashboards', 'admin', 'index.html');
 
@@ -95,6 +99,9 @@ function mountHtmlRoutes(app, rootDir) {
     sendHtml(res, legacyAdminPath);
   }
 
+  // Pilotage est la seule URL stable qui entrait déjà en collision avec
+  // Legacy 1. `?legacy=1` fournit donc un rollback immédiat sans modifier le
+  // pathname vu par le routeur SPA historique.
   app.get('/admin/pilotage', (req, res) => {
     if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
     sendCanonicalAdmin(res);
@@ -118,6 +125,9 @@ function mountHtmlRoutes(app, rootDir) {
     sendCanonicalAdmin(res);
   });
 
+  // Les URLs de construction restent des aliases temporaires mais ne créent
+  // plus une seconde URL produit : elles ramènent systématiquement vers le
+  // pathname stable correspondant.
   const CANONICAL_BUILD_ALIASES = Object.freeze({
     '/admin-next': '/admin/pilotage',
     '/admin-next/commerce': '/admin/commerce',
@@ -133,6 +143,8 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
+  // Legacy 1 reste accessible pour toutes les capacités non encore remplacées
+  // par un Workspace / Entity 360 / Action Center Canonical.
   const ADMIN_DASHBOARD_PATHS = [
     '/admin/control-tower',
     '/admin/costing',
