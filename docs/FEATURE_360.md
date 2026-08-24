@@ -950,6 +950,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l'agent relais — comparaison aveugle uniquement
 - le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l'un ne bloque jamais l'autre
+- le jalon disponible au relais transmet à notifications le nom et l adresse publics nécessaires au lien de localisation, sans géocodage bloquant
 
 **Owns** : `carriers`, `parcel_events`, `parcel_items`, `parcels`, `pickup_print_tokens`, `pickup_reveal_codes`, `pickup_verify_attempts`, `relais`, `scan_events`, `scans`, `shipments`
 
@@ -1162,10 +1163,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - la lecture réconcilie une émission manquée depuis la vérité métier sans créer de doublon
 - un jalon plus récent résout le jalon précédent de la même commande sans créer un message pour in_transit
 - une exception exige une clé order.exception.* et un déclencheur métier confirmé
+- le WhatsApp de disponibilité peut enrichir son message existant d un unique lien cartographique dérivé du nom et de l adresse publics du relais ; aucun second message n est émis
 
 **Owns** : `alerts`, `client_notifications`, `notification_log`
 
-**Exposes** : 8 internal API(s), 6 HTTP interface(s)
+**Exposes** : 9 internal API(s), 6 HTTP interface(s)
+  - `buildRelayMapUrl / formatRelayPoint / appendRelayLocation` (services/notifications/relay-location.js) — resolved
   - `createAlert` (utils/alerts.js) — resolved
   - `emitOrderMilestone / emitExceptional / resolveOrderMilestones` (services/client-notification-service.js) — resolved
   - `notifyLoyaltyEarned` (services/notifications/loyalty.js) — resolved
@@ -1190,11 +1193,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement" — ne correspond à aucun nom de feature connu
 
-**Implementation** : 42 fichier(s) déclaré(s), boutique: 3 fichier(s)
+**Implementation** : 44 fichier(s) déclaré(s), boutique: 3 fichier(s)
   - migrations : 6
   - routes : 4
-  - services : 12
-  - tests : 18
+  - services : 13
+  - tests : 19
   - utils : 2
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="notifications"]_
