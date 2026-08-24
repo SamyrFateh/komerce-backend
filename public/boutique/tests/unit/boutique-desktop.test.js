@@ -20,4 +20,10 @@ describe('boutique desktop — surface du side cart', () => {
     expect(shell).toMatch(/box-shadow\s*:\s*none/);
     expect(css).toMatch(/html\.k-home-premium-v1 \.k-side-cart\s*\{[^}]*box-shadow:\s*none/s);
   });
+
+  it('retire tout récapitulatif transactionnel quand le panier de la fiche produit est vide', () => {
+    expect(css).toMatch(
+      /\.k-side-cart--in-modal:has\(\.k-sc-empty\) \.k-sc-header\s*\{[^}]*display\s*:\s*none/s,
+    );
+  });
 });
