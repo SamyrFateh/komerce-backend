@@ -33,6 +33,7 @@ import {
   renderFulfillmentSelector as _renderFulfillmentSelector,
   setCheckoutConfirmButton  as _setCheckoutConfirmButton,
   buildOrderSuccessDOM,
+  buildRelayMapUrl,
   renderStepHeader,
   renderCheckoutRecentProducts,
   makeInput                 as _makeInputRender,
@@ -796,6 +797,30 @@ function _renderRelaisSummary(container, od, byIle, allIles) {
   });
   header.id = 'ck-relais-summary';
   header.classList.add('ck-relais-summary');
+
+  const selectedRelay = Object.values(byIle).find(
+    relay => String(relay?.id) === String(od.selectedRelaisId)
+  ) || byIle[od.selectedIsland];
+  const mapUrl = buildRelayMapUrl(selectedRelay);
+  if (mapUrl) {
+    const mapLink = document.createElement('a');
+    // Réutilise la sous-ligne compacte déjà livrée par le checkout : le lien
+    // reste lisible sans introduire un nouveau bundle CSS pour cette action.
+    mapLink.className = 'ck-relais-map-link ck-step-header-sub';
+    mapLink.href = mapUrl;
+    mapLink.target = '_blank';
+    mapLink.rel = 'noopener';
+    mapLink.textContent = '📍 Localiser ce relais';
+    mapLink.setAttribute(
+      'aria-label',
+      'Localiser ' + getRelayDisplayName(od.selectedRelaisName) + ' sur la carte',
+    );
+    // La ligne complète ouvre le picker. Le lien Maps doit rester une action
+    // indépendante et ne jamais déclencher « Changer » par propagation.
+    mapLink.addEventListener('click', event => event.stopPropagation());
+    header.querySelector('.ck-step-header-text')?.appendChild(mapLink);
+  }
+
   container.appendChild(header);
 }
 
