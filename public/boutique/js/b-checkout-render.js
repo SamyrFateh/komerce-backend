@@ -186,6 +186,22 @@ export function renderFulfillmentSelector(container, od, onChange) {
 // ── Liste des points relais ───────────────────────────────────────────────────
 
 /**
+ * Construit le lien cartographique du relais sans appel à un géocodeur.
+ * Le même contrat nom + adresse est utilisé par la notification WhatsApp.
+ */
+export function buildRelayMapUrl(relay = {}) {
+  const clean = (value) => String(value || '').trim().replace(/\s+/g, ' ');
+  const query = [
+    clean(relay.name || relay.nom),
+    clean(relay.address || relay.adresse || relay.location),
+  ].filter(Boolean).join(', ');
+
+  return query
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    : null;
+}
+
+/**
  * Rend la liste des relais pour une île dans listEl.
  * Callback onSelect(relaisId) appelé à chaque sélection.
  * @param {HTMLElement} listEl
