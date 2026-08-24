@@ -65,6 +65,7 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
   });
 
   test('mount charge la source canonique puis rend le dashboard', async () => {
+    const root = {};
     const render = jest.fn();
     const renderer = { createRenderer: jest.fn(() => ({ render })) };
     const fetch = jest.fn().mockResolvedValue({
@@ -72,19 +73,21 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       json: jest.fn().mockResolvedValue(payloadFixture()),
     });
 
-    await pilotage.mount({ root: {}, document: {}, ui: {}, fetch, renderer });
+    await pilotage.mount({ root, document: {}, ui: {}, fetch, renderer });
 
     expect(fetch).toHaveBeenCalledWith('/api/admin/dashboard/unified', expect.objectContaining({
       method: 'GET',
       credentials: 'include',
     }));
-    expect(render).toHaveBeenNthCalledWith(1, {}, pilotage.PILOTAGE_SCHEMA, expect.objectContaining({ state: 'loading' }));
-    expect(render).toHaveBeenNthCalledWith(2, {}, pilotage.PILOTAGE_SCHEMA, expect.objectContaining({
+    expect(root.className).toBe('');
+    expect(render).toHaveBeenNthCalledWith(1, root, pilotage.PILOTAGE_SCHEMA, expect.objectContaining({ state: 'loading' }));
+    expect(render).toHaveBeenNthCalledWith(2, root, pilotage.PILOTAGE_SCHEMA, expect.objectContaining({
       data: expect.objectContaining({ 'pilotage.metrics': expect.any(Object) }),
     }));
   });
 
   test('mount rend l’état erreur si /unified échoue', async () => {
+    const root = {};
     const render = jest.fn();
     const renderer = { createRenderer: jest.fn(() => ({ render })) };
     const fetch = jest.fn().mockResolvedValue({
@@ -93,10 +96,11 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       json: jest.fn().mockResolvedValue({ error: 'dashboard indisponible' }),
     });
 
-    await expect(pilotage.mount({ root: {}, document: {}, ui: {}, fetch, renderer }))
+    await expect(pilotage.mount({ root, document: {}, ui: {}, fetch, renderer }))
       .rejects.toThrow('dashboard indisponible');
 
-    expect(render).toHaveBeenLastCalledWith({}, pilotage.PILOTAGE_SCHEMA, expect.objectContaining({
+    expect(root.className).toBe('');
+    expect(render).toHaveBeenLastCalledWith(root, pilotage.PILOTAGE_SCHEMA, expect.objectContaining({
       state: 'error',
       stateMessage: 'dashboard indisponible',
     }));
