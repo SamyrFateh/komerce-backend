@@ -1,0 +1,25 @@
+/**
+ * @komerce-arch-lite
+ * @role          modal-suggestion-card-polish
+ * @domain        recommendations
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-modal-suggestions.js
+ * @purpose       Allège les cartes de suggestions PDP en laissant la section porter le contexte éditorial.
+ * @impact-areas  product-modal, recommendations, suggestion-cards
+ * @version       2026-08
+ */
+
+/*
+ * Le moteur de recommandation conserve reason_code/reason_label pour le ranking,
+ * le debug et l'analytique. Dans la PDP, le rail « Dans le même univers » porte
+ * déjà l'explication éditoriale : répéter « Alternative premium », « Même
+ * catégorie », etc. sous chaque carte surcharge le scan visuel et peut faire
+ * croire qu'un prix plus élevé prouve une qualité premium.
+ *
+ * On masque donc uniquement la ligne de raison dans les cartes de la modale.
+ * Les données backend restent intactes et les autres surfaces peuvent continuer
+ * à les exploiter.
+ */
+#k-modal .k-sug-card-reason {
+  display: none;
+}
