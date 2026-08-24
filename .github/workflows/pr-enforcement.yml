@@ -6,10 +6,8 @@ on:
       - main
     types: [opened, synchronize, reopened, ready_for_review]
 
-# TEMP LOT 2C: write is required only for the one-shot contract snapshot refresh
-# below. Restored to contents: read immediately after the generated commit lands.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: pr-enforcement-${{ github.event.pull_request.number }}
@@ -37,7 +35,7 @@ jobs:
       boutique_unit: ${{ steps.scope.outputs.boutique_unit }}
       boutique_package: ${{ steps.scope.outputs.boutique_package }}
       governance: ${{ steps.scope.outputs.governance }}
-      governance_files: ${{ steps.scope.outputs.governance_files }}
+      governance_files: ${{ steps.scope.outputs.govenance_files }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,29 +61,6 @@ jobs:
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.golden == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      NODE_ENV: test
-      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
-      ADMIN_PASSWORD: ci-dummy
-      STRIPE_WEBHOOK_SECRET: whsec_dummy
-      QR_SECRET: ci-dummy
-      JWT_SECRET: ci-dummy
-      SESSION_SECRET: ci-dummy
-      INTERNAL_API_KEY: ci-dummy
-      STRIPE_SECRET_KEY: sk_test_dummy
-      JWT_EXPIRES: 7d
-      APP_URL: http://localhost
-      PUBLIC_URL: http://localhost
-      PUBLIC_BASE_URL: http://localhost
-      ADMIN_RESET_KEY: ci-dummy
-      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
-      AUTHKEY_API_KEY: ci-dummy
-      PAYPAL_CLIENT_ID: ci-dummy
-      PAYPAL_CLIENT_SECRET: ci-dummy
-      PAYPAL_WEBHOOK_ID: ci-dummy
-      META_WA_TOKEN: ci-dummy
-      META_WA_PHONE_NUMBER_ID: ci-dummy
-      META_WA_APP_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
         with:
@@ -95,43 +70,6 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-
-      - name: One-shot refresh Canonical AdminContext contract
-        if: github.event.pull_request.head.ref == 'feat/canonical-admin-context-server-2c'
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('scripts/contract-generate.js')
-          s = p.read_text()
-
-          route_marker = "  // ADMIN — surfaces dashboards\n"
-          route_block = """  // LOT 2C — Canonical AdminContext + Pilotage market-scoped\n  { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },\n  { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },\n"""
-          if route_block not in s:
-              if route_marker not in s:
-                  raise SystemExit('ROUTE_SCHEMA_MAP marker not found')
-              s = s.replace(route_marker, route_marker + route_block, 1)
-
-          response_marker = "const KNOWN_RESPONSES = {\n"
-          response_block = """  // LOT 2C — réponses consommées par Canonical et couvertes par tests.\n  '/api/admin/dashboard/context': {\n    get: { fields: ['actor','access'], source: 'test' }\n  },\n  '/api/admin/dashboard/unified/market/{marketCode}': {\n    get: { fields: ['scope','kpis_global','view_blocks','economic_flow','principles','system_alerts','data_quality'], source: 'test' }\n  },\n"""
-          if response_block not in s:
-              if response_marker not in s:
-                  raise SystemExit('KNOWN_RESPONSES marker not found')
-              s = s.replace(response_marker, response_marker + response_block, 1)
-          p.write_text(s)
-          PY
-
-          node scripts/gen-route-registry.js
-          npm run contract:generate
-          node scripts/contract-check.js
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/contract-generate.js docs/_generated/route-registry.json docs/contract/openapi.json docs/contract/DEBT.md
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(contract): refresh AdminContext dashboard routes"
-            git push origin HEAD:feat/canonical-admin-context-server-2c
-          fi
 
       - name: Quality gate
         if: needs.changes.outputs.backend == 'true'
