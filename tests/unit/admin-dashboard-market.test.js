@@ -8,6 +8,7 @@
 
 let mockCurrentUser = { id: 'admin-1', role: 'admin' };
 let mockAllowedMarkets = new Set(['market-cm-id']);
+let mockGlobalAllowed = false;
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = mockCurrentUser; next(); },
@@ -27,6 +28,19 @@ jest.mock('../../middleware/require-market-scope', () => ({
     if (!req.authorizedMarkets.has(target)) {
       return res.status(403).json({ error: 'denied', code: 'market_scope_denied' });
     }
+    next();
+  },
+}));
+
+jest.mock('../../middleware/require-dashboard-global-authority', () => ({
+  requireDashboardGlobalAuthority: (req, res, next) => {
+    if (!mockGlobalAllowed) {
+      return res.status(403).json({
+        error: 'global denied',
+        code: 'dashboard_global_access_denied',
+      });
+    }
+    req.dashboardGlobalAuthority = true;
     next();
   },
 }));
@@ -51,6 +65,9 @@ function makeApp() {
   const app = express();
   app.use(express.json());
   app.use('/api/admin/dashboard', router);
+  // Simule le routeur global historique, monté juste après en production.
+  app.get('/api/admin/dashboard/unified', (req, res) => res.json({ mode: 'global' }));
+  app.get('/api/admin/dashboard/control-tower', (req, res) => res.json({ mode: 'global-control' }));
   return app;
 }
 
@@ -58,6 +75,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockCurrentUser = { id: 'admin-1', role: 'admin' };
   mockAllowedMarkets = new Set(['market-cm-id']);
+  mockGlobalAllowed = false;
   mockQuery.mockImplementation(async (sql, params) => {
     if (String(sql).includes('FROM markets') && params[0] === 'CM') {
       return { rows: [{ id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF' }] };
@@ -104,7 +122,8 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     expect(mockBuildMarketPilotage).not.toHaveBeenCalled();
   });
 
-  test('un grant CM autorise uniquement l’agrégat CM et injecte son UUID serveur', async () => {
+  test('un grant CM autorise l’agrégat CM même sans autorité globale', async () => {
+    mockGlobalAllowed = false;
     const res = await request(makeApp())
       .get('/api/admin/dashboard/unified/market/cm?from=2026-08-01&status=confirmed');
 
@@ -120,5 +139,28 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
       status: 'confirmed',
       market_id: 'market-cm-id',
     });
+  });
+});
+
+describe('verrou des agrégats globaux montés après le routeur market', () => {
+  test('role=admin ne suffit pas : /unified global est 403 sans grant explicite', async () => {
+    mockGlobalAllowed = false;
+    const res = await request(makeApp()).get('/api/admin/dashboard/unified');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('dashboard_global_access_denied');
+  });
+
+  test('le verrou couvre aussi les sous-agrégats globaux', async () => {
+    mockGlobalAllowed = false;
+    const res = await request(makeApp()).get('/api/admin/dashboard/control-tower');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('dashboard_global_access_denied');
+  });
+
+  test('un grant global explicite laisse atteindre le routeur historique', async () => {
+    mockGlobalAllowed = true;
+    const res = await request(makeApp()).get('/api/admin/dashboard/unified');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ mode: 'global' });
   });
 });
