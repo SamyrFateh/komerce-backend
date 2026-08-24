@@ -1,11 +1,13 @@
 'use strict';
 /**
  * TEMP LOT 2F — branche CI éphémère uniquement.
- * Génère le contrat Finance dans le runner et publie les artefacts Actions.
+ * Génère le contrat Finance dans le runner et l'encode dans les logs CI.
  * Ce fichier ne doit jamais être mergé.
  */
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
+const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
@@ -16,7 +18,10 @@ const routeMarker = "  { prefix: '/api/admin/dashboard/operations/market/{market
 const routeBlock = "  // LOT 2F — Canonical Finance global + market-scoped\n" +
   "  { prefix: '/api/admin/dashboard/finance', method: 'get', schema: null },\n" +
   "  { prefix: '/api/admin/dashboard/finance/market/{marketCode}', method: 'get', schema: null },\n";
-if (!source.includes(routeBlock)) source = source.replace(routeMarker, routeMarker + routeBlock);
+if (!source.includes(routeBlock)) {
+  if (!source.includes(routeMarker)) throw new Error('operations route marker not found');
+  source = source.replace(routeMarker, routeMarker + routeBlock);
+}
 
 const responseMarker = 'const KNOWN_RESPONSES = {\n';
 const responseBlock = "  // LOT 2F — réponses Finance consommées par Canonical.\n" +
@@ -26,11 +31,13 @@ const responseBlock = "  // LOT 2F — réponses Finance consommées par Canonic
   "  '/api/admin/dashboard/finance/market/{marketCode}': {\n" +
   "    get: { fields: ['scope','period','kpis','payment_mix','refunds','incomplete_cost_orders','data_quality'], source: 'test' }\n" +
   "  },\n";
-if (!source.includes(responseBlock)) source = source.replace(responseMarker, responseMarker + responseBlock);
-
+if (!source.includes(responseBlock)) {
+  if (!source.includes(responseMarker)) throw new Error('KNOWN_RESPONSES marker not found');
+  source = source.replace(responseMarker, responseMarker + responseBlock);
+}
 fs.writeFileSync(generatorPath, source);
 
-const generatorEnv = {
+const env = {
   ...process.env,
   NODE_ENV: 'test',
   DATABASE_URL: 'postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy',
@@ -57,33 +64,27 @@ const generatorEnv = {
 };
 
 execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'gen-route-registry.js')], {
-  stdio: 'inherit', cwd: ROOT, env: generatorEnv,
+  stdio: 'inherit', cwd: ROOT, env,
 });
 execFileSync(process.execPath, [generatorPath], {
-  stdio: 'inherit', cwd: ROOT, env: generatorEnv,
+  stdio: 'inherit', cwd: ROOT, env,
 });
 
-execFileSync('npm', ['install', '--no-save', '--package-lock=false', '@actions/artifact@2'], {
-  stdio: 'inherit', cwd: ROOT, env: generatorEnv,
-});
+const outputs = [
+  ['contract-generate.js', generatorPath],
+  ['route-registry.json', path.join(ROOT, 'docs', '_generated', 'route-registry.json')],
+  ['openapi.json', path.join(ROOT, 'docs', 'contract', 'openapi.json')],
+];
 
-const uploadScript = `
-(async () => {
-  const path = require('path');
-  const { DefaultArtifactClient } = require('@actions/artifact');
-  const root = process.cwd();
-  const files = [
-    path.join(root, 'scripts', 'contract-generate.js'),
-    path.join(root, 'docs', '_generated', 'route-registry.json'),
-    path.join(root, 'docs', 'contract', 'openapi.json'),
-  ];
-  const client = new DefaultArtifactClient();
-  const result = await client.uploadArtifact('finance-contract-2f', files, root, { retentionDays: 1 });
-  console.log('FINANCE_CONTRACT_ARTIFACT', JSON.stringify(result));
-})().catch(err => { console.error(err); process.exit(1); });
-`;
-execFileSync(process.execPath, ['-e', uploadScript], {
-  stdio: 'inherit', cwd: ROOT, env: generatorEnv,
-});
+for (const [name, file] of outputs) {
+  const raw = fs.readFileSync(file);
+  const sha256 = crypto.createHash('sha256').update(raw).digest('hex');
+  const encoded = zlib.gzipSync(raw, { level: 9 }).toString('base64');
+  const chunkSize = 4000;
+  const chunks = [];
+  for (let i = 0; i < encoded.length; i += chunkSize) chunks.push(encoded.slice(i, i + chunkSize));
+  console.log(`FC2F_META|${name}|${raw.length}|${sha256}|${chunks.length}`);
+  chunks.forEach((chunk, index) => console.log(`FC2F_DATA|${name}|${index + 1}|${chunks.length}|${chunk}`));
+}
 
-console.log('✅ Finance contract generated and uploaded.');
+console.log('✅ Finance contract generated and encoded.');
