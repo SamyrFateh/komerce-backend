@@ -5,8 +5,8 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_admin, requested_market_code, dashboard_filters
- * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, global_dashboard_gate, canonical_admin_context
- * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-admin-context
+ * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, authorized_market_operations_projection, global_dashboard_gate, canonical_admin_context
+ * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-admin-context
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, dashboard_global_access_grants
  * @db-write      none
@@ -32,6 +32,7 @@ const {
 } = require('../services/dashboard-admin-context');
 const pilotage = require('../services/dashboard-pilotage-market');
 const commerce = require('../services/dashboard-commerce');
+const operations = require('../services/dashboard-operations');
 const log = require('../utils/logger').child({ module: 'admin-dashboard-market' });
 
 const router = express.Router();
@@ -93,14 +94,10 @@ function requireDashboardMarketRead(req, res, next) {
   const targetMarketId = req.dashboardMarket && req.dashboardMarket.id;
   const marketGuard = requireMarketScope(() => targetMarketId);
 
-  // Le chemin ordinaire partenaire reste requireMarketScope, sans requête
-  // globale additionnelle lorsqu'un grant market actif suffit déjà.
   if (req.authorizedMarkets && req.authorizedMarkets.has(targetMarketId)) {
     return marketGuard(req, res, next);
   }
 
-  // Komerce central possède une capability dashboard globale explicite : elle
-  // autorise aussi le drill d'un marché ACTIF déjà résolu côté serveur.
   return hasDashboardGlobalAuthority(req.user && req.user.id)
     .then(globalAllowed => {
       if (globalAllowed) {
@@ -112,8 +109,6 @@ function requireDashboardMarketRead(req, res, next) {
     .catch(next);
 }
 
-// Projection d'autorité consommée par le runtime Canonical. Aucun UUID de
-// market scope ne quitte le serveur : uniquement les codes marché autorisés.
 router.get(
   '/context',
   authenticate,
@@ -145,8 +140,6 @@ router.get(
   requireDashboardMarketRead,
   async (req, res, next) => {
     try {
-      // Pas de dashboard-cache partagé ici : tant que la clé de cache globale
-      // n'encode pas un scope serveur, la route scopée reste fail-closed/no-store.
       res.set('Cache-Control', 'private, no-store');
       const filters = parseFilters(req);
       const payload = await pilotage.buildMarketPilotage(filters, req.dashboardMarket);
@@ -178,13 +171,29 @@ router.get(
   }
 );
 
+router.get(
+  '/operations/market/:marketCode',
+  authenticate,
+  requireAdmin,
+  rejectClientMarketId,
+  resolveRequestedMarket,
+  attachAuthorizedMarkets,
+  requireDashboardMarketRead,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await operations.buildOperations({ market: req.dashboardMarket });
+      res.json(payload);
+    } catch (err) {
+      log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] operations market error');
+      next(err);
+    }
+  }
+);
+
 // IMPORTANT : ce router est monté AVANT routes/admin-dashboard.js dans
-// bootstrap/api-routes.js. Toute requête /api/admin/dashboard/* qui n'a pas
-// été consommée par les routes context/market-scoped ci-dessus traverse donc
-// ce verrou avant d'atteindre les agrégats globaux historiques (control-tower,
-// costing, logistics, unified et cache/clear).
-//
-// Le rôle admin ne suffit jamais. Seul un grant actif persistant dans
+// bootstrap/api-routes.js. Tout chemin global non consommé ci-dessus doit
+// franchir ce verrou. Le rôle admin ne suffit jamais : seul un grant actif
 // dashboard_global_access_grants autorise la vue multi-market.
 router.use(
   authenticate,
@@ -202,6 +211,21 @@ router.get(
       res.json(payload);
     } catch (err) {
       log.error({ err }, '[admin-dashboard-market] commerce global error');
+      next(err);
+    }
+  }
+);
+
+router.get(
+  '/operations',
+  rejectClientMarketId,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await operations.buildOperations();
+      res.json(payload);
+    } catch (err) {
+      log.error({ err }, '[admin-dashboard-market] operations global error');
       next(err);
     }
   }
