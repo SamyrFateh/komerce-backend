@@ -21,6 +21,9 @@ describe('notification-service barrels', () => {
       'sendOtpMessage',
       'sendMagicLink',
       'notifyText',
+      'buildRelayMapUrl',
+      'formatRelayPoint',
+      'appendRelayLocation',
       'notifyLoyaltyEarned',
       '_loadOrderFromParcel',
     ].forEach((name) => {
