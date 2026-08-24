@@ -32,7 +32,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockMetrics.getCAEncaisse.mockResolvedValue(metric('ca_encaisse', 'CA encaissé', 120000, 'KMF'));
   mockMetrics.getCmdsCreees.mockResolvedValue(metric('cmds_creees', 'Commandes créées', 12));
-  mockMetrics.getMargeConsolidee.mockResolvedValue(metric('marge_consolidee', 'Marge consolidée', 24.5, '%'));
+  mockMetrics.getMargeConsolidee.mockResolvedValue(metric('marge_consolidee', 'Marge consolidée', 24500, 'KMF'));
 
   db.query
     .mockResolvedValueOnce({ rows: [{ value: '10000', items_total: '12' }] })
@@ -60,7 +60,7 @@ describe('dashboard-commerce', () => {
       market: { code: 'CM', name: 'Cameroun', currency: 'XAF' },
     });
     expect(result.period).toBe(30);
-    expect(result.data_quality.scope_enforced).toBe(true);
+    expect(result.data_quality).toMatchObject({ scope_enforced: true, scope_mode: 'market' });
     expect(JSON.stringify(result)).not.toContain('market-cm-id');
 
     for (const fn of [mockMetrics.getCAEncaisse, mockMetrics.getCmdsCreees, mockMetrics.getMargeConsolidee]) {
@@ -79,18 +79,19 @@ describe('dashboard-commerce', () => {
     expect(result.kpis.map(item => item.key)).toEqual([
       'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee',
     ]);
+    expect(result.kpis[3].unit).toBe('KMF');
     expect(result.top_products[0]).toEqual({
       name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000,
     });
     expect(result.funnel.steps.map(step => step.pct)).toEqual([100, 83.3, 66.7, 50, 33.3]);
   });
 
-  test('projection globale n’invente aucun market_id', async () => {
+  test('projection globale n’invente aucun market_id mais reste sous autorité serveur', async () => {
     const now = new Date('2026-08-24T12:00:00.000Z');
     const result = await commerce.buildCommerce({ period: '7' }, { now });
 
     expect(result.scope).toEqual({ mode: 'global', market: null });
-    expect(result.data_quality.scope_enforced).toBe(false);
+    expect(result.data_quality).toMatchObject({ scope_enforced: true, scope_mode: 'global' });
     expect(mockMetrics.getCAEncaisse.mock.calls[0][0]).not.toHaveProperty('market_id');
     db.query.mock.calls.forEach(([sql, params]) => {
       expect(String(sql)).not.toContain('o.market_id =');
