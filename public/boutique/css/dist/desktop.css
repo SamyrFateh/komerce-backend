@@ -848,6 +848,13 @@
 
   .k-side-cart--in-modal:not(.has-items) { display: flex; }
 
+  /* Un panier vide est un état informatif, jamais une transaction à zéro.
+     Le message central suffit : le footer (livraison, sous-total et CTA)
+     revient naturellement dès que .k-sc-empty disparaît après un ajout. */
+  .k-side-cart--in-modal:has(.k-sc-empty) .k-sc-header {
+    display: none;
+  }
+
   /* ── TITLE BAR — "Mon panier" + badge count (référence image 1) ── */
   .k-sc-title-bar {
     flex-shrink: 0;
