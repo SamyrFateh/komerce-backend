@@ -4,15 +4,15 @@
  * @domain        admin-dashboard
  * @layer         ui-orchestration
  * @criticality   medium
- * @inputs        canonical_admin_session, /api/admin/dashboard/unified
+ * @inputs        canonical_admin_session, server_resolved_admin_context
  * @outputs       canonical_pilotage_dashboard
- * @depends       dashboard-schema, dashboard-renderer, primitives
+ * @depends       admin-context, dashboard-schema, dashboard-renderer, primitives
  * @used-by       canonical admin entrypoint
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      dashboard_no_business_recompute, canonical_admin_no_legacy_imports
- * @impact-areas  admin-dashboard, pilotage
+ * @doctrine      dashboard_no_business_recompute, canonical_admin_no_legacy_imports, server_market_scope_is_authority
+ * @impact-areas  admin-dashboard, pilotage, market-authorization
  * @version       2026-08
  */
 
@@ -25,7 +25,8 @@
   /* istanbul ignore else -- exercé par le navigateur. */
   if (root) root.KomerceCanonicalPilotage = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createCanonicalPilotage() {
-  const ENDPOINT = '/api/admin/dashboard/unified';
+  const GLOBAL_ENDPOINT = '/api/admin/dashboard/unified';
+  const MARKET_ENDPOINT_PREFIX = '/api/admin/dashboard/unified/market/';
 
   const PILOTAGE_SCHEMA = Object.freeze({
     id: 'pilotage',
@@ -186,6 +187,15 @@
     });
   }
 
+  function endpointForContext(adminContext, contextContract, requestedMarket) {
+    if (!contextContract || typeof contextContract.resolveMarketView !== 'function') {
+      throw new Error('canonical_pilotage_admin_context_contract_missing');
+    }
+    const view = contextContract.resolveMarketView(adminContext, requestedMarket);
+    if (view.mode === 'global') return GLOBAL_ENDPOINT;
+    return MARKET_ENDPOINT_PREFIX + encodeURIComponent(view.marketCode);
+  }
+
   async function jsonRequest(fetchFn, url) {
     const response = await fetchFn(url, {
       method: 'GET',
@@ -203,6 +213,11 @@
     const ui = options.ui;
     const doc = options.document;
     const fetchFn = options.fetch;
+    const endpoint = endpointForContext(
+      options.adminContext,
+      options.contextContract,
+      options.requestedMarket
+    );
 
     if (!rootNode) throw new Error('canonical_pilotage_root_missing');
     if (!rendererContract || typeof rendererContract.createRenderer !== 'function') {
@@ -213,10 +228,10 @@
     const renderer = rendererContract.createRenderer({ document: doc, ui });
     renderer.render(rootNode, PILOTAGE_SCHEMA, { state: 'loading', stateMessage: 'Chargement du Pilotage…' });
 
-    return jsonRequest(fetchFn, ENDPOINT)
+    return jsonRequest(fetchFn, endpoint)
       .then(payload => {
         const result = renderer.render(rootNode, PILOTAGE_SCHEMA, { data: resolveSources(payload) });
-        return Object.freeze({ payload, result });
+        return Object.freeze({ payload, result, endpoint });
       })
       .catch(error => {
         renderer.render(rootNode, PILOTAGE_SCHEMA, { state: 'error', stateMessage: error.message });
@@ -225,7 +240,8 @@
   }
 
   return Object.freeze({
-    ENDPOINT,
+    GLOBAL_ENDPOINT,
+    MARKET_ENDPOINT_PREFIX,
     KPI_KEYS,
     PILOTAGE_SCHEMA,
     formatMetricValue,
@@ -236,6 +252,7 @@
     projectViews,
     projectFlow,
     resolveSources,
+    endpointForContext,
     jsonRequest,
     mount,
   });

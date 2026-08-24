@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 18,
-    "total_routes": 433,
+    "total_routes": 435,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -4539,10 +4539,106 @@
         }
       }
     },
+    "/api/admin/dashboard/context": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/context",
+        "x-route-file": "routes/admin-dashboard-market.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "actor": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "access": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/unified/market/{marketCode}": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/unified/market/{marketCode}",
+        "x-route-file": "routes/admin-dashboard-market.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "kpis_global": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "view_blocks": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "economic_flow": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "principles": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "system_alerts": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/dashboard/control-tower": {
       "get": {
         "summary": "GET /api/admin/dashboard/control-tower",
-        "x-route-file": "routes/admin-dashboard.js",
+        "x-route-file": "routes/admin-dashboard-market.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -4583,7 +4679,7 @@
     "/api/admin/dashboard/costing": {
       "get": {
         "summary": "GET /api/admin/dashboard/costing",
-        "x-route-file": "routes/admin-dashboard.js",
+        "x-route-file": "routes/admin-dashboard-market.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -4620,7 +4716,7 @@
     "/api/admin/dashboard/logistics": {
       "get": {
         "summary": "GET /api/admin/dashboard/logistics",
-        "x-route-file": "routes/admin-dashboard.js",
+        "x-route-file": "routes/admin-dashboard-market.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -4661,7 +4757,7 @@
     "/api/admin/dashboard/unified": {
       "get": {
         "summary": "GET /api/admin/dashboard/unified",
-        "x-route-file": "routes/admin-dashboard.js",
+        "x-route-file": "routes/admin-dashboard-market.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -4702,7 +4798,7 @@
     "/api/admin/dashboard/cache/clear": {
       "post": {
         "summary": "POST /api/admin/dashboard/cache/clear",
-        "x-route-file": "routes/admin-dashboard.js",
+        "x-route-file": "routes/admin-dashboard-market.js",
         "responses": {
           "200": {
             "description": "Succès",

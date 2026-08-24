@@ -44,14 +44,15 @@ DashboardSchema + renderer
 Règles non négociables :
 
 1. Le navigateur ne choisit jamais son autorité avec `market_id`, une query string, un stockage local ou un rôle supposé.
-2. Le backend applique `requireMarketScope` avant toute lecture ou mutation scopée.
+2. Le backend applique `requireMarketScope` avant toute lecture ou mutation scopée d'un opérateur pays.
 3. Les agrégats sont calculés dans le scope autorisé ; on ne charge jamais un ensemble global pour le filtrer ensuite dans le frontend.
 4. Le rôle vertical ne suffit pas. Un utilisateur `admin` peut rester enfermé dans un seul marché.
 5. Seul un contexte serveur explicitement global autorise une agrégation multi-marchés.
 6. L'autorité globale dashboard est persistée dans `dashboard_global_access_grants`, historisée et révocable. Elle n'est jamais déduite du rôle `admin`, ni de l'absence de `operator_market_scopes`.
-7. Le changement de marché dans l'UI est une sélection de vue parmi les marchés déjà autorisés, jamais une élévation de privilège.
-8. Les métriques cross-market Komerce utilisent la référence EUR de la Currency Boundary. Le dashboard ne recalcule aucune parité.
-9. `operator_market_scopes` demeure un historique d'accès utilisateur. Il ne devient ni une entité partenaire ni une source de settlement.
+7. Une autorité globale explicite autorise également le drill vers un marché actif précis ; un opérateur pays reste limité à ses grants `operator_market_scopes`.
+8. Le changement de marché dans l'UI est une sélection de vue parmi les marchés déjà autorisés, jamais une élévation de privilège.
+9. Les métriques cross-market Komerce utilisent la référence EUR de la Currency Boundary. Le dashboard ne recalcule aucune parité.
+10. `operator_market_scopes` demeure un historique d'accès utilisateur. Il ne devient ni une entité partenaire ni une source de settlement.
 
 ### Bootstrap legacy de l'autorité globale
 
@@ -75,38 +76,70 @@ Ce bootstrap n'est **pas** une règle runtime. Après la migration :
 
 Le Dashboard observe. Les actes terrain restent dans les workspaces scopés par marché. Les mutations continuent d'appartenir à leurs features métier.
 
-## Contrat client
+## AdminContext serveur livré
 
-`public/dashboards/canonical/js/admin-context.js` valide uniquement une projection déjà résolue par le serveur :
+`GET /api/admin/dashboard/context` résout l'autorité depuis les sources serveur puis retourne uniquement une projection UI sans UUID de scope :
 
 ```js
 {
   actor: { id, role },
   access: {
     mode: 'global' | 'market',
-    allowedMarkets: ['KM', 'CM', 'CG'],
+    allowedMarkets: ['CM', 'CG', 'KM'],
     defaultMarket: 'CM' | null,
-    capabilities: ['operations.read']
+    capabilities: [
+      'pilotage.read',
+      'dashboard.market.read',
+      // global uniquement :
+      'dashboard.global.read'
+    ]
   }
 }
 ```
 
-Ce contrat pilote la navigation et l'affichage. Il n'est pas une barrière de sécurité. Chaque future source du LOT 2C devra prouver son enforcement backend indépendamment.
+Résolution :
+
+- grant actif `dashboard_global_access_grants` → `mode='global'`, tous les marchés actifs dans `allowedMarkets`, `defaultMarket=null` ;
+- sinon grants actifs `operator_market_scopes` → `mode='market'`, uniquement les codes autorisés, premier grant actif comme `defaultMarket` ;
+- ni global ni market grant → 403 `dashboard_access_denied` ;
+- zéro scope n'est jamais interprété comme autorité centrale.
+
+`public/dashboards/canonical/js/admin-context.js` valide cette projection mais ne possède aucune autorité. Il n'accède ni au réseau ni au stockage local.
 
 ## Routes Pilotage livrées
 
-- `GET /api/admin/dashboard/unified/market/:marketCode` : `requireMarketScope`, agrégat calculé dans le marché autorisé, `market_id` client interdit.
+- `GET /api/admin/dashboard/context` : projection d'autorité serveur, `private, no-store`.
+- `GET /api/admin/dashboard/unified/market/:marketCode` : opérateur via `requireMarketScope`; central via grant global explicite ; agrégat calculé dans le marché résolu ; `market_id` client interdit.
 - Les agrégats globaux historiques `/api/admin/dashboard/*` (`control-tower`, `costing`, `logistics`, `unified`, `cache/clear`) traversent `requireDashboardGlobalAuthority` avant d'atteindre leur routeur.
 
-## Gate de sortie avant données Pilotage
+## Consommation Canonical
+
+Le bootstrap Canonical suit désormais :
+
+```text
+/api/auth/me
+      ↓ session valide
+/api/admin/dashboard/context
+      ↓ validateAdminContext()
+resolveMarketView()
+      ↓
+mode=global  → /api/admin/dashboard/unified
+mode=market  → /api/admin/dashboard/unified/market/:marketCode
+```
+
+Pilotage ne charge donc jamais l'agrégat global pour ensuite filtrer côté navigateur.
+
+## Gate de sortie LOT 2C Pilotage
 
 - contrat `AdminContext` testé et sans accès réseau ;
+- AdminContext réellement résolu côté serveur ;
 - aucun scope déduit du rôle côté client ;
 - aucun `market_id` client accepté comme autorité ;
-- `requireMarketScope` branché sur chaque source Pilotage market-scoped ;
-- test d'intégration d'isolation CM/CG/KM sur les routes effectivement exposées ;
+- `requireMarketScope` branché sur la source Pilotage des opérateurs pays ;
+- test d'intégration d'isolation central / CM / admin sans grant ;
 - vue globale disponible uniquement pour un grant actif `dashboard_global_access_grants` ;
 - absence de scope marché explicitement testée comme **non globale** ;
+- Canonical sélectionne l'endpoint avant la lecture des données ;
 - aucun import legacy dans `canonical/**`.
 
-Le contrat de sécurité backend Pilotage est désormais matérialisé. Le prochain lot peut projeter cette autorité dans un `AdminContext` serveur sans inventer de privilège côté client.
+Le premier Pilotage Canonical possède désormais une chaîne d'autorité complète du serveur jusqu'au renderer. Le prochain lot peut ajouter la **sélection de marché visible dans l'UI pour le contexte global/multi-market**, sans modifier la frontière de sécurité.
