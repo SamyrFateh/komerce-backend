@@ -15,14 +15,28 @@ Deux audiences consomment les mêmes quatre dashboards :
 
 ## Frontière d'autorité
 
+Vue market-scoped :
+
 ```text
 operator_market_scopes
         ↓ résolution serveur
 requireMarketScope
         ↓ requête déjà enfermée
-agrégateur dashboard
+agrégateur dashboard market
         ↓ données autorisées
 AdminContext canonical
+        ↓ présentation
+DashboardSchema + renderer
+```
+
+Vue globale Komerce :
+
+```text
+dashboard_global_access_grants
+        ↓ résolution serveur
+requireDashboardGlobalAuthority
+        ↓ agrégateurs globaux autorisés
+AdminContext canonical mode=global
         ↓ présentation
 DashboardSchema + renderer
 ```
@@ -34,9 +48,21 @@ Règles non négociables :
 3. Les agrégats sont calculés dans le scope autorisé ; on ne charge jamais un ensemble global pour le filtrer ensuite dans le frontend.
 4. Le rôle vertical ne suffit pas. Un utilisateur `admin` peut rester enfermé dans un seul marché.
 5. Seul un contexte serveur explicitement global autorise une agrégation multi-marchés.
-6. Le changement de marché dans l'UI est une sélection de vue parmi les marchés déjà autorisés, jamais une élévation de privilège.
-7. Les métriques cross-market Komerce utilisent la référence EUR de la Currency Boundary. Le dashboard ne recalcule aucune parité.
-8. `operator_market_scopes` demeure un historique d'accès utilisateur. Il ne devient ni une entité partenaire ni une source de settlement.
+6. L'autorité globale dashboard est persistée dans `dashboard_global_access_grants`, historisée et révocable. Elle n'est jamais déduite du rôle `admin`, ni de l'absence de `operator_market_scopes`.
+7. Le changement de marché dans l'UI est une sélection de vue parmi les marchés déjà autorisés, jamais une élévation de privilège.
+8. Les métriques cross-market Komerce utilisent la référence EUR de la Currency Boundary. Le dashboard ne recalcule aucune parité.
+9. `operator_market_scopes` demeure un historique d'accès utilisateur. Il ne devient ni une entité partenaire ni une source de settlement.
+
+### Bootstrap legacy de l'autorité globale
+
+La migration `145_dashboard_global_access_grants.sql` transforme une seule fois l'état legacy en grants persistés : les admins existants sans scope marché actif reçoivent un grant `legacy-central-bootstrap-2026-08-24`.
+
+Ce bootstrap n'est **pas** une règle runtime. Après la migration :
+
+- un nouvel utilisateur `admin` sans grant global reçoit 403 sur les agrégats globaux ;
+- un admin avec un scope CM/CG/KM mais sans grant global reçoit également 403 ;
+- seul un grant actif dans `dashboard_global_access_grants` ouvre la vue cross-market ;
+- une révocation conserve l'historique et ferme immédiatement l'accès.
 
 ## Projection des dashboards
 
@@ -67,6 +93,11 @@ Le Dashboard observe. Les actes terrain restent dans les workspaces scopés par 
 
 Ce contrat pilote la navigation et l'affichage. Il n'est pas une barrière de sécurité. Chaque future source du LOT 2C devra prouver son enforcement backend indépendamment.
 
+## Routes Pilotage livrées
+
+- `GET /api/admin/dashboard/unified/market/:marketCode` : `requireMarketScope`, agrégat calculé dans le marché autorisé, `market_id` client interdit.
+- Les agrégats globaux historiques `/api/admin/dashboard/*` (`control-tower`, `costing`, `logistics`, `unified`, `cache/clear`) traversent `requireDashboardGlobalAuthority` avant d'atteindre leur routeur.
+
 ## Gate de sortie avant données Pilotage
 
 - contrat `AdminContext` testé et sans accès réseau ;
@@ -74,7 +105,8 @@ Ce contrat pilote la navigation et l'affichage. Il n'est pas une barrière de s�
 - aucun `market_id` client accepté comme autorité ;
 - `requireMarketScope` branché sur chaque source Pilotage market-scoped ;
 - test d'intégration d'isolation CM/CG/KM sur les routes effectivement exposées ;
-- vue globale disponible uniquement pour l'autorité Komerce centrale ;
+- vue globale disponible uniquement pour un grant actif `dashboard_global_access_grants` ;
+- absence de scope marché explicitement testée comme **non globale** ;
 - aucun import legacy dans `canonical/**`.
 
-Le présent lot fige la forme et les invariants. Il ne prétend pas que les routes Pilotage scopées existent déjà.
+Le contrat de sécurité backend Pilotage est désormais matérialisé. Le prochain lot peut projeter cette autorité dans un `AdminContext` serveur sans inventer de privilège côté client.
