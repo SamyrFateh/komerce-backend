@@ -5,14 +5,14 @@
  * @layer         bootstrap
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
+ * @outputs       response_or_domain_result
  * @depends       utils/logger.js
  * @db-write      none
  * @db-read      none
  * @used-by       server.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  bootstrap
- * @version       2026-06
+ * @version       2026-08
  */
 
 'use strict';
@@ -83,10 +83,11 @@ function mountHtmlRoutes(app, rootDir) {
   });
 
   // ── Admin canonical greenfield ─────────────────────────────────────────
-  // Même runtime pour Pilotage et le cockpit staging. Les routes historiques
-  // /admin/* restent intactes tant que la preuve de remplacement n'est pas faite.
+  // Même runtime pour Pilotage, Commerce et le cockpit staging. Les routes
+  // historiques /admin/* restent intactes tant que la preuve de remplacement
+  // n'est pas faite.
   const canonicalAdminPath = path.join(publicDir, 'dashboards', 'canonical', 'index.html');
-  ['/admin-next', '/admin-next/demo', '/admin/pilotage-v2'].forEach(routePath => {
+  ['/admin-next', '/admin-next/commerce', '/admin-next/demo', '/admin/pilotage-v2'].forEach(routePath => {
     app.get(routePath, (req, res) => {
       sendHtml(res, canonicalAdminPath);
     });
@@ -120,9 +121,9 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/shared-carts',
     '/admin/economic-flow',
     // ── Vues manquantes (absentes du legacy → fallback boutique) ──
-    '/admin/accounting',   // FIX: AccountingView non chargée — servait boutique/index.html
-    '/admin/settings',     // FIX: Paramètres business non chargés — servait boutique/index.html
-    '/admin/simulator',    // FIX: Simulateur non chargé — servait boutique/index.html
+    '/admin/accounting',
+    '/admin/settings',
+    '/admin/simulator',
   ];
 
   ADMIN_DASHBOARD_PATHS.forEach(routePath => {
@@ -132,8 +133,6 @@ function mountHtmlRoutes(app, rootDir) {
   });
 
   // ── Raccourci portail de pilotage ───────────────────────────────────────
-  // URL courte vers public/dashboards/admin/portal-pilotage.html.
-  // Le portail garde lui-même la session (fetch /api/auth/me -> /login.html).
   ['/portail', '/pilotage'].forEach(routePath => {
     app.get(routePath, (req, res) => {
       sendHtml(res, path.join(publicDir, 'dashboards', 'admin', 'portal-pilotage.html'));
