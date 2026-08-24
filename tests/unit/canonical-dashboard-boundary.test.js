@@ -44,7 +44,7 @@ function fakeRes() {
   };
 }
 
-describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
+describe('LOT 2-CUTOVER — frontière Legacy / Canonical', () => {
   test('le runtime canonical physique contient Pilotage, Commerce, Operations et Finance', () => {
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'index.html'))).toBe(true);
     expect(fs.existsSync(path.join(CANONICAL_ROOT, 'css', 'base.css'))).toBe(true);
@@ -75,7 +75,27 @@ describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
     expect(violations).toEqual([]);
   });
 
-  test('les surfaces Canonical servent le runtime neuf sans détourner /admin/pilotage', () => {
+  test('les quatre dashboards prennent leurs URLs admin stables dans Canonical', () => {
+    const app = fakeApp();
+    mountHtmlRoutes(app, ROOT);
+    const canonicalPath = path.join(ROOT, 'public', 'dashboards', 'canonical', 'index.html');
+
+    for (const routePath of [
+      '/admin',
+      '/admin/pilotage',
+      '/admin/commerce',
+      '/admin/operations',
+      '/admin/finance',
+      '/admin/demo',
+    ]) {
+      const canonicalRes = fakeRes();
+      app._routes[routePath]({ query: {} }, canonicalRes);
+      expect(canonicalRes.sendFile).toHaveBeenCalledWith(canonicalPath, expect.any(Function));
+      expect(canonicalRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
+    }
+  });
+
+  test('les aliases de construction restent disponibles pendant la fenêtre de cutover', () => {
     const app = fakeApp();
     mountHtmlRoutes(app, ROOT);
     const canonicalPath = path.join(ROOT, 'public', 'dashboards', 'canonical', 'index.html');
@@ -89,16 +109,33 @@ describe('LOT 2-RESET — frontière Legacy / Canonical', () => {
       '/admin/pilotage-v2',
     ]) {
       const canonicalRes = fakeRes();
-      app._routes[routePath]({}, canonicalRes);
+      app._routes[routePath]({ query: {} }, canonicalRes);
       expect(canonicalRes.sendFile).toHaveBeenCalledWith(canonicalPath, expect.any(Function));
     }
+  });
 
-    const legacyCurrentRes = fakeRes();
-    app._routes['/admin/pilotage']({}, legacyCurrentRes);
-    expect(legacyCurrentRes.sendFile).toHaveBeenCalledWith(
-      path.join(ROOT, 'public', 'dashboards', 'admin', 'index.html'),
-      expect.any(Function)
-    );
+  test('Pilotage Legacy 1 reste rollbackable sans changer le pathname historique', () => {
+    const app = fakeApp();
+    mountHtmlRoutes(app, ROOT);
+    const legacyPath = path.join(ROOT, 'public', 'dashboards', 'admin', 'index.html');
+    const res = fakeRes();
+
+    app._routes['/admin/pilotage']({ query: { legacy: '1' } }, res);
+
+    expect(res.sendFile).toHaveBeenCalledWith(legacyPath, expect.any(Function));
+    expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+  });
+
+  test('une capacité non encore reconstruite reste servie par Legacy 1', () => {
+    const app = fakeApp();
+    mountHtmlRoutes(app, ROOT);
+    const legacyPath = path.join(ROOT, 'public', 'dashboards', 'admin', 'index.html');
+    const res = fakeRes();
+
+    app._routes['/admin/hub-relais']({ query: {} }, res);
+
+    expect(res.sendFile).toHaveBeenCalledWith(legacyPath, expect.any(Function));
+    expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
   });
 
   test('l’entrypoint canonical ne charge que la session puis l’autorité serveur', () => {
