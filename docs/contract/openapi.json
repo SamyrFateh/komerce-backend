@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 18,
-    "total_routes": 443,
+    "total_routes": 444,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -5312,6 +5312,77 @@
                       "x-observed": true
                     },
                     "security": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "timeline": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/entities/products/{productRef}": {
+      "get": {
+        "summary": "GET /api/admin/entities/products/{productRef}",
+        "x-route-file": "routes/admin-product-360.js",
+        "parameters": [
+          {
+            "name": "productRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "product": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "summary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "inventory": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "performance": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "economics": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "central": {
                       "type": "string",
                       "x-observed": true
                     },

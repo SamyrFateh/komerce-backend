@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-25T11:03:07.562Z",
+  "generatedAt": "2026-08-25T16:51:58.459Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 474,
+  "count": 475,
   "routes": [
     {
       "method": "GET",
@@ -623,6 +623,16 @@
       "mountPrefix": "/api/admin/entities",
       "localPath": "/orders/:orderReference",
       "routeFile": "routes/admin-order-360.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/entities/products/:productRef",
+      "mountPrefix": "/api/admin/entities",
+      "localPath": "/products/:productRef",
+      "routeFile": "routes/admin-product-360.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
