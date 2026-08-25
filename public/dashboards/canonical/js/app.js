@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, order-360, client-360, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/orders/:reference, /admin/clients/:phone, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, operations, finance, order-360, client-360, product-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -29,6 +29,7 @@
     FINANCE: 'finance',
     ORDER_360: 'order-360',
     CLIENT_360: 'client-360',
+    PRODUCT_360: 'product-360',
     DEMO: 'demo',
   });
 
@@ -86,6 +87,7 @@
     const path = String(pathname || '');
     if (/^\/admin\/orders\/[^/]+$/.test(path)) return SURFACES.ORDER_360;
     if (/^\/admin\/clients\/[^/]+$/.test(path)) return SURFACES.CLIENT_360;
+    if (/^\/admin\/products\/[^/]+$/.test(path)) return SURFACES.PRODUCT_360;
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
     if (path === '/admin/operations' || path === '/admin-next/operations') return SURFACES.OPERATIONS;
@@ -277,6 +279,18 @@
     });
   }
 
+  function renderProduct360(root, user) {
+    if (!global.KomerceCanonicalProduct360) throw new Error('canonical_product_360_module_missing');
+    return global.KomerceCanonicalProduct360.mount({
+      root,
+      user,
+      pathname: global.location.pathname,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
   function renderMarketSurfaceShell(root, user, adminContext, options) {
     if (!root || typeof root.replaceChildren !== 'function' || typeof root.appendChild !== 'function') {
       throw new Error('canonical_admin_shell_root_missing');
@@ -350,6 +364,7 @@
     const surface = surfaceForPath(global.location.pathname);
     if (surface === SURFACES.ORDER_360) return renderOrder360(root, user);
     if (surface === SURFACES.CLIENT_360) return renderClient360(root, user);
+    if (surface === SURFACES.PRODUCT_360) return renderProduct360(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
@@ -385,6 +400,7 @@
     renderFinance,
     renderOrder360,
     renderClient360,
+    renderProduct360,
     renderMarketSurfaceShell,
     renderPilotageShell,
     renderCommerceShell,

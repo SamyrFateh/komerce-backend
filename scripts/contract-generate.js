@@ -194,6 +194,8 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/entities/orders/{orderReference}', method: 'get', schema: null },
   // LOT 3B — Canonical Client 360
   { prefix: '/api/admin/entities/clients/{clientPhone}', method: 'get', schema: null },
+  // LOT 3C — Canonical Product 360
+  { prefix: '/api/admin/entities/products/{productRef}', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -213,6 +215,10 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 3C — réponse Product 360 consommée par Canonical.
+  '/api/admin/entities/products/{productRef}': {
+    get: { fields: ['product','scope','summary','inventory','performance','economics','central','timeline','data_quality'], source: 'test' }
+  },
   // LOT 3B — réponse Client 360 consommée par Canonical.
   '/api/admin/entities/clients/{clientPhone}': {
     get: { fields: ['client','scope','summary','finance','orders','top_products','shared_lists','notifications','security','timeline','data_quality'], source: 'test' }

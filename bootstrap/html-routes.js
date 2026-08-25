@@ -132,6 +132,12 @@ function mountHtmlRoutes(app, rootDir) {
     sendCanonicalAdmin(res);
   });
 
+  // LOT 3C — Product 360 Canonical. product_ref est l'identité métier stable ;
+  // `/admin/products` reste Legacy 1 jusqu'au Catalogue Workspace Canonical.
+  app.get('/admin/products/:productRef', (req, res) => {
+    sendCanonicalAdmin(res);
+  });
+
   // Les URLs de construction restent des aliases temporaires mais ne créent
   // plus une seconde URL produit : elles ramènent systématiquement vers le
   // pathname stable correspondant.
