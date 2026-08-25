@@ -35,6 +35,20 @@ test('metricItems ne recalcule aucune vérité économique', () => {
   expect(metrics.find(metric => metric.key === 'incidents').tone).toBe('critical');
 });
 
+test('productDrills ouvre Product 360 par product_ref et déduplique les lignes', () => {
+  const drills = order360.productDrills([
+    { product_ref: 'KPR-000123', product_name: 'Produit A' },
+    { product_ref: 'KPR-000123', product_name: 'Produit A' },
+    { product_ref: 'KPR-000456', product_name: 'Produit B' },
+    { product_ref: null, product_name: 'Ancien produit' },
+  ]);
+
+  expect(drills).toEqual([
+    expect.objectContaining({ title: 'Produit A', href: '/admin/products/KPR-000123', actionLabel: 'Product 360' }),
+    expect.objectContaining({ title: 'Produit B', href: '/admin/products/KPR-000456', actionLabel: 'Product 360' }),
+  ]);
+});
+
 test('mount charge la référence dans le namespace Entity 360', async () => {
   const root = { replaceChildren: jest.fn(), appendChild: jest.fn(), className: '' };
   const fetch = jest.fn().mockResolvedValue({
