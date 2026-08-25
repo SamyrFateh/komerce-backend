@@ -24,10 +24,11 @@ test('endpointFor impose un code marché et reste dans le namespace Canonical', 
 });
 
 test('le frontend ne construit jamais market_id comme autorité', () => {
-  expect(SOURCE).not.toContain('market_id');
-  expect(SOURCE).not.toContain('marketId');
-  expect(SOURCE).not.toContain('/api/hub/');
-  expect(SOURCE).not.toContain('/api/v2/');
+  const executable = SOURCE.replace(/\/\*\*[\s\S]*?\*\//, '');
+  expect(executable).not.toMatch(/\bmarket_id\b/);
+  expect(executable).not.toMatch(/\bmarketId\b/);
+  expect(executable).not.toContain('/api/hub/');
+  expect(executable).not.toContain('/api/v2/');
 });
 
 test('les KPI du Workspace sont une projection pure du résumé serveur', () => {

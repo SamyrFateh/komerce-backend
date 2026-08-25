@@ -109,14 +109,20 @@ async function queryDistribution(marketId) {
        JOIN orders owner_order ON owner_order.id = p.order_id
        LEFT JOIN relais r ON r.id = p.relais_id
        LEFT JOIN LATERAL (
-         SELECT COUNT(DISTINCT oi.order_id)::int AS orders_count,
-                COUNT(pi.id)::int AS items_count,
-                COALESCE(SUM(DISTINCT linked_order.total_kmf), 0)::int AS total_kmf
-           FROM parcel_items pi
-           JOIN order_items oi ON oi.id = pi.order_item_id
-           JOIN orders linked_order ON linked_order.id = oi.order_id
-          WHERE pi.parcel_id = p.id
-            AND linked_order.market_id = $1
+         SELECT COUNT(*)::int AS orders_count,
+                COALESCE(SUM(per_order.items_count), 0)::int AS items_count,
+                COALESCE(SUM(per_order.total_kmf), 0)::int AS total_kmf
+           FROM (
+             SELECT linked_order.id,
+                    COUNT(pi.id)::int AS items_count,
+                    MAX(linked_order.total_kmf)::int AS total_kmf
+               FROM parcel_items pi
+               JOIN order_items oi ON oi.id = pi.order_item_id
+               JOIN orders linked_order ON linked_order.id = oi.order_id
+              WHERE pi.parcel_id = p.id
+                AND linked_order.market_id = $1
+              GROUP BY linked_order.id
+           ) per_order
        ) agg ON true
       WHERE owner_order.market_id = $1
         AND (p.relais_id IS NULL OR r.market_id = $1)
@@ -531,6 +537,13 @@ async function assignInventory(itemId, parcelReference, market) {
   }
 
   const parcel = await resolveParcelInMarket(parcelReference, resolvedMarket.id);
+  if (!['draft', 'preparation'].includes(parcel.status)) {
+    throw new OperationsWorkspaceError(
+      'inventory_parcel_not_open',
+      `Le colis ${parcel.reference} n'est plus ouvert à l'affectation inventaire`,
+      409
+    );
+  }
   const result = await inventory.scanIntoParcel(rows[0].id, parcel.id);
   return Object.freeze({
     item_id: rows[0].id,

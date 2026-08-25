@@ -196,6 +196,15 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/entities/clients/{clientPhone}', method: 'get', schema: null },
   // LOT 3C — Canonical Product 360
   { prefix: '/api/admin/entities/products/{productRef}', method: 'get', schema: null },
+  // LOT 4A — Canonical Operations / Hub-Relais Workspace (single-market actions)
+  { prefix: '/api/admin/workspaces/operations/market/{marketCode}', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/mark-ordered', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/operations/market/{marketCode}/distribution/run', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/ship', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/confirm-cash', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/receive', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/collect', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/operations/market/{marketCode}/inventory/items/{itemId}/assign', method: 'post', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -215,6 +224,31 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 4A — réponses Operations Workspace consommées par Canonical.
+  '/api/admin/workspaces/operations/market/{marketCode}': {
+    get: { fields: ['scope','summary','queues','distribution','inventory','data_quality'], source: 'test' }
+  },
+  '/api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/mark-ordered': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/operations/market/{marketCode}/distribution/run': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/ship': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/confirm-cash': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/receive': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/collect': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/operations/market/{marketCode}/inventory/items/{itemId}/assign': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
   // LOT 3C — réponse Product 360 consommée par Canonical.
   '/api/admin/entities/products/{productRef}': {
     get: { fields: ['product','scope','summary','inventory','performance','economics','central','timeline','data_quality'], source: 'test' }
