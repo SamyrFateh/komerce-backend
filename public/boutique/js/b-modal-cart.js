@@ -208,7 +208,7 @@ function signalUnavailableOption(axisKey, optionValue, optionState) {
     .find((button) => button.dataset.optionValue === optionValue);
 
   const canonicalMessage = String(state.modalSelection?.selection_message || '').trim();
-  const fallback = optionReason(optionState);
+  const fallback = optionReason(optionState) || 'Option non disponible';
   ensureSelectionMessage(canonicalMessage || `${optionValue} indisponible — ${fallback.toLowerCase()}`);
 
   animateShake(option, { focus: true });
@@ -225,14 +225,24 @@ function purchaseIntentButtons() {
 /**
  * Un SKU incomplet ne doit PAS être un bouton natif disabled : sinon le clic
  * n'atteint jamais le guard et l'utilisateur ne reçoit aucun feedback.
- * `aria-disabled=true` conserve la sémantique visuelle/accessibilité tandis que
- * le handler garantit qu'aucune mutation panier/checkout n'est possible.
+ * `aria-disabled=true` conserve la sémantique accessibilité tandis que le
+ * handler garantit qu'aucune mutation panier/checkout n'est possible.
  */
 function reconcilePurchaseIntentButtons(purchaseReady, inventoryModel) {
   const buttons = purchaseIntentButtons();
+
+  // Ne retirer que l'état que CE module avait lui-même posé. Les produits
+  // legacy peuvent avoir leur propre disabled/aria-describedby, possédés par
+  // les renderers : on ne doit jamais effacer cette sémantique par accident.
   buttons.forEach((button) => {
+    const ownedBlockedState = button.classList.contains('k-purchase-intent--blocked');
     button.classList.remove('k-purchase-intent--blocked');
-    button.removeAttribute('aria-disabled');
+    if (ownedBlockedState) {
+      button.removeAttribute('aria-disabled');
+      if (button.getAttribute('aria-describedby') === 'k-modal-selection-message') {
+        button.removeAttribute('aria-describedby');
+      }
+    }
   });
 
   if (inventoryModel !== 'SKU') return;
@@ -251,7 +261,9 @@ function reconcilePurchaseIntentButtons(purchaseReady, inventoryModel) {
     if (!button.classList.contains('confirmed') && !button.classList.contains('buy-confirmed')) {
       button.disabled = false;
     }
-    button.removeAttribute('aria-describedby');
+    if (button.getAttribute('aria-describedby') === 'k-modal-selection-message') {
+      button.removeAttribute('aria-describedby');
+    }
   });
 }
 
@@ -346,10 +358,10 @@ function _syncModalQtyUI() {
 }
 
 /**
- * Les renderers PDC rerendent directement leur composition lors d'un clic sur
- * une option et ne repassent pas par le bootstrap. Cette délégation document
- * réconcilie l'owner panier juste après le handler du renderer, y compris quand
- * le bouton cliqué a été remplacé par le rerender.
+ * Capture la cible AVANT le handler du renderer (qui peut remplacer le DOM),
+ * puis réconcilie en microtask APRES le changement de sélection. Le capture
+ * garantit qu'on conserve axe/valeur/état même si le bouton cliqué est détaché
+ * synchronement par le rerender desktop ou mobile.
  */
 function installSelectionReconcile() {
   if (_selectionReconcileInstalled) return;
@@ -369,7 +381,7 @@ function installSelectionReconcile() {
       _syncModalQtyUI();
       if (unavailable) signalUnavailableOption(axisKey, optionValue, optionState);
     });
-  });
+  }, true);
 }
 
 /**
