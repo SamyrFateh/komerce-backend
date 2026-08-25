@@ -202,13 +202,8 @@
       { label: 'Relais / destination', render: row => row.relais_name || row.relais_island || row.destination_island || '—' },
       { label: 'Montant', render: row => formatKmf(row.total_kmf) },
       { label: 'Depuis', render: row => formatDate(row.updated_at || row.shipped_at || row.created_at) },
-      { label: '', className: 'is-action', render: config.renderAction },
+      { label: '', className: 'is-action', render: () => '' },
     ];
-  }
-
-  function wireButton(button, handler) {
-    button.addEventListener('click', handler);
-    return button;
   }
 
   async function runAction(context, button, options) {
@@ -244,33 +239,15 @@
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
 
-    const hubOrder = createSection(
-      rootNode,
-      ui,
-      'Hub · Commander',
-      'Commandes confirmées à envoyer au sourcing. La transition reste exécutée par la state machine commande.'
-    );
-    renderActionTable(hubOrder, {
+    renderOrderActionSection(rootNode, ui, doc, context, {
+      title: 'Hub · Commander',
+      description: 'Commandes confirmées à envoyer au sourcing. La transition reste exécutée par la state machine commande.',
       rows: payload.queues.hub.to_order,
-      emptyText: 'Aucune commande à envoyer au sourcing.',
-      columns: actionColumns({
-        referenceKind: 'order',
-        renderAction: (row, rowDoc) => wireButton(
-          makeActionButton(rowDoc, 'Commander', 'mark-ordered'),
-          () => runAction(context, eventButton(rowDoc), {})
-        ),
-      }),
-    });
-
-    // Rewire explicitly: eventButton cannot infer the button during construction in every DOM implementation.
-    hubOrder.querySelectorAll('[data-workspace-action="mark-ordered"]').forEach((button, index) => {
-      const row = payload.queues.hub.to_order[index];
-      button.replaceWith(makeBoundButton(doc, 'Commander', 'mark-ordered', () => runAction(context, buttonProxy(button), {
-        url: endpointFor(context.marketCode, `orders/${encodeURIComponent(row.reference)}/mark-ordered`),
-        confirmMessage: `Envoyer ${row.reference} au sourcing ?`,
-        runningMessage: `${row.reference} · envoi au sourcing…`,
-        successMessage: `${row.reference} envoyée au sourcing.`,
-      })));
+      action: 'mark-ordered',
+      actionLabel: 'Commander',
+      suffix: row => `orders/${encodeURIComponent(row.reference)}/mark-ordered`,
+      confirm: row => `Envoyer ${row.reference} au sourcing ?`,
+      empty: 'Aucune commande à envoyer au sourcing.',
     });
 
     const distribution = createSection(
@@ -351,16 +328,6 @@
     renderInventorySection(rootNode, ui, doc, payload, context);
   }
 
-  // Tiny helpers kept outside business rendering so tests can assert requests without a browser framework.
-  function eventButton() { return null; }
-  function buttonProxy(button) { return button; }
-
-  function makeBoundButton(doc, label, action, handler) {
-    const button = makeActionButton(doc, label, action);
-    button.addEventListener('click', () => handler(button));
-    return button;
-  }
-
   function renderOrderActionSection(rootNode, ui, doc, context, config) {
     const slot = createSection(rootNode, ui, config.title, config.description);
     renderActionRows(slot, doc, context, config, 'order');
@@ -375,10 +342,7 @@
     renderActionTable(slot, {
       rows: config.rows,
       emptyText: config.empty,
-      columns: actionColumns({
-        referenceKind: kind,
-        renderAction: () => text(doc, 'span', '', ''),
-      }),
+      columns: actionColumns({ referenceKind: kind }),
     });
     slot.querySelectorAll('tbody tr').forEach((rowNode, index) => {
       const row = config.rows[index];
