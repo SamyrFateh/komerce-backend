@@ -11,7 +11,7 @@
  * @db-read       users, recipients, orders, markets, relais, order_items, products, shared_carts, shared_cart_items, client_notifications, webauthn_credentials
  * @db-write      none
  * @db-txn        none
- * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority, client_security_global_only
+ * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority, client_account_facets_global_only
  * @impact-areas  admin-dashboard, clients, commerce, shared-cart, auth-passkey, notifications, market-authorization
  * @version       2026-08
  */
@@ -94,7 +94,7 @@ async function loadClient360(client, options = {}) {
 
   const marketIds = options.marketIds === undefined ? null : options.marketIds;
   const mode = marketIds === null ? 'global' : 'market';
-  const includeSecurity = Boolean(options.includeSecurity && client.user_id);
+  const includeAccountFacets = Boolean(options.includeSecurity && client.user_id && mode === 'global');
   const phone = client.normalized_phone;
 
   const profileMarket = marketFilter('o', marketIds, 2);
@@ -208,46 +208,33 @@ async function loadClient360(client, options = {}) {
         FROM client_notifications n
         JOIN orders o ON o.id = n.entity_id
         WHERE n.user_id = $1::uuid
-          ${notificationsMarket.sql.replace('$2', '$2')}
+          ${notificationsMarket.sql}
         ORDER BY n.created_at DESC
         LIMIT 50
       `, [client.user_id, ...notificationsMarket.params])
     : Promise.resolve({ rows: [] });
 
-  let sharedListsPromise = Promise.resolve({ rows: [] });
-  if (client.user_id) {
-    const listScope = marketIds === null
-      ? ''
-      : `AND EXISTS (
-           SELECT 1
-           FROM shared_cart_items sci
-           JOIN order_items oi ON oi.shared_cart_item_id = sci.id
-           JOIN orders so ON so.id = oi.order_id
-           WHERE sci.shared_cart_id = sc.id
-             AND so.market_id = ANY($2::uuid[])
-         )`;
-    const listParams = marketIds === null ? [client.user_id] : [client.user_id, marketIds];
-    sharedListsPromise = db.query(`
-      SELECT
-        sc.title,
-        sc.status,
-        sc.created_at,
-        sc.closed_at,
-        sc.cancelled_at,
-        COALESCE(SUM(sci.quantity), 0)::int AS items_count,
-        COALESCE(SUM(sci.quantity) FILTER (WHERE oi.id IS NOT NULL), 0)::int AS claimed_count
-      FROM shared_carts sc
-      LEFT JOIN shared_cart_items sci ON sci.shared_cart_id = sc.id
-      LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
-      WHERE ${ORGANIZER_ID_SQL} = $1::uuid
-        ${listScope}
-      GROUP BY sc.id, sc.title, sc.status, sc.created_at, sc.closed_at, sc.cancelled_at
-      ORDER BY sc.created_at DESC
-      LIMIT 50
-    `, listParams);
-  }
+  const sharedListsPromise = includeAccountFacets
+    ? db.query(`
+        SELECT
+          sc.title,
+          sc.status,
+          sc.created_at,
+          sc.closed_at,
+          sc.cancelled_at,
+          COALESCE(SUM(sci.quantity), 0)::int AS items_count,
+          COALESCE(SUM(sci.quantity) FILTER (WHERE oi.id IS NOT NULL), 0)::int AS claimed_count
+        FROM shared_carts sc
+        LEFT JOIN shared_cart_items sci ON sci.shared_cart_id = sc.id
+        LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
+        WHERE ${ORGANIZER_ID_SQL} = $1::uuid
+        GROUP BY sc.id, sc.title, sc.status, sc.created_at, sc.closed_at, sc.cancelled_at
+        ORDER BY sc.created_at DESC
+        LIMIT 50
+      `, [client.user_id])
+    : Promise.resolve({ rows: [] });
 
-  const securityPromise = includeSecurity
+  const securityPromise = includeAccountFacets
     ? Promise.all([
         db.query(`
           SELECT role, created_at, updated_at, last_login_at,
@@ -422,7 +409,7 @@ async function loadClient360(client, options = {}) {
     data_quality: Object.freeze({
       generated_at: new Date().toISOString(),
       scope_mode: mode,
-      security_scope: security.visibility,
+      account_facets: includeAccountFacets ? 'global-visible' : 'restricted',
       source_tables: Object.freeze([
         'users', 'recipients', 'orders', 'markets', 'relais', 'order_items', 'products',
         'shared_carts', 'shared_cart_items', 'client_notifications', 'webauthn_credentials',
