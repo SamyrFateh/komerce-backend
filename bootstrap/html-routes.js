@@ -83,9 +83,6 @@ function mountHtmlRoutes(app, rootDir) {
   });
 
   // ── Admin Canonical — LOT 2-CUTOVER ────────────────────────────────────
-  // Les quatre dashboards prouvés prennent leurs URLs stables. Les anciennes
-  // capacités qui n'ont pas encore d'équivalent Canonical restent servies par
-  // Legacy 1 : le cutover est additif, jamais destructif.
   const canonicalAdminPath = path.join(publicDir, 'dashboards', 'canonical', 'index.html');
   const legacyAdminPath = path.join(publicDir, 'dashboards', 'admin', 'index.html');
 
@@ -99,9 +96,6 @@ function mountHtmlRoutes(app, rootDir) {
     sendHtml(res, legacyAdminPath);
   }
 
-  // Pilotage est la seule URL stable qui entrait déjà en collision avec
-  // Legacy 1. `?legacy=1` fournit donc un rollback immédiat sans modifier le
-  // pathname vu par le routeur SPA historique.
   app.get('/admin/pilotage', (req, res) => {
     if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
     sendCanonicalAdmin(res);
@@ -114,27 +108,23 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/finance',
     '/admin/demo',
   ].forEach(routePath => {
-    app.get(routePath, (req, res) => {
-      sendCanonicalAdmin(res);
-    });
+    app.get(routePath, (req, res) => sendCanonicalAdmin(res));
   });
 
-  // LOT 3A — première Entity 360 Canonical. La référence reste lisible dans
-  // l'URL ; l'autorité de marché est vérifiée exclusivement côté API.
   app.get('/admin/orders/:orderReference', (req, res) => {
     sendCanonicalAdmin(res);
   });
 
-  // LOT 3B — Client 360 Canonical. L'URL détaillée est canonique, tandis que
-  // `/admin/clients` sans identifiant reste Legacy 1 jusqu'à reconstruction
-  // d'une vraie surface de recherche/navigation clients.
   app.get('/admin/clients/:clientPhone', (req, res) => {
     sendCanonicalAdmin(res);
   });
 
-  // Les URLs de construction restent des aliases temporaires mais ne créent
-  // plus une seconde URL produit : elles ramènent systématiquement vers le
-  // pathname stable correspondant.
+  // LOT 3C — Product 360 Canonical. La référence KPR est l'identité métier ;
+  // `/admin/products` sans référence reste Legacy 1 (Catalogue Workspace non reconstruit).
+  app.get('/admin/products/:productRef', (req, res) => {
+    sendCanonicalAdmin(res);
+  });
+
   const CANONICAL_BUILD_ALIASES = Object.freeze({
     '/admin-next': '/admin/pilotage',
     '/admin-next/commerce': '/admin/commerce',
@@ -145,13 +135,9 @@ function mountHtmlRoutes(app, rootDir) {
   });
 
   Object.entries(CANONICAL_BUILD_ALIASES).forEach(([routePath, stablePath]) => {
-    app.get(routePath, (req, res) => {
-      res.redirect(302, stablePath);
-    });
+    app.get(routePath, (req, res) => res.redirect(302, stablePath));
   });
 
-  // Legacy 1 reste accessible pour toutes les capacités non encore remplacées
-  // par un Workspace / Entity 360 / Action Center Canonical.
   const ADMIN_DASHBOARD_PATHS = [
     '/admin/control-tower',
     '/admin/costing',
@@ -184,9 +170,7 @@ function mountHtmlRoutes(app, rootDir) {
   ];
 
   ADMIN_DASHBOARD_PATHS.forEach(routePath => {
-    app.get(routePath, (req, res) => {
-      sendLegacyAdmin(res);
-    });
+    app.get(routePath, (req, res) => sendLegacyAdmin(res));
   });
 
   ['/portail', '/pilotage'].forEach(routePath => {
@@ -203,15 +187,9 @@ function mountHtmlRoutes(app, rootDir) {
     res.redirect(301, '/admin/pilotage');
   });
 
-  app.get('/Komerce_Relais.html', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'relais', 'index.html'));
-  });
-  app.get('/relais', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'relais', 'index.html'));
-  });
-  app.get('/hub', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'hub', 'index.html'));
-  });
+  app.get('/Komerce_Relais.html', (req, res) => sendHtml(res, path.join(publicDir, 'relais', 'index.html')));
+  app.get('/relais', (req, res) => sendHtml(res, path.join(publicDir, 'relais', 'index.html')));
+  app.get('/hub', (req, res) => sendHtml(res, path.join(publicDir, 'hub', 'index.html')));
 
   app.get('/event/create', (req, res) => redirectToBoutique(res));
   app.get('/event/manage/:creatorToken', (req, res) => redirectToBoutique(res));
@@ -220,20 +198,12 @@ function mountHtmlRoutes(app, rootDir) {
   app.get('/event/:creatorToken/manage', (req, res) => redirectToBoutique(res));
   app.get('/workspace/:publicToken', (req, res) => redirectToBoutique(res));
 
-  app.get('/Komerce_Boutique.html', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
-  });
-  app.get('/boutique', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
-  });
-  app.get('/login.html', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'login.html'));
-  });
+  app.get('/Komerce_Boutique.html', (req, res) => sendHtml(res, path.join(publicDir, 'boutique', 'index.html')));
+  app.get('/boutique', (req, res) => sendHtml(res, path.join(publicDir, 'boutique', 'index.html')));
+  app.get('/login.html', (req, res) => sendHtml(res, path.join(publicDir, 'login.html')));
 
   app.get('*', (req, res) => {
-    if (req.path.startsWith('/api')) {
-      return res.status(404).json({ error: 'Endpoint introuvable' });
-    }
+    if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Endpoint introuvable' });
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.sendFile(path.join(publicDir, 'boutique', 'index.html'));
   });
