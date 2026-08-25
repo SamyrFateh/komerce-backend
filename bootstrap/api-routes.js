@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js
+ * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js
  * @db-write      none
  * @db-read       none
  * @used-by       server.js
@@ -125,6 +125,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const adminOrder360Router = require('../routes/admin-order-360');
   const adminClient360Router = require('../routes/admin-client-360');
   const adminProduct360Router = require('../routes/admin-product-360');
+  const adminOperationsWorkspaceRouter = require('../routes/admin-operations-workspace');
   // ZG-3: adminCollectiveRepairsRouter supprimé — system collective_workspaces démonté (2026-05-30)
   // Les services repair-collective-*.js et la route /api/admin/collective ne sont plus montés.
 
@@ -135,6 +136,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/admin/entities',    adminOrder360Router);
   app.use('/api/admin/entities',    adminClient360Router);
   app.use('/api/admin/entities',    adminProduct360Router);
+  app.use('/api/admin/workspaces/operations', adminOperationsWorkspaceRouter);
   app.use('/api/admin/costing',     require('../routes/admin-costing'));
   app.use('/api/admin',      catalogApprovalRouter);
   app.use('/api/admin',      adminRouter);
