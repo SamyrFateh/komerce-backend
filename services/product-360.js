@@ -8,7 +8,7 @@
  * @outputs       product_360_projection
  * @depends       db
  * @used-by       routes/admin-product-360.js
- * @db-read       products, product_variants, product_skus, order_items, orders, markets, order_item_cost_imputations, order_item_real_cost_allocations, product_suppliers, suppliers, price_history, alerts
+ * @db-read       products, product_variants, product_skus, order_items, orders, markets, order_item_cost_imputations, order_item_real_cost_allocations, product_suppliers, suppliers, price_history, alerts, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority, product_ref_is_business_identity, sourcing_and_audit_global_only
@@ -193,8 +193,6 @@ async function loadProduct360(product, options = {}) {
           ph.new_price_kmf,
           ph.source,
           ph.applied_at,
-          ph.scenario_label,
-          ph.levier,
           u.full_name AS applied_by_name
         FROM price_history ph
         LEFT JOIN users u ON u.id = ph.applied_by
@@ -249,14 +247,12 @@ async function loadProduct360(product, options = {}) {
   }));
 
   const inventoryModel = product.inventory_model || 'LEGACY_VARIANTS';
-  let stockTotal;
-  if (inventoryModel === 'SKU') {
-    stockTotal = skus.filter(row => row.is_active).reduce((sum, row) => sum + row.stock, 0);
-  } else if (variants.length) {
-    stockTotal = variants.reduce((sum, row) => sum + row.stock, 0);
-  } else {
-    stockTotal = Number(product.stock) || 0;
-  }
+  // Le modèle est l'autorité. En LEGACY_VARIANTS, les lignes de variantes
+  // décrivent des axes historiques et ne constituent pas nécessairement des
+  // unités vendables combinatoires : les additionner peut doubler le stock.
+  const stockTotal = inventoryModel === 'SKU'
+    ? skus.filter(row => row.is_active).reduce((sum, row) => sum + row.stock, 0)
+    : (Number(product.stock) || 0);
 
   const performance = performanceResult.rows.map(row => Object.freeze({
     market: Object.freeze({ code: row.code || null, name: row.name || null, currency: row.currency || null }),
@@ -267,13 +263,15 @@ async function loadProduct360(product, options = {}) {
     last_order_at: row.last_order_at || null,
   }));
 
+  // Les clients distincts restent une mesure PAR MARCHÉ. Les additionner au
+  // niveau consolidé compterait deux fois un même client ayant acheté sur deux
+  // marchés. Product 360 n'invente donc pas de total cross-market.
   const summary = performance.reduce((acc, row) => {
     acc.orders_count += row.orders_count;
     acc.quantity_sold += row.quantity_sold;
     acc.revenue_kmf += row.revenue_kmf;
-    acc.customers_count += row.customers_count;
     return acc;
-  }, { orders_count: 0, quantity_sold: 0, revenue_kmf: 0, customers_count: 0 });
+  }, { orders_count: 0, quantity_sold: 0, revenue_kmf: 0 });
 
   const e = economicsResult.rows[0] || {};
   const r = realCostsResult.rows[0] || {};
@@ -296,8 +294,6 @@ async function loadProduct360(product, options = {}) {
     new_price_kmf: row.new_price_kmf == null ? null : Number(row.new_price_kmf),
     source: row.source || null,
     applied_at: row.applied_at,
-    scenario_label: row.scenario_label || null,
-    levier: row.levier || null,
     applied_by: row.applied_by_name || null,
   }));
 
@@ -327,8 +323,11 @@ async function loadProduct360(product, options = {}) {
     type: 'price',
     occurred_at: row.applied_at,
     title: 'Prix modifié',
-    detail: [row.source, row.old_price_kmf == null ? null : `${row.old_price_kmf} → ${row.new_price_kmf} KMF`, row.applied_by]
-      .filter(Boolean).join(' · '),
+    detail: [
+      row.source,
+      row.old_price_kmf == null ? null : `${row.old_price_kmf} → ${row.new_price_kmf} KMF`,
+      row.applied_by,
+    ].filter(Boolean).join(' · '),
   })));
   stockHistory.forEach(row => timeline.push(Object.freeze({
     type: 'stock',
@@ -389,11 +388,14 @@ async function loadProduct360(product, options = {}) {
       generated_at: new Date().toISOString(),
       scope_mode: mode,
       central_scope: includeCentral ? 'global' : 'restricted',
+      stock_truth: inventoryModel === 'SKU' ? 'product_skus' : 'products.stock',
+      legacy_variant_stock_rule: inventoryModel === 'SKU' ? null : 'variant_rows_not_summed',
+      cross_market_customer_rule: 'customers_count_is_per_market_only',
       cost_truth: 'order_item_cost_imputations + order_item_real_cost_allocations',
       source_tables: Object.freeze([
         'products', 'product_variants', 'product_skus', 'order_items', 'orders', 'markets',
         'order_item_cost_imputations', 'order_item_real_cost_allocations',
-        'product_suppliers', 'suppliers', 'price_history', 'alerts',
+        'product_suppliers', 'suppliers', 'price_history', 'alerts', 'users',
       ]),
     }),
   });
