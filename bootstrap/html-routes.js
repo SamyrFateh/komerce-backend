@@ -119,6 +119,12 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
+  // LOT 3A — première Entity 360 Canonical. La référence reste lisible dans
+  // l'URL ; l'autorité de marché est vérifiée exclusivement côté API.
+  app.get('/admin/orders/:orderReference', (req, res) => {
+    sendCanonicalAdmin(res);
+  });
+
   // Les URLs de construction restent des aliases temporaires mais ne créent
   // plus une seconde URL produit : elles ramènent systématiquement vers le
   // pathname stable correspondant.

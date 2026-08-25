@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, operations, finance, order-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/orders/:reference, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -27,6 +27,7 @@
     COMMERCE: 'commerce',
     OPERATIONS: 'operations',
     FINANCE: 'finance',
+    ORDER_360: 'order-360',
     DEMO: 'demo',
   });
 
@@ -82,6 +83,7 @@
 
   function surfaceForPath(pathname) {
     const path = String(pathname || '');
+    if (/^\/admin\/orders\/[^/]+$/.test(path)) return SURFACES.ORDER_360;
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
     if (path === '/admin/operations' || path === '/admin-next/operations') return SURFACES.OPERATIONS;
@@ -249,6 +251,18 @@
     return canonicalMount(global.KomerceCanonicalFinance, 'canonical_finance_module_missing', root, user, adminContext, requestedMarket);
   }
 
+  function renderOrder360(root, user) {
+    if (!global.KomerceCanonicalOrder360) throw new Error('canonical_order_360_module_missing');
+    return global.KomerceCanonicalOrder360.mount({
+      root,
+      user,
+      pathname: global.location.pathname,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
   function renderMarketSurfaceShell(root, user, adminContext, options) {
     if (!root || typeof root.replaceChildren !== 'function' || typeof root.appendChild !== 'function') {
       throw new Error('canonical_admin_shell_root_missing');
@@ -320,6 +334,7 @@
 
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
+    if (surface === SURFACES.ORDER_360) return renderOrder360(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
@@ -353,6 +368,7 @@
     renderCommerce,
     renderOperations,
     renderFinance,
+    renderOrder360,
     renderMarketSurfaceShell,
     renderPilotageShell,
     renderCommerceShell,

@@ -190,6 +190,8 @@ const ROUTE_SCHEMA_MAP = [
   // LOT 2F — Canonical Finance global + market-scoped
   { prefix: '/api/admin/dashboard/finance', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/finance/market/{marketCode}', method: 'get', schema: null },
+  // LOT 3A — Canonical Order 360
+  { prefix: '/api/admin/entities/orders/{orderReference}', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -209,6 +211,10 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 3A — réponse Order 360 consommée par Canonical.
+  '/api/admin/entities/orders/{orderReference}': {
+    get: { fields: ['order','summary','items','parcels','history','scans','incidents','comments','notifications','invoices','documents','data_quality'], source: 'test' }
+  },
   // LOT 2F — réponses Finance consommées par Canonical.
   '/api/admin/dashboard/finance': {
     get: { fields: ['scope','period','kpis','payment_mix','refunds','incomplete_cost_orders','data_quality'], source: 'test' }

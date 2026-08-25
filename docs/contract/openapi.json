@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 18,
-    "total_routes": 441,
+    "total_routes": 442,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -5158,6 +5158,89 @@
                       "x-observed": true
                     },
                     "prefix": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/entities/orders/{orderReference}": {
+      "get": {
+        "summary": "GET /api/admin/entities/orders/{orderReference}",
+        "x-route-file": "routes/admin-order-360.js",
+        "parameters": [
+          {
+            "name": "orderReference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "summary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "items": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "parcels": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "history": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "scans": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "incidents": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "comments": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "notifications": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "invoices": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "documents": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
                       "type": "string",
                       "x-observed": true
                     }

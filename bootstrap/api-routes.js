@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js
+ * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js
  * @db-write      none
  * @db-read       none
  * @used-by       server.js
@@ -122,6 +122,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const sourcingScannerRouter = require('../routes/sourcing-scanner');
   const signalsRouter         = require('../routes/signals');
   const adminRiskProvisionsRouter = require('../routes/admin-risk-provisions');
+  const adminOrder360Router = require('../routes/admin-order-360');
   // ZG-3: adminCollectiveRepairsRouter supprimé — system collective_workspaces démonté (2026-05-30)
   // Les services repair-collective-*.js et la route /api/admin/collective ne sont plus montés.
 
@@ -129,6 +130,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   // LOT 2C — route Pilotage market-scoped montée avant l'agrégateur global historique.
   app.use('/api/admin/dashboard',   require('../routes/admin-dashboard-market'));
   app.use('/api/admin/dashboard',   require('../routes/admin-dashboard'));
+  app.use('/api/admin/entities',    adminOrder360Router);
   app.use('/api/admin/costing',     require('../routes/admin-costing'));
   app.use('/api/admin',      catalogApprovalRouter);
   app.use('/api/admin',      adminRouter);
