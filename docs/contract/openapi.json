@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 18,
-    "total_routes": 442,
+    "total_routes": 443,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -5237,6 +5237,85 @@
                       "x-observed": true
                     },
                     "documents": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/entities/clients/{clientPhone}": {
+      "get": {
+        "summary": "GET /api/admin/entities/clients/{clientPhone}",
+        "x-route-file": "routes/admin-client-360.js",
+        "parameters": [
+          {
+            "name": "clientPhone",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "client": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "summary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "finance": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "orders": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "top_products": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "shared_lists": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "notifications": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "security": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "timeline": {
                       "type": "string",
                       "x-observed": true
                     },

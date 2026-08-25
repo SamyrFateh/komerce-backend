@@ -125,6 +125,13 @@ function mountHtmlRoutes(app, rootDir) {
     sendCanonicalAdmin(res);
   });
 
+  // LOT 3B — Client 360 Canonical. L'URL détaillée est canonique, tandis que
+  // `/admin/clients` sans identifiant reste Legacy 1 jusqu'à reconstruction
+  // d'une vraie surface de recherche/navigation clients.
+  app.get('/admin/clients/:clientPhone', (req, res) => {
+    sendCanonicalAdmin(res);
+  });
+
   // Les URLs de construction restent des aliases temporaires mais ne créent
   // plus une seconde URL produit : elles ramènent systématiquement vers le
   // pathname stable correspondant.
