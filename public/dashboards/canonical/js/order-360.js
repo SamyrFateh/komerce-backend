@@ -12,7 +12,7 @@
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, canonical_admin_no_legacy_imports
- * @impact-areas  admin-dashboard, orders, logistics, notifications, documents, finance, clients
+ * @impact-areas  admin-dashboard, orders, logistics, notifications, documents, finance, clients, products
  * @version       2026-08
  */
 
@@ -102,6 +102,21 @@
     ];
   }
 
+  function productDrills(items) {
+    const seen = new Set();
+    return (Array.isArray(items) ? items : []).filter(row => {
+      if (!row || !row.product_ref || seen.has(row.product_ref)) return false;
+      seen.add(row.product_ref);
+      return true;
+    }).map(row => ({
+      level: 'info',
+      title: row.product_name || row.product_ref,
+      message: row.product_ref,
+      href: `/admin/products/${encodeURIComponent(row.product_ref)}`,
+      actionLabel: 'Product 360',
+    }));
+  }
+
   function renderTableSection(rootNode, ui, doc, options) {
     const section = ui.Section.create({ title: options.title, description: options.description });
     rootNode.appendChild(section.element);
@@ -142,18 +157,28 @@
     renderTableSection(rootNode, ui, doc, {
       title: 'Articles',
       columns: [
+        { key: 'reference', label: 'Réf. Komerce' },
         { key: 'produit', label: 'Produit' },
         { key: 'categorie', label: 'Catégorie' },
         { key: 'quantite', label: 'Qté', align: 'right' },
         { key: 'prix', label: 'Prix unitaire', align: 'right' },
       ],
       rows: (payload.items || []).map(row => ({
+        reference: row.product_ref,
         produit: row.product_name,
         categorie: row.category,
         quantite: formatNumber(row.quantity),
         prix: formatKmf(row.unit_price_kmf),
       })),
       emptyText: 'Aucun article.',
+    });
+
+    const products = doc.createElement('section');
+    rootNode.appendChild(products);
+    ui.AlertPanel.render(products, {
+      title: 'Produits de la commande',
+      emptyText: 'Aucune référence produit navigable.',
+      items: productDrills(payload.items),
     });
 
     renderTableSection(rootNode, ui, doc, {
@@ -291,6 +316,7 @@
     formatNumber,
     formatKmf,
     formatDate,
+    productDrills,
     metricItems,
     renderPayload,
     jsonRequest,
