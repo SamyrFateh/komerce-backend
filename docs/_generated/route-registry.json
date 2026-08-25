@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-25T09:46:55.361Z",
+  "generatedAt": "2026-08-25T11:03:07.562Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 473,
+  "count": 474,
   "routes": [
     {
       "method": "GET",
@@ -603,6 +603,16 @@
       "mountPrefix": "/api/admin/economic",
       "localPath": "/variables/:key",
       "routeFile": "routes/economic.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/entities/clients/:clientPhone",
+      "mountPrefix": "/api/admin/entities",
+      "localPath": "/clients/:clientPhone",
+      "routeFile": "routes/admin-client-360.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
