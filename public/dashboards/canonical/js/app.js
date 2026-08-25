@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, order-360, client-360, product-360, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, order-360, client-360, product-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -27,6 +27,7 @@
     COMMERCE: 'commerce',
     OPERATIONS: 'operations',
     FINANCE: 'finance',
+    OPERATIONS_WORKSPACE: 'operations-workspace',
     ORDER_360: 'order-360',
     CLIENT_360: 'client-360',
     PRODUCT_360: 'product-360',
@@ -88,6 +89,9 @@
     if (/^\/admin\/orders\/[^/]+$/.test(path)) return SURFACES.ORDER_360;
     if (/^\/admin\/clients\/[^/]+$/.test(path)) return SURFACES.CLIENT_360;
     if (/^\/admin\/products\/[^/]+$/.test(path)) return SURFACES.PRODUCT_360;
+    if (path === '/admin/workspaces/operations' || path === '/admin-next/workspaces/operations') {
+      return SURFACES.OPERATIONS_WORKSPACE;
+    }
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
     if (path === '/admin/operations' || path === '/admin-next/operations') return SURFACES.OPERATIONS;
@@ -108,14 +112,14 @@
     return code;
   }
 
-  function marketChoices(adminContext) {
+  function marketChoices(adminContext, options = {}) {
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) {
       throw new Error('canonical_market_selector_context_missing');
     }
 
     const choices = [];
-    if (access.mode === 'global') {
+    if (access.mode === 'global' && !options.requireMarket) {
       choices.push(Object.freeze({ value: '', marketCode: null, label: 'Global · Tous les marchés' }));
     }
     access.allowedMarkets.forEach(code => {
@@ -124,10 +128,21 @@
     return Object.freeze(choices);
   }
 
-  function initialRequestedMarket(adminContext, contextContract) {
+  function initialRequestedMarket(adminContext, contextContract, options = {}) {
     if (!contextContract || typeof contextContract.resolveMarketView !== 'function') {
       throw new Error('canonical_market_selector_contract_missing');
     }
+
+    if (options.requireMarket) {
+      const access = adminContext && adminContext.access;
+      const preferred = access && (
+        access.defaultMarket ||
+        (Array.isArray(access.allowedMarkets) && access.allowedMarkets[0])
+      );
+      if (!preferred) throw new Error('canonical_workspace_market_required');
+      return contextContract.resolveMarketView(adminContext, preferred).marketCode;
+    }
+
     return contextContract.resolveMarketView(adminContext).marketCode;
   }
 
@@ -155,8 +170,12 @@
     if (!container || typeof container.appendChild !== 'function') throw new Error('canonical_market_selector_container_missing');
     if (typeof onChange !== 'function') throw new Error('canonical_market_selector_onchange_missing');
 
-    const initialMarket = initialRequestedMarket(adminContext, contextContract);
-    const choices = marketChoices(adminContext);
+    const initialMarket = initialRequestedMarket(adminContext, contextContract, {
+      requireMarket: Boolean(options.requireMarket),
+    });
+    const choices = marketChoices(adminContext, {
+      requireMarket: Boolean(options.requireMarket),
+    });
     let selectedMarket = initialMarket;
 
     const bar = doc.createElement('section');
@@ -165,7 +184,7 @@
 
     const copy = doc.createElement('div');
     copy.className = 'kmc-market-context-copy';
-    copy.appendChild(textNode(doc, 'span', 'kmc-market-context-kicker', 'PÉRIMÈTRE'));
+    copy.appendChild(textNode(doc, 'span', 'kmc-market-context-kicker', options.requireMarket ? 'CONTEXTE D’ACTION' : 'PÉRIMÈTRE'));
     copy.appendChild(textNode(doc, 'strong', 'kmc-market-context-title', options.title || 'Vue de pilotage'));
     const description = textNode(doc, 'span', 'kmc-market-context-description', scopeDescription(initialMarket));
     copy.appendChild(description);
@@ -191,6 +210,7 @@
       let resolved;
       try {
         const requestedMarket = select.value || null;
+        if (options.requireMarket && !requestedMarket) throw new Error('canonical_workspace_market_required');
         resolved = contextContract.resolveMarketView(adminContext, requestedMarket);
       } catch (error) {
         select.value = previousMarket || '';
@@ -255,6 +275,17 @@
     return canonicalMount(global.KomerceCanonicalFinance, 'canonical_finance_module_missing', root, user, adminContext, requestedMarket);
   }
 
+  function renderOperationsWorkspace(root, user, adminContext, requestedMarket) {
+    return canonicalMount(
+      global.KomerceCanonicalOperationsWorkspace,
+      'canonical_operations_workspace_module_missing',
+      root,
+      user,
+      adminContext,
+      requestedMarket
+    );
+  }
+
   function renderOrder360(root, user) {
     if (!global.KomerceCanonicalOrder360) throw new Error('canonical_order_360_module_missing');
     return global.KomerceCanonicalOrder360.mount({
@@ -311,6 +342,7 @@
       adminContext,
       contextContract: global.KomerceAdminContext,
       title: options.title,
+      requireMarket: Boolean(options.requireMarket),
       onChange: requestedMarket => options.render(surface, user, adminContext, requestedMarket),
     });
 
@@ -350,6 +382,15 @@
     });
   }
 
+  function renderOperationsWorkspaceShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'operations-workspace',
+      title: 'Workspace Operations / Hub-Relais',
+      requireMarket: true,
+      render: renderOperationsWorkspace,
+    });
+  }
+
   function renderDemo(root, user) {
     if (!global.KomerceDemoOrderFlow) throw new Error('demo_order_flow_module_missing');
     return global.KomerceDemoOrderFlow.mount({
@@ -365,6 +406,7 @@
     if (surface === SURFACES.ORDER_360) return renderOrder360(root, user);
     if (surface === SURFACES.CLIENT_360) return renderClient360(root, user);
     if (surface === SURFACES.PRODUCT_360) return renderProduct360(root, user);
+    if (surface === SURFACES.OPERATIONS_WORKSPACE) return renderOperationsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
@@ -398,6 +440,7 @@
     renderCommerce,
     renderOperations,
     renderFinance,
+    renderOperationsWorkspace,
     renderOrder360,
     renderClient360,
     renderProduct360,
@@ -406,6 +449,7 @@
     renderCommerceShell,
     renderOperationsShell,
     renderFinanceShell,
+    renderOperationsWorkspaceShell,
     renderDemo,
     renderReady,
   };
