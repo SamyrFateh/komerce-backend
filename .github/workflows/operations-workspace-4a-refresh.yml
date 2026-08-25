@@ -22,19 +22,38 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - name: Harden inventory assignment guard
+      - name: Harden source and semantic browser proof
         run: |
           node <<'NODE'
           const fs = require('fs');
-          const file = 'services/operations-workspace.js';
-          let src = fs.readFileSync(file, 'utf8');
-          const before = "  const parcel = await resolveParcelInMarket(parcelReference, resolvedMarket.id);\n  const result = await inventory.scanIntoParcel(rows[0].id, parcel.id);\n";
-          const after = "  const parcel = await resolveParcelInMarket(parcelReference, resolvedMarket.id);\n  if (!['draft', 'preparation'].includes(parcel.status)) {\n    throw new OperationsWorkspaceError(\n      'inventory_parcel_not_open',\n      `Le colis ${parcel.reference} n'est plus ouvert à l'affectation inventaire`,\n      409\n    );\n  }\n  const result = await inventory.scanIntoParcel(rows[0].id, parcel.id);\n";
-          if (!src.includes(after)) {
-            if (!src.includes(before)) throw new Error('Inventory guard marker missing');
-            src = src.replace(before, after);
+
+          const serviceFile = 'services/operations-workspace.js';
+          let service = fs.readFileSync(serviceFile, 'utf8');
+
+          const guardBefore = "  const parcel = await resolveParcelInMarket(parcelReference, resolvedMarket.id);\n  const result = await inventory.scanIntoParcel(rows[0].id, parcel.id);\n";
+          const guardAfter = "  const parcel = await resolveParcelInMarket(parcelReference, resolvedMarket.id);\n  if (!['draft', 'preparation'].includes(parcel.status)) {\n    throw new OperationsWorkspaceError(\n      'inventory_parcel_not_open',\n      `Le colis ${parcel.reference} n'est plus ouvert à l'affectation inventaire`,\n      409\n    );\n  }\n  const result = await inventory.scanIntoParcel(rows[0].id, parcel.id);\n";
+          if (!service.includes(guardAfter)) {
+            if (!service.includes(guardBefore)) throw new Error('Inventory guard marker missing');
+            service = service.replace(guardBefore, guardAfter);
           }
-          fs.writeFileSync(file, src);
+
+          const aggregateBefore = "       LEFT JOIN LATERAL (\n         SELECT COUNT(DISTINCT oi.order_id)::int AS orders_count,\n                COUNT(pi.id)::int AS items_count,\n                COALESCE(SUM(DISTINCT linked_order.total_kmf), 0)::int AS total_kmf\n           FROM parcel_items pi\n           JOIN order_items oi ON oi.id = pi.order_item_id\n           JOIN orders linked_order ON linked_order.id = oi.order_id\n          WHERE pi.parcel_id = p.id\n            AND linked_order.market_id = $1\n       ) agg ON true\n";
+          const aggregateAfter = "       LEFT JOIN LATERAL (\n         SELECT COUNT(*)::int AS orders_count,\n                COALESCE(SUM(per_order.items_count), 0)::int AS items_count,\n                COALESCE(SUM(per_order.total_kmf), 0)::int AS total_kmf\n           FROM (\n             SELECT linked_order.id,\n                    COUNT(pi.id)::int AS items_count,\n                    MAX(linked_order.total_kmf)::int AS total_kmf\n               FROM parcel_items pi\n               JOIN order_items oi ON oi.id = pi.order_item_id\n               JOIN orders linked_order ON linked_order.id = oi.order_id\n              WHERE pi.parcel_id = p.id\n                AND linked_order.market_id = $1\n              GROUP BY linked_order.id\n           ) per_order\n       ) agg ON true\n";
+          if (!service.includes(aggregateAfter)) {
+            if (!service.includes(aggregateBefore)) throw new Error('Distribution aggregate marker missing');
+            service = service.replace(aggregateBefore, aggregateAfter);
+          }
+          fs.writeFileSync(serviceFile, service);
+
+          const testFile = 'tests/unit/canonical-operations-workspace.test.js';
+          let test = fs.readFileSync(testFile, 'utf8');
+          const testBefore = "test('le frontend ne construit jamais market_id comme autorité', () => {\n  expect(SOURCE).not.toContain('market_id');\n  expect(SOURCE).not.toContain('marketId');\n  expect(SOURCE).not.toContain('/api/hub/');\n  expect(SOURCE).not.toContain('/api/v2/');\n});\n";
+          const testAfter = "test('le frontend ne construit jamais market_id comme autorité', () => {\n  const executable = SOURCE.replace(/\\/\\*\\*[\\s\\S]*?\\*\\//, '');\n  expect(executable).not.toMatch(/\\bmarket_id\\b/);\n  expect(executable).not.toMatch(/\\bmarketId\\b/);\n  expect(executable).not.toContain('/api/hub/');\n  expect(executable).not.toContain('/api/v2/');\n});\n";
+          if (!test.includes(testAfter)) {
+            if (!test.includes(testBefore)) throw new Error('Semantic browser proof marker missing');
+            test = test.replace(testBefore, testAfter);
+          }
+          fs.writeFileSync(testFile, test);
           NODE
       - name: Register Operations workspace contract
         run: |
@@ -106,7 +125,7 @@ jobs:
             tests/unit/canonical-admin-app.test.js
       - name: Commit source guard and generated artifacts
         run: |
-          git add services/operations-workspace.js scripts/contract-generate.js docs/_generated/route-registry.json docs/contract/openapi.json
+          git add services/operations-workspace.js tests/unit/canonical-operations-workspace.test.js scripts/contract-generate.js docs/_generated/route-registry.json docs/contract/openapi.json
           if git diff --cached --quiet; then
             echo "No prepared diff"
             exit 0
