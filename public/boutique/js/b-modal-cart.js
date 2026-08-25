@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/b-modal-core.js
  * @purpose       supports public/boutique/js/b-modal-core.js
  * @impact-areas  boutique
- * @version       2026-08
+ * @version       2026-07
  */
 'use strict';
 
@@ -18,11 +18,14 @@
 import { bus } from './b-bus.js';
 import { state, dom, getRequestedTransportRail } from './b-store.js';
 import { addToCart, quickAdd, quickRemove, setQty } from './b-cart.js';
-import { OPTION_STATE } from './view-models/modal-selection-model.js';
 import {
   buildModalCartProduct,
   isModalPurchaseReady,
 } from './view-models/modal-cart-product-model.js';
+
+const OPTION_AVAILABLE = 'AVAILABLE';
+const OPTION_OUT_OF_STOCK = 'OUT_OF_STOCK';
+const OPTION_INCOMPATIBLE = 'INCOMPATIBLE';
 
 let _selectionReconcileInstalled = false;
 let _detailReadyReconcileInstalled = false;
@@ -75,6 +78,13 @@ function modalRoot() {
     || document;
 }
 
+function findAxisElement(axisKey) {
+  const root = modalRoot();
+  const findIn = (scope) => Array.from(scope?.querySelectorAll?.('[data-axis-key]') || [])
+    .find((element) => element.dataset.axisKey === axisKey) || null;
+  return findIn(root) || (root !== document ? findIn(document) : null);
+}
+
 function animateShake(element, { focus = false } = {}) {
   if (!element) return;
   if (typeof element.animate === 'function') {
@@ -107,8 +117,8 @@ function pulseSelectionMessage(message) {
 }
 
 function optionReason(optionState) {
-  if (optionState === OPTION_STATE.OUT_OF_STOCK) return 'Rupture de stock';
-  if (optionState === OPTION_STATE.INCOMPATIBLE) return 'Combinaison non proposée';
+  if (optionState === OPTION_OUT_OF_STOCK) return 'Rupture de stock';
+  if (optionState === OPTION_INCOMPATIBLE) return 'Combinaison non proposée';
   return '';
 }
 
@@ -124,7 +134,7 @@ function reconcileVariantAvailabilityUI() {
   const root = modalRoot();
   root.querySelectorAll?.('[data-option-value][data-option-state]').forEach((button) => {
     const optionState = button.dataset.optionState;
-    const unavailable = optionState !== OPTION_STATE.AVAILABLE;
+    const unavailable = optionState !== OPTION_AVAILABLE;
     button.classList.toggle('k-vp--out', unavailable);
     if (unavailable) {
       button.setAttribute('aria-disabled', 'true');
@@ -168,7 +178,6 @@ function ensureSelectionMessage(text) {
  */
 function signalMissingVariantSelection() {
   const axis = firstMissingAxis();
-  const root = modalRoot();
   if (!axis) {
     ensureSelectionMessage('Cette combinaison n’est pas disponible. Choisissez une autre option.');
     return;
@@ -182,8 +191,7 @@ function signalMissingVariantSelection() {
     : 'Cette combinaison n’est pas disponible. Choisissez une autre option.';
   ensureSelectionMessage(message);
 
-  const axisElement = Array.from(root.querySelectorAll?.('[data-axis-key]') || [])
-    .find((element) => element.dataset.axisKey === axis.key);
+  const axisElement = findAxisElement(axis.key);
   if (!axisElement) return;
 
   animateShake(axisElement);
@@ -201,9 +209,7 @@ function signalMissingVariantSelection() {
  * clic a été remplacée dans le DOM, donc on la retrouve par axe + valeur.
  */
 function signalUnavailableOption(axisKey, optionValue, optionState) {
-  const root = modalRoot();
-  const axisElement = Array.from(root.querySelectorAll?.('[data-axis-key]') || [])
-    .find((element) => element.dataset.axisKey === axisKey);
+  const axisElement = findAxisElement(axisKey);
   const option = Array.from(axisElement?.querySelectorAll?.('[data-option-value]') || [])
     .find((button) => button.dataset.optionValue === optionValue);
 
@@ -359,7 +365,7 @@ function _syncModalQtyUI() {
 
 /**
  * Capture la cible AVANT le handler du renderer (qui peut remplacer le DOM),
- * puis réconcilie en microtask APRES le changement de sélection. Le capture
+ * puis réconcilie en microtask APRES le changement de sélection. La capture
  * garantit qu'on conserve axe/valeur/état même si le bouton cliqué est détaché
  * synchronement par le rerender desktop ou mobile.
  */
@@ -374,8 +380,8 @@ function installSelectionReconcile() {
 
     const axisKey = option.closest('[data-axis-key]')?.dataset.axisKey || '';
     const optionValue = option.dataset.optionValue || '';
-    const optionState = option.dataset.optionState || OPTION_STATE.AVAILABLE;
-    const unavailable = optionState !== OPTION_STATE.AVAILABLE;
+    const optionState = option.dataset.optionState || OPTION_AVAILABLE;
+    const unavailable = optionState !== OPTION_AVAILABLE;
 
     Promise.resolve().then(() => {
       _syncModalQtyUI();
