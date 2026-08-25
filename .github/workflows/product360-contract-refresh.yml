@@ -1,0 +1,93 @@
+name: Product 360 contract refresh
+
+on:
+  push:
+    branches:
+      - feat/product-360-canonical-3c
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/product-360-canonical-3c
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Register Product 360 contract
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'scripts/contract-generate.js';
+          let src = fs.readFileSync(file, 'utf8');
+          const routeMarker = "  { prefix: '/api/admin/entities/clients/{clientPhone}', method: 'get', schema: null },\n";
+          const routeBlock = "  // LOT 3C — Canonical Product 360\n  { prefix: '/api/admin/entities/products/{productRef}', method: 'get', schema: null },\n";
+          if (!src.includes(routeBlock)) {
+            if (!src.includes(routeMarker)) throw new Error('Client 360 route marker missing');
+            src = src.replace(routeMarker, routeMarker + routeBlock);
+          }
+          const responseMarker = "  // LOT 3B — réponse Client 360 consommée par Canonical.\n";
+          const responseBlock = "  // LOT 3C — réponse Product 360 consommée par Canonical.\n  '/api/admin/entities/products/{productRef}': {\n    get: { fields: ['product','scope','summary','inventory','performance','economics','central','timeline','data_quality'], source: 'test' }\n  },\n";
+          if (!src.includes(responseBlock)) {
+            if (!src.includes(responseMarker)) throw new Error('Client 360 response marker missing');
+            src = src.replace(responseMarker, responseBlock + responseMarker);
+          }
+          fs.writeFileSync(file, src);
+          NODE
+      - name: Generate and validate contract
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+          ADMIN_PASSWORD: ci-dummy
+          STRIPE_WEBHOOK_SECRET: whsec_dummy
+          QR_SECRET: ci-dummy
+          JWT_SECRET: ci-dummy
+          SESSION_SECRET: ci-dummy
+          INTERNAL_API_KEY: ci-dummy
+          STRIPE_SECRET_KEY: sk_test_dummy
+          JWT_EXPIRES: 7d
+          APP_URL: http://localhost
+          PUBLIC_URL: http://localhost
+          PUBLIC_BASE_URL: http://localhost
+          ADMIN_RESET_KEY: ci-dummy
+          INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+          AUTHKEY_API_KEY: ci-dummy
+          PAYPAL_CLIENT_ID: ci-dummy
+          PAYPAL_CLIENT_SECRET: ci-dummy
+          PAYPAL_WEBHOOK_ID: ci-dummy
+          META_WA_TOKEN: ci-dummy
+          META_WA_PHONE_NUMBER_ID: ci-dummy
+          META_WA_APP_SECRET: ci-dummy
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          node scripts/contract-check.js
+      - name: Run Product 360 tests
+        run: |
+          npx jest --runInBand \
+            tests/unit/admin-product-360-route.test.js \
+            tests/unit/product-360-service.test.js \
+            tests/unit/canonical-product-360.test.js \
+            tests/unit/canonical-product-360-app.test.js \
+            tests/unit/canonical-product-360-boundary.test.js \
+            tests/unit/canonical-order-360.test.js \
+            tests/unit/order-360-service.test.js
+      - name: Commit generated contract artifacts
+        run: |
+          git add scripts/contract-generate.js docs/_generated/route-registry.json docs/contract/openapi.json
+          if git diff --cached --quiet; then
+            echo "No generated diff"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(contract): refresh Product 360 artifacts"
+          git push origin HEAD:feat/product-360-canonical-3c
