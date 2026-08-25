@@ -12,7 +12,7 @@
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, canonical_admin_no_legacy_imports
- * @impact-areas  admin-dashboard, orders, logistics, notifications, documents, finance
+ * @impact-areas  admin-dashboard, orders, logistics, notifications, documents, finance, clients
  * @version       2026-08
  */
 
@@ -71,11 +71,16 @@
 
     const nav = doc.createElement('nav');
     nav.className = 'kmc-entity-nav';
-    [
+    const links = [
       ['/admin/operations', '← Opérations'],
       ['/admin/pilotage', 'Pilotage'],
       ['/admin/finance', 'Finance'],
-    ].forEach(([href, label]) => {
+    ];
+    const clientPhone = order.customer && order.customer.phone;
+    if (clientPhone) {
+      links.splice(1, 0, [`/admin/clients/${encodeURIComponent(clientPhone)}`, 'Client 360']);
+    }
+    links.forEach(([href, label]) => {
       const link = text(doc, 'a', 'kmc-entity-nav-link', label);
       link.setAttribute('href', href);
       nav.appendChild(link);
