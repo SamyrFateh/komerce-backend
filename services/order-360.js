@@ -97,7 +97,7 @@ async function loadOrder360(order) {
     incidentsResult, commentsResult, notificationsResult, invoicesResult, documentsResult] = await Promise.all([
     db.query(`
       SELECT oi.id, oi.product_id, oi.quantity, oi.price_kmf,
-             p.name AS product_name, p.category, p.image_url
+             p.product_ref, p.name AS product_name, p.category, p.image_url
       FROM order_items oi
       LEFT JOIN products p ON p.id = oi.product_id
       WHERE oi.order_id = $1::uuid
@@ -195,6 +195,7 @@ async function loadOrder360(order) {
   });
 
   const items = itemsResult.rows.map(row => Object.freeze({
+    product_ref: row.product_ref || null,
     product_name: row.product_name || null,
     category: row.category || null,
     quantity: Number(row.quantity) || 0,
