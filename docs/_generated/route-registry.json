@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-22T23:50:01.820Z",
+  "generatedAt": "2026-08-25T09:46:55.361Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 472,
+  "count": 473,
   "routes": [
     {
       "method": "GET",
@@ -603,6 +603,16 @@
       "mountPrefix": "/api/admin/economic",
       "localPath": "/variables/:key",
       "routeFile": "routes/economic.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/entities/orders/:orderReference",
+      "mountPrefix": "/api/admin/entities",
+      "localPath": "/orders/:orderReference",
+      "routeFile": "routes/admin-order-360.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
