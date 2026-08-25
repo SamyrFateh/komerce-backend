@@ -14,6 +14,7 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 const { mountHtmlRoutes } = require('../../bootstrap/html-routes');
+const product360Contract = require('../../public/dashboards/canonical/js/product-360.js');
 
 const ROOT = path.join(__dirname, '..', '..');
 const CANONICAL = path.join(ROOT, 'public', 'dashboards', 'canonical');
@@ -65,11 +66,16 @@ test('le runtime charge Product 360 sans dépendance ProductsView ni endpoint CR
   expect(product360).toContain('/api/admin/entities/products/');
 });
 
-test('Product 360 expose product_ref comme identité et jamais un UUID de navigation', () => {
-  const product360 = fs.readFileSync(path.join(CANONICAL, 'js', 'product-360.js'), 'utf8');
+test('Product 360 navigue par product_ref et jamais par UUID technique', () => {
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'product-360.js'), 'utf8');
 
-  expect(product360).toContain('product_ref');
-  expect(product360).toContain('/admin/products/');
-  expect(product360).not.toContain('product_id=');
-  expect(product360).not.toContain('/admin/products/${product.id}');
+  expect(product360Contract.productRefFromPath('/admin/products/KPR-000123')).toBe('KPR-000123');
+  expect(product360Contract.productRefFromPath('/admin/products/11111111-1111-4111-8111-111111111111'))
+    .toBe('11111111-1111-4111-8111-111111111111');
+  // Le parser ne décide pas de la validité métier : l'API refuse l'UUID via
+  // normalizeProductRef. Le navigateur, lui, ne construit jamais de product_id.
+  expect(source).toContain('product_ref');
+  expect(source).not.toContain('product_id=');
+  expect(source).not.toContain('/admin/products/${product.id}');
+  expect(product360Contract.ENDPOINT_PREFIX).toBe('/api/admin/entities/products/');
 });
