@@ -69,6 +69,18 @@ test('buildWorkspace scope toutes ses lectures DB par le market id serveur', asy
   }
 });
 
+test('agrégat répartition groupe par commande et ne déduplique jamais sur le montant', async () => {
+  await workspace.buildWorkspace({ market: MARKET });
+
+  const distributionSql = mockQuery.mock.calls
+    .map(call => String(call[0]))
+    .find(sql => sql.includes('per_order'));
+
+  expect(distributionSql).toContain('GROUP BY linked_order.id');
+  expect(distributionSql).toContain('SUM(per_order.total_kmf)');
+  expect(distributionSql).not.toContain('SUM(DISTINCT linked_order.total_kmf)');
+});
+
 test('scope public ne divulgue jamais UUID marché', () => {
   const scope = workspace.publicMarket(MARKET);
 
