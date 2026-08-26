@@ -1,0 +1,61 @@
+name: Catalog 4C auth boundary one-shot
+
+on:
+  push:
+    branches:
+      - ci/canonical-catalog-4c-auth-boundary
+
+permissions:
+  contents: write
+
+jobs:
+  patch-catalog-auth-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-catalog-workspace-4c
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Make Catalog boot independent from Dashboard AdminContext
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('public/dashboards/canonical/js/app.js')
+          s = p.read_text()
+          old = "    const user = await requireSession();\n    const adminContext = await requireAdminContext();\n"
+          new = "    const user = await requireSession();\n    const surface = surfaceForPath(global.location.pathname);\n    const adminContext = surface === SURFACES.CATALOG_WORKSPACE ? null : await requireAdminContext();\n"
+          if new not in s:
+              if old not in s:
+                  raise SystemExit('canonical boot anchor not found')
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+
+      - name: Prove Catalog auth boundary
+        run: |
+          npx jest --config jest.unit.config.js --runInBand --forceExit \
+            tests/unit/canonical-catalog-authority-boundary.test.js \
+            tests/unit/canonical-catalog-workspace-boundary.test.js \
+            tests/unit/admin-catalog-workspace-route.test.js \
+            tests/unit/catalog-workspace.test.js
+
+      - name: Commit boundary to LOT 4C
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/dashboards/canonical/js/app.js
+          git diff --cached --check
+          git commit -m "fix(canonical): isolate Catalog authority from Dashboard context"
+          git push origin HEAD:feat/canonical-catalog-workspace-4c
