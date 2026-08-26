@@ -186,16 +186,50 @@ document.addEventListener(
   { capture: true, passive: true }
 );
 
-// ── Carte visible du point relais ────────────────────────────────────────────
-// b-checkout.js rend déjà le lien canonique « Localiser ce relais » à partir
-// du nom + adresse fournis par /api/relais. La régression venait de la refonte
-// compacte du checkout : l'ancienne carte visible avait été supprimée et seul
-// ce lien était resté. On rétablit ici une prévisualisation cartographique
-// toujours visible, comme enrichissement d'interface, sans dupliquer la donnée
-// relais ni la logique de sélection du checkout.
+// ── Carte + identité de visite du point relais ───────────────────────────────
+// Le checkout rend le lien canonique « Localiser ce relais ». Cette couche
+// l'enrichit avec les données publiques du relais chargées dans state : GPS
+// exact (quand disponible), photo reconnaissable et message d'accueil local.
+// Tant que le GPS n'est pas renseigné, le fallback nom + adresse reste actif.
 let _relayMapPreviewObserver = null;
 
-function relayEmbedUrlFromLink(mapLink) {
+function relayCoordinates(relay = {}) {
+  if (!relay) return null;
+  const latitude = Number(relay.latitude ?? relay.lat);
+  const longitude = Number(relay.longitude ?? relay.lng ?? relay.lon);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+  return { latitude, longitude };
+}
+
+function relayForMapLink(mapLink) {
+  const relais = Array.isArray(state.relais) ? state.relais : [];
+  const selectedId = state.orderData?.selectedRelaisId;
+  if (selectedId != null) {
+    const exact = relais.find(relay => String(relay?.id) === String(selectedId));
+    if (exact) return exact;
+  }
+
+  const label = String(mapLink?.getAttribute?.('aria-label') || '').toLowerCase();
+  return relais.find((relay) => {
+    const name = String(relay?.name || relay?.nom || '').trim().toLowerCase();
+    return name && label.includes(name);
+  }) || null;
+}
+
+function relayNavigationUrl(relay, fallbackHref = null) {
+  const coordinates = relayCoordinates(relay);
+  return coordinates
+    ? `https://www.google.com/maps?q=${coordinates.latitude},${coordinates.longitude}&z=17&hl=fr`
+    : fallbackHref;
+}
+
+function relayEmbedUrlFromLink(mapLink, relay = null) {
+  const coordinates = relayCoordinates(relay);
+  if (coordinates) {
+    return `https://www.google.com/maps?q=${coordinates.latitude},${coordinates.longitude}&z=17&output=embed`;
+  }
+
   if (!mapLink?.href) return null;
   try {
     const url = new URL(mapLink.href, window.location.href);
@@ -208,12 +242,105 @@ function relayEmbedUrlFromLink(mapLink) {
   }
 }
 
+function relayPhotoUrl(relay = {}) {
+  const raw = String(relay.photo_url || relay.photoUrl || '').trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw, window.location.href);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function buildRelayVisitIdentity(relay = {}) {
+  const strip = document.createElement('div');
+  strip.className = 'ck-relais-visit-identity';
+  strip.style.display = 'flex';
+  strip.style.alignItems = 'center';
+  strip.style.gap = '10px';
+  strip.style.padding = '10px';
+  strip.style.background = 'var(--sand)';
+
+  const photoUrl = relayPhotoUrl(relay);
+  const relayName = String(relay.name || relay.nom || 'ce relais').trim();
+  if (photoUrl) {
+    const photoLink = document.createElement('a');
+    photoLink.className = 'ck-relais-photo-link';
+    photoLink.href = photoUrl;
+    photoLink.target = '_blank';
+    photoLink.rel = 'noopener';
+    photoLink.setAttribute('aria-label', `Voir la photo de ${relayName}`);
+    photoLink.style.display = 'block';
+    photoLink.style.flex = '0 0 76px';
+
+    const image = document.createElement('img');
+    image.className = 'ck-relais-photo';
+    image.src = photoUrl;
+    image.alt = `Entrée de ${relayName}`;
+    image.loading = 'lazy';
+    image.style.display = 'block';
+    image.style.width = '76px';
+    image.style.height = '62px';
+    image.style.objectFit = 'cover';
+    image.style.borderRadius = '11px';
+    image.style.border = '1px solid rgba(31,48,36,.10)';
+    image.addEventListener('error', () => photoLink.remove(), { once: true });
+    photoLink.appendChild(image);
+    strip.appendChild(photoLink);
+  } else {
+    const icon = document.createElement('span');
+    icon.className = 'ck-relais-visit-icon';
+    icon.textContent = '🏪';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.style.display = 'grid';
+    icon.style.placeItems = 'center';
+    icon.style.flex = '0 0 44px';
+    icon.style.width = '44px';
+    icon.style.height = '44px';
+    icon.style.borderRadius = '12px';
+    icon.style.background = 'rgba(255,255,255,.72)';
+    strip.appendChild(icon);
+  }
+
+  const copy = document.createElement('span');
+  copy.className = 'ck-relais-visit-copy';
+  copy.style.display = 'grid';
+  copy.style.gap = '2px';
+
+  const title = document.createElement('strong');
+  title.className = 'ck-relais-visit-title';
+  title.textContent = 'Venez nous voir au relais 👋';
+  title.style.fontSize = '13px';
+  title.style.color = 'var(--text)';
+
+  const note = document.createElement('span');
+  note.className = 'ck-relais-visit-note';
+  note.textContent = photoUrl
+    ? 'Repérez facilement l’entrée avant de venir · photo cliquable'
+    : 'Retrouvez facilement le point de retrait sur la carte.';
+  note.style.fontSize = '11px';
+  note.style.lineHeight = '1.35';
+  note.style.color = 'var(--muted)';
+
+  copy.append(title, note);
+  strip.appendChild(copy);
+  return strip;
+}
+
 function ensureRelayMapPreview(mapLink) {
   const summary = mapLink?.closest?.('#ck-relais-summary');
   const container = summary?.parentElement;
   if (!summary || !container || container.querySelector('.ck-relais-map-preview')) return;
 
-  const embedUrl = relayEmbedUrlFromLink(mapLink);
+  const relay = relayForMapLink(mapLink);
+  const exactMapUrl = relayNavigationUrl(relay, mapLink.href);
+  if (exactMapUrl && exactMapUrl !== mapLink.href) {
+    mapLink.href = exactMapUrl;
+    mapLink.dataset.locationPrecision = 'gps';
+  }
+
+  const embedUrl = relayEmbedUrlFromLink(mapLink, relay);
   if (!embedUrl) return;
 
   const preview = document.createElement('div');
@@ -225,11 +352,14 @@ function ensureRelayMapPreview(mapLink) {
   preview.style.background = 'var(--sand)';
   preview.style.boxShadow = '0 3px 10px rgba(31,48,36,.04)';
 
+  preview.appendChild(buildRelayVisitIdentity(relay || {}));
+
   const frame = document.createElement('iframe');
   frame.className = 'ck-relais-map-frame';
   frame.src = embedUrl;
-  frame.title = mapLink.getAttribute('aria-label')
-    ?.replace(/^Localiser\s+/i, 'Carte de ') || 'Carte du point relais';
+  frame.title = relay?.name
+    ? `Carte de ${relay.name}`
+    : (mapLink.getAttribute('aria-label')?.replace(/^Localiser\s+/i, 'Carte de ') || 'Carte du point relais');
   frame.loading = 'lazy';
   frame.referrerPolicy = 'no-referrer-when-downgrade';
   frame.allowFullscreen = true;

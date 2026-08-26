@@ -7,13 +7,23 @@
  */
 
 const {
+  relayCoordinates,
   buildRelayMapUrl,
   formatRelayPoint,
   appendRelayLocation,
 } = require('../../services/notifications/relay-location');
 
 describe('localisation utilitaire du relais', () => {
-  it('génère une recherche Google Maps encodée depuis le nom et l adresse', () => {
+  it('préfère le GPS exact quand latitude et longitude sont renseignées', () => {
+    expect(buildRelayMapUrl({
+      name: 'Relais Moroni Centre',
+      address: 'Volo-Volo, Grande Comore',
+      latitude: -11.7172,
+      longitude: 43.2473,
+    })).toBe('https://www.google.com/maps?q=-11.7172,43.2473&z=17&hl=fr');
+  });
+
+  it('génère une recherche Google Maps encodée depuis le nom et l adresse en fallback', () => {
     expect(buildRelayMapUrl({
       name: 'Relais Moroni Centre',
       address: 'Volo-Volo, Grande Comore',
@@ -25,6 +35,16 @@ describe('localisation utilitaire du relais', () => {
   it('nettoie les espaces avant de construire le lien', () => {
     expect(buildRelayMapUrl({ name: '  Relais   A  ', address: '  Moroni  ' }))
       .toContain('query=Relais%20A%2C%20Moroni');
+  });
+
+  it('refuse une paire GPS hors limites et conserve le fallback adresse', () => {
+    expect(relayCoordinates({ latitude: 120, longitude: 43.2 })).toBeNull();
+    expect(buildRelayMapUrl({
+      name: 'Relais A',
+      address: 'Moroni',
+      latitude: 120,
+      longitude: 43.2,
+    })).toContain('query=Relais%20A%2C%20Moroni');
   });
 
   it('ne fabrique aucun lien quand la localisation est absente', () => {
