@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-26T12:11:42.357Z",
+  "generatedAt": "2026-08-26T13:05:57.158Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 490,
+  "count": 503,
   "routes": [
     {
       "method": "GET",
@@ -1591,6 +1591,136 @@
         "bootstrap/api-routes.js",
         "routes/admin.js",
         "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/catalog",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/approval/:productRef/approve",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/approval/:productRef/approve",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/approval/:productRef/override",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/approval/:productRef/override",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/approval/:productRef/reject",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/approval/:productRef/reject",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/categories",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/categories",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/categories/:key/deactivate",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/categories/:key/deactivate",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/categories/:key/subcategories",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/categories/:key/subcategories",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/categories/:key/subcategories/:subKey/deactivate",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/categories/:key/subcategories/:subKey/deactivate",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/categories/:key/subcategories/:subKey/update",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/categories/:key/subcategories/:subKey/update",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/categories/:key/update",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/categories/:key/update",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/products",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/products",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/products/:productRef/deactivate",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/products/:productRef/deactivate",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/products/:productRef/update",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/products/:productRef/update",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
       ]
     },
     {
