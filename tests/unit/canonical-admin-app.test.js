@@ -110,6 +110,31 @@ afterEach(() => {
 });
 
 describe('canonical admin app — server AdminContext bootstrap', () => {
+  test.each(['agent_hub', 'agent_relais'])('requireSession accepte le rôle opérationnel réel %s', async role => {
+    const env = loadCanonicalApp();
+    const user = { id: `${role}-1`, role };
+    env.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue(user),
+    });
+
+    await expect(env.api.requireSession()).resolves.toEqual(user);
+    expect(env.replace).not.toHaveBeenCalled();
+  });
+
+  test('requireSession refuse un client sur le runtime Canonical admin', async () => {
+    const env = loadCanonicalApp();
+    env.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({ id: 'client-1', role: 'client' }),
+    });
+
+    await expect(env.api.requireSession()).rejects.toThrow('forbidden');
+    expect(env.replace).toHaveBeenCalledWith('/');
+  });
+
   test('requireAdminContext charge la projection serveur puis la valide', async () => {
     const env = loadCanonicalApp();
     const raw = {
