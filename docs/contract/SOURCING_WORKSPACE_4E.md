@@ -167,3 +167,7 @@ LOT 4E ne :
 - duplique pas la raffinerie JSON avancée ou les profils d’ingestion dans l’UI V1 ;
 - remplace pas Product 360 ;
 - fusionne pas les propriétaires `sourcing`, `economic-engine` et `catalog`.
+
+## Vérification de merge
+
+LOT 4E est validé contre le `main` courant avant merge. La branche doit rester à jour et repasser le check requis `Required verdict` conformément à la politique stricte du dépôt ; un verdict obtenu sur une tête devenue obsolète n’est pas utilisé pour contourner cette protection.
