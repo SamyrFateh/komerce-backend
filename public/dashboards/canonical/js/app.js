@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, order-360, client-360, product-360, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, pricing-workspace, order-360, client-360, product-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/pricing, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -32,6 +32,7 @@
     CATALOG_WORKSPACE: 'catalog-workspace',
     ACCOUNTING_WORKSPACE: 'accounting-workspace',
     SOURCING_WORKSPACE: 'sourcing-workspace',
+    PRICING_WORKSPACE: 'pricing-workspace',
     ORDER_360: 'order-360',
     CLIENT_360: 'client-360',
     PRODUCT_360: 'product-360',
@@ -107,6 +108,9 @@
     }
     if (path === '/admin/workspaces/sourcing' || path === '/admin-next/workspaces/sourcing') {
       return SURFACES.SOURCING_WORKSPACE;
+    }
+    if (path === '/admin/workspaces/pricing' || path === '/admin-next/workspaces/pricing') {
+      return SURFACES.PRICING_WORKSPACE;
     }
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
@@ -346,6 +350,17 @@
     });
   }
 
+  function renderPricingWorkspace(root, user) {
+    if (!global.KomerceCanonicalPricingWorkspace) throw new Error('canonical_pricing_workspace_module_missing');
+    return global.KomerceCanonicalPricingWorkspace.mount({
+      root,
+      user,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
   function renderOrder360(root, user) {
     if (!global.KomerceCanonicalOrder360) throw new Error('canonical_order_360_module_missing');
     return global.KomerceCanonicalOrder360.mount({
@@ -488,6 +503,7 @@
     if (surface === SURFACES.CATALOG_WORKSPACE) return renderCatalogWorkspace(root, user, adminContext);
     if (surface === SURFACES.ACCOUNTING_WORKSPACE) return renderFinanceAccountingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);
+    if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspace(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
@@ -501,7 +517,7 @@
 
     const user = await requireSession();
     const surface = surfaceForPath(global.location.pathname);
-    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE)
+    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PRICING_WORKSPACE)
       ? null
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
@@ -528,6 +544,7 @@
     renderShippingCustomsWorkspace,
     renderCatalogWorkspace,
     renderSourcingWorkspace,
+    renderPricingWorkspace,
     renderFinanceAccountingWorkspace,
     renderOrder360,
     renderClient360,

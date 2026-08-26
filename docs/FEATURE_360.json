@@ -4443,7 +4443,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 95,
+            "count": 96,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -4856,6 +4856,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/pricing-workspace.js",
+                "resolvedPath": "public/dashboards/canonical/js/pricing-workspace.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/primitives.js",
                 "resolvedPath": "public/dashboards/canonical/js/primitives.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5098,7 +5103,7 @@
             ]
           },
           "tests": {
-            "count": 41,
+            "count": 42,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -5183,6 +5188,11 @@
               {
                 "declared": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
                 "resolvedPath": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-pricing-workspace-boundary.test.js",
+                "resolvedPath": "tests/unit/canonical-pricing-workspace-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5308,7 +5318,7 @@
             ]
           }
         },
-        "totalFiles": 168,
+        "totalFiles": 170,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6727,8 +6737,18 @@
               }
             ]
           },
+          "middleware": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "middleware/require-pricing-global-authority.js",
+                "resolvedPath": "middleware/require-pricing-global-authority.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
           "migrations": {
-            "count": 19,
+            "count": 20,
             "files": [
               {
                 "declared": "migrations/019_finance_columns.sql",
@@ -6824,11 +6844,16 @@
                 "declared": "migrations/119_economic_variables_to_finance_config.sql",
                 "resolvedPath": "migrations/119_economic_variables_to_finance_config.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/152_pricing_workspace_global_authority.sql",
+                "resolvedPath": "migrations/152_pricing_workspace_global_authority.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "routes": {
-            "count": 12,
+            "count": 13,
             "files": [
               {
                 "declared": "routes/admin-cost-components.js",
@@ -6853,6 +6878,11 @@
               {
                 "declared": "routes/admin-pricing-matrices.js",
                 "resolvedPath": "routes/admin-pricing-matrices.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-pricing-workspace.js",
+                "resolvedPath": "routes/admin-pricing-workspace.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -6893,7 +6923,7 @@
             ]
           },
           "services": {
-            "count": 27,
+            "count": 29,
             "files": [
               {
                 "declared": "services/apply-pricing-updates.js",
@@ -6918,6 +6948,11 @@
               {
                 "declared": "services/cost-allocation/variance.js",
                 "resolvedPath": "services/cost-allocation/variance.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/cost-component-admin-service.js",
+                "resolvedPath": "services/cost-component-admin-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -7011,6 +7046,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/pricing-workspace.js",
+                "resolvedPath": "services/pricing-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/sourcing-analysis.js",
                 "resolvedPath": "services/sourcing-analysis.js",
                 "status": "resolved-in-technical-graph"
@@ -7033,7 +7073,7 @@
             ]
           },
           "tests": {
-            "count": 51,
+            "count": 54,
             "files": [
               {
                 "declared": "tests/integration/sourcing-engine-routes.test.js",
@@ -7068,6 +7108,11 @@
               {
                 "declared": "tests/unit/admin-pricing-matrices.test.js",
                 "resolvedPath": "tests/unit/admin-pricing-matrices.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-pricing-workspace-route.test.js",
+                "resolvedPath": "tests/unit/admin-pricing-workspace-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7266,6 +7311,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/pricing-workspace.test.js",
+                "resolvedPath": "tests/unit/pricing-workspace.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/require-pricing-global-authority.test.js",
+                "resolvedPath": "tests/unit/require-pricing-global-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/sourcing-analysis.test.js",
                 "resolvedPath": "tests/unit/sourcing-analysis.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7313,7 +7368,7 @@
             ]
           }
         },
-        "totalFiles": 118,
+        "totalFiles": 126,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -7546,6 +7601,10 @@
           },
           {
             "table": "pricing_benchmarks",
+            "lifecycleOwner": null
+          },
+          {
+            "table": "pricing_global_access_grants",
             "lifecycleOwner": null
           },
           {
@@ -7807,6 +7866,10 @@
             "lifecycleOwner": null
           },
           {
+            "table": "pricing_global_access_grants",
+            "lifecycleOwner": null
+          },
+          {
             "table": "product_variants",
             "lifecycleOwner": "catalog"
           },
@@ -7850,7 +7913,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 73
+          "count": 84
         }
       },
       "businessDependencies": [

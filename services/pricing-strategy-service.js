@@ -7,7 +7,7 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, services/catalog-product-mutation-service.js
- * @used-by       routes/pricing-strategy.js
+ * @used-by       routes/pricing-strategy.js, services/pricing-workspace.js
  * @db-read       charges, competitor_prices, customs_categories, finance_config, order_items, orders, pricing_components, pricing_strategies, products, risk_provisions, users
  * @db-write      competitor_prices, price_history, pricing_strategies, pricing_strategy_history
  * @db-write-via:catalog-product-mutation-service products
@@ -207,7 +207,7 @@ async function getCompetitors(dbOrClient, { product_id, category } = {}) {
     where.push(`(category = $${++pi} OR product_id IN (SELECT id FROM products WHERE category = $${pi}))`);
   }
   const { rows } = await dbOrClient.query(
-    `SELECT id, product_id, category, competitor_name, price_kmf, observed_at, source, notes
+    `SELECT id, competitor_ref, product_id, category, competitor_name, price_kmf, observed_at, source, notes
        FROM competitor_prices
       WHERE ${where.join(' AND ')}
       ORDER BY observed_at DESC`,

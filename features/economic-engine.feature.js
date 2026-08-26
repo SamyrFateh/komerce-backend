@@ -47,8 +47,13 @@ module.exports = {
       'utils/pricing-cache.js',
       'utils/relay-commission.js',
     ],
+    middleware: [
+      'middleware/require-pricing-global-authority.js',
+    ],
     services: [
       'services/pricing-apply.js',
+      'services/cost-component-admin-service.js',
+      'services/pricing-workspace.js',
       'services/pricing-dashboard.js',
       'services/pricing-recommend.js',
       'services/dashboard-finance-metrics.js',
@@ -79,6 +84,7 @@ module.exports = {
     routes: [
       'routes/pricing-strategy.js',
       'routes/pricing.js',
+      'routes/admin-pricing-workspace.js',
       'routes/admin-pricing-matrices.js',
       'routes/admin-cost-components.js',
       'routes/finance.js',
@@ -114,6 +120,7 @@ module.exports = {
       'migrations/090_cost_benchmarks.sql',
       'migrations/103_cost_benchmarks.sql',
       'migrations/119_economic_variables_to_finance_config.sql',
+      'migrations/152_pricing_workspace_global_authority.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -165,6 +172,9 @@ module.exports = {
       'tests/unit/economic-variables-migration-119.test.js',
       'tests/unit/economic-variables-readonly-1a4.test.js',
       'tests/unit/pricing-apply.test.js',
+      'tests/unit/admin-pricing-workspace-route.test.js',
+      'tests/unit/pricing-workspace.test.js',
+      'tests/unit/require-pricing-global-authority.test.js',
       'tests/unit/pricing-chain.test.js',
       'tests/unit/pricing-dashboard-truth.test.js',
       'tests/unit/pricing-flow-contract.test.js',
@@ -188,6 +198,7 @@ module.exports = {
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   docs: [
+    'docs/contract/PRICING_WORKSPACE_4F.md',
     'docs/adr/ADR-009-source-verite-unifiee.md',
     'docs/adr/ADR-010-pricing-reads-db.md',
     'docs/adr/ADR-011-pricing-extensible-3-niveaux.md',
@@ -239,6 +250,7 @@ module.exports = {
       'pricing_components: RW',
       'pricing_matrices_audit: W',
       'pricing_strategies: RW',
+      'pricing_global_access_grants: R',
       'pricing_strategy_history: W',
       'product_variants: R',
       'products: R',
@@ -253,13 +265,24 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 71,
-    totalRoutes: 73,
-    note: "71/73 routes protégées. 2 routes publiques par design : POST /api/pricing/calculate et /api/pricing/couture — configurateur de prix consommé par la boutique publique (aucun accès aux données client, calcul stateless). (+6 routes /api/admin/risk-provisions/* retaggées depuis dashboard, Lot O2)",
+    authedRoutesDetected: 82,
+    totalRoutes: 84,
+    note: "82/84 routes protégées (dont 11 routes Canonical Pricing 4F sous grant global explicite). 2 routes publiques par design : POST /api/pricing/calculate et /api/pricing/couture — configurateur de prix consommé par la boutique publique (aucun accès aux données client, calcul stateless). (+6 routes /api/admin/risk-provisions/* retaggées depuis dashboard, Lot O2)",
   },
   contract: {
     exposes: [
       'POST /api/pricing/recommend',
+      'GET /api/admin/workspaces/pricing',
+      'POST /api/admin/workspaces/pricing/simulate',
+      'POST /api/admin/workspaces/pricing/flow',
+      'POST /api/admin/workspaces/pricing/products/:productRef/apply-price',
+      'GET /api/admin/workspaces/pricing/strategy',
+      'POST /api/admin/workspaces/pricing/strategy/apply',
+      'POST /api/admin/workspaces/pricing/competitors',
+      'POST /api/admin/workspaces/pricing/competitors/:competitorRef/deactivate',
+      'POST /api/admin/workspaces/pricing/cost-components',
+      'POST /api/admin/workspaces/pricing/cost-components/:key/update',
+      'POST /api/admin/workspaces/pricing/cost-components/:key/toggle',
       // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
       // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
       'GET /api/admin/cost-components',

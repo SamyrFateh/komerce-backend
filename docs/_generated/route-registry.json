@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-26T21:01:36.148Z",
+  "generatedAt": "2026-08-26T21:19:51.372Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 519,
+  "count": 530,
   "routes": [
     {
       "method": "GET",
@@ -1839,6 +1839,116 @@
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/parcels/:reference/ship",
       "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/competitors",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/competitors",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/competitors/:competitorRef/deactivate",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/competitors/:competitorRef/deactivate",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-components",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-components",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-components/:key/toggle",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-components/:key/toggle",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-components/:key/update",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-components/:key/update",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/flow",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/flow",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/products/:productRef/apply-price",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/products/:productRef/apply-price",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/simulate",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/simulate",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/strategy",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/strategy",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/strategy/apply",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/strategy/apply",
+      "routeFile": "routes/admin-pricing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

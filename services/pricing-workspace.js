@@ -10,7 +10,6 @@
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       products, competitor_prices
  * @db-write      none
- * @db-write-via:economic-engine delegated pricing/cost services
  * @db-txn        none
  * @doctrine      workspace_orchestrates_existing_pricing_authorities, browser_business_refs_only
  * @impact-areas  pricing, economic-engine, admin-dashboard, catalog
@@ -42,7 +41,8 @@ function stripInternalIds(value) {
   const out = {};
   for (const [key, item] of Object.entries(value)) {
     const lower = key.toLowerCase();
-    if (lower === 'id' || lower === 'ids' || lower === 'product_id' || lower === 'competitor_id' || lower === 'component_id' || lower.endsWith('_uuid')) continue;
+    const businessIds = new Set(['scenario_id']);
+    if (lower === 'id' || lower === 'ids' || lower.endsWith('_by') || lower.endsWith('_uuid') || ((lower.endsWith('_id') || lower.endsWith('_ids')) && !businessIds.has(lower))) continue;
     out[key] = stripInternalIds(item);
   }
   return out;
@@ -77,7 +77,9 @@ async function resolveCompetitorRef(competitorRef, q = db) {
 }
 
 function publicComponent(component) {
-  return stripInternalIds(component);
+  const clean = stripInternalIds(component);
+  delete clean.scope_value; // peut contenir un UUID historique selon le scope
+  return clean;
 }
 
 function publicProduct(product) {

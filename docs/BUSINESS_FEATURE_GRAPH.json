@@ -2663,6 +2663,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/pricing-workspace.js",
+        "resolvedPath": "public/dashboards/canonical/js/pricing-workspace.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/admin/index.html",
         "resolvedPath": "public/dashboards/admin/index.html",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3363,6 +3370,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/canonical-pricing-workspace-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-pricing-workspace-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/finance-accounting-workspace.test.js",
         "resolvedPath": "tests/unit/finance-accounting-workspace.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3803,9 +3817,30 @@
       },
       {
         "feature": "economic-engine",
+        "category": "middleware",
+        "declared": "middleware/require-pricing-global-authority.js",
+        "resolvedPath": "middleware/require-pricing-global-authority.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
         "category": "services",
         "declared": "services/pricing-apply.js",
         "resolvedPath": "services/pricing-apply.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/cost-component-admin-service.js",
+        "resolvedPath": "services/cost-component-admin-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/pricing-workspace.js",
+        "resolvedPath": "services/pricing-workspace.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -4002,6 +4037,13 @@
         "category": "routes",
         "declared": "routes/pricing.js",
         "resolvedPath": "routes/pricing.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "routes",
+        "declared": "routes/admin-pricing-workspace.js",
+        "resolvedPath": "routes/admin-pricing-workspace.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -4205,6 +4247,13 @@
         "category": "migrations",
         "declared": "migrations/119_economic_variables_to_finance_config.sql",
         "resolvedPath": "migrations/119_economic_variables_to_finance_config.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/152_pricing_workspace_global_authority.sql",
+        "resolvedPath": "migrations/152_pricing_workspace_global_authority.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -4527,6 +4576,27 @@
         "category": "tests",
         "declared": "tests/unit/pricing-apply.test.js",
         "resolvedPath": "tests/unit/pricing-apply.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/admin-pricing-workspace-route.test.js",
+        "resolvedPath": "tests/unit/admin-pricing-workspace-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-workspace.test.js",
+        "resolvedPath": "tests/unit/pricing-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/require-pricing-global-authority.test.js",
+        "resolvedPath": "tests/unit/require-pricing-global-authority.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -11355,6 +11425,94 @@
         "method": "POST",
         "path": "/api/pricing/recommend",
         "routeFile": "routes/pricing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/simulate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/simulate",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/flow",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/flow",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/products/:productRef/apply-price",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/products/{id}/apply-price",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/strategy",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/strategy",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/strategy/apply",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/strategy/apply",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/competitors",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/competitors",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/competitors/:competitorRef/deactivate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/competitors/{id}/deactivate",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-components",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-components",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-components/:key/update",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-components/{id}/update",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-components/:key/toggle",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-components/{id}/toggle",
+        "routeFile": "routes/admin-pricing-workspace.js",
         "status": "resolved-owned"
       },
       {
@@ -19851,6 +20009,10 @@
                 "targetFile": "bootstrap/html-routes.js"
               },
               {
+                "sourceFileId": "tests/unit/canonical-pricing-workspace-boundary.test.js",
+                "targetFile": "bootstrap/html-routes.js"
+              },
+              {
                 "sourceFileId": "tests/unit/finance-accounting-workspace.test.js",
                 "targetFile": "db.js"
               },
@@ -20283,6 +20445,10 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "routes/admin-pricing-matrices.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -20415,7 +20581,19 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "middleware/require-pricing-global-authority.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/pricing-apply.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/cost-component-admin-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pricing-workspace.js",
                 "targetFile": "db.js"
               },
               {
@@ -20552,10 +20730,6 @@
               },
               {
                 "sourceFileId": "routes/admin-pricing-matrices.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "routes/admin-cost-components.js",
                 "targetFile": "db.js"
               },
               {
@@ -21065,6 +21239,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin-risk-provisions.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-pricing-workspace.js"
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
@@ -26171,7 +26349,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 894
+        "filesObserved": 903
       },
       "boutique": {
         "filesObserved": 169,
@@ -27791,6 +27969,14 @@
       "lifecycleOwner": "economic-engine",
       "resolution": "single-writer"
     },
+    "pricing_global_access_grants": {
+      "writers": [],
+      "readers": [
+        "economic-engine"
+      ],
+      "lifecycleOwner": null,
+      "resolution": "no-declared-writer"
+    },
     "pricing_strategy_history": {
       "writers": [
         {
@@ -28258,8 +28444,8 @@
       "backend": {
         "manifestsDiscovered": 27,
         "manifestsConnected": 27,
-        "technicalNodesTotal": 346,
-        "technicalNodesOwned": 330,
+        "technicalNodesTotal": 350,
+        "technicalNodesOwned": 334,
         "technicalOrphans": 16
       },
       "dash": {

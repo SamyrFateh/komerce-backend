@@ -380,7 +380,7 @@
       }
       if (act === 'save-cost') {
         const key = target.dataset.key;
-        const input = rootNode.querySelector(`[data-cost-value="${CSS.escape(key)}"]`);
+        const input = Array.from(rootNode.querySelectorAll('[data-cost-value]')).find(node => node.dataset.costValue === key);
         const result = await action(context, `${ENDPOINT}/cost-components/${encodeURIComponent(key)}/update`, { default_value: Number(input?.value || 0), source: 'manual' }, 'Composant mis à jour.');
         if (result) await context.reload();
       }
