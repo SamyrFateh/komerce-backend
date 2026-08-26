@@ -62,6 +62,14 @@ async function listCategories({ active } = {}, q = db) {
   return categories;
 }
 
+async function listSubcategories(categoryKey, q = db) {
+  const { rows } = await q.query(
+    'SELECT * FROM boutique_subcategories WHERE category_key = $1 ORDER BY display_order',
+    [categoryKey]
+  );
+  return rows;
+}
+
 async function createCategory(payload = {}, q = db) {
   if (!payload.key || !payload.label) throw new TaxonomyAdminError(400, 'key et label obligatoires');
   const duplicate = await q.query('SELECT 1 FROM boutique_categories WHERE key = $1', [payload.key]);
@@ -168,6 +176,7 @@ module.exports = {
   TaxonomyAdminError,
   getCategoryWithSubcats,
   listCategories,
+  listSubcategories,
   createCategory,
   updateCategory,
   deactivateCategory,
