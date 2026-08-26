@@ -1,0 +1,128 @@
+name: Shipping Customs 4B contract refresh one-shot
+
+on:
+  push:
+    branches:
+      - ci/canonical-shipping-customs-4b-contract
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-shipping-customs-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-shipping-customs-workspace-4b
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Add Shipping Customs routes to contract generator
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/contract-generate.js')
+          s = p.read_text()
+
+          route_anchor = "  { prefix: '/api/admin/workspaces/operations/market/{marketCode}/inventory/items/{itemId}/assign', method: 'post', schema: null },\n"
+          route_block = route_anchor + "  // LOT 4B — Canonical Expéditions & Douane Workspace (single-market actions)\n" + \
+            "  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}', method: 'get', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/parcels/{reference}/confirm-transit', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/update', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/declare', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/activate', method: 'post', schema: null },\n"
+          if "// LOT 4B — Canonical Expéditions & Douane Workspace" not in s:
+              if route_anchor not in s:
+                  raise SystemExit('Shipping Customs route anchor not found')
+              s = s.replace(route_anchor, route_block, 1)
+
+          response_anchor = "const KNOWN_RESPONSES = {\n"
+          response_block = response_anchor + \
+            "  // LOT 4B — réponses Expéditions & Douane Workspace consommées par Canonical.\n" + \
+            "  '/api/admin/workspaces/shipping-customs/market/{marketCode}': {\n" + \
+            "    get: { fields: ['scope','summary','transit','customs'], source: 'test' }\n" + \
+            "  },\n" + \
+            "  '/api/admin/workspaces/shipping-customs/market/{marketCode}/parcels/{reference}/confirm-transit': {\n" + \
+            "    post: { fields: ['ok','action','result'], source: 'test' }\n" + \
+            "  },\n" + \
+            "  '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments': {\n" + \
+            "    post: { fields: ['ok','action','result'], source: 'test' }\n" + \
+            "  },\n" + \
+            "  '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/update': {\n" + \
+            "    post: { fields: ['ok','action','result'], source: 'test' }\n" + \
+            "  },\n" + \
+            "  '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/declare': {\n" + \
+            "    post: { fields: ['ok','action','result'], source: 'test' }\n" + \
+            "  },\n" + \
+            "  '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate': {\n" + \
+            "    post: { fields: ['ok','action','result'], source: 'test' }\n" + \
+            "  },\n" + \
+            "  '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/activate': {\n" + \
+            "    post: { fields: ['ok','action','result'], source: 'test' }\n" + \
+            "  },\n"
+          if "// LOT 4B — réponses Expéditions & Douane Workspace consommées par Canonical." not in s:
+              if response_anchor not in s:
+                  raise SystemExit('KNOWN_RESPONSES anchor not found')
+              s = s.replace(response_anchor, response_block, 1)
+
+          p.write_text(s)
+          PY
+
+      - name: Generate and verify canonical contract
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          node scripts/contract-check.js
+          npx jest --config jest.unit.config.js --runInBand --forceExit --detectOpenHandles \
+            tests/unit/admin-shipping-customs-workspace-route.test.js \
+            tests/unit/canonical-shipping-customs-workspace-boundary.test.js \
+            tests/unit/canonical-operations-workspace-boundary.test.js
+
+      - name: Commit generated Shipping Customs contract to LOT 4B branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/contract-generate.js docs/_generated/route-registry.json docs/contract/openapi.json docs/contract/DEBT.md
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No contract changes to commit"
+            exit 1
+          fi
+          git commit -m "chore(contract): refresh Shipping Customs Workspace routes"
+          git push origin HEAD:feat/canonical-shipping-customs-workspace-4b
