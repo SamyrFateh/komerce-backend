@@ -736,6 +736,18 @@ CREATE TABLE public.cash_collections (
 
 
 --
+-- Name: cash_deposit_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.cash_deposit_ref_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: cash_deposits; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -753,8 +765,16 @@ CREATE TABLE public.cash_deposits (
     verified_at timestamp with time zone,
     status text DEFAULT 'pending'::text NOT NULL,
     notes text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    deposit_ref text DEFAULT ('KDP-'::text || lpad((nextval('public.cash_deposit_ref_seq'::regclass))::text, 6, '0'::text)) NOT NULL
 );
+
+
+--
+-- Name: COLUMN cash_deposits.deposit_ref; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.cash_deposits.deposit_ref IS 'Référence métier stable du dépôt cash exposable au navigateur (KDP-xxxxxx). L UUID interne reste serveur-only.';
 
 
 --
@@ -8595,6 +8615,13 @@ CREATE UNIQUE INDEX uniq_active_dashboard_global_access ON public.dashboard_glob
 --
 
 CREATE UNIQUE INDEX uniq_active_operator_scope ON public.operator_market_scopes USING btree (user_id, market_id) WHERE (revoked_at IS NULL);
+
+
+--
+-- Name: uniq_cash_deposits_deposit_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_cash_deposits_deposit_ref ON public.cash_deposits USING btree (deposit_ref);
 
 
 --
