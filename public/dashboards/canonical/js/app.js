@@ -461,7 +461,8 @@
     if (!root) throw new Error('canonical_admin_root_missing');
 
     const user = await requireSession();
-    const adminContext = await requireAdminContext();
+    const surface = surfaceForPath(global.location.pathname);
+    const adminContext = surface === SURFACES.CATALOG_WORKSPACE ? null : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
     global.KOMERCE_CANONICAL_ADMIN_CONTEXT = adminContext;
     await renderReady(root, user, adminContext);
