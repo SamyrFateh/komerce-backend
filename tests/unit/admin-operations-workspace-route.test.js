@@ -8,18 +8,25 @@
 
 let mockAllowedMarkets = new Set(['market-cm-id']);
 let mockGlobalAllowed = false;
+let mockUserRole = 'admin';
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => {
     req.user = {
-      id: 'admin-1',
-      role: 'admin',
-      full_name: 'Admin Test',
-      email: 'admin@example.test',
+      id: `${mockUserRole}-1`,
+      role: mockUserRole,
+      full_name: `${mockUserRole} Test`,
+      email: `${mockUserRole}@example.test`,
     };
     next();
   },
-  requireAdmin: (req, res, next) => next(),
+  requireRole: roles => (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Rôle interdit', code: 'role_forbidden' });
+    }
+    return next();
+  },
 }));
 
 jest.mock('../../middleware/require-market-scope', () => ({
@@ -100,6 +107,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
+  mockUserRole = 'admin';
   mockBuildWorkspace.mockResolvedValue({
     scope: { code: 'CM', name: 'Market CM', currency: 'XAF' },
     summary: {},
@@ -114,7 +122,7 @@ beforeEach(() => {
   mockAssignInventory.mockResolvedValue({ item_id: 'item-1', parcel_ref: 'PCL-CM-001', assigned: true });
 });
 
-test('opérateur CM ouvre uniquement le Workspace CM', async () => {
+test('admin ouvre uniquement le Workspace CM autorisé', async () => {
   const res = await request(app()).get('/api/admin/workspaces/operations/market/CM');
 
   expect(res.status).toBe(200);
@@ -122,6 +130,25 @@ test('opérateur CM ouvre uniquement le Workspace CM', async () => {
   expect(mockBuildWorkspace).toHaveBeenCalledWith({
     market: expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
   });
+});
+
+test.each(['agent_hub', 'agent_relais'])('%s peut lire le Workspace de son marché', async role => {
+  mockUserRole = role;
+
+  const res = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+
+  expect(res.status).toBe(200);
+  expect(mockBuildWorkspace).toHaveBeenCalledTimes(1);
+});
+
+test('un client ne peut jamais entrer dans le Workspace', async () => {
+  mockUserRole = 'client';
+
+  const res = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+
+  expect(res.status).toBe(403);
+  expect(res.body.code).toBe('role_forbidden');
+  expect(mockBuildWorkspace).not.toHaveBeenCalled();
 });
 
 test('opérateur CM ne peut pas ouvrir CG', async () => {
@@ -171,8 +198,40 @@ test('mark-ordered reçoit le marché serveur et l acteur authentifié', async (
   expect(mockMarkOrdered).toHaveBeenCalledWith(
     'CMD-CM-001',
     expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
-    expect.objectContaining({ id: 'admin-1', role: 'admin', full_name: 'Admin Test' })
+    expect.objectContaining({ id: 'admin-1', role: 'admin', full_name: 'admin Test' })
   );
+});
+
+test('agent_hub peut commander mais ne peut pas encaisser au relais', async () => {
+  mockUserRole = 'agent_hub';
+
+  const hubAction = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/mark-ordered')
+    .send({});
+  const relayAction = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/confirm-cash')
+    .send({});
+
+  expect(hubAction.status).toBe(200);
+  expect(relayAction.status).toBe(403);
+  expect(mockMarkOrdered).toHaveBeenCalledTimes(1);
+  expect(mockConfirmCash).not.toHaveBeenCalled();
+});
+
+test('agent_relais peut encaisser mais ne peut pas commander au sourcing', async () => {
+  mockUserRole = 'agent_relais';
+
+  const relayAction = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/confirm-cash')
+    .send({});
+  const hubAction = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/mark-ordered')
+    .send({});
+
+  expect(relayAction.status).toBe(200);
+  expect(hubAction.status).toBe(403);
+  expect(mockConfirmCash).toHaveBeenCalledTimes(1);
+  expect(mockMarkOrdered).not.toHaveBeenCalled();
 });
 
 test('assign inventory ne reçoit que parcel_ref, jamais market_id', async () => {
