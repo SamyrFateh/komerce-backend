@@ -58,6 +58,9 @@ module.exports = {
   },
 
   files: {
+    middleware: [
+      'middleware/require-catalog-global-authority.js',
+    ],
     ci: [
       // Workflow ACTIF (.github/workflows/).
       '.github/workflows/showcase-v2-staging-deploy.yml',
@@ -99,6 +102,8 @@ module.exports = {
       'services/prompts/catalog-enrichment.prompt.js',
       'services/catalog-overrides.js',
       'services/catalog-approval.js',
+      'services/boutique-taxonomy-admin.js',
+      'services/catalog-workspace.js',
     ],
     schemas: [
       'schemas/catalog/normalized-supplier-product.v1.schema.json',
@@ -122,6 +127,7 @@ module.exports = {
       // komerce-schema — suit services/suppliers/json-source-pipeline.js.
       'migrations/110_catalog_import_audit.sql',
       'migrations/130_deactivate_catalog_test_placeholders.sql',
+      'migrations/147_catalog_global_access_grants.sql',
     ],
     config: [
       // Rattaché (B1, 2026-07-29) : profil de test dummyjson, catalogué à tort
@@ -140,6 +146,7 @@ module.exports = {
       'routes/admin-boutique-categories.js',
       'routes/categories.js',
       'routes/admin/catalog-approval.js',
+      'routes/admin-catalog-workspace.js',
     ],
     boutique: [
       'js/b-catalog.js',
@@ -233,6 +240,11 @@ module.exports = {
       'tests/unit/json-source-pipeline.test.js',
       'tests/unit/json-connector.test.js',
       'tests/unit/catalog-approval.test.js',
+      'tests/unit/admin-catalog-workspace-route.test.js',
+      'tests/unit/catalog-workspace.test.js',
+      'tests/unit/canonical-catalog-workspace-boundary.test.js',
+      'tests/unit/canonical-catalog-authority-boundary.test.js',
+      'tests/unit/require-catalog-global-authority.test.js',
     ],
   },
 
