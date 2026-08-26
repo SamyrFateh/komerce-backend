@@ -6,8 +6,8 @@
  * @test-requires none
  */
 
-const query = jest.fn();
-jest.mock('../../db', () => ({ query: (...args) => query(...args) }));
+const mockQuery = jest.fn();
+jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 jest.mock('../../services/sourcing-analysis', () => ({ getSynthesis: jest.fn(), getAnalysis: jest.fn() }));
 jest.mock('../../services/sourcing-mutations', () => ({ updateProduct: jest.fn() }));
 jest.mock('../../services/sourcing-candidate-actions', () => ({
@@ -25,20 +25,20 @@ const workspace = require('../../services/sourcing-workspace');
 beforeEach(() => jest.clearAllMocks());
 
 test('product_ref est résolu côté serveur', async () => {
-  query.mockResolvedValueOnce({ rows: [{ id: 'product-internal', product_ref: 'KPR-000001' }] });
+  mockQuery.mockResolvedValueOnce({ rows: [{ id: 'product-internal', product_ref: 'KPR-000001' }] });
   await expect(workspace.resolveProductRef('KPR-000001')).resolves.toEqual({ id: 'product-internal', product_ref: 'KPR-000001' });
-  expect(query).toHaveBeenCalledWith(expect.stringContaining('product_ref = $1'), ['KPR-000001']);
+  expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('product_ref = $1'), ['KPR-000001']);
 });
 
 test('candidate_ref est résolu côté serveur', async () => {
-  query.mockResolvedValueOnce({ rows: [{ id: 'candidate-internal', candidate_ref: 'KSC-000001' }] });
+  mockQuery.mockResolvedValueOnce({ rows: [{ id: 'candidate-internal', candidate_ref: 'KSC-000001' }] });
   await expect(workspace.resolveCandidateRef('KSC-000001')).resolves.toEqual({ id: 'candidate-internal', candidate_ref: 'KSC-000001' });
 });
 
 test('partner_ref reste limité au type sourcing', async () => {
-  query.mockResolvedValueOnce({ rows: [] });
+  mockQuery.mockResolvedValueOnce({ rows: [] });
   await expect(workspace.resolvePartnerRef('KPT-000001')).rejects.toMatchObject({ code: 'sourcing_partner_not_found' });
-  expect(query.mock.calls[0][0]).toContain("partner_type = 'sourcing'");
+  expect(mockQuery.mock.calls[0][0]).toContain("partner_type = 'sourcing'");
 });
 
 test('les identifiants internes sont retirés de toute projection', () => {
