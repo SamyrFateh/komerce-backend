@@ -52,6 +52,7 @@ module.exports = {
       'services/confirm-pickup-cash-payment.js',
       'services/payment-paypal-events.js',
       'services/cash-operations.js',
+      'services/cash-deposit-service.js',
     
       'services/reconciliation-service.js',],
     routes: [
@@ -62,6 +63,7 @@ module.exports = {
     ],
     migrations: [
       'migrations/079_paypal_payment_mode.sql',
+      'migrations/148_cash_deposit_business_reference.sql',
     ],
     boutique: [
       // Payment-specific uniquement. Le tunnel général b-checkout* appartient
@@ -85,6 +87,7 @@ module.exports = {
       // audit 2026-07-06 §2c) — services/routes étaient déjà ici, seuls ces
       // tests traînaient encore dans l'ancien manifeste.
       'tests/unit/cash-operations-service.test.js',
+      'tests/unit/cash-deposit-service.test.js',
       'tests/unit/cash-reminder-service.test.js',
       'tests/unit/cash-route.test.js',
       'tests/unit/confirm-pickup-cash-payment.test.js',

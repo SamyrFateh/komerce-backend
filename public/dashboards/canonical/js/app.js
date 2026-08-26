@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, order-360, client-360, product-360, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, order-360, client-360, product-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -30,6 +30,7 @@
     OPERATIONS_WORKSPACE: 'operations-workspace',
     SHIPPING_CUSTOMS_WORKSPACE: 'shipping-customs-workspace',
     CATALOG_WORKSPACE: 'catalog-workspace',
+    ACCOUNTING_WORKSPACE: 'accounting-workspace',
     ORDER_360: 'order-360',
     CLIENT_360: 'client-360',
     PRODUCT_360: 'product-360',
@@ -99,6 +100,9 @@
     }
     if (path === '/admin/workspaces/catalog' || path === '/admin-next/workspaces/catalog') {
       return SURFACES.CATALOG_WORKSPACE;
+    }
+    if (path === '/admin/workspaces/accounting' || path === '/admin-next/workspaces/accounting') {
+      return SURFACES.ACCOUNTING_WORKSPACE;
     }
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
@@ -305,6 +309,16 @@
     );
   }
 
+  function renderFinanceAccountingWorkspace(root, user, adminContext, requestedMarket) {
+    return canonicalMount(
+      global.KomerceCanonicalFinanceAccountingWorkspace,
+      'canonical_accounting_workspace_module_missing',
+      root,
+      user,
+      adminContext,
+      requestedMarket
+    );
+  }
   function renderCatalogWorkspace(root, user, adminContext) {
     if (!global.KomerceCanonicalCatalogWorkspace) throw new Error('canonical_catalog_workspace_module_missing');
     return global.KomerceCanonicalCatalogWorkspace.mount({
@@ -431,6 +445,14 @@
     });
   }
 
+  function renderFinanceAccountingWorkspaceShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'accounting-workspace',
+      title: 'Workspace Finance / Comptabilité',
+      requireMarket: true,
+      render: renderFinanceAccountingWorkspace,
+    });
+  }
   function renderDemo(root, user) {
     if (!global.KomerceDemoOrderFlow) throw new Error('demo_order_flow_module_missing');
     return global.KomerceDemoOrderFlow.mount({
@@ -449,6 +471,7 @@
     if (surface === SURFACES.OPERATIONS_WORKSPACE) return renderOperationsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.SHIPPING_CUSTOMS_WORKSPACE) return renderShippingCustomsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.CATALOG_WORKSPACE) return renderCatalogWorkspace(root, user, adminContext);
+    if (surface === SURFACES.ACCOUNTING_WORKSPACE) return renderFinanceAccountingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
@@ -486,6 +509,7 @@
     renderOperationsWorkspace,
     renderShippingCustomsWorkspace,
     renderCatalogWorkspace,
+    renderFinanceAccountingWorkspace,
     renderOrder360,
     renderClient360,
     renderProduct360,
@@ -496,6 +520,7 @@
     renderFinanceShell,
     renderOperationsWorkspaceShell,
     renderShippingCustomsWorkspaceShell,
+    renderFinanceAccountingWorkspaceShell,
     renderDemo,
     renderReady,
   };

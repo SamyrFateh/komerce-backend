@@ -262,11 +262,12 @@ describe('bootstrap/html-routes', () => {
       expect(EXPECTED_ADMIN_PATHS).toHaveLength(29);
     });
 
-    test('chaque chemin admin sert dashboards/admin/index.html', () => {
+    test('/admin/pilotage sert désormais le runtime Canonical stable', () => {
       const res = fakeRes();
       app._routes['/admin/pilotage']({}, res);
+      expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
       expect(res.sendFile).toHaveBeenCalledWith(
-        require('path').join(PUBLIC_DIR, 'dashboards', 'admin', 'index.html'),
+        require('path').join(PUBLIC_DIR, 'dashboards', 'canonical', 'index.html'),
         expect.any(Function)
       );
     });

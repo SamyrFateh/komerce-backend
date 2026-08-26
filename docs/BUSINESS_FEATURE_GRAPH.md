@@ -74,7 +74,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 27 | 27 | 337 | 321 | 16 |
+| backend | 27 | 27 | 340 | 324 | 16 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 15 | 15 | 89 | 89 | 0 |
 
@@ -211,11 +211,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.
 
-- services: 10
-- routes: 17
+- services: 11
+- routes: 18
 - migrations: 1
-- dash: 93
-- tests: 37
+- dash: 94
+- tests: 40
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 17
 - interfaces exposed: 66
@@ -418,11 +418,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Encaisser un paiement (carte, PayPal, especes au retrait) et confirmer son etat de facon idempotente.
 
-- services: 11
+- services: 12
 - routes: 4
-- migrations: 1
+- migrations: 2
 - boutique: 2
-- tests: 19
+- tests: 20
 - tables owned (lifecycle): 4 — `cash_collections`, `cash_deposits`, `paypal_events_processed`, `stripe_events_processed`
 - tables written: 4
 - interfaces exposed: 18
@@ -1588,7 +1588,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 875 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 883 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 169 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1644,7 +1644,7 @@ Meta Graph monté : oui.
 | customs | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | customs | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | customs | orders | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | auth | static-code | 11 | **DECLARED_AND_OBSERVED** |
+| dashboard | auth | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | dashboard | auth-identity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1652,10 +1652,12 @@ Meta Graph monté : oui.
 | dashboard | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 48 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 53 | **DECLARED_AND_OBSERVED** |
 | dashboard | logistics | static-code | 11 | **DECLARED_AND_OBSERVED** |
+| dashboard | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| dashboard | payments | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | purchasing | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | decision-signals | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | decision-signals | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1677,7 +1679,7 @@ Meta Graph monté : oui.
 | infrastructure | business-rules | static-code | 3 | **OBSERVED_UNDECLARED** |
 | infrastructure | catalog | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | infrastructure | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| infrastructure | dashboard | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| infrastructure | dashboard | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | infrastructure | decision-signals | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | documents | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | economic-engine | static-code | 11 | **DECLARED_AND_OBSERVED** |
@@ -1742,7 +1744,7 @@ Meta Graph monté : oui.
 | payments | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | payments | documents | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | payments | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| payments | infrastructure | static-code, interface | 39 | **DECLARED_AND_OBSERVED** |
+| payments | infrastructure | static-code, interface | 41 | **DECLARED_AND_OBSERVED** |
 | payments | logistics | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | payments | loyalty | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | payments | notifications | static-code | 12 | **DECLARED_AND_OBSERVED** |
@@ -1825,11 +1827,9 @@ Meta Graph monté : oui.
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
 
 - `auth` → `orders` (déclaré : `orders`)
-- `dashboard` → `payments` (déclaré : `payments (lecture paiements)`)
 - `dashboard` → `inventory` (déclaré : `inventory (lecture stock)`)
 - `dashboard` → `wallet` (déclaré : `wallet (soldes et crédits)`)
 - `dashboard` → `recommendations` (déclaré : `recommendations`)
-- `dashboard` → `market` (déclaré : `market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)`)
 - `documents` → `orders` (déclaré : `orders`)
 - `documents` → `customs` (déclaré : `customs`)
 - `documents` → `wallet` (déclaré : `wallet`)
