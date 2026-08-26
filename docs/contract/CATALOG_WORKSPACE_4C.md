@@ -144,6 +144,12 @@ Le module Canonical :
 - recharge la projection après mutation ;
 - ouvre `/admin/products/:productRef` pour le détail Product 360.
 
+## Gouvernance Feature First
+
+LOT 4C appartient explicitement au slice `catalog` dans `features/catalog.feature.js`. Le slice revendique le middleware d’autorité Catalogue, les services `boutique-taxonomy-admin` et `catalog-workspace`, la route Canonical, la migration 147 et les tests de frontière associés.
+
+Les projections `KOMERCE_ARCH_HEADER_GRAPH`, `BUSINESS_FEATURE_GRAPH` et `FEATURE_360` sont régénérées depuis ces sources puis vérifiées en mode `--check`. Cette déclaration ne change pas la frontière fonctionnelle : le runtime UI Canonical reste une projection admin, tandis que les autorités métier et leurs données appartiennent à `catalog`.
+
 ## Hors périmètre
 
 LOT 4C ne :
