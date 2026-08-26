@@ -49,11 +49,13 @@ jobs:
 
       - run: npm ci
 
-      - name: Load one-shot wiring script
+      - name: Load one-shot wiring and witness scripts
         run: |
           git fetch origin ci/canonical-accounting-4d-wire:refs/remotes/origin/ci/canonical-accounting-4d-wire
           git show origin/ci/canonical-accounting-4d-wire:scripts/ci-wire-accounting-4d.js > /tmp/ci-wire-accounting-4d.js
+          git show origin/ci/canonical-accounting-4d-wire:scripts/ci-fix-accounting-4d-tests.js > /tmp/ci-fix-accounting-4d-tests.js
           node /tmp/ci-wire-accounting-4d.js
+          node /tmp/ci-fix-accounting-4d-tests.js
 
       - name: Generate contract and governance projections
         run: |
