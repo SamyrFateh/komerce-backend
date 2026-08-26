@@ -77,8 +77,9 @@ async function updateCandidate(id, body = {}, actorId = null, q = db) {
   if (!sets.length) throw new SourcingCandidateActionError(400, 'Aucun champ à modifier', 'candidate_no_changes');
 
   if (body.purchase_price !== undefined || body.currency !== undefined) {
-    const current = await requireCandidate(id, q);
-    const currency = body.currency !== undefined ? body.currency : current.currency;
+    const needsCurrent = body.purchase_price === undefined || body.currency === undefined;
+    const current = needsCurrent ? await requireCandidate(id, q) : null;
+    const currency = body.currency !== undefined ? body.currency : current?.currency;
     if (!currency) {
       throw new SourcingCandidateActionError(
         400,
@@ -86,7 +87,7 @@ async function updateCandidate(id, body = {}, actorId = null, q = db) {
         'candidate_currency_required'
       );
     }
-    const purchasePrice = body.purchase_price !== undefined ? body.purchase_price : current.purchase_price;
+    const purchasePrice = body.purchase_price !== undefined ? body.purchase_price : current?.purchase_price;
     const config = await pricingEngine.loadGlobalConfig();
     const priceKmf = scanner.convertToKMF(purchasePrice, currency, config.finance);
     sets.push(`purchase_price_kmf = $${pi++}`);
