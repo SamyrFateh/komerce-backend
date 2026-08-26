@@ -23,8 +23,13 @@ import {
   isModalPurchaseReady,
 } from './view-models/modal-cart-product-model.js';
 
+const OPTION_AVAILABLE = 'AVAILABLE';
+const OPTION_OUT_OF_STOCK = 'OUT_OF_STOCK';
+const OPTION_INCOMPATIBLE = 'INCOMPATIBLE';
+
 let _selectionReconcileInstalled = false;
 let _detailReadyReconcileInstalled = false;
+let _purchaseIntentFeedbackInstalled = false;
 
 function normalizedCombo(combo) {
   if (!combo || typeof combo !== 'object') return '';
@@ -66,6 +71,208 @@ function paintAddButton(button) {
   button.replaceChildren(image, document.createTextNode(' Ajouter'));
 }
 
+function modalRoot() {
+  return dom.modalOverlay?.querySelector?.('#k-modal')
+    || document.getElementById('k-modal')
+    || dom.modalOverlay
+    || document;
+}
+
+function findAxisElement(axisKey) {
+  const root = modalRoot();
+  const findIn = (scope) => Array.from(scope?.querySelectorAll?.('[data-axis-key]') || [])
+    .find((element) => element.dataset.axisKey === axisKey) || null;
+  return findIn(root) || (root !== document ? findIn(document) : null);
+}
+
+function animateShake(element, { focus = false } = {}) {
+  if (!element) return;
+  if (typeof element.animate === 'function') {
+    element.animate(
+      [
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(-6px)' },
+        { transform: 'translateX(6px)' },
+        { transform: 'translateX(-4px)' },
+        { transform: 'translateX(4px)' },
+        { transform: 'translateX(0)' },
+      ],
+      { duration: 280, easing: 'ease-out' }
+    );
+  }
+  if (focus && typeof element.focus === 'function') {
+    element.focus({ preventScroll: true });
+  }
+}
+
+function pulseSelectionMessage(message) {
+  if (!message || typeof message.animate !== 'function') return;
+  message.animate(
+    [
+      { opacity: 0.45, transform: 'translateY(-2px)' },
+      { opacity: 1, transform: 'translateY(0)' },
+    ],
+    { duration: 240, easing: 'ease-out' }
+  );
+}
+
+function optionReason(optionState) {
+  if (optionState === OPTION_OUT_OF_STOCK) return 'Rupture de stock';
+  if (optionState === OPTION_INCOMPATIBLE) return 'Combinaison non proposée';
+  return '';
+}
+
+/**
+ * Projection accessibilité + disponibilité partagée desktop/mobile.
+ *
+ * Important : on n'utilise volontairement PAS l'attribut natif `disabled`
+ * sur une variante indisponible. Le clic doit rester capturable afin de dire
+ * explicitement POURQUOI le choix n'est pas appliqué (rupture / combinaison
+ * non proposée), plutôt que de donner l'impression d'un bouton cassé.
+ */
+function reconcileVariantAvailabilityUI() {
+  const root = modalRoot();
+  root.querySelectorAll?.('[data-option-value][data-option-state]').forEach((button) => {
+    const optionState = button.dataset.optionState;
+    const unavailable = optionState !== OPTION_AVAILABLE;
+    button.classList.toggle('k-vp--out', unavailable);
+    if (unavailable) {
+      button.setAttribute('aria-disabled', 'true');
+      button.dataset.optionUnavailable = 'true';
+      const reason = optionReason(optionState);
+      if (reason) button.dataset.optionUnavailableReason = reason;
+    } else {
+      button.removeAttribute('aria-disabled');
+      delete button.dataset.optionUnavailable;
+      delete button.dataset.optionUnavailableReason;
+    }
+  });
+}
+
+function firstMissingAxis() {
+  const axes = state.modalProductDetail?.option_axes || [];
+  const selected = state.modalSelection?.selected_options || {};
+  return axes.find((axis) => !Object.prototype.hasOwnProperty.call(selected, axis.key))
+    || axes[axes.length - 1]
+    || null;
+}
+
+function ensureSelectionMessage(text) {
+  const root = modalRoot();
+  const message = root.querySelector?.('#k-modal-selection-message');
+  if (!message) return null;
+  message.textContent = text || '';
+  message.hidden = !message.textContent;
+  if (message.textContent) {
+    message.setAttribute('role', 'status');
+    message.setAttribute('aria-live', 'polite');
+    pulseSelectionMessage(message);
+  }
+  return message;
+}
+
+/**
+ * Feedback transactionnel quand l'utilisateur tente Ajouter/Acheter sans SKU
+ * résolu. Le CTA reste visuellement bloqué via aria-disabled mais cliquable :
+ * le clic ne mute rien et sert uniquement à guider vers l'axe manquant.
+ */
+function signalMissingVariantSelection() {
+  const axis = firstMissingAxis();
+  if (!axis) {
+    ensureSelectionMessage('Cette combinaison n’est pas disponible. Choisissez une autre option.');
+    return;
+  }
+
+  const selected = state.modalSelection?.selected_options || {};
+  const actuallyMissing = !Object.prototype.hasOwnProperty.call(selected, axis.key);
+  const label = axis.display_name || axis.key || 'option';
+  const message = actuallyMissing
+    ? `Choisissez « ${label} » pour continuer.`
+    : 'Cette combinaison n’est pas disponible. Choisissez une autre option.';
+  ensureSelectionMessage(message);
+
+  const axisElement = findAxisElement(axis.key);
+  if (!axisElement) return;
+
+  animateShake(axisElement);
+  const firstAvailable = axisElement.querySelector('[data-option-state="AVAILABLE"]')
+    || axisElement.querySelector('button');
+  if (firstAvailable) {
+    firstAvailable.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    firstAvailable.focus?.({ preventScroll: true });
+  }
+}
+
+/**
+ * Après le rerender déclenché par selectModalOption(), fait trembler la valeur
+ * que le modèle a refusée et expose son message canonique. L'ancienne cible du
+ * clic a été remplacée dans le DOM, donc on la retrouve par axe + valeur.
+ */
+function signalUnavailableOption(axisKey, optionValue, optionState) {
+  const axisElement = findAxisElement(axisKey);
+  const option = Array.from(axisElement?.querySelectorAll?.('[data-option-value]') || [])
+    .find((button) => button.dataset.optionValue === optionValue);
+
+  const canonicalMessage = String(state.modalSelection?.selection_message || '').trim();
+  const fallback = optionReason(optionState) || 'Option non disponible';
+  ensureSelectionMessage(canonicalMessage || `${optionValue} indisponible — ${fallback.toLowerCase()}`);
+
+  animateShake(option, { focus: true });
+  if (option) option.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+}
+
+function purchaseIntentButtons() {
+  return [
+    dom.addCartBtn,
+    document.getElementById('k-buy-now-btn'),
+  ].filter(Boolean);
+}
+
+/**
+ * Un SKU incomplet ne doit PAS être un bouton natif disabled : sinon le clic
+ * n'atteint jamais le guard et l'utilisateur ne reçoit aucun feedback.
+ * `aria-disabled=true` conserve la sémantique accessibilité tandis que le
+ * handler garantit qu'aucune mutation panier/checkout n'est possible.
+ */
+function reconcilePurchaseIntentButtons(purchaseReady, inventoryModel) {
+  const buttons = purchaseIntentButtons();
+
+  // Ne retirer que l'état que CE module avait lui-même posé. Les produits
+  // legacy peuvent avoir leur propre disabled/aria-describedby, possédés par
+  // les renderers : on ne doit jamais effacer cette sémantique par accident.
+  buttons.forEach((button) => {
+    const ownedBlockedState = button.classList.contains('k-purchase-intent--blocked');
+    button.classList.remove('k-purchase-intent--blocked');
+    if (ownedBlockedState) {
+      button.removeAttribute('aria-disabled');
+      if (button.getAttribute('aria-describedby') === 'k-modal-selection-message') {
+        button.removeAttribute('aria-describedby');
+      }
+    }
+  });
+
+  if (inventoryModel !== 'SKU') return;
+
+  buttons.forEach((button) => {
+    if (!purchaseReady) {
+      if (!button.classList.contains('confirmed') && !button.classList.contains('buy-confirmed')) {
+        button.disabled = false;
+      }
+      button.classList.add('k-purchase-intent--blocked');
+      button.setAttribute('aria-disabled', 'true');
+      button.setAttribute('aria-describedby', 'k-modal-selection-message');
+      return;
+    }
+
+    if (!button.classList.contains('confirmed') && !button.classList.contains('buy-confirmed')) {
+      button.disabled = false;
+    }
+    if (button.getAttribute('aria-describedby') === 'k-modal-selection-message') {
+      button.removeAttribute('aria-describedby');
+    }
+  });
+}
+
 /**
  * Retourne uniquement la ligne correspondant à la sélection courante. Un produit
  * SKU ne doit jamais réutiliser la première ligne du même product.id : deux
@@ -105,7 +312,9 @@ function resetAddCartButtonState() {
   if (!dom.addCartBtn) return;
   dom.addCartBtn.disabled = false;
   dom.addCartBtn.onclick = null;
-  dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed');
+  dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed', 'k-purchase-intent--blocked');
+  dom.addCartBtn.removeAttribute('aria-disabled');
+  dom.addCartBtn.removeAttribute('aria-describedby');
 }
 
 /** Synchronise quantité, état SKU et représentation bouton/stepper. */
@@ -120,6 +329,9 @@ function _syncModalQtyUI() {
     state.modalSelection
   );
   const canUseExactLineStepper = purchaseReady && Boolean(item);
+
+  reconcileVariantAvailabilityUI();
+  reconcilePurchaseIntentButtons(purchaseReady, inventoryModel);
 
   // Le stepper n'apparait qu'après ajout et cible toujours la ligne exacte
   // résolue par currentModalCartItem(). Pour un SKU, cette résolution repose
@@ -152,10 +364,10 @@ function _syncModalQtyUI() {
 }
 
 /**
- * Les renderers PDC rerendent directement leur composition lors d'un clic sur
- * une option et ne repassent pas par le bootstrap. Cette délégation document
- * réconcilie l'owner panier juste après le handler du renderer, y compris quand
- * le bouton cliqué a été remplacé par le rerender.
+ * Capture la cible AVANT le handler du renderer (qui peut remplacer le DOM),
+ * puis réconcilie en microtask APRES le changement de sélection. La capture
+ * garantit qu'on conserve axe/valeur/état même si le bouton cliqué est détaché
+ * synchronement par le rerender desktop ou mobile.
  */
 function installSelectionReconcile() {
   if (_selectionReconcileInstalled) return;
@@ -165,8 +377,48 @@ function installSelectionReconcile() {
     const target = event.target;
     const option = target?.closest?.('[data-option-value]');
     if (!option || !option.closest('#k-modal')) return;
-    Promise.resolve().then(_syncModalQtyUI);
-  });
+
+    const axisKey = option.closest('[data-axis-key]')?.dataset.axisKey || '';
+    const optionValue = option.dataset.optionValue || '';
+    const optionState = option.dataset.optionState || OPTION_AVAILABLE;
+    const unavailable = optionState !== OPTION_AVAILABLE;
+
+    Promise.resolve().then(() => {
+      _syncModalQtyUI();
+      if (unavailable) signalUnavailableOption(axisKey, optionValue, optionState);
+    });
+  }, true);
+}
+
+/**
+ * Capture Ajouter/Acheter avant leurs handlers propres. Pour un SKU incomplet,
+ * aucune mutation n'est exécutée : on transforme seulement le clic en guidage
+ * explicite vers la variante manquante. Le listener capture couvre également
+ * le bouton Acheter dont l'owner vit dans b-modal-buybox-shared.js.
+ */
+function installPurchaseIntentFeedback() {
+  if (_purchaseIntentFeedbackInstalled) return;
+  _purchaseIntentFeedbackInstalled = true;
+
+  document.addEventListener('click', (event) => {
+    const button = event.target?.closest?.('button');
+    if (!button || !button.closest('#k-modal')) return;
+    const isPurchaseIntent = button === dom.addCartBtn || button.id === 'k-buy-now-btn';
+    if (!isPurchaseIntent) return;
+    if (state.modalProductDetail?.inventory_model !== 'SKU') return;
+
+    const ready = isModalPurchaseReady(
+      state.modalProduct,
+      state.modalProductDetail,
+      state.modalSelection
+    );
+    if (ready) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    signalMissingVariantSelection();
+  }, true);
 }
 
 function installDetailReadyReconcile() {
@@ -177,6 +429,7 @@ function installDetailReadyReconcile() {
 
 function setupModalCart() {
   installSelectionReconcile();
+  installPurchaseIntentFeedback();
   installDetailReadyReconcile();
 
   dom.qtyMinus.addEventListener('click', () => {
@@ -198,23 +451,17 @@ function setupModalCart() {
   });
 
   dom.addCartBtn.addEventListener('click', () => {
-    if (!state.modalProduct || dom.addCartBtn.disabled || dom.addCartBtn.classList.contains('confirmed')) return;
+    if (!state.modalProduct || dom.addCartBtn.classList.contains('confirmed')) return;
     if (!isModalPurchaseReady(
       state.modalProduct,
       state.modalProductDetail,
       state.modalSelection
     )) {
-      // À minima : renvoyer le focus vers la première variante plutôt
-      // qu'un clic silencieux sans aucun signal (bug signalé 22-08-2026).
-      // [data-axis-key] est le conteneur de chaque axe (couleur/taille/...),
-      // rendu identiquement en desktop (b-modal-desktop-product.js) et
-      // mobile (b-modal-mobile-product.js) — un seul correctif couvre les
-      // deux. Le premier bouton d'option à l'intérieur est nativement
-      // focusable (button natif), scrollIntoView le rend visible même si
-      // la modale a défilé au-delà.
-      focusFirstVariantOption();
+      signalMissingVariantSelection();
       return;
     }
+    if (dom.addCartBtn.disabled) return;
+
     const cartProduct = buildModalCartProduct(
       state.modalProduct,
       state.modalProductDetail,
@@ -225,23 +472,6 @@ function setupModalCart() {
     });
     _syncModalQtyUI();
   });
-}
-
-/**
- * Renvoie le focus vers le premier bouton d'option de variante affiché
- * dans la modale — seul signal donné aujourd'hui à un clic "Ajouter"
- * bloqué par une sélection incomplète (couleur/taille non choisie).
- * Cherche dans dom.modalOverlay (racine commune desktop/mobile) plutôt
- * qu'un sélecteur global pour ne jamais capturer un axe d'une autre
- * modale/instance restée dans le DOM.
- */
-function focusFirstVariantOption() {
-  const root = dom.modalOverlay || document;
-  const firstAxis = root.querySelector('[data-axis-key]');
-  const firstButton = firstAxis?.querySelector('button');
-  if (!firstButton) return;
-  firstButton.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  firstButton.focus({ preventScroll: true });
 }
 
 export {
@@ -255,4 +485,8 @@ export const _modalCartTestApi = Object.freeze({
   normalizedCombo,
   paintInCartButton,
   paintAddButton,
+  reconcileVariantAvailabilityUI,
+  reconcilePurchaseIntentButtons,
+  signalMissingVariantSelection,
+  signalUnavailableOption,
 });
