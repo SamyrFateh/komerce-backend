@@ -311,6 +311,7 @@ module.exports = {
       'services/hub-dashboard-queries.js',
       'services/relay-dashboard-queries.js',
       'services/finance-accounting-workspace.js',
+      'services/partner-admin-service.js',
     ],
     routes: [
       'routes/admin/dashboard.js',
@@ -336,6 +337,7 @@ module.exports = {
     ],
     migrations: [
       'migrations/071_relay_dashboard_tables.sql',
+      'migrations/151_partner_business_ref.sql',
     ],
     dash: [
       // ── Canonical — seule cible de nouveau développement dashboard ──
@@ -350,6 +352,7 @@ module.exports = {
       'dashboards/canonical/js/admin-context.js',
       'dashboards/canonical/js/demo-order-flow.js',
       'dashboards/canonical/js/finance-accounting-workspace.js',
+      'dashboards/canonical/js/sourcing-workspace.js',
 
       // ── Legacy 1 — admin actuel, gelé maintenance corrective ──────
       'dashboards/admin/index.html',
@@ -465,6 +468,7 @@ module.exports = {
       'tests/unit/canonical-dashboard-admin-context.test.js',
       'tests/unit/canonical-demo-order-flow.test.js',
       'tests/unit/canonical-finance-accounting-workspace-boundary.test.js',
+      'tests/unit/canonical-sourcing-workspace-boundary.test.js',
       'tests/unit/finance-accounting-workspace.test.js',
       'tests/unit/admin-finance-accounting-workspace-route.test.js',
       'tests/unit/dashboard-cache.test.js',

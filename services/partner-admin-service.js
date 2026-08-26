@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          partner-admin-service
- * @domain        sourcing
+ * @domain        dashboard
  * @layer         service
  * @criticality   high
  * @inputs        partner_filters, validated_partner_payload, partner_id

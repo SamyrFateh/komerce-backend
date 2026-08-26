@@ -1326,6 +1326,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/sourcing-import-dispatch.js",
+        "resolvedPath": "services/sourcing-import-dispatch.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/suppliers/catalog-import-json.js",
         "resolvedPath": "services/suppliers/catalog-import-json.js",
         "status": "resolved-in-technical-graph"
@@ -1496,6 +1503,13 @@
         "category": "migrations",
         "declared": "migrations/130_deactivate_catalog_test_placeholders.sql",
         "resolvedPath": "migrations/130_deactivate_catalog_test_placeholders.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/150_catalog_import_business_ref.sql",
+        "resolvedPath": "migrations/150_catalog_import_business_ref.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2417,6 +2431,13 @@
       },
       {
         "feature": "dashboard",
+        "category": "services",
+        "declared": "services/partner-admin-service.js",
+        "resolvedPath": "services/partner-admin-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
         "category": "routes",
         "declared": "routes/admin/dashboard.js",
         "resolvedPath": "routes/admin/dashboard.js",
@@ -2550,6 +2571,13 @@
       },
       {
         "feature": "dashboard",
+        "category": "migrations",
+        "declared": "migrations/151_partner_business_ref.sql",
+        "resolvedPath": "migrations/151_partner_business_ref.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
         "category": "dash",
         "declared": "dashboards/canonical/index.html",
         "resolvedPath": "public/dashboards/canonical/index.html",
@@ -2623,6 +2651,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/finance-accounting-workspace.js",
         "resolvedPath": "public/dashboards/canonical/js/finance-accounting-workspace.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/sourcing-workspace.js",
+        "resolvedPath": "public/dashboards/canonical/js/sourcing-workspace.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3316,6 +3351,13 @@
         "category": "tests",
         "declared": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
         "resolvedPath": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-sourcing-workspace-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-sourcing-workspace-boundary.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9193,6 +9235,13 @@
       },
       {
         "feature": "sourcing",
+        "category": "middleware",
+        "declared": "middleware/require-sourcing-global-authority.js",
+        "resolvedPath": "middleware/require-sourcing-global-authority.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
         "category": "migrations",
         "declared": "migrations/041_sourcing_candidates.sql",
         "resolvedPath": "migrations/041_sourcing_candidates.sql",
@@ -9221,6 +9270,13 @@
       },
       {
         "feature": "sourcing",
+        "category": "migrations",
+        "declared": "migrations/149_sourcing_workspace_business_refs.sql",
+        "resolvedPath": "migrations/149_sourcing_workspace_business_refs.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
         "category": "services",
         "declared": "services/sourcing-candidate-import-service.js",
         "resolvedPath": "services/sourcing-candidate-import-service.js",
@@ -9228,9 +9284,30 @@
       },
       {
         "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-candidate-actions.js",
+        "resolvedPath": "services/sourcing-candidate-actions.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-workspace.js",
+        "resolvedPath": "services/sourcing-workspace.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
         "category": "routes",
         "declared": "routes/sourcing-scanner.js",
         "resolvedPath": "routes/sourcing-scanner.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "routes",
+        "declared": "routes/admin-sourcing-workspace.js",
+        "resolvedPath": "routes/admin-sourcing-workspace.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -9245,6 +9322,27 @@
         "category": "tests",
         "declared": "tests/unit/sourcing-candidate-import-service.test.js",
         "resolvedPath": "tests/unit/sourcing-candidate-import-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/admin-sourcing-workspace-route.test.js",
+        "resolvedPath": "tests/unit/admin-sourcing-workspace-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-workspace.test.js",
+        "resolvedPath": "tests/unit/sourcing-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/require-sourcing-global-authority.test.js",
+        "resolvedPath": "tests/unit/require-sourcing-global-authority.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13524,6 +13622,102 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "sourcing",
+        "entry": "GET /api/admin/workspaces/sourcing",
+        "method": "GET",
+        "path": "/api/admin/workspaces/sourcing",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/imports",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/imports",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/products/:productRef/update",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/products/{id}/update",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/candidates/:candidateRef/update",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/candidates/{id}/update",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/candidates/:candidateRef/scan",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/candidates/{id}/scan",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/candidates/:candidateRef/promote",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/candidates/{id}/promote",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/candidates/:candidateRef/watchlist",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/candidates/{id}/watchlist",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/candidates/:candidateRef/reject",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/candidates/{id}/reject",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/suppliers",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/suppliers",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/update",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/suppliers/{id}/update",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/deactivate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/suppliers/{id}/deactivate",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/activate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/suppliers/{id}/activate",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "unsold-resolution",
         "entry": "GET /api/unsold",
         "method": "GET",
@@ -15447,6 +15641,12 @@
         "from": "sourcing",
         "to": "auth",
         "raw": "auth",
+        "resolved": true
+      },
+      {
+        "from": "sourcing",
+        "to": "dashboard",
+        "raw": "dashboard (registre partenaires partagé via partner-admin-service ; 4E filtre strictement partner_type=sourcing)",
         "resolved": true
       },
       {
@@ -19531,6 +19731,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/partner-admin-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/admin/dashboard.js",
                 "targetFile": "utils/logger.js"
               },
@@ -19540,19 +19744,11 @@
               },
               {
                 "sourceFileId": "routes/admin/partners.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "routes/admin/partners.js",
                 "targetFile": "middleware/validate.js"
               },
               {
                 "sourceFileId": "routes/admin/partners.js",
                 "targetFile": "validators/index.js"
-              },
-              {
-                "sourceFileId": "routes/admin/partners.js",
-                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "routes/admin/system.js",
@@ -19648,6 +19844,10 @@
               },
               {
                 "sourceFileId": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
+                "targetFile": "bootstrap/html-routes.js"
+              },
+              {
+                "sourceFileId": "tests/unit/canonical-sourcing-workspace-boundary.test.js",
                 "targetFile": "bootstrap/html-routes.js"
               },
               {
@@ -21205,6 +21405,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/sourcing-scanner.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-sourcing-workspace.js"
               }
             ]
           }
@@ -25522,6 +25726,10 @@
               {
                 "sourceFileId": "routes/sourcing-scanner.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-sourcing-workspace.js",
+                "targetFile": "middleware/auth.js"
               }
             ]
           }
@@ -25536,6 +25744,30 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/sourcing-candidate-actions.js",
+                "targetFile": "services/supplier-catalog-scanner.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-candidate-actions.js",
+                "targetFile": "services/catalog-enrichment.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-candidate-actions.js",
+                "targetFile": "services/catalog-candidate-product-service.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-candidate-actions.js",
+                "targetFile": "services/catalog-promotion.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "services/sourcing-import-dispatch.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "services/suppliers/catalog-import-orchestrator.js"
+              },
+              {
                 "sourceFileId": "routes/sourcing-scanner.js",
                 "targetFile": "services/supplier-catalog-scanner.js"
               },
@@ -25545,27 +25777,7 @@
               },
               {
                 "sourceFileId": "routes/sourcing-scanner.js",
-                "targetFile": "services/catalog-enrichment.js"
-              },
-              {
-                "sourceFileId": "routes/sourcing-scanner.js",
-                "targetFile": "services/catalog-candidate-product-service.js"
-              },
-              {
-                "sourceFileId": "routes/sourcing-scanner.js",
-                "targetFile": "services/catalog-promotion.js"
-              },
-              {
-                "sourceFileId": "routes/sourcing-scanner.js",
-                "targetFile": "services/suppliers/connectors/csv-connector.js"
-              },
-              {
-                "sourceFileId": "routes/sourcing-scanner.js",
-                "targetFile": "services/suppliers/connectors/manual-connector.js"
-              },
-              {
-                "sourceFileId": "routes/sourcing-scanner.js",
-                "targetFile": "services/suppliers/connectors/noon-connector.js"
+                "targetFile": "services/sourcing-import-dispatch.js"
               },
               {
                 "sourceFileId": "tests/unit/sourcing-scanner.test.js",
@@ -25582,11 +25794,39 @@
       },
       {
         "from": "sourcing",
+        "to": "dashboard",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "services/partner-admin-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "sourcing",
         "to": "economic-engine",
         "channels": [
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/sourcing-candidate-actions.js",
+                "targetFile": "services/pricing-engine.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "services/sourcing-analysis.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "services/sourcing-mutations.js"
+              },
               {
                 "sourceFileId": "routes/sourcing-scanner.js",
                 "targetFile": "services/pricing-engine.js"
@@ -25603,6 +25843,18 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "middleware/require-sourcing-global-authority.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-candidate-actions.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "db.js"
+              },
               {
                 "sourceFileId": "routes/sourcing-scanner.js",
                 "targetFile": "db.js"
@@ -25907,11 +26159,6 @@
           "sourceFileId": "scripts/touched-files-feature-gate.js",
           "kind": "require",
           "raw": "path.join(abs, f"
-        },
-        {
-          "sourceFileId": "routes/sourcing-scanner.js",
-          "kind": "require",
-          "raw": "'../services/suppliers/connectors/' + supplier + '-connector'"
         }
       ],
       "boutique": [
@@ -25924,7 +26171,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 883
+        "filesObserved": 894
       },
       "boutique": {
         "filesObserved": 169,
@@ -28011,8 +28258,8 @@
       "backend": {
         "manifestsDiscovered": 27,
         "manifestsConnected": 27,
-        "technicalNodesTotal": 340,
-        "technicalNodesOwned": 324,
+        "technicalNodesTotal": 346,
+        "technicalNodesOwned": 330,
         "technicalOrphans": 16
       },
       "dash": {
@@ -28320,7 +28567,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> sourcing",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"sourcing\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"sourcing\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -28442,7 +28689,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé"
+        "msg": "15 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",

@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, order-360, client-360, product-360, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, order-360, client-360, product-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -31,6 +31,7 @@
     SHIPPING_CUSTOMS_WORKSPACE: 'shipping-customs-workspace',
     CATALOG_WORKSPACE: 'catalog-workspace',
     ACCOUNTING_WORKSPACE: 'accounting-workspace',
+    SOURCING_WORKSPACE: 'sourcing-workspace',
     ORDER_360: 'order-360',
     CLIENT_360: 'client-360',
     PRODUCT_360: 'product-360',
@@ -103,6 +104,9 @@
     }
     if (path === '/admin/workspaces/accounting' || path === '/admin-next/workspaces/accounting') {
       return SURFACES.ACCOUNTING_WORKSPACE;
+    }
+    if (path === '/admin/workspaces/sourcing' || path === '/admin-next/workspaces/sourcing') {
+      return SURFACES.SOURCING_WORKSPACE;
     }
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
@@ -331,6 +335,17 @@
     });
   }
 
+  function renderSourcingWorkspace(root, user) {
+    if (!global.KomerceCanonicalSourcingWorkspace) throw new Error('canonical_sourcing_workspace_module_missing');
+    return global.KomerceCanonicalSourcingWorkspace.mount({
+      root,
+      user,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
   function renderOrder360(root, user) {
     if (!global.KomerceCanonicalOrder360) throw new Error('canonical_order_360_module_missing');
     return global.KomerceCanonicalOrder360.mount({
@@ -472,6 +487,7 @@
     if (surface === SURFACES.SHIPPING_CUSTOMS_WORKSPACE) return renderShippingCustomsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.CATALOG_WORKSPACE) return renderCatalogWorkspace(root, user, adminContext);
     if (surface === SURFACES.ACCOUNTING_WORKSPACE) return renderFinanceAccountingWorkspaceShell(root, user, adminContext);
+    if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
@@ -485,7 +501,9 @@
 
     const user = await requireSession();
     const surface = surfaceForPath(global.location.pathname);
-    const adminContext = surface === SURFACES.CATALOG_WORKSPACE ? null : await requireAdminContext();
+    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE)
+      ? null
+      : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
     global.KOMERCE_CANONICAL_ADMIN_CONTEXT = adminContext;
     await renderReady(root, user, adminContext);
@@ -509,6 +527,7 @@
     renderOperationsWorkspace,
     renderShippingCustomsWorkspace,
     renderCatalogWorkspace,
+    renderSourcingWorkspace,
     renderFinanceAccountingWorkspace,
     renderOrder360,
     renderClient360,

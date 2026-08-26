@@ -47,7 +47,7 @@
     "healthy": 16,
     "attention": 15,
     "blocked": 0,
-    "businessDependencies": 185,
+    "businessDependencies": 186,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -2588,7 +2588,7 @@
             ]
           },
           "migrations": {
-            "count": 12,
+            "count": 13,
             "files": [
               {
                 "declared": "migrations/098_catalog_refinery_foundation.sql",
@@ -2648,6 +2648,11 @@
               {
                 "declared": "migrations/147_catalog_global_access_grants.sql",
                 "resolvedPath": "migrations/147_catalog_global_access_grants.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/150_catalog_import_business_ref.sql",
+                "resolvedPath": "migrations/150_catalog_import_business_ref.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -2713,7 +2718,7 @@
             ]
           },
           "services": {
-            "count": 30,
+            "count": 31,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -2808,6 +2813,11 @@
               {
                 "declared": "services/prompts/catalog-enrichment.prompt.js",
                 "resolvedPath": "services/prompts/catalog-enrichment.prompt.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-import-dispatch.js",
+                "resolvedPath": "services/sourcing-import-dispatch.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -3113,7 +3123,7 @@
             ]
           }
         },
-        "totalFiles": 150,
+        "totalFiles": 152,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 32,
@@ -4433,7 +4443,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 94,
+            "count": 95,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -4851,6 +4861,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/sourcing-workspace.js",
+                "resolvedPath": "public/dashboards/canonical/js/sourcing-workspace.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "hub/index.html",
                 "resolvedPath": "public/hub/index.html",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4908,11 +4923,16 @@
             ]
           },
           "migrations": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "migrations/071_relay_dashboard_tables.sql",
                 "resolvedPath": "migrations/071_relay_dashboard_tables.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/151_partner_business_ref.sql",
+                "resolvedPath": "migrations/151_partner_business_ref.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -5013,7 +5033,7 @@
             ]
           },
           "services": {
-            "count": 11,
+            "count": 12,
             "files": [
               {
                 "declared": "services/dashboard-cache.js",
@@ -5066,6 +5086,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/partner-admin-service.js",
+                "resolvedPath": "services/partner-admin-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/relay-dashboard-queries.js",
                 "resolvedPath": "services/relay-dashboard-queries.js",
                 "status": "resolved-in-technical-graph"
@@ -5073,7 +5098,7 @@
             ]
           },
           "tests": {
-            "count": 40,
+            "count": 41,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -5158,6 +5183,11 @@
               {
                 "declared": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
                 "resolvedPath": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-sourcing-workspace-boundary.test.js",
+                "resolvedPath": "tests/unit/canonical-sourcing-workspace-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5278,7 +5308,7 @@
             ]
           }
         },
-        "totalFiles": 164,
+        "totalFiles": 168,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -5779,6 +5809,13 @@
         },
         {
           "consumer": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "sourcing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -18078,8 +18115,18 @@
       ],
       "implementation": {
         "byCategory": {
+          "middleware": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "middleware/require-sourcing-global-authority.js",
+                "resolvedPath": "middleware/require-sourcing-global-authority.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
           "migrations": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "migrations/041_sourcing_candidates.sql",
@@ -18100,12 +18147,22 @@
                 "declared": "migrations/102_sourcing_candidates_raw_payload.sql",
                 "resolvedPath": "migrations/102_sourcing_candidates_raw_payload.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/149_sourcing_workspace_business_refs.sql",
+                "resolvedPath": "migrations/149_sourcing_workspace_business_refs.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "routes": {
-            "count": 1,
+            "count": 2,
             "files": [
+              {
+                "declared": "routes/admin-sourcing-workspace.js",
+                "resolvedPath": "routes/admin-sourcing-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "routes/sourcing-scanner.js",
                 "resolvedPath": "routes/sourcing-scanner.js",
@@ -18114,18 +18171,38 @@
             ]
           },
           "services": {
-            "count": 1,
+            "count": 3,
             "files": [
+              {
+                "declared": "services/sourcing-candidate-actions.js",
+                "resolvedPath": "services/sourcing-candidate-actions.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/sourcing-candidate-import-service.js",
                 "resolvedPath": "services/sourcing-candidate-import-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-workspace.js",
+                "resolvedPath": "services/sourcing-workspace.js",
                 "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 2,
+            "count": 5,
             "files": [
+              {
+                "declared": "tests/unit/admin-sourcing-workspace-route.test.js",
+                "resolvedPath": "tests/unit/admin-sourcing-workspace-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/require-sourcing-global-authority.test.js",
+                "resolvedPath": "tests/unit/require-sourcing-global-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/sourcing-candidate-import-service.test.js",
                 "resolvedPath": "tests/unit/sourcing-candidate-import-service.test.js",
@@ -18135,11 +18212,16 @@
                 "declared": "tests/unit/sourcing-scanner.test.js",
                 "resolvedPath": "tests/unit/sourcing-scanner.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-workspace.test.js",
+                "resolvedPath": "tests/unit/sourcing-workspace.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 8,
+        "totalFiles": 16,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -18256,7 +18338,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 11
+          "count": 23
         }
       },
       "businessDependencies": [
@@ -18269,6 +18351,13 @@
         },
         {
           "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

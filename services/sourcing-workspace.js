@@ -44,7 +44,8 @@ function stripInternalIds(value) {
   if (!value || typeof value !== 'object') return value;
   const out = {};
   for (const [key, child] of Object.entries(value)) {
-    if (key === 'id' || key.endsWith('_id')) continue;
+    const lowerKey = String(key).toLowerCase();
+    if (lowerKey === 'id' || lowerKey === 'ids' || lowerKey.endsWith('_id') || lowerKey.endsWith('_ids') || /Ids?$/.test(key)) continue;
     out[key] = stripInternalIds(child);
   }
   return out;

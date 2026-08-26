@@ -13,30 +13,31 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 431,
-    "filesWithFullHeaders": 401,
+    "scannedCodeFiles": 437,
+    "filesWithFullHeaders": 407,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 429,
+    "filesWithAnyHeaders": 435,
     "filesWithoutHeaders": 2,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 945,
-    "edges": 4971,
-    "dbTables": 119,
-    "doctrines": 239,
-    "impactAreas": 158,
-    "unresolvedCodeEdges": 521,
-    "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 64
+    "graphNodes": 968,
+    "edges": 5063,
+    "dbTables": 120,
+    "doctrines": 253,
+    "impactAreas": 160,
+    "unresolvedCodeEdges": 524,
+    "dbWriteViaOverlapWarnings": 1,
+    "multiWriterTables": 62
   },
   "byDomain": {
     "infrastructure": 19,
     "bootstrap": 2,
     "notification": 20,
     "auth": 13,
-    "catalog": 72,
+    "catalog": 73,
     "admin-dashboard": 19,
     "market": 2,
+    "sourcing": 6,
     "logistics": 38,
     "boutique": 20,
     "checkout": 2,
@@ -50,7 +51,7 @@
     "wallet": 4,
     "economic-engine": 42,
     "customs": 6,
-    "dashboard": 27,
+    "dashboard": 28,
     "business-rules": 1,
     "orders": 25,
     "documents": 15,
@@ -60,7 +61,6 @@
     "loyalty": 2,
     "purchasing": 8,
     "decision-signals": 3,
-    "sourcing": 2,
     "unsold-resolution": 1,
     "incident-management": 2,
     "refunds": 2,
@@ -72,7 +72,7 @@
     "cron": 1,
     "composition-root": 1,
     "manual-test": 1,
-    "middleware": 16,
+    "middleware": 17,
     "ui-bootstrap": 4,
     "ui-component": 38,
     "ui-enhancer": 3,
@@ -95,9 +95,9 @@
     "ui-boundary": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 108,
+    "route": 109,
     "entrypoint": 1,
-    "service": 171,
+    "service": 175,
     "external-adapter": 2,
     "machine": 1,
     "data-service": 1,
@@ -105,8 +105,8 @@
   },
   "byCriticality": {
     "critical": 61,
-    "medium": 110,
-    "high": 221,
+    "medium": 111,
+    "high": 226,
     "low": 37
   },
   "nodes": [
@@ -142,7 +142,8 @@
         "routes/admin-operations-workspace.js",
         "routes/admin-shipping-customs-workspace.js",
         "routes/admin-catalog-workspace.js",
-        "routes/admin-finance-accounting-workspace.js"
+        "routes/admin-finance-accounting-workspace.js",
+        "routes/admin-sourcing-workspace.js"
       ],
       "usedBy": [
         "server.js"
@@ -1007,6 +1008,48 @@
       "impactAreas": [
         "auth",
         "account-security"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-sourcing-global-authority.js",
+      "file": "middleware/require-sourcing-global-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "sourcing-global-authorization-guard",
+      "domain": "sourcing",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.user.id",
+        "sourcing_global_access_grants"
+      ],
+      "outputs": [
+        "req.sourcingGlobalAuthority",
+        "next_or_403"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-sourcing-workspace.js"
+      ],
+      "dbRead": [
+        "sourcing_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "sourcing_global_authority_explicit",
+        "admin_role_never_implies_sourcing_write"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "admin-dashboard",
+        "authorization"
       ],
       "version": "2026-08"
     },
@@ -5826,6 +5869,55 @@
       "version": "2026-08"
     },
     {
+      "id": "routes/admin-sourcing-workspace.js",
+      "file": "routes/admin-sourcing-workspace.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-sourcing-workspace-api",
+      "domain": "sourcing",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_session",
+        "sourcing_global_grant",
+        "business_references",
+        "action_payloads"
+      ],
+      "outputs": [
+        "global_sourcing_projection",
+        "sourcing_action_results"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "middleware/require-sourcing-global-authority.js",
+        "services/sourcing-workspace.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "canonical sourcing workspace"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "delegated_to_sourcing_workspace_service"
+      ],
+      "doctrine": [
+        "global_sourcing_authority",
+        "no_client_market_dimension",
+        "no_browser_internal_ids"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "catalog",
+        "partners",
+        "admin-dashboard"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "routes/admin.js",
       "file": "routes/admin.js",
       "type": "file",
@@ -6251,34 +6343,30 @@
         "side_effects"
       ],
       "depends": [
-        "db.js",
         "middleware/auth.js",
-        "services/*"
+        "middleware/validate.js",
+        "validators",
+        "services/partner-admin-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
-      "dbRead": [
-        "customs_shipments",
-        "orders",
-        "partners",
-        "suppliers_stats"
-      ],
-      "dbWrite": [
-        "partners"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "delegated_to_partner_admin_service"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "legacy_http_contract_preserved",
+        "single_partner_mutation_authority"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "partners"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "routes/admin/system.js",
@@ -9737,33 +9825,29 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
-        "services/*",
+        "services/supplier-catalog-scanner.js",
+        "services/pricing-engine.js",
         "services/suppliers/catalog-import-orchestrator.js",
-        "services/catalog-candidate-product-service.js",
-        "services/catalog-promotion.js"
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-candidate-actions.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "product_skus",
         "sourcing_candidate_events",
         "sourcing_candidates",
         "supplier_catalog_imports"
       ],
       "dbWrite": [
-        "catalog_media",
-        "product_sku_media",
-        "product_skus",
-        "product_variants",
-        "sourcing_candidate_events",
         "sourcing_candidates"
       ],
       "dbWriteVia": [
         {
-          "via": "catalog-candidate-product-service",
+          "via": "sourcing-candidate-actions",
           "tables": [
-            "products"
+            "sourcing_candidates",
+            "sourcing_candidate_events"
           ]
         },
         {
@@ -9774,18 +9858,19 @@
         }
       ],
       "dbTxn": [
-        "import-product : transaction dédiée (db.getClient/BEGIN..COMMIT)",
-        "promotion catalogue incluse ; reste des routes : query_direct"
+        "candidate_mutations_delegated_to_shared_authority"
       ],
       "doctrine": [
-        "PDC-8 Lot 6",
+        "legacy_http_contract_preserved",
+        "single_sourcing_candidate_mutation_authority",
         "DOCTRINE_INGESTION_CATALOGUE.md"
       ],
       "impactAreas": [
         "sourcing",
         "catalog"
       ],
-      "version": "2026-08 (WRITER-NOT-OWNER : création products déléguée au lifecycle owner catalog)"
+      "version": "2026-08",
+      "dbWriteViaOverlapWarning": "routes/sourcing-scanner.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_candidates"
     },
     {
       "id": "routes/sourcing.js",
@@ -15151,6 +15236,57 @@
       "version": "2026-06"
     },
     {
+      "id": "services/partner-admin-service.js",
+      "file": "services/partner-admin-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "partner-admin-service",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "partner_filters",
+        "validated_partner_payload",
+        "partner_id"
+      ],
+      "outputs": [
+        "partner_rows",
+        "partner_stats",
+        "partner_mutation_result"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin/partners.js",
+        "services/sourcing-workspace.js"
+      ],
+      "dbRead": [
+        "partners",
+        "suppliers_stats",
+        "customs_shipments",
+        "orders"
+      ],
+      "dbWrite": [
+        "partners"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "shared_partner_mutation_authority",
+        "sourcing_workspace_filters_partner_type"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "partners",
+        "logistics",
+        "admin-dashboard"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "services/payment-cash-confirm.js",
       "file": "services/payment-cash-confirm.js",
       "type": "file",
@@ -17889,6 +18025,77 @@
       "version": "2026-06"
     },
     {
+      "id": "services/sourcing-candidate-actions.js",
+      "file": "services/sourcing-candidate-actions.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "sourcing-candidate-action-service",
+      "domain": "sourcing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "candidate_id_internal",
+        "validated_candidate_payload",
+        "actor_id"
+      ],
+      "outputs": [
+        "candidate_mutation_result",
+        "promoted_catalog_product"
+      ],
+      "depends": [
+        "db.js",
+        "services/supplier-catalog-scanner.js",
+        "services/pricing-engine.js",
+        "services/catalog-candidate-product-service.js",
+        "services/catalog-promotion.js",
+        "services/catalog-enrichment.js"
+      ],
+      "usedBy": [
+        "routes/sourcing-scanner.js",
+        "services/sourcing-workspace.js"
+      ],
+      "dbRead": [
+        "sourcing_candidates",
+        "sourcing_candidate_events",
+        "supplier_catalog_imports"
+      ],
+      "dbWrite": [
+        "sourcing_candidates",
+        "sourcing_candidate_events"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "catalog-candidate-product-service",
+          "tables": [
+            "products"
+          ]
+        },
+        {
+          "via": "catalog-promotion",
+          "tables": [
+            "catalog_media",
+            "product_variants",
+            "product_skus",
+            "product_sku_media"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "promoteCandidate : transaction dédiée"
+      ],
+      "doctrine": [
+        "single_sourcing_candidate_mutation_authority",
+        "catalog_promotion_owner_respected"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "catalog"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "services/sourcing-candidate-import-service.js",
       "file": "services/sourcing-candidate-import-service.js",
       "type": "file",
@@ -17928,6 +18135,46 @@
       "impactAreas": [
         "sourcing",
         "catalog"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "services/sourcing-import-dispatch.js",
+      "file": "services/sourcing-import-dispatch.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "sourcing-import-connector-dispatch",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "supplier_import_payload"
+      ],
+      "outputs": [
+        "normalized_supplier_products",
+        "connector_catalog"
+      ],
+      "depends": [
+        "services/suppliers/connectors/csv-connector.js",
+        "services/suppliers/connectors/manual-connector.js",
+        "services/suppliers/connectors/noon-connector.js"
+      ],
+      "usedBy": [
+        "routes/sourcing-scanner.js",
+        "services/sourcing-workspace.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "single_connector_dispatch_authority"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "supplier-import"
       ],
       "version": "2026-08"
     },
@@ -17984,6 +18231,96 @@
         "unknown"
       ],
       "version": "2026-08 (campagne WRITER-NOT-OWNER — wrapper de compatibilité)"
+    },
+    {
+      "id": "services/sourcing-workspace.js",
+      "file": "services/sourcing-workspace.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-sourcing-workspace-service",
+      "domain": "sourcing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "business_references",
+        "sourcing_action_payloads",
+        "authenticated_actor"
+      ],
+      "outputs": [
+        "global_sourcing_projection",
+        "sourcing_mutation_result"
+      ],
+      "depends": [
+        "db.js",
+        "services/sourcing-analysis.js",
+        "services/sourcing-mutations.js",
+        "services/sourcing-candidate-actions.js",
+        "services/sourcing-import-dispatch.js",
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/partner-admin-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-sourcing-workspace.js"
+      ],
+      "dbRead": [
+        "products",
+        "sourcing_candidates",
+        "supplier_catalog_imports",
+        "partners",
+        "suppliers_stats"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "sourcing-mutations",
+          "tables": [
+            "products"
+          ]
+        },
+        {
+          "via": "sourcing-candidate-actions",
+          "tables": [
+            "sourcing_candidates",
+            "sourcing_candidate_events",
+            "products",
+            "catalog_media",
+            "product_variants",
+            "product_skus",
+            "product_sku_media"
+          ]
+        },
+        {
+          "via": "catalog-import-orchestrator",
+          "tables": [
+            "supplier_catalog_imports",
+            "sourcing_candidates"
+          ]
+        },
+        {
+          "via": "partner-admin-service",
+          "tables": [
+            "partners"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "delegated_to_domain_authorities"
+      ],
+      "doctrine": [
+        "global_sourcing_authority",
+        "browser_business_refs_only",
+        "sourcing_partners_only",
+        "workspace_orchestrates_not_reimplements"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "catalog",
+        "partners",
+        "admin-dashboard"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "services/supplier-catalog-scanner.js",
@@ -20275,6 +20612,11 @@
       "table": "dashboard_global_access_grants"
     },
     {
+      "id": "db:sourcing_global_access_grants",
+      "type": "db-table",
+      "table": "sourcing_global_access_grants"
+    },
+    {
       "id": "db:orders",
       "type": "db-table",
       "table": "orders"
@@ -20433,11 +20775,6 @@
       "id": "db:partners",
       "type": "db-table",
       "table": "partners"
-    },
-    {
-      "id": "db:suppliers_stats",
-      "type": "db-table",
-      "table": "suppliers_stats"
     },
     {
       "id": "db:basket_items",
@@ -20660,16 +20997,6 @@
       "table": "supplier_catalog_imports"
     },
     {
-      "id": "db:catalog_media",
-      "type": "db-table",
-      "table": "catalog_media"
-    },
-    {
-      "id": "db:product_sku_media",
-      "type": "db-table",
-      "table": "product_sku_media"
-    },
-    {
       "id": "db:unsold_items",
       "type": "db-table",
       "table": "unsold_items"
@@ -20710,6 +21037,11 @@
       "table": "catalog_enrichment_runs"
     },
     {
+      "id": "db:catalog_media",
+      "type": "db-table",
+      "table": "catalog_media"
+    },
+    {
       "id": "db:product_attributes",
       "type": "db-table",
       "table": "product_attributes"
@@ -20723,6 +21055,11 @@
       "id": "db:product_content_sections",
       "type": "db-table",
       "table": "product_content_sections"
+    },
+    {
+      "id": "db:product_sku_media",
+      "type": "db-table",
+      "table": "product_sku_media"
     },
     {
       "id": "db:customs_effective_rates",
@@ -20748,6 +21085,11 @@
       "id": "db:markets (via utils/currency.js)",
       "type": "db-table",
       "table": "markets (via utils/currency.js)"
+    },
+    {
+      "id": "db:suppliers_stats",
+      "type": "db-table",
+      "table": "suppliers_stats"
     },
     {
       "id": "db:paypal_events_processed",
@@ -20903,6 +21245,16 @@
       "id": "doctrine:auth7_step_up_by_freshness_and_method",
       "type": "doctrine",
       "doctrine": "auth7_step_up_by_freshness_and_method"
+    },
+    {
+      "id": "doctrine:sourcing_global_authority_explicit",
+      "type": "doctrine",
+      "doctrine": "sourcing_global_authority_explicit"
+    },
+    {
+      "id": "doctrine:admin_role_never_implies_sourcing_write",
+      "type": "doctrine",
+      "doctrine": "admin_role_never_implies_sourcing_write"
     },
     {
       "id": "doctrine:DOCTRINE_NON_CONFORMITE (Q-1)",
@@ -21410,6 +21762,21 @@
       "doctrine": "product_ref_is_business_identity"
     },
     {
+      "id": "doctrine:global_sourcing_authority",
+      "type": "doctrine",
+      "doctrine": "global_sourcing_authority"
+    },
+    {
+      "id": "doctrine:no_client_market_dimension",
+      "type": "doctrine",
+      "doctrine": "no_client_market_dimension"
+    },
+    {
+      "id": "doctrine:no_browser_internal_ids",
+      "type": "doctrine",
+      "doctrine": "no_browser_internal_ids"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §6",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md §6"
@@ -21423,6 +21790,16 @@
       "id": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
       "type": "doctrine",
       "doctrine": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "id": "doctrine:legacy_http_contract_preserved",
+      "type": "doctrine",
+      "doctrine": "legacy_http_contract_preserved"
+    },
+    {
+      "id": "doctrine:single_partner_mutation_authority",
+      "type": "doctrine",
+      "doctrine": "single_partner_mutation_authority"
     },
     {
       "id": "doctrine:no_homemade_crypto",
@@ -21530,9 +21907,9 @@
       "doctrine": "participant_achete_individuellement"
     },
     {
-      "id": "doctrine:PDC-8 Lot 6",
+      "id": "doctrine:single_sourcing_candidate_mutation_authority",
       "type": "doctrine",
-      "doctrine": "PDC-8 Lot 6"
+      "doctrine": "single_sourcing_candidate_mutation_authority"
     },
     {
       "id": "doctrine:DOCTRINE_INGESTION_CATALOGUE.md",
@@ -21815,6 +22192,16 @@
       "doctrine": "writer_not_owner_boundary"
     },
     {
+      "id": "doctrine:shared_partner_mutation_authority",
+      "type": "doctrine",
+      "doctrine": "shared_partner_mutation_authority"
+    },
+    {
+      "id": "doctrine:sourcing_workspace_filters_partner_type",
+      "type": "doctrine",
+      "doctrine": "sourcing_workspace_filters_partner_type"
+    },
+    {
       "id": "doctrine:cash_validation_tracee",
       "type": "doctrine",
       "doctrine": "cash_validation_tracee"
@@ -21885,9 +22272,34 @@
       "doctrine": "lecture_derivee"
     },
     {
+      "id": "doctrine:catalog_promotion_owner_respected",
+      "type": "doctrine",
+      "doctrine": "catalog_promotion_owner_respected"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "id": "doctrine:single_connector_dispatch_authority",
+      "type": "doctrine",
+      "doctrine": "single_connector_dispatch_authority"
+    },
+    {
+      "id": "doctrine:browser_business_refs_only",
+      "type": "doctrine",
+      "doctrine": "browser_business_refs_only"
+    },
+    {
+      "id": "doctrine:sourcing_partners_only",
+      "type": "doctrine",
+      "doctrine": "sourcing_partners_only"
+    },
+    {
+      "id": "doctrine:workspace_orchestrates_not_reimplements",
+      "type": "doctrine",
+      "doctrine": "workspace_orchestrates_not_reimplements"
     },
     {
       "id": "doctrine:docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
@@ -22113,6 +22525,11 @@
       "id": "impact:account-security",
       "type": "impact-area",
       "area": "account-security"
+    },
+    {
+      "id": "impact:sourcing",
+      "type": "impact-area",
+      "area": "sourcing"
     },
     {
       "id": "impact:hub",
@@ -22575,11 +22992,6 @@
       "area": "commerce"
     },
     {
-      "id": "impact:sourcing",
-      "type": "impact-area",
-      "area": "sourcing"
-    },
-    {
       "id": "impact:business-rules",
       "type": "impact-area",
       "area": "business-rules"
@@ -22588,6 +23000,11 @@
       "id": "impact:customs",
       "type": "impact-area",
       "area": "customs"
+    },
+    {
+      "id": "impact:partners",
+      "type": "impact-area",
+      "area": "partners"
     },
     {
       "id": "impact:notification",
@@ -22760,6 +23177,11 @@
       "area": "admin-debug"
     },
     {
+      "id": "impact:supplier-import",
+      "type": "impact-area",
+      "area": "supplier-import"
+    },
+    {
       "id": "impact:all-authenticated-api",
       "type": "impact-area",
       "area": "all-authenticated-api"
@@ -22880,6 +23302,12 @@
       "to": "routes/admin-finance-accounting-workspace.js",
       "type": "depends",
       "label": "routes/admin-finance-accounting-workspace.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-sourcing-workspace.js",
+      "type": "depends",
+      "label": "routes/admin-sourcing-workspace.js"
     },
     {
       "from": "server.js",
@@ -24230,6 +24658,54 @@
       "to": "impact:account-security",
       "type": "impact",
       "label": "account-security"
+    },
+    {
+      "from": "middleware/require-sourcing-global-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "middleware/require-sourcing-global-authority.js",
+      "type": "uses",
+      "label": "routes/admin-sourcing-workspace.js"
+    },
+    {
+      "from": "middleware/require-sourcing-global-authority.js",
+      "to": "db:sourcing_global_access_grants",
+      "type": "db-read",
+      "label": "sourcing_global_access_grants"
+    },
+    {
+      "from": "middleware/require-sourcing-global-authority.js",
+      "to": "doctrine:sourcing_global_authority_explicit",
+      "type": "doctrine",
+      "label": "sourcing_global_authority_explicit"
+    },
+    {
+      "from": "middleware/require-sourcing-global-authority.js",
+      "to": "doctrine:admin_role_never_implies_sourcing_write",
+      "type": "doctrine",
+      "label": "admin_role_never_implies_sourcing_write"
+    },
+    {
+      "from": "middleware/require-sourcing-global-authority.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "middleware/require-sourcing-global-authority.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "middleware/require-sourcing-global-authority.js",
+      "to": "impact:authorization",
+      "type": "impact",
+      "label": "authorization"
     },
     {
       "from": "middleware/require-verified-identity.js",
@@ -31037,6 +31513,78 @@
       "label": "market-authorization"
     },
     {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "middleware/require-sourcing-global-authority.js",
+      "type": "depends",
+      "label": "middleware/require-sourcing-global-authority.js"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "services/sourcing-workspace.js",
+      "type": "depends",
+      "label": "services/sourcing-workspace.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-sourcing-workspace.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "canonical sourcing workspace",
+      "to": "routes/admin-sourcing-workspace.js",
+      "type": "uses",
+      "label": "canonical sourcing workspace"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "doctrine:global_sourcing_authority",
+      "type": "doctrine",
+      "label": "global_sourcing_authority"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "doctrine:no_client_market_dimension",
+      "type": "doctrine",
+      "label": "no_client_market_dimension"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "doctrine:no_browser_internal_ids",
+      "type": "doctrine",
+      "label": "no_browser_internal_ids"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "impact:partners",
+      "type": "impact",
+      "label": "partners"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "routes/admin.js",
       "to": "db.js",
       "type": "depends",
@@ -31560,21 +32108,27 @@
     },
     {
       "from": "routes/admin/partners.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "routes/admin/partners.js",
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
     },
     {
       "from": "routes/admin/partners.js",
-      "to": "services/*",
+      "to": "middleware/validate.js",
       "type": "depends",
-      "label": "services/*"
+      "label": "middleware/validate.js"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "validators",
+      "type": "depends",
+      "label": "validators"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "services/partner-admin-service.js",
+      "type": "depends",
+      "label": "services/partner-admin-service.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -31584,39 +32138,15 @@
     },
     {
       "from": "routes/admin/partners.js",
-      "to": "db:customs_shipments",
-      "type": "db-read",
-      "label": "customs_shipments"
-    },
-    {
-      "from": "routes/admin/partners.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "routes/admin/partners.js",
-      "to": "db:partners",
-      "type": "db-read",
-      "label": "partners"
-    },
-    {
-      "from": "routes/admin/partners.js",
-      "to": "db:suppliers_stats",
-      "type": "db-read",
-      "label": "suppliers_stats"
-    },
-    {
-      "from": "routes/admin/partners.js",
-      "to": "db:partners",
-      "type": "db-write",
-      "label": "partners"
-    },
-    {
-      "from": "routes/admin/partners.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:legacy_http_contract_preserved",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "legacy_http_contract_preserved"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "doctrine:single_partner_mutation_authority",
+      "type": "doctrine",
+      "label": "single_partner_mutation_authority"
     },
     {
       "from": "routes/admin/partners.js",
@@ -31629,6 +32159,12 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "impact:partners",
+      "type": "impact",
+      "label": "partners"
     },
     {
       "from": "routes/admin/system.js",
@@ -36553,9 +37089,15 @@
     },
     {
       "from": "routes/sourcing-scanner.js",
-      "to": "services/*",
+      "to": "services/supplier-catalog-scanner.js",
       "type": "depends",
-      "label": "services/*"
+      "label": "services/supplier-catalog-scanner.js"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "services/pricing-engine.js",
+      "type": "depends",
+      "label": "services/pricing-engine.js"
     },
     {
       "from": "routes/sourcing-scanner.js",
@@ -36565,27 +37107,21 @@
     },
     {
       "from": "routes/sourcing-scanner.js",
-      "to": "services/catalog-candidate-product-service.js",
+      "to": "services/sourcing-import-dispatch.js",
       "type": "depends",
-      "label": "services/catalog-candidate-product-service.js"
+      "label": "services/sourcing-import-dispatch.js"
     },
     {
       "from": "routes/sourcing-scanner.js",
-      "to": "services/catalog-promotion.js",
+      "to": "services/sourcing-candidate-actions.js",
       "type": "depends",
-      "label": "services/catalog-promotion.js"
+      "label": "services/sourcing-candidate-actions.js"
     },
     {
       "from": "bootstrap/api-routes.js",
       "to": "routes/sourcing-scanner.js",
       "type": "uses",
       "label": "bootstrap/api-routes.js"
-    },
-    {
-      "from": "routes/sourcing-scanner.js",
-      "to": "db:product_skus",
-      "type": "db-read",
-      "label": "product_skus"
     },
     {
       "from": "routes/sourcing-scanner.js",
@@ -36607,46 +37143,23 @@
     },
     {
       "from": "routes/sourcing-scanner.js",
-      "to": "db:catalog_media",
-      "type": "db-write",
-      "label": "catalog_media"
-    },
-    {
-      "from": "routes/sourcing-scanner.js",
-      "to": "db:product_sku_media",
-      "type": "db-write",
-      "label": "product_sku_media"
-    },
-    {
-      "from": "routes/sourcing-scanner.js",
-      "to": "db:product_skus",
-      "type": "db-write",
-      "label": "product_skus"
-    },
-    {
-      "from": "routes/sourcing-scanner.js",
-      "to": "db:product_variants",
-      "type": "db-write",
-      "label": "product_variants"
-    },
-    {
-      "from": "routes/sourcing-scanner.js",
-      "to": "db:sourcing_candidate_events",
-      "type": "db-write",
-      "label": "sourcing_candidate_events"
-    },
-    {
-      "from": "routes/sourcing-scanner.js",
       "to": "db:sourcing_candidates",
       "type": "db-write",
       "label": "sourcing_candidates"
     },
     {
       "from": "routes/sourcing-scanner.js",
-      "to": "db:products",
+      "to": "db:sourcing_candidates",
       "type": "db-write-via",
-      "label": "products",
-      "via": "catalog-candidate-product-service"
+      "label": "sourcing_candidates",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "db:sourcing_candidate_events",
+      "type": "db-write-via",
+      "label": "sourcing_candidate_events",
+      "via": "sourcing-candidate-actions"
     },
     {
       "from": "routes/sourcing-scanner.js",
@@ -36657,9 +37170,15 @@
     },
     {
       "from": "routes/sourcing-scanner.js",
-      "to": "doctrine:PDC-8 Lot 6",
+      "to": "doctrine:legacy_http_contract_preserved",
       "type": "doctrine",
-      "label": "PDC-8 Lot 6"
+      "label": "legacy_http_contract_preserved"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "doctrine:single_sourcing_candidate_mutation_authority",
+      "type": "doctrine",
+      "label": "single_sourcing_candidate_mutation_authority"
     },
     {
       "from": "routes/sourcing-scanner.js",
@@ -45054,6 +45573,90 @@
       "label": "logistics"
     },
     {
+      "from": "services/partner-admin-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin/partners.js",
+      "to": "services/partner-admin-service.js",
+      "type": "uses",
+      "label": "routes/admin/partners.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/partner-admin-service.js",
+      "type": "uses",
+      "label": "services/sourcing-workspace.js"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "db:partners",
+      "type": "db-read",
+      "label": "partners"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "db:suppliers_stats",
+      "type": "db-read",
+      "label": "suppliers_stats"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "db:partners",
+      "type": "db-write",
+      "label": "partners"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "doctrine:shared_partner_mutation_authority",
+      "type": "doctrine",
+      "label": "shared_partner_mutation_authority"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "doctrine:sourcing_workspace_filters_partner_type",
+      "type": "doctrine",
+      "label": "sourcing_workspace_filters_partner_type"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "impact:partners",
+      "type": "impact",
+      "label": "partners"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/partner-admin-service.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/payment-cash-confirm.js",
       "to": "services/order-payment-confirmation.js",
       "type": "depends",
@@ -49207,6 +49810,143 @@
       "label": "unknown"
     },
     {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "services/supplier-catalog-scanner.js",
+      "type": "depends",
+      "label": "services/supplier-catalog-scanner.js"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "services/pricing-engine.js",
+      "type": "depends",
+      "label": "services/pricing-engine.js"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "services/catalog-candidate-product-service.js",
+      "type": "depends",
+      "label": "services/catalog-candidate-product-service.js"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "services/catalog-promotion.js",
+      "type": "depends",
+      "label": "services/catalog-promotion.js"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "services/catalog-enrichment.js",
+      "type": "depends",
+      "label": "services/catalog-enrichment.js"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "services/sourcing-candidate-actions.js",
+      "type": "uses",
+      "label": "routes/sourcing-scanner.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/sourcing-candidate-actions.js",
+      "type": "uses",
+      "label": "services/sourcing-workspace.js"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:sourcing_candidate_events",
+      "type": "db-read",
+      "label": "sourcing_candidate_events"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:supplier_catalog_imports",
+      "type": "db-read",
+      "label": "supplier_catalog_imports"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-write",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:sourcing_candidate_events",
+      "type": "db-write",
+      "label": "sourcing_candidate_events"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "catalog-candidate-product-service"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:catalog_media",
+      "type": "db-write-via",
+      "label": "catalog_media",
+      "via": "catalog-promotion"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "catalog-promotion"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:product_skus",
+      "type": "db-write-via",
+      "label": "product_skus",
+      "via": "catalog-promotion"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:product_sku_media",
+      "type": "db-write-via",
+      "label": "product_sku_media",
+      "via": "catalog-promotion"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "doctrine:single_sourcing_candidate_mutation_authority",
+      "type": "doctrine",
+      "label": "single_sourcing_candidate_mutation_authority"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "doctrine:catalog_promotion_owner_respected",
+      "type": "doctrine",
+      "label": "catalog_promotion_owner_respected"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
       "from": "services/suppliers/catalog-import-orchestrator.js",
       "to": "services/sourcing-candidate-import-service.js",
       "type": "uses",
@@ -49247,6 +49987,54 @@
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "services/suppliers/connectors/csv-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/csv-connector.js"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "services/suppliers/connectors/manual-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/manual-connector.js"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "services/suppliers/connectors/noon-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/noon-connector.js"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "services/sourcing-import-dispatch.js",
+      "type": "uses",
+      "label": "routes/sourcing-scanner.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/sourcing-import-dispatch.js",
+      "type": "uses",
+      "label": "services/sourcing-workspace.js"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "doctrine:single_connector_dispatch_authority",
+      "type": "doctrine",
+      "label": "single_connector_dispatch_authority"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
     },
     {
       "from": "services/sourcing-mutations.js",
@@ -49321,6 +50109,209 @@
       "to": "impact:unknown",
       "type": "impact",
       "label": "unknown"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/sourcing-analysis.js",
+      "type": "depends",
+      "label": "services/sourcing-analysis.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/sourcing-mutations.js",
+      "type": "depends",
+      "label": "services/sourcing-mutations.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/sourcing-candidate-actions.js",
+      "type": "depends",
+      "label": "services/sourcing-candidate-actions.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/sourcing-import-dispatch.js",
+      "type": "depends",
+      "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/suppliers/catalog-import-orchestrator.js",
+      "type": "depends",
+      "label": "services/suppliers/catalog-import-orchestrator.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/partner-admin-service.js",
+      "type": "depends",
+      "label": "services/partner-admin-service.js"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "services/sourcing-workspace.js",
+      "type": "uses",
+      "label": "routes/admin-sourcing-workspace.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:supplier_catalog_imports",
+      "type": "db-read",
+      "label": "supplier_catalog_imports"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:partners",
+      "type": "db-read",
+      "label": "partners"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:suppliers_stats",
+      "type": "db-read",
+      "label": "suppliers_stats"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "sourcing-mutations"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-write-via",
+      "label": "sourcing_candidates",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:sourcing_candidate_events",
+      "type": "db-write-via",
+      "label": "sourcing_candidate_events",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:catalog_media",
+      "type": "db-write-via",
+      "label": "catalog_media",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:product_skus",
+      "type": "db-write-via",
+      "label": "product_skus",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:product_sku_media",
+      "type": "db-write-via",
+      "label": "product_sku_media",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:supplier_catalog_imports",
+      "type": "db-write-via",
+      "label": "supplier_catalog_imports",
+      "via": "catalog-import-orchestrator"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-write-via",
+      "label": "sourcing_candidates",
+      "via": "catalog-import-orchestrator"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:partners",
+      "type": "db-write-via",
+      "label": "partners",
+      "via": "partner-admin-service"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "doctrine:global_sourcing_authority",
+      "type": "doctrine",
+      "label": "global_sourcing_authority"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "doctrine:browser_business_refs_only",
+      "type": "doctrine",
+      "label": "browser_business_refs_only"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "doctrine:sourcing_partners_only",
+      "type": "doctrine",
+      "label": "sourcing_partners_only"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "doctrine:workspace_orchestrates_not_reimplements",
+      "type": "doctrine",
+      "label": "workspace_orchestrates_not_reimplements"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "impact:partners",
+      "type": "impact",
+      "label": "partners"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "services/supplier-catalog-scanner.js",
@@ -52728,7 +53719,8 @@
         "routes/admin-operations-workspace.js",
         "routes/admin-shipping-customs-workspace.js",
         "routes/admin-catalog-workspace.js",
-        "routes/admin-finance-accounting-workspace.js"
+        "routes/admin-finance-accounting-workspace.js",
+        "routes/admin-sourcing-workspace.js"
       ],
       "directUsedBy": [
         "server.js"
@@ -52785,6 +53777,7 @@
         "routes/admin-risk-provisions.js",
         "routes/admin-rules.js",
         "routes/admin-shipping-customs-workspace.js",
+        "routes/admin-sourcing-workspace.js",
         "routes/admin.js",
         "routes/admin/customs.js",
         "routes/admin/dashboard.js",
@@ -53367,6 +54360,7 @@
         "routes/admin-radar.js",
         "routes/admin-risk-provisions.js",
         "routes/admin-rules.js",
+        "routes/admin-sourcing-workspace.js",
         "routes/admin.js",
         "routes/admin/catalog-approval.js",
         "routes/admin/customs.js",
@@ -53715,6 +54709,44 @@
         "doctrine:auth7_step_up_by_freshness_and_method",
         "impact:account-security",
         "impact:auth"
+      ]
+    },
+    "middleware/require-sourcing-global-authority.js": {
+      "role": "sourcing-global-authorization-guard",
+      "domain": "sourcing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-sourcing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "sourcing_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "sourcing_global_authority_explicit",
+        "admin_role_never_implies_sourcing_write"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "admin-dashboard",
+        "authorization"
+      ],
+      "mustCheck": [
+        "db:sourcing_global_access_grants",
+        "doctrine:admin_role_never_implies_sourcing_write",
+        "doctrine:sourcing_global_authority_explicit",
+        "impact:admin-dashboard",
+        "impact:authorization",
+        "impact:sourcing",
+        "routes/admin-sourcing-workspace.js"
       ]
     },
     "middleware/require-verified-identity.js": {
@@ -58592,6 +59624,51 @@
         "services/shipping-customs-workspace.js"
       ]
     },
+    "routes/admin-sourcing-workspace.js": {
+      "role": "canonical-sourcing-workspace-api",
+      "domain": "sourcing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "middleware/require-sourcing-global-authority.js",
+        "services/sourcing-workspace.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "canonical sourcing workspace"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "global_sourcing_authority",
+        "no_client_market_dimension",
+        "no_browser_internal_ids"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "catalog",
+        "partners",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "doctrine:global_sourcing_authority",
+        "doctrine:no_browser_internal_ids",
+        "doctrine:no_client_market_dimension",
+        "impact:admin-dashboard",
+        "impact:catalog",
+        "impact:partners",
+        "impact:sourcing",
+        "middleware/auth.js",
+        "middleware/require-sourcing-global-authority.js",
+        "services/sourcing-workspace.js"
+      ]
+    },
     "routes/admin.js": {
       "role": "dashboard-admin",
       "domain": "dashboard",
@@ -58969,42 +60046,37 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db.js",
         "middleware/auth.js",
-        "services/*"
+        "middleware/validate.js",
+        "validators",
+        "services/partner-admin-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "customs_shipments",
-        "orders",
-        "partners",
-        "suppliers_stats"
-      ],
-      "dbWrite": [
-        "partners"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "legacy_http_contract_preserved",
+        "single_partner_mutation_authority"
       ],
       "impactAreas": [
         "dashboard",
-        "admin-dashboard"
+        "admin-dashboard",
+        "partners"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:customs_shipments",
-        "db:orders",
-        "db:partners",
-        "db:suppliers_stats",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:legacy_http_contract_preserved",
+        "doctrine:single_partner_mutation_authority",
         "impact:admin-dashboard",
         "impact:dashboard",
+        "impact:partners",
         "middleware/auth.js",
         "middleware/validate.js",
+        "services/partner-admin-service.js",
         "utils/logger.js"
       ]
     },
@@ -62329,34 +63401,30 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
-        "services/*",
+        "services/supplier-catalog-scanner.js",
+        "services/pricing-engine.js",
         "services/suppliers/catalog-import-orchestrator.js",
-        "services/catalog-candidate-product-service.js",
-        "services/catalog-promotion.js"
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-candidate-actions.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
       "dbRead": [
-        "product_skus",
         "sourcing_candidate_events",
         "sourcing_candidates",
         "supplier_catalog_imports"
       ],
       "dbWrite": [
-        "catalog_media",
-        "product_sku_media",
-        "product_skus",
-        "product_variants",
-        "sourcing_candidate_events",
         "sourcing_candidates"
       ],
       "dbWriteVia": [
         {
-          "via": "catalog-candidate-product-service",
+          "via": "sourcing-candidate-actions",
           "tables": [
-            "products"
+            "sourcing_candidates",
+            "sourcing_candidate_events"
           ]
         },
         {
@@ -62367,7 +63435,8 @@
         }
       ],
       "doctrines": [
-        "PDC-8 Lot 6",
+        "legacy_http_contract_preserved",
+        "single_sourcing_candidate_mutation_authority",
         "DOCTRINE_INGESTION_CATALOGUE.md"
       ],
       "impactAreas": [
@@ -62376,23 +63445,20 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:catalog_media",
-        "db:product_sku_media",
-        "db:product_skus",
-        "db:product_variants",
-        "db:products",
         "db:sourcing_candidate_events",
         "db:sourcing_candidates",
         "db:supplier_catalog_imports",
         "doctrine:DOCTRINE_INGESTION_CATALOGUE.md",
-        "doctrine:PDC-8 Lot 6",
+        "doctrine:legacy_http_contract_preserved",
+        "doctrine:single_sourcing_candidate_mutation_authority",
         "impact:catalog",
         "impact:sourcing",
         "middleware/auth.js",
         "services/catalog-candidate-product-service.js",
         "services/catalog-enrichment.js",
-        "services/catalog-promotion.js",
         "services/pricing-engine.js",
+        "services/sourcing-candidate-actions.js",
+        "services/sourcing-import-dispatch.js",
         "services/supplier-catalog-scanner.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/suppliers/connectors/csv-connector.js",
@@ -63385,7 +64451,8 @@
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §7",
         "impact:catalog",
         "impact:sourcing",
-        "routes/sourcing-scanner.js"
+        "routes/sourcing-scanner.js",
+        "services/sourcing-candidate-actions.js"
       ]
     },
     "services/catalog-eligibility.js": {
@@ -63469,6 +64536,7 @@
         "routes/sourcing-scanner.js",
         "services/catalog-overrides.js",
         "services/prompts/catalog-enrichment.prompt.js",
+        "services/sourcing-candidate-actions.js",
         "utils/logger.js",
         "utils/rules.js"
       ]
@@ -63680,11 +64748,11 @@
         "doctrine:PDC-8 (tous lots)",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
         "impact:catalog",
-        "routes/sourcing-scanner.js",
         "services/catalog-promotion/axes.js",
         "services/catalog-promotion/content.js",
         "services/catalog-promotion/sku-media.js",
         "services/catalog-promotion/sku.js",
+        "services/sourcing-candidate-actions.js",
         "services/suppliers/normalized-product.js"
       ]
     },
@@ -67683,6 +68751,56 @@
         "utils/reference.js"
       ]
     },
+    "services/partner-admin-service.js": {
+      "role": "partner-admin-service",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/admin/partners.js",
+        "services/sourcing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "partners",
+        "suppliers_stats",
+        "customs_shipments",
+        "orders"
+      ],
+      "dbWrite": [
+        "partners"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "shared_partner_mutation_authority",
+        "sourcing_workspace_filters_partner_type"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "partners",
+        "logistics",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:customs_shipments",
+        "db:orders",
+        "db:partners",
+        "db:suppliers_stats",
+        "doctrine:shared_partner_mutation_authority",
+        "doctrine:sourcing_workspace_filters_partner_type",
+        "impact:admin-dashboard",
+        "impact:logistics",
+        "impact:partners",
+        "impact:sourcing",
+        "routes/admin/partners.js",
+        "services/sourcing-workspace.js"
+      ]
+    },
     "services/payment-cash-confirm.js": {
       "role": "cash-payment-confirmation-service",
       "domain": "payment",
@@ -68341,6 +69459,7 @@
         "services/pricing-dashboard.js",
         "services/pricing-output.js",
         "services/pricing-recommend.js",
+        "services/sourcing-candidate-actions.js",
         "services/supplier-catalog-scanner.js",
         "services/suppliers/catalog-import-orchestrator.js"
       ]
@@ -70308,7 +71427,84 @@
         "impact:unknown",
         "routes/sourcing.js",
         "services/sourcing-mutations.js",
+        "services/sourcing-workspace.js",
         "utils/logger.js"
+      ]
+    },
+    "services/sourcing-candidate-actions.js": {
+      "role": "sourcing-candidate-action-service",
+      "domain": "sourcing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/supplier-catalog-scanner.js",
+        "services/pricing-engine.js",
+        "services/catalog-candidate-product-service.js",
+        "services/catalog-promotion.js",
+        "services/catalog-enrichment.js"
+      ],
+      "directUsedBy": [
+        "routes/sourcing-scanner.js",
+        "services/sourcing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "sourcing_candidates",
+        "sourcing_candidate_events",
+        "supplier_catalog_imports"
+      ],
+      "dbWrite": [
+        "sourcing_candidates",
+        "sourcing_candidate_events"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "catalog-candidate-product-service",
+          "tables": [
+            "products"
+          ]
+        },
+        {
+          "via": "catalog-promotion",
+          "tables": [
+            "catalog_media",
+            "product_variants",
+            "product_skus",
+            "product_sku_media"
+          ]
+        }
+      ],
+      "doctrines": [
+        "single_sourcing_candidate_mutation_authority",
+        "catalog_promotion_owner_respected"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "catalog"
+      ],
+      "mustCheck": [
+        "db:catalog_media",
+        "db:product_sku_media",
+        "db:product_skus",
+        "db:product_variants",
+        "db:products",
+        "db:sourcing_candidate_events",
+        "db:sourcing_candidates",
+        "db:supplier_catalog_imports",
+        "doctrine:catalog_promotion_owner_respected",
+        "doctrine:single_sourcing_candidate_mutation_authority",
+        "impact:catalog",
+        "impact:sourcing",
+        "routes/sourcing-scanner.js",
+        "services/catalog-candidate-product-service.js",
+        "services/catalog-enrichment.js",
+        "services/catalog-promotion.js",
+        "services/pricing-engine.js",
+        "services/sourcing-workspace.js",
+        "services/supplier-catalog-scanner.js"
       ]
     },
     "services/sourcing-candidate-import-service.js": {
@@ -70345,6 +71541,44 @@
         "impact:catalog",
         "impact:sourcing",
         "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    "services/sourcing-import-dispatch.js": {
+      "role": "sourcing-import-connector-dispatch",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/connectors/csv-connector.js",
+        "services/suppliers/connectors/manual-connector.js",
+        "services/suppliers/connectors/noon-connector.js"
+      ],
+      "directUsedBy": [
+        "routes/sourcing-scanner.js",
+        "services/sourcing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "single_connector_dispatch_authority"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "supplier-import"
+      ],
+      "mustCheck": [
+        "doctrine:single_connector_dispatch_authority",
+        "impact:sourcing",
+        "impact:supplier-import",
+        "routes/sourcing-scanner.js",
+        "services/sourcing-workspace.js",
+        "services/suppliers/connectors/csv-connector.js",
+        "services/suppliers/connectors/manual-connector.js",
+        "services/suppliers/connectors/noon-connector.js"
       ]
     },
     "services/sourcing-mutations.js": {
@@ -70394,7 +71628,109 @@
         "impact:unknown",
         "routes/sourcing.js",
         "services/catalog-product-mutation-service.js",
-        "services/sourcing-analysis.js"
+        "services/sourcing-analysis.js",
+        "services/sourcing-workspace.js"
+      ]
+    },
+    "services/sourcing-workspace.js": {
+      "role": "canonical-sourcing-workspace-service",
+      "domain": "sourcing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/sourcing-analysis.js",
+        "services/sourcing-mutations.js",
+        "services/sourcing-candidate-actions.js",
+        "services/sourcing-import-dispatch.js",
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/partner-admin-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-sourcing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "sourcing_candidates",
+        "supplier_catalog_imports",
+        "partners",
+        "suppliers_stats"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "sourcing-mutations",
+          "tables": [
+            "products"
+          ]
+        },
+        {
+          "via": "sourcing-candidate-actions",
+          "tables": [
+            "sourcing_candidates",
+            "sourcing_candidate_events",
+            "products",
+            "catalog_media",
+            "product_variants",
+            "product_skus",
+            "product_sku_media"
+          ]
+        },
+        {
+          "via": "catalog-import-orchestrator",
+          "tables": [
+            "supplier_catalog_imports",
+            "sourcing_candidates"
+          ]
+        },
+        {
+          "via": "partner-admin-service",
+          "tables": [
+            "partners"
+          ]
+        }
+      ],
+      "doctrines": [
+        "global_sourcing_authority",
+        "browser_business_refs_only",
+        "sourcing_partners_only",
+        "workspace_orchestrates_not_reimplements"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "catalog",
+        "partners",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:catalog_media",
+        "db:partners",
+        "db:product_sku_media",
+        "db:product_skus",
+        "db:product_variants",
+        "db:products",
+        "db:sourcing_candidate_events",
+        "db:sourcing_candidates",
+        "db:supplier_catalog_imports",
+        "db:suppliers_stats",
+        "doctrine:browser_business_refs_only",
+        "doctrine:global_sourcing_authority",
+        "doctrine:sourcing_partners_only",
+        "doctrine:workspace_orchestrates_not_reimplements",
+        "impact:admin-dashboard",
+        "impact:catalog",
+        "impact:partners",
+        "impact:sourcing",
+        "routes/admin-sourcing-workspace.js",
+        "services/partner-admin-service.js",
+        "services/sourcing-analysis.js",
+        "services/sourcing-candidate-actions.js",
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-mutations.js",
+        "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
     "services/supplier-catalog-scanner.js": {
@@ -70429,6 +71765,7 @@
         "impact:product-discovery",
         "routes/sourcing-scanner.js",
         "services/pricing-engine.js",
+        "services/sourcing-candidate-actions.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "utils/rates.js"
       ]
@@ -70517,6 +71854,7 @@
         "services/catalog-eligibility.js",
         "services/pricing-engine.js",
         "services/sourcing-candidate-import-service.js",
+        "services/sourcing-workspace.js",
         "services/supplier-catalog-scanner.js",
         "services/suppliers/normalized-product.js",
         "utils/rules.js"
@@ -70620,6 +71958,7 @@
         "impact:catalog",
         "impact:product-discovery",
         "routes/sourcing-scanner.js",
+        "services/sourcing-import-dispatch.js",
         "services/suppliers/connectors/_connector-utils.js",
         "services/suppliers/normalized-product.js"
       ]
@@ -70692,6 +72031,7 @@
         "impact:product-detail",
         "impact:product-discovery",
         "routes/sourcing-scanner.js",
+        "services/sourcing-import-dispatch.js",
         "services/suppliers/connectors/_connector-utils.js",
         "services/suppliers/normalized-product.js"
       ]
@@ -70725,6 +72065,7 @@
         "impact:catalog",
         "impact:product-discovery",
         "routes/sourcing-scanner.js",
+        "services/sourcing-import-dispatch.js",
         "services/suppliers/connectors/api-connector.base.js"
       ]
     },
@@ -72590,7 +73931,9 @@
       ]
     }
   },
-  "dbWriteViaOverlapWarnings": [],
+  "dbWriteViaOverlapWarnings": [
+    "routes/sourcing-scanner.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_candidates"
+  ],
   "multiWriterTables": [
     {
       "table": "orders",
@@ -72869,16 +74212,6 @@
       ]
     },
     {
-      "table": "product_variants",
-      "writerCount": 4,
-      "writers": [
-        "routes/sourcing-scanner.js",
-        "services/catalog-product-mutation-service.js",
-        "services/catalog-promotion.js",
-        "services/product-admin-service.js"
-      ]
-    },
-    {
       "table": "shared_carts",
       "writerCount": 4,
       "writers": [
@@ -72886,6 +74219,16 @@
         "services/shared-cart-engine.js",
         "services/shared-cart-lifecycle.js",
         "services/shared-cart-queries.js"
+      ]
+    },
+    {
+      "table": "sourcing_candidates",
+      "writerCount": 4,
+      "writers": [
+        "routes/sourcing-scanner.js",
+        "services/sourcing-candidate-actions.js",
+        "services/sourcing-candidate-import-service.js",
+        "services/suppliers/catalog-import-json.js"
       ]
     },
     {
@@ -72945,10 +74288,10 @@
       ]
     },
     {
-      "table": "product_skus",
+      "table": "product_variants",
       "writerCount": 3,
       "writers": [
-        "routes/sourcing-scanner.js",
+        "services/catalog-product-mutation-service.js",
         "services/catalog-promotion.js",
         "services/product-admin-service.js"
       ]
@@ -72960,15 +74303,6 @@
         "routes/admin/delete-order-cascade.js",
         "routes/admin/system.js",
         "routes/admin/users.js"
-      ]
-    },
-    {
-      "table": "sourcing_candidates",
-      "writerCount": 3,
-      "writers": [
-        "routes/sourcing-scanner.js",
-        "services/sourcing-candidate-import-service.js",
-        "services/suppliers/catalog-import-json.js"
       ]
     },
     {
@@ -73044,14 +74378,6 @@
       "writers": [
         "services/catalog-overrides.js",
         "services/product-admin-service.js"
-      ]
-    },
-    {
-      "table": "catalog_media",
-      "writerCount": 2,
-      "writers": [
-        "routes/sourcing-scanner.js",
-        "services/catalog-promotion.js"
       ]
     },
     {
@@ -73138,8 +74464,8 @@
       "table": "partners",
       "writerCount": 2,
       "writers": [
-        "routes/admin/partners.js",
-        "routes/admin/system.js"
+        "routes/admin/system.js",
+        "services/partner-admin-service.js"
       ]
     },
     {
@@ -73159,11 +74485,11 @@
       ]
     },
     {
-      "table": "product_sku_media",
+      "table": "product_skus",
       "writerCount": 2,
       "writers": [
-        "routes/sourcing-scanner.js",
-        "services/catalog-promotion.js"
+        "services/catalog-promotion.js",
+        "services/product-admin-service.js"
       ]
     },
     {
@@ -73226,7 +74552,7 @@
       "table": "sourcing_candidate_events",
       "writerCount": 2,
       "writers": [
-        "routes/sourcing-scanner.js",
+        "services/sourcing-candidate-actions.js",
         "services/sourcing-candidate-import-service.js"
       ]
     },
@@ -73391,6 +74717,12 @@
       "to": "middleware/require-recent-auth.js",
       "type": "uses",
       "label": "pickup authorization mutations"
+    },
+    {
+      "from": "middleware/require-sourcing-global-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "middleware/require-verified-identity.js",
@@ -73987,6 +75319,12 @@
       "label": "services/shipping-customs-workspace"
     },
     {
+      "from": "canonical sourcing workspace",
+      "to": "routes/admin-sourcing-workspace.js",
+      "type": "uses",
+      "label": "canonical sourcing workspace"
+    },
+    {
       "from": "routes/admin.js",
       "to": "db.js",
       "type": "depends",
@@ -74072,15 +75410,9 @@
     },
     {
       "from": "routes/admin/partners.js",
-      "to": "db.js",
+      "to": "validators",
       "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "routes/admin/partners.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
+      "label": "validators"
     },
     {
       "from": "routes/admin/system.js",
@@ -74873,12 +76205,6 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
-    },
-    {
-      "from": "routes/sourcing-scanner.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
     },
     {
       "from": "routes/sourcing.js",
@@ -75739,6 +77065,12 @@
       "label": "db"
     },
     {
+      "from": "services/partner-admin-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/payment-cash-confirm.js",
       "to": "db.js",
       "type": "depends",
@@ -76039,10 +77371,22 @@
       "label": "db"
     },
     {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/sourcing-mutations.js",
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/suppliers/catalog-import-json.js",

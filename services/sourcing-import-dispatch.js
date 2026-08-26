@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          sourcing-import-connector-dispatch
- * @domain        sourcing
+ * @domain        catalog
  * @layer         service
  * @criticality   medium
  * @inputs        supplier_import_payload
@@ -63,7 +63,7 @@ async function dispatchToConnector(body = {}) {
   if (sourceType === 'api') {
     const supplier = String(body.supplier_id || '').toLowerCase();
     const entry = CONNECTORS.api[supplier];
-    if (!entry) throw new Error(`API non configurée : supplier "${supplier}" inconnu.`);
+    if (!entry) throw new Error(`API non configurée : supplier "${supplier}" inconnu. Sources connues : ${Object.keys(CONNECTORS.api).join(', ')}`);
     if (!entry.active) throw new Error(`API non configurée : ${entry.reason || 'connecteur inactif'}`);
     throw new Error(`API "${supplier}" déclarée mais non câblée. Voir api-connector.base.js.`);
   }
