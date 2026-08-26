@@ -7,57 +7,57 @@
 'use strict';
 
 const mockBus = { on: jest.fn() };
-const noop = jest.fn();
+const mockNoop = jest.fn();
 
 jest.mock('../../js/b-bus.js', () => ({ bus: mockBus }));
 jest.mock('../../js/b-store.js', () => ({
-  state: {}, dom: {}, initDom: noop, updateMobileScrollTop: noop,
+  state: {}, dom: {}, initDom: mockNoop, updateMobileScrollTop: mockNoop,
   $: jest.fn(), $$: jest.fn(() => []), CART_VERSION: 1, PAGE_SIZE: 24,
 }));
 jest.mock('../../js/b-utils.js', () => ({
-  optimizeImgUrl: noop, sanitize: noop, promoImgUrl: noop,
-  renderProductCarousel: noop, bindCarouselDots: noop, detectCurrency: noop,
-  fmt: noop, fmtPrice: noop, productEmoji: noop, genIdempotencyKey: noop,
+  optimizeImgUrl: mockNoop, sanitize: mockNoop, promoImgUrl: mockNoop,
+  renderProductCarousel: mockNoop, bindCarouselDots: mockNoop, detectCurrency: mockNoop,
+  fmt: mockNoop, fmtPrice: mockNoop, productEmoji: mockNoop, genIdempotencyKey: mockNoop,
   _currency: 'KMF', _rates: {},
 }));
 jest.mock('../../js/b-cart-core.js', () => ({
-  showToast: noop, cartQty: noop, cartTotal: noop, saveCart: noop,
-  updateCartBadge: noop, isFav: noop, saveFavs: noop,
+  showToast: mockNoop, cartQty: mockNoop, cartTotal: mockNoop, saveCart: mockNoop,
+  updateCartBadge: mockNoop, isFav: mockNoop, saveFavs: mockNoop,
 }));
 jest.mock('../../js/b-catalog.js', () => ({
-  renderPromos: noop, renderGrid: noop, appendNextPage: noop,
-  setupCats: noop, setupCatSwipeNav: noop, centerActiveChip: noop,
-  setupSearch: noop, loadProducts: noop, setActiveCat: noop,
+  renderPromos: mockNoop, renderGrid: mockNoop, appendNextPage: mockNoop,
+  setupCats: mockNoop, setupCatSwipeNav: mockNoop, centerActiveChip: mockNoop,
+  setupSearch: mockNoop, loadProducts: mockNoop, setActiveCat: mockNoop,
 }));
-jest.mock('../../js/b-subcat.js', () => ({ initFlatSubcat: noop, renderSubcatChips: noop }));
-jest.mock('../../js/b-modal.js', () => ({ openModal: noop, closeModal: noop, modalGoBack: noop, setupModal: noop }));
+jest.mock('../../js/b-subcat.js', () => ({ initFlatSubcat: mockNoop, renderSubcatChips: mockNoop }));
+jest.mock('../../js/b-modal.js', () => ({ openModal: mockNoop, closeModal: mockNoop, modalGoBack: mockNoop, setupModal: mockNoop }));
 jest.mock('../../js/b-cart.js', () => ({
-  addToCart: noop, openCart: noop, closeCart: noop, renderCartBody: noop,
-  quickAdd: noop, quickRemove: noop, setQty: noop, loadSharedCart: noop,
+  addToCart: mockNoop, openCart: mockNoop, closeCart: mockNoop, renderCartBody: mockNoop,
+  quickAdd: mockNoop, quickRemove: mockNoop, setQty: mockNoop, loadSharedCart: mockNoop,
 }));
 jest.mock('../../js/b-checkout.js', () => ({
-  checkoutCart: noop, closeOrderModal: noop, renderCheckout: noop,
-  makeInput: noop, makeIntlPhoneInput: noop, digitsOnly: noop,
-  normalizeLocal: noop, prettifyLocal: noop, buildE164: noop,
-  makePhoneInput: noop, checkWalletBalance: noop, updateWalletDisplay: noop,
-  submitOrder: noop, renderOrderSuccess: noop,
+  checkoutCart: mockNoop, closeOrderModal: mockNoop, renderCheckout: mockNoop,
+  makeInput: mockNoop, makeIntlPhoneInput: mockNoop, digitsOnly: mockNoop,
+  normalizeLocal: mockNoop, prettifyLocal: mockNoop, buildE164: mockNoop,
+  makePhoneInput: mockNoop, checkWalletBalance: mockNoop, updateWalletDisplay: mockNoop,
+  submitOrder: mockNoop, renderOrderSuccess: mockNoop,
 }));
 jest.mock('../../js/b-nav.js', () => ({
-  setupDrawer: noop, setupInfiniteScroll: noop, switchView: noop,
-  setupBnav: noop, loadRelais: noop, handleParticipantUrl: noop,
+  setupDrawer: mockNoop, setupInfiniteScroll: mockNoop, switchView: mockNoop,
+  setupBnav: mockNoop, loadRelais: mockNoop, handleParticipantUrl: mockNoop,
 }));
-jest.mock('../../js/b-favs.js', () => ({ renderFavView: noop, updateFavPromoBadge: noop, shareWishlistWhatsApp: noop }));
+jest.mock('../../js/b-favs.js', () => ({ renderFavView: mockNoop, updateFavPromoBadge: mockNoop, shareWishlistWhatsApp: mockNoop }));
 jest.mock('../../js/b-tracking.js', () => ({
-  buildTimeline: noop, renderOrdersHistory: noop, renderOrderDetail: noop,
-  renderTrackView: noop, renderMyOrdersList: noop, getStatusDisplay: noop,
-  formatOrderDate: noop, renderTrackViewSearchMode: noop,
+  buildTimeline: mockNoop, renderOrdersHistory: mockNoop, renderOrderDetail: mockNoop,
+  renderTrackView: mockNoop, renderMyOrdersList: mockNoop, getStatusDisplay: mockNoop,
+  formatOrderDate: mockNoop, renderTrackViewSearchMode: mockNoop,
 }));
 jest.mock('../../js/b-pager.js', () => ({
-  _setupMobilePager: noop, _setupSectionAutoAdvance: noop,
-  _setupHorizontalWrap: noop, _syncChipToScroll: noop, _onPagerScroll: noop,
+  _setupMobilePager: mockNoop, _setupSectionAutoAdvance: mockNoop,
+  _setupHorizontalWrap: mockNoop, _syncChipToScroll: mockNoop, _onPagerScroll: mockNoop,
 }));
-jest.mock('../../js/b-scroll-owner.js', () => ({ installScrollOwner: noop, scrollPageToElement: noop }));
-jest.mock('../../js/b-share-cart.js', () => ({ install: noop }));
+jest.mock('../../js/b-scroll-owner.js', () => ({ installScrollOwner: mockNoop, scrollPageToElement: mockNoop }));
+jest.mock('../../js/b-share-cart.js', () => ({ install: mockNoop }));
 jest.mock('../../js/b-group-banner.js', () => ({}));
 jest.mock('../../js/b-cart-stepper-guard.js', () => ({}));
 
