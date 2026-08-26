@@ -194,6 +194,7 @@ document.addEventListener(
 let _relayMapPreviewObserver = null;
 
 function relayCoordinates(relay = {}) {
+  if (!relay) return null;
   const latitude = Number(relay.latitude ?? relay.lat);
   const longitude = Number(relay.longitude ?? relay.lng ?? relay.lon);
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
