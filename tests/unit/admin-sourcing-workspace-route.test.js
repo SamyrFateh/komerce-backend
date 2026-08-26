@@ -1,0 +1,132 @@
+'use strict';
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+let sourcingAllowed = true;
+
+jest.mock('../../middleware/auth', () => ({
+  authenticate: (req, res, next) => {
+    req.user = { id: 'central-sourcing', role: 'admin', full_name: 'Central Sourcing' };
+    next();
+  },
+  requireRole: roles => (req, res, next) => {
+    if (!roles.includes(req.user.role)) return res.status(403).json({ code: 'role_forbidden' });
+    next();
+  },
+}));
+
+jest.mock('../../middleware/require-sourcing-global-authority', () => ({
+  requireSourcingGlobalAuthority: (req, res, next) => {
+    if (!sourcingAllowed) return res.status(403).json({ code: 'sourcing_global_access_denied' });
+    req.sourcingGlobalAuthority = true;
+    next();
+  },
+}));
+
+const calls = {
+  buildWorkspace: jest.fn(),
+  importCatalog: jest.fn(),
+  updatePortfolioProduct: jest.fn(),
+  updateCandidate: jest.fn(),
+  scanCandidate: jest.fn(),
+  watchlistCandidate: jest.fn(),
+  rejectCandidate: jest.fn(),
+  promoteCandidate: jest.fn(),
+  createSupplier: jest.fn(),
+  updateSupplier: jest.fn(),
+  setSupplierActive: jest.fn(),
+};
+
+jest.mock('../../services/sourcing-workspace', () => ({
+  SourcingWorkspaceError: class SourcingWorkspaceError extends Error {},
+  buildWorkspace: (...args) => calls.buildWorkspace(...args),
+  importCatalog: (...args) => calls.importCatalog(...args),
+  updatePortfolioProduct: (...args) => calls.updatePortfolioProduct(...args),
+  updateCandidate: (...args) => calls.updateCandidate(...args),
+  scanCandidate: (...args) => calls.scanCandidate(...args),
+  watchlistCandidate: (...args) => calls.watchlistCandidate(...args),
+  rejectCandidate: (...args) => calls.rejectCandidate(...args),
+  promoteCandidate: (...args) => calls.promoteCandidate(...args),
+  createSupplier: (...args) => calls.createSupplier(...args),
+  updateSupplier: (...args) => calls.updateSupplier(...args),
+  setSupplierActive: (...args) => calls.setSupplierActive(...args),
+}));
+
+const express = require('express');
+const request = require('supertest');
+const router = require('../../routes/admin-sourcing-workspace');
+
+function app() {
+  const instance = express();
+  instance.use(express.json());
+  instance.use('/api/admin/workspaces/sourcing', router);
+  return instance;
+}
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  sourcingAllowed = true;
+  calls.buildWorkspace.mockResolvedValue({ scope: { mode: 'global_sourcing' }, summary: {}, portfolio: {}, imports: [], candidates: [], suppliers: [] });
+  calls.updatePortfolioProduct.mockResolvedValue({ product_ref: 'KPR-000001' });
+  calls.scanCandidate.mockResolvedValue({ candidate_ref: 'KSC-000001', state: 'scanned' });
+  calls.promoteCandidate.mockResolvedValue({ candidate_ref: 'KSC-000001', product_ref: 'KPR-000002' });
+  calls.createSupplier.mockResolvedValue({ partner_ref: 'KPT-000001', name: 'Supplier' });
+});
+
+test('grant sourcing ouvre la projection globale sans marché', async () => {
+  const res = await request(app()).get('/api/admin/workspaces/sourcing');
+  expect(res.status).toBe(200);
+  expect(res.headers['cache-control']).toContain('no-store');
+  expect(calls.buildWorkspace).toHaveBeenCalledTimes(1);
+});
+
+test('role admin seul ne suffit jamais sans grant sourcing', async () => {
+  sourcingAllowed = false;
+  const res = await request(app()).get('/api/admin/workspaces/sourcing');
+  expect(res.status).toBe(403);
+  expect(res.body.code).toBe('sourcing_global_access_denied');
+  expect(calls.buildWorkspace).not.toHaveBeenCalled();
+});
+
+test.each([
+  ['/api/admin/workspaces/sourcing?market_id=cm', 'get', null, 'sourcing_market_dimension_forbidden'],
+  ['/api/admin/workspaces/sourcing/imports', 'post', { marketCode: 'CM' }, 'sourcing_market_dimension_forbidden'],
+  ['/api/admin/workspaces/sourcing/imports', 'post', { import_id: 'internal' }, 'sourcing_internal_id_forbidden'],
+])('refuse les dimensions d’autorité navigateur', async (url, method, body, code) => {
+  const call = request(app())[method](url);
+  const res = body ? await call.send(body) : await call;
+  expect(res.status).toBe(400);
+  expect(res.body.code).toBe(code);
+});
+
+test('mutation produit délègue product_ref et acteur authentifié', async () => {
+  const res = await request(app())
+    .post('/api/admin/workspaces/sourcing/products/KPR-000001/update')
+    .send({ sourcing_rail: 'A' });
+  expect(res.status).toBe(200);
+  expect(calls.updatePortfolioProduct).toHaveBeenCalledWith(
+    'KPR-000001',
+    { sourcing_rail: 'A' },
+    expect.objectContaining({ id: 'central-sourcing', role: 'admin' })
+  );
+});
+
+test('mutation candidat délègue candidate_ref et jamais UUID', async () => {
+  const res = await request(app())
+    .post('/api/admin/workspaces/sourcing/candidates/KSC-000001/scan')
+    .send({});
+  expect(res.status).toBe(200);
+  expect(calls.scanCandidate).toHaveBeenCalledWith('KSC-000001', expect.objectContaining({ id: 'central-sourcing' }));
+});
+
+test('création fournisseur reste dans la frontière sourcing', async () => {
+  const res = await request(app())
+    .post('/api/admin/workspaces/sourcing/suppliers')
+    .send({ name: 'Supplier', partner_type: 'sourcing' });
+  expect(res.status).toBe(201);
+  expect(calls.createSupplier).toHaveBeenCalledWith({ name: 'Supplier', partner_type: 'sourcing' });
+});
