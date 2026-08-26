@@ -21,7 +21,7 @@
 (function (global) {
   'use strict';
 
-  const ALLOWED_ROLES = new Set(['admin', 'finance', 'sourcing', 'hub', 'relais', 'support']);
+  const ALLOWED_ROLES = new Set(['admin', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'support']);
   const SURFACES = Object.freeze({
     PILOTAGE: 'pilotage',
     COMMERCE: 'commerce',
