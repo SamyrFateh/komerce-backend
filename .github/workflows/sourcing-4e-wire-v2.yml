@@ -1,0 +1,385 @@
+name: Sourcing 4E wire one-shot
+
+on:
+  push:
+    branches:
+      - ci/canonical-sourcing-4e-wire-v2
+
+permissions:
+  contents: write
+
+jobs:
+  wire-sourcing-workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-sourcing-workspace-4e
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Wire Sourcing Workspace runtime and ownership
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def patch(path, old, new, required=True):
+              p = Path(path)
+              s = p.read_text()
+              if old in s:
+                  s = s.replace(old, new, 1)
+                  p.write_text(s)
+                  return
+              if required and new not in s:
+                  raise SystemExit(f'anchor not found in {path}: {old[:90]!r}')
+
+          # Composition root API.
+          patch(
+              'bootstrap/api-routes.js',
+              "routes/admin-finance-accounting-workspace.js\n * @db-write",
+              "routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js\n * @db-write",
+          )
+          patch(
+              'bootstrap/api-routes.js',
+              "  const adminFinanceAccountingWorkspaceRouter = require('../routes/admin-finance-accounting-workspace');\n",
+              "  const adminFinanceAccountingWorkspaceRouter = require('../routes/admin-finance-accounting-workspace');\n  const adminSourcingWorkspaceRouter = require('../routes/admin-sourcing-workspace');\n",
+          )
+          patch(
+              'bootstrap/api-routes.js',
+              "  app.use('/api/admin/workspaces/accounting', adminFinanceAccountingWorkspaceRouter);\n",
+              "  app.use('/api/admin/workspaces/accounting', adminFinanceAccountingWorkspaceRouter);\n  app.use('/api/admin/workspaces/sourcing', adminSourcingWorkspaceRouter);\n",
+          )
+
+          # Stable HTML + build alias. Legacy routes remain explicit below.
+          patch(
+              'bootstrap/html-routes.js',
+              "    '/admin/workspaces/accounting',\n",
+              "    '/admin/workspaces/accounting',\n    '/admin/workspaces/sourcing',\n",
+          )
+          patch(
+              'bootstrap/html-routes.js',
+              "    '/admin-next/workspaces/accounting': '/admin/workspaces/accounting',\n",
+              "    '/admin-next/workspaces/accounting': '/admin/workspaces/accounting',\n    '/admin-next/workspaces/sourcing': '/admin/workspaces/sourcing',\n",
+          )
+
+          # Canonical bundle.
+          patch(
+              'public/dashboards/canonical/index.html',
+              '  <script src="/dashboards/canonical/js/finance-accounting-workspace.js"></script>\n',
+              '  <script src="/dashboards/canonical/js/finance-accounting-workspace.js"></script>\n  <script src="/dashboards/canonical/js/sourcing-workspace.js"></script>\n',
+          )
+
+          # Canonical router + independent global boot (same principle as Catalogue).
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              'catalog-workspace, finance-accounting-workspace, order-360',
+              'catalog-workspace, finance-accounting-workspace, sourcing-workspace, order-360',
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              '/admin/workspaces/catalog, /admin/workspaces/accounting, /admin/orders',
+              '/admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/orders',
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    ACCOUNTING_WORKSPACE: 'accounting-workspace',\n",
+              "    ACCOUNTING_WORKSPACE: 'accounting-workspace',\n    SOURCING_WORKSPACE: 'sourcing-workspace',\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    if (path === '/admin/workspaces/accounting' || path === '/admin-next/workspaces/accounting') {\n      return SURFACES.ACCOUNTING_WORKSPACE;\n    }\n",
+              "    if (path === '/admin/workspaces/accounting' || path === '/admin-next/workspaces/accounting') {\n      return SURFACES.ACCOUNTING_WORKSPACE;\n    }\n    if (path === '/admin/workspaces/sourcing' || path === '/admin-next/workspaces/sourcing') {\n      return SURFACES.SOURCING_WORKSPACE;\n    }\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "  function renderOrder360(root, user) {\n",
+              "  function renderSourcingWorkspace(root, user) {\n    if (!global.KomerceCanonicalSourcingWorkspace) throw new Error('canonical_sourcing_workspace_module_missing');\n    return global.KomerceCanonicalSourcingWorkspace.mount({\n      root,\n      user,\n      document: global.document,\n      fetch: global.fetch.bind(global),\n      ui: global.KomerceCanonicalUI,\n    });\n  }\n\n  function renderOrder360(root, user) {\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    if (surface === SURFACES.ACCOUNTING_WORKSPACE) return renderFinanceAccountingWorkspaceShell(root, user, adminContext);\n",
+              "    if (surface === SURFACES.ACCOUNTING_WORKSPACE) return renderFinanceAccountingWorkspaceShell(root, user, adminContext);\n    if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    const adminContext = surface === SURFACES.CATALOG_WORKSPACE ? null : await requireAdminContext();\n",
+              "    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE)\n      ? null\n      : await requireAdminContext();\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    renderCatalogWorkspace,\n",
+              "    renderCatalogWorkspace,\n    renderSourcingWorkspace,\n",
+          )
+
+          # Ownership corrections: generic partner registry belongs to dashboard;
+          # connector dispatch belongs to catalog ingestion.
+          patch('services/partner-admin-service.js', '@domain        sourcing', '@domain        dashboard')
+          patch('services/sourcing-import-dispatch.js', '@domain        sourcing', '@domain        catalog')
+          patch(
+              'services/sourcing-import-dispatch.js',
+              'if (!entry) throw new Error(`API non configurée : supplier "${supplier}" inconnu.`);',
+              'if (!entry) throw new Error(`API non configurée : supplier "${supplier}" inconnu. Sources connues : ${Object.keys(CONNECTORS.api).join(\', \')}`);',
+          )
+
+          # Never leak nested internal IDs from delegated result objects.
+          patch(
+              'services/sourcing-workspace.js',
+              "    if (key === 'id' || key.endsWith('_id')) continue;\n",
+              "    const lowerKey = String(key).toLowerCase();\n    if (lowerKey === 'id' || lowerKey === 'ids' || lowerKey.endsWith('_id') || lowerKey.endsWith('_ids') || /Ids?$/.test(key)) continue;\n",
+          )
+
+          # Jest factory names must be mock-prefixed for hoisting safety.
+          p = Path('tests/unit/admin-sourcing-workspace-route.test.js')
+          s = p.read_text().replace('const calls = {', 'const mockCalls = {').replace('calls.', 'mockCalls.')
+          p.write_text(s)
+          p = Path('tests/unit/sourcing-workspace.test.js')
+          s = p.read_text()
+          s = s.replace(
+              "const query = jest.fn();\njest.mock('../../db', () => ({ query: (...args) => query(...args) }));",
+              "const mockQuery = jest.fn();\njest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));",
+          ).replace('query.', 'mockQuery.')
+          p.write_text(s)
+
+          # Feature ownership: sourcing owns candidate lifecycle/global authority;
+          # catalog owns connector dispatch/import ref; dashboard owns partner registry/UI.
+          p = Path('features/sourcing.feature.js')
+          s = p.read_text()
+          if 'middleware/require-sourcing-global-authority.js' not in s:
+              s = s.replace(
+                  '  files: {\n    migrations: [',
+                  "  files: {\n    middleware: [\n      'middleware/require-sourcing-global-authority.js',\n    ],\n    migrations: [",
+                  1,
+              )
+          if 'migrations/149_sourcing_workspace_business_refs.sql' not in s:
+              s = s.replace(
+                  "      'migrations/102_sourcing_candidates_raw_payload.sql',\n",
+                  "      'migrations/102_sourcing_candidates_raw_payload.sql',\n      'migrations/149_sourcing_workspace_business_refs.sql',\n",
+                  1,
+              )
+          if 'services/sourcing-candidate-actions.js' not in s:
+              s = s.replace(
+                  "      'services/sourcing-candidate-import-service.js',\n",
+                  "      'services/sourcing-candidate-import-service.js',\n      'services/sourcing-candidate-actions.js',\n      'services/sourcing-workspace.js',\n",
+                  1,
+              )
+          if 'routes/admin-sourcing-workspace.js' not in s:
+              s = s.replace(
+                  "      'routes/sourcing-scanner.js',\n",
+                  "      'routes/sourcing-scanner.js',\n      'routes/admin-sourcing-workspace.js',\n",
+                  1,
+              )
+          if 'tests/unit/admin-sourcing-workspace-route.test.js' not in s:
+              s = s.replace(
+                  "      'tests/unit/sourcing-candidate-import-service.test.js',\n",
+                  "      'tests/unit/sourcing-candidate-import-service.test.js',\n      'tests/unit/admin-sourcing-workspace-route.test.js',\n      'tests/unit/sourcing-workspace.test.js',\n      'tests/unit/require-sourcing-global-authority.test.js',\n",
+                  1,
+              )
+          s = s.replace('authedRoutesDetected: 11,\n    totalRoutes: 11,', 'authedRoutesDetected: 23,\n    totalRoutes: 23,')
+          if 'dashboard (registre partenaires partagé' not in s:
+              s = s.replace(
+                  "      'auth',\n",
+                  "      'auth',\n      'dashboard (registre partenaires partagé via partner-admin-service ; 4E filtre strictement partner_type=sourcing)',\n",
+                  1,
+              )
+          if 'GET /api/admin/workspaces/sourcing' not in s:
+              anchor = "      'POST /api/admin/sourcing/candidates/:id/watchlist',\n"
+              block = anchor + \
+                  "      'GET /api/admin/workspaces/sourcing',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/imports',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/products/:productRef/update',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/update',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/scan',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/promote',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/watchlist',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/reject',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/suppliers',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/update',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/deactivate',\n" + \
+                  "      'POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/activate',\n"
+              if anchor not in s:
+                  raise SystemExit('sourcing exposes anchor missing')
+              s = s.replace(anchor, block, 1)
+          p.write_text(s)
+
+          p = Path('features/catalog.feature.js')
+          s = p.read_text()
+          if 'services/sourcing-import-dispatch.js' not in s:
+              s = s.replace(
+                  "      'services/suppliers/catalog-import-orchestrator.js',\n",
+                  "      'services/suppliers/catalog-import-orchestrator.js',\n      'services/sourcing-import-dispatch.js',\n",
+                  1,
+              )
+          if 'migrations/150_catalog_import_business_ref.sql' not in s:
+              s = s.replace(
+                  "      'migrations/130_deactivate_catalog_test_placeholders.sql',\n",
+                  "      'migrations/130_deactivate_catalog_test_placeholders.sql',\n      'migrations/150_catalog_import_business_ref.sql',\n",
+                  1,
+              )
+          p.write_text(s)
+
+          p = Path('features/dashboard.feature.js')
+          s = p.read_text()
+          if 'services/partner-admin-service.js' not in s:
+              s = s.replace(
+                  "      'services/finance-accounting-workspace.js',\n",
+                  "      'services/finance-accounting-workspace.js',\n      'services/partner-admin-service.js',\n",
+                  1,
+              )
+          if 'migrations/151_partner_business_ref.sql' not in s:
+              s = s.replace(
+                  "      'migrations/071_relay_dashboard_tables.sql',\n",
+                  "      'migrations/071_relay_dashboard_tables.sql',\n      'migrations/151_partner_business_ref.sql',\n",
+                  1,
+              )
+          if "dashboards/canonical/js/sourcing-workspace.js" not in s:
+              s = s.replace(
+                  "      'dashboards/canonical/js/finance-accounting-workspace.js',\n",
+                  "      'dashboards/canonical/js/finance-accounting-workspace.js',\n      'dashboards/canonical/js/sourcing-workspace.js',\n",
+                  1,
+              )
+          if 'tests/unit/canonical-sourcing-workspace-boundary.test.js' not in s:
+              s = s.replace(
+                  "      'tests/unit/canonical-finance-accounting-workspace-boundary.test.js',\n",
+                  "      'tests/unit/canonical-finance-accounting-workspace-boundary.test.js',\n      'tests/unit/canonical-sourcing-workspace-boundary.test.js',\n",
+                  1,
+              )
+          p.write_text(s)
+          PY
+
+      - name: Add Sourcing Workspace to generated API contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/contract-generate.js')
+          s = p.read_text()
+          marker = '// LOT 4E — Canonical Sourcing Workspace'
+          if marker not in s:
+              start = s.index('const ROUTE_SCHEMA_MAP = [')
+              end = s.index('\n];', start)
+              block = "\n  // LOT 4E — Canonical Sourcing Workspace (global central actions)\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing', method: 'get', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/imports', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/products/{productRef}/update', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/update', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/scan', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/promote', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/reject', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/suppliers', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/update', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/deactivate', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/activate', method: 'post', schema: null },\n"
+              s = s[:end] + block + s[end:]
+
+          response_marker = '// LOT 4E — réponses Sourcing Workspace'
+          if response_marker not in s:
+              anchor = 'const KNOWN_RESPONSES = {\n'
+              block = "  // LOT 4E — réponses Sourcing Workspace consommées par Canonical.\n" + \
+                "  '/api/admin/workspaces/sourcing': { get: { fields: ['scope','summary','portfolio','imports','candidates','suppliers','connectors'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/imports': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/products/{productRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/candidates/{candidateRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/candidates/{candidateRef}/scan': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/candidates/{candidateRef}/promote': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/candidates/{candidateRef}/reject': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/suppliers': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/deactivate': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/activate': { post: { fields: ['ok','action','result'], source: 'test' } },\n"
+              if anchor not in s:
+                  raise SystemExit('KNOWN_RESPONSES anchor missing')
+              s = s.replace(anchor, anchor + block, 1)
+          p.write_text(s)
+          PY
+
+      - name: Generate contracts and governance projections
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          node scripts/contract-check.js
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+
+      - name: Focused 4E proof and Legacy compatibility
+        run: |
+          npx jest --config jest.unit.config.js --runInBand --forceExit \
+            tests/unit/admin-sourcing-workspace-route.test.js \
+            tests/unit/sourcing-workspace.test.js \
+            tests/unit/require-sourcing-global-authority.test.js \
+            tests/unit/canonical-sourcing-workspace-boundary.test.js \
+            tests/unit/sourcing-scanner.test.js \
+            tests/unit/partners.test.js
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+
+      - name: Commit 4E wiring and generated projections
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            bootstrap/api-routes.js \
+            bootstrap/html-routes.js \
+            public/dashboards/canonical/index.html \
+            public/dashboards/canonical/js/app.js \
+            services/partner-admin-service.js \
+            services/sourcing-import-dispatch.js \
+            services/sourcing-workspace.js \
+            tests/unit/admin-sourcing-workspace-route.test.js \
+            tests/unit/sourcing-workspace.test.js \
+            features/sourcing.feature.js \
+            features/catalog.feature.js \
+            features/dashboard.feature.js \
+            scripts/contract-generate.js \
+            docs/_generated/route-registry.json \
+            docs/contract/openapi.json \
+            docs/contract/DEBT.md \
+            docs/komerce-arch-header-graph.json \
+            docs/komerce-arch-header-graph.md \
+            docs/BUSINESS_FEATURE_GRAPH.json \
+            docs/BUSINESS_FEATURE_GRAPH.md \
+            docs/FEATURE_360.json \
+            docs/FEATURE_360.md
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No wiring changes to commit"
+            exit 1
+          fi
+          git commit -m "feat(canonical): wire Sourcing Workspace LOT 4E"
+          git push origin HEAD:feat/canonical-sourcing-workspace-4e
