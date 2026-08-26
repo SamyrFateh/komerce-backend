@@ -1174,6 +1174,7 @@ END) STORED,
     declared_at timestamp with time zone,
     declared_by uuid,
     total_volume_m3 numeric(8,4),
+    market_id uuid,
     CONSTRAINT customs_shipments_allocation_method_check CHECK ((allocation_method = ANY (ARRAY['by_cif_value'::text, 'by_weight'::text, 'by_volume'::text, 'mixed'::text, 'manual'::text]))),
     CONSTRAINT customs_shipments_transport_mode_check CHECK ((transport_mode = ANY (ARRAY['sea'::text, 'air'::text, 'land'::text])))
 );
@@ -1184,6 +1185,13 @@ END) STORED,
 --
 
 COMMENT ON COLUMN public.customs_shipments.total_volume_m3 IS 'Volume total facturé par le transitaire (m³), saisi depuis la facture. Sert au taux de remplissage et au tonnage taxable W/M (v_shipment_density).';
+
+
+--
+-- Name: COLUMN customs_shipments.market_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.customs_shipments.market_id IS 'Marché propriétaire de l expédition douane. Autorité serveur pour les Workspaces Canonical; NULL = legacy non résolu, non actionnable en Canonical.';
 
 
 --
@@ -6748,6 +6756,13 @@ CREATE INDEX idx_customs_shipment ON public.customs_history USING btree (shipmen
 
 
 --
+-- Name: idx_customs_shipments_market_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_customs_shipments_market_id ON public.customs_shipments USING btree (market_id, shipment_date DESC);
+
+
+--
 -- Name: idx_customs_shipments_status; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9032,6 +9047,14 @@ ALTER TABLE ONLY public.customs_shipments
 
 ALTER TABLE ONLY public.customs_shipments
     ADD CONSTRAINT customs_shipments_declared_by_fkey FOREIGN KEY (declared_by) REFERENCES public.users(id);
+
+
+--
+-- Name: customs_shipments customs_shipments_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customs_shipments
+    ADD CONSTRAINT customs_shipments_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
 
 
 --
