@@ -29,6 +29,16 @@ Legacy reste disponible pendant la preuve :
 
 Aucun cutover destructif dans LOT 4D.
 
+## Frontière Feature First
+
+LOT 4D ne déplace pas l’autorité cash dans le Dashboard :
+
+- la feature `payments` possède `cash-deposit-service`, la migration `148` et les mutations de dépôt ;
+- la feature `dashboard` possède uniquement la projection, la route d’orchestration et l’UI du Workspace Canonical ;
+- `routes/cash.js` Legacy et le Workspace Canonical délèguent à la même autorité `payments`.
+
+Cette séparation garantit qu’une évolution de l’UI Finance ne crée jamais une seconde vérité métier pour les dépôts.
+
 ## Marché obligatoire
 
 Contrairement au Catalogue 4C, la comptabilité opérationnelle est toujours liée à un marché explicite.
