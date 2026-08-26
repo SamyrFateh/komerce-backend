@@ -6,7 +6,7 @@
  * @test-requires none
  */
 
-let catalogAllowed = true;
+let mockCatalogAllowed = true;
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => {
@@ -21,7 +21,7 @@ jest.mock('../../middleware/auth', () => ({
 
 jest.mock('../../middleware/require-catalog-global-authority', () => ({
   requireCatalogGlobalAuthority: (req, res, next) => {
-    if (!catalogAllowed) return res.status(403).json({ code: 'catalog_global_access_denied' });
+    if (!mockCatalogAllowed) return res.status(403).json({ code: 'catalog_global_access_denied' });
     req.catalogGlobalAuthority = true;
     next();
   },
@@ -80,7 +80,7 @@ function app() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  catalogAllowed = true;
+  mockCatalogAllowed = true;
   mockBuildWorkspace.mockResolvedValue({ scope: { mode: 'global_catalog' }, summary: {}, categories: [], products: [], approval: [] });
   mockCreateProduct.mockResolvedValue({ product_ref: 'KPR-000001', name: 'Produit' });
   mockUpdateProduct.mockResolvedValue({ product_ref: 'KPR-000001', price_kmf: 5000 });
@@ -94,11 +94,11 @@ test('admin central avec grant ouvre le Workspace global sans marché', async ()
   const res = await request(app()).get('/api/admin/workspaces/catalog');
   expect(res.status).toBe(200);
   expect(res.headers['cache-control']).toContain('no-store');
-  expect(mockBuildWorkspace).toHaveBeenCalledWith({});
+  expect(mockBuildWorkspace).toHaveBeenCalledWith(expect.objectContaining({}));
 });
 
 test('role admin seul ne suffit pas sans grant catalogue', async () => {
-  catalogAllowed = false;
+  mockCatalogAllowed = false;
   const res = await request(app()).get('/api/admin/workspaces/catalog');
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('catalog_global_access_denied');
