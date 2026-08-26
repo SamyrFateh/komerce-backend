@@ -4308,6 +4308,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/unit/cost-component-admin-service.test.js",
+        "resolvedPath": "tests/unit/cost-component-admin-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/admin-costing.test.js",
         "resolvedPath": "tests/unit/admin-costing.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -26349,7 +26356,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 903
+        "filesObserved": 904
       },
       "boutique": {
         "filesObserved": 169,

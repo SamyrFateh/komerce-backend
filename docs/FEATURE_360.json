@@ -7073,7 +7073,7 @@
             ]
           },
           "tests": {
-            "count": 54,
+            "count": 55,
             "files": [
               {
                 "declared": "tests/integration/sourcing-engine-routes.test.js",
@@ -7148,6 +7148,11 @@
               {
                 "declared": "tests/unit/cost-allocation.test.js",
                 "resolvedPath": "tests/unit/cost-allocation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cost-component-admin-service.test.js",
+                "resolvedPath": "tests/unit/cost-component-admin-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7368,7 +7373,7 @@
             ]
           }
         },
-        "totalFiles": 126,
+        "totalFiles": 127,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -682,13 +682,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 126 fichier(s) déclaré(s)
+**Implementation** : 127 fichier(s) déclaré(s)
   - dash : 6
   - middleware : 1
   - migrations : 20
   - routes : 13
   - services : 29
-  - tests : 54
+  - tests : 55
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="economic-engine"]_

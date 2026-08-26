@@ -133,6 +133,7 @@ module.exports = {
     ],
         tests: [
       'tests/unit/admin-cost-components.test.js',
+      'tests/unit/cost-component-admin-service.test.js',
       'tests/unit/admin-costing.test.js',
       'tests/unit/admin-finance-config.test.js',
       'tests/unit/admin-pricing-components.test.js',
