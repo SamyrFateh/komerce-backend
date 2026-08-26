@@ -13,7 +13,7 @@
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
- * @version       2026-06
+ * @version       2026-08
  */
 
 
@@ -29,11 +29,16 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 
+const PUBLIC_RELAY_COLUMNS = `
+  id, name, agent_name, phone, address, zone, hours, island,
+  latitude, longitude, photo_url
+`;
+
 // GET /api/relais — liste publique des points relais actifs
 router.get('/', async (req, res, next) => {
   try {
     const { rows } = await db.query(`
-      SELECT id, name, agent_name, phone, address, zone, hours, island
+      SELECT ${PUBLIC_RELAY_COLUMNS}
       FROM relais
       WHERE is_active = TRUE
       ORDER BY island, name
@@ -45,9 +50,12 @@ router.get('/', async (req, res, next) => {
 // Route publique — liste des relais actifs (pas d'auth requise)
 router.get('/public', async (req, res, next) => {
   try {
-    const { rows } = await db.query(
-      'SELECT id, name, zone, island, address, phone FROM relais WHERE is_active = TRUE ORDER BY island, zone, name'
-    );
+    const { rows } = await db.query(`
+      SELECT id, name, zone, island, address, phone, latitude, longitude, photo_url
+      FROM relais
+      WHERE is_active = TRUE
+      ORDER BY island, zone, name
+    `);
     res.json({ relais: rows });
   } catch(err) { next(err); }
 });
@@ -56,7 +64,7 @@ router.get('/public', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, name, agent_name, phone, address, zone, hours, island
+      `SELECT ${PUBLIC_RELAY_COLUMNS}
        FROM relais WHERE id = $1 AND is_active = TRUE`,
       [req.params.id]
     );
