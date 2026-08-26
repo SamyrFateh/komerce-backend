@@ -1,0 +1,28 @@
+name: Sourcing 4E update with main
+
+on:
+  push:
+    branches:
+      - ci/canonical-sourcing-4e-update-main
+
+permissions:
+  contents: write
+
+jobs:
+  update-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-sourcing-workspace-4e
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Merge current main into 4E
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-edit origin/main
+          git push origin HEAD:feat/canonical-sourcing-workspace-4e
