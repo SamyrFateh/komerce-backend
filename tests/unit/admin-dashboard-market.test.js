@@ -16,6 +16,11 @@ jest.mock('../../middleware/auth', () => ({
     if (!req.user || req.user.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
     next();
   },
+  requireRole: roles => (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'unauthenticated' });
+    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'forbidden' });
+    next();
+  },
 }));
 
 jest.mock('../../middleware/require-market-scope', () => ({
@@ -89,15 +94,15 @@ beforeEach(() => {
   mockCurrentUser = { id: 'admin-1', role: 'admin' };
   mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
-  mockResolveAdminContext.mockResolvedValue({
-    actor: { id: 'admin-1', role: 'admin' },
+  mockResolveAdminContext.mockImplementation(async user => ({
+    actor: { id: user.id, role: user.role },
     access: {
       mode: 'market',
       allowedMarkets: ['CM'],
       defaultMarket: 'CM',
       capabilities: ['pilotage.read', 'dashboard.market.read'],
     },
-  });
+  }));
   mockQuery.mockImplementation(async (sql, params) => {
     if (String(sql).includes('FROM markets') && params[0] === 'CM') {
       return { rows: [{ id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF' }] };
@@ -127,6 +132,18 @@ describe('GET /api/admin/dashboard/context', () => {
       defaultMarket: 'CM',
     }));
     expect(JSON.stringify(res.body)).not.toContain('market_id');
+  });
+
+  test.each(['agent_hub', 'agent_relais'])('%s peut résoudre son AdminContext sans devenir admin dashboard', async role => {
+    mockCurrentUser = { id: `${role}-1`, role };
+
+    const contextRes = await request(makeApp()).get('/api/admin/dashboard/context');
+    const dashboardRes = await request(makeApp()).get('/api/admin/dashboard/unified/market/CM');
+
+    expect(contextRes.status).toBe(200);
+    expect(contextRes.body.actor.role).toBe(role);
+    expect(dashboardRes.status).toBe(403);
+    expect(mockBuildMarketPilotage).not.toHaveBeenCalled();
   });
 
   test('zéro autorité dashboard renvoie 403, même pour role=admin', async () => {
