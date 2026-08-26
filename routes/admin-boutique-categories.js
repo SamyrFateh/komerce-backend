@@ -25,9 +25,12 @@ const taxonomy = require('../services/boutique-taxonomy-admin');
 
 const guard = [authenticate, requireRole(['admin'])];
 
+// Legacy HTTP contract: keep historical error bodies unchanged. The shared
+// service may carry stable error codes for Canonical callers, but Legacy 1
+// continues to expose only { error } here.
 function handleTaxonomyError(err, res, next) {
   if (err instanceof taxonomy.TaxonomyAdminError || err.status) {
-    return res.status(err.status || 400).json({ error: err.message, ...(err.code ? { code: err.code } : {}) });
+    return res.status(err.status || 400).json({ error: err.message });
   }
   return next(err);
 }
@@ -72,8 +75,7 @@ router.delete('/:key', ...guard, async (req, res, next) => {
 
 router.get('/:key/subcategories', ...guard, async (req, res, next) => {
   try {
-    const category = await taxonomy.getCategoryWithSubcats(req.params.key);
-    res.json(category ? category.subcategories : []);
+    res.json(await taxonomy.listSubcategories(req.params.key));
   } catch (err) { next(err); }
 });
 
