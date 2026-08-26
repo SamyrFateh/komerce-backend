@@ -227,6 +227,11 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/workspaces/catalog/categories/{key}/subcategories', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/update', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/deactivate', method: 'post', schema: null },
+  // LOT 4D — Canonical Finance / Comptabilité Workspace (single-market cash actions)
+  { prefix: '/api/admin/workspaces/accounting/market/{marketCode}', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/verify', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/dispute', method: 'post', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -246,6 +251,11 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 4D — réponses Finance / Comptabilité Workspace consommées par Canonical.
+  '/api/admin/workspaces/accounting/market/{marketCode}': { get: { fields: ['scope','filters','summary','reconciliation','deposits','uncollected','collections','invoices'], source: 'test' } },
+  '/api/admin/workspaces/accounting/market/{marketCode}/deposits': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/verify': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/dispute': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4C — réponses Catalogue Workspace consommées par Canonical.
   '/api/admin/workspaces/catalog': { get: { fields: ['scope','summary','categories','products','approval'], source: 'test' } },
   '/api/admin/workspaces/catalog/products': { post: { fields: ['ok','action','result'], source: 'test' } },

@@ -47,12 +47,12 @@
     "healthy": 16,
     "attention": 15,
     "blocked": 0,
-    "businessDependencies": 183,
+    "businessDependencies": 185,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 43,
+    "debtItemsTotal": 41,
     "gateHealthy": 15,
     "gateBlocked": 0
   },
@@ -4433,7 +4433,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 93,
+            "count": 94,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -4841,6 +4841,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/finance-accounting-workspace.js",
+                "resolvedPath": "public/dashboards/canonical/js/finance-accounting-workspace.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/primitives.js",
                 "resolvedPath": "public/dashboards/canonical/js/primitives.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4913,11 +4918,16 @@
             ]
           },
           "routes": {
-            "count": 17,
+            "count": 18,
             "files": [
               {
                 "declared": "routes/admin-dashboard.js",
                 "resolvedPath": "routes/admin-dashboard.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-finance-accounting-workspace.js",
+                "resolvedPath": "routes/admin-finance-accounting-workspace.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5003,7 +5013,7 @@
             ]
           },
           "services": {
-            "count": 10,
+            "count": 11,
             "files": [
               {
                 "declared": "services/dashboard-cache.js",
@@ -5046,6 +5056,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/finance-accounting-workspace.js",
+                "resolvedPath": "services/finance-accounting-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/hub-dashboard-queries.js",
                 "resolvedPath": "services/hub-dashboard-queries.js",
                 "status": "resolved-in-technical-graph"
@@ -5058,7 +5073,7 @@
             ]
           },
           "tests": {
-            "count": 37,
+            "count": 40,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -5088,6 +5103,11 @@
               {
                 "declared": "tests/unit/admin-facades-route.test.js",
                 "resolvedPath": "tests/unit/admin-facades-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-finance-accounting-workspace-route.test.js",
+                "resolvedPath": "tests/unit/admin-finance-accounting-workspace-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5133,6 +5153,11 @@
               {
                 "declared": "tests/unit/canonical-demo-order-flow.test.js",
                 "resolvedPath": "tests/unit/canonical-demo-order-flow.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
+                "resolvedPath": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5211,6 +5236,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/finance-accounting-workspace.test.js",
+                "resolvedPath": "tests/unit/finance-accounting-workspace.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-dashboard-queries.test.js",
                 "resolvedPath": "tests/unit/hub-dashboard-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5248,7 +5278,7 @@
             ]
           }
         },
-        "totalFiles": 158,
+        "totalFiles": 164,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -5697,6 +5727,13 @@
           ]
         },
         {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "notifications",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5705,6 +5742,13 @@
         },
         {
           "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -5755,11 +5799,9 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 5,
+        "declaredNotObserved": 3,
         "declaredNotObservedEvidence": [
           "inventory",
-          "market",
-          "payments",
           "recommendations",
           "wallet"
         ]
@@ -5782,22 +5824,12 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 5,
+        "debtCount": 3,
         "debtItems": [
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
             "evidence": "contract.consumes déclare \"inventory\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"market\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"payments\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
           },
           {
             "type": "DECLARED_NOT_OBSERVED",
@@ -12558,6 +12590,13 @@
       ],
       "consumedBy": [
         {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -14602,11 +14641,16 @@
             ]
           },
           "migrations": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "migrations/079_paypal_payment_mode.sql",
                 "resolvedPath": "migrations/079_paypal_payment_mode.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/148_cash_deposit_business_reference.sql",
+                "resolvedPath": "migrations/148_cash_deposit_business_reference.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -14637,8 +14681,13 @@
             ]
           },
           "services": {
-            "count": 11,
+            "count": 12,
             "files": [
+              {
+                "declared": "services/cash-deposit-service.js",
+                "resolvedPath": "services/cash-deposit-service.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/cash-operations.js",
                 "resolvedPath": "services/cash-operations.js",
@@ -14697,7 +14746,7 @@
             ]
           },
           "tests": {
-            "count": 19,
+            "count": 20,
             "files": [
               {
                 "declared": "tests/e2e-api/payments.paypal-amount-currency.e2e.test.js",
@@ -14707,6 +14756,11 @@
               {
                 "declared": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cash-deposit-service.test.js",
+                "resolvedPath": "tests/unit/cash-deposit-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -14797,7 +14851,7 @@
             ]
           }
         },
-        "totalFiles": 37,
+        "totalFiles": 40,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 3,
@@ -15077,6 +15131,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "interface"
+          ]
+        },
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {

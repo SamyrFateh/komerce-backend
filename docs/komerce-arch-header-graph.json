@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 428,
-    "filesWithFullHeaders": 398,
+    "scannedCodeFiles": 431,
+    "filesWithFullHeaders": 401,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 426,
+    "filesWithAnyHeaders": 429,
     "filesWithoutHeaders": 2,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 938,
-    "edges": 4923,
+    "graphNodes": 945,
+    "edges": 4971,
     "dbTables": 119,
-    "doctrines": 237,
-    "impactAreas": 156,
-    "unresolvedCodeEdges": 514,
+    "doctrines": 239,
+    "impactAreas": 158,
+    "unresolvedCodeEdges": 521,
     "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 63
+    "multiWriterTables": 64
   },
   "byDomain": {
     "infrastructure": 19,
@@ -35,7 +35,7 @@
     "notification": 20,
     "auth": 13,
     "catalog": 72,
-    "admin-dashboard": 17,
+    "admin-dashboard": 19,
     "market": 2,
     "logistics": 38,
     "boutique": 20,
@@ -45,7 +45,7 @@
     "shared-cart-modal": 7,
     "recommendations": 4,
     "auth-passkey": 7,
-    "payment": 16,
+    "payment": 17,
     "tracking": 1,
     "wallet": 4,
     "economic-engine": 42,
@@ -95,9 +95,9 @@
     "ui-boundary": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 107,
+    "route": 108,
     "entrypoint": 1,
-    "service": 169,
+    "service": 171,
     "external-adapter": 2,
     "machine": 1,
     "data-service": 1,
@@ -106,7 +106,7 @@
   "byCriticality": {
     "critical": 61,
     "medium": 110,
-    "high": 218,
+    "high": 221,
     "low": 37
   },
   "nodes": [
@@ -141,7 +141,8 @@
         "routes/admin-product-360.js",
         "routes/admin-operations-workspace.js",
         "routes/admin-shipping-customs-workspace.js",
-        "routes/admin-catalog-workspace.js"
+        "routes/admin-catalog-workspace.js",
+        "routes/admin-finance-accounting-workspace.js"
       ],
       "usedBy": [
         "server.js"
@@ -5251,6 +5252,58 @@
       "version": "2026-06"
     },
     {
+      "id": "routes/admin-finance-accounting-workspace.js",
+      "file": "routes/admin-finance-accounting-workspace.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-finance-accounting-workspace-route",
+      "domain": "admin-dashboard",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_operator",
+        "requested_market_code",
+        "accounting_action"
+      ],
+      "outputs": [
+        "authorized_accounting_projection",
+        "authorized_cash_deposit_mutations"
+      ],
+      "depends": [
+        "db",
+        "middleware/auth",
+        "middleware/require-market-scope",
+        "middleware/require-dashboard-global-authority",
+        "services/finance-accounting-workspace"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [
+        "markets",
+        "operator_market_scopes",
+        "dashboard_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "workspace_single_market_action_context",
+        "server_market_scope_is_authority",
+        "client_market_id_forbidden",
+        "workspace_role_least_privilege"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "payment",
+        "accounting",
+        "market-authorization"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "routes/admin-finance-config.js",
       "file": "routes/admin-finance-config.js",
       "type": "file",
@@ -6730,6 +6783,8 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
+        "services/cash-operations.js",
+        "services/cash-deposit-service.js",
         "services/*"
       ],
       "usedBy": [
@@ -10526,6 +10581,52 @@
       "version": "2026-08"
     },
     {
+      "id": "services/cash-deposit-service.js",
+      "file": "services/cash-deposit-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "payment-cash-deposit-service",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_actor",
+        "deposit_payload_or_id"
+      ],
+      "outputs": [
+        "cash_deposit_mutation_result"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/cash.js",
+        "services/finance-accounting-workspace.js"
+      ],
+      "dbRead": [
+        "cash_deposits"
+      ],
+      "dbWrite": [
+        "cash_deposits"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_or_pool"
+      ],
+      "doctrine": [
+        "single_cash_deposit_mutation_authority",
+        "stable_business_reference_at_browser_boundary"
+      ],
+      "impactAreas": [
+        "payment",
+        "cash-reconciliation",
+        "admin-dashboard"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "services/cash-operations.js",
       "file": "services/cash-operations.js",
       "type": "file",
@@ -12914,6 +13015,68 @@
         "economic-engine",
         "catalog",
         "pricing"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "services/finance-accounting-workspace.js",
+      "file": "services/finance-accounting-workspace.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-finance-accounting-workspace-service",
+      "domain": "admin-dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "server_resolved_market",
+        "authenticated_actor",
+        "accounting_filters",
+        "deposit_business_reference"
+      ],
+      "outputs": [
+        "market_scoped_accounting_projection",
+        "delegated_cash_deposit_mutations"
+      ],
+      "depends": [
+        "db",
+        "services/cash-deposit-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-finance-accounting-workspace.js"
+      ],
+      "dbRead": [
+        "orders",
+        "cash_collections",
+        "cash_deposits",
+        "users",
+        "relais",
+        "invoices"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "cash-deposit-service",
+          "tables": [
+            "cash_deposits"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "delegated_to_domain_authority"
+      ],
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "server_market_scope_is_authority",
+        "no_global_workspace_mutation",
+        "stable_business_reference_at_browser_boundary"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "payment",
+        "accounting",
+        "market-authorization"
       ],
       "version": "2026-08"
     },
@@ -21212,11 +21375,6 @@
       "doctrine": "client_security_global_only"
     },
     {
-      "id": "doctrine:lot1a_relay_commission_one_runtime_truth",
-      "type": "doctrine",
-      "doctrine": "lot1a_relay_commission_one_runtime_truth"
-    },
-    {
       "id": "doctrine:workspace_single_market_action_context",
       "type": "doctrine",
       "doctrine": "workspace_single_market_action_context"
@@ -21230,6 +21388,11 @@
       "id": "doctrine:workspace_role_least_privilege",
       "type": "doctrine",
       "doctrine": "workspace_role_least_privilege"
+    },
+    {
+      "id": "doctrine:lot1a_relay_commission_one_runtime_truth",
+      "type": "doctrine",
+      "doctrine": "lot1a_relay_commission_one_runtime_truth"
     },
     {
       "id": "doctrine:fail_closed_unresolved_market",
@@ -21402,6 +21565,16 @@
       "doctrine": "writer_not_owner_campaign_2026_08"
     },
     {
+      "id": "doctrine:single_cash_deposit_mutation_authority",
+      "type": "doctrine",
+      "doctrine": "single_cash_deposit_mutation_authority"
+    },
+    {
+      "id": "doctrine:stable_business_reference_at_browser_boundary",
+      "type": "doctrine",
+      "doctrine": "stable_business_reference_at_browser_boundary"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
@@ -21530,6 +21703,11 @@
       "id": "doctrine:snapshot_debounce",
       "type": "doctrine",
       "doctrine": "snapshot_debounce"
+    },
+    {
+      "id": "doctrine:no_global_workspace_mutation",
+      "type": "doctrine",
+      "doctrine": "no_global_workspace_mutation"
     },
     {
       "id": "doctrine:DOCTRINE_DENSITE_VALEUR (V-4",
@@ -21705,11 +21883,6 @@
       "id": "doctrine:lecture_derivee",
       "type": "doctrine",
       "doctrine": "lecture_derivee"
-    },
-    {
-      "id": "doctrine:no_global_workspace_mutation",
-      "type": "doctrine",
-      "doctrine": "no_global_workspace_mutation"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
@@ -22387,6 +22560,11 @@
       "area": "auth-passkey"
     },
     {
+      "id": "impact:accounting",
+      "type": "impact-area",
+      "area": "accounting"
+    },
+    {
       "id": "impact:logistics",
       "type": "impact-area",
       "area": "logistics"
@@ -22505,6 +22683,11 @@
       "id": "impact:shares",
       "type": "impact-area",
       "area": "shares"
+    },
+    {
+      "id": "impact:cash-reconciliation",
+      "type": "impact-area",
+      "area": "cash-reconciliation"
     },
     {
       "id": "impact:admin-costing",
@@ -22691,6 +22874,12 @@
       "to": "routes/admin-catalog-workspace.js",
       "type": "depends",
       "label": "routes/admin-catalog-workspace.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-finance-accounting-workspace.js",
+      "type": "depends",
+      "label": "routes/admin-finance-accounting-workspace.js"
     },
     {
       "from": "server.js",
@@ -29948,6 +30137,108 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "middleware/auth",
+      "type": "depends",
+      "label": "middleware/auth"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "middleware/require-market-scope",
+      "type": "depends",
+      "label": "middleware/require-market-scope"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "middleware/require-dashboard-global-authority",
+      "type": "depends",
+      "label": "middleware/require-dashboard-global-authority"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "services/finance-accounting-workspace",
+      "type": "depends",
+      "label": "services/finance-accounting-workspace"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-finance-accounting-workspace.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "db:operator_market_scopes",
+      "type": "db-read",
+      "label": "operator_market_scopes"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "db:dashboard_global_access_grants",
+      "type": "db-read",
+      "label": "dashboard_global_access_grants"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "doctrine:workspace_single_market_action_context",
+      "type": "doctrine",
+      "label": "workspace_single_market_action_context"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "doctrine:server_market_scope_is_authority",
+      "type": "doctrine",
+      "label": "server_market_scope_is_authority"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "doctrine:client_market_id_forbidden",
+      "type": "doctrine",
+      "label": "client_market_id_forbidden"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "doctrine:workspace_role_least_privilege",
+      "type": "doctrine",
+      "label": "workspace_role_least_privilege"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "impact:accounting",
+      "type": "impact",
+      "label": "accounting"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
+    },
+    {
       "from": "routes/admin-finance-config.js",
       "to": "db.js",
       "type": "depends",
@@ -32069,6 +32360,18 @@
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/cash.js",
+      "to": "services/cash-operations.js",
+      "type": "depends",
+      "label": "services/cash-operations.js"
+    },
+    {
+      "from": "routes/cash.js",
+      "to": "services/cash-deposit-service.js",
+      "type": "depends",
+      "label": "services/cash-deposit-service.js"
     },
     {
       "from": "routes/cash.js",
@@ -37497,6 +37800,66 @@
       "label": "shares"
     },
     {
+      "from": "services/cash-deposit-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/cash.js",
+      "to": "services/cash-deposit-service.js",
+      "type": "uses",
+      "label": "routes/cash.js"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "services/cash-deposit-service.js",
+      "type": "uses",
+      "label": "services/finance-accounting-workspace.js"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "db:cash_deposits",
+      "type": "db-read",
+      "label": "cash_deposits"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "db:cash_deposits",
+      "type": "db-write",
+      "label": "cash_deposits"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "doctrine:single_cash_deposit_mutation_authority",
+      "type": "doctrine",
+      "label": "single_cash_deposit_mutation_authority"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "doctrine:stable_business_reference_at_browser_boundary",
+      "type": "doctrine",
+      "label": "stable_business_reference_at_browser_boundary"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "impact:cash-reconciliation",
+      "type": "impact",
+      "label": "cash-reconciliation"
+    },
+    {
+      "from": "services/cash-deposit-service.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/cash-operations.js",
       "to": "services/order-payment-confirmation.js",
       "type": "depends",
@@ -41116,6 +41479,115 @@
       "to": "impact:pricing",
       "type": "impact",
       "label": "pricing"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "services/cash-deposit-service.js",
+      "type": "depends",
+      "label": "services/cash-deposit-service.js"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "services/finance-accounting-workspace.js",
+      "type": "uses",
+      "label": "routes/admin-finance-accounting-workspace.js"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "db:cash_collections",
+      "type": "db-read",
+      "label": "cash_collections"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "db:cash_deposits",
+      "type": "db-read",
+      "label": "cash_deposits"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "db:invoices",
+      "type": "db-read",
+      "label": "invoices"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "db:cash_deposits",
+      "type": "db-write-via",
+      "label": "cash_deposits",
+      "via": "cash-deposit-service"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "doctrine:workspace_acts_dashboard_observes",
+      "type": "doctrine",
+      "label": "workspace_acts_dashboard_observes"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "doctrine:server_market_scope_is_authority",
+      "type": "doctrine",
+      "label": "server_market_scope_is_authority"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "doctrine:no_global_workspace_mutation",
+      "type": "doctrine",
+      "label": "no_global_workspace_mutation"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "doctrine:stable_business_reference_at_browser_boundary",
+      "type": "doctrine",
+      "label": "stable_business_reference_at_browser_boundary"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "impact:accounting",
+      "type": "impact",
+      "label": "accounting"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
     },
     {
       "from": "services/finance-metrics/annulations.js",
@@ -52255,7 +52727,8 @@
         "routes/admin-product-360.js",
         "routes/admin-operations-workspace.js",
         "routes/admin-shipping-customs-workspace.js",
-        "routes/admin-catalog-workspace.js"
+        "routes/admin-catalog-workspace.js",
+        "routes/admin-finance-accounting-workspace.js"
       ],
       "directUsedBy": [
         "server.js"
@@ -52300,6 +52773,7 @@
         "routes/admin-customs-shipments.js",
         "routes/admin-dashboard-market.js",
         "routes/admin-dashboard.js",
+        "routes/admin-finance-accounting-workspace.js",
         "routes/admin-finance-config.js",
         "routes/admin-loyalty.js",
         "routes/admin-operations-workspace.js",
@@ -57567,6 +58041,59 @@
         "utils/logger.js"
       ]
     },
+    "routes/admin-finance-accounting-workspace.js": {
+      "role": "canonical-finance-accounting-workspace-route",
+      "domain": "admin-dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "middleware/auth",
+        "middleware/require-market-scope",
+        "middleware/require-dashboard-global-authority",
+        "services/finance-accounting-workspace"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "operator_market_scopes",
+        "dashboard_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "workspace_single_market_action_context",
+        "server_market_scope_is_authority",
+        "client_market_id_forbidden",
+        "workspace_role_least_privilege"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "payment",
+        "accounting",
+        "market-authorization"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:dashboard_global_access_grants",
+        "db:markets",
+        "db:operator_market_scopes",
+        "doctrine:client_market_id_forbidden",
+        "doctrine:server_market_scope_is_authority",
+        "doctrine:workspace_role_least_privilege",
+        "doctrine:workspace_single_market_action_context",
+        "impact:accounting",
+        "impact:admin-dashboard",
+        "impact:market-authorization",
+        "impact:payment",
+        "services/finance-accounting-workspace.js"
+      ]
+    },
     "routes/admin-finance-config.js": {
       "role": "economic-engine-admin-finance-config",
       "domain": "economic-engine",
@@ -58950,6 +59477,8 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
+        "services/cash-operations.js",
+        "services/cash-deposit-service.js",
         "services/*"
       ],
       "directUsedBy": [
@@ -58981,6 +59510,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:payment",
         "middleware/auth.js",
+        "services/cash-deposit-service.js",
         "services/cash-operations.js",
         "services/loyalty-service.js",
         "services/purchasing-trigger-service.js",
@@ -62632,6 +63162,48 @@
         "routes/orders/create.js"
       ]
     },
+    "services/cash-deposit-service.js": {
+      "role": "payment-cash-deposit-service",
+      "domain": "payment",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/cash.js",
+        "services/finance-accounting-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "cash_deposits"
+      ],
+      "dbWrite": [
+        "cash_deposits"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "single_cash_deposit_mutation_authority",
+        "stable_business_reference_at_browser_boundary"
+      ],
+      "impactAreas": [
+        "payment",
+        "cash-reconciliation",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:cash_deposits",
+        "doctrine:single_cash_deposit_mutation_authority",
+        "doctrine:stable_business_reference_at_browser_boundary",
+        "impact:admin-dashboard",
+        "impact:cash-reconciliation",
+        "impact:payment",
+        "routes/cash.js",
+        "services/finance-accounting-workspace.js"
+      ]
+    },
     "services/cash-operations.js": {
       "role": "payment-cash-operations",
       "domain": "payment",
@@ -64947,6 +65519,69 @@
         "services/apply-pricing-updates.js",
         "services/product-price-audit.js",
         "utils/logger.js"
+      ]
+    },
+    "services/finance-accounting-workspace.js": {
+      "role": "canonical-finance-accounting-workspace-service",
+      "domain": "admin-dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/cash-deposit-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-finance-accounting-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "cash_collections",
+        "cash_deposits",
+        "users",
+        "relais",
+        "invoices"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "cash-deposit-service",
+          "tables": [
+            "cash_deposits"
+          ]
+        }
+      ],
+      "doctrines": [
+        "workspace_acts_dashboard_observes",
+        "server_market_scope_is_authority",
+        "no_global_workspace_mutation",
+        "stable_business_reference_at_browser_boundary"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "payment",
+        "accounting",
+        "market-authorization"
+      ],
+      "mustCheck": [
+        "db:cash_collections",
+        "db:cash_deposits",
+        "db:invoices",
+        "db:orders",
+        "db:relais",
+        "db:users",
+        "doctrine:no_global_workspace_mutation",
+        "doctrine:server_market_scope_is_authority",
+        "doctrine:stable_business_reference_at_browser_boundary",
+        "doctrine:workspace_acts_dashboard_observes",
+        "impact:accounting",
+        "impact:admin-dashboard",
+        "impact:market-authorization",
+        "impact:payment",
+        "routes/admin-finance-accounting-workspace.js",
+        "services/cash-deposit-service.js"
       ]
     },
     "services/finance-metrics/annulations.js": {
@@ -72396,6 +73031,14 @@
       ]
     },
     {
+      "table": "cash_deposits",
+      "writerCount": 2,
+      "writers": [
+        "routes/cash.js",
+        "services/cash-deposit-service.js"
+      ]
+    },
+    {
       "table": "catalog_field_overrides",
       "writerCount": 2,
       "writers": [
@@ -73132,6 +73775,36 @@
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "middleware/auth",
+      "type": "depends",
+      "label": "middleware/auth"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "middleware/require-market-scope",
+      "type": "depends",
+      "label": "middleware/require-market-scope"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "middleware/require-dashboard-global-authority",
+      "type": "depends",
+      "label": "middleware/require-dashboard-global-authority"
+    },
+    {
+      "from": "routes/admin-finance-accounting-workspace.js",
+      "to": "services/finance-accounting-workspace",
+      "type": "depends",
+      "label": "services/finance-accounting-workspace"
     },
     {
       "from": "routes/admin-finance-config.js",
@@ -74328,6 +75001,12 @@
       "label": "db.js"
     },
     {
+      "from": "services/cash-deposit-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/cash-reminder-service.js",
       "to": "db",
       "type": "depends",
@@ -74809,6 +75488,12 @@
     },
     {
       "from": "services/economic-price-audit-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/finance-accounting-workspace.js",
       "to": "db",
       "type": "depends",
       "label": "db"

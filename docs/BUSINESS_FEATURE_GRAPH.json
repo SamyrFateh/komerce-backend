@@ -2410,6 +2410,13 @@
       },
       {
         "feature": "dashboard",
+        "category": "services",
+        "declared": "services/finance-accounting-workspace.js",
+        "resolvedPath": "services/finance-accounting-workspace.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
         "category": "routes",
         "declared": "routes/admin/dashboard.js",
         "resolvedPath": "routes/admin/dashboard.js",
@@ -2455,6 +2462,13 @@
         "category": "routes",
         "declared": "routes/admin-dashboard.js",
         "resolvedPath": "routes/admin-dashboard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
+        "declared": "routes/admin-finance-accounting-workspace.js",
+        "resolvedPath": "routes/admin-finance-accounting-workspace.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -2602,6 +2616,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/demo-order-flow.js",
         "resolvedPath": "public/dashboards/canonical/js/demo-order-flow.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/finance-accounting-workspace.js",
+        "resolvedPath": "public/dashboards/canonical/js/finance-accounting-workspace.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3288,6 +3309,27 @@
         "category": "tests",
         "declared": "tests/unit/canonical-demo-order-flow.test.js",
         "resolvedPath": "tests/unit/canonical-demo-order-flow.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/finance-accounting-workspace.test.js",
+        "resolvedPath": "tests/unit/finance-accounting-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-finance-accounting-workspace-route.test.js",
+        "resolvedPath": "tests/unit/admin-finance-accounting-workspace-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8074,6 +8116,13 @@
       {
         "feature": "payments",
         "category": "services",
+        "declared": "services/cash-deposit-service.js",
+        "resolvedPath": "services/cash-deposit-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "payments",
+        "category": "services",
         "declared": "services/reconciliation-service.js",
         "resolvedPath": "services/reconciliation-service.js",
         "status": "resolved-in-technical-graph"
@@ -8111,6 +8160,13 @@
         "category": "migrations",
         "declared": "migrations/079_paypal_payment_mode.sql",
         "resolvedPath": "migrations/079_paypal_payment_mode.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "migrations",
+        "declared": "migrations/148_cash_deposit_business_reference.sql",
+        "resolvedPath": "migrations/148_cash_deposit_business_reference.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8195,6 +8251,13 @@
         "category": "tests",
         "declared": "tests/unit/cash-operations-service.test.js",
         "resolvedPath": "tests/unit/cash-operations-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/cash-deposit-service.test.js",
+        "resolvedPath": "tests/unit/cash-deposit-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19244,6 +19307,10 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/admin-finance-accounting-workspace.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "routes/admin-loyalty.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -19460,6 +19527,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/finance-accounting-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/admin/dashboard.js",
                 "targetFile": "utils/logger.js"
               },
@@ -19516,6 +19587,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "routes/admin-finance-accounting-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/admin-finance-accounting-workspace.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/admin-loyalty.js",
                 "targetFile": "db.js"
               },
@@ -19566,6 +19645,14 @@
               {
                 "sourceFileId": "tests/unit/canonical-dashboard-boundary.test.js",
                 "targetFile": "bootstrap/html-routes.js"
+              },
+              {
+                "sourceFileId": "tests/unit/canonical-finance-accounting-workspace-boundary.test.js",
+                "targetFile": "bootstrap/html-routes.js"
+              },
+              {
+                "sourceFileId": "tests/unit/finance-accounting-workspace.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/dashboard-control-tower.test.js",
@@ -19670,6 +19757,22 @@
       },
       {
         "from": "dashboard",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-finance-accounting-workspace.js",
+                "targetFile": "middleware/require-market-scope.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
         "to": "notifications",
         "channels": [
           {
@@ -19714,6 +19817,22 @@
               {
                 "sourceFileId": "tests/unit/hub-dashboard-route.test.js",
                 "targetFile": "services/order-status-machine.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
+        "to": "payments",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/finance-accounting-workspace.js",
+                "targetFile": "services/cash-deposit-service.js"
               }
             ]
           }
@@ -20646,6 +20765,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin-loyalty.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-finance-accounting-workspace.js"
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
@@ -23423,6 +23546,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/cash-deposit-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/reconciliation-service.js",
                 "targetFile": "db.js"
               },
@@ -23488,6 +23615,10 @@
               },
               {
                 "sourceFileId": "tests/unit/cash-operations-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/cash-deposit-service.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -25793,7 +25924,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 875
+        "filesObserved": 883
       },
       "boutique": {
         "filesObserved": 169,
@@ -27880,8 +28011,8 @@
       "backend": {
         "manifestsDiscovered": 27,
         "manifestsConnected": 27,
-        "technicalNodesTotal": 337,
-        "technicalNodesOwned": 321,
+        "technicalNodesTotal": 340,
+        "technicalNodesOwned": 324,
         "technicalOrphans": 16
       },
       "dash": {

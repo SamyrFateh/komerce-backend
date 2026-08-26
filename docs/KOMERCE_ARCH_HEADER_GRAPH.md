@@ -6,26 +6,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 428
-- Files with full headers: 398
+- Scanned code files: 431
+- Files with full headers: 401
 - Files with lite headers: 28
-- Files with any headers: 426
+- Files with any headers: 429
 - Files without headers: 2
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 938
-- Edges: 4923
+- Graph nodes: 945
+- Edges: 4971
 - DB tables: 119
-- Doctrines: 237
-- Impact areas: 156
-- Unresolved code edges: 514
-- Tables multi-écrivains directs (>=2): 63
+- Doctrines: 239
+- Impact areas: 158
+- Unresolved code edges: 521
+- Tables multi-écrivains directs (>=2): 64
 - Avertissements db-write / db-write-via en chevauchement: 0
 
 ## Domains
 
 - account: 2
-- admin-dashboard: 17
+- admin-dashboard: 19
 - auth: 13
 - auth-identity: 6
 - auth-passkey: 7
@@ -48,7 +48,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - notification: 20
 - operations: 11
 - orders: 25
-- payment: 16
+- payment: 17
 - purchasing: 8
 - recommendations: 4
 - refunds: 2
@@ -77,10 +77,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 16
 - presenter: 1
-- route: 107
+- route: 108
 - route-manifest: 1
 - schema: 1
-- service: 169
+- service: 171
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
@@ -217,6 +217,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-customs-shipments.js — dashboard-admin-customs-shipments (customs, high, full)
 - routes/admin-dashboard-market.js — dashboard-market-scoped-route (admin-dashboard, high, full)
 - routes/admin-dashboard.js — dashboard-admin-dashboard (dashboard, high, full)
+- routes/admin-finance-accounting-workspace.js — canonical-finance-accounting-workspace-route (admin-dashboard, high, full)
 - routes/admin-finance-config.js — economic-engine-admin-finance-config (economic-engine, high, full)
 - routes/admin-loyalty.js — dashboard-admin-loyalty (dashboard, high, full)
 - routes/admin-operations-workspace.js — canonical-operations-workspace-route (admin-dashboard, high, full)
@@ -273,6 +274,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/authkey-client.js — authkey-whatsapp-adapter (notification, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
 - services/boutique-taxonomy-admin.js — boutique-taxonomy-admin-service (catalog, high, full)
+- services/cash-deposit-service.js — payment-cash-deposit-service (payment, high, full)
 - services/catalog-approval.js — catalog-approval-queue (catalog, high, full)
 - services/catalog-candidate-product-service.js — catalog-candidate-product-owner (catalog, high, full)
 - services/catalog-eligibility.js — catalog-eligibility (catalog, high, full)
@@ -311,6 +313,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/economic-config.js — economic-config-canonical-bridge (economic-engine, high, full)
 - services/economic-engine-queries.js — economic-engine-calculation-service (economic-engine, high, full)
 - services/economic-price-audit-service.js — economic-engine-product-price-audit (economic-engine, high, full)
+- services/finance-accounting-workspace.js — canonical-finance-accounting-workspace-service (admin-dashboard, high, full)
 - services/finance-metrics/annulations.js — economic-engine-annulations-parcels (economic-engine, high, full)
 - services/finance-metrics/finance-summary.js — economic-engine-finance-summary (economic-engine, high, full)
 - services/finance-metrics/index.js — economic-engine-dashboard-finance-metrics (economic-engine, high, full)
@@ -451,6 +454,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/cash-operations.js -> cash_collections
 - WRITE services/confirm-pickup-cash-payment.js -> cash_collections
 - WRITE routes/cash.js -> cash_deposits
+- WRITE services/cash-deposit-service.js -> cash_deposits
 - WRITE services/catalog-enrichment.js -> catalog_enrichment_runs
 - WRITE services/catalog-overrides.js -> catalog_field_overrides
 - WRITE services/product-admin-service.js -> catalog_field_overrides
@@ -532,11 +536,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/cancel.js -> orders
 - WRITE routes/orders/create.js -> orders
 - WRITE routes/orders/qr.js -> orders
-- WRITE routes/orders/status.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 
 - WRITE services/catalog-approval.js -> alerts (via alerts-persistence-boundary)
+- WRITE services/finance-accounting-workspace.js -> cash_deposits (via cash-deposit-service)
 - WRITE services/shipping-customs-workspace.js -> customs_shipment_parcels (via customs-shipment-service)
 - WRITE services/shipping-customs-workspace.js -> customs_shipments (via customs-shipment-service)
 - WRITE routes/admin/system.js -> incidents (via incident-write-service)
@@ -662,6 +666,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - cart_shares: 2 écrivains directs — routes/shares.js, services/cart-share-service.js
 - cash_collections: 2 écrivains directs — services/cash-operations.js, services/confirm-pickup-cash-payment.js
+- cash_deposits: 2 écrivains directs — routes/cash.js, services/cash-deposit-service.js
 - catalog_field_overrides: 2 écrivains directs — services/catalog-overrides.js, services/product-admin-service.js
 - catalog_media: 2 écrivains directs — routes/sourcing-scanner.js, services/catalog-promotion.js
 - charges: 2 écrivains directs — bootstrap/startup-migrations.js, services/economic-engine-queries.js
@@ -684,7 +689,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - relais: 2 écrivains directs — routes/admin/system.js, services/routing.js
 - revoked_tokens: 2 écrivains directs — bootstrap/crons.js, routes/auth.js
 - shared_cart_items: 2 écrivains directs — services/shared-cart-creation.js, services/shared-cart-engine.js
-- signals: 2 écrivains directs — routes/signals.js, services/signal-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 
@@ -806,12 +810,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-dashboard-market.js -> services/dashboard-pilotage-market (services/dashboard-pilotage-market)
 - depends: routes/admin-dashboard.js -> db.js (db.js)
 - depends: routes/admin-dashboard.js -> services/* (services/*)
+- depends: routes/admin-finance-accounting-workspace.js -> db (db)
+- depends: routes/admin-finance-accounting-workspace.js -> middleware/auth (middleware/auth)
+- depends: routes/admin-finance-accounting-workspace.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
+- depends: routes/admin-finance-accounting-workspace.js -> middleware/require-market-scope (middleware/require-market-scope)
+- depends: routes/admin-finance-accounting-workspace.js -> services/finance-accounting-workspace (services/finance-accounting-workspace)
 - depends: routes/admin-finance-config.js -> db.js (db.js)
-- depends: routes/admin-finance-config.js -> services/* (services/*)
-- depends: routes/admin-loyalty.js -> db.js (db.js)
-- depends: routes/admin-loyalty.js -> services/* (services/*)
-- depends: routes/admin-operations-workspace.js -> db (db)
-- depends: routes/admin-operations-workspace.js -> middleware/auth (middleware/auth)
 
 ## Files Still Without Headers Or Aggregation
 

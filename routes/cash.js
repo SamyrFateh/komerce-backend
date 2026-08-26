@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/cash-operations.js, services/cash-deposit-service.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       cash_collections, cash_deposits, orders, users
  * @db-write      cash_deposits
@@ -42,6 +42,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { collectCash } = require('../services/cash-operations'); // [R5]
+const cashDeposits = require('../services/cash-deposit-service');
 const { cacheCodeForReveal } = require('../services/pickup-secret-service');
 const notifSvc = require('../services/notification-service');
 const log = require('../utils/logger').child({ module: 'cash-route' });
@@ -231,46 +232,19 @@ router.get('/collections', authenticate, requireRelaisOrAdmin, async (req, res, 
 // ══════════════════════════════════════════════════════════════════════════════
 router.post('/deposit', authenticate, requireRelaisOrAdmin, async (req, res, next) => {
   try {
-    const agentId = req.user.id;
-    const {
-      amount_kmf,
-      deposit_method,  // 'mobile_money' | 'bank' | 'physical'
-      reference,       // n° transaction / reçu
-      proof_url,       // photo du justificatif (optionnel)
-      period_start,    // date début période couverte
-      period_end,      // date fin période couverte
-      notes,
-    } = req.body;
-
-    // Validation
-    if (!amount_kmf || amount_kmf <= 0) {
-      return res.status(400).json({ error: 'Montant requis et > 0' });
-    }
-    const METHODS = ['mobile_money', 'bank', 'physical'];
-    if (!METHODS.includes(deposit_method)) {
-      return res.status(400).json({ error: `Méthode invalide. Options: ${METHODS.join(', ')}` });
-    }
-    if (!period_start || !period_end) {
-      return res.status(400).json({ error: 'Période (period_start, period_end) requise' });
-    }
-
-    const { rows: [deposit] } = await db.query(`
-      INSERT INTO cash_deposits
-        (agent_id, amount_kmf, deposit_method, reference, proof_url,
-         period_start, period_end, notes)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *
-    `, [agentId, amount_kmf, deposit_method, reference || null,
-        proof_url || null, period_start, period_end, notes || null]);
-
-    res.status(201).json({
+    const deposit = await cashDeposits.createDeposit({ agentId: req.user.id, payload: req.body || {} });
+    return res.status(201).json({
       success: true,
-      message: `Dépôt de ${Number(amount_kmf).toLocaleString('fr-FR')} KMF enregistré`,
+      message: `Dépôt de ${Number(deposit.amount_kmf).toLocaleString('fr-FR')} KMF enregistré`,
       deposit,
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    if (err instanceof cashDeposits.CashDepositError) {
+      return res.status(err.status || 400).json({ error: err.message });
+    }
+    return next(err);
+  }
 });
-
 // ══════════════════════════════════════════════════════════════════════════════
 // 4. GET /deposits — Liste des dépôts
 // ══════════════════════════════════════════════════════════════════════════════
@@ -331,57 +305,37 @@ router.get('/deposits', authenticate, requireRelaisOrAdmin, async (req, res, nex
 // ══════════════════════════════════════════════════════════════════════════════
 router.post('/deposits/:id/verify', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { notes } = req.body;
-
-    const { rows: [deposit] } = await db.query(`
-      UPDATE cash_deposits
-      SET status = 'verified',
-          verified_by = $1,
-          verified_at = NOW(),
-          notes = COALESCE($3, notes)
-      WHERE id = $2
-      RETURNING *
-    `, [req.user.id, id, notes || null]);
-
-    if (!deposit) {
-      return res.status(404).json({ error: 'Dépôt introuvable' });
+    const deposit = await cashDeposits.verifyDeposit({
+      depositId: req.params.id,
+      verifierId: req.user.id,
+      notes: req.body && req.body.notes,
+    });
+    return res.json({ success: true, message: 'Dépôt vérifié', deposit });
+  } catch (err) {
+    if (err instanceof cashDeposits.CashDepositError) {
+      return res.status(err.status || 400).json({ error: err.message });
     }
-
-    res.json({ success: true, message: 'Dépôt vérifié', deposit });
-  } catch (err) { next(err); }
+    return next(err);
+  }
 });
-
 // ══════════════════════════════════════════════════════════════════════════════
 // 6. POST /deposits/:id/dispute — Admin conteste un dépôt
 // ══════════════════════════════════════════════════════════════════════════════
 router.post('/deposits/:id/dispute', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { reason } = req.body;
-
-    if (!reason) {
-      return res.status(400).json({ error: 'Raison requise' });
+    const deposit = await cashDeposits.disputeDeposit({
+      depositId: req.params.id,
+      verifierId: req.user.id,
+      reason: req.body && req.body.reason,
+    });
+    return res.json({ success: true, message: 'Dépôt contesté', deposit });
+  } catch (err) {
+    if (err instanceof cashDeposits.CashDepositError) {
+      return res.status(err.status || 400).json({ error: err.message });
     }
-
-    const { rows: [deposit] } = await db.query(`
-      UPDATE cash_deposits
-      SET status = 'disputed',
-          verified_by = $1,
-          verified_at = NOW(),
-          notes = $3
-      WHERE id = $2
-      RETURNING *
-    `, [req.user.id, id, reason]);
-
-    if (!deposit) {
-      return res.status(404).json({ error: 'Dépôt introuvable' });
-    }
-
-    res.json({ success: true, message: 'Dépôt contesté', deposit });
-  } catch (err) { next(err); }
+    return next(err);
+  }
 });
-
 // ══════════════════════════════════════════════════════════════════════════════
 // 7. GET /reconciliation — Calcul réconciliation pour une période
 // ══════════════════════════════════════════════════════════════════════════════

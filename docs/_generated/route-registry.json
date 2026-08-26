@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-26T13:05:57.158Z",
+  "generatedAt": "2026-08-26T17:26:45.132Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 503,
+  "count": 507,
   "routes": [
     {
       "method": "GET",
@@ -1591,6 +1591,46 @@
         "bootstrap/api-routes.js",
         "routes/admin.js",
         "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/accounting/market/:marketCode",
+      "mountPrefix": "/api/admin/workspaces/accounting",
+      "localPath": "/market/:marketCode",
+      "routeFile": "routes/admin-finance-accounting-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/accounting/market/:marketCode/deposits",
+      "mountPrefix": "/api/admin/workspaces/accounting",
+      "localPath": "/market/:marketCode/deposits",
+      "routeFile": "routes/admin-finance-accounting-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/accounting/market/:marketCode/deposits/:depositRef/dispute",
+      "mountPrefix": "/api/admin/workspaces/accounting",
+      "localPath": "/market/:marketCode/deposits/:depositRef/dispute",
+      "routeFile": "routes/admin-finance-accounting-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/accounting/market/:marketCode/deposits/:depositRef/verify",
+      "mountPrefix": "/api/admin/workspaces/accounting",
+      "localPath": "/market/:marketCode/deposits/:depositRef/verify",
+      "routeFile": "routes/admin-finance-accounting-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
       ]
     },
     {

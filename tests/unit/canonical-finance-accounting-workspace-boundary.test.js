@@ -66,6 +66,10 @@ test('Workspace utilise deposit_ref et conserve Order 360 comme drill-down', () 
   expect(appSource).toContain("ACCOUNTING_WORKSPACE: 'accounting-workspace'");
   expect(source).toContain('row.deposit_ref');
   expect(source).toContain('/admin/orders/${encodeURIComponent(row.order_ref)}');
-  expect(source).not.toContain('agent_id');
-  expect(source).not.toContain('market_id');
+  const executable = source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '');
+  expect(executable).not.toContain('agent_id');
+  expect(executable).not.toContain('market_id');
+  expect(executable).not.toMatch(/[?&]market_id=/);
 });

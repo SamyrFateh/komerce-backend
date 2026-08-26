@@ -115,6 +115,7 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/workspaces/operations',
     '/admin/workspaces/shipping-customs',
     '/admin/workspaces/catalog',
+    '/admin/workspaces/accounting',
     '/admin/demo',
   ].forEach(routePath => {
     app.get(routePath, (req, res) => {
@@ -152,6 +153,7 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin-next/workspaces/operations': '/admin/workspaces/operations',
     '/admin-next/workspaces/shipping-customs': '/admin/workspaces/shipping-customs',
     '/admin-next/workspaces/catalog': '/admin/workspaces/catalog',
+    '/admin-next/workspaces/accounting': '/admin/workspaces/accounting',
     '/admin-next/demo': '/admin/demo',
     '/admin/pilotage-v2': '/admin/pilotage',
   });

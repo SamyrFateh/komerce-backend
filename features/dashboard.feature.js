@@ -310,6 +310,7 @@ module.exports = {
       'services/dashboard-ops-queries.js',
       'services/hub-dashboard-queries.js',
       'services/relay-dashboard-queries.js',
+      'services/finance-accounting-workspace.js',
     ],
     routes: [
       'routes/admin/dashboard.js',
@@ -319,6 +320,7 @@ module.exports = {
       'routes/admin/system.js',
       'routes/admin/users.js',
       'routes/admin-dashboard.js',
+      'routes/admin-finance-accounting-workspace.js',
       'routes/admin-loyalty.js',
       'routes/admin-radar.js',
       // routes/admin-rules.js — retiré (B2, 2026-07-29) : vérité mutée
@@ -347,6 +349,7 @@ module.exports = {
       'dashboards/canonical/js/dashboard-renderer.js',
       'dashboards/canonical/js/admin-context.js',
       'dashboards/canonical/js/demo-order-flow.js',
+      'dashboards/canonical/js/finance-accounting-workspace.js',
 
       // ── Legacy 1 — admin actuel, gelé maintenance corrective ──────
       'dashboards/admin/index.html',
@@ -461,6 +464,9 @@ module.exports = {
       'tests/unit/canonical-dashboard-schema-renderer.test.js',
       'tests/unit/canonical-dashboard-admin-context.test.js',
       'tests/unit/canonical-demo-order-flow.test.js',
+      'tests/unit/canonical-finance-accounting-workspace-boundary.test.js',
+      'tests/unit/finance-accounting-workspace.test.js',
+      'tests/unit/admin-finance-accounting-workspace-route.test.js',
       'tests/unit/dashboard-cache.test.js',
       'tests/unit/dashboard-clients-route.test.js',
       'tests/unit/dashboard-control-tower.test.js',
