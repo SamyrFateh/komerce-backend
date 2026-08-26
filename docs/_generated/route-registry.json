@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-26T17:26:45.132Z",
+  "generatedAt": "2026-08-26T21:01:36.148Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 507,
+  "count": 519,
   "routes": [
     {
       "method": "GET",
@@ -1909,6 +1909,126 @@
       "mountPrefix": "/api/admin/workspaces/shipping-customs",
       "localPath": "/market/:marketCode/parcels/:reference/confirm-transit",
       "routeFile": "routes/admin-shipping-customs-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/sourcing",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/promote",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/promote",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/reject",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/reject",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/scan",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/scan",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/update",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/update",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/candidates/:candidateRef/watchlist",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/candidates/:candidateRef/watchlist",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/imports",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/imports",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/products/:productRef/update",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/products/:productRef/update",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/suppliers",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/suppliers",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/suppliers/:partnerRef/activate",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/suppliers/:partnerRef/activate",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/suppliers/:partnerRef/deactivate",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/suppliers/:partnerRef/deactivate",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/suppliers/:partnerRef/update",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/suppliers/:partnerRef/update",
+      "routeFile": "routes/admin-sourcing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

@@ -65,6 +65,9 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    middleware: [
+      'middleware/require-sourcing-global-authority.js',
+    ],
     migrations: [
       // 041 crée aussi supplier_catalog_imports (table catalog) dans le même
       // fichier — migration jointe catalog/sourcing à la création du pipeline
@@ -76,16 +79,23 @@ module.exports = {
       'migrations/076_sourcing_candidates_unique.sql',
       'migrations/088_sourcing_standalone_fixes.sql',
       'migrations/102_sourcing_candidates_raw_payload.sql',
+      'migrations/149_sourcing_workspace_business_refs.sql',
     ],
     services: [
       'services/sourcing-candidate-import-service.js',
+      'services/sourcing-candidate-actions.js',
+      'services/sourcing-workspace.js',
     ],
     routes: [
       'routes/sourcing-scanner.js',
+      'routes/admin-sourcing-workspace.js',
     ],
     tests: [
       'tests/unit/sourcing-scanner.test.js',
       'tests/unit/sourcing-candidate-import-service.test.js',
+      'tests/unit/admin-sourcing-workspace-route.test.js',
+      'tests/unit/sourcing-workspace.test.js',
+      'tests/unit/require-sourcing-global-authority.test.js',
     ],
   },
 
@@ -117,8 +127,8 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED',
-    authedRoutesDetected: 11,
-    totalRoutes: 11,
+    authedRoutesDetected: 23,
+    totalRoutes: 23,
     note: 'Toutes les routes /api/admin/sourcing/* exigent authenticate + role admin (requireAdminOrFounder).',
   },
 
@@ -135,6 +145,18 @@ module.exports = {
       'POST /api/admin/sourcing/candidates/:id/import-product',
       'POST /api/admin/sourcing/candidates/:id/reject',
       'POST /api/admin/sourcing/candidates/:id/watchlist',
+      'GET /api/admin/workspaces/sourcing',
+      'POST /api/admin/workspaces/sourcing/imports',
+      'POST /api/admin/workspaces/sourcing/products/:productRef/update',
+      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/update',
+      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/scan',
+      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/promote',
+      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/watchlist',
+      'POST /api/admin/workspaces/sourcing/candidates/:candidateRef/reject',
+      'POST /api/admin/workspaces/sourcing/suppliers',
+      'POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/update',
+      'POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/deactivate',
+      'POST /api/admin/workspaces/sourcing/suppliers/:partnerRef/activate',
     ],
     internalApi: [
       { fn: 'upsertCandidateFromCatalogImport', file: 'services/sourcing-candidate-import-service.js' },
@@ -148,6 +170,7 @@ module.exports = {
         'product_skus/product_sku_media dans la transaction de POST .../import-product)',
       'economic-engine (pricing-engine.loadGlobalConfig — config de scan)',
       'auth',
+      'dashboard (registre partenaires partagé via partner-admin-service ; 4E filtre strictement partner_type=sourcing)',
     ],
   },
 

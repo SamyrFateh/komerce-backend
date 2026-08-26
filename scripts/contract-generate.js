@@ -246,11 +246,38 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/simulator/status',      method: 'get',  schema: null },
   // HEALTH
   { prefix: '/api/health',              method: 'get',    schema: null },
+  // LOT 4E — Canonical Sourcing Workspace (global central actions)
+  { prefix: '/api/admin/workspaces/sourcing', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/imports', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/products/{productRef}/update', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/update', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/scan', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/promote', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/reject', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/suppliers', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/update', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/deactivate', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/activate', method: 'post', schema: null },
+
 ];
 
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 4E — réponses Sourcing Workspace consommées par Canonical.
+  '/api/admin/workspaces/sourcing': { get: { fields: ['scope','summary','portfolio','imports','candidates','suppliers','connectors'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/imports': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/products/{productRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/candidates/{candidateRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/candidates/{candidateRef}/scan': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/candidates/{candidateRef}/promote': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/candidates/{candidateRef}/reject': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/suppliers': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/deactivate': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/suppliers/{partnerRef}/activate': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4D — réponses Finance / Comptabilité Workspace consommées par Canonical.
   '/api/admin/workspaces/accounting/market/{marketCode}': { get: { fields: ['scope','filters','summary','reconciliation','deposits','uncollected','collections','invoices'], source: 'test' } },
   '/api/admin/workspaces/accounting/market/{marketCode}/deposits': { post: { fields: ['ok','action','result'], source: 'test' } },

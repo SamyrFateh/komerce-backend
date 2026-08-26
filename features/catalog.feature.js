@@ -94,6 +94,7 @@ module.exports = {
       'services/suppliers/connectors/json-connector.js',
       'services/supplier-catalog-scanner.js',
       'services/suppliers/catalog-import-orchestrator.js',
+      'services/sourcing-import-dispatch.js',
       'services/suppliers/catalog-import-json.js',
       'services/catalog-eligibility.js',
       'services/catalog-public-view.js',
@@ -127,6 +128,7 @@ module.exports = {
       // komerce-schema — suit services/suppliers/json-source-pipeline.js.
       'migrations/110_catalog_import_audit.sql',
       'migrations/130_deactivate_catalog_test_placeholders.sql',
+      'migrations/150_catalog_import_business_ref.sql',
       'migrations/147_catalog_global_access_grants.sql',
     ],
     config: [
