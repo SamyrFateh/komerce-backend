@@ -1,0 +1,82 @@
+name: Sourcing 4E Legacy test alignment
+
+on:
+  push:
+    branches:
+      - ci/canonical-sourcing-4e-wire-v3
+
+permissions:
+  contents: write
+
+jobs:
+  align-legacy-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-sourcing-workspace-4e
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Align SQL-order-sensitive witness
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tests/unit/sourcing-scanner.test.js')
+          s = p.read_text()
+          old = '''  it('déclenche la conversion KMF et l\\'audit "data_correction" quand purchase_price change', async () => {
+    mockConvertToKMF.mockReturnValueOnce(45000);
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'c1', purchase_price_kmf: 45000 }] }) // UPDATE RETURNING *
+      .mockResolvedValueOnce({ rows: [] });                                       // INSERT event
+
+    const res = await request(app)
+      .put('/api/admin/sourcing/candidates/c1')
+      .send({ purchase_price: 100, currency: 'EUR' });
+
+    expect(res.status).toBe(200);
+    expect(mockLoadGlobalConfig).toHaveBeenCalled();
+    expect(mockConvertToKMF).toHaveBeenCalledWith(100, 'EUR', {});
+    const updateSql = mockQuery.mock.calls[0][0];
+    expect(updateSql).toMatch(/purchase_price_kmf = \\$/);
+    const auditCall = mockQuery.mock.calls[1];
+    expect(auditCall[0]).toMatch(/INSERT INTO sourcing_candidate_events/);
+    expect(auditCall[0]).toMatch(/'data_correction'/);
+  });'''
+          new = '''  it('déclenche la conversion KMF et l\\'audit "data_correction" quand purchase_price change', async () => {
+    mockConvertToKMF.mockReturnValueOnce(45000);
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'c1', currency: 'EUR', purchase_price: 90 }] }) // SELECT current candidate
+      .mockResolvedValueOnce({ rows: [{ id: 'c1', purchase_price_kmf: 45000 }] })            // UPDATE RETURNING *
+      .mockResolvedValueOnce({ rows: [] });                                                   // INSERT event
+
+    const res = await request(app)
+      .put('/api/admin/sourcing/candidates/c1')
+      .send({ purchase_price: 100, currency: 'EUR' });
+
+    expect(res.status).toBe(200);
+    expect(mockLoadGlobalConfig).toHaveBeenCalled();
+    expect(mockConvertToKMF).toHaveBeenCalledWith(100, 'EUR', {});
+    const updateCall = mockQuery.mock.calls.find(([sql]) => /UPDATE sourcing_candidates SET/.test(sql));
+    expect(updateCall).toBeDefined();
+    expect(updateCall[0]).toMatch(/purchase_price_kmf = \\$/);
+    const auditCall = mockQuery.mock.calls.find(([sql]) => /INSERT INTO sourcing_candidate_events/.test(sql));
+    expect(auditCall).toBeDefined();
+    expect(auditCall[0]).toMatch(/'data_correction'/);
+  });'''
+          if old not in s:
+              raise SystemExit('Legacy sourcing witness anchor not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+
+      - name: Commit test alignment to LOT 4E
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/unit/sourcing-scanner.test.js
+          git diff --cached --check
+          git commit -m "test(sourcing): align Legacy witness with shared authority"
+          git push origin HEAD:feat/canonical-sourcing-workspace-4e
