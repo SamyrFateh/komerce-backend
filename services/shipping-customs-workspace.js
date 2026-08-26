@@ -24,6 +24,8 @@ const db = require('../db');
 const scanEngine = require('./scan-engine');
 const customs = require('./customs-shipment-service');
 
+const CUSTOMS_PARCEL_STATUSES = Object.freeze(['shipped', 'in_transit']);
+
 class ShippingCustomsWorkspaceError extends Error {
   constructor(code, message, status = 400) {
     super(message);
@@ -224,9 +226,12 @@ async function confirmTransit(reference, market, actor = {}, notes = null) {
   };
 }
 
-async function resolveParcelRefs(parcelRefs, marketId) {
+async function resolveParcelRefs(parcelRefs, marketId, allowedStatuses = CUSTOMS_PARCEL_STATUSES) {
   const refs = [...new Set((Array.isArray(parcelRefs) ? parcelRefs : []).map(value => String(value || '').trim()).filter(Boolean))];
   if (!refs.length) return [];
+  const statuses = Array.isArray(allowedStatuses) && allowedStatuses.length
+    ? allowedStatuses
+    : CUSTOMS_PARCEL_STATUSES;
   const { rows } = await db.query(
     `SELECT p.id, p.reference, p.status
        FROM parcels p
@@ -234,13 +239,14 @@ async function resolveParcelRefs(parcelRefs, marketId) {
        LEFT JOIN relais r ON r.id = COALESCE(p.relais_id, o.relais_id)
       WHERE p.reference = ANY($1::text[])
         AND o.market_id = $2
-        AND (r.id IS NULL OR r.market_id = $2)`,
-    [refs, marketId]
+        AND (r.id IS NULL OR r.market_id = $2)
+        AND p.status = ANY($3::text[])`,
+    [refs, marketId, statuses]
   );
   if (rows.length !== refs.length) {
     throw new ShippingCustomsWorkspaceError(
       'customs_parcel_scope_mismatch',
-      'Au moins un colis douane est introuvable ou hors du marché sélectionné',
+      'Au moins un colis douane est introuvable, hors du marché sélectionné ou hors du flux expédition/transit',
       404
     );
   }
@@ -374,6 +380,7 @@ module.exports = {
   deactivateCustomsShipment,
   activateCustomsShipment,
   _test: {
+    CUSTOMS_PARCEL_STATUSES,
     requireMarket,
     publicMarket,
     resolveParcel,
