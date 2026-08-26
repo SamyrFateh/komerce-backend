@@ -1,0 +1,349 @@
+name: Pricing 4F wire and proof
+
+on:
+  push:
+    branches:
+      - ci/canonical-pricing-4f-wire
+
+permissions:
+  contents: write
+
+jobs:
+  wire-pricing-workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-pricing-workspace-4f
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Wire Pricing Workspace runtime and ownership
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def patch(path, old, new, required=True):
+              p = Path(path)
+              s = p.read_text()
+              if old in s:
+                  p.write_text(s.replace(old, new, 1))
+                  return
+              if required and new not in s:
+                  raise SystemExit(f'anchor not found in {path}: {old[:120]!r}')
+
+          # Strategy projection must carry the stable competitor ref.
+          patch(
+              'services/pricing-strategy-service.js',
+              '@used-by       routes/pricing-strategy.js',
+              '@used-by       routes/pricing-strategy.js, services/pricing-workspace.js',
+          )
+          patch(
+              'services/pricing-strategy-service.js',
+              'SELECT id, product_id, category, competitor_name, price_kmf, observed_at, source, notes',
+              'SELECT id, competitor_ref, product_id, category, competitor_name, price_kmf, observed_at, source, notes',
+          )
+
+          # Canonical projections never expose internal UUID authority.
+          patch(
+              'services/pricing-workspace.js',
+              "    if (lower === 'id' || lower === 'ids' || lower === 'product_id' || lower === 'competitor_id' || lower === 'component_id' || lower.endsWith('_uuid')) continue;",
+              "    const businessIds = new Set(['scenario_id']);\n    if (lower === 'id' || lower === 'ids' || lower.endsWith('_by') || lower.endsWith('_uuid') || ((lower.endsWith('_id') || lower.endsWith('_ids')) && !businessIds.has(lower))) continue;",
+          )
+          patch(
+              'services/pricing-workspace.js',
+              "function publicComponent(component) {\n  return stripInternalIds(component);\n}",
+              "function publicComponent(component) {\n  const clean = stripInternalIds(component);\n  delete clean.scope_value; // peut contenir un UUID historique selon le scope\n  return clean;\n}",
+          )
+          patch(
+              'services/pricing-workspace.js',
+              ' * @db-write-via:economic-engine delegated pricing/cost services\n',
+              '',
+              required=False,
+          )
+
+          # No CSS.escape dependency in the Canonical test/runtime boundary.
+          patch(
+              'public/dashboards/canonical/js/pricing-workspace.js',
+              '        const input = rootNode.querySelector(`[data-cost-value="${CSS.escape(key)}"]`);',
+              "        const input = Array.from(rootNode.querySelectorAll('[data-cost-value]')).find(node => node.dataset.costValue === key);",
+          )
+
+          # API composition root.
+          patch(
+              'bootstrap/api-routes.js',
+              'routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js\n * @db-write',
+              'routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js\n * @db-write',
+          )
+          patch(
+              'bootstrap/api-routes.js',
+              "  const adminSourcingWorkspaceRouter = require('../routes/admin-sourcing-workspace');\n",
+              "  const adminSourcingWorkspaceRouter = require('../routes/admin-sourcing-workspace');\n  const adminPricingWorkspaceRouter = require('../routes/admin-pricing-workspace');\n",
+          )
+          patch(
+              'bootstrap/api-routes.js',
+              "  app.use('/api/admin/workspaces/sourcing', adminSourcingWorkspaceRouter);\n",
+              "  app.use('/api/admin/workspaces/sourcing', adminSourcingWorkspaceRouter);\n  app.use('/api/admin/workspaces/pricing', adminPricingWorkspaceRouter);\n",
+          )
+
+          # Stable HTML surface + temporary build alias. Legacy source URLs remain untouched.
+          patch(
+              'bootstrap/html-routes.js',
+              "    '/admin/workspaces/sourcing',\n",
+              "    '/admin/workspaces/sourcing',\n    '/admin/workspaces/pricing',\n",
+          )
+          patch(
+              'bootstrap/html-routes.js',
+              "    '/admin-next/workspaces/sourcing': '/admin/workspaces/sourcing',\n",
+              "    '/admin-next/workspaces/sourcing': '/admin/workspaces/sourcing',\n    '/admin-next/workspaces/pricing': '/admin/workspaces/pricing',\n",
+          )
+
+          # Canonical bundle and router. Pricing is global, so no AdminContext dependency.
+          patch(
+              'public/dashboards/canonical/index.html',
+              '  <script src="/dashboards/canonical/js/sourcing-workspace.js"></script>\n',
+              '  <script src="/dashboards/canonical/js/sourcing-workspace.js"></script>\n  <script src="/dashboards/canonical/js/pricing-workspace.js"></script>\n',
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              'finance-accounting-workspace, sourcing-workspace, order-360',
+              'finance-accounting-workspace, sourcing-workspace, pricing-workspace, order-360',
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              '/admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/orders',
+              '/admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/pricing, /admin/orders',
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    SOURCING_WORKSPACE: 'sourcing-workspace',\n",
+              "    SOURCING_WORKSPACE: 'sourcing-workspace',\n    PRICING_WORKSPACE: 'pricing-workspace',\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    if (path === '/admin/workspaces/sourcing' || path === '/admin-next/workspaces/sourcing') {\n      return SURFACES.SOURCING_WORKSPACE;\n    }\n",
+              "    if (path === '/admin/workspaces/sourcing' || path === '/admin-next/workspaces/sourcing') {\n      return SURFACES.SOURCING_WORKSPACE;\n    }\n    if (path === '/admin/workspaces/pricing' || path === '/admin-next/workspaces/pricing') {\n      return SURFACES.PRICING_WORKSPACE;\n    }\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "  function renderOrder360(root, user) {\n",
+              "  function renderPricingWorkspace(root, user) {\n    if (!global.KomerceCanonicalPricingWorkspace) throw new Error('canonical_pricing_workspace_module_missing');\n    return global.KomerceCanonicalPricingWorkspace.mount({\n      root,\n      user,\n      document: global.document,\n      fetch: global.fetch.bind(global),\n      ui: global.KomerceCanonicalUI,\n    });\n  }\n\n  function renderOrder360(root, user) {\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);\n",
+              "    if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);\n    if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspace(root, user);\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              '    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE)\n      ? null',
+              '    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PRICING_WORKSPACE)\n      ? null',
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              '    renderSourcingWorkspace,\n',
+              '    renderSourcingWorkspace,\n    renderPricingWorkspace,\n',
+          )
+
+          # economic-engine owns the Pricing backend authority.
+          p = Path('features/economic-engine.feature.js')
+          s = p.read_text()
+          if 'middleware/require-pricing-global-authority.js' not in s:
+              s = s.replace(
+                  "    services: [\n",
+                  "    middleware: [\n      'middleware/require-pricing-global-authority.js',\n    ],\n    services: [\n",
+                  1,
+              )
+          if 'services/cost-component-admin-service.js' not in s:
+              s = s.replace(
+                  "      'services/pricing-apply.js',\n",
+                  "      'services/pricing-apply.js',\n      'services/cost-component-admin-service.js',\n      'services/pricing-workspace.js',\n",
+                  1,
+              )
+          if 'routes/admin-pricing-workspace.js' not in s:
+              s = s.replace(
+                  "      'routes/pricing.js',\n",
+                  "      'routes/pricing.js',\n      'routes/admin-pricing-workspace.js',\n",
+                  1,
+              )
+          if 'migrations/152_pricing_workspace_global_authority.sql' not in s:
+              s = s.replace(
+                  "      'migrations/119_economic_variables_to_finance_config.sql',\n",
+                  "      'migrations/119_economic_variables_to_finance_config.sql',\n      'migrations/152_pricing_workspace_global_authority.sql',\n",
+                  1,
+              )
+          if 'tests/unit/admin-pricing-workspace-route.test.js' not in s:
+              s = s.replace(
+                  "      'tests/unit/pricing-apply.test.js',\n",
+                  "      'tests/unit/pricing-apply.test.js',\n      'tests/unit/admin-pricing-workspace-route.test.js',\n      'tests/unit/pricing-workspace.test.js',\n      'tests/unit/require-pricing-global-authority.test.js',\n",
+                  1,
+              )
+          if 'docs/contract/PRICING_WORKSPACE_4F.md' not in s:
+              s = s.replace(
+                  "    'docs/adr/ADR-009-source-verite-unifiee.md',\n",
+                  "    'docs/contract/PRICING_WORKSPACE_4F.md',\n    'docs/adr/ADR-009-source-verite-unifiee.md',\n",
+                  1,
+              )
+          if "'pricing_global_access_grants: R'" not in s:
+              s = s.replace(
+                  "      'pricing_strategies: RW',\n",
+                  "      'pricing_strategies: RW',\n      'pricing_global_access_grants: R',\n",
+                  1,
+              )
+          s = s.replace('authedRoutesDetected: 71,\n    totalRoutes: 73,', 'authedRoutesDetected: 82,\n    totalRoutes: 84,')
+          s = s.replace('71/73 routes protégées.', '82/84 routes protégées (dont 11 routes Canonical Pricing 4F sous grant global explicite).')
+          if 'GET /api/admin/workspaces/pricing' not in s:
+              anchor = "      'POST /api/pricing/recommend',\n"
+              block = anchor + \
+                  "      'GET /api/admin/workspaces/pricing',\n" + \
+                  "      'POST /api/admin/workspaces/pricing/simulate',\n" + \
+                  "      'POST /api/admin/workspaces/pricing/flow',\n" + \
+                  "      'POST /api/admin/workspaces/pricing/products/:productRef/apply-price',\n" + \
+                  "      'GET /api/admin/workspaces/pricing/strategy',\n" + \
+                  "      'POST /api/admin/workspaces/pricing/strategy/apply',\n" + \
+                  "      'POST /api/admin/workspaces/pricing/competitors',\n" + \
+                  "      'POST /api/admin/workspaces/pricing/competitors/:competitorRef/deactivate',\n" + \
+                  "      'POST /api/admin/workspaces/pricing/cost-components',\n" + \
+                  "      'POST /api/admin/workspaces/pricing/cost-components/:key/update',\n" + \
+                  "      'POST /api/admin/workspaces/pricing/cost-components/:key/toggle',\n"
+              if anchor not in s:
+                  raise SystemExit('economic-engine exposes anchor missing')
+              s = s.replace(anchor, block, 1)
+          p.write_text(s)
+
+          # Dashboard owns only the Canonical UI surface/boundary test.
+          p = Path('features/dashboard.feature.js')
+          s = p.read_text()
+          if "dashboards/canonical/js/pricing-workspace.js" not in s:
+              s = s.replace(
+                  "      'dashboards/canonical/js/sourcing-workspace.js',\n",
+                  "      'dashboards/canonical/js/sourcing-workspace.js',\n      'dashboards/canonical/js/pricing-workspace.js',\n",
+                  1,
+              )
+          if 'tests/unit/canonical-pricing-workspace-boundary.test.js' not in s:
+              s = s.replace(
+                  "      'tests/unit/canonical-sourcing-workspace-boundary.test.js',\n",
+                  "      'tests/unit/canonical-sourcing-workspace-boundary.test.js',\n      'tests/unit/canonical-pricing-workspace-boundary.test.js',\n",
+                  1,
+              )
+          p.write_text(s)
+          PY
+
+      - name: Add Pricing Workspace to generated API contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/contract-generate.js')
+          s = p.read_text()
+          marker = '// LOT 4F — Canonical Pricing Workspace'
+          if marker not in s:
+              start = s.index('const ROUTE_SCHEMA_MAP = [')
+              end = s.index('\n];', start)
+              block = "\n  // LOT 4F — Canonical Pricing Workspace (global central actions)\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing', method: 'get', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing/simulate', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing/flow', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing/products/{productRef}/apply-price', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing/strategy', method: 'get', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing/strategy/apply', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing/competitors', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing/competitors/{competitorRef}/deactivate', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing/cost-components', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing/cost-components/{key}/update', method: 'post', schema: null },\n" + \
+                "  { prefix: '/api/admin/workspaces/pricing/cost-components/{key}/toggle', method: 'post', schema: null },\n"
+              s = s[:end] + block + s[end:]
+
+          response_marker = '// LOT 4F — réponses Pricing Workspace'
+          if response_marker not in s:
+              anchor = 'const KNOWN_RESPONSES = {\n'
+              block = "  // LOT 4F — réponses Pricing Workspace consommées par Canonical.\n" + \
+                "  '/api/admin/workspaces/pricing': { get: { fields: ['scope','summary','products','recommendations','cost_components','cost_meta','rates'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/pricing/simulate': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/pricing/flow': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/pricing/products/{productRef}/apply-price': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/pricing/strategy': { get: { fields: ['strategy','competitors'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/pricing/strategy/apply': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/pricing/competitors': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/pricing/competitors/{competitorRef}/deactivate': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/pricing/cost-components': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/pricing/cost-components/{key}/update': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+                "  '/api/admin/workspaces/pricing/cost-components/{key}/toggle': { post: { fields: ['ok','action','result'], source: 'test' } },\n"
+              if anchor not in s:
+                  raise SystemExit('KNOWN_RESPONSES anchor missing')
+              s = s.replace(anchor, anchor + block, 1)
+          p.write_text(s)
+          PY
+
+      - name: Generate contracts and governance projections
+        shell: bash
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          node scripts/contract-check.js
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+
+      - name: Focused 4F proof and Legacy compatibility
+        shell: bash
+        run: |
+          npx jest --config jest.unit.config.js --runInBand --forceExit \
+            tests/unit/require-pricing-global-authority.test.js \
+            tests/unit/pricing-workspace.test.js \
+            tests/unit/admin-pricing-workspace-route.test.js \
+            tests/unit/canonical-pricing-workspace-boundary.test.js \
+            tests/unit/admin-cost-components.test.js \
+            tests/unit/pricing-strategy-service.test.js \
+            tests/unit/pricing-strategy-route.test.js \
+            tests/unit/pricing-route.test.js \
+            tests/unit/bootstrap-api-routes.test.js
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+
+      - name: Persist validated 4F wiring
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No validated 4F changes to commit"
+            exit 1
+          fi
+          git commit -m "feat(canonical): wire Pricing Workspace LOT 4F"
+          git push origin HEAD:feat/canonical-pricing-workspace-4f
