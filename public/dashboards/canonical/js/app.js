@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, order-360, client-360, product-360, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, operations, finance, operations-workspace, shipping-customs-workspace, order-360, client-360, product-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/orders/:reference, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -21,13 +21,14 @@
 (function (global) {
   'use strict';
 
-  const ALLOWED_ROLES = new Set(['admin', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'support']);
+  const ALLOWED_ROLES = new Set(['admin', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']);
   const SURFACES = Object.freeze({
     PILOTAGE: 'pilotage',
     COMMERCE: 'commerce',
     OPERATIONS: 'operations',
     FINANCE: 'finance',
     OPERATIONS_WORKSPACE: 'operations-workspace',
+    SHIPPING_CUSTOMS_WORKSPACE: 'shipping-customs-workspace',
     ORDER_360: 'order-360',
     CLIENT_360: 'client-360',
     PRODUCT_360: 'product-360',
@@ -91,6 +92,9 @@
     if (/^\/admin\/products\/[^/]+$/.test(path)) return SURFACES.PRODUCT_360;
     if (path === '/admin/workspaces/operations' || path === '/admin-next/workspaces/operations') {
       return SURFACES.OPERATIONS_WORKSPACE;
+    }
+    if (path === '/admin/workspaces/shipping-customs' || path === '/admin-next/workspaces/shipping-customs') {
+      return SURFACES.SHIPPING_CUSTOMS_WORKSPACE;
     }
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
@@ -286,6 +290,17 @@
     );
   }
 
+  function renderShippingCustomsWorkspace(root, user, adminContext, requestedMarket) {
+    return canonicalMount(
+      global.KomerceCanonicalShippingCustomsWorkspace,
+      'canonical_shipping_customs_workspace_module_missing',
+      root,
+      user,
+      adminContext,
+      requestedMarket
+    );
+  }
+
   function renderOrder360(root, user) {
     if (!global.KomerceCanonicalOrder360) throw new Error('canonical_order_360_module_missing');
     return global.KomerceCanonicalOrder360.mount({
@@ -391,6 +406,15 @@
     });
   }
 
+  function renderShippingCustomsWorkspaceShell(root, user, adminContext) {
+    return renderMarketSurfaceShell(root, user, adminContext, {
+      surface: 'shipping-customs-workspace',
+      title: 'Workspace Expéditions & Douane',
+      requireMarket: true,
+      render: renderShippingCustomsWorkspace,
+    });
+  }
+
   function renderDemo(root, user) {
     if (!global.KomerceDemoOrderFlow) throw new Error('demo_order_flow_module_missing');
     return global.KomerceDemoOrderFlow.mount({
@@ -407,6 +431,7 @@
     if (surface === SURFACES.CLIENT_360) return renderClient360(root, user);
     if (surface === SURFACES.PRODUCT_360) return renderProduct360(root, user);
     if (surface === SURFACES.OPERATIONS_WORKSPACE) return renderOperationsWorkspaceShell(root, user, adminContext);
+    if (surface === SURFACES.SHIPPING_CUSTOMS_WORKSPACE) return renderShippingCustomsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
     if (surface === SURFACES.COMMERCE) return renderCommerceShell(root, user, adminContext);
     if (surface === SURFACES.OPERATIONS) return renderOperationsShell(root, user, adminContext);
@@ -441,6 +466,7 @@
     renderOperations,
     renderFinance,
     renderOperationsWorkspace,
+    renderShippingCustomsWorkspace,
     renderOrder360,
     renderClient360,
     renderProduct360,
@@ -450,6 +476,7 @@
     renderOperationsShell,
     renderFinanceShell,
     renderOperationsWorkspaceShell,
+    renderShippingCustomsWorkspaceShell,
     renderDemo,
     renderReady,
   };

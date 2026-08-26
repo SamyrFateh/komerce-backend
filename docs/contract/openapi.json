@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 18,
-    "total_routes": 452,
+    "total_routes": 459,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -5801,6 +5801,379 @@
           },
           {
             "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/shipping-customs/market/{marketCode}": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/shipping-customs/market/{marketCode}",
+        "x-route-file": "routes/admin-shipping-customs-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "summary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "transit": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "customs": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/shipping-customs/market/{marketCode}/parcels/{reference}/confirm-transit": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/parcels/{reference}/confirm-transit",
+        "x-route-file": "routes/admin-shipping-customs-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments",
+        "x-route-file": "routes/admin-shipping-customs-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/update": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/update",
+        "x-route-file": "routes/admin-shipping-customs-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/declare": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/declare",
+        "x-route-file": "routes/admin-shipping-customs-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate",
+        "x-route-file": "routes/admin-shipping-customs-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/activate": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/activate",
+        "x-route-file": "routes/admin-shipping-customs-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
             "in": "path",
             "required": true,
             "schema": {

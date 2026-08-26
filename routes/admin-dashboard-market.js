@@ -38,7 +38,7 @@ const log = require('../utils/logger').child({ module: 'admin-dashboard-market' 
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
-const requireCanonicalContextRole = requireRole(['admin', 'agent_hub', 'agent_relais']);
+const requireCanonicalContextRole = requireRole(['admin', 'agent_hub', 'agent_relais', 'agent_transitaire']);
 
 function rejectClientMarketId(req, res, next) {
   if (Object.prototype.hasOwnProperty.call(req.query || {}, 'market_id')) {

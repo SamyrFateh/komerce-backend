@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-25T23:42:09.917Z",
+  "generatedAt": "2026-08-26T12:11:42.357Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 483,
+  "count": 490,
   "routes": [
     {
       "method": "GET",
@@ -1669,6 +1669,76 @@
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/parcels/:reference/ship",
       "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode",
+      "mountPrefix": "/api/admin/workspaces/shipping-customs",
+      "localPath": "/market/:marketCode",
+      "routeFile": "routes/admin-shipping-customs-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments",
+      "mountPrefix": "/api/admin/workspaces/shipping-customs",
+      "localPath": "/market/:marketCode/customs/shipments",
+      "routeFile": "routes/admin-shipping-customs-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/activate",
+      "mountPrefix": "/api/admin/workspaces/shipping-customs",
+      "localPath": "/market/:marketCode/customs/shipments/:reference/activate",
+      "routeFile": "routes/admin-shipping-customs-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/deactivate",
+      "mountPrefix": "/api/admin/workspaces/shipping-customs",
+      "localPath": "/market/:marketCode/customs/shipments/:reference/deactivate",
+      "routeFile": "routes/admin-shipping-customs-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/declare",
+      "mountPrefix": "/api/admin/workspaces/shipping-customs",
+      "localPath": "/market/:marketCode/customs/shipments/:reference/declare",
+      "routeFile": "routes/admin-shipping-customs-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/update",
+      "mountPrefix": "/api/admin/workspaces/shipping-customs",
+      "localPath": "/market/:marketCode/customs/shipments/:reference/update",
+      "routeFile": "routes/admin-shipping-customs-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/parcels/:reference/confirm-transit",
+      "mountPrefix": "/api/admin/workspaces/shipping-customs",
+      "localPath": "/market/:marketCode/parcels/:reference/confirm-transit",
+      "routeFile": "routes/admin-shipping-customs-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
