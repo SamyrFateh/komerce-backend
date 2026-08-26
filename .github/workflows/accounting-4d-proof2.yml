@@ -1,0 +1,101 @@
+name: Accounting 4D clean proof
+
+on:
+  push:
+    branches:
+      - ci/canonical-accounting-4d-proof2
+
+permissions:
+  contents: write
+
+jobs:
+  prove-and-wire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-finance-accounting-workspace-4d
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply already-proven LOT 4D transforms and witness fixes
+        run: |
+          git fetch origin ci/canonical-accounting-4d-wire:refs/remotes/origin/ci/canonical-accounting-4d-wire
+          git show 01c704e56676ba776c496203cfc4b8f7d3d63baf:scripts/ci-wire-accounting-4d.js > /tmp/ci-wire-accounting-4d-core.js
+          git show origin/ci/canonical-accounting-4d-wire:scripts/ci-fix-accounting-4d-tests.js > /tmp/ci-fix-accounting-4d-tests.js
+          node /tmp/ci-wire-accounting-4d-core.js
+          node /tmp/ci-fix-accounting-4d-tests.js
+
+      - name: Generate contracts and governance
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          node scripts/contract-check.js
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+
+      - name: Prove LOT 4D
+        run: |
+          node scripts/feature-guard.js --strict
+          npm run business-graph:check
+          npm run feature:360:check
+          npx jest --config jest.unit.config.js --runInBand --forceExit tests/unit/admin-finance-accounting-workspace-route.test.js tests/unit/finance-accounting-workspace.test.js tests/unit/cash-deposit-service.test.js tests/unit/canonical-finance-accounting-workspace-boundary.test.js tests/unit/cash-route.test.js tests/unit/bootstrap-html-routes.test.js
+
+      - name: Verify contract ratchet
+        run: |
+          node - <<'NODE'
+          const doc = require('./docs/contract/openapi.json');
+          let operations = 0;
+          for (const path of Object.values(doc.paths || {})) {
+            operations += Object.keys(path).filter(k => ['get','post','put','patch','delete'].includes(k)).length;
+          }
+          if (operations !== 476) throw new Error(`Expected 476 operations, got ${operations}`);
+          const debt = require('fs').readFileSync('docs/contract/DEBT.md', 'utf8');
+          if (!/UNKNOWN[^\n]*18|18[^\n]*UNKNOWN/i.test(debt)) throw new Error('Expected UNKNOWN debt to remain 18');
+          console.log('LOT 4D contract ratchet: 476 operations / 18 UNKNOWN');
+          NODE
+
+      - name: Commit green LOT 4D wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -u
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No wiring changes to commit"
+            exit 1
+          fi
+          git commit -m "feat(canonical): wire Finance Accounting Workspace LOT 4D"
+          git push origin HEAD:feat/canonical-finance-accounting-workspace-4d
