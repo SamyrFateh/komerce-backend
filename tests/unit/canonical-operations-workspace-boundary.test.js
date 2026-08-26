@@ -82,9 +82,10 @@ test('rôles opérationnels réels sont admis sans ouvrir les dashboards admin',
 
   expect(appSource).toContain("'agent_hub'");
   expect(appSource).toContain("'agent_relais'");
+  expect(appSource).toContain("'agent_transitaire'");
   expect(workspaceRoute).toContain("requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_relais'])");
   expect(workspaceRoute).toContain("requireHubWorkspaceAction = requireRole(['admin', 'agent_hub'])");
   expect(workspaceRoute).toContain("requireRelayWorkspaceAction = requireRole(['admin', 'agent_relais'])");
-  expect(dashboardRoute).toContain("requireCanonicalContextRole = requireRole(['admin', 'agent_hub', 'agent_relais'])");
+  expect(dashboardRoute).toContain("requireCanonicalContextRole = requireRole(['admin', 'agent_hub', 'agent_relais', 'agent_transitaire'])");
   expect(dashboardRoute).toMatch(/'\/operations\/market\/:marketCode',[\s\S]*?authenticate,[\s\S]*?requireAdmin,/);
 });
