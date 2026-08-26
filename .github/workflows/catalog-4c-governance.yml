@@ -1,0 +1,113 @@
+name: Catalog 4C governance refresh one-shot
+
+on:
+  push:
+    branches:
+      - ci/canonical-catalog-4c-governance
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-catalog-governance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-catalog-workspace-4c
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Declare LOT 4C ownership in catalog feature
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('features/catalog.feature.js')
+          s = p.read_text()
+
+          if "'middleware/require-catalog-global-authority.js'" not in s:
+              anchor = "  files: {\n"
+              block = "  files: {\n    middleware: [\n      'middleware/require-catalog-global-authority.js',\n    ],\n"
+              if anchor not in s:
+                  raise SystemExit('catalog files anchor not found')
+              s = s.replace(anchor, block, 1)
+
+          if "'services/boutique-taxonomy-admin.js'" not in s:
+              anchor = "      'services/catalog-approval.js',\n"
+              insert = anchor + "      'services/boutique-taxonomy-admin.js',\n      'services/catalog-workspace.js',\n"
+              if anchor not in s:
+                  raise SystemExit('catalog services anchor not found')
+              s = s.replace(anchor, insert, 1)
+
+          if "'routes/admin-catalog-workspace.js'" not in s:
+              anchor = "      'routes/admin/catalog-approval.js',\n"
+              insert = anchor + "      'routes/admin-catalog-workspace.js',\n"
+              if anchor not in s:
+                  raise SystemExit('catalog routes anchor not found')
+              s = s.replace(anchor, insert, 1)
+
+          if "'migrations/147_catalog_global_access_grants.sql'" not in s:
+              anchor = "      'migrations/130_deactivate_catalog_test_placeholders.sql',\n"
+              insert = anchor + "      'migrations/147_catalog_global_access_grants.sql',\n"
+              if anchor not in s:
+                  raise SystemExit('catalog migrations anchor not found')
+              s = s.replace(anchor, insert, 1)
+
+          test_anchor = "      'tests/unit/catalog-approval.test.js',\n"
+          tests = [
+              'tests/unit/admin-catalog-workspace-route.test.js',
+              'tests/unit/catalog-workspace.test.js',
+              'tests/unit/canonical-catalog-workspace-boundary.test.js',
+              'tests/unit/canonical-catalog-authority-boundary.test.js',
+              'tests/unit/require-catalog-global-authority.test.js',
+          ]
+          if tests[0] not in s:
+              if test_anchor not in s:
+                  raise SystemExit('catalog tests anchor not found')
+              extra = ''.join(f"      '{t}',\n" for t in tests)
+              s = s.replace(test_anchor, test_anchor + extra, 1)
+
+          p.write_text(s)
+          PY
+
+      - name: Regenerate architecture and governance projections
+        run: |
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+
+      - name: Prove governance gates
+        run: |
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+
+      - name: Commit refreshed governance to LOT 4C
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            features/catalog.feature.js \
+            docs/komerce-arch-header-graph.json \
+            docs/KOMERCE_ARCH_HEADER_GRAPH.md \
+            docs/BUSINESS_FEATURE_GRAPH.json \
+            docs/BUSINESS_FEATURE_GRAPH.md \
+            docs/FEATURE_360.json \
+            docs/FEATURE_360.md
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No governance changes to commit"
+            exit 1
+          fi
+          git commit -m "chore(governance): register Catalog Workspace LOT 4C"
+          git push origin HEAD:feat/canonical-catalog-workspace-4c
