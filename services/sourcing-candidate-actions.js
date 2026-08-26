@@ -82,7 +82,7 @@ async function updateCandidate(id, body = {}, actorId = null, q = db) {
     if (!currency) {
       throw new SourcingCandidateActionError(
         400,
-        'Devise introuvable : fournir explicitement currency.',
+        'Devise introuvable : ni fournie dans la requête, ni présente en base pour ce candidat. Fournir explicitement currency.',
         'candidate_currency_required'
       );
     }
@@ -198,7 +198,7 @@ async function promoteCandidate(id, body = {}, actorId = null) {
           409,
           `Import parent non promouvable (statut batch: ${batchStatus}).`,
           'candidate_parent_batch_blocked',
-          { batch_status: batchStatus }
+          { import_id: candidate.import_id, batch_status: batchStatus }
         );
       }
     }
