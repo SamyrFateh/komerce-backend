@@ -205,6 +205,14 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/receive', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/collect', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}/inventory/items/{itemId}/assign', method: 'post', schema: null },
+  // LOT 4B — Canonical Expéditions & Douane Workspace (single-market actions)
+  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/parcels/{reference}/confirm-transit', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/update', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/declare', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/activate', method: 'post', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -224,6 +232,28 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 4B — réponses Expéditions & Douane Workspace consommées par Canonical.
+  '/api/admin/workspaces/shipping-customs/market/{marketCode}': {
+    get: { fields: ['scope','summary','transit','customs'], source: 'test' }
+  },
+  '/api/admin/workspaces/shipping-customs/market/{marketCode}/parcels/{reference}/confirm-transit': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/update': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/declare': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/activate': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
   // LOT 4A — réponses Operations Workspace consommées par Canonical.
   '/api/admin/workspaces/operations/market/{marketCode}': {
     get: { fields: ['scope','summary','queues','distribution','inventory','data_quality'], source: 'test' }
