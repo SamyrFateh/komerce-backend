@@ -10,7 +10,7 @@
  * @used-by       public/boutique/index.html
  * @doctrine      boutique_canal_decouverte, navigation_sans_friction, side_cart_non_intrusif
  * @impact-areas  boutique-home, product-discovery, side-cart, checkout, shared-cart, responsive-layout
- * @version       2026-07
+ * @version       2026-08
  */
 'use strict';
 
@@ -186,6 +186,84 @@ document.addEventListener(
   { capture: true, passive: true }
 );
 
+// ── Carte visible du point relais ────────────────────────────────────────────
+// b-checkout.js rend déjà le lien canonique « Localiser ce relais » à partir
+// du nom + adresse fournis par /api/relais. La régression venait de la refonte
+// compacte du checkout : l'ancienne carte visible avait été supprimée et seul
+// ce lien était resté. On rétablit ici une prévisualisation cartographique
+// toujours visible, comme enrichissement d'interface, sans dupliquer la donnée
+// relais ni la logique de sélection du checkout.
+let _relayMapPreviewObserver = null;
+
+function relayEmbedUrlFromLink(mapLink) {
+  if (!mapLink?.href) return null;
+  try {
+    const url = new URL(mapLink.href, window.location.href);
+    const query = url.searchParams.get('query') || url.searchParams.get('q');
+    return query
+      ? `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`
+      : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function ensureRelayMapPreview(mapLink) {
+  const summary = mapLink?.closest?.('#ck-relais-summary');
+  const container = summary?.parentElement;
+  if (!summary || !container || container.querySelector('.ck-relais-map-preview')) return;
+
+  const embedUrl = relayEmbedUrlFromLink(mapLink);
+  if (!embedUrl) return;
+
+  const preview = document.createElement('div');
+  preview.className = 'ck-relais-map-preview';
+  preview.style.margin = '8px 0 2px';
+  preview.style.overflow = 'hidden';
+  preview.style.border = '1px solid var(--border-sage-14, var(--border))';
+  preview.style.borderRadius = '14px';
+  preview.style.background = 'var(--sand)';
+  preview.style.boxShadow = '0 3px 10px rgba(31,48,36,.04)';
+
+  const frame = document.createElement('iframe');
+  frame.className = 'ck-relais-map-frame';
+  frame.src = embedUrl;
+  frame.title = mapLink.getAttribute('aria-label')
+    ?.replace(/^Localiser\s+/i, 'Carte de ') || 'Carte du point relais';
+  frame.loading = 'lazy';
+  frame.referrerPolicy = 'no-referrer-when-downgrade';
+  frame.allowFullscreen = true;
+  frame.style.display = 'block';
+  frame.style.width = '100%';
+  frame.style.height = 'clamp(150px, 24vw, 190px)';
+  frame.style.border = '0';
+  frame.style.background = 'var(--sand)';
+
+  preview.appendChild(frame);
+  summary.insertAdjacentElement('afterend', preview);
+}
+
+function syncRelayMapPreviews(root = document) {
+  const links = [];
+  if (root?.matches?.('.ck-relais-map-link')) links.push(root);
+  root?.querySelectorAll?.('.ck-relais-map-link').forEach(link => links.push(link));
+  links.forEach(ensureRelayMapPreview);
+}
+
+function installRelayMapPreviews() {
+  syncRelayMapPreviews(document);
+  if (_relayMapPreviewObserver || typeof MutationObserver !== 'function' || !document.body) return;
+
+  _relayMapPreviewObserver = new MutationObserver((records) => {
+    records.forEach((record) => {
+      record.addedNodes.forEach((node) => {
+        if (node?.nodeType === 1) syncRelayMapPreviews(node);
+      });
+    });
+  });
+  _relayMapPreviewObserver.observe(document.body, { childList: true, subtree: true });
+}
+
 // ── CONSTANTES KOMERCE ──────────────────────────────────────────────
 const KOMERCE_WA = '33699272526';
 const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
@@ -206,6 +284,7 @@ const PAVILION_CATEGORY_ALIASES = {
 function init() {
   initDom();
   syncModalViewportOwner();
+  installRelayMapPreviews();
   document.body.classList.add('k-view-shop');
 
   installScrollOwner();
