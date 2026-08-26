@@ -1,0 +1,90 @@
+name: Pricing 4F close direct-service warning
+
+on:
+  push:
+    branches:
+      - ci/canonical-pricing-4f-warning-clean
+
+permissions:
+  contents: write
+
+jobs:
+  close-warning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-pricing-workspace-4f
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Declare direct service witness
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('features/economic-engine.feature.js')
+          s = p.read_text()
+          if 'tests/unit/cost-component-admin-service.test.js' not in s:
+              anchor = "      'tests/unit/admin-cost-components.test.js',\n"
+              if anchor not in s:
+                  raise SystemExit('economic-engine test anchor missing')
+              s = s.replace(anchor, anchor + "      'tests/unit/cost-component-admin-service.test.js',\n", 1)
+              p.write_text(s)
+          PY
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+      - name: Prove warning closed
+        shell: bash
+        run: |
+          npx jest --config jest.unit.config.js --runInBand --forceExit \
+            tests/unit/cost-component-admin-service.test.js \
+            tests/unit/admin-cost-components.test.js \
+            tests/unit/pricing-workspace.test.js \
+            tests/unit/admin-pricing-workspace-route.test.js \
+            tests/unit/canonical-pricing-workspace-boundary.test.js
+          node scripts/feature-guard.js --strict | tee /tmp/feature-guard.log
+          if grep -q 'Pas de test déclaré pour services/cost-component-admin-service.js' /tmp/feature-guard.log; then
+            echo 'Direct service warning still present'
+            exit 1
+          fi
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+      - name: Persist warning closure
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "test(pricing): register direct cost component authority witness"
+          git push origin HEAD:feat/canonical-pricing-workspace-4f
