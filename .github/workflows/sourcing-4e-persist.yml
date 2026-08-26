@@ -1,0 +1,97 @@
+name: Sourcing 4E persist validated wiring
+
+on:
+  push:
+    branches:
+      - ci/canonical-sourcing-4e-persist
+
+permissions:
+  contents: write
+
+jobs:
+  persist-sourcing-workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-sourcing-workspace-4e
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Replay validated 4E steps
+        shell: bash
+        run: |
+          git fetch origin ci/canonical-sourcing-4e-wire-v2:refs/remotes/origin/ci/canonical-sourcing-4e-wire-v2
+          python - <<'PY'
+          import subprocess
+
+          ref = 'origin/ci/canonical-sourcing-4e-wire-v2:.github/workflows/sourcing-4e-wire-v2.yml'
+          text = subprocess.check_output(['git', 'show', ref], text=True)
+          wanted = [
+              'Wire Sourcing Workspace runtime and ownership',
+              'Add Sourcing Workspace to generated API contract',
+              'Generate contracts and governance projections',
+              'Focused 4E proof and Legacy compatibility',
+          ]
+
+          for name in wanted:
+              marker = f'      - name: {name}\n'
+              start = text.index(marker)
+              run_marker = '        run: |\n'
+              run_start = text.index(run_marker, start) + len(run_marker)
+              next_step = text.find('\n      - name:', run_start)
+              if next_step == -1:
+                  next_step = len(text)
+              raw = text[run_start:next_step]
+              lines = []
+              for line in raw.splitlines():
+                  lines.append(line[10:] if line.startswith('          ') else line)
+              script = '\n'.join(lines) + '\n'
+              print(f'==> {name}')
+              subprocess.run(['bash', '-euo', 'pipefail', '-c', script], check=True)
+          PY
+
+      - name: Persist validated wiring
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No validated 4E changes to commit"
+            exit 1
+          fi
+          git commit -m "feat(canonical): wire Sourcing Workspace LOT 4E"
+          git push origin HEAD:feat/canonical-sourcing-workspace-4e
