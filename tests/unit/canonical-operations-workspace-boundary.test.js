@@ -74,3 +74,17 @@ test('Workspace et Dashboard Opérations restent deux surfaces physiques distinc
   expect(workspaceSource).not.toContain('KomerceCanonicalOperations.mount');
   expect(dashboardSource).not.toContain('/api/admin/workspaces/operations/');
 });
+
+test('rôles opérationnels réels sont admis sans ouvrir les dashboards admin', () => {
+  const appSource = fs.readFileSync(path.join(CANONICAL, 'js', 'app.js'), 'utf8');
+  const workspaceRoute = fs.readFileSync(path.join(ROOT, 'routes', 'admin-operations-workspace.js'), 'utf8');
+  const dashboardRoute = fs.readFileSync(path.join(ROOT, 'routes', 'admin-dashboard-market.js'), 'utf8');
+
+  expect(appSource).toContain("'agent_hub'");
+  expect(appSource).toContain("'agent_relais'");
+  expect(workspaceRoute).toContain("requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_relais'])");
+  expect(workspaceRoute).toContain("requireHubWorkspaceAction = requireRole(['admin', 'agent_hub'])");
+  expect(workspaceRoute).toContain("requireRelayWorkspaceAction = requireRole(['admin', 'agent_relais'])");
+  expect(dashboardRoute).toContain("requireCanonicalContextRole = requireRole(['admin', 'agent_hub', 'agent_relais'])");
+  expect(dashboardRoute).toMatch(/'\/operations\/market\/:marketCode',[\s\S]*?authenticate,[\s\S]*?requireAdmin,/);
+});
