@@ -1,0 +1,206 @@
+name: Catalog 4C wire one-shot v2
+
+on:
+  push:
+    branches:
+      - ci/canonical-catalog-4c-wire-v2
+
+permissions:
+  contents: write
+
+jobs:
+  wire-catalog-workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-catalog-workspace-4c
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Wire Catalog Workspace runtime and contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('bootstrap/api-routes.js')
+          s = p.read_text()
+          if "adminCatalogWorkspaceRouter" not in s:
+              s = s.replace(
+                  "  const adminShippingCustomsWorkspaceRouter = require('../routes/admin-shipping-customs-workspace');\n",
+                  "  const adminShippingCustomsWorkspaceRouter = require('../routes/admin-shipping-customs-workspace');\n  const adminCatalogWorkspaceRouter = require('../routes/admin-catalog-workspace');\n",
+                  1,
+              )
+              s = s.replace(
+                  "  app.use('/api/admin/workspaces/shipping-customs', adminShippingCustomsWorkspaceRouter);\n",
+                  "  app.use('/api/admin/workspaces/shipping-customs', adminShippingCustomsWorkspaceRouter);\n  app.use('/api/admin/workspaces/catalog', adminCatalogWorkspaceRouter);\n",
+                  1,
+              )
+              s = s.replace(
+                  'routes/admin-shipping-customs-workspace.js\n * @db-write',
+                  'routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js\n * @db-write',
+                  1,
+              )
+          p.write_text(s)
+
+          p = Path('bootstrap/html-routes.js')
+          s = p.read_text()
+          if "'/admin/workspaces/catalog'" not in s:
+              s = s.replace(
+                  "    '/admin/workspaces/shipping-customs',\n",
+                  "    '/admin/workspaces/shipping-customs',\n    '/admin/workspaces/catalog',\n",
+                  1,
+              )
+              s = s.replace(
+                  "    '/admin-next/workspaces/shipping-customs': '/admin/workspaces/shipping-customs',\n",
+                  "    '/admin-next/workspaces/shipping-customs': '/admin/workspaces/shipping-customs',\n    '/admin-next/workspaces/catalog': '/admin/workspaces/catalog',\n",
+                  1,
+              )
+          if "'/admin/catalog-approval'" not in s:
+              s = s.replace("    '/admin/products',\n", "    '/admin/products',\n    '/admin/catalog-approval',\n", 1)
+          p.write_text(s)
+
+          p = Path('public/dashboards/canonical/index.html')
+          s = p.read_text()
+          if '/dashboards/canonical/js/catalog-workspace.js' not in s:
+              s = s.replace(
+                  '  <script src="/dashboards/canonical/js/shipping-customs-workspace.js"></script>\n',
+                  '  <script src="/dashboards/canonical/js/shipping-customs-workspace.js"></script>\n  <script src="/dashboards/canonical/js/catalog-workspace.js"></script>\n',
+                  1,
+              )
+          p.write_text(s)
+
+          p = Path('public/dashboards/canonical/js/app.js')
+          s = p.read_text()
+          if "CATALOG_WORKSPACE: 'catalog-workspace'" not in s:
+              s = s.replace(
+                  "    SHIPPING_CUSTOMS_WORKSPACE: 'shipping-customs-workspace',\n",
+                  "    SHIPPING_CUSTOMS_WORKSPACE: 'shipping-customs-workspace',\n    CATALOG_WORKSPACE: 'catalog-workspace',\n",
+                  1,
+              )
+              s = s.replace(
+                  "    if (path === '/admin/workspaces/shipping-customs' || path === '/admin-next/workspaces/shipping-customs') {\n      return SURFACES.SHIPPING_CUSTOMS_WORKSPACE;\n    }\n",
+                  "    if (path === '/admin/workspaces/shipping-customs' || path === '/admin-next/workspaces/shipping-customs') {\n      return SURFACES.SHIPPING_CUSTOMS_WORKSPACE;\n    }\n    if (path === '/admin/workspaces/catalog' || path === '/admin-next/workspaces/catalog') {\n      return SURFACES.CATALOG_WORKSPACE;\n    }\n",
+                  1,
+              )
+              marker = "  function renderOrder360(root, user) {\n"
+              block = "  function renderCatalogWorkspace(root, user, adminContext) {\n    if (!global.KomerceCanonicalCatalogWorkspace) throw new Error('canonical_catalog_workspace_module_missing');\n    return global.KomerceCanonicalCatalogWorkspace.mount({\n      root,\n      user,\n      adminContext,\n      document: global.document,\n      fetch: global.fetch.bind(global),\n      ui: global.KomerceCanonicalUI,\n    });\n  }\n\n"
+              if marker not in s:
+                  raise SystemExit('catalog render marker not found')
+              s = s.replace(marker, block + marker, 1)
+              s = s.replace(
+                  "    if (surface === SURFACES.SHIPPING_CUSTOMS_WORKSPACE) return renderShippingCustomsWorkspaceShell(root, user, adminContext);\n",
+                  "    if (surface === SURFACES.SHIPPING_CUSTOMS_WORKSPACE) return renderShippingCustomsWorkspaceShell(root, user, adminContext);\n    if (surface === SURFACES.CATALOG_WORKSPACE) return renderCatalogWorkspace(root, user, adminContext);\n",
+                  1,
+              )
+              s = s.replace(
+                  "    renderShippingCustomsWorkspace,\n",
+                  "    renderShippingCustomsWorkspace,\n    renderCatalogWorkspace,\n",
+                  1,
+              )
+              s = s.replace('shipping-customs-workspace, order-360', 'shipping-customs-workspace, catalog-workspace, order-360', 1)
+              s = s.replace('/admin/workspaces/shipping-customs, /admin/orders', '/admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/orders', 1)
+          p.write_text(s)
+
+          p = Path('scripts/contract-generate.js')
+          s = p.read_text()
+          route_anchor = "  { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/activate', method: 'post', schema: null },\n"
+          route_block = "  // LOT 4C — Canonical Catalogue Workspace (global central actions)\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog', method: 'get', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/products', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/products/{productRef}/update', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/products/{productRef}/deactivate', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/approval/{productRef}/approve', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/approval/{productRef}/reject', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/approval/{productRef}/override', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/categories', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/categories/{key}/update', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/categories/{key}/deactivate', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/categories/{key}/subcategories', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/update', method: 'post', schema: null },\n" + \
+            "  { prefix: '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/deactivate', method: 'post', schema: null },\n"
+          if "LOT 4C — Canonical Catalogue Workspace" not in s:
+              if route_anchor not in s:
+                  raise SystemExit('4C route anchor not found')
+              s = s.replace(route_anchor, route_anchor + route_block, 1)
+
+          response_anchor = "const KNOWN_RESPONSES = {\n"
+          response_block = "  // LOT 4C — réponses Catalogue Workspace consommées par Canonical.\n" + \
+            "  '/api/admin/workspaces/catalog': { get: { fields: ['scope','summary','categories','products','approval'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/products': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/products/{productRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/products/{productRef}/deactivate': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/approval/{productRef}/approve': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/approval/{productRef}/reject': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/approval/{productRef}/override': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/categories': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/categories/{key}/update': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/categories/{key}/deactivate': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/categories/{key}/subcategories': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/update': { post: { fields: ['ok','action','result'], source: 'test' } },\n" + \
+            "  '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/deactivate': { post: { fields: ['ok','action','result'], source: 'test' } },\n"
+          if "// LOT 4C — réponses Catalogue Workspace" not in s:
+              s = s.replace(response_anchor, response_anchor + response_block, 1)
+          p.write_text(s)
+          PY
+
+      - name: Generate contract and run focused proof
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          node scripts/contract-check.js
+          npx jest --config jest.unit.config.js --runInBand --forceExit \
+            tests/unit/admin-catalog-workspace-route.test.js \
+            tests/unit/catalog-workspace.test.js \
+            tests/unit/canonical-catalog-workspace-boundary.test.js \
+            tests/unit/admin-boutique-categories.test.js
+
+      - name: Commit runtime wiring and generated contract to LOT 4C branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            bootstrap/api-routes.js \
+            bootstrap/html-routes.js \
+            public/dashboards/canonical/index.html \
+            public/dashboards/canonical/js/app.js \
+            scripts/contract-generate.js \
+            docs/_generated/route-registry.json \
+            docs/contract/openapi.json \
+            docs/contract/DEBT.md
+          git diff --cached --check
+          git commit -m "feat(canonical): wire Catalog Workspace LOT 4C"
+          git push origin HEAD:feat/canonical-catalog-workspace-4c
