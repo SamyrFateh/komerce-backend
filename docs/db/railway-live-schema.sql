@@ -856,6 +856,28 @@ COMMENT ON TABLE public.catalog_field_overrides IS 'Retouches manuelles par cham
 
 
 --
+-- Name: catalog_global_access_grants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_global_access_grants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    granted_by uuid,
+    reason text,
+    revoked_at timestamp with time zone,
+    revoked_by uuid
+);
+
+
+--
+-- Name: TABLE catalog_global_access_grants; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_global_access_grants IS 'Historique des grants autorisant les mutations du catalogue global Komerce. Le rôle admin seul ne confère jamais cette autorité.';
+
+
+--
 -- Name: catalog_glossary; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3809,7 +3831,13 @@ CREATE TABLE public.relais (
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     island_code character varying(20),
-    market_id uuid NOT NULL
+    market_id uuid NOT NULL,
+    latitude numeric(10,7),
+    longitude numeric(11,7),
+    photo_url text,
+    CONSTRAINT relais_gps_pair_check CHECK (((latitude IS NULL) = (longitude IS NULL))),
+    CONSTRAINT relais_latitude_range_check CHECK (((latitude IS NULL) OR ((latitude >= ('-90'::integer)::numeric) AND (latitude <= (90)::numeric)))),
+    CONSTRAINT relais_longitude_range_check CHECK (((longitude IS NULL) OR ((longitude >= ('-180'::integer)::numeric) AND (longitude <= (180)::numeric))))
 );
 
 
@@ -3818,6 +3846,27 @@ CREATE TABLE public.relais (
 --
 
 COMMENT ON COLUMN public.relais.market_id IS 'Marché auquel ce relais appartient. NOT NULL — un relais est un lieu physique, il ne peut pas exister sans marché. Backfill KM total au 2026-08 (M1b), voir migrations/137_relais_market_id.sql.';
+
+
+--
+-- Name: COLUMN relais.latitude; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.relais.latitude IS 'Latitude GPS exacte du point relais. Toujours renseignée avec longitude.';
+
+
+--
+-- Name: COLUMN relais.longitude; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.relais.longitude IS 'Longitude GPS exacte du point relais. Toujours renseignée avec latitude.';
+
+
+--
+-- Name: COLUMN relais.photo_url; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.relais.photo_url IS 'Photo publique permettant au client de reconnaître physiquement le relais.';
 
 
 --
@@ -5377,6 +5426,14 @@ ALTER TABLE ONLY public.catalog_field_overrides
 
 
 --
+-- Name: catalog_global_access_grants catalog_global_access_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_global_access_grants
+    ADD CONSTRAINT catalog_global_access_grants_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: catalog_glossary catalog_glossary_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6571,6 +6628,13 @@ CREATE INDEX idx_cash_recon_period ON public.cash_reconciliation USING btree (pe
 --
 
 CREATE INDEX idx_cash_recon_status ON public.cash_reconciliation USING btree (status);
+
+
+--
+-- Name: idx_catalog_global_access_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_global_access_user ON public.catalog_global_access_grants USING btree (user_id) WHERE (revoked_at IS NULL);
 
 
 --
@@ -8513,6 +8577,13 @@ CREATE UNIQUE INDEX shared_carts_one_open_per_organizer ON public.shared_carts U
 
 
 --
+-- Name: uniq_active_catalog_global_access; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uniq_active_catalog_global_access ON public.catalog_global_access_grants USING btree (user_id) WHERE (revoked_at IS NULL);
+
+
+--
 -- Name: uniq_active_dashboard_global_access; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8935,6 +9006,30 @@ ALTER TABLE ONLY public.catalog_enrichment_runs
 
 ALTER TABLE ONLY public.catalog_field_overrides
     ADD CONSTRAINT catalog_field_overrides_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: catalog_global_access_grants catalog_global_access_grants_granted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_global_access_grants
+    ADD CONSTRAINT catalog_global_access_grants_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id);
+
+
+--
+-- Name: catalog_global_access_grants catalog_global_access_grants_revoked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_global_access_grants
+    ADD CONSTRAINT catalog_global_access_grants_revoked_by_fkey FOREIGN KEY (revoked_by) REFERENCES public.users(id);
+
+
+--
+-- Name: catalog_global_access_grants catalog_global_access_grants_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_global_access_grants
+    ADD CONSTRAINT catalog_global_access_grants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
