@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 437
-- Files with full headers: 407
+- Scanned code files: 441
+- Files with full headers: 411
 - Files with lite headers: 28
-- Files with any headers: 435
+- Files with any headers: 439
 - Files without headers: 2
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 968
-- Edges: 5063
-- DB tables: 120
-- Doctrines: 253
+- Graph nodes: 981
+- Edges: 5108
+- DB tables: 121
+- Doctrines: 261
 - Impact areas: 160
-- Unresolved code edges: 524
+- Unresolved code edges: 525
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 1
 
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 28
 - decision-signals: 3
 - documents: 15
-- economic-engine: 42
+- economic-engine: 46
 - incident-management: 2
 - infrastructure: 19
 - inventory: 2
@@ -75,12 +75,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - external-adapter: 2
 - machine: 1
 - manual-test: 1
-- middleware: 17
+- middleware: 18
 - presenter: 1
-- route: 109
+- route: 110
 - route-manifest: 1
 - schema: 1
-- service: 175
+- service: 177
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
@@ -168,6 +168,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - middleware/require-catalog-global-authority.js — catalog-global-authorization-guard (catalog, high, full)
 - middleware/require-dashboard-global-authority.js — dashboard-global-authorization-guard (admin-dashboard, high, full)
 - middleware/require-market-scope.js — market-scope-authorization-guard (market, high, full)
+- middleware/require-pricing-global-authority.js — pricing-global-authorization-guard (economic-engine, high, full)
 - middleware/require-recent-auth.js — auth-recent-proof-guard (auth, high, full)
 - middleware/require-sourcing-global-authority.js — sourcing-global-authorization-guard (sourcing, high, full)
 - middleware/soft-auth.js — auth-soft-auth (auth, high, full)
@@ -225,6 +226,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-order-360.js — canonical-order-360-route (admin-dashboard, high, full)
 - routes/admin-pricing-components.js — economic-engine-admin-pricing-components (economic-engine, high, full)
 - routes/admin-pricing-matrices.js — economic-engine-admin-pricing-matrices (economic-engine, high, full)
+- routes/admin-pricing-workspace.js — canonical-pricing-workspace-route (economic-engine, high, full)
 - routes/admin-product-360.js — canonical-product-360-route (admin-dashboard, high, full)
 - routes/admin-radar.js — dashboard-admin-radar (dashboard, high, full)
 - routes/admin-risk-provisions.js — dashboard-admin-risk-provisions (economic-engine, high, full)
@@ -295,6 +297,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/client-notification-service.js — client-notification-service (notification, high, full)
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
+- services/cost-component-admin-service.js — economic-engine-cost-component-admin-service (economic-engine, high, full)
 - services/customs-classification.js — customs-classification (customs, high, full)
 - services/dashboard-admin-context.js — canonical-admin-context-resolver (admin-dashboard, high, full)
 - services/dashboard-cache.js — dashboard-dashboard-cache (dashboard, high, full)
@@ -353,6 +356,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pricing-rates.js — economic-engine-pricing-rates (economic-engine, high, full)
 - services/pricing-recommend.js — economic-engine-pricing-recommend (economic-engine, high, full)
 - services/pricing-strategy-service.js — economic-engine-pricing-strategy-service (economic-engine, high, full)
+- services/pricing-workspace.js — canonical-pricing-workspace-service (economic-engine, high, full)
 - services/product-360.js — canonical-product-360-service (admin-dashboard, high, full)
 - services/product-admin-service.js — catalog-product-admin-service (catalog, high, full)
 - services/product-price-audit.js — catalog-product-price-audit-boundary (catalog, high, full)
@@ -470,8 +474,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/client-notification-service.js -> client_notifications
 - WRITE services/pricing-strategy-service.js -> competitor_prices
 - WRITE routes/pricing.js -> cost_benchmarks
-- WRITE routes/admin-cost-components.js -> cost_component_events
-- WRITE routes/admin-cost-components.js -> cost_components
+- WRITE services/cost-component-admin-service.js -> cost_component_events
+- WRITE services/cost-component-admin-service.js -> cost_components
 - WRITE routes/admin-customs-categories.js -> customs_categories
 - WRITE routes/orders/status.js -> customs_history
 - WRITE routes/admin-customs-shipments.js -> customs_shipment_parcels
@@ -765,6 +769,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: middleware/require-market-scope.js -> db.js (db.js)
 - depends: middleware/require-market-scope.js -> markets (M0) (markets (M0))
 - depends: middleware/require-market-scope.js -> operator_market_scopes (M1) (operator_market_scopes (M1))
+- depends: middleware/require-pricing-global-authority.js -> db.js (db.js)
 - depends: middleware/require-recent-auth.js -> middleware/auth.js session proof context (middleware/auth.js session proof context)
 - depends: middleware/require-sourcing-global-authority.js -> db.js (db.js)
 - depends: middleware/require-verified-identity.js -> db (db)
@@ -815,8 +820,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-client-360.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
 - depends: routes/admin-client-360.js -> middleware/require-market-scope (middleware/require-market-scope)
 - depends: routes/admin-client-360.js -> services/client-360 (services/client-360)
-- depends: routes/admin-cost-components.js -> db.js (db.js)
-- depends: routes/admin-cost-components.js -> services/* (services/*)
 - depends: routes/admin-costing.js -> db.js (db.js)
 - depends: routes/admin-costing.js -> services/* (services/*)
 - depends: routes/admin-customs-categories.js -> db.js (db.js)
@@ -838,6 +841,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-finance-accounting-workspace.js -> middleware/auth (middleware/auth)
 - depends: routes/admin-finance-accounting-workspace.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
 - depends: routes/admin-finance-accounting-workspace.js -> middleware/require-market-scope (middleware/require-market-scope)
+- depends: routes/admin-finance-accounting-workspace.js -> services/finance-accounting-workspace (services/finance-accounting-workspace)
 
 ## Files Still Without Headers Or Aggregation
 

@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 437,
-    "filesWithFullHeaders": 407,
+    "scannedCodeFiles": 441,
+    "filesWithFullHeaders": 411,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 435,
+    "filesWithAnyHeaders": 439,
     "filesWithoutHeaders": 2,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 968,
-    "edges": 5063,
-    "dbTables": 120,
-    "doctrines": 253,
+    "graphNodes": 981,
+    "edges": 5108,
+    "dbTables": 121,
+    "doctrines": 261,
     "impactAreas": 160,
-    "unresolvedCodeEdges": 524,
+    "unresolvedCodeEdges": 525,
     "dbWriteViaOverlapWarnings": 1,
     "multiWriterTables": 62
   },
@@ -37,6 +37,7 @@
     "catalog": 73,
     "admin-dashboard": 19,
     "market": 2,
+    "economic-engine": 46,
     "sourcing": 6,
     "logistics": 38,
     "boutique": 20,
@@ -49,7 +50,6 @@
     "payment": 17,
     "tracking": 1,
     "wallet": 4,
-    "economic-engine": 42,
     "customs": 6,
     "dashboard": 28,
     "business-rules": 1,
@@ -72,7 +72,7 @@
     "cron": 1,
     "composition-root": 1,
     "manual-test": 1,
-    "middleware": 17,
+    "middleware": 18,
     "ui-bootstrap": 4,
     "ui-component": 38,
     "ui-enhancer": 3,
@@ -95,9 +95,9 @@
     "ui-boundary": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 109,
+    "route": 110,
     "entrypoint": 1,
-    "service": 175,
+    "service": 177,
     "external-adapter": 2,
     "machine": 1,
     "data-service": 1,
@@ -106,7 +106,7 @@
   "byCriticality": {
     "critical": 61,
     "medium": 111,
-    "high": 226,
+    "high": 230,
     "low": 37
   },
   "nodes": [
@@ -143,7 +143,8 @@
         "routes/admin-shipping-customs-workspace.js",
         "routes/admin-catalog-workspace.js",
         "routes/admin-finance-accounting-workspace.js",
-        "routes/admin-sourcing-workspace.js"
+        "routes/admin-sourcing-workspace.js",
+        "routes/admin-pricing-workspace.js"
       ],
       "usedBy": [
         "server.js"
@@ -970,6 +971,49 @@
       "impactAreas": [
         "market",
         "admin-authorization"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-pricing-global-authority.js",
+      "file": "middleware/require-pricing-global-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pricing-global-authorization-guard",
+      "domain": "economic-engine",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.user.id",
+        "pricing_global_access_grants"
+      ],
+      "outputs": [
+        "req.pricingGlobalAuthority",
+        "next_or_403"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "pricing_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "pricing_global_authority_explicit",
+        "admin_role_never_implies_canonical_pricing_write"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "admin-dashboard",
+        "authorization"
       ],
       "version": "2026-08"
     },
@@ -4998,37 +5042,28 @@
         "request_or_service_payload"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "response_or_domain_result"
       ],
       "depends": [
-        "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/cost-component-admin-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
-      "dbRead": [
-        "cost_component_events",
-        "cost_components"
-      ],
-      "dbWrite": [
-        "cost_component_events",
-        "cost_components"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
       "dbWriteVia": [],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
+      "dbTxn": [],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "thin_facade",
+        "single_cost_component_mutation_authority"
       ],
       "impactAreas": [
         "economic-engine",
         "admin-dashboard"
       ],
-      "version": "2026-06"
+      "version": "2026-08"
     },
     {
       "id": "routes/admin-costing.js",
@@ -5625,6 +5660,51 @@
         "lot1a_dead_editor_retired_read_only"
       ],
       "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "routes/admin-pricing-workspace.js",
+      "file": "routes/admin-pricing-workspace.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-pricing-workspace-route",
+      "domain": "economic-engine",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_admin",
+        "pricing_global_grant",
+        "business_refs",
+        "pricing_payload"
+      ],
+      "outputs": [
+        "canonical_pricing_projection",
+        "action_results"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "middleware/require-pricing-global-authority.js",
+        "services/pricing-workspace.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "global_pricing_authority",
+        "browser_business_refs_only",
+        "no_market_authority"
+      ],
+      "impactAreas": [
+        "pricing",
         "economic-engine",
         "admin-dashboard"
       ],
@@ -11805,6 +11885,55 @@
       "version": "2026-06"
     },
     {
+      "id": "services/cost-component-admin-service.js",
+      "file": "services/cost-component-admin-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-cost-component-admin-service",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "component_selector",
+        "validated_component_payload",
+        "actor_id"
+      ],
+      "outputs": [
+        "component_projection",
+        "mutation_result",
+        "audit_events"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-cost-components.js",
+        "services/pricing-workspace.js"
+      ],
+      "dbRead": [
+        "cost_components",
+        "cost_component_events"
+      ],
+      "dbWrite": [
+        "cost_components",
+        "cost_component_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "single_cost_component_mutation_authority",
+        "browser_uses_component_key"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "services/create-stripe-order-intent.js",
       "file": "services/create-stripe-order-intent.js",
       "type": "file",
@@ -16157,7 +16286,8 @@
         "services/catalog-product-mutation-service.js"
       ],
       "usedBy": [
-        "routes/pricing-strategy.js"
+        "routes/pricing-strategy.js",
+        "services/pricing-workspace.js"
       ],
       "dbRead": [
         "charges",
@@ -16196,6 +16326,59 @@
         "economic-engine"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/pricing-workspace.js",
+      "file": "services/pricing-workspace.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-pricing-workspace-service",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_ref",
+        "competitor_ref",
+        "cost_component_key",
+        "simulation_payload",
+        "actor"
+      ],
+      "outputs": [
+        "canonical_pricing_projection",
+        "delegated_mutation_results"
+      ],
+      "depends": [
+        "db.js",
+        "services/pricing-engine.js",
+        "services/pricing-recommend.js",
+        "services/pricing-rates.js",
+        "services/pricing-apply.js",
+        "services/pricing-strategy-service.js",
+        "services/cost-component-admin-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "products",
+        "competitor_prices"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "workspace_orchestrates_existing_pricing_authorities",
+        "browser_business_refs_only"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "admin-dashboard",
+        "catalog"
+      ],
+      "version": "2026-08"
     },
     {
       "id": "services/product-360.js",
@@ -20612,6 +20795,11 @@
       "table": "dashboard_global_access_grants"
     },
     {
+      "id": "db:pricing_global_access_grants",
+      "type": "db-table",
+      "table": "pricing_global_access_grants"
+    },
+    {
       "id": "db:sourcing_global_access_grants",
       "type": "db-table",
       "table": "sourcing_global_access_grants"
@@ -20625,16 +20813,6 @@
       "id": "db:operator_market_scopes",
       "type": "db-table",
       "table": "operator_market_scopes"
-    },
-    {
-      "id": "db:cost_component_events",
-      "type": "db-table",
-      "table": "cost_component_events"
-    },
-    {
-      "id": "db:cost_components",
-      "type": "db-table",
-      "table": "cost_components"
     },
     {
       "id": "db:customs_shipments",
@@ -21062,6 +21240,16 @@
       "table": "product_sku_media"
     },
     {
+      "id": "db:cost_components",
+      "type": "db-table",
+      "table": "cost_components"
+    },
+    {
+      "id": "db:cost_component_events",
+      "type": "db-table",
+      "table": "cost_component_events"
+    },
+    {
       "id": "db:customs_effective_rates",
       "type": "db-table",
       "table": "customs_effective_rates"
@@ -21240,6 +21428,16 @@
       "id": "doctrine:KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope",
       "type": "doctrine",
       "doctrine": "KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope"
+    },
+    {
+      "id": "doctrine:pricing_global_authority_explicit",
+      "type": "doctrine",
+      "doctrine": "pricing_global_authority_explicit"
+    },
+    {
+      "id": "doctrine:admin_role_never_implies_canonical_pricing_write",
+      "type": "doctrine",
+      "doctrine": "admin_role_never_implies_canonical_pricing_write"
     },
     {
       "id": "doctrine:auth7_step_up_by_freshness_and_method",
@@ -21727,6 +21925,16 @@
       "doctrine": "client_security_global_only"
     },
     {
+      "id": "doctrine:thin_facade",
+      "type": "doctrine",
+      "doctrine": "thin_facade"
+    },
+    {
+      "id": "doctrine:single_cost_component_mutation_authority",
+      "type": "doctrine",
+      "doctrine": "single_cost_component_mutation_authority"
+    },
+    {
       "id": "doctrine:workspace_single_market_action_context",
       "type": "doctrine",
       "doctrine": "workspace_single_market_action_context"
@@ -21755,6 +21963,21 @@
       "id": "doctrine:lot1a_dead_editor_retired_read_only",
       "type": "doctrine",
       "doctrine": "lot1a_dead_editor_retired_read_only"
+    },
+    {
+      "id": "doctrine:global_pricing_authority",
+      "type": "doctrine",
+      "doctrine": "global_pricing_authority"
+    },
+    {
+      "id": "doctrine:browser_business_refs_only",
+      "type": "doctrine",
+      "doctrine": "browser_business_refs_only"
+    },
+    {
+      "id": "doctrine:no_market_authority",
+      "type": "doctrine",
+      "doctrine": "no_market_authority"
     },
     {
       "id": "doctrine:product_ref_is_business_identity",
@@ -22042,6 +22265,11 @@
       "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
     },
     {
+      "id": "doctrine:browser_uses_component_key",
+      "type": "doctrine",
+      "doctrine": "browser_uses_component_key"
+    },
+    {
       "id": "doctrine:douane_declaration_pivot",
       "type": "doctrine",
       "doctrine": "douane_declaration_pivot"
@@ -22232,6 +22460,11 @@
       "doctrine": "exceptional_pickup_strict_normalized_match"
     },
     {
+      "id": "doctrine:workspace_orchestrates_existing_pricing_authorities",
+      "type": "doctrine",
+      "doctrine": "workspace_orchestrates_existing_pricing_authorities"
+    },
+    {
       "id": "doctrine:sourcing_and_audit_global_only",
       "type": "doctrine",
       "doctrine": "sourcing_and_audit_global_only"
@@ -22285,11 +22518,6 @@
       "id": "doctrine:single_connector_dispatch_authority",
       "type": "doctrine",
       "doctrine": "single_connector_dispatch_authority"
-    },
-    {
-      "id": "doctrine:browser_business_refs_only",
-      "type": "doctrine",
-      "doctrine": "browser_business_refs_only"
     },
     {
       "id": "doctrine:sourcing_partners_only",
@@ -22520,6 +22748,11 @@
       "id": "impact:admin-authorization",
       "type": "impact-area",
       "area": "admin-authorization"
+    },
+    {
+      "id": "impact:pricing",
+      "type": "impact-area",
+      "area": "pricing"
     },
     {
       "id": "impact:account-security",
@@ -22947,11 +23180,6 @@
       "area": "boutique-test-entry"
     },
     {
-      "id": "impact:pricing",
-      "type": "impact-area",
-      "area": "pricing"
-    },
-    {
       "id": "impact:product-selection",
       "type": "impact-area",
       "area": "product-selection"
@@ -23308,6 +23536,12 @@
       "to": "routes/admin-sourcing-workspace.js",
       "type": "depends",
       "label": "routes/admin-sourcing-workspace.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-pricing-workspace.js",
+      "type": "depends",
+      "label": "routes/admin-pricing-workspace.js"
     },
     {
       "from": "server.js",
@@ -24622,6 +24856,60 @@
       "to": "impact:admin-authorization",
       "type": "impact",
       "label": "admin-authorization"
+    },
+    {
+      "from": "middleware/require-pricing-global-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "middleware/require-pricing-global-authority.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "middleware/require-pricing-global-authority.js",
+      "to": "db:pricing_global_access_grants",
+      "type": "db-read",
+      "label": "pricing_global_access_grants"
+    },
+    {
+      "from": "middleware/require-pricing-global-authority.js",
+      "to": "doctrine:pricing_global_authority_explicit",
+      "type": "doctrine",
+      "label": "pricing_global_authority_explicit"
+    },
+    {
+      "from": "middleware/require-pricing-global-authority.js",
+      "to": "doctrine:admin_role_never_implies_canonical_pricing_write",
+      "type": "doctrine",
+      "label": "admin_role_never_implies_canonical_pricing_write"
+    },
+    {
+      "from": "middleware/require-pricing-global-authority.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "middleware/require-pricing-global-authority.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "middleware/require-pricing-global-authority.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "middleware/require-pricing-global-authority.js",
+      "to": "impact:authorization",
+      "type": "impact",
+      "label": "authorization"
     },
     {
       "from": "middleware/require-recent-auth.js",
@@ -30115,21 +30403,15 @@
     },
     {
       "from": "routes/admin-cost-components.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "routes/admin-cost-components.js",
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
     },
     {
       "from": "routes/admin-cost-components.js",
-      "to": "services/*",
+      "to": "services/cost-component-admin-service.js",
       "type": "depends",
-      "label": "services/*"
+      "label": "services/cost-component-admin-service.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -30139,33 +30421,15 @@
     },
     {
       "from": "routes/admin-cost-components.js",
-      "to": "db:cost_component_events",
-      "type": "db-read",
-      "label": "cost_component_events"
-    },
-    {
-      "from": "routes/admin-cost-components.js",
-      "to": "db:cost_components",
-      "type": "db-read",
-      "label": "cost_components"
-    },
-    {
-      "from": "routes/admin-cost-components.js",
-      "to": "db:cost_component_events",
-      "type": "db-write",
-      "label": "cost_component_events"
-    },
-    {
-      "from": "routes/admin-cost-components.js",
-      "to": "db:cost_components",
-      "type": "db-write",
-      "label": "cost_components"
-    },
-    {
-      "from": "routes/admin-cost-components.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:thin_facade",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "thin_facade"
+    },
+    {
+      "from": "routes/admin-cost-components.js",
+      "to": "doctrine:single_cost_component_mutation_authority",
+      "type": "doctrine",
+      "label": "single_cost_component_mutation_authority"
     },
     {
       "from": "routes/admin-cost-components.js",
@@ -31142,6 +31406,66 @@
     },
     {
       "from": "routes/admin-pricing-matrices.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "middleware/require-pricing-global-authority.js",
+      "type": "depends",
+      "label": "middleware/require-pricing-global-authority.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/pricing-workspace.js",
+      "type": "depends",
+      "label": "services/pricing-workspace.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-pricing-workspace.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:global_pricing_authority",
+      "type": "doctrine",
+      "label": "global_pricing_authority"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:browser_business_refs_only",
+      "type": "doctrine",
+      "label": "browser_business_refs_only"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "doctrine:no_market_authority",
+      "type": "doctrine",
+      "label": "no_market_authority"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
@@ -39971,6 +40295,78 @@
       "label": "admin-costing"
     },
     {
+      "from": "services/cost-component-admin-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-cost-components.js",
+      "to": "services/cost-component-admin-service.js",
+      "type": "uses",
+      "label": "routes/admin-cost-components.js"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "services/cost-component-admin-service.js",
+      "type": "uses",
+      "label": "services/pricing-workspace.js"
+    },
+    {
+      "from": "services/cost-component-admin-service.js",
+      "to": "db:cost_components",
+      "type": "db-read",
+      "label": "cost_components"
+    },
+    {
+      "from": "services/cost-component-admin-service.js",
+      "to": "db:cost_component_events",
+      "type": "db-read",
+      "label": "cost_component_events"
+    },
+    {
+      "from": "services/cost-component-admin-service.js",
+      "to": "db:cost_components",
+      "type": "db-write",
+      "label": "cost_components"
+    },
+    {
+      "from": "services/cost-component-admin-service.js",
+      "to": "db:cost_component_events",
+      "type": "db-write",
+      "label": "cost_component_events"
+    },
+    {
+      "from": "services/cost-component-admin-service.js",
+      "to": "doctrine:single_cost_component_mutation_authority",
+      "type": "doctrine",
+      "label": "single_cost_component_mutation_authority"
+    },
+    {
+      "from": "services/cost-component-admin-service.js",
+      "to": "doctrine:browser_uses_component_key",
+      "type": "doctrine",
+      "label": "browser_uses_component_key"
+    },
+    {
+      "from": "services/cost-component-admin-service.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/cost-component-admin-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-component-admin-service.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/create-stripe-order-intent.js",
       "to": "db",
       "type": "depends",
@@ -46887,6 +47283,12 @@
       "label": "routes/pricing-strategy.js"
     },
     {
+      "from": "services/pricing-workspace.js",
+      "to": "services/pricing-strategy-service.js",
+      "type": "uses",
+      "label": "services/pricing-workspace.js"
+    },
+    {
       "from": "services/pricing-strategy-service.js",
       "to": "db:charges",
       "type": "db-read",
@@ -46994,6 +47396,102 @@
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "services/pricing-engine.js",
+      "type": "depends",
+      "label": "services/pricing-engine.js"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "services/pricing-recommend.js",
+      "type": "depends",
+      "label": "services/pricing-recommend.js"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "services/pricing-rates.js",
+      "type": "depends",
+      "label": "services/pricing-rates.js"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "services/pricing-apply.js",
+      "type": "depends",
+      "label": "services/pricing-apply.js"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "services/pricing-strategy-service.js",
+      "type": "depends",
+      "label": "services/pricing-strategy-service.js"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "services/cost-component-admin-service.js",
+      "type": "depends",
+      "label": "services/cost-component-admin-service.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/pricing-workspace.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "db:competitor_prices",
+      "type": "db-read",
+      "label": "competitor_prices"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "doctrine:workspace_orchestrates_existing_pricing_authorities",
+      "type": "doctrine",
+      "label": "workspace_orchestrates_existing_pricing_authorities"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "doctrine:browser_business_refs_only",
+      "type": "doctrine",
+      "label": "browser_business_refs_only"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
     },
     {
       "from": "services/product-360.js",
@@ -53720,7 +54218,8 @@
         "routes/admin-shipping-customs-workspace.js",
         "routes/admin-catalog-workspace.js",
         "routes/admin-finance-accounting-workspace.js",
-        "routes/admin-sourcing-workspace.js"
+        "routes/admin-sourcing-workspace.js",
+        "routes/admin-pricing-workspace.js"
       ],
       "directUsedBy": [
         "server.js"
@@ -53772,6 +54271,7 @@
         "routes/admin-order-360.js",
         "routes/admin-pricing-components.js",
         "routes/admin-pricing-matrices.js",
+        "routes/admin-pricing-workspace.js",
         "routes/admin-product-360.js",
         "routes/admin-radar.js",
         "routes/admin-risk-provisions.js",
@@ -54357,6 +54857,7 @@
         "routes/admin-loyalty.js",
         "routes/admin-pricing-components.js",
         "routes/admin-pricing-matrices.js",
+        "routes/admin-pricing-workspace.js",
         "routes/admin-radar.js",
         "routes/admin-risk-provisions.js",
         "routes/admin-rules.js",
@@ -54678,6 +55179,46 @@
         "doctrine:KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope",
         "impact:admin-authorization",
         "impact:market"
+      ]
+    },
+    "middleware/require-pricing-global-authority.js": {
+      "role": "pricing-global-authorization-guard",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "pricing_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "pricing_global_authority_explicit",
+        "admin_role_never_implies_canonical_pricing_write"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "admin-dashboard",
+        "authorization"
+      ],
+      "mustCheck": [
+        "db:pricing_global_access_grants",
+        "doctrine:admin_role_never_implies_canonical_pricing_write",
+        "doctrine:pricing_global_authority_explicit",
+        "impact:admin-dashboard",
+        "impact:authorization",
+        "impact:economic-engine",
+        "impact:pricing",
+        "routes/admin-pricing-workspace.js"
       ]
     },
     "middleware/require-recent-auth.js": {
@@ -58778,25 +59319,19 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/cost-component-admin-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "cost_component_events",
-        "cost_components"
-      ],
-      "dbWrite": [
-        "cost_component_events",
-        "cost_components"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "thin_facade",
+        "single_cost_component_mutation_authority"
       ],
       "impactAreas": [
         "economic-engine",
@@ -58804,12 +59339,12 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:cost_component_events",
-        "db:cost_components",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:single_cost_component_mutation_authority",
+        "doctrine:thin_facade",
         "impact:admin-dashboard",
         "impact:economic-engine",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/cost-component-admin-service.js"
       ]
     },
     "routes/admin-costing.js": {
@@ -59398,6 +59933,48 @@
         "middleware/auth.js",
         "utils/logger.js",
         "utils/pricing-cache.js"
+      ]
+    },
+    "routes/admin-pricing-workspace.js": {
+      "role": "canonical-pricing-workspace-route",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "middleware/require-pricing-global-authority.js",
+        "services/pricing-workspace.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "global_pricing_authority",
+        "browser_business_refs_only",
+        "no_market_authority"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "doctrine:browser_business_refs_only",
+        "doctrine:global_pricing_authority",
+        "doctrine:no_market_authority",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "impact:pricing",
+        "middleware/auth.js",
+        "middleware/require-pricing-global-authority.js",
+        "services/pricing-workspace.js"
       ]
     },
     "routes/admin-product-360.js": {
@@ -65319,6 +65896,51 @@
         "services/cost-allocation/index.js"
       ]
     },
+    "services/cost-component-admin-service.js": {
+      "role": "economic-engine-cost-component-admin-service",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-cost-components.js",
+        "services/pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "cost_components",
+        "cost_component_events"
+      ],
+      "dbWrite": [
+        "cost_components",
+        "cost_component_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "single_cost_component_mutation_authority",
+        "browser_uses_component_key"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:cost_component_events",
+        "db:cost_components",
+        "doctrine:browser_uses_component_key",
+        "doctrine:single_cost_component_mutation_authority",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "impact:pricing",
+        "routes/admin-cost-components.js",
+        "services/pricing-workspace.js"
+      ]
+    },
     "services/create-stripe-order-intent.js": {
       "role": "payment-create-stripe-order-intent",
       "domain": "payment",
@@ -69308,7 +69930,8 @@
         "impact:economic-engine",
         "routes/pricing.js",
         "services/catalog-product-mutation-service.js",
-        "services/pricing-guards.js"
+        "services/pricing-guards.js",
+        "services/pricing-workspace.js"
       ]
     },
     "services/pricing-cdr.js": {
@@ -69459,6 +70082,7 @@
         "services/pricing-dashboard.js",
         "services/pricing-output.js",
         "services/pricing-recommend.js",
+        "services/pricing-workspace.js",
         "services/sourcing-candidate-actions.js",
         "services/supplier-catalog-scanner.js",
         "services/suppliers/catalog-import-orchestrator.js"
@@ -69554,6 +70178,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
         "routes/pricing.js",
+        "services/pricing-workspace.js",
         "utils/rates.js"
       ]
     },
@@ -69600,6 +70225,7 @@
         "impact:economic-engine",
         "routes/pricing.js",
         "services/pricing-engine.js",
+        "services/pricing-workspace.js",
         "utils/logger.js"
       ]
     },
@@ -69615,7 +70241,8 @@
         "services/catalog-product-mutation-service.js"
       ],
       "directUsedBy": [
-        "routes/pricing-strategy.js"
+        "routes/pricing-strategy.js",
+        "services/pricing-workspace.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -69668,7 +70295,62 @@
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
         "routes/pricing-strategy.js",
-        "services/catalog-product-mutation-service.js"
+        "services/catalog-product-mutation-service.js",
+        "services/pricing-workspace.js"
+      ]
+    },
+    "services/pricing-workspace.js": {
+      "role": "canonical-pricing-workspace-service",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/pricing-engine.js",
+        "services/pricing-recommend.js",
+        "services/pricing-rates.js",
+        "services/pricing-apply.js",
+        "services/pricing-strategy-service.js",
+        "services/cost-component-admin-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "competitor_prices"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "workspace_orchestrates_existing_pricing_authorities",
+        "browser_business_refs_only"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "admin-dashboard",
+        "catalog"
+      ],
+      "mustCheck": [
+        "db:competitor_prices",
+        "db:products",
+        "doctrine:browser_business_refs_only",
+        "doctrine:workspace_orchestrates_existing_pricing_authorities",
+        "impact:admin-dashboard",
+        "impact:catalog",
+        "impact:economic-engine",
+        "impact:pricing",
+        "routes/admin-pricing-workspace.js",
+        "services/cost-component-admin-service.js",
+        "services/pricing-apply.js",
+        "services/pricing-engine.js",
+        "services/pricing-rates.js",
+        "services/pricing-recommend.js",
+        "services/pricing-strategy-service.js"
       ]
     },
     "services/product-360.js": {
@@ -74701,6 +75383,12 @@
       "label": "hors M2)"
     },
     {
+      "from": "middleware/require-pricing-global-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "middleware/require-recent-auth.js",
       "to": "middleware/auth.js session proof context",
       "type": "depends",
@@ -74993,18 +75681,6 @@
       "to": "services/client-360",
       "type": "depends",
       "label": "services/client-360"
-    },
-    {
-      "from": "routes/admin-cost-components.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "routes/admin-cost-components.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
     },
     {
       "from": "routes/admin-costing.js",
@@ -76513,6 +77189,12 @@
       "label": "db"
     },
     {
+      "from": "services/cost-component-admin-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/create-stripe-order-intent.js",
       "to": "db",
       "type": "depends",
@@ -77177,6 +77859,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/pricing-workspace.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/product-360.js",

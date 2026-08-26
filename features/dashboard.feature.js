@@ -353,6 +353,7 @@ module.exports = {
       'dashboards/canonical/js/demo-order-flow.js',
       'dashboards/canonical/js/finance-accounting-workspace.js',
       'dashboards/canonical/js/sourcing-workspace.js',
+      'dashboards/canonical/js/pricing-workspace.js',
 
       // ── Legacy 1 — admin actuel, gelé maintenance corrective ──────
       'dashboards/admin/index.html',
@@ -469,6 +470,7 @@ module.exports = {
       'tests/unit/canonical-demo-order-flow.test.js',
       'tests/unit/canonical-finance-accounting-workspace-boundary.test.js',
       'tests/unit/canonical-sourcing-workspace-boundary.test.js',
+      'tests/unit/canonical-pricing-workspace-boundary.test.js',
       'tests/unit/finance-accounting-workspace.test.js',
       'tests/unit/admin-finance-accounting-workspace-route.test.js',
       'tests/unit/dashboard-cache.test.js',

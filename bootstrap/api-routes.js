@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js
+ * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js
  * @db-write      none
  * @db-read       none
  * @used-by       server.js
@@ -130,6 +130,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const adminCatalogWorkspaceRouter = require('../routes/admin-catalog-workspace');
   const adminFinanceAccountingWorkspaceRouter = require('../routes/admin-finance-accounting-workspace');
   const adminSourcingWorkspaceRouter = require('../routes/admin-sourcing-workspace');
+  const adminPricingWorkspaceRouter = require('../routes/admin-pricing-workspace');
   // ZG-3: adminCollectiveRepairsRouter supprimé — system collective_workspaces démonté (2026-05-30)
   // Les services repair-collective-*.js et la route /api/admin/collective ne sont plus montés.
 
@@ -145,6 +146,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/admin/workspaces/catalog', adminCatalogWorkspaceRouter);
   app.use('/api/admin/workspaces/accounting', adminFinanceAccountingWorkspaceRouter);
   app.use('/api/admin/workspaces/sourcing', adminSourcingWorkspaceRouter);
+  app.use('/api/admin/workspaces/pricing', adminPricingWorkspaceRouter);
   app.use('/api/admin/costing',     require('../routes/admin-costing'));
   app.use('/api/admin',      catalogApprovalRouter);
   app.use('/api/admin',      adminRouter);

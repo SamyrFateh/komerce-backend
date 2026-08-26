@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 18,
-    "total_routes": 488,
+    "total_routes": 499,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -7553,6 +7553,465 @@
         "parameters": [
           {
             "name": "partnerRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/pricing",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "summary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "products": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "recommendations": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "cost_components": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "cost_meta": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "rates": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/simulate": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/simulate",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/flow": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/flow",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/products/{productRef}/apply-price": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/products/{productRef}/apply-price",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "productRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/strategy": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/pricing/strategy",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "strategy": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "competitors": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/strategy/apply": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/strategy/apply",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/competitors": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/competitors",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/competitors/{competitorRef}/deactivate": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/competitors/{competitorRef}/deactivate",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "competitorRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-components": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-components",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-components/{key}/update": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-components/{key}/update",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-components/{key}/toggle": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-components/{key}/toggle",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "key",
             "in": "path",
             "required": true,
             "schema": {
