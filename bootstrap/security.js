@@ -12,7 +12,7 @@
  * @used-by       server.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  bootstrap
- * @version       2026-06
+ * @version       2026-08
  */
 
 'use strict';
@@ -74,7 +74,10 @@ function buildHelmetOptions() {
         fontSrc:     ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
         imgSrc:      ["'self'", "data:", "https:", "http:"],
         connectSrc:  ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://api.stripe.com", "https://www.paypal.com", "https://api.paypal.com", "https://api.sandbox.paypal.com"],
-        frameSrc:    ["'self'", "https://js.stripe.com", "https://hooks.stripe.com", "https://www.paypal.com", "https://www.sandbox.paypal.com"],
+        // Checkout : la carte visible du point relais est un iframe Google Maps.
+        // Autoriser uniquement l'hôte utilisé par l'URL d'embed, sans élargir
+        // frame-src à un wildcard externe.
+        frameSrc:    ["'self'", "https://js.stripe.com", "https://hooks.stripe.com", "https://www.paypal.com", "https://www.sandbox.paypal.com", "https://www.google.com"],
         mediaSrc:    ["'self'"],
         objectSrc:   ["'none'"],
         frameAncestors: ["'none'"],
