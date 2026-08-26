@@ -4,7 +4,7 @@
  * @domain        admin-dashboard
  * @layer         route
  * @criticality   high
- * @inputs        authenticated_admin, requested_market_code, dashboard_filters
+ * @inputs        authenticated_operator, requested_market_code, dashboard_filters
  * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, authorized_market_operations_projection, authorized_market_finance_projection, global_dashboard_gate, canonical_admin_context
  * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context
  * @used-by       bootstrap/api-routes.js
@@ -20,7 +20,7 @@
 
 const express = require('express');
 const db = require('../db');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
 const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const {
   hasDashboardGlobalAuthority,
@@ -38,6 +38,7 @@ const log = require('../utils/logger').child({ module: 'admin-dashboard-market' 
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
+const requireCanonicalContextRole = requireRole(['admin', 'agent_hub', 'agent_relais']);
 
 function rejectClientMarketId(req, res, next) {
   if (Object.prototype.hasOwnProperty.call(req.query || {}, 'market_id')) {
@@ -112,7 +113,7 @@ function requireDashboardMarketRead(req, res, next) {
 router.get(
   '/context',
   authenticate,
-  requireAdmin,
+  requireCanonicalContextRole,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
