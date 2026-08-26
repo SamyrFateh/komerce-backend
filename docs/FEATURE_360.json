@@ -497,7 +497,7 @@
               {
                 "declared": "middleware/csrf-origin.js",
                 "resolvedPath": "middleware/csrf-origin.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "middleware/require-verified-identity.js",
@@ -617,17 +617,17 @@
               {
                 "declared": "utils/auth-session-policy.js",
                 "resolvedPath": "utils/auth-session-policy.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "utils/auth-session.js",
                 "resolvedPath": "utils/auth-session.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "utils/auth-token-policy.js",
                 "resolvedPath": "utils/auth-token-policy.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           }
@@ -1026,7 +1026,7 @@
               {
                 "declared": "services/user-mutation-service.js",
                 "resolvedPath": "services/user-mutation-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -1631,7 +1631,7 @@
               {
                 "declared": "routes/auth-passkey.js",
                 "resolvedPath": "routes/auth-passkey.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -1641,17 +1641,17 @@
               {
                 "declared": "middleware/require-recent-auth.js",
                 "resolvedPath": "middleware/require-recent-auth.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/webauthn-management-service.js",
                 "resolvedPath": "services/webauthn-management-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/webauthn-service.js",
                 "resolvedPath": "services/webauthn-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -2577,8 +2577,18 @@
               }
             ]
           },
+          "middleware": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "middleware/require-catalog-global-authority.js",
+                "resolvedPath": "middleware/require-catalog-global-authority.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
           "migrations": {
-            "count": 11,
+            "count": 12,
             "files": [
               {
                 "declared": "migrations/098_catalog_refinery_foundation.sql",
@@ -2634,15 +2644,25 @@
                 "declared": "migrations/130_deactivate_catalog_test_placeholders.sql",
                 "resolvedPath": "migrations/130_deactivate_catalog_test_placeholders.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/147_catalog_global_access_grants.sql",
+                "resolvedPath": "migrations/147_catalog_global_access_grants.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "routes": {
-            "count": 5,
+            "count": 6,
             "files": [
               {
                 "declared": "routes/admin-boutique-categories.js",
                 "resolvedPath": "routes/admin-boutique-categories.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-catalog-workspace.js",
+                "resolvedPath": "routes/admin-catalog-workspace.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -2693,8 +2713,13 @@
             ]
           },
           "services": {
-            "count": 28,
+            "count": 30,
             "files": [
+              {
+                "declared": "services/boutique-taxonomy-admin.js",
+                "resolvedPath": "services/boutique-taxonomy-admin.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/catalog-approval.js",
                 "resolvedPath": "services/catalog-approval.js",
@@ -2703,7 +2728,7 @@
               {
                 "declared": "services/catalog-candidate-product-service.js",
                 "resolvedPath": "services/catalog-candidate-product-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/catalog-eligibility.js",
@@ -2728,7 +2753,7 @@
               {
                 "declared": "services/catalog-product-mutation-service.js",
                 "resolvedPath": "services/catalog-product-mutation-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/catalog-promotion.js",
@@ -2758,6 +2783,11 @@
               {
                 "declared": "services/catalog-public-view.js",
                 "resolvedPath": "services/catalog-public-view.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-workspace.js",
+                "resolvedPath": "services/catalog-workspace.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -2838,7 +2868,7 @@
             ]
           },
           "tests": {
-            "count": 41,
+            "count": 46,
             "files": [
               {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
@@ -2851,8 +2881,23 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/admin-catalog-workspace-route.test.js",
+                "resolvedPath": "tests/unit/admin-catalog-workspace-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/api-connector-base.test.js",
                 "resolvedPath": "tests/unit/api-connector-base.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-catalog-authority-boundary.test.js",
+                "resolvedPath": "tests/unit/canonical-catalog-authority-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-catalog-workspace-boundary.test.js",
+                "resolvedPath": "tests/unit/canonical-catalog-workspace-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -2951,6 +2996,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/catalog-workspace.test.js",
+                "resolvedPath": "tests/unit/catalog-workspace.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/categories-cache.test.js",
                 "resolvedPath": "tests/unit/categories-cache.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3031,6 +3081,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/require-catalog-global-authority.test.js",
+                "resolvedPath": "tests/unit/require-catalog-global-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/scan-engine-content-verification.test.js",
                 "resolvedPath": "tests/unit/scan-engine-content-verification.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3058,7 +3113,7 @@
             ]
           }
         },
-        "totalFiles": 140,
+        "totalFiles": 150,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 32,
@@ -4888,7 +4943,7 @@
               {
                 "declared": "routes/admin/demo-order-flow.js",
                 "resolvedPath": "routes/admin/demo-order-flow.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "routes/admin/index.js",
@@ -6804,7 +6859,7 @@
               {
                 "declared": "services/economic-config.js",
                 "resolvedPath": "services/economic-config.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/economic-engine-queries.js",
@@ -6814,7 +6869,7 @@
               {
                 "declared": "services/economic-price-audit-service.js",
                 "resolvedPath": "services/economic-price-audit-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/finance-metrics/annulations.js",
@@ -7184,7 +7239,7 @@
               {
                 "declared": "utils/relay-commission.js",
                 "resolvedPath": "utils/relay-commission.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           }
@@ -7942,7 +7997,7 @@
               {
                 "declared": "services/incident-write-service.js",
                 "resolvedPath": "services/incident-write-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -11063,12 +11118,12 @@
               {
                 "declared": "services/parcel-item-mutation-service.js",
                 "resolvedPath": "services/parcel-item-mutation-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/parcel-mutation-service.js",
                 "resolvedPath": "services/parcel-mutation-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/parcel-operations.js",
@@ -11113,7 +11168,7 @@
               {
                 "declared": "services/scan-write-service.js",
                 "resolvedPath": "services/scan-write-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/transport-rails.js",
@@ -12409,12 +12464,12 @@
               {
                 "declared": "middleware/require-market-scope.js",
                 "resolvedPath": "middleware/require-market-scope.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "utils/currency.js",
                 "resolvedPath": "utils/currency.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -13377,17 +13432,17 @@
               {
                 "declared": "services/order-display-snapshot.js",
                 "resolvedPath": "services/order-display-snapshot.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/order-item-availability-service.js",
                 "resolvedPath": "services/order-item-availability-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/order-mutation-service.js",
                 "resolvedPath": "services/order-mutation-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/order-payment-confirmation.js",
@@ -16218,7 +16273,7 @@
               {
                 "declared": "services/purchasing-cancel-service.js",
                 "resolvedPath": "services/purchasing-cancel-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/purchasing-receive-service.js",
@@ -17323,7 +17378,7 @@
               {
                 "declared": "services/cart-share-service.js",
                 "resolvedPath": "services/cart-share-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/shared-cart-creation.js",
@@ -18003,7 +18058,7 @@
               {
                 "declared": "services/sourcing-candidate-import-service.js",
                 "resolvedPath": "services/sourcing-candidate-import-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               }
             ]
           },

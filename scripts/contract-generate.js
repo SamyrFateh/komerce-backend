@@ -213,6 +213,20 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/declare', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/activate', method: 'post', schema: null },
+  // LOT 4C — Canonical Catalogue Workspace (global central actions)
+  { prefix: '/api/admin/workspaces/catalog', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/products', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/products/{productRef}/update', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/products/{productRef}/deactivate', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/approval/{productRef}/approve', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/approval/{productRef}/reject', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/approval/{productRef}/override', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/categories', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/categories/{key}/update', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/categories/{key}/deactivate', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/categories/{key}/subcategories', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/update', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/deactivate', method: 'post', schema: null },
   { prefix: '/api/admin/dashboard/context', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/unified/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
@@ -232,6 +246,20 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 4C — réponses Catalogue Workspace consommées par Canonical.
+  '/api/admin/workspaces/catalog': { get: { fields: ['scope','summary','categories','products','approval'], source: 'test' } },
+  '/api/admin/workspaces/catalog/products': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/products/{productRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/products/{productRef}/deactivate': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/approval/{productRef}/approve': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/approval/{productRef}/reject': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/approval/{productRef}/override': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/categories': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/categories/{key}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/categories/{key}/deactivate': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/categories/{key}/subcategories': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/categories/{key}/subcategories/{subKey}/deactivate': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4B — réponses Expéditions & Douane Workspace consommées par Canonical.
   '/api/admin/workspaces/shipping-customs/market/{marketCode}': {
     get: { fields: ['scope','summary','transit','customs'], source: 'test' }

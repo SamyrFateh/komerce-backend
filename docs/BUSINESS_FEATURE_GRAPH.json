@@ -719,7 +719,7 @@
         "category": "middleware",
         "declared": "middleware/csrf-origin.js",
         "resolvedPath": "middleware/csrf-origin.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth",
@@ -768,21 +768,21 @@
         "category": "utils",
         "declared": "utils/auth-session.js",
         "resolvedPath": "utils/auth-session.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth",
         "category": "utils",
         "declared": "utils/auth-session-policy.js",
         "resolvedPath": "utils/auth-session-policy.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth",
         "category": "utils",
         "declared": "utils/auth-token-policy.js",
         "resolvedPath": "utils/auth-token-policy.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth",
@@ -901,7 +901,7 @@
         "category": "services",
         "declared": "services/user-mutation-service.js",
         "resolvedPath": "services/user-mutation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth-identity",
@@ -1027,28 +1027,28 @@
         "category": "services",
         "declared": "services/webauthn-service.js",
         "resolvedPath": "services/webauthn-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth-passkey",
         "category": "services",
         "declared": "services/webauthn-management-service.js",
         "resolvedPath": "services/webauthn-management-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth-passkey",
         "category": "services",
         "declared": "middleware/require-recent-auth.js",
         "resolvedPath": "middleware/require-recent-auth.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth-passkey",
         "category": "routes",
         "declared": "routes/auth-passkey.js",
         "resolvedPath": "routes/auth-passkey.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "auth-passkey",
@@ -1150,6 +1150,13 @@
       },
       {
         "feature": "catalog",
+        "category": "middleware",
+        "declared": "middleware/require-catalog-global-authority.js",
+        "resolvedPath": "middleware/require-catalog-global-authority.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
         "category": "ci",
         "declared": ".github/workflows/showcase-v2-staging-deploy.yml",
         "resolvedPath": ".github/workflows/showcase-v2-staging-deploy.yml",
@@ -1202,14 +1209,14 @@
         "category": "services",
         "declared": "services/catalog-candidate-product-service.js",
         "resolvedPath": "services/catalog-candidate-product-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
         "category": "services",
         "declared": "services/catalog-product-mutation-service.js",
         "resolvedPath": "services/catalog-product-mutation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
@@ -1374,6 +1381,20 @@
       },
       {
         "feature": "catalog",
+        "category": "services",
+        "declared": "services/boutique-taxonomy-admin.js",
+        "resolvedPath": "services/boutique-taxonomy-admin.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-workspace.js",
+        "resolvedPath": "services/catalog-workspace.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
         "category": "schemas",
         "declared": "schemas/catalog/normalized-supplier-product.v1.schema.json",
         "resolvedPath": "schemas/catalog/normalized-supplier-product.v1.schema.json",
@@ -1479,6 +1500,13 @@
       },
       {
         "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/147_catalog_global_access_grants.sql",
+        "resolvedPath": "migrations/147_catalog_global_access_grants.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
         "category": "config",
         "declared": "config/import-profiles/komerce-test-dummyjson.v1.json",
         "resolvedPath": "config/import-profiles/komerce-test-dummyjson.v1.json",
@@ -1545,6 +1573,13 @@
         "category": "routes",
         "declared": "routes/admin/catalog-approval.js",
         "resolvedPath": "routes/admin/catalog-approval.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "routes",
+        "declared": "routes/admin-catalog-workspace.js",
+        "resolvedPath": "routes/admin-catalog-workspace.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -2129,6 +2164,41 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/admin-catalog-workspace-route.test.js",
+        "resolvedPath": "tests/unit/admin-catalog-workspace-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-workspace.test.js",
+        "resolvedPath": "tests/unit/catalog-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/canonical-catalog-workspace-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-catalog-workspace-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/canonical-catalog-authority-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-catalog-authority-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/require-catalog-global-authority.test.js",
+        "resolvedPath": "tests/unit/require-catalog-global-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "customs",
         "category": "services",
         "declared": "services/customs-classification.js",
@@ -2350,7 +2420,7 @@
         "category": "routes",
         "declared": "routes/admin/demo-order-flow.js",
         "resolvedPath": "routes/admin/demo-order-flow.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "dashboard",
@@ -3645,7 +3715,7 @@
         "category": "utils",
         "declared": "utils/relay-commission.js",
         "resolvedPath": "utils/relay-commission.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "economic-engine",
@@ -3785,7 +3855,7 @@
         "category": "services",
         "declared": "services/economic-config.js",
         "resolvedPath": "services/economic-config.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "economic-engine",
@@ -3799,7 +3869,7 @@
         "category": "services",
         "declared": "services/economic-price-audit-service.js",
         "resolvedPath": "services/economic-price-audit-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "economic-engine",
@@ -4464,7 +4534,7 @@
         "category": "services",
         "declared": "services/incident-write-service.js",
         "resolvedPath": "services/incident-write-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "incident-management",
@@ -6515,14 +6585,14 @@
         "category": "services",
         "declared": "services/parcel-item-mutation-service.js",
         "resolvedPath": "services/parcel-item-mutation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
         "category": "services",
         "declared": "services/parcel-mutation-service.js",
         "resolvedPath": "services/parcel-mutation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -6543,7 +6613,7 @@
         "category": "services",
         "declared": "services/scan-write-service.js",
         "resolvedPath": "services/scan-write-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -7124,14 +7194,14 @@
         "category": "services",
         "declared": "middleware/require-market-scope.js",
         "resolvedPath": "middleware/require-market-scope.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "market",
         "category": "services",
         "declared": "utils/currency.js",
         "resolvedPath": "utils/currency.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "market",
@@ -7544,7 +7614,7 @@
         "category": "services",
         "declared": "services/order-display-snapshot.js",
         "resolvedPath": "services/order-display-snapshot.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -7579,14 +7649,14 @@
         "category": "services",
         "declared": "services/order-item-availability-service.js",
         "resolvedPath": "services/order-item-availability-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
         "category": "services",
         "declared": "services/order-mutation-service.js",
         "resolvedPath": "services/order-mutation-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -8489,7 +8559,7 @@
         "category": "services",
         "declared": "services/purchasing-cancel-service.js",
         "resolvedPath": "services/purchasing-cancel-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
@@ -8720,7 +8790,7 @@
         "category": "services",
         "declared": "services/cart-share-service.js",
         "resolvedPath": "services/cart-share-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "shared-cart",
@@ -9091,7 +9161,7 @@
         "category": "services",
         "declared": "services/sourcing-candidate-import-service.js",
         "resolvedPath": "services/sourcing-candidate-import-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "sourcing",
@@ -18297,6 +18367,10 @@
               {
                 "sourceFileId": "routes/admin/catalog-approval.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-catalog-workspace.js",
+                "targetFile": "middleware/auth.js"
               }
             ]
           }
@@ -18408,6 +18482,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "middleware/require-catalog-global-authority.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "utils/categories-cache.js",
                 "targetFile": "utils/logger.js"
               },
@@ -18456,6 +18534,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/boutique-taxonomy-admin.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/catalog-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/products.js",
                 "targetFile": "db.js"
               },
@@ -18480,12 +18566,12 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "routes/admin-boutique-categories.js",
+                "sourceFileId": "routes/categories.js",
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "routes/categories.js",
-                "targetFile": "db.js"
+                "sourceFileId": "routes/admin-catalog-workspace.js",
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "tests/unit/catalog-promotion.test.js",
@@ -18542,6 +18628,10 @@
               {
                 "sourceFileId": "tests/integration/catalog-import-json.integration.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/canonical-catalog-workspace-boundary.test.js",
+                "targetFile": "bootstrap/html-routes.js"
               }
             ]
           }
@@ -20496,6 +20586,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin/catalog-approval.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-catalog-workspace.js"
               }
             ]
           }
@@ -25699,7 +25793,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 866
+        "filesObserved": 875
       },
       "boutique": {
         "filesObserved": 169,
@@ -27763,15 +27857,32 @@
       "resolution": "single-writer"
     }
   },
-  "orphanTechnicalNodes": [],
+  "orphanTechnicalNodes": [
+    "routes/admin-client-360.js",
+    "routes/admin-dashboard-market.js",
+    "routes/admin-operations-workspace.js",
+    "routes/admin-order-360.js",
+    "routes/admin-product-360.js",
+    "routes/admin-shipping-customs-workspace.js",
+    "services/client-360.js",
+    "services/dashboard-admin-context.js",
+    "services/dashboard-commerce.js",
+    "services/dashboard-finance-canonical.js",
+    "services/dashboard-operations.js",
+    "services/dashboard-pilotage-market.js",
+    "services/operations-workspace.js",
+    "services/order-360.js",
+    "services/product-360.js",
+    "services/shipping-customs-workspace.js"
+  ],
   "bigMap": {
     "perRepo": {
       "backend": {
         "manifestsDiscovered": 27,
         "manifestsConnected": 27,
-        "technicalNodesTotal": 289,
-        "technicalNodesOwned": 289,
-        "technicalOrphans": 0
+        "technicalNodesTotal": 337,
+        "technicalNodesOwned": 321,
+        "technicalOrphans": 16
       },
       "dash": {
         "manifestsDiscovered": 3,
@@ -27784,8 +27895,8 @@
       "boutique": {
         "manifestsDiscovered": 15,
         "manifestsConnected": 15,
-        "technicalNodesTotal": 80,
-        "technicalNodesOwned": 80,
+        "technicalNodesTotal": 89,
+        "technicalNodesOwned": 89,
         "technicalOrphans": 0
       }
     },
@@ -27835,7 +27946,7 @@
           "openQuestion": "Faut-il créer une feature 'analytics' dédiée côté backend/dash (si un service de collecte équivalent existe ou est prévu côté serveur), ou rattacher ce manifeste à une feature existante par proximité fonctionnelle (ex. platform-ops) ? Décision produit non tranchée par O4."
         }
       ],
-      "technicalOrphansRemaining": 0
+      "technicalOrphansRemaining": 16
     }
   },
   "scopeTopology": {
@@ -27860,8 +27971,170 @@
   },
   "drifts": {
     "error": [],
-    "warn": [],
-    "debt": [],
+    "warn": [
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-client-360.js",
+        "msg": "nœud technique \"routes/admin-client-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-dashboard-market.js",
+        "msg": "nœud technique \"routes/admin-dashboard-market.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-operations-workspace.js",
+        "msg": "nœud technique \"routes/admin-operations-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-order-360.js",
+        "msg": "nœud technique \"routes/admin-order-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-product-360.js",
+        "msg": "nœud technique \"routes/admin-product-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-shipping-customs-workspace.js",
+        "msg": "nœud technique \"routes/admin-shipping-customs-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/client-360.js",
+        "msg": "nœud technique \"services/client-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/dashboard-admin-context.js",
+        "msg": "nœud technique \"services/dashboard-admin-context.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/dashboard-commerce.js",
+        "msg": "nœud technique \"services/dashboard-commerce.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/dashboard-finance-canonical.js",
+        "msg": "nœud technique \"services/dashboard-finance-canonical.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/dashboard-operations.js",
+        "msg": "nœud technique \"services/dashboard-operations.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/dashboard-pilotage-market.js",
+        "msg": "nœud technique \"services/dashboard-pilotage-market.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/operations-workspace.js",
+        "msg": "nœud technique \"services/operations-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/order-360.js",
+        "msg": "nœud technique \"services/order-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/product-360.js",
+        "msg": "nœud technique \"services/product-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/shipping-customs-workspace.js",
+        "msg": "nœud technique \"services/shipping-customs-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      }
+    ],
+    "debt": [
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-client-360.js",
+        "msg": "nœud technique \"routes/admin-client-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-dashboard-market.js",
+        "msg": "nœud technique \"routes/admin-dashboard-market.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-operations-workspace.js",
+        "msg": "nœud technique \"routes/admin-operations-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-order-360.js",
+        "msg": "nœud technique \"routes/admin-order-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-product-360.js",
+        "msg": "nœud technique \"routes/admin-product-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "routes/admin-shipping-customs-workspace.js",
+        "msg": "nœud technique \"routes/admin-shipping-customs-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/client-360.js",
+        "msg": "nœud technique \"services/client-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/dashboard-admin-context.js",
+        "msg": "nœud technique \"services/dashboard-admin-context.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/dashboard-commerce.js",
+        "msg": "nœud technique \"services/dashboard-commerce.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/dashboard-finance-canonical.js",
+        "msg": "nœud technique \"services/dashboard-finance-canonical.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/dashboard-operations.js",
+        "msg": "nœud technique \"services/dashboard-operations.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/dashboard-pilotage-market.js",
+        "msg": "nœud technique \"services/dashboard-pilotage-market.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/operations-workspace.js",
+        "msg": "nœud technique \"services/operations-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/order-360.js",
+        "msg": "nœud technique \"services/order-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/product-360.js",
+        "msg": "nœud technique \"services/product-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      },
+      {
+        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
+        "ref": "services/shipping-customs-workspace.js",
+        "msg": "nœud technique \"services/shipping-customs-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
+      }
+    ],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -28067,11 +28340,11 @@
       }
     ],
     "summary": {
-      "signals": 0,
-      "debt": 0,
+      "signals": 16,
+      "debt": 16,
       "expectedTopology": 32,
       "generatorLimitations": 8,
-      "classifiedCandidates": 40
+      "classifiedCandidates": 56
     }
   }
 }

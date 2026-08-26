@@ -74,9 +74,9 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 27 | 27 | 289 | 289 | 0 |
+| backend | 27 | 27 | 337 | 321 | 16 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 15 | 15 | 80 | 80 | 0 |
+| boutique | 15 | 15 | 89 | 89 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -172,17 +172,18 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.
 
+- middleware: 1
 - ci: 3
 - utils: 1
-- services: 28
+- services: 30
 - schemas: 4
-- migrations: 11
+- migrations: 12
 - config: 1
 - docs: 4
-- routes: 5
+- routes: 6
 - boutique: 38
 - dash: 4
-- tests: 41
+- tests: 46
 - tables owned (lifecycle): 13 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `catalog_media`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_attributes`, `supplier_catalog_imports`
 - tables written: 13
 - interfaces exposed: 31
@@ -1493,11 +1494,26 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (0)
+### DETTE / DRIFT ACTIONNABLE (16)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- none
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-client-360.js — nœud technique "routes/admin-client-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-dashboard-market.js — nœud technique "routes/admin-dashboard-market.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-operations-workspace.js — nœud technique "routes/admin-operations-workspace.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-order-360.js — nœud technique "routes/admin-order-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-product-360.js — nœud technique "routes/admin-product-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-shipping-customs-workspace.js — nœud technique "routes/admin-shipping-customs-workspace.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/client-360.js — nœud technique "services/client-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/dashboard-admin-context.js — nœud technique "services/dashboard-admin-context.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/dashboard-commerce.js — nœud technique "services/dashboard-commerce.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/dashboard-finance-canonical.js — nœud technique "services/dashboard-finance-canonical.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/dashboard-operations.js — nœud technique "services/dashboard-operations.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/dashboard-pilotage-market.js — nœud technique "services/dashboard-pilotage-market.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/operations-workspace.js — nœud technique "services/operations-workspace.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/order-360.js — nœud technique "services/order-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/product-360.js — nœud technique "services/product-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/shipping-customs-workspace.js — nœud technique "services/shipping-customs-workspace.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
 
 ### TOPOLOGIE ATTENDUE — hors dette (32)
 
@@ -1549,7 +1565,22 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 Fichiers présents dans le Technical Architecture Graph, non revendiqués par une carte feature ni un transversal déclaré (`governance/transversal-paths.json`).
 
-- none
+- routes/admin-client-360.js
+- routes/admin-dashboard-market.js
+- routes/admin-operations-workspace.js
+- routes/admin-order-360.js
+- routes/admin-product-360.js
+- routes/admin-shipping-customs-workspace.js
+- services/client-360.js
+- services/dashboard-admin-context.js
+- services/dashboard-commerce.js
+- services/dashboard-finance-canonical.js
+- services/dashboard-operations.js
+- services/dashboard-pilotage-market.js
+- services/operations-workspace.js
+- services/order-360.js
+- services/product-360.js
+- services/shipping-customs-workspace.js
 
 ## Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate
 
@@ -1557,7 +1588,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 866 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 875 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 169 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1596,11 +1627,11 @@ Meta Graph monté : oui.
 | auth-passkey | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | business-rules | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | business-rules | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| catalog | auth | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | catalog | auth-identity | interface | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | business-rules | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | catalog | economic-engine | static-code | 7 | **DECLARED_AND_OBSERVED** |
-| catalog | infrastructure | static-code | 34 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 38 | **DECLARED_AND_OBSERVED** |
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | orders | static-code | 12 | **DECLARED_AND_OBSERVED** |
@@ -1644,7 +1675,7 @@ Meta Graph monté : oui.
 | infrastructure | auth-identity | static-code | 3 | **OBSERVED_UNDECLARED** |
 | infrastructure | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | business-rules | static-code | 3 | **OBSERVED_UNDECLARED** |
-| infrastructure | catalog | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| infrastructure | catalog | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | infrastructure | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | infrastructure | dashboard | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | infrastructure | decision-signals | static-code | 2 | **OBSERVED_UNDECLARED** |

@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js
+ * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js
  * @db-write      none
  * @db-read       none
  * @used-by       server.js
@@ -127,6 +127,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const adminProduct360Router = require('../routes/admin-product-360');
   const adminOperationsWorkspaceRouter = require('../routes/admin-operations-workspace');
   const adminShippingCustomsWorkspaceRouter = require('../routes/admin-shipping-customs-workspace');
+  const adminCatalogWorkspaceRouter = require('../routes/admin-catalog-workspace');
   // ZG-3: adminCollectiveRepairsRouter supprimé — system collective_workspaces démonté (2026-05-30)
   // Les services repair-collective-*.js et la route /api/admin/collective ne sont plus montés.
 
@@ -139,6 +140,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/admin/entities',    adminProduct360Router);
   app.use('/api/admin/workspaces/operations', adminOperationsWorkspaceRouter);
   app.use('/api/admin/workspaces/shipping-customs', adminShippingCustomsWorkspaceRouter);
+  app.use('/api/admin/workspaces/catalog', adminCatalogWorkspaceRouter);
   app.use('/api/admin/costing',     require('../routes/admin-costing'));
   app.use('/api/admin',      catalogApprovalRouter);
   app.use('/api/admin',      adminRouter);
