@@ -5,6 +5,16 @@ root = Path(sys.argv[1] if len(sys.argv) > 1 else '.')
 p = root / 'scripts/gen-security-360.js'
 src = p.read_text()
 
+# WebAuthn login is the authentication ceremony itself. Keep the allow-list
+# deliberately narrow: registration, step-up and credential management remain
+# guarded and must never inherit this public classification.
+public_anchor = "  /^\\/api\\/auth\\/(login|register|refresh|forgot|reset|verify|logout|me)/,\n"
+public_line = public_anchor + "  /^\\/api\\/auth\\/passkey\\/login\\/(options|verify)$/,\n"
+if "passkey\\/login\\/(options|verify)" not in src:
+    if public_anchor not in src:
+        raise SystemExit('PUBLIC_OK auth anchor not found')
+    src = src.replace(public_anchor, public_line, 1)
+
 anchor = "function mergeInto(t, a) { t.authn = t.authn || a.authn; t.admin = t.admin || a.admin; a.roles.forEach(r => t.roles.add(r)); }\n"
 helpers = r'''
 
