@@ -6,10 +6,10 @@ on:
       - ci/debt-zero-absolute-close
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  probe:
+  integrate-data-channel:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -18,17 +18,40 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Preserve probes
-        run: |
-          cp scripts/debt-zero-data-channel-probe.js /tmp/debt-zero-data-channel-probe.js
-          cp scripts/debt-zero-data-drift-report.js /tmp/debt-zero-data-drift-report.js
+      - name: Preserve integration script
+        run: cp scripts/debt-zero-integrate-data-channel.js /tmp/debt-zero-integrate-data-channel.js
       - name: Switch to product branch
         run: git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
-      - name: Run data-channel probe
+      - name: Apply canonical data channel
         run: |
-          cp /tmp/debt-zero-data-channel-probe.js scripts/debt-zero-data-channel-probe.js
-          node scripts/debt-zero-data-channel-probe.js || true
-      - name: Report resulting drift
+          cp /tmp/debt-zero-integrate-data-channel.js scripts/debt-zero-integrate-data-channel.js
+          node scripts/debt-zero-integrate-data-channel.js
+          rm scripts/debt-zero-integrate-data-channel.js
+      - name: Prove data-channel semantics
+        run: npx jest tests/unit/feature-dependency-data-channel.test.js tests/unit/feature-360-internal-api-projection.test.js --runInBand
+      - name: Regenerate canonical governance artifacts
         run: |
-          cp /tmp/debt-zero-data-drift-report.js scripts/debt-zero-data-drift-report.js
-          node scripts/debt-zero-data-drift-report.js
+          npm run business-graph:gen
+          npm run feature:360:gen
+      - name: Assert expected newly visible debt only
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const g = JSON.parse(fs.readFileSync('docs/BUSINESS_FEATURE_GRAPH.json', 'utf8'));
+          const debt = (g.drifts && g.drifts.debt) || [];
+          const bad = debt.filter(x => x.type !== 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY');
+          if (debt.length !== 25) throw new Error(`expected 25 newly visible data debts, got ${debt.length}`);
+          if (bad.length) throw new Error(`unexpected debt types: ${bad.map(x => x.type).join(', ')}`);
+          if ((g.o6 && g.o6.unclassified || []).length) throw new Error('O6 has unclassified data dependencies');
+          const f = JSON.parse(fs.readFileSync('docs/FEATURE_360.json', 'utf8'));
+          if (f.summary.debtItemsTotal !== 16) throw new Error(`expected Feature360 residual 16, got ${f.summary.debtItemsTotal}`);
+          console.log('ASSERTIONS_GREEN', { graphDebt: debt.length, feature360Debt: f.summary.debtItemsTotal });
+          NODE
+      - name: Commit product integration
+        run: |
+          git config user.name "SamyrFateh"
+          git config user.email "fatehsamyr@gmail.com"
+          git add scripts/lib/feature-dependency-conformance.js scripts/lib/feature-dependency-disposition.js scripts/business-graph-gen.js tests/unit/feature-dependency-data-channel.test.js docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/FEATURE_360.json docs/FEATURE_360.md
+          git diff --cached --check
+          git commit -m "chore(governance): observe cross-feature data dependencies"
+          git push origin HEAD:chore/debt-zero-absolute
