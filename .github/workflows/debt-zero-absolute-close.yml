@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  close-data-dependencies:
+  close-feature360:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -19,64 +19,66 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Preserve closure script
-        run: cp scripts/debt-zero-close-data-dependencies.js /tmp/debt-zero-close-data-dependencies.js
+      - name: Preserve Feature360 closure script
+        run: cp scripts/debt-zero-close-feature360-residuals.js /tmp/debt-zero-close-feature360-residuals.js
       - name: Switch to product branch
         run: git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
       - name: Install repository dependencies
         run: npm ci --ignore-scripts
-      - name: Close data dependencies at source
+      - name: Reconcile final residual contracts
         run: |
-          cp /tmp/debt-zero-close-data-dependencies.js scripts/debt-zero-close-data-dependencies.js
-          node scripts/debt-zero-close-data-dependencies.js
-          rm scripts/debt-zero-close-data-dependencies.js
-      - name: Refresh technical architecture
-        run: npm run arch:gen
-      - name: Targeted regression tests
-        run: |
-          npx --no-install jest \
-            tests/unit/feature-dependency-data-channel.test.js \
-            tests/unit/feature-360-internal-api-projection.test.js \
-            tests/unit/loyalty-route.test.js \
-            tests/unit/loyalty-service.test.js \
-            tests/unit/shared-cart-engine.test.js \
-            tests/unit/shared-cart-queries.test.js \
-            --runInBand
+          cp /tmp/debt-zero-close-feature360-residuals.js scripts/debt-zero-close-feature360-residuals.js
+          node scripts/debt-zero-close-feature360-residuals.js
+          rm scripts/debt-zero-close-feature360-residuals.js
       - name: Regenerate canonical governance artifacts
         run: |
           npm run business-graph:gen
           npm run feature:360:gen
-      - name: Prove data debt is closed
+      - name: Assert absolute Feature360 zero
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const g = JSON.parse(fs.readFileSync('docs/BUSINESS_FEATURE_GRAPH.json', 'utf8'));
-          const debt = (g.drifts && g.drifts.debt) || [];
-          const dataDebt = debt.filter(x => x.type === 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY');
-          if (dataDebt.length) throw new Error(`data dependency debt remains: ${dataDebt.map(x => x.ref).join(' | ')}`);
-          if (debt.length) throw new Error(`unexpected graph debt remains: ${debt.map(x => `${x.type}:${x.ref}`).join(' | ')}`);
-          if ((g.o6 && g.o6.unclassified || []).length) throw new Error('O6 has unclassified dependencies');
+          const graphDebt = (g.drifts && g.drifts.debt) || [];
+          if (graphDebt.length) throw new Error(`Business graph debt remains: ${graphDebt.map(x => `${x.type}:${x.ref}`).join(' | ')}`);
+          if ((g.o6 && g.o6.unclassified || []).length) throw new Error('O6 unclassified dependencies remain');
           if ((g.o6 && g.o6.missingExceptions || []).length) throw new Error(`O6 missing exceptions: ${g.o6.missingExceptions.join(', ')}`);
+
           const f = JSON.parse(fs.readFileSync('docs/FEATURE_360.json', 'utf8'));
-          console.log('DATA_CLOSURE_GREEN', {
-            graphDebt: debt.length,
-            feature360Debt: f.summary.debtItemsTotal,
-            healthy: f.summary.healthy,
-            attention: f.summary.attention,
-            blocked: f.summary.blocked,
+          const s = f.summary;
+          if (s.debtItemsTotal !== 0) {
+            const remaining = f.features
+              .filter(x => x.architecturalDebt && x.architecturalDebt.debtCount)
+              .map(x => `${x.id}:${JSON.stringify(x.architecturalDebt.debtItems)}`);
+            throw new Error(`Feature360 debt=${s.debtItemsTotal}: ${remaining.join(' | ')}`);
+          }
+          if (s.healthy !== 31 || s.attention !== 0 || s.blocked !== 0) {
+            throw new Error(`Feature360 health expected 31/0/0, got ${s.healthy}/${s.attention}/${s.blocked}`);
+          }
+          console.log('FEATURE360_ABSOLUTE_ZERO', {
+            features: s.features,
+            healthy: s.healthy,
+            attention: s.attention,
+            blocked: s.blocked,
+            debt: s.debtItemsTotal,
+            graphDebt: graphDebt.length,
           });
           NODE
-      - name: Governance checks
+      - name: Governance regression suite
         run: |
+          npx --no-install jest \
+            tests/unit/feature-dependency-data-channel.test.js \
+            tests/unit/feature-360-internal-api-projection.test.js \
+            --runInBand
           npm run business-graph:disposition-check
           npm run feature:360:check
           node scripts/feature-guard.js --strict
           git diff --check
-      - name: Commit product closure
+      - name: Commit Feature360 absolute zero
         run: |
           git config user.name "SamyrFateh"
           git config user.email "fatehsamyr@gmail.com"
           git add -A
           git diff --cached --check
-          git commit -m "chore(governance): close cross-feature data debt"
+          git commit -m "chore(governance): close Feature360 architectural debt"
           git push origin HEAD:chore/debt-zero-absolute
