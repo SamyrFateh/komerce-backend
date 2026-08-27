@@ -795,10 +795,9 @@
     height: 100dvh;
     border-radius: 0;
     background: var(--white);
-    /* Coque unique et neutre : aucun code couleur panier/liste.
-       La séparation avec la boutique vient d'un cadre continu, sans halo. */
+    /* Surface blanche ouverte : l'alignement et les accents fonctionnels
+       suffisent ; aucun cadre ni halo ne redessine une boîte autour. */
     border: none;
-    border-left: 1px solid var(--border);
     box-shadow: none;
     overflow: hidden;
     z-index: 200;
@@ -1484,12 +1483,13 @@
   /* Navigation Panier / Liste : même grammaire que le mobile.
      Deux labels sur une surface ouverte ; seul l'actif reçoit un trait fin. */
   #k-cart-surface-switch.k-cart-tabs {
+    --k-side-cart-bar-h: 68px;
     position: relative;
-    min-height: 52px;
+    min-height: var(--k-side-cart-bar-h);
+    height: var(--k-side-cart-bar-h);
     padding: 0 10px;
     gap: 0;
     border: 0;
-    border-bottom: 1px solid var(--border);
     border-radius: 0;
     background: var(--white);
     box-shadow: none;
@@ -1501,7 +1501,7 @@
 
   #k-cart-surface-switch .k-cart-tab {
     position: relative;
-    height: 52px;
+    height: var(--k-side-cart-bar-h);
     padding: 0 10px;
     border: 0;
     border-radius: 0;
@@ -1515,7 +1515,7 @@
 
   #k-cart-surface-switch .k-cart-tab--active,
   #k-cart-surface-switch[data-active="personal"] .k-tab-personal.k-cart-tab--active {
-    color: var(--text);
+    color: var(--ocean-dark-deep);
     background: transparent;
     border: 0;
     border-radius: 0;
@@ -1533,14 +1533,14 @@
     width: 32px;
     height: 2px;
     border-radius: 999px;
-    background: var(--text);
+    background: var(--cta-green);
     transform: translateX(-50%);
   }
 
   #k-cart-surface-switch .k-cart-tab-group {
     position: relative;
     min-width: 0;
-    height: 52px;
+    height: var(--k-side-cart-bar-h);
   }
 
   #k-cart-surface-switch .k-cart-tab-group--active {
@@ -1561,14 +1561,14 @@
   }
 
   #k-cart-surface-switch .k-cart-tab-exit {
-    height: 52px;
+    height: var(--k-side-cart-bar-h);
     color: var(--text-muted);
   }
 
-  /* Liste d'articles : cartes sable sur la coque blanche, selon la même
-     hiérarchie que le catalogue et le drawer mobile. */
+  /* Liste d'articles ouverte : l'espace et l'alignement structurent la
+     lecture sur une toile blanche, sans cartes ni séparateurs. */
   .k-sc-items {
-    padding: 8px 10px 10px;
+    padding: 8px 12px 10px;
     gap: 8px;
     background: var(--white);
   }
@@ -1576,24 +1576,53 @@
   .k-sc-item {
     align-items: center;
     gap: 10px;
-    padding: 8px;
-    border: 1px solid var(--item-card-border);
-    border-radius: 13px;
-    background: var(--sand);
+    padding: 8px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
   }
 
   .k-sc-item:hover {
-    background: var(--sand);
-    border-color: var(--stone-border);
+    background: transparent;
   }
 
   .k-sc-item-img {
     width: 52px;
     height: 52px;
-    border-radius: 10px;
-    background: var(--sand);
-    border: 1px solid var(--border-text-06);
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+  }
+
+  /* Même surface ouverte pour une ligne issue d'une liste partagée. */
+  .k-cart-snapshot-item,
+  .k-cart-snapshot-item.is-cart-item-claimed {
+    padding: 8px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .k-cart-snapshot-item .k-cart-item-img {
+    border: 0;
+    border-radius: 0;
+    background: var(--white);
+  }
+
+  .k-sc-item-price,
+  .k-cart-snapshot-item .k-cart-item-price {
+    color: var(--coral);
+  }
+
+  .k-cart-item-select.is-checked {
+    border-color: var(--cta-green);
+    background: var(--cta-green);
+  }
+
+  .k-cart-item-select.is-checked::after {
+    border-color: var(--white);
   }
 
   /* Parité exacte avec la ligne canonique panier/liste de cart.css. */
@@ -1658,7 +1687,13 @@
     padding: 10px 12px 12px;
     gap: 7px;
     background: var(--white);
-    border-top: 1px solid var(--border-text-08);
+    border-top: 0;
+  }
+
+  #k-side-cart:has(.k-cart-tabs) .k-sc-title-bar:has(
+    .k-cart-snapshot-contributors
+  ) {
+    border-bottom: 0;
   }
 
   .k-sc-free-ship {
@@ -1686,6 +1721,12 @@
     border-color: transparent;
     background: transparent;
     color: var(--coral);
+  }
+}
+
+@media (min-width: 1200px) {
+  #k-cart-surface-switch.k-cart-tabs {
+    --k-side-cart-bar-h: 72px;
   }
 }
 
@@ -1717,7 +1758,6 @@
     overflow: visible;
     background: var(--white);
     border: 0;
-    border-bottom: 1px solid var(--border-text-06);
     box-shadow: none;
   }
 

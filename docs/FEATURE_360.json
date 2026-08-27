@@ -60,8 +60,8 @@
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 41,
-    "attributedFindings": 41,
+    "totalFindings": 30,
+    "attributedFindings": 30,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -14805,36 +14805,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 9,
+        "warnCount": 6,
         "gatesReporting": [
-          "check:body-classes",
           "check:imports"
         ],
         "findings": [
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "↳ Référencé en CSS : css/cart.css:2188, css/cart.css:2199 … — sélecteur legacy ou JS manquant"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ 0 erreur, 6 avertissement(s) — exit 0"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
           {
             "gate": "check:imports",
             "scope": "boutique",
@@ -16481,76 +16456,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 12,
+        "warnCount": 4,
         "gatesReporting": [
-          "check:body-classes",
           "check:imports"
         ],
         "findings": [
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "ck-is-me                     0     0     0     ✔      ⚠ warning"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "k-order-body--recap          0     1     0     ·      ⚠ warning"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "k-view-komerce               0     1     0     ·      ⚠ warning"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-order-body--recap' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-group' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-komerce' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-track' retirée mais jamais ajoutée dans le JS ou HTML inline"
-          },
-          {
-            "gate": "check:body-classes",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ [B-3] CSS utilise body.ck-is-me mais aucun JS ne gère cette classe"
-          },
           {
             "gate": "check:imports",
             "scope": "boutique",

@@ -1795,12 +1795,13 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
 
-  /* Header glass effect (ex desktop-commerce-skeleton.css) */
+  /* Header blanc fluide : le contenu et le scroll portent la hiérarchie,
+     sans filet ni ombre de coque permanente. */
   .k-header {
     z-index: 220;
     background: rgba(255,255,255,.94);
-    border-bottom: 1px solid rgba(42,33,23,.08);
-    box-shadow: 0 4px 16px rgba(42,33,23,.06);
+    border-bottom: 0;
+    box-shadow: none;
     backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
   }
@@ -2409,9 +2410,7 @@ body:has(#k-page-scroll.k-pager-active) {
 /* ── Premium desktop home — hero (rapatrié de b-home-premium-v1.js, Lot 3) ── */
 @media (min-width: 900px) {
   html.k-home-premium-v1 #k-hero-fixed-wrap {
-    background:
-      radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--ocean-bg-08) 66%, transparent), transparent 24%),
-      linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 55%, var(--white)) 100%);
+    background: var(--white);
   }
 
   html.k-home-premium-v1 .k-hero-media {
@@ -2589,18 +2588,18 @@ body:has(#k-page-scroll.k-pager-active) {
     padding-inline: 0;
   }
 
-  /* ── Carte panorama unique ── */
+  /* ── Panorama ouvert : la lumière structure, jamais un cadre ── */
   html.k-home-premium-v1 .k-hero-media {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
     height: clamp(190px, 14vw, 208px);
     margin: 0;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    box-shadow: 0 12px 34px var(--border-text-06);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
     position: relative;
-    background: var(--hero-bg);
+    background: transparent;
   }
 
   /* ── Image plein cadre ── */
@@ -2609,7 +2608,7 @@ body:has(#k-page-scroll.k-pager-active) {
     grid-row: 1;
     display: block;
     overflow: hidden;
-    border-radius: inherit;
+    border-radius: 0;
   }
 
   html.k-home-premium-v1 .k-hero-img {
@@ -2905,8 +2904,9 @@ body:has(#k-page-scroll.k-pager-active) {
   /* Fond premium rapatrié du wrap (perdu avec display:contents). */
   html.k-home-premium-v1 .k-hero {
     background:
-      radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--ocean-bg-08) 66%, transparent), transparent 24%),
-      linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 55%, var(--white)) 100%);
+      radial-gradient(circle at 76% 50%, var(--ocean-bg-08) 0%, transparent 30%),
+      radial-gradient(circle at 18% 58%, var(--coral-focus-08) 0%, transparent 26%),
+      var(--white);
   }
 
   /* Barre nav épinglée sous le header, sur tout le scroll catalogue.
@@ -3016,5 +3016,57 @@ body:has(#k-page-scroll.k-pager-active) {
 
   .k-hero-media .k-hero-mini-slogan--premium {
     display: none;
+  }
+}
+
+
+/* ── mobile-shell-convergence.css ────────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          mobile-shell-visual-convergence
+ * @domain        boutique
+ * @layer         css
+ * @owner         public/boutique/css/layout.css
+ * @purpose       Aligne le shell mobile sur la toile blanche fluide desktop : header et bottom-nav ouverts, recherche matérialisée sans filet permanent.
+ * @impact-areas  mobile, header, search, bottom-nav
+ * @version       2026-08
+ */
+
+@media (max-width: 899px) {
+  .k-header {
+    background: rgba(255,255,255,.96);
+    border-bottom: 0;
+    box-shadow: none;
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+
+  .k-search {
+    background: var(--surface-sand-97);
+    border: 1px solid var(--border-text-08);
+    box-shadow: none;
+  }
+
+  .k-search:focus-within {
+    background: var(--white);
+    border-color: rgba(42,122,62,.30);
+    box-shadow: 0 0 0 3px rgba(100,175,90,.08);
+  }
+
+  .k-bnav {
+    background: rgba(255,255,255,.96);
+    border-top: 0;
+    box-shadow: 0 -8px 24px var(--border-text-06);
+  }
+
+  .k-bnav-btn.active,
+  .k-bnav-item.active {
+    color: var(--ocean-dark-deep);
+    font-weight: 800;
+  }
+
+  .k-bnav-btn.active svg,
+  .k-bnav-item.active svg {
+    stroke-width: 2.4;
   }
 }

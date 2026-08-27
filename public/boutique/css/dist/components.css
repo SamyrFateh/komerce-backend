@@ -6352,6 +6352,58 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 }
 
 
+/* ── modal-desktop-density.css ───────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — modal-desktop-density.css
+   Desktop PDP density pass (2026-08).
+
+   Objectif : corriger la sensation de page vide sans réintroduire de cartes,
+   séparateurs ou cadres décoratifs. La densité vient de la géométrie :
+   buybox plus large, side-cart légèrement plus compact et média un peu plus
+   présent. Mobile reste strictement inchangé.
+
+   Gouvernance responsive : seuls les breakpoints canoniques 900/1200 sont
+   autorisés. Toute la calibration desktop large vit donc sous 1200px.
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1200px) {
+  /* Le side-cart reste lisible mais rend quelques pixels au produit. */
+  #k-modal .k-modal-body {
+    grid-template-columns: minmax(0, 1fr) 288px;
+  }
+
+  /* Réduire le déséquilibre "grand vide média / buybox étroite".
+     La piste droite gagne assez de présence pour les grands écrans sans
+     introduire un breakpoint supplémentaire hors contrat. */
+  #k-modal .k-modal-product-zone {
+    grid-template-columns: minmax(0, 1fr) minmax(460px, 520px);
+    gap: 18px;
+    padding: 16px 18px;
+  }
+
+  /* Une buybox plus large n'a pas besoin des gros paddings historiques. */
+  #k-modal .k-modal-product-zone .k-modal-details {
+    padding-inline: clamp(18px, 1.45vw, 26px);
+  }
+
+  #k-modal .k-modal-buybox > .k-modal-configurator {
+    padding-inline: clamp(18px, 1.45vw, 26px);
+  }
+
+  #k-modal .k-modal-product-zone > .k-modal-long-details {
+    padding-inline: clamp(18px, 1.45vw, 26px);
+  }
+
+  /* Les assets catalogue contiennent souvent une marge interne importante.
+     Un zoom optique léger rend le produit plus présent sans modifier le DOM
+     ni le comportement du carousel. Overflow reste borné par img-wrap. */
+  #k-modal .k-modal-product-zone .k-modal-slide {
+    transform: scale(1.08);
+    transform-origin: center center;
+  }
+}
+
+
 /* ── modal-mobile-canonical.css ──────────────────────────── */
 /**
  * @komerce-arch-lite
@@ -9619,22 +9671,6 @@ body.cart-open .k-wa-fab {
   .k-confirm-btn        { padding: 11px 18px; font-size: .88rem; }
 }
 
-/* « Numéro changé ? · Ce n'est pas vous ? » — une seule ligne */
-.k-ck-id-btns-row {
-  display: none; /* masqué par défaut — visible via body.ck-is-me */
-  flex-direction: row;
-  align-items: center;
-  white-space: nowrap;
-}
-.k-ck-id-sep {
-  color: var(--text-muted);
-  font-size: .7rem;
-  pointer-events: none;
-}
-
-/* §3 doctrine : body.ck-is-me posé par JS — CSS gère la visibilité */
-body.ck-is-me .k-ck-id-btns-row { display: flex; }
-
 
 /* ── interactions.css ────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
@@ -10563,6 +10599,58 @@ body.cart-open  #k-section-index { display:none; }
   #k-modal .k-modal-cart-btn {
     transition: none;
   }
+}
+
+
+/* ── modal-suggestion-filter.css ─────────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          modal-suggestion-filter-style
+ * @domain        recommendations
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-modal-suggestions.js
+ * @purpose       Rend effectif le filtrage visuel des cartes de suggestions par sous-catégorie.
+ * @impact-areas  product-modal, recommendations, subcategory-filter
+ * @version       2026-08
+ */
+
+/*
+ * Le moteur de filtre JS pose correctement .subcat-hidden sur les cartes.
+ * Dans modal-product.css, la règle historique `.k-sug-card.subcat-hidden`
+ * avait la même spécificité que `.k-sug-grid .k-sug-card`, déclarée ensuite
+ * avec `display:flex`; la cascade réaffichait donc les cartes filtrées.
+ * Ce propriétaire tardif rend l'état hidden explicite dans le contexte rail.
+ */
+#k-modal .k-sug-grid .k-sug-card.subcat-hidden {
+  display: none;
+}
+
+
+/* ── modal-suggestion-card-polish.css ────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          modal-suggestion-card-polish
+ * @domain        recommendations
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-modal-suggestions.js
+ * @purpose       Allège les cartes de suggestions PDP en laissant la section porter le contexte éditorial.
+ * @impact-areas  product-modal, recommendations, suggestion-cards
+ * @version       2026-08
+ */
+
+/*
+ * Le moteur de recommandation conserve reason_code/reason_label pour le ranking,
+ * le debug et l'analytique. Dans la PDP, le rail « Dans le même univers » porte
+ * déjà l'explication éditoriale : répéter « Alternative premium », « Même
+ * catégorie », etc. sous chaque carte surcharge le scan visuel et peut faire
+ * croire qu'un prix plus élevé prouve une qualité premium.
+ *
+ * On masque donc uniquement la ligne de raison dans les cartes de la modale.
+ * Les données backend restent intactes et les autres surfaces peuvent continuer
+ * à les exploiter.
+ */
+#k-modal .k-sug-card-reason {
+  display: none;
 }
 
 
@@ -11632,19 +11720,13 @@ body.is-shared-list-context #k-cart-recap-word {
  * @version       2026-08
  */
 
-.k-library-item-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: stretch;
-  gap: 8px;
-  min-width: 0;
-}
-
-.k-library-item-row .k-library-item {
-  min-width: 0;
-}
-
+/*
+ * La géométrie de .k-library-item-row appartient à shared-list-lists-tab.css.
+ * Ce fichier ne possède que l'action ajoutée par group-library-remove.js :
+ * aucun breakpoint ni second modèle de layout parallèle.
+ */
 .k-library-item-remove {
+  justify-self: end;
   align-self: center;
   min-height: 40px;
   padding: 0 10px;
@@ -11667,18 +11749,6 @@ body.is-shared-list-context #k-cart-recap-word {
 .k-library-item-remove:disabled {
   cursor: wait;
   opacity: 0.65;
-}
-
-@media (max-width: 430px) {
-  .k-library-item-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
-  }
-
-  .k-library-item-remove {
-    justify-self: end;
-    min-height: 36px;
-  }
 }
 
 
@@ -13169,7 +13239,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 16px 18px 18px;
+  padding: 16px clamp(12px, 4vw, 18px) 18px;
   background: var(--checkout-cream);
 }
 
@@ -13774,7 +13844,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 
 .ck-recipient-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr));
   gap: 8px;
   margin-top: 4px;
 }
@@ -13802,9 +13872,6 @@ body.k-id-scroll-lock { overflow: hidden; }
 .ck-recipient-copy strong { font-size: .84rem; color: var(--text); }
 .ck-recipient-copy small { font-size: .72rem; color: var(--text-muted); line-height: 1.25; }
 
-@media (max-width: 380px) {
-  .ck-recipient-grid { grid-template-columns: 1fr; }
-}
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Total final Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 .ck-final-total {
@@ -13939,12 +14006,6 @@ body.k-id-scroll-lock { overflow: hidden; }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Responsive Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 
-@media (max-width: 380px) {
-  .k-order-overlay.open .k-order-body--checkout { padding-right: 12px; padding-left: 12px; }
-  .ck-step-header { padding-right: 11px; padding-left: 11px; }
-  .ck-step-header-change { padding: 0 9px; }
-  .ck-pay-chip { min-height: 56px; padding: 7px 9px; }
-}
 
 
 @media (max-width: 899px) {
@@ -14281,4 +14342,156 @@ body.k-id-scroll-lock { overflow: hidden; }
   .ck-step-header-change,
   .ck-checkout-recent-media img,
   .k-order-overlay.open .ck-confirm-btn { transition: none; }
+}
+
+
+/* ── mobile-catalog-convergence.css ──────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          mobile-catalog-visual-convergence
+ * @domain        catalog
+ * @layer         css
+ * @owner         public/boutique/css/products.css
+ * @purpose       Prolonge sur mobile la toile blanche fluide desktop : hero ouvert, rail sans filet et accents catalogue plus lisibles sans reprendre l'ownership des cartes produit.
+ * @impact-areas  mobile, hero, category-navigation, product-cards
+ * @version       2026-08
+ */
+
+@media (max-width: 899px) {
+  #k-hero-fixed-wrap > .k-hero {
+    background:
+      radial-gradient(circle at 78% 48%, var(--ocean-bg-08) 0%, transparent 34%),
+      radial-gradient(circle at 18% 62%, var(--coral-focus-08) 0%, transparent 30%),
+      var(--white);
+  }
+
+  .k-hero .k-hero-inner .k-hero-media {
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .k-shelf-rail {
+    background: var(--white);
+    box-shadow: none;
+  }
+
+  .k-cat-cutout.active .k-chip-label::after {
+    background: var(--cta-green);
+  }
+
+  .k-card-name {
+    font-weight: 500;
+  }
+}
+
+
+/* ── mobile-cart-convergence.css ─────────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          mobile-cart-visual-convergence
+ * @domain        boutique
+ * @layer         css
+ * @owner         public/boutique/css/cart.css
+ * @purpose       Donne au drawer panier mobile la même hiérarchie ouverte que le desktop récent, sans modifier le checkout ni la surface liste partagée.
+ * @impact-areas  mobile, cart-drawer, cart-items, cart-footer
+ * @version       2026-08
+ */
+
+@media (max-width: 899px) {
+  .k-cart-drawer {
+    background: var(--white);
+    border: 0;
+    box-shadow: none;
+  }
+
+  .k-cart-header {
+    min-height: 56px;
+    padding: 10px 14px;
+    border-bottom: 0;
+    background: var(--white);
+  }
+
+  #k-cart-header-title {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -.01em;
+  }
+
+  #k-cart-close {
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 18px;
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-body {
+    padding: 10px 10px 16px;
+    background: var(--white);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item {
+    padding: 9px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--sand);
+    box-shadow: none;
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item:hover {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item-name {
+    font-weight: 600;
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item-price {
+    color: var(--coral);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item-qty {
+    border-color: var(--border-text-15);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-item-qty .k-qty-ctrl:last-child {
+    color: var(--cta-green-dark, var(--cta-green));
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-footer {
+    border-top: 0;
+    background: rgba(255,255,255,.98);
+    box-shadow: 0 -8px 24px var(--border-text-06);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) .k-cart-recap-val {
+    font-size: 24px;
+    font-weight: 500;
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-share {
+    border-color: var(--cta-green);
+    background: transparent;
+    color: var(--cta-green-dark, var(--cta-green));
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-share:hover,
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-share:active {
+    background: var(--cta-green);
+    color: var(--white);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-clear {
+    border-color: transparent;
+    background: transparent;
+    color: var(--text-muted);
+  }
+
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-clear:hover,
+  #k-cart-drawer:not([data-mode="shared-list"]) #k-cart-clear:active {
+    background: transparent;
+    color: var(--coral);
+  }
 }
