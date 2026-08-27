@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  classify-feature360-debt:
+  classify-db-surface:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout product branch
@@ -22,19 +22,22 @@ jobs:
         with:
           node-version: 24
 
-      - name: Classify remaining debt against governed table ownership
+      - name: Measure governed DB dependencies
         run: |
           node - <<'NODE'
           const bfg = require('./docs/BUSINESS_FEATURE_GRAPH.json');
-          const f360 = require('./docs/FEATURE_360.json');
+          const declared = new Set((bfg.edges.consumesFeature || [])
+            .filter(e => e.resolved)
+            .map(e => `${e.from}=>${e.to}`));
 
-          const dbPairs = new Map();
+          const pairs = new Map();
           function note(from, to, channel, table) {
             if (!from || !to || from === to) return;
             const key = `${from}=>${to}`;
-            const list = dbPairs.get(key) || [];
-            list.push({ channel, table });
-            dbPairs.set(key, list);
+            const evidence = pairs.get(key) || [];
+            const token = `${channel}:${table}`;
+            if (!evidence.includes(token)) evidence.push(token);
+            pairs.set(key, evidence);
           }
 
           for (const [table, info] of Object.entries(bfg.tableOwnership || {})) {
@@ -44,38 +47,14 @@ jobs:
             for (const writer of info.writers || []) note(writer.feature, owner, 'db-write', table);
           }
 
-          console.log('FEATURE360_DEBT_TOTAL', f360.summary.debtItemsTotal);
-          for (const feature of f360.features) {
-            if (!feature.architecturalDebt?.debtCount) continue;
-            console.log(`FEATURE ${feature.id} debt=${feature.architecturalDebt.debtCount}`);
-            for (const item of feature.architecturalDebt.debtItems) {
-              let target = null;
-              if (item.type === 'DECLARED_NOT_OBSERVED') {
-                const match = item.evidence.match(/déclare "([^"]+)"/);
-                target = match && match[1];
-              }
-              const dbEvidence = target ? (dbPairs.get(`${feature.id}=>${target}`) || []) : [];
-              console.log('DEBT_ITEM', JSON.stringify({
-                feature: feature.id,
-                type: item.type,
-                target,
-                evidence: item.evidence,
-                dbEvidence,
-              }));
-            }
-          }
-
-          const debtPairs = new Set();
-          for (const feature of f360.features) {
-            for (const item of feature.architecturalDebt?.debtItems || []) {
-              if (item.type !== 'DECLARED_NOT_OBSERVED') continue;
-              const match = item.evidence.match(/déclare "([^"]+)"/);
-              if (match) debtPairs.add(`${feature.id}=>${match[1]}`);
-            }
-          }
-          console.log('DB_EVIDENCE_FOR_DEBT_PAIRS');
-          for (const key of [...debtPairs].sort()) {
-            const evidence = dbPairs.get(key) || [];
-            console.log(key, JSON.stringify(evidence));
-          }
+          const all = [...pairs.entries()].sort((a,b) => a[0].localeCompare(b[0]));
+          const declaredDb = all.filter(([key]) => declared.has(key));
+          const undeclaredDb = all.filter(([key]) => !declared.has(key));
+          console.log('DB_PAIR_TOTAL', all.length);
+          console.log('DB_PAIR_DECLARED', declaredDb.length);
+          console.log('DB_PAIR_UNDECLARED', undeclaredDb.length);
+          console.log('DB_DECLARED_PAIRS');
+          for (const [key, evidence] of declaredDb) console.log('DECLARED_DB', key, JSON.stringify(evidence));
+          console.log('DB_UNDECLARED_PAIRS');
+          for (const [key, evidence] of undeclaredDb) console.log('UNDECLARED_DB', key, JSON.stringify(evidence));
           NODE
