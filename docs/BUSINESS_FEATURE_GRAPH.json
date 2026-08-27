@@ -2670,6 +2670,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/action-center.js",
+        "resolvedPath": "public/dashboards/canonical/js/action-center.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/admin/index.html",
         "resolvedPath": "public/dashboards/admin/index.html",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3365,6 +3372,13 @@
         "category": "tests",
         "declared": "tests/unit/canonical-sourcing-workspace-boundary.test.js",
         "resolvedPath": "tests/unit/canonical-sourcing-workspace-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-action-center-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-action-center-boundary.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10096,6 +10110,13 @@
       },
       {
         "feature": "decision-signals",
+        "category": "middleware",
+        "declared": "middleware/require-decision-signal-global-authority.js",
+        "resolvedPath": "middleware/require-decision-signal-global-authority.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "decision-signals",
         "category": "services",
         "declared": "services/radar-queries.js",
         "resolvedPath": "services/radar-queries.js",
@@ -10110,10 +10131,38 @@
       },
       {
         "feature": "decision-signals",
+        "category": "services",
+        "declared": "services/signal-admin-service.js",
+        "resolvedPath": "services/signal-admin-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "services",
+        "declared": "services/action-center-workspace.js",
+        "resolvedPath": "services/action-center-workspace.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "decision-signals",
         "category": "routes",
         "declared": "routes/signals.js",
         "resolvedPath": "routes/signals.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "routes",
+        "declared": "routes/admin-action-center.js",
+        "resolvedPath": "routes/admin-action-center.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "migrations",
+        "declared": "migrations/153_action_center_signal_authority.sql",
+        "resolvedPath": "migrations/153_action_center_signal_authority.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "decision-signals",
@@ -10134,6 +10183,41 @@
         "category": "tests",
         "declared": "tests/unit/signal-service.test.js",
         "resolvedPath": "tests/unit/signal-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/signal-admin-service.test.js",
+        "resolvedPath": "tests/unit/signal-admin-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/action-center-workspace.test.js",
+        "resolvedPath": "tests/unit/action-center-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/admin-action-center-route.test.js",
+        "resolvedPath": "tests/unit/admin-action-center-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/require-decision-signal-global-authority.test.js",
+        "resolvedPath": "tests/unit/require-decision-signal-global-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/signals-error-propagation.test.js",
+        "resolvedPath": "tests/unit/signals-error-propagation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       }
     ],
@@ -14008,6 +14092,46 @@
         "method": "POST",
         "path": "/api/wallet/admin/reverse-lot",
         "routeFile": "routes/wallet.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "decision-signals",
+        "entry": "GET /api/admin/action-center",
+        "method": "GET",
+        "path": "/api/admin/action-center",
+        "routeFile": "routes/admin-action-center.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "decision-signals",
+        "entry": "POST /api/admin/action-center/generate",
+        "method": "POST",
+        "path": "/api/admin/action-center/generate",
+        "routeFile": "routes/admin-action-center.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "decision-signals",
+        "entry": "POST /api/admin/action-center/signals/:signalRef/acknowledge",
+        "method": "POST",
+        "path": "/api/admin/action-center/signals/{id}/acknowledge",
+        "routeFile": "routes/admin-action-center.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "decision-signals",
+        "entry": "POST /api/admin/action-center/signals/:signalRef/snooze",
+        "method": "POST",
+        "path": "/api/admin/action-center/signals/{id}/snooze",
+        "routeFile": "routes/admin-action-center.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "decision-signals",
+        "entry": "POST /api/admin/action-center/signals/:signalRef/resolve",
+        "method": "POST",
+        "path": "/api/admin/action-center/signals/{id}/resolve",
+        "routeFile": "routes/admin-action-center.js",
         "status": "resolved-owned"
       }
     ],
@@ -20016,6 +20140,10 @@
                 "targetFile": "bootstrap/html-routes.js"
               },
               {
+                "sourceFileId": "tests/unit/canonical-action-center-boundary.test.js",
+                "targetFile": "bootstrap/html-routes.js"
+              },
+              {
                 "sourceFileId": "tests/unit/canonical-pricing-workspace-boundary.test.js",
                 "targetFile": "bootstrap/html-routes.js"
               },
@@ -20238,6 +20366,10 @@
               {
                 "sourceFileId": "routes/signals.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-action-center.js",
+                "targetFile": "middleware/auth.js"
               }
             ]
           }
@@ -20272,6 +20404,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "middleware/require-decision-signal-global-authority.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/radar-queries.js",
                 "targetFile": "db.js"
               },
@@ -20284,12 +20420,12 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "routes/signals.js",
+                "sourceFileId": "services/signal-admin-service.js",
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "routes/signals.js",
-                "targetFile": "utils/logger.js"
+                "sourceFileId": "services/action-center-workspace.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/radar-queries.test.js",
@@ -21174,6 +21310,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/signals.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-action-center.js"
               }
             ]
           }
@@ -26356,7 +26496,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 904
+        "filesObserved": 915
       },
       "boutique": {
         "filesObserved": 169,
@@ -28451,8 +28591,8 @@
       "backend": {
         "manifestsDiscovered": 27,
         "manifestsConnected": 27,
-        "technicalNodesTotal": 350,
-        "technicalNodesOwned": 334,
+        "technicalNodesTotal": 354,
+        "technicalNodesOwned": 338,
         "technicalOrphans": 16
       },
       "dash": {
@@ -28740,7 +28880,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> decision-signals",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"decision-signals\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"decision-signals\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

@@ -7,7 +7,7 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/logger.js
- * @used-by       routes/signals.js, bootstrap/feature-wiring.js
+ * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js
  * @db-read       cash_collections, order_items, orders, parcels, products, users
  * @db-write      signals
  * @db-txn        resolve_before_behavior_change
@@ -37,22 +37,71 @@ let log = require('../utils/logger').child({ module: 'signal-service' });
    UPSERT — insert or update a signal (dedup on type+entity)
    ═══════════════════════════════════════════════════════════════ */
 async function upsertSignal(sig) {
+  // A signal is one derived fact across its whole active lifecycle.
+  // Update an existing open/acknowledged/snoozed signal first; only
+  // insert when no active fact exists. An expired snooze wakes up.
   let sql = `
-    INSERT INTO signals (
-      signal_type, severity, title, summary,
-      source_module, target_shell, target_view, target_filters,
-      owner_role, entity_type, entity_id,
-      recommendation, confidence, meta, expires_at
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-    ON CONFLICT (signal_type, entity_type, entity_id) WHERE status = 'open'
-    DO UPDATE SET
-      severity = EXCLUDED.severity,
-      title = EXCLUDED.title,
-      summary = EXCLUDED.summary,
-      recommendation = EXCLUDED.recommendation,
-      meta = EXCLUDED.meta,
-      updated_at = NOW()
-    RETURNING id
+    WITH candidate AS (
+      SELECT id
+        FROM signals
+       WHERE signal_type = $1
+         AND entity_type IS NOT DISTINCT FROM $10
+         AND entity_id IS NOT DISTINCT FROM $11
+         AND status IN ('open','acknowledged','snoozed')
+       ORDER BY
+         CASE status WHEN 'snoozed' THEN 1 WHEN 'acknowledged' THEN 2 ELSE 3 END,
+         created_at DESC
+       LIMIT 1
+    ), active AS (
+      UPDATE signals s
+         SET severity = $2,
+             title = $3,
+             summary = $4,
+             source_module = $5,
+             target_shell = $6,
+             target_view = $7,
+             target_filters = $8,
+             owner_role = $9,
+             recommendation = $12,
+             confidence = $13,
+             meta = $14,
+             expires_at = $15,
+             status = CASE
+               WHEN s.status = 'snoozed' AND s.snoozed_until <= NOW() THEN 'open'
+               ELSE s.status
+             END,
+             snoozed_until = CASE
+               WHEN s.status = 'snoozed' AND s.snoozed_until <= NOW() THEN NULL
+               ELSE s.snoozed_until
+             END,
+             updated_at = NOW()
+        FROM candidate c
+       WHERE s.id = c.id
+      RETURNING s.id, s.signal_ref
+    ), inserted AS (
+      INSERT INTO signals (
+        signal_type, severity, title, summary,
+        source_module, target_shell, target_view, target_filters,
+        owner_role, entity_type, entity_id,
+        recommendation, confidence, meta, expires_at
+      )
+      SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
+       WHERE NOT EXISTS (SELECT 1 FROM active)
+      ON CONFLICT (signal_type, entity_type, entity_id) WHERE status = 'open'
+      DO UPDATE SET
+        severity = EXCLUDED.severity,
+        title = EXCLUDED.title,
+        summary = EXCLUDED.summary,
+        recommendation = EXCLUDED.recommendation,
+        meta = EXCLUDED.meta,
+        expires_at = EXCLUDED.expires_at,
+        updated_at = NOW()
+      RETURNING id, signal_ref
+    )
+    SELECT * FROM active
+    UNION ALL
+    SELECT * FROM inserted
+    LIMIT 1
   `;
   let result = await db.query(sql, [
     sig.signal_type,
@@ -81,14 +130,14 @@ async function autoResolveSignals(signalType, stillActiveEntityIds) {
   if (!stillActiveEntityIds || stillActiveEntityIds.length === 0) {
     // Resolve ALL open signals of this type
     await db.query(`
-      UPDATE signals SET status = 'resolved', resolved_at = NOW(), updated_at = NOW()
-      WHERE signal_type = $1 AND status = 'open'
+      UPDATE signals SET status = 'resolved', resolved_at = NOW(), snoozed_until = NULL, updated_at = NOW()
+      WHERE signal_type = $1 AND status IN ('open','acknowledged','snoozed')
     `, [signalType]);
     return;
   }
   await db.query(`
-    UPDATE signals SET status = 'resolved', resolved_at = NOW(), updated_at = NOW()
-    WHERE signal_type = $1 AND status = 'open'
+    UPDATE signals SET status = 'resolved', resolved_at = NOW(), snoozed_until = NULL, updated_at = NOW()
+    WHERE signal_type = $1 AND status IN ('open','acknowledged','snoozed')
       AND entity_id IS NOT NULL
       AND entity_id != ALL($2)
   `, [signalType, stillActiveEntityIds]);

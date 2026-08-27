@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-26T21:19:51.372Z",
+  "generatedAt": "2026-08-27T09:51:34.739Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 530,
+  "count": 535,
   "routes": [
     {
       "method": "GET",
@@ -10,6 +10,56 @@
       "localPath": "/*.html",
       "routeFile": "server.js",
       "mountedFrom": []
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/action-center",
+      "mountPrefix": "/api/admin/action-center",
+      "localPath": "/",
+      "routeFile": "routes/admin-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/action-center/generate",
+      "mountPrefix": "/api/admin/action-center",
+      "localPath": "/generate",
+      "routeFile": "routes/admin-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/action-center/signals/:signalRef/acknowledge",
+      "mountPrefix": "/api/admin/action-center",
+      "localPath": "/signals/:signalRef/acknowledge",
+      "routeFile": "routes/admin-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/action-center/signals/:signalRef/resolve",
+      "mountPrefix": "/api/admin/action-center",
+      "localPath": "/signals/:signalRef/resolve",
+      "routeFile": "routes/admin-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/action-center/signals/:signalRef/snooze",
+      "mountPrefix": "/api/admin/action-center",
+      "localPath": "/signals/:signalRef/snooze",
+      "routeFile": "routes/admin-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
     },
     {
       "method": "GET",

@@ -74,7 +74,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 27 | 27 | 350 | 334 | 16 |
+| backend | 27 | 27 | 354 | 338 | 16 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 15 | 15 | 89 | 89 | 0 |
 
@@ -214,8 +214,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 12
 - routes: 18
 - migrations: 2
-- dash: 96
-- tests: 42
+- dash: 97
+- tests: 43
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 17
 - interfaces exposed: 66
@@ -227,12 +227,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Detecter et qualifier des signaux operationnels (cash, colis, incidents) a partir des donnees produites par plusieurs features, pour l'aide a la decision admin.
 
-- services: 2
-- routes: 1
-- tests: 3
+- middleware: 1
+- services: 4
+- routes: 2
+- migrations: 1
+- tests: 8
 - tables owned (lifecycle): 1 — `signals`
 - tables written: 1
-- interfaces exposed: 0
+- interfaces exposed: 5
 - internal APIs: 0
 - dependencies (consumes): 4 — auth, infrastructure, logistics, business-rules
 - consumers: 2 — dashboard, admin-dashboard
@@ -1178,6 +1180,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/wallet/admin/credit` | wallet | `routes/wallet.js` (resolved-owned) |
 | `POST /api/wallet/admin/order-credit/{id}` | wallet | `routes/wallet.js` (resolved-owned) |
 | `POST /api/wallet/admin/reverse-lot` | wallet | `routes/wallet.js` (resolved-owned) |
+| `GET /api/admin/action-center` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/generate` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/signals/{id}/acknowledge` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/signals/{id}/snooze` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/signals/{id}/resolve` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
 
 ### API internes (contract.internalApi)
 
@@ -1550,7 +1557,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> auth-passkey — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> business-rules — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "business-rules"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> decision-signals — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "decision-signals"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> decision-signals — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "decision-signals"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> documents — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "documents"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> loyalty — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "loyalty"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> purchasing — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "purchasing"
@@ -1615,7 +1622,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 904 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 915 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 169 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1679,16 +1686,16 @@ Meta Graph monté : oui.
 | dashboard | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 54 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 55 | **DECLARED_AND_OBSERVED** |
 | dashboard | logistics | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | dashboard | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | dashboard | payments | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | purchasing | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| decision-signals | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| decision-signals | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | decision-signals | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| decision-signals | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| decision-signals | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | decision-signals | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | documents | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | documents | infrastructure | static-code | 21 | **DECLARED_AND_OBSERVED** |
@@ -1707,7 +1714,7 @@ Meta Graph monté : oui.
 | infrastructure | catalog | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | infrastructure | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | infrastructure | dashboard | static-code | 8 | **DECLARED_AND_OBSERVED** |
-| infrastructure | decision-signals | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | decision-signals | static-code | 3 | **OBSERVED_UNDECLARED** |
 | infrastructure | documents | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | economic-engine | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | infrastructure | inventory | static-code | 2 | **DECLARED_AND_OBSERVED** |

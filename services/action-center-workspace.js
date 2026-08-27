@@ -10,7 +10,6 @@
  * @used-by       routes/admin-action-center.js
  * @db-read       orders, products, parcels, cash_collections
  * @db-write      none
- * @db-write-via:decision-signals signal-admin-service.js, signal-service.js
  * @db-txn        none
  * @doctrine      action_center_manages_derived_signals_only, browser_business_refs_only, global_until_signals_have_market_authority
  * @impact-areas  decision-signals, admin-dashboard, orders, catalog, logistics

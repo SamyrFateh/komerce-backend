@@ -273,11 +273,24 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/workspaces/pricing/cost-components/{key}/update', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/pricing/cost-components/{key}/toggle', method: 'post', schema: null },
 
+  // LOT 4G — Canonical Action Center (global derived-signal lifecycle)
+  { prefix: '/api/admin/action-center', method: 'get', schema: null },
+  { prefix: '/api/admin/action-center/generate', method: 'post', schema: null },
+  { prefix: '/api/admin/action-center/signals/{signalRef}/acknowledge', method: 'post', schema: null },
+  { prefix: '/api/admin/action-center/signals/{signalRef}/snooze', method: 'post', schema: null },
+  { prefix: '/api/admin/action-center/signals/{signalRef}/resolve', method: 'post', schema: null },
+
 ];
 
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // LOT 4G — réponses Action Center consommées par Canonical.
+  '/api/admin/action-center': { get: { fields: ['scope','summary','signals','pagination'], source: 'test' } },
+  '/api/admin/action-center/generate': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/action-center/signals/{signalRef}/acknowledge': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/action-center/signals/{signalRef}/snooze': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/action-center/signals/{signalRef}/resolve': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4F — réponses Pricing Workspace consommées par Canonical.
   '/api/admin/workspaces/pricing': { get: { fields: ['scope','summary','products','recommendations','cost_components','cost_meta','rates'], source: 'test' } },
   '/api/admin/workspaces/pricing/simulate': { post: { fields: ['ok','action','result'], source: 'test' } },

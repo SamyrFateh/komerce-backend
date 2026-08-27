@@ -10,17 +10,10 @@
  * tests/unit/signals.test.js
  * Couvre routes/signals.js
  *
- * ⚠️ BUG SOURCE CONNU : aucun handler de ce fichier ne déclare `next` en
- * paramètre (`async function(req, res) {...}`), pourtant chaque catch
- * appelle `next(err)`. Résultat : en cas de rejet de db.query(), le catch
- * lève une ReferenceError ("next is not defined") sous forme de promesse
- * rejetée non gérée — la requête HTTP ne reçoit JAMAIS de réponse (elle
- * reste en attente indéfiniment). Vérifié expérimentalement hors-suite.
- * Conséquence pour ce fichier de tests : AUCUN test "erreur DB → 500"
- * n'est écrit ici (ferait timeout toute la suite) ; seuls les chemins
- * nominaux/validations/404, qui ne traversent jamais le catch, sont testés.
- * À corriger côté source (ajouter `next` aux signatures) avant d'activer
- * une couverture d'erreur complète.
+ * LOT 4G : routes/signals.js est désormais une façade Legacy autour de
+ * signal-admin-service. Les erreurs DB atteignent le middleware Express ;
+ * la régression historique `next is not defined` est couverte séparément par
+ * signals-error-propagation.test.js.
  */
 
 const express = require('express');
