@@ -1,0 +1,79 @@
+name: Decision Signals Truth 4H
+
+on:
+  push:
+    branches:
+      - ci/decision-signals-truth-4h
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-prove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout patch tooling
+        uses: actions/checkout@v4
+        with:
+          ref: ci/decision-signals-truth-4h
+          path: tooling
+
+      - name: Checkout product branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/decision-signals-truth-4h
+          path: product
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: product/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci --prefix product
+
+      - name: Apply LOT 4H patch
+        run: python3 tooling/tooling/decision-signals-truth-4h.py product
+
+      - name: Targeted Decision Signals proof
+        working-directory: product
+        run: >-
+          npx jest
+          tests/unit/signal-service.test.js
+          tests/unit/signal-admin-service.test.js
+          tests/unit/action-center-workspace.test.js
+          tests/unit/admin-action-center-route.test.js
+          tests/unit/signals.test.js
+          --config jest.unit.config.js
+          --runInBand
+
+      - name: Governance projections
+        working-directory: product
+        run: |
+          node scripts/feature-guard.js --strict
+          npm run business-graph:gen
+          npm run feature:360:gen
+          npm run business-graph:check
+          npm run feature:360:check
+          npm run quality:gate
+          npm run security:360:check
+          git diff --check
+
+      - name: Commit verified product branch
+        working-directory: product
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add services/signal-service.js \
+                  services/signal-admin-service.js \
+                  tests/unit/signal-service.test.js \
+                  capabilities/decision-signals.capability.js \
+                  docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md \
+                  docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md \
+                  docs/FEATURE_360.json docs/FEATURE_360.md
+          git diff --cached --check
+          git commit -m "feat(decision-signals): absorb canonical problem truths"
+          git push origin HEAD:feat/decision-signals-truth-4h
