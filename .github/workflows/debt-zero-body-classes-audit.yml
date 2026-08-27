@@ -1,0 +1,19 @@
+name: Debt Zero body classes audit
+
+on:
+  push:
+    branches:
+      - ci/debt-zero-body-classes
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Raw body-class diagnostics
+        run: node public/boutique/scripts/check-body-classes.js
