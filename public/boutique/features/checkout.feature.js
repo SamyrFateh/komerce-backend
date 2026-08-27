@@ -61,6 +61,7 @@ module.exports = {
     tests: [
       '../tests/unit/b-checkout.test.js',
       '../tests/unit/b-checkout-render.test.js',
+      '../tests/unit/checkout-responsive-css.test.js',
       // b-checkout.test.js teste l'orchestrateur réel en mockant ses
       // collaborateurs ; b-checkout-render.test.js couvre le renderer DOM pur.
     ],

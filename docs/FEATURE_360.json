@@ -60,8 +60,8 @@
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 42,
-    "attributedFindings": 42,
+    "totalFindings": 41,
+    "attributedFindings": 41,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -18306,20 +18306,11 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 4,
+        "warnCount": 3,
         "gatesReporting": [
-          "check:breakpoints",
           "check:imports"
         ],
         "findings": [
-          {
-            "gate": "check:breakpoints",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "Total : 2 violations dans 2 fichiers."
-          },
           {
             "gate": "check:imports",
             "scope": "boutique",
