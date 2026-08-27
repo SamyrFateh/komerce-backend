@@ -10,7 +10,7 @@ const express = require('express');
 const request = require('supertest');
 
 let mockUser = { id: 'admin-1', role: 'admin' };
-let allowGrant = true;
+let mockAllowGrant = true;
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => {
@@ -22,7 +22,7 @@ jest.mock('../../middleware/auth', () => ({
 }));
 
 jest.mock('../../middleware/require-decision-signal-global-authority', () => ({
-  requireDecisionSignalGlobalAuthority: (req, res, next) => allowGrant ? next() : res.status(403).json({ code: 'decision_signal_global_access_denied' }),
+  requireDecisionSignalGlobalAuthority: (req, res, next) => mockAllowGrant ? next() : res.status(403).json({ code: 'decision_signal_global_access_denied' }),
 }));
 
 const mockWorkspace = {
@@ -47,11 +47,11 @@ function app() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockUser = { id: 'admin-1', role: 'admin' };
-  allowGrant = true;
+  mockAllowGrant = true;
 });
 
 test('authenticated admin without explicit global grant is denied', async () => {
-  allowGrant = false;
+  mockAllowGrant = false;
   const res = await request(app()).get('/api/admin/action-center');
   expect(res.status).toBe(403);
   expect(mockWorkspace.buildWorkspace).not.toHaveBeenCalled();
