@@ -90,7 +90,7 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     expect(res.status).toBe(200);
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain("s.status IN ('open','acknowledged')");
-    expect(params).toEqual([]);
+    expect(params).toEqual([null, null, null, null, null, 50, 0]);
   });
 
   it('?status=resolved → filtre explicite remplace le défaut', async () => {
@@ -98,32 +98,45 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     await request(buildApp()).get('/api/admin/signals?status=resolved');
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain('s.status = $1');
-    expect(params).toEqual(['resolved']);
+    expect(params).toEqual(['resolved', null, null, null, null, 50, 0]);
   });
 
-  it('filtres combinés (severity, signal_type, owner_role) → tous appliqués, params dans l\'ordre', async () => {
+  it('filtres combinés (severity, signal_type, owner_role) → tous appliqués dans les slots fixes', async () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ count: '0' }] });
     await request(buildApp()).get('/api/admin/signals?severity=urgent&signal_type=sla_breach&owner_role=hub');
     const [sql, params] = mockDbQuery.mock.calls[0];
-    expect(sql).toContain('s.severity = $1');
-    expect(sql).toContain('s.signal_type = $2');
-    expect(sql).toContain('s.owner_role = $3');
-    expect(params).toEqual(['urgent', 'sla_breach', 'hub']);
+    expect(sql).toContain('s.severity = $2');
+    expect(sql).toContain('s.signal_type = $3');
+    expect(sql).toContain('s.owner_role = $4');
+    expect(params).toEqual([null, 'urgent', 'sla_breach', 'hub', null, 50, 0]);
   });
 
   it('?family=ops → mappe vers les signal_type connus (ANY)', async () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ count: '0' }] });
     await request(buildApp()).get('/api/admin/signals?family=ops');
     const [sql, params] = mockDbQuery.mock.calls[0];
-    expect(sql).toContain('s.signal_type = ANY($1)');
-    expect(params[0]).toEqual(['parcel_blocked', 'cash_expiring', 'sla_breach', 'hub_tension', 'relay_tension', 'loyalty_pending']);
+    expect(sql).toContain('s.signal_type = ANY($5::text[])');
+    expect(params[4]).toEqual(['parcel_blocked', 'cash_expiring', 'sla_breach', 'hub_tension', 'relay_tension', 'loyalty_pending']);
+    expect(params.slice(0, 4)).toEqual([null, null, null, null]);
+    expect(params.slice(5)).toEqual([50, 0]);
   });
 
-  it('?family=inconnu → ignoré (pas de condition ajoutée)', async () => {
+  it('?family=inconnu → ignoré sans modifier la structure SQL', async () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ count: '0' }] });
     await request(buildApp()).get('/api/admin/signals?family=inexistant');
-    const [, params] = mockDbQuery.mock.calls[0];
-    expect(params).toEqual([]);
+    const [sql, params] = mockDbQuery.mock.calls[0];
+    expect(sql).toContain('($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))');
+    expect(params).toEqual([null, null, null, null, null, 50, 0]);
+  });
+
+  it('une valeur de filtre reste un paramètre et ne modifie jamais la structure SQL', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ count: '0' }] });
+    const malicious = "urgent' OR 1=1 --";
+    await request(buildApp()).get(`/api/admin/signals?severity=${encodeURIComponent(malicious)}`);
+    const [sql, params] = mockDbQuery.mock.calls[0];
+    expect(sql).not.toContain(malicious);
+    expect(sql).toContain('s.severity = $2');
+    expect(params).toEqual([null, malicious, null, null, null, 50, 0]);
   });
 
   it('limit/offset par défaut = 50/0', async () => {
