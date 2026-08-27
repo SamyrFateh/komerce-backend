@@ -33,6 +33,8 @@ const tabsCssPath = path.resolve(__dirname, '../../css/shared-list-side-cart.css
 const tabsCss = fs.readFileSync(tabsCssPath, 'utf8');
 const libraryRemoveCssPath = path.resolve(__dirname, '../../css/shared-list-library-remove.css');
 const libraryRemoveCss = fs.readFileSync(libraryRemoveCssPath, 'utf8');
+const libraryLayoutCssPath = path.resolve(__dirname, '../../css/shared-list-lists-tab.css');
+const libraryLayoutCss = fs.readFileSync(libraryLayoutCssPath, 'utf8');
 
 function compact(value) {
   return String(value).replace(/\s+/g, ' ').trim();
@@ -103,9 +105,6 @@ describe('liste partageable — layout étroit side cart / drawer', () => {
   });
 
   it('ne réintroduit aucune géométrie desktop propre au snapshot', () => {
-    // La géométrie produit est désormais possédée par les classes canoniques
-    // de cart.css. Ce fichier responsive ne doit plus redimensionner la
-    // ligne, l'image, le bloc info ou le nom uniquement pour la liste.
     expect(css).not.toMatch(
       /@media \(min-width: 900px\)[\s\S]*?#k-side-cart \.k-cart-snapshot-item\s*\{/
     );
@@ -121,22 +120,29 @@ describe('liste partageable — layout étroit side cart / drawer', () => {
   });
 });
 
-describe('bibliothèque de listes — retrait intrinsèquement responsive', () => {
-  it('ne dépend plus d un breakpoint local 430px', () => {
+describe('bibliothèque de listes — ownership responsive unique', () => {
+  it('le style Retirer ne possède plus aucun breakpoint ni géométrie de ligne', () => {
     expect(libraryRemoveCss).not.toMatch(/@media/);
     expect(libraryRemoveCss).not.toMatch(/430px/);
+    expect(libraryRemoveCss).not.toMatch(/\.k-library-item-row\s*\{/);
+    expect(libraryRemoveCss).not.toMatch(/grid-template-columns/);
+    expect(libraryRemoveCss).not.toMatch(/display:\s*(grid|flex)/);
   });
 
-  it('laisse le conteneur décider du repli via flex-wrap', () => {
+  it('shared-list-lists-tab.css reste l unique owner du layout desktop/mobile', () => {
+    const normalized = compact(libraryLayoutCss);
+    expect(normalized).toMatch(
+      /\.k-library-item-row \{[^}]*display: grid;[^}]*grid-template-columns: minmax\(0, 1fr\) auto;/
+    );
+    expect(normalized).toMatch(
+      /@media \(max-width: 899px\) \{[^}]*\.k-library-item-row \{[^}]*grid-template-columns: minmax\(0, 1fr\);[^}]*gap: 6px;/
+    );
+  });
+
+  it('le bouton Retirer reste aligné sans dépendre d un seuil local', () => {
     const normalized = compact(libraryRemoveCss);
     expect(normalized).toMatch(
-      /\.k-library-item-row \{[^}]*display: flex;[^}]*flex-wrap: wrap;[^}]*gap: 8px;/
-    );
-    expect(normalized).toMatch(
-      /\.k-library-item-row \.k-library-item \{[^}]*flex: 1 1 22rem;[^}]*min-width: min\(100%, 22rem\);/
-    );
-    expect(normalized).toMatch(
-      /\.k-library-item-remove \{[^}]*flex: 0 0 auto;[^}]*margin-left: auto;/
+      /\.k-library-item-remove \{[^}]*justify-self: end;[^}]*align-self: center;[^}]*min-height: 40px;/
     );
   });
 });
