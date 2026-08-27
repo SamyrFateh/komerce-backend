@@ -1,0 +1,59 @@
+name: Debt Zero next audit
+
+on:
+  push:
+    branches:
+      - ci/debt-zero-next-audit
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Rank Gate Findings warnings
+        run: |
+          node - <<'NODE'
+          const g = require('./docs/GATE_FINDINGS.json');
+          const grouped = new Map();
+          for (const f of g.findings || []) {
+            const key = [f.verdict, f.gate, f.feature, f.sourceFile || '-'].join(' | ');
+            if (!grouped.has(key)) grouped.set(key, []);
+            grouped.get(key).push(f.message);
+          }
+          console.log(`TOTAL_FINDINGS ${g.findings.length}`);
+          for (const [key, messages] of [...grouped.entries()].sort((a,b) => b[1].length-a[1].length || a[0].localeCompare(b[0]))) {
+            console.log(`GROUP ${messages.length} | ${key}`);
+            for (const m of messages.slice(0, 6)) console.log(`  - ${m}`);
+          }
+          NODE
+      - name: Rank Feature 360 attention reasons
+        run: |
+          node - <<'NODE'
+          const f = require('./docs/FEATURE_360.json');
+          console.log('TOP_LEVEL_KEYS', Object.keys(f));
+          const features = f.features || f.items || [];
+          console.log(`FEATURE_COUNT ${features.length}`);
+          for (const x of features) {
+            const status = x.health || x.status || x.verdict;
+            if (String(status).toLowerCase().includes('attention') || String(status).toLowerCase().includes('warn')) {
+              console.log('ATTENTION', JSON.stringify({
+                name: x.name || x.feature,
+                status,
+                reasons: x.reasons || x.findings || x.issues || x.attention || x.gaps || null,
+                debt: x.debt || null,
+              }));
+            }
+          }
+          NODE
+      - name: Classification warnings exact
+        run: |
+          node scripts/feature-classification-check.js --json > /tmp/class.json || true
+          node - <<'NODE'
+          const fs = require('fs');
+          const j = JSON.parse(fs.readFileSync('/tmp/class.json','utf8'));
+          console.log(`CLASS errors=${(j.errors||[]).length} warnings=${(j.warnings||[]).length}`);
+          for (const w of j.warnings || []) console.log('CLASS_WARN', JSON.stringify(w));
+          NODE
