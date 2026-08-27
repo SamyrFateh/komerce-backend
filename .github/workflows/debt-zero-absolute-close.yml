@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  classify-db-surface:
+  prove-data-channel:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout product branch
@@ -22,39 +22,151 @@ jobs:
         with:
           node-version: 24
 
-      - name: Measure governed DB dependencies
+      - name: Patch governed data observation in workspace
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('scripts/lib/feature-dependency-conformance.js')
+          s = p.read_text(encoding='utf-8')
+          marker = "// ─────────────────────────────────────────────────────────────────────────\n// 5. AGRÉGATION EN PAIRES + CLASSIFICATION DE CONFORMANCE"
+          insert = r'''// ─────────────────────────────────────────────────────────────────────────
+// 4b. CANAL DATA — projection de tableOwnership déjà gouverné
+// ─────────────────────────────────────────────────────────────────────────
+// Ne réanalyse aucun SQL ici. Le Business Feature Graph a déjà résolu chaque
+// table vers un lifecycleOwner et conservé lecteurs/écrivains. Les écrivains
+// marqués technical (~) sont explicitement exclus : reset/seed/simulateur ne
+// créent aucune dépendance métier.
+function scanDataChannel(tableOwnership) {
+  const records = [];
+  for (const [table, info] of Object.entries(tableOwnership || {})) {
+    const providerFeature = info && info.lifecycleOwner;
+    if (!providerFeature) continue;
+    for (const consumerFeature of info.readers || []) {
+      if (!consumerFeature || consumerFeature === providerFeature) continue;
+      records.push({ consumerFeature, providerFeature, channel: 'data-read', table, mode: 'R' });
+    }
+    for (const writer of info.writers || []) {
+      if (!writer || writer.technical) continue;
+      const consumerFeature = writer.feature;
+      if (!consumerFeature || consumerFeature === providerFeature) continue;
+      records.push({ consumerFeature, providerFeature, channel: 'data-write', table, mode: writer.mode || 'W' });
+    }
+  }
+  return records;
+}
+
+'''
+          if marker not in s: raise SystemExit('aggregate marker missing')
+          s = s.replace(marker, insert + marker, 1)
+          old = "function aggregate({ codeByFile, interfaceRecords, index, ontologyGapManifests, declaredPairs, resolveAbsToFileId }) {"
+          new = "function aggregate({ codeByFile, interfaceRecords, dataRecords, index, ontologyGapManifests, declaredPairs, resolveAbsToFileId }) {"
+          if old not in s: raise SystemExit('aggregate signature missing')
+          s = s.replace(old, new, 1)
+          classify_marker = "  // ── Classification de conformance par paire canonique ───────────────────"
+          data_loop = r'''  // ── Canal DATA : ownership/read-write déjà résolu par O4 ───────────────
+  for (const rec of dataRecords || []) {
+    const consumerIdn = { kind: 'canonical-feature', id: rec.consumerFeature, scope: 'backend' };
+    recordEvidence(consumerIdn, rec.providerFeature, rec.channel, {
+      table: rec.table,
+      mode: rec.mode,
+    });
+  }
+
+'''
+          if classify_marker not in s: raise SystemExit('classification marker missing')
+          s = s.replace(classify_marker, data_loop + classify_marker, 1)
+          old = "  const declaredPairs = (ctx.consumesEdges || []).filter(e => e.resolved).map(e => ({ from: e.from, to: e.to }));"
+          new = "  const dataRecords = scanDataChannel(ctx.tableOwnership || {});\n\n" + old
+          if old not in s: raise SystemExit('declaredPairs line missing')
+          s = s.replace(old, new, 1)
+          old = "    codeByFile, interfaceRecords, index, ontologyGapManifests, declaredPairs, resolveAbsToFileId,"
+          new = "    codeByFile, interfaceRecords, dataRecords, index, ontologyGapManifests, declaredPairs, resolveAbsToFileId,"
+          if old not in s: raise SystemExit('aggregate invocation missing')
+          s = s.replace(old, new, 1)
+          old = "  scanInterfaceChannel,\n  buildBoutiqueModuleToFileId,"
+          new = "  scanInterfaceChannel,\n  scanDataChannel,\n  buildBoutiqueModuleToFileId,"
+          if old not in s: raise SystemExit('exports insertion missing')
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('scripts/business-graph-gen.js')
+          s = p.read_text(encoding='utf-8')
+          old = "    boutiqueManifestNodes, consumesEdges, ontologyGaps, metaGraph,\n    ROOT, DASH_ROOT, BOUTIQUE_ROOT,"
+          new = "    boutiqueManifestNodes, consumesEdges, ontologyGaps, metaGraph, tableOwnership,\n    ROOT, DASH_ROOT, BOUTIQUE_ROOT,"
+          if old not in s: raise SystemExit('business graph O5 context missing')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+
+          p = Path('scripts/lib/feature-dependency-disposition.js')
+          s = p.read_text(encoding='utf-8')
+          old = "      evidenceFiles.push({ role, channel: c.channel, source: src, target: e.targetFile || null, endpoint: e.endpoint || null });"
+          new = "      evidenceFiles.push({ role, channel: c.channel, source: src, target: e.targetFile || null, endpoint: e.endpoint || null, table: e.table || null });"
+          if old not in s: raise SystemExit('disposition evidence line missing')
+          s = s.replace(old, new, 1)
+          old = "  const hasStatic = shapeChannels.has('static-code');\n  const hasIface = shapeChannels.has('interface');"
+          new = "  const hasStatic = shapeChannels.has('static-code');\n  const hasIface = shapeChannels.has('interface');\n  const hasData = shapeChannels.has('data-read') || shapeChannels.has('data-write');"
+          if old not in s: raise SystemExit('shape channel lines missing')
+          s = s.replace(old, new, 1)
+          old = "  if (hasStatic && hasIface) couplingObserved = 'mixed';\n  else if (hasIface) couplingObserved = 'interface';"
+          new = "  if (hasStatic && (hasIface || hasData)) couplingObserved = 'mixed';\n  else if (hasIface) couplingObserved = 'interface';\n  else if (hasData) couplingObserved = 'data';"
+          if old not in s: raise SystemExit('coupling classification missing')
+          s = s.replace(old, new, 1)
+          old = "    const label = f.channel === 'interface'\n      ? `${f.source || '(view)'} -> ${f.endpoint}`\n      : `${f.source} -> ${f.target}`;"
+          new = "    const label = f.channel === 'interface'\n      ? `${f.source || '(view)'} -> ${f.endpoint}`\n      : (f.channel === 'data-read' || f.channel === 'data-write')\n        ? `${f.channel}:${f.table}`\n        : `${f.source} -> ${f.target}`;"
+          if old not in s: raise SystemExit('dedupe label block missing')
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Unit prove data channel semantics
         run: |
           node - <<'NODE'
-          const bfg = require('./docs/BUSINESS_FEATURE_GRAPH.json');
-          const declared = new Set((bfg.edges.consumesFeature || [])
-            .filter(e => e.resolved)
-            .map(e => `${e.from}=>${e.to}`));
+          const { scanDataChannel } = require('./scripts/lib/feature-dependency-conformance');
+          const rows = scanDataChannel({
+            products: {
+              lifecycleOwner: 'catalog',
+              readers: ['orders'],
+              writers: [
+                { feature: 'catalog', mode: 'RW', technical: false },
+                { feature: 'dashboard', mode: 'RW', technical: true },
+                { feature: 'sourcing', mode: 'W', technical: false },
+              ],
+            },
+          });
+          const keys = rows.map(r => `${r.consumerFeature}->${r.providerFeature}:${r.channel}:${r.table}`).sort();
+          console.log(keys);
+          if (!keys.includes('orders->catalog:data-read:products')) throw new Error('reader missing');
+          if (!keys.includes('sourcing->catalog:data-write:products')) throw new Error('business writer missing');
+          if (keys.some(k => k.startsWith('dashboard->'))) throw new Error('technical writer leaked into business dependencies');
+          NODE
 
-          const pairs = new Map();
-          function note(from, to, channel, table) {
-            if (!from || !to || from === to) return;
-            const key = `${from}=>${to}`;
-            const evidence = pairs.get(key) || [];
-            const token = `${channel}:${table}`;
-            if (!evidence.includes(token)) evidence.push(token);
-            pairs.set(key, evidence);
+      - name: Regenerate graph with data evidence
+        run: node scripts/business-graph-gen.js
+
+      - name: Measure resulting truth surface
+        run: |
+          node - <<'NODE'
+          const g=require('./docs/BUSINESS_FEATURE_GRAPH.json');
+          const dataPairs=g.o5.pairs.filter(p=>p.channels.some(c=>c.channel==='data-read'||c.channel==='data-write'));
+          const undeclared=dataPairs.filter(p=>p.conformanceStatus==='OBSERVED_UNDECLARED');
+          const declared=dataPairs.filter(p=>p.conformanceStatus==='DECLARED_AND_OBSERVED');
+          console.log('DATA_PAIRS', dataPairs.length);
+          console.log('DATA_DECLARED', declared.length);
+          console.log('DATA_UNDECLARED', undeclared.length);
+          for (const p of undeclared) console.log('DATA_DEBT', `${p.from}->${p.to}`, JSON.stringify(p.channels.filter(c=>c.channel.startsWith('data-'))));
+          console.log('GRAPH_DRIFTS', JSON.stringify(g.drifts.summary));
+          console.log('O6_UNCLASSIFIED', JSON.stringify(g.o6.unclassified));
+          console.log('O6_MISSING_EXCEPTIONS', JSON.stringify(g.o6.missingExceptions));
+          NODE
+
+      - name: Refresh Feature 360 and measure
+        run: |
+          node scripts/gen-feature-360.js
+          node - <<'NODE'
+          const f=require('./docs/FEATURE_360.json');
+          console.log('FEATURE360', JSON.stringify(f.summary));
+          for (const x of f.features.filter(x=>x.architecturalDebt.debtCount)) {
+            console.log('F360_DEBT', x.id, JSON.stringify(x.architecturalDebt.debtItems));
           }
-
-          for (const [table, info] of Object.entries(bfg.tableOwnership || {})) {
-            const owner = info.lifecycleOwner;
-            if (!owner) continue;
-            for (const reader of info.readers || []) note(reader, owner, 'db-read', table);
-            for (const writer of info.writers || []) note(writer.feature, owner, 'db-write', table);
-          }
-
-          const all = [...pairs.entries()].sort((a,b) => a[0].localeCompare(b[0]));
-          const declaredDb = all.filter(([key]) => declared.has(key));
-          const undeclaredDb = all.filter(([key]) => !declared.has(key));
-          console.log('DB_PAIR_TOTAL', all.length);
-          console.log('DB_PAIR_DECLARED', declaredDb.length);
-          console.log('DB_PAIR_UNDECLARED', undeclaredDb.length);
-          console.log('DB_DECLARED_PAIRS');
-          for (const [key, evidence] of declaredDb) console.log('DECLARED_DB', key, JSON.stringify(evidence));
-          console.log('DB_UNDECLARED_PAIRS');
-          for (const [key, evidence] of undeclaredDb) console.log('UNDECLARED_DB', key, JSON.stringify(evidence));
           NODE
