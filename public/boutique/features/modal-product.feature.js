@@ -74,6 +74,7 @@ module.exports = {
       '../css/modal-mobile-suggestion-actions.css',
       '../css/modal-enriched-content.css',
       '../css/modal-cart-sku-guard.css',
+      '../css/modal-desktop-density.css',
       // P3b (2026-07-27) : déjà utilisé comme contract.artifact plus bas
       // (mobile image overlays / flex scroll) mais jamais déclaré ici.
       '../css/modal-media.css',

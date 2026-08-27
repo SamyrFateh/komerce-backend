@@ -406,7 +406,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 154 fichier(s) déclaré(s), boutique: 32 fichier(s)
+**Implementation** : 154 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 38
   - ci : 3
   - config : 1
@@ -529,12 +529,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "recommendations" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 205 fichier(s) déclaré(s)
+**Implementation** : 207 fichier(s) déclaré(s)
   - dash : 97
+  - middleware : 1
   - migrations : 2
   - routes : 24
   - services : 22
-  - tests : 60
+  - tests : 61
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
@@ -1276,7 +1277,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "dashboard" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 61 fichier(s) déclaré(s), boutique: 15 fichier(s)
+**Implementation** : 61 fichier(s) déclaré(s), boutique: 17 fichier(s)
   - boutique : 3
   - routes : 12
   - services : 12
@@ -1425,7 +1426,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 40 fichier(s) déclaré(s), boutique: 23 fichier(s)
+**Implementation** : 40 fichier(s) déclaré(s), boutique: 25 fichier(s)
   - boutique : 6
   - compositionRoots : 3
   - routes : 5
@@ -1529,7 +1530,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "logistics" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 4 fichier(s) déclaré(s), boutique: 3 fichier(s)
+**Implementation** : 4 fichier(s) déclaré(s), boutique: 5 fichier(s)
   - routes : 1
   - services : 1
   - tests : 2

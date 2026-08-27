@@ -211,11 +211,12 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.
 
+- middleware: 1
 - services: 22
 - routes: 24
 - migrations: 2
 - dash: 97
-- tests: 60
+- tests: 61
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 17
 - interfaces exposed: 66
@@ -1592,8 +1593,8 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 952 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 169 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
+- backend : 954 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 172 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1656,7 +1657,7 @@ Meta Graph monté : oui.
 | dashboard | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 80 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 81 | **DECLARED_AND_OBSERVED** |
 | dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | logistics | static-code | 16 | **DECLARED_AND_OBSERVED** |
 | dashboard | market | static-code | 7 | **DECLARED_AND_OBSERVED** |
