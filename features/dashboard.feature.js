@@ -300,6 +300,9 @@ module.exports = {
 
   // ── Périmètre fichiers ─────────────────────────────────────────────────
   files: {
+    middleware: [
+      'middleware/require-dashboard-global-authority.js',
+    ],
     services: [
       'services/dashboard-cache.js',
       'services/dashboard-clients-queries.js',
@@ -490,6 +493,7 @@ module.exports = {
       'tests/unit/canonical-sourcing-workspace-boundary.test.js',
       'tests/unit/canonical-action-center-boundary.test.js',
       'tests/unit/partner-admin-service.test.js',
+      'tests/unit/require-dashboard-global-authority.test.js',
       'tests/unit/admin-client-360-route.test.js',
       'tests/unit/admin-dashboard-market.test.js',
       'tests/unit/admin-operations-workspace-route.test.js',

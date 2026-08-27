@@ -3136,7 +3136,7 @@
         "totalFiles": 154,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 32,
+          "count": 33,
           "files": [
             {
               "declared": "../css/dist/components.css",
@@ -3148,6 +3148,13 @@
             {
               "declared": "../css/modal-cart-sku-guard.css",
               "resolvedPath": "public/boutique/css/modal-cart-sku-guard.css",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-desktop-density.css",
+              "resolvedPath": "public/boutique/css/modal-desktop-density.css",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
@@ -4942,6 +4949,16 @@
               }
             ]
           },
+          "middleware": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "middleware/require-dashboard-global-authority.js",
+                "resolvedPath": "middleware/require-dashboard-global-authority.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
           "migrations": {
             "count": 2,
             "files": [
@@ -5198,7 +5215,7 @@
             ]
           },
           "tests": {
-            "count": 60,
+            "count": 61,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -5486,6 +5503,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/require-dashboard-global-authority.test.js",
+                "resolvedPath": "tests/unit/require-dashboard-global-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/shipping-customs-workspace.test.js",
                 "resolvedPath": "tests/unit/shipping-customs-workspace.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5503,7 +5525,7 @@
             ]
           }
         },
-        "totalFiles": 205,
+        "totalFiles": 207,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -14065,11 +14087,18 @@
         "totalFiles": 61,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
-          "count": 15,
+          "count": 17,
           "files": [
             {
               "declared": "../css/cart.css",
               "resolvedPath": "public/boutique/css/cart.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/mobile-cart-convergence.css",
+              "resolvedPath": "public/boutique/css/mobile-cart-convergence.css",
               "category": "css",
               "exists": true,
               "status": "resolved-on-disk"
@@ -14168,6 +14197,13 @@
             {
               "declared": "../tests/unit/cart-public-api-boundary.test.js",
               "resolvedPath": "public/boutique/tests/unit/cart-public-api-boundary.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/mobile-cart-convergence.test.js",
+              "resolvedPath": "public/boutique/tests/unit/mobile-cart-convergence.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -15960,7 +15996,7 @@
         "totalFiles": 40,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
-          "count": 23,
+          "count": 25,
           "files": [
             {
               "declared": "../css/boutique-desktop.css",
@@ -15979,6 +16015,13 @@
             {
               "declared": "../css/layout.css",
               "resolvedPath": "public/boutique/css/layout.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/mobile-shell-convergence.css",
+              "resolvedPath": "public/boutique/css/mobile-shell-convergence.css",
               "category": "css",
               "exists": true,
               "status": "resolved-on-disk"
@@ -16119,6 +16162,13 @@
             {
               "declared": "../tests/unit/layout.test.js",
               "resolvedPath": "public/boutique/tests/unit/layout.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/mobile-shell-convergence.test.js",
+              "resolvedPath": "public/boutique/tests/unit/mobile-shell-convergence.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -17118,11 +17168,25 @@
         "totalFiles": 4,
         "boutiqueManifest": "recommendations",
         "boutiqueFiles": {
-          "count": 3,
+          "count": 5,
           "files": [
             {
               "declared": "../css/modal-product-polish.css",
               "resolvedPath": "public/boutique/css/modal-product-polish.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-suggestion-card-polish.css",
+              "resolvedPath": "public/boutique/css/modal-suggestion-card-polish.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-suggestion-filter.css",
+              "resolvedPath": "public/boutique/css/modal-suggestion-filter.css",
               "category": "css",
               "exists": true,
               "status": "resolved-on-disk"

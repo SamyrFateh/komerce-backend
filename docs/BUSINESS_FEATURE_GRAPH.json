@@ -2368,6 +2368,13 @@
       },
       {
         "feature": "dashboard",
+        "category": "middleware",
+        "declared": "middleware/require-dashboard-global-authority.js",
+        "resolvedPath": "middleware/require-dashboard-global-authority.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
         "category": "services",
         "declared": "services/dashboard-cache.js",
         "resolvedPath": "services/dashboard-cache.js",
@@ -3512,6 +3519,13 @@
         "category": "tests",
         "declared": "tests/unit/partner-admin-service.test.js",
         "resolvedPath": "tests/unit/partner-admin-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/require-dashboard-global-authority.test.js",
+        "resolvedPath": "tests/unit/require-dashboard-global-authority.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -16941,6 +16955,14 @@
       },
       {
         "boutiqueManifest": "catalog",
+        "category": "css",
+        "declared": "../css/mobile-catalog-convergence.css",
+        "resolvedPath": "public/boutique/css/mobile-catalog-convergence.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
         "category": "assets",
         "declared": "../categories/cat-all-v3.webp",
         "resolvedPath": "public/boutique/categories/cat-all-v3.webp",
@@ -17072,6 +17094,14 @@
         "category": "tests",
         "declared": "../tests/unit/products.test.js",
         "resolvedPath": "public/boutique/tests/unit/products.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/mobile-catalog-convergence.test.js",
+        "resolvedPath": "public/boutique/tests/unit/mobile-catalog-convergence.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17248,6 +17278,14 @@
         "category": "boutique",
         "declared": "../css/modal-cart-sku-guard.css",
         "resolvedPath": "public/boutique/css/modal-cart-sku-guard.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
+        "declared": "../css/modal-desktop-density.css",
+        "resolvedPath": "public/boutique/css/modal-desktop-density.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17469,6 +17507,14 @@
       },
       {
         "boutiqueManifest": "orders-client",
+        "category": "css",
+        "declared": "../css/mobile-cart-convergence.css",
+        "resolvedPath": "public/boutique/css/mobile-cart-convergence.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "orders-client",
         "category": "tests",
         "declared": "../tests/unit/b-tracking.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-tracking.test.js",
@@ -17512,6 +17558,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-mini-cart.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-mini-cart.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "orders-client",
+        "category": "tests",
+        "declared": "../tests/unit/mobile-cart-convergence.test.js",
+        "resolvedPath": "public/boutique/tests/unit/mobile-cart-convergence.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -17677,6 +17731,14 @@
       },
       {
         "boutiqueManifest": "platform-ops",
+        "category": "css",
+        "declared": "../css/mobile-shell-convergence.css",
+        "resolvedPath": "public/boutique/css/mobile-shell-convergence.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "platform-ops",
         "category": "assets",
         "declared": "../index.html",
         "resolvedPath": "public/boutique/index.html",
@@ -17724,6 +17786,14 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "platform-ops",
+        "category": "tests",
+        "declared": "../tests/unit/mobile-shell-convergence.test.js",
+        "resolvedPath": "public/boutique/tests/unit/mobile-shell-convergence.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "recommendations",
         "category": "js",
         "declared": "../js/b-modal-suggestions.js",
@@ -17744,6 +17814,22 @@
         "category": "css",
         "declared": "../css/modal-product-polish.css",
         "resolvedPath": "public/boutique/css/modal-product-polish.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "recommendations",
+        "category": "css",
+        "declared": "../css/modal-suggestion-card-polish.css",
+        "resolvedPath": "public/boutique/css/modal-suggestion-card-polish.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "recommendations",
+        "category": "css",
+        "declared": "../css/modal-suggestion-filter.css",
+        "resolvedPath": "public/boutique/css/modal-suggestion-filter.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -20262,6 +20348,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "middleware/require-dashboard-global-authority.js",
+                "targetFile": "db.js"
+              },
               {
                 "sourceFileId": "services/dashboard-clients-queries.js",
                 "targetFile": "db.js"
@@ -26979,10 +27069,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 952
+        "filesObserved": 954
       },
       "boutique": {
-        "filesObserved": 169,
+        "filesObserved": 172,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {

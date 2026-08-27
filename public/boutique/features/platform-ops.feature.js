@@ -54,6 +54,7 @@ module.exports = {
       '../css/layout.css',
       '../css/boutique-desktop.css',
       '../css/interactions.css',
+      '../css/mobile-shell-convergence.css',
     ],
     assets: [
       '../index.html',
@@ -64,6 +65,7 @@ module.exports = {
       '../tests/unit/boutique-core.unit.test.js',
       '../tests/unit/boutique-desktop.test.js',
       '../tests/unit/layout.test.js',
+      '../tests/unit/mobile-shell-convergence.test.js',
     ],
   },
 

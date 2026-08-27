@@ -70,6 +70,7 @@ module.exports = {
       '../css/products.css',
       '../css/category-cutout-navigation.css',
       '../css/category-cutout-navigation-desktop.css',
+      '../css/mobile-catalog-convergence.css',
     ],
     assets: [
       '../../images/komerce_hero_catalog_canonical_v4.webp',
@@ -93,6 +94,7 @@ module.exports = {
       '../tests/unit/category-subcategory-continuity.test.js',
       '../tests/unit/category-cutout-assets-integrity.test.js',
       '../tests/unit/products.test.js',
+      '../tests/unit/mobile-catalog-convergence.test.js',
     ],
   },
 
