@@ -183,6 +183,14 @@ Aucune suppression hard n’est exposée dans Canonical.
 
 Le refactor du routeur Legacy corrige également son bug d’erreur historique : les handlers déclarent désormais `next`, donc une erreur DB atteint bien le middleware d’erreur au lieu de laisser la requête pendante.
 
+## Security 360
+
+Après intégration de la PR sécurité #950, `docs/SECURITY_360.{json,md}` est régénéré sur la branche 4G avant merge.
+
+La preuve CI dédiée impose que les cinq opérations Canonical `/api/admin/action-center...` soient toutes classées `PROTECTED` par Security 360. Le contrôle `npm run security:360:check` doit ensuite rester read-only et frais sur le même head.
+
+Cette preuve s’ajoute aux gardes runtime `authenticate + requireAdmin + requireDecisionSignalGlobalAuthority` et interdit qu’un simple oubli de projection dérivée masque une nouvelle route admin.
+
 ## Feature First
 
 - capability métier : `decision-signals`
