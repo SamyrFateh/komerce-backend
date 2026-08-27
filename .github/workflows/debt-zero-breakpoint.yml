@@ -27,8 +27,51 @@ jobs:
       - run: npm ci
       - run: npm --prefix public/boutique ci
 
-      - name: Prove shared-cart responsive regression test
-        run: npm --prefix public/boutique test -- --runInBand tests/unit/shared-list-responsive-layout.test.js
+      - name: Remove the remaining checkout 380px breakpoint intrinsically
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('public/boutique/css/checkout-vertical-rail.css')
+          src = p.read_text(encoding='utf-8')
+
+          old_padding = '  padding: 16px 18px 18px;'
+          new_padding = '  padding: 16px clamp(12px, 4vw, 18px) 18px;'
+          if old_padding not in src:
+              raise SystemExit('checkout body padding anchor missing')
+          src = src.replace(old_padding, new_padding, 1)
+
+          recipient_pattern = re.compile(
+              r'(\.ck-recipient-grid\s*\{[^}]*?)grid-template-columns:\s*repeat\(2,\s*minmax\(0,1fr\)\);',
+              re.S,
+          )
+          src, count = recipient_pattern.subn(
+              r'\1grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr));',
+              src,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit(f'recipient grid anchor count={count}')
+
+          blocks = [
+              '''@media (max-width: 380px) {\n  .ck-recipient-grid { grid-template-columns: 1fr; }\n}\n''',
+              '''@media (max-width: 380px) {\n  .k-order-overlay.open .k-order-body--checkout { padding-right: 12px; padding-left: 12px; }\n  .ck-step-header { padding-right: 11px; padding-left: 11px; }\n  .ck-step-header-change { padding: 0 9px; }\n  .ck-pay-chip { min-height: 56px; padding: 7px 9px; }\n}\n''',
+          ]
+          for block in blocks:
+              if block not in src:
+                  raise SystemExit('expected 380px block missing')
+              src = src.replace(block, '', 1)
+
+          if '380px' in src:
+              raise SystemExit('380px still present after intrinsic rewrite')
+
+          p.write_text(src, encoding='utf-8')
+          PY
+
+      - name: Prove responsive regression tests
+        run: |
+          npm --prefix public/boutique test -- --runInBand tests/unit/shared-list-responsive-layout.test.js tests/unit/checkout-responsive-css.test.js
 
       - name: Prove breakpoint debt is actually zero
         run: |
@@ -92,5 +135,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "style(shared-cart): fermer la dette breakpoint"
+          git commit -m "style(boutique): fermer la dette breakpoint"
           git push origin HEAD:chore/debt-zero-breakpoint
