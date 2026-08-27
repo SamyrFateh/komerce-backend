@@ -70,11 +70,25 @@ const jsFiles = walk(JS);
 const testFiles = walk(TESTS);
 const exportMap = new Map(jsFiles.map(f => [f, SKIP.has(path.basename(f)) ? new Set() : exportsOf(f)]));
 const consumed = new Map(jsFiles.map(f => [f, new Set()]));
+const testConsumed = new Map(jsFiles.map(f => [f, new Map()]));
+
 for (const importer of jsFiles) {
   for (const imp of importsOf(importer)) {
     const target = resolve(importer, imp.source);
     if (!target || !consumed.has(target)) continue;
     for (const n of imp.names) consumed.get(target).add(n);
+  }
+}
+
+for (const importer of testFiles) {
+  for (const imp of importsOf(importer)) {
+    const target = resolve(importer, imp.source);
+    if (!target || !testConsumed.has(target)) continue;
+    for (const n of imp.names) {
+      const byName = testConsumed.get(target);
+      if (!byName.has(n)) byName.set(n, []);
+      byName.get(n).push(path.relative(ROOT, importer));
+    }
   }
 }
 
@@ -87,20 +101,23 @@ for (const file of jsFiles) {
 }
 
 console.log(`unused_exports=${unused.length}`);
+const counts = new Map();
 for (const item of unused) {
   const own = fs.readFileSync(item.file, 'utf8');
   const ownRefs = Math.max(0, wordCount(own, item.name) - 1);
+  const exactTestImports = testConsumed.get(item.file)?.get(item.name) || [];
   const sourceRefs = [];
   for (const f of jsFiles) {
     if (f === item.file) continue;
     const src = fs.readFileSync(f, 'utf8');
     if (wordCount(src, item.name)) sourceRefs.push(path.relative(ROOT, f));
   }
-  const testRefs = [];
-  for (const f of testFiles) {
-    const src = fs.readFileSync(f, 'utf8');
-    if (wordCount(src, item.name)) testRefs.push(path.relative(ROOT, f));
-  }
-  const category = testRefs.length ? 'TEST' : sourceRefs.length ? 'INDIRECT_SOURCE' : ownRefs ? 'INTERNAL' : 'NONE';
-  console.log(`${category}\t${path.relative(ROOT, item.file)}\t${item.name}\town=${ownRefs}\tsource=${sourceRefs.join(',') || '-'}\ttests=${testRefs.join(',') || '-'}`);
+  let category;
+  if (exactTestImports.length) category = 'TEST_IMPORT';
+  else if (sourceRefs.length) category = 'INDIRECT_SOURCE';
+  else if (ownRefs) category = 'INTERNAL';
+  else category = 'NONE';
+  counts.set(category, (counts.get(category) || 0) + 1);
+  console.log(`${category}\t${path.relative(ROOT, item.file)}\t${item.name}\town=${ownRefs}\tsource=${sourceRefs.join(',') || '-'}\ttestImports=${exactTestImports.join(',') || '-'}`);
 }
+console.log('category_counts=' + JSON.stringify(Object.fromEntries(counts)));
