@@ -21,6 +21,25 @@ module.exports = {
   since:    '2025-11',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  classification: {
+    "axis": "business",
+    "kind": "business-transversal",
+    "decision": "feature-transverse",
+    "signals": {
+      "ownsTables": true,
+      "ownsLifecycle": true,
+      "activeService": true,
+      "multiConsumer": true,
+      "ownsMigrations": false,
+      "externalSideEffect": "refund",
+      "surface": "service"
+    },
+    "rationale": [
+      "orchestre transversalement le remboursement entre paiement, wallet et documents tout en conservant la trace refunds du flux compensatoire",
+      "ne constitue pas un domaine métier isolé : il coordonne les frontières propriétaires des features sources et garantit l idempotence par événement"
+    ]
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Rembourser un client (wallet, cash, panier partage) de facon tracable et sans double remboursement.',
 
@@ -102,6 +121,7 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'un remboursement n\'est jamais applique deux fois pour le meme evenement source',
+    "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement",
   ],
 
 };

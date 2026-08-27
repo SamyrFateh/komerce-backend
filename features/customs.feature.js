@@ -21,6 +21,25 @@ module.exports = {
   since:    '2025-11',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  classification: {
+    "axis": "business",
+    "kind": "business-feature",
+    "decision": "feature-autonome",
+    "signals": {
+      "ownsTables": true,
+      "ownsLifecycle": true,
+      "activeService": true,
+      "multiConsumer": true,
+      "ownsMigrations": true,
+      "externalSideEffect": "none",
+      "surface": "api+service"
+    },
+    "rationale": [
+      "possède les catégories, déclarations et shipments douaniers ainsi que leur workflow ; logistics ne fait que consommer leur statut",
+      "porte ses migrations et invariants, tandis que documents et economic-engine restent propriétaires de leurs effets respectifs"
+    ]
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Classer et declarer un colis douanierement ; la declaration est le pivot, jamais une optimisation.',
 

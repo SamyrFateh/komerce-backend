@@ -45,7 +45,7 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 0,
-      "warningCount": 12,
+      "warningCount": 0,
       "coverageCount": 0,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
@@ -699,114 +699,6 @@
       "file": null,
       "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant.",
       "sourceFile": "public/boutique/js/b-wallet.js"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "auth-identity",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "customs",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "economic-engine",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "inventory",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "logistics",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "payments",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "refunds",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "CLASSIFICATION-MISSING",
-      "verdict": "warn",
-      "feature": "sourcing",
-      "file": null,
-      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "SIDEEFFECT-NO-INVARIANT",
-      "verdict": "warn",
-      "feature": "purchasing",
-      "file": null,
-      "message": "externalSideEffect \"outbound-message\" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "RATIONALE-SHORT",
-      "verdict": "warn",
-      "feature": "auth-identity",
-      "file": null,
-      "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "RATIONALE-SHORT",
-      "verdict": "warn",
-      "feature": "auth-passkey",
-      "file": null,
-      "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
-    },
-    {
-      "gate": "gate:feature-classification-check",
-      "scope": "root",
-      "type": "RATIONALE-SHORT",
-      "verdict": "warn",
-      "feature": "catalog",
-      "file": null,
-      "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
     }
   ]
 }

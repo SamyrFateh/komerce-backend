@@ -53,15 +53,15 @@
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
     "debtItemsTotal": 40,
-    "gateHealthy": 15,
+    "gateHealthy": 23,
     "gateBlocked": 0
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 54,
-    "attributedFindings": 54,
+    "totalFindings": 42,
+    "attributedFindings": 42,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -521,21 +521,6 @@
               }
             ]
           },
-          "migrations": {
-            "count": 2,
-            "files": [
-              {
-                "declared": "migrations/072_jwt_revocation.sql",
-                "resolvedPath": "migrations/072_jwt_revocation.sql",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "migrations/084_jwt_revocation.sql",
-                "resolvedPath": "migrations/084_jwt_revocation.sql",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              }
-            ]
-          },
           "tests": {
             "count": 13,
             "files": [
@@ -632,7 +617,7 @@
             ]
           }
         },
-        "totalFiles": 26,
+        "totalFiles": 24,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -1508,10 +1493,9 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 5,
+        "warnCount": 3,
         "gatesReporting": [
-          "check:imports",
-          "gate:feature-classification-check"
+          "check:imports"
         ],
         "findings": [
           {
@@ -1537,22 +1521,6 @@
             "verdict": "warn",
             "file": null,
             "message": "⚠ js/b-phone.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          },
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "RATIONALE-SHORT",
-            "verdict": "warn",
-            "file": null,
-            "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
           }
         ]
       },
@@ -1918,10 +1886,9 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 4,
+        "warnCount": 3,
         "gatesReporting": [
-          "check:imports",
-          "gate:feature-classification-check"
+          "check:imports"
         ],
         "findings": [
           {
@@ -1947,14 +1914,6 @@
             "verdict": "warn",
             "file": null,
             "message": "⚠ js/b-passkey-step-up.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "RATIONALE-SHORT",
-            "verdict": "warn",
-            "file": null,
-            "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
           }
         ]
       },
@@ -3901,10 +3860,9 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 9,
+        "warnCount": 8,
         "gatesReporting": [
-          "check:imports",
-          "gate:feature-classification-check"
+          "check:imports"
         ],
         "findings": [
           {
@@ -3970,14 +3928,6 @@
             "verdict": "warn",
             "file": null,
             "message": "⚠ js/b-subcat.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "RATIONALE-SHORT",
-            "verdict": "warn",
-            "file": null,
-            "message": "rationale absent ou < 2 entrées (1) — documenter au moins 2 raisons objectives"
           }
         ]
       },
@@ -4384,22 +4334,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -8336,22 +8275,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -9529,7 +9457,7 @@
             ]
           },
           "migrations": {
-            "count": 6,
+            "count": 8,
             "files": [
               {
                 "declared": "migrations/016_add_missing_indexes.sql",
@@ -9544,6 +9472,16 @@
               {
                 "declared": "migrations/069_analytical_indexes.sql",
                 "resolvedPath": "migrations/069_analytical_indexes.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/072_jwt_revocation.sql",
+                "resolvedPath": "migrations/072_jwt_revocation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/084_jwt_revocation.sql",
+                "resolvedPath": "migrations/084_jwt_revocation.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -10144,7 +10082,7 @@
             ]
           }
         },
-        "totalFiles": 272,
+        "totalFiles": 274,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -10980,22 +10918,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -12427,22 +12354,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 3,
@@ -15023,7 +14939,8 @@
         {
           "statement": "un paiement confirme ne peut etre confirme deux fois",
           "test": "tests/invariants/payments.no-double-confirm.test.js"
-        }
+        },
+        "tout payment externe et tout webhook Stripe ou PayPal est idempotent ; un rejeu ne confirme jamais deux fois la même commande"
       ],
       "implementation": {
         "byCategory": {
@@ -15593,22 +15510,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -16725,7 +16631,8 @@
         },
         "purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)",
         "une réception ne peut être appliquée qu'à un bon de commande existant et cohérent",
-        "aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js"
+        "aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js",
+        "tout message WhatsApp fournisseur part d un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon ni ne confirme son statut"
       ],
       "implementation": {
         "byCategory": {
@@ -17075,22 +16982,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "SIDEEFFECT-NO-INVARIANT",
-            "verdict": "warn",
-            "file": null,
-            "message": "externalSideEffect \"outbound-message\" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -17385,7 +17281,8 @@
       },
       "authority": "backend-core — tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js",
       "invariants": [
-        "un remboursement n'est jamais applique deux fois pour le meme evenement source"
+        "un remboursement n'est jamais applique deux fois pour le meme evenement source",
+        "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement"
       ],
       "implementation": {
         "byCategory": {
@@ -17598,22 +17495,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -18820,22 +18706,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,

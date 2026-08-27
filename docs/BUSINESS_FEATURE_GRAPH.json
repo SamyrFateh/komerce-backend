@@ -80,7 +80,7 @@
         "since": "2025-08",
         "service": "Fournir les gardes transverses d'authentification et de vérification d'identité (middlewares JWT/session/rôles) consommées par toutes les autres features.",
         "businessKind": "technical-transversal",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -160,7 +160,7 @@
         "since": "2025-11",
         "service": "Classer et declarer un colis douanierement ; la declaration est le pivot, jamais une optimisation.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -208,7 +208,7 @@
         "since": "2025-09",
         "service": "Calculer le prix, le cout et la marge d'un produit ou d'une commande selon une strategie tarifaire versionnee.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -256,7 +256,7 @@
         "since": "2026-01",
         "service": "Réceptionner, affecter et dispatcher les articles au hub.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -272,7 +272,7 @@
         "since": "2025-08",
         "service": "Faire transiter un colis du scan initial au retrait final, avec tracking client et transporteur.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -352,7 +352,7 @@
         "since": "2025-09",
         "service": "Encaisser un paiement (carte, PayPal, especes au retrait) et confirmer son etat de facon idempotente.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -416,7 +416,7 @@
         "since": "2025-11",
         "service": "Rembourser un client (wallet, cash, panier partage) de facon tracable et sans double remboursement.",
         "businessKind": "business-transversal",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -448,7 +448,7 @@
         "since": "2026-07",
         "service": "Identifier, qualifier et arbitrer des opportunités fournisseur ou produit (scan pricing, décision garder/watchlist/rejeter) avant leur entrée dans le catalogue.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -783,20 +783,6 @@
         "declared": "utils/auth-token-policy.js",
         "resolvedPath": "utils/auth-token-policy.js",
         "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "auth",
-        "category": "migrations",
-        "declared": "migrations/072_jwt_revocation.sql",
-        "resolvedPath": "migrations/072_jwt_revocation.sql",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "auth",
-        "category": "migrations",
-        "declared": "migrations/084_jwt_revocation.sql",
-        "resolvedPath": "migrations/084_jwt_revocation.sql",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "auth",
@@ -5143,6 +5129,20 @@
         "category": "migrations",
         "declared": "migrations/069_analytical_indexes.sql",
         "resolvedPath": "migrations/069_analytical_indexes.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "migrations",
+        "declared": "migrations/072_jwt_revocation.sql",
+        "resolvedPath": "migrations/072_jwt_revocation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "migrations",
+        "declared": "migrations/084_jwt_revocation.sql",
+        "resolvedPath": "migrations/084_jwt_revocation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {

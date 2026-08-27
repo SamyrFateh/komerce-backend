@@ -21,6 +21,25 @@ module.exports = {
   since:    '2026-01',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  classification: {
+    "axis": "business",
+    "kind": "business-feature",
+    "decision": "feature-autonome",
+    "signals": {
+      "ownsTables": true,
+      "ownsLifecycle": true,
+      "activeService": true,
+      "multiConsumer": false,
+      "ownsMigrations": false,
+      "externalSideEffect": "none",
+      "surface": "api+service"
+    },
+    "rationale": [
+      "possède inventory_items et la non-négativité du stock ; la publication produit reste explicitement hors périmètre",
+      "orchestre les mouvements de stock avec orders et logistics sans posséder leurs commandes, colis ou décisions catalogue"
+    ]
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Réceptionner, affecter et dispatcher les articles au hub.',
 

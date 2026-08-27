@@ -21,6 +21,25 @@ module.exports = {
   since:    '2025-08',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  classification: {
+    "axis": "support",
+    "kind": "technical-transversal",
+    "decision": "transversal-technique",
+    "signals": {
+      "ownsTables": false,
+      "ownsLifecycle": false,
+      "activeService": true,
+      "multiConsumer": true,
+      "ownsMigrations": false,
+      "externalSideEffect": "none",
+      "surface": "middleware+session"
+    },
+    "rationale": [
+      "porte les gardes JWT, rôle, révocation et politique de session consommées transversalement, sans décider aucun cycle métier des consommateurs",
+      "reste un transversal technique conformément à la doctrine O2 ; le DDL technique de révocation appartient à infrastructure, tandis que les mutations d identité et credentials restent à auth-identity/auth-passkey"
+    ]
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Fournir les gardes transverses d\'authentification et de vérification d\'identité ' +
            '(middlewares JWT/session/rôles) consommées par toutes les autres features.',
@@ -56,8 +75,6 @@ module.exports = {
     services: [],
     routes: [],
     migrations: [
-      'migrations/072_jwt_revocation.sql',
-      'migrations/084_jwt_revocation.sql',
     ],
     boutique: [],
     tests: [

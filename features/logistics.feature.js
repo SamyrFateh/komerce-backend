@@ -21,6 +21,25 @@ module.exports = {
   since:    '2025-08',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  classification: {
+    "axis": "business",
+    "kind": "business-feature",
+    "decision": "feature-autonome",
+    "signals": {
+      "ownsTables": true,
+      "ownsLifecycle": true,
+      "activeService": true,
+      "multiConsumer": true,
+      "ownsMigrations": true,
+      "externalSideEffect": "none",
+      "surface": "api+service"
+    },
+    "rationale": [
+      "possède le cycle physique colis/scan/relais, les secrets de retrait et leurs transitions ; orders et customs gardent leurs propres décisions",
+      "porte ses tables et migrations opérationnelles tout en exposant des services consommés par payments, catalog, purchasing et dashboard"
+    ]
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Faire transiter un colis du scan initial au retrait final, avec tracking client et transporteur.',
 
