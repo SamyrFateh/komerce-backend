@@ -33,18 +33,12 @@ jobs:
         run: |
           node - <<'NODE'
           const f = require('./docs/FEATURE_360.json');
-          console.log('TOP_LEVEL_KEYS', Object.keys(f));
           const features = f.features || f.items || [];
           console.log(`FEATURE_COUNT ${features.length}`);
           for (const x of features) {
             const status = x.health || x.status || x.verdict;
             if (String(status).toLowerCase().includes('attention') || String(status).toLowerCase().includes('warn')) {
-              console.log('ATTENTION', JSON.stringify({
-                name: x.name || x.feature,
-                status,
-                reasons: x.reasons || x.findings || x.issues || x.attention || x.gaps || null,
-                debt: x.debt || null,
-              }));
+              console.log('ATTENTION', JSON.stringify({ name: x.name || x.feature, status, reasons: x.reasons || x.findings || x.issues || x.attention || x.gaps || null, debt: x.debt || null }));
             }
           }
           NODE
@@ -56,4 +50,37 @@ jobs:
           const j = JSON.parse(fs.readFileSync('/tmp/class.json','utf8'));
           console.log(`CLASS errors=${(j.errors||[]).length} warnings=${(j.warnings||[]).length}`);
           for (const w of j.warnings || []) console.log('CLASS_WARN', JSON.stringify(w));
+          NODE
+      - name: Classification shapes and target facts
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const dir = './features';
+          const manifests = {};
+          for (const file of fs.readdirSync(dir).filter(x => x.endsWith('.feature.js') && !x.startsWith('_'))) {
+            const m = require(path.resolve(dir, file));
+            manifests[m.name] = m;
+          }
+          for (const m of Object.values(manifests).filter(x => x.classification).sort((a,b) => a.name.localeCompare(b.name))) {
+            console.log('EXISTING_CLASS', m.name, JSON.stringify(m.classification));
+          }
+          const targets = ['auth','customs','economic-engine','inventory','logistics','payments','refunds','sourcing','auth-identity','auth-passkey','catalog','purchasing'];
+          for (const name of targets) {
+            const m = manifests[name];
+            if (!m) continue;
+            console.log('TARGET_FACTS', name, JSON.stringify({
+              type: m.type,
+              status: m.status,
+              classification: m.classification || null,
+              db: m.db?.tables || [],
+              migrations: m.files?.migrations || [],
+              services: (m.files?.services || []).length,
+              routes: (m.files?.routes || []).length,
+              consumes: m.contract?.consumes || [],
+              invariants: m.invariants || [],
+              perimeterIn: m.perimeter?.in || [],
+              perimeterOut: m.perimeter?.out || [],
+            }));
+          }
           NODE
