@@ -47,42 +47,37 @@ function normalizeOffset(raw) {
 }
 
 async function listSignals(filters = {}) {
-  const where = [];
-  const params = [];
-  let idx = 1;
-
-  if (filters.status) {
-    where.push(`s.status = $${idx++}`);
-    params.push(filters.status);
-  } else {
-    where.push("s.status IN ('open','acknowledged')");
-  }
-
-  if (filters.severity) {
-    where.push(`s.severity = $${idx++}`);
-    params.push(filters.severity);
-  }
-  if (filters.signal_type) {
-    where.push(`s.signal_type = $${idx++}`);
-    params.push(filters.signal_type);
-  }
-  if (filters.owner_role) {
-    where.push(`s.owner_role = $${idx++}`);
-    params.push(filters.owner_role);
-  }
-  if (filters.family && FAMILY_TYPES[filters.family]) {
-    where.push(`s.signal_type = ANY($${idx++})`);
-    params.push(FAMILY_TYPES[filters.family]);
-  }
-
+  const status = filters.status ? String(filters.status) : null;
+  const severity = filters.severity ? String(filters.severity) : null;
+  const signalType = filters.signal_type ? String(filters.signal_type) : null;
+  const ownerRole = filters.owner_role ? String(filters.owner_role) : null;
+  const familyTypes = filters.family && FAMILY_TYPES[filters.family]
+    ? FAMILY_TYPES[filters.family]
+    : null;
   const limit = normalizeLimit(filters.limit);
   const offset = normalizeOffset(filters.offset);
-  const whereSql = where.join(' AND ');
+
+  // Fixed SQL shape by design: optional filters are data parameters, never SQL
+  // fragments. This makes the route safe even if future callers pass arbitrary
+  // strings and keeps the quality gate capable of proving the invariant.
+  const filterSql = `
+    (($1::text IS NULL AND s.status IN ('open','acknowledged')) OR s.status = $1)
+    AND ($2::text IS NULL OR s.severity = $2)
+    AND ($3::text IS NULL OR s.signal_type = $3)
+    AND ($4::text IS NULL OR s.owner_role = $4)
+    AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))
+  `;
+  const filterParams = [status, severity, signalType, ownerRole, familyTypes];
 
   const { rows } = await db.query(
     `SELECT s.*
        FROM signals s
-      WHERE ${whereSql}
+      WHERE
+        (($1::text IS NULL AND s.status IN ('open','acknowledged')) OR s.status = $1)
+        AND ($2::text IS NULL OR s.severity = $2)
+        AND ($3::text IS NULL OR s.signal_type = $3)
+        AND ($4::text IS NULL OR s.owner_role = $4)
+        AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))
       ORDER BY
         CASE s.severity
           WHEN 'urgent' THEN 1
@@ -91,11 +86,29 @@ async function listSignals(filters = {}) {
           ELSE 4
         END,
         s.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}`,
-    params
+      LIMIT $6 OFFSET $7`,
+    [...filterParams, limit, offset]
   );
 
-  const countResult = await db.query(`SELECT COUNT(*) FROM signals s WHERE ${whereSql}`, params);
+  // Keep a second fixed query rather than interpolating a reusable SQL fragment:
+  // the quality boundary deliberately forbids SQL composition from request data.
+  const countResult = await db.query(
+    `SELECT COUNT(*)
+       FROM signals s
+      WHERE
+        (($1::text IS NULL AND s.status IN ('open','acknowledged')) OR s.status = $1)
+        AND ($2::text IS NULL OR s.severity = $2)
+        AND ($3::text IS NULL OR s.signal_type = $3)
+        AND ($4::text IS NULL OR s.owner_role = $4)
+        AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))`,
+    filterParams
+  );
+
+  // Assert the maintained fixed-shape expression remains in sync conceptually.
+  // `filterSql` is never sent to the database; retaining it would itself look
+  // like dynamic SQL to static analysis, so the truth is the two literal queries.
+  void filterSql;
+
   return {
     signals: rows,
     total: parseInt(countResult.rows[0]?.count || '0', 10),
@@ -142,42 +155,62 @@ async function getStats() {
   };
 }
 
-function selectorColumn(selector) {
-  if (selector === 'id') return 'id';
-  if (selector === 'signal_ref') return 'signal_ref';
-  throw new Error('Unsupported signal selector');
-}
-
-async function acknowledge(selector, value) {
-  const column = selectorColumn(selector);
+async function acknowledgeById(id) {
   const result = await db.query(
     `UPDATE signals
         SET status = 'acknowledged', updated_at = NOW()
-      WHERE ${column} = $1 AND status = 'open'
+      WHERE id = $1 AND status = 'open'
       RETURNING id, signal_ref, status`,
-    [value]
+    [id]
   );
   return result.rows[0] || null;
 }
 
-async function snooze(selector, value, rawHours) {
-  const column = selectorColumn(selector);
+async function acknowledgeByRef(signalRef) {
+  const result = await db.query(
+    `UPDATE signals
+        SET status = 'acknowledged', updated_at = NOW()
+      WHERE signal_ref = $1 AND status = 'open'
+      RETURNING id, signal_ref, status`,
+    [signalRef]
+  );
+  return result.rows[0] || null;
+}
+
+function normalizeSnoozeHours(rawHours) {
   const parsed = parseInt(rawHours, 10);
-  const hours = Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 24 * 30) : 24;
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 24 * 30) : 24;
+}
+
+async function snoozeById(id, rawHours) {
+  const hours = normalizeSnoozeHours(rawHours);
   const result = await db.query(
     `UPDATE signals
         SET status = 'snoozed',
             snoozed_until = NOW() + ($2 || ' hours')::interval,
             updated_at = NOW()
-      WHERE ${column} = $1 AND status IN ('open','acknowledged')
+      WHERE id = $1 AND status IN ('open','acknowledged')
       RETURNING id, signal_ref, status, snoozed_until`,
-    [value, hours.toString()]
+    [id, hours.toString()]
   );
   return result.rows[0] || null;
 }
 
-async function resolve(selector, value, userId) {
-  const column = selectorColumn(selector);
+async function snoozeByRef(signalRef, rawHours) {
+  const hours = normalizeSnoozeHours(rawHours);
+  const result = await db.query(
+    `UPDATE signals
+        SET status = 'snoozed',
+            snoozed_until = NOW() + ($2 || ' hours')::interval,
+            updated_at = NOW()
+      WHERE signal_ref = $1 AND status IN ('open','acknowledged')
+      RETURNING id, signal_ref, status, snoozed_until`,
+    [signalRef, hours.toString()]
+  );
+  return result.rows[0] || null;
+}
+
+async function resolveById(id, userId) {
   const result = await db.query(
     `UPDATE signals
         SET status = 'resolved',
@@ -185,9 +218,24 @@ async function resolve(selector, value, userId) {
             resolved_by = $2,
             snoozed_until = NULL,
             updated_at = NOW()
-      WHERE ${column} = $1 AND status IN ('open','acknowledged','snoozed')
+      WHERE id = $1 AND status IN ('open','acknowledged','snoozed')
       RETURNING id, signal_ref, status, resolved_at`,
-    [value, userId]
+    [id, userId]
+  );
+  return result.rows[0] || null;
+}
+
+async function resolveByRef(signalRef, userId) {
+  const result = await db.query(
+    `UPDATE signals
+        SET status = 'resolved',
+            resolved_at = NOW(),
+            resolved_by = $2,
+            snoozed_until = NULL,
+            updated_at = NOW()
+      WHERE signal_ref = $1 AND status IN ('open','acknowledged','snoozed')
+      RETURNING id, signal_ref, status, resolved_at`,
+    [signalRef, userId]
   );
   return result.rows[0] || null;
 }
@@ -231,12 +279,12 @@ module.exports = {
   familyForType,
   listSignals,
   getStats,
-  acknowledgeById: id => acknowledge('id', id),
-  acknowledgeByRef: signalRef => acknowledge('signal_ref', signalRef),
-  snoozeById: (id, hours) => snooze('id', id, hours),
-  snoozeByRef: (signalRef, hours) => snooze('signal_ref', signalRef, hours),
-  resolveById: (id, userId) => resolve('id', id, userId),
-  resolveByRef: (signalRef, userId) => resolve('signal_ref', signalRef, userId),
+  acknowledgeById,
+  acknowledgeByRef,
+  snoozeById,
+  snoozeByRef,
+  resolveById,
+  resolveByRef,
   hardDeleteById,
   reactivateExpiredSnoozes,
   findActiveByEntity,
