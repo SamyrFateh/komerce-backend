@@ -21,6 +21,25 @@ module.exports = {
   since:    '2025-09',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  classification: {
+    "axis": "business",
+    "kind": "business-feature",
+    "decision": "feature-autonome",
+    "signals": {
+      "ownsTables": true,
+      "ownsLifecycle": true,
+      "activeService": true,
+      "multiConsumer": true,
+      "ownsMigrations": true,
+      "externalSideEffect": "payment",
+      "surface": "api+webhook+service"
+    },
+    "rationale": [
+      "possède confirmation et idempotence des encaissements Stripe, PayPal et cash ainsi que les journaux d événements traités",
+      "borne l effet externe de paiement par webhook, montant, devise et anti-double-confirmation ; orders ne possède que la commande à payer"
+    ]
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Encaisser un paiement (carte, PayPal, especes au retrait) et confirmer son etat de facon idempotente.',
 
@@ -210,6 +229,7 @@ module.exports = {
     'aucun secret de paiement en dur dans le code',
     { statement: 'un paiement confirme ne peut etre confirme deux fois',
       test: 'tests/invariants/payments.no-double-confirm.test.js' },
+    "tout payment externe et tout webhook Stripe ou PayPal est idempotent ; un rejeu ne confirme jamais deux fois la même commande",
   ],
 
 };

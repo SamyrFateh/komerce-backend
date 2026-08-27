@@ -26,6 +26,7 @@ module.exports = {
     kind:     'business-feature',
     rationale: [
       'Propriétaire exclusif de products, catalog_media, product_variants, product_skus, product_sku_media, et des règles de canonicalisation, dédoublonnage et publication (arbitrage D, 2026-07-29).',
+      "possède le contrat produit public, le lifecycle de publication et la vérité SKU/media ; pricing, routing et ranking restent consommés depuis leurs features propriétaires",
     ],
   },
   since:    '2025-09',

@@ -21,6 +21,25 @@ module.exports = {
   since:    '2025-09',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  classification: {
+    "axis": "business",
+    "kind": "business-feature",
+    "decision": "feature-autonome",
+    "signals": {
+      "ownsTables": true,
+      "ownsLifecycle": true,
+      "activeService": true,
+      "multiConsumer": true,
+      "ownsMigrations": true,
+      "externalSideEffect": "none",
+      "surface": "api+service"
+    },
+    "rationale": [
+      "possède pricing, composants de coût, stratégies versionnées et allocations ; ces décisions économiques ne sont pas des projections dashboard",
+      "porte ses tables et migrations propriétaires consommées par catalog, orders et dashboard sans reprendre leurs cycles métier"
+    ]
+  },
+
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Calculer le prix, le cout et la marge d\'un produit ou d\'une commande selon une strategie tarifaire versionnee.',
 

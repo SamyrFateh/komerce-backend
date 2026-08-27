@@ -80,6 +80,8 @@ module.exports = {
       'migrations/016_add_missing_indexes.sql',
       'migrations/018_schema_reconciliation.sql',
       'migrations/069_analytical_indexes.sql',
+      'migrations/072_jwt_revocation.sql',
+      'migrations/084_jwt_revocation.sql',
       'migrations/AUD-10_rename_tracking_fix.sql',
       'migrations/deploy-all.sql',
     ],

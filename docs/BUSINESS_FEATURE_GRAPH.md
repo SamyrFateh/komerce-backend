@@ -113,7 +113,6 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - middleware: 7
 - utils: 4
-- migrations: 2
 - tests: 13
 - tables owned (lifecycle): 0
 - tables written: 0
@@ -295,7 +294,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - utils: 4
 - validators: 1
 - bootstrap: 9
-- migrations: 6
+- migrations: 8
 - scripts: 88
 - docs: 60
 - ci: 24
