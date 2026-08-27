@@ -1,0 +1,427 @@
+name: Action Center 4G wire and proof
+
+on:
+  push:
+    branches:
+      - ci/canonical-action-center-4g-wire
+
+permissions:
+  contents: write
+
+jobs:
+  wire-action-center:
+    runs-on: ubuntu-24.04
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-action-center-4g
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Correct signal lifecycle and wire Canonical Action Center
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def patch(path, old, new, required=True):
+              p = Path(path)
+              s = p.read_text()
+              if old in s:
+                  p.write_text(s.replace(old, new, 1))
+                  return
+              if required and new not in s:
+                  raise SystemExit(f'anchor not found in {path}: {old[:120]!r}')
+
+          # ── Signal generation: preserve one active lifecycle across open / ack / snooze.
+          p = Path('services/signal-service.js')
+          s = p.read_text()
+          s = s.replace(
+              '@used-by       routes/signals.js, bootstrap/feature-wiring.js',
+              '@used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js'
+          )
+          start = s.index('async function upsertSignal(sig) {')
+          end = s.index('/* ═══════════════════════════════════════════════════════════════\n   AUTO-RESOLVE', start)
+          replacement = r'''async function upsertSignal(sig) {
+            // A signal is one derived fact across its whole active lifecycle.
+            // Update an existing open/acknowledged/snoozed signal first; only
+            // insert when no active fact exists. An expired snooze wakes up.
+            let sql = `
+              WITH candidate AS (
+                SELECT id
+                  FROM signals
+                 WHERE signal_type = $1
+                   AND entity_type IS NOT DISTINCT FROM $10
+                   AND entity_id IS NOT DISTINCT FROM $11
+                   AND status IN ('open','acknowledged','snoozed')
+                 ORDER BY
+                   CASE status WHEN 'snoozed' THEN 1 WHEN 'acknowledged' THEN 2 ELSE 3 END,
+                   created_at DESC
+                 LIMIT 1
+              ), active AS (
+                UPDATE signals s
+                   SET severity = $2,
+                       title = $3,
+                       summary = $4,
+                       source_module = $5,
+                       target_shell = $6,
+                       target_view = $7,
+                       target_filters = $8,
+                       owner_role = $9,
+                       recommendation = $12,
+                       confidence = $13,
+                       meta = $14,
+                       expires_at = $15,
+                       status = CASE
+                         WHEN s.status = 'snoozed' AND s.snoozed_until <= NOW() THEN 'open'
+                         ELSE s.status
+                       END,
+                       snoozed_until = CASE
+                         WHEN s.status = 'snoozed' AND s.snoozed_until <= NOW() THEN NULL
+                         ELSE s.snoozed_until
+                       END,
+                       updated_at = NOW()
+                  FROM candidate c
+                 WHERE s.id = c.id
+                RETURNING s.id, s.signal_ref
+              ), inserted AS (
+                INSERT INTO signals (
+                  signal_type, severity, title, summary,
+                  source_module, target_shell, target_view, target_filters,
+                  owner_role, entity_type, entity_id,
+                  recommendation, confidence, meta, expires_at
+                )
+                SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
+                 WHERE NOT EXISTS (SELECT 1 FROM active)
+                ON CONFLICT (signal_type, entity_type, entity_id) WHERE status = 'open'
+                DO UPDATE SET
+                  severity = EXCLUDED.severity,
+                  title = EXCLUDED.title,
+                  summary = EXCLUDED.summary,
+                  recommendation = EXCLUDED.recommendation,
+                  meta = EXCLUDED.meta,
+                  expires_at = EXCLUDED.expires_at,
+                  updated_at = NOW()
+                RETURNING id, signal_ref
+              )
+              SELECT * FROM active
+              UNION ALL
+              SELECT * FROM inserted
+              LIMIT 1
+            `;
+            let result = await db.query(sql, [
+              sig.signal_type,
+              sig.severity || 'warning',
+              sig.title,
+              sig.summary || null,
+              sig.source_module || 'signal-service',
+              sig.target_shell || 'bo',
+              sig.target_view || null,
+              JSON.stringify(sig.target_filters || {}),
+              sig.owner_role || 'admin',
+              sig.entity_type || null,
+              sig.entity_id || null,
+              sig.recommendation || null,
+              sig.confidence || 'high',
+              JSON.stringify(sig.meta || {}),
+              sig.expires_at || null
+            ]);
+            return result.rows[0];
+          }
+
+          '''
+          s = s[:start] + replacement + s[end:]
+          s = s.replace(
+              "UPDATE signals SET status = 'resolved', resolved_at = NOW(), updated_at = NOW()\n      WHERE signal_type = $1 AND status = 'open'",
+              "UPDATE signals SET status = 'resolved', resolved_at = NOW(), snoozed_until = NULL, updated_at = NOW()\n      WHERE signal_type = $1 AND status IN ('open','acknowledged','snoozed')"
+          )
+          s = s.replace(
+              "UPDATE signals SET status = 'resolved', resolved_at = NOW(), updated_at = NOW()\n    WHERE signal_type = $1 AND status = 'open'",
+              "UPDATE signals SET status = 'resolved', resolved_at = NOW(), snoozed_until = NULL, updated_at = NOW()\n    WHERE signal_type = $1 AND status IN ('open','acknowledged','snoozed')"
+          )
+          p.write_text(s)
+
+          # Remove unsupported arch pseudo-directive; dependency remains explicit in @depends.
+          patch(
+              'services/action-center-workspace.js',
+              ' * @db-write-via:decision-signals signal-admin-service.js, signal-service.js\n',
+              '',
+              required=False,
+          )
+
+          # ── API composition root.
+          patch(
+              'bootstrap/api-routes.js',
+              'routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js\n * @db-write',
+              'routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js\n * @db-write',
+          )
+          patch(
+              'bootstrap/api-routes.js',
+              "  const adminPricingWorkspaceRouter = require('../routes/admin-pricing-workspace');\n",
+              "  const adminPricingWorkspaceRouter = require('../routes/admin-pricing-workspace');\n  const adminActionCenterRouter = require('../routes/admin-action-center');\n",
+          )
+          patch(
+              'bootstrap/api-routes.js',
+              "  app.use('/api/admin/workspaces/pricing', adminPricingWorkspaceRouter);\n",
+              "  app.use('/api/admin/workspaces/pricing', adminPricingWorkspaceRouter);\n  app.use('/api/admin/action-center', adminActionCenterRouter);\n",
+          )
+
+          # ── Stable Canonical URL + additive Legacy preservation.
+          patch(
+              'bootstrap/html-routes.js',
+              "    '/admin/workspaces/pricing',\n    '/admin/demo',",
+              "    '/admin/workspaces/pricing',\n    '/admin/action-center',\n    '/admin/demo',",
+          )
+          patch(
+              'bootstrap/html-routes.js',
+              "    '/admin-next/workspaces/pricing': '/admin/workspaces/pricing',\n    '/admin-next/demo': '/admin/demo',",
+              "    '/admin-next/workspaces/pricing': '/admin/workspaces/pricing',\n    '/admin-next/action-center': '/admin/action-center',\n    '/admin-next/demo': '/admin/demo',",
+          )
+
+          # ── Canonical bundle and router. Action Center is global: no AdminContext.
+          patch(
+              'public/dashboards/canonical/index.html',
+              '  <script src="/dashboards/canonical/js/pricing-workspace.js"></script>\n',
+              '  <script src="/dashboards/canonical/js/pricing-workspace.js"></script>\n  <script src="/dashboards/canonical/js/action-center.js"></script>\n',
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              'sourcing-workspace, pricing-workspace, order-360',
+              'sourcing-workspace, pricing-workspace, action-center, order-360',
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              '/admin/workspaces/sourcing, /admin/workspaces/pricing, /admin/orders',
+              '/admin/workspaces/sourcing, /admin/workspaces/pricing, /admin/action-center, /admin/orders',
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    PRICING_WORKSPACE: 'pricing-workspace',\n",
+              "    PRICING_WORKSPACE: 'pricing-workspace',\n    ACTION_CENTER: 'action-center',\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    if (path === '/admin/workspaces/pricing' || path === '/admin-next/workspaces/pricing') {\n      return SURFACES.PRICING_WORKSPACE;\n    }\n",
+              "    if (path === '/admin/workspaces/pricing' || path === '/admin-next/workspaces/pricing') {\n      return SURFACES.PRICING_WORKSPACE;\n    }\n    if (path === '/admin/action-center' || path === '/admin-next/action-center') {\n      return SURFACES.ACTION_CENTER;\n    }\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "  function renderOrder360(root, user) {\n",
+              "  function renderActionCenter(root, user) {\n    if (!global.KomerceCanonicalActionCenter) throw new Error('canonical_action_center_module_missing');\n    return global.KomerceCanonicalActionCenter.mount({\n      root,\n      user,\n      document: global.document,\n      fetch: global.fetch.bind(global),\n      ui: global.KomerceCanonicalUI,\n    });\n  }\n\n  function renderOrder360(root, user) {\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              "    if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspace(root, user);\n",
+              "    if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspace(root, user);\n    if (surface === SURFACES.ACTION_CENTER) return renderActionCenter(root, user);\n",
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              'surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PRICING_WORKSPACE)',
+              'surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PRICING_WORKSPACE || surface === SURFACES.ACTION_CENTER)',
+          )
+          patch(
+              'public/dashboards/canonical/js/app.js',
+              '    renderPricingWorkspace,\n',
+              '    renderPricingWorkspace,\n    renderActionCenter,\n',
+          )
+
+          # ── Capability ownership: decision-signals owns facts and lifecycle.
+          p = Path('capabilities/decision-signals.capability.js')
+          s = p.read_text()
+          s = s.replace(
+              "      'consultation admin des signaux (routes/signals.js)',\n",
+              "      'consultation admin des signaux (routes/signals.js)',\n      'Action Center Canonical : projection globale + lifecycle par signal_ref',\n"
+          )
+          s = s.replace(
+              "      'aucune UI propre : la restitution visuelle passe par dashboard (routes/admin-radar.js), qui reste une projection',",
+              "      'aucune UI ne devient propriétaire de la donnée source : Action Center reste une projection dashboard de cette capability',"
+          )
+          s = s.replace(
+              "  files: {\n    services: [\n",
+              "  files: {\n    middleware: [\n      'middleware/require-decision-signal-global-authority.js',\n    ],\n    services: [\n"
+          )
+          s = s.replace(
+              "      'services/signal-service.js',\n",
+              "      'services/signal-service.js',\n      'services/signal-admin-service.js',\n      'services/action-center-workspace.js',\n"
+          )
+          s = s.replace(
+              "      'routes/signals.js',\n",
+              "      'routes/signals.js',\n      'routes/admin-action-center.js',\n"
+          )
+          if 'migrations/153_action_center_signal_authority.sql' not in s:
+              s = s.replace(
+                  "    tests: [\n",
+                  "    migrations: [\n      'migrations/153_action_center_signal_authority.sql',\n    ],\n    tests: [\n",
+                  1,
+              )
+          s = s.replace(
+              "      'tests/unit/signal-service.test.js',\n",
+              "      'tests/unit/signal-service.test.js',\n      'tests/unit/signal-admin-service.test.js',\n      'tests/unit/action-center-workspace.test.js',\n      'tests/unit/admin-action-center-route.test.js',\n      'tests/unit/require-decision-signal-global-authority.test.js',\n      'tests/unit/signals-error-propagation.test.js',\n"
+          )
+          s = s.replace(
+              "    'consultation admin directe (routes/signals.js)',\n",
+              "    'consultation admin directe (routes/signals.js)',\n    'dashboard Canonical (Action Center /admin/action-center)',\n"
+          )
+          s = s.replace(
+              "    'acknowledge/resolve/snooze changent uniquement l\\'etat du signal, jamais l\\'etat de la donnee source',\n",
+              "    'acknowledge/resolve/snooze changent uniquement l\\'etat du signal, jamais l\\'etat de la donnee source',\n    'open, acknowledged et snoozed forment un seul lifecycle actif ; disparition de la condition => auto-resolution',\n    'aucune autorite market n\\'est inventee tant que signals ne porte pas un market_id canonique',\n"
+          )
+          if 'GET /api/admin/action-center' not in s:
+              s = s.replace(
+                  "  contract: {\n    consumes: [\n",
+                  "  contract: {\n    exposes: [\n      'GET /api/admin/action-center',\n      'POST /api/admin/action-center/generate',\n      'POST /api/admin/action-center/signals/:signalRef/acknowledge',\n      'POST /api/admin/action-center/signals/:signalRef/snooze',\n      'POST /api/admin/action-center/signals/:signalRef/resolve',\n    ],\n    consumes: [\n",
+                  1,
+              )
+          p.write_text(s)
+
+          # ── Dashboard owns the Canonical UI projection only.
+          p = Path('features/dashboard.feature.js')
+          s = p.read_text()
+          if 'docs/contract/ACTION_CENTER_4G.md' not in s:
+              s = s.replace(
+                  "      'docs/contract/DASHBOARD_MARKET_SCOPE_2C.md',\n",
+                  "      'docs/contract/DASHBOARD_MARKET_SCOPE_2C.md',\n      'docs/contract/ACTION_CENTER_4G.md',\n",
+                  1,
+              )
+          if "'dashboards/canonical/js/action-center.js'" not in s:
+              s = s.replace(
+                  "      'dashboards/canonical/js/pricing-workspace.js',\n",
+                  "      'dashboards/canonical/js/pricing-workspace.js',\n      'dashboards/canonical/js/action-center.js',\n",
+                  1,
+              )
+          if "'tests/unit/canonical-action-center-boundary.test.js'" not in s:
+              s = s.replace(
+                  "      'tests/unit/canonical-sourcing-workspace-boundary.test.js',\n",
+                  "      'tests/unit/canonical-sourcing-workspace-boundary.test.js',\n      'tests/unit/canonical-action-center-boundary.test.js',\n",
+                  1,
+              )
+          p.write_text(s)
+
+          # ── Correct the 0A classification discovered by reading SimulatorView.
+          p = Path('docs/LOT_0A_SURFACES_LIVRABLE.md')
+          s = p.read_text()
+          s = s.replace(
+              '| SimulatorView | A lecture seule ⚠️ | B | 5 | 0 | — | Pricing WS (simulation) | MERGE |',
+              '| SimulatorView | A lecture seule ⚠️ | B | 5 | 0 | — | Simulateur opérationnel / staging | **RECLASSIFY** |'
+          )
+          s = s.replace(
+              '**② 4 workspaces-cibles actuellement en LECTURE SEULE** — AccountingView, InvoicesView, EconomicFlowView, SimulatorView. Leur côté *exécution* n\'existe pas encore dans l\'UI : il est à **construire**, pas seulement à migrer (LOT 6/7/8). Généralise le constat déjà fait sur Finance (II-5b).',
+              '**② 3 workspaces-cibles actuellement en LECTURE SEULE** — AccountingView, InvoicesView, EconomicFlowView. Leur côté *exécution* n\'existe pas encore dans l\'UI : il est à **construire**, pas seulement à migrer. **SimulatorView est reclassé hors Pricing** après lecture du code réel : il pilote des scénarios opérationnels de commandes (douane, relais, litiges, start/stop/cleanup) et relève du staging/opérations.'
+          )
+          p.write_text(s)
+
+          # ── Remove obsolete bug note from the Legacy route test header.
+          p = Path('tests/unit/signals.test.js')
+          s = p.read_text()
+          old_start = " * ⚠️ BUG SOURCE CONNU : aucun handler de ce fichier ne déclare `next` en\n"
+          if old_start in s:
+              begin = s.index(old_start)
+              end = s.index(' */', begin)
+              replacement = " * LOT 4G : routes/signals.js est désormais une façade Legacy autour de\n * signal-admin-service. Les erreurs DB atteignent le middleware Express ;\n * la régression historique `next is not defined` est couverte séparément par\n * signals-error-propagation.test.js.\n"
+              s = s[:begin] + replacement + s[end:]
+          p.write_text(s)
+          PY
+
+      - name: Add Action Center to generated API contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/contract-generate.js')
+          s = p.read_text()
+          marker = '// LOT 4G — Canonical Action Center'
+          if marker not in s:
+              end = s.index('\n];', s.index('const ROUTE_SCHEMA_MAP = ['))
+              block = "\n  // LOT 4G — Canonical Action Center (global derived-signal lifecycle)\n" \
+                "  { prefix: '/api/admin/action-center', method: 'get', schema: null },\n" \
+                "  { prefix: '/api/admin/action-center/generate', method: 'post', schema: null },\n" \
+                "  { prefix: '/api/admin/action-center/signals/{signalRef}/acknowledge', method: 'post', schema: null },\n" \
+                "  { prefix: '/api/admin/action-center/signals/{signalRef}/snooze', method: 'post', schema: null },\n" \
+                "  { prefix: '/api/admin/action-center/signals/{signalRef}/resolve', method: 'post', schema: null },\n"
+              s = s[:end] + block + s[end:]
+
+          response_marker = '// LOT 4G — réponses Action Center'
+          if response_marker not in s:
+              anchor = 'const KNOWN_RESPONSES = {\n'
+              block = "  // LOT 4G — réponses Action Center consommées par Canonical.\n" \
+                "  '/api/admin/action-center': { get: { fields: ['scope','summary','signals','pagination'], source: 'test' } },\n" \
+                "  '/api/admin/action-center/generate': { post: { fields: ['ok','action','result'], source: 'test' } },\n" \
+                "  '/api/admin/action-center/signals/{signalRef}/acknowledge': { post: { fields: ['ok','action','result'], source: 'test' } },\n" \
+                "  '/api/admin/action-center/signals/{signalRef}/snooze': { post: { fields: ['ok','action','result'], source: 'test' } },\n" \
+                "  '/api/admin/action-center/signals/{signalRef}/resolve': { post: { fields: ['ok','action','result'], source: 'test' } },\n"
+              if anchor not in s:
+                  raise SystemExit('KNOWN_RESPONSES anchor missing')
+              s = s.replace(anchor, anchor + block, 1)
+          p.write_text(s)
+          PY
+
+      - name: Generate contracts and governance projections
+        shell: bash
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          node scripts/contract-check.js
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+
+      - name: Focused 4G proof and Legacy compatibility
+        shell: bash
+        run: |
+          npx jest --config jest.unit.config.js --runInBand --forceExit \
+            tests/unit/require-decision-signal-global-authority.test.js \
+            tests/unit/signal-admin-service.test.js \
+            tests/unit/action-center-workspace.test.js \
+            tests/unit/admin-action-center-route.test.js \
+            tests/unit/canonical-action-center-boundary.test.js \
+            tests/unit/signals-error-propagation.test.js \
+            tests/unit/signals.test.js \
+            tests/unit/signal-service.test.js \
+            tests/unit/bootstrap-api-routes.test.js
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+
+      - name: Persist validated 4G wiring
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No validated 4G changes to commit"
+            exit 1
+          fi
+          git commit -m "feat(canonical): wire Action Center LOT 4G"
+          git push origin HEAD:feat/canonical-action-center-4g
