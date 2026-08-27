@@ -70,6 +70,10 @@ LOT 4G fixe le modèle actif :
 - si la condition métier disparaît, les trois états actifs sont auto-résolus ;
 - `resolve` remet `snoozed_until` à `NULL`.
 
+### Invariant DB — un seul fait actif
+
+La migration résorbe les éventuels doublons historiques actifs en conservant l’intention opérateur la plus forte (`snoozed` > `acknowledged` > `open`), puis crée un index unique partiel sur `(signal_type, entity_type, entity_id)` avec `NULLS NOT DISTINCT` pour les trois états actifs. La déduplication est ainsi garantie jusque sous concurrence entre génération et action opérateur.
+
 ## Autorités backend
 
 ### `services/signal-service.js`

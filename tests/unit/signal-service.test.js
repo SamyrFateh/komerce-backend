@@ -70,6 +70,8 @@ describe("upsertSignal", () => {
     const [sql, params] = mockQuery.mock.calls[0];
     expect(sql).toMatch(/INSERT INTO signals/);
     expect(sql).toMatch(/ON CONFLICT/);
+    expect(sql).toContain("WHERE status IN ('open','acknowledged','snoozed')");
+    expect(sql).toContain("WHEN signals.status = 'snoozed' AND signals.snoozed_until <= NOW() THEN 'open'");
     expect(params).toHaveLength(15);
     expect(result).toEqual({ id: 'sig-1' });
   });

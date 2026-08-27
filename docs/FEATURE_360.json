@@ -6000,8 +6000,13 @@
             ]
           },
           "tests": {
-            "count": 8,
+            "count": 9,
             "files": [
+              {
+                "declared": "tests/unit/action-center-migration-contract.test.js",
+                "resolvedPath": "tests/unit/action-center-migration-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/action-center-workspace.test.js",
                 "resolvedPath": "tests/unit/action-center-workspace.test.js",
@@ -6045,7 +6050,7 @@
             ]
           }
         },
-        "totalFiles": 16,
+        "totalFiles": 17,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

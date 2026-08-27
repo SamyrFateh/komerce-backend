@@ -579,12 +579,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 16 fichier(s) déclaré(s)
+**Implementation** : 17 fichier(s) déclaré(s)
   - middleware : 1
   - migrations : 1
   - routes : 2
   - services : 4
-  - tests : 8
+  - tests : 9
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="decision-signals"]_
 

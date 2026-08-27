@@ -87,14 +87,28 @@ async function upsertSignal(sig) {
       )
       SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
        WHERE NOT EXISTS (SELECT 1 FROM active)
-      ON CONFLICT (signal_type, entity_type, entity_id) WHERE status = 'open'
+      ON CONFLICT (signal_type, entity_type, entity_id) WHERE status IN ('open','acknowledged','snoozed')
       DO UPDATE SET
         severity = EXCLUDED.severity,
         title = EXCLUDED.title,
         summary = EXCLUDED.summary,
+        source_module = EXCLUDED.source_module,
+        target_shell = EXCLUDED.target_shell,
+        target_view = EXCLUDED.target_view,
+        target_filters = EXCLUDED.target_filters,
+        owner_role = EXCLUDED.owner_role,
         recommendation = EXCLUDED.recommendation,
+        confidence = EXCLUDED.confidence,
         meta = EXCLUDED.meta,
         expires_at = EXCLUDED.expires_at,
+        status = CASE
+          WHEN signals.status = 'snoozed' AND signals.snoozed_until <= NOW() THEN 'open'
+          ELSE signals.status
+        END,
+        snoozed_until = CASE
+          WHEN signals.status = 'snoozed' AND signals.snoozed_until <= NOW() THEN NULL
+          ELSE signals.snoozed_until
+        END,
         updated_at = NOW()
       RETURNING id, signal_ref
     )

@@ -63,6 +63,7 @@ module.exports = {
       'tests/unit/admin-action-center-route.test.js',
       'tests/unit/require-decision-signal-global-authority.test.js',
       'tests/unit/signals-error-propagation.test.js',
+      'tests/unit/action-center-migration-contract.test.js',
     ],
   },
 

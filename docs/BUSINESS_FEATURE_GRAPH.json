@@ -10219,6 +10219,13 @@
         "declared": "tests/unit/signals-error-propagation.test.js",
         "resolvedPath": "tests/unit/signals-error-propagation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/action-center-migration-contract.test.js",
+        "resolvedPath": "tests/unit/action-center-migration-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       }
     ],
     "exposesInterface": [
@@ -26496,7 +26503,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 915
+        "filesObserved": 916
       },
       "boutique": {
         "filesObserved": 169,
