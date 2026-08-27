@@ -95,6 +95,7 @@ module.exports = {
       'tests/unit/sourcing-candidate-import-service.test.js',
       'tests/unit/admin-sourcing-workspace-route.test.js',
       'tests/unit/sourcing-workspace.test.js',
+      'tests/unit/sourcing-candidate-actions.test.js',
       'tests/unit/require-sourcing-global-authority.test.js',
     ],
   },

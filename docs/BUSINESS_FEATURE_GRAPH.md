@@ -74,7 +74,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 27 | 27 | 354 | 338 | 16 |
+| backend | 27 | 27 | 354 | 354 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 15 | 15 | 89 | 89 | 0 |
 
@@ -183,7 +183,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 6
 - boutique: 38
 - dash: 4
-- tests: 46
+- tests: 48
 - tables owned (lifecycle): 13 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `catalog_media`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_attributes`, `supplier_catalog_imports`
 - tables written: 13
 - interfaces exposed: 31
@@ -211,11 +211,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Exposer les agrégats de pilotage et porter la transition UI vers un admin canonique greenfield, global pour Komerce et strictement scopé par marché pour les partenaires opérateurs pays, sans réutiliser les deux générations historiques de dashboards.
 
-- services: 12
-- routes: 18
+- services: 22
+- routes: 24
 - migrations: 2
 - dash: 97
-- tests: 43
+- tests: 60
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 17
 - interfaces exposed: 66
@@ -528,7 +528,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 5
 - services: 3
 - routes: 2
-- tests: 5
+- tests: 6
 - tables owned (lifecycle): 2 — `sourcing_candidates`, `sourcing_candidate_events`
 - tables written: 2
 - interfaces exposed: 23
@@ -1528,26 +1528,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (16)
+### DETTE / DRIFT ACTIONNABLE (0)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-client-360.js — nœud technique "routes/admin-client-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-dashboard-market.js — nœud technique "routes/admin-dashboard-market.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-operations-workspace.js — nœud technique "routes/admin-operations-workspace.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-order-360.js — nœud technique "routes/admin-order-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-product-360.js — nœud technique "routes/admin-product-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ routes/admin-shipping-customs-workspace.js — nœud technique "routes/admin-shipping-customs-workspace.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/client-360.js — nœud technique "services/client-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/dashboard-admin-context.js — nœud technique "services/dashboard-admin-context.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/dashboard-commerce.js — nœud technique "services/dashboard-commerce.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/dashboard-finance-canonical.js — nœud technique "services/dashboard-finance-canonical.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/dashboard-operations.js — nœud technique "services/dashboard-operations.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/dashboard-pilotage-market.js — nœud technique "services/dashboard-pilotage-market.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/operations-workspace.js — nœud technique "services/operations-workspace.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/order-360.js — nœud technique "services/order-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/product-360.js — nœud technique "services/product-360.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** _[ACTIONABLE_DRIFT]_ services/shipping-customs-workspace.js — nœud technique "services/shipping-customs-workspace.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
+- none
 
 ### TOPOLOGIE ATTENDUE — hors dette (32)
 
@@ -1599,22 +1584,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 Fichiers présents dans le Technical Architecture Graph, non revendiqués par une carte feature ni un transversal déclaré (`governance/transversal-paths.json`).
 
-- routes/admin-client-360.js
-- routes/admin-dashboard-market.js
-- routes/admin-operations-workspace.js
-- routes/admin-order-360.js
-- routes/admin-product-360.js
-- routes/admin-shipping-customs-workspace.js
-- services/client-360.js
-- services/dashboard-admin-context.js
-- services/dashboard-commerce.js
-- services/dashboard-finance-canonical.js
-- services/dashboard-operations.js
-- services/dashboard-pilotage-market.js
-- services/operations-workspace.js
-- services/order-360.js
-- services/product-360.js
-- services/shipping-customs-workspace.js
+- none
 
 ## Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate
 
@@ -1622,7 +1592,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 916 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 952 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 169 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1678,19 +1648,20 @@ Meta Graph monté : oui.
 | customs | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | customs | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | customs | orders | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | auth | static-code | 12 | **DECLARED_AND_OBSERVED** |
+| dashboard | auth | static-code | 18 | **DECLARED_AND_OBSERVED** |
 | dashboard | auth-identity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| dashboard | customs | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | decision-signals | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| dashboard | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 55 | **DECLARED_AND_OBSERVED** |
-| dashboard | logistics | static-code | 11 | **DECLARED_AND_OBSERVED** |
-| dashboard | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 80 | **DECLARED_AND_OBSERVED** |
+| dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | logistics | static-code | 16 | **DECLARED_AND_OBSERVED** |
+| dashboard | market | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| dashboard | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| dashboard | orders | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | dashboard | payments | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | purchasing | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | decision-signals | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1713,7 +1684,7 @@ Meta Graph monté : oui.
 | infrastructure | business-rules | static-code | 3 | **OBSERVED_UNDECLARED** |
 | infrastructure | catalog | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | infrastructure | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| infrastructure | dashboard | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| infrastructure | dashboard | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | infrastructure | decision-signals | static-code | 3 | **OBSERVED_UNDECLARED** |
 | infrastructure | documents | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | economic-engine | static-code | 12 | **DECLARED_AND_OBSERVED** |
@@ -1862,7 +1833,6 @@ Meta Graph monté : oui.
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
 
 - `auth` → `orders` (déclaré : `orders`)
-- `dashboard` → `inventory` (déclaré : `inventory (lecture stock)`)
 - `dashboard` → `wallet` (déclaré : `wallet (soldes et crédits)`)
 - `dashboard` → `recommendations` (déclaré : `recommendations`)
 - `documents` → `orders` (déclaré : `orders`)

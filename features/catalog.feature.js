@@ -244,6 +244,8 @@ module.exports = {
       'tests/unit/catalog-approval.test.js',
       'tests/unit/admin-catalog-workspace-route.test.js',
       'tests/unit/catalog-workspace.test.js',
+      'tests/unit/sourcing-import-dispatch.test.js',
+      'tests/unit/boutique-taxonomy-admin.test.js',
       'tests/unit/canonical-catalog-workspace-boundary.test.js',
       'tests/unit/canonical-catalog-authority-boundary.test.js',
       'tests/unit/require-catalog-global-authority.test.js',
