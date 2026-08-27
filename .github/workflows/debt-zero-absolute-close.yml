@@ -6,10 +6,10 @@ on:
       - ci/debt-zero-absolute-close
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  decompose-final-signals:
+  close-specialized-360:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -19,64 +19,65 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - name: Preserve closure script
+        run: cp scripts/debt-zero-close-specialized-360.js /tmp/debt-zero-close-specialized-360.js
       - name: Switch to product branch
         run: git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
       - name: Install repository dependencies
         run: npm ci --ignore-scripts
+      - name: Apply structural closure
+        run: |
+          cp /tmp/debt-zero-close-specialized-360.js scripts/debt-zero-close-specialized-360.js
+          node scripts/debt-zero-close-specialized-360.js
+          rm scripts/debt-zero-close-specialized-360.js
+      - name: Targeted Boutique regression
+        run: |
+          npx --no-install jest \
+            public/boutique/tests/unit/b-modal-social-proof.test.js \
+            public/boutique/tests/unit/b-modal-core.test.js \
+            --runInBand
       - name: Regenerate specialized 360s
         run: |
           npm run dashboards:360
           npm run boutique:360
-      - name: Exact Dashboard residuals
+      - name: Assert structural zero
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const d = JSON.parse(fs.readFileSync('docs/DASHBOARDS_360.json','utf8'));
-          console.log('DASH_KEYS', Object.keys(d));
-          const mods = d.modules || [];
-          console.log('DASH_HEADERLESS', JSON.stringify(mods.filter(m => !m.hasHeader).map(m => m.file)));
-          for (const key of ['orphanRoutes','deadApiMethods','missingApiMethods','doctrineViolations','unknownContracts','unresolvedUrls']) {
-            if (d[key] !== undefined) console.log(`DASH_${key}`, JSON.stringify(d[key]));
+          const headerless = (d.modules || []).filter(m => !m.hasHeader).map(m => m.file);
+          if (headerless.length) throw new Error(`Dashboard headerless: ${headerless.join(', ')}`);
+          for (const key of ['orphanRoutes','deadApiMethods','missingApiMethods','doctrineViolations']) {
+            if ((d.summary && d.summary[key]) !== 0) throw new Error(`Dashboard ${key}=${d.summary[key]}`);
           }
-          console.log('DASH_SUMMARY', JSON.stringify(d.summary || {}));
-          NODE
-      - name: Exact Boutique bus residuals
-        run: |
-          node - <<'NODE'
-          const fs = require('fs');
+
           const b = JSON.parse(fs.readFileSync('docs/BOUTIQUE_360.json','utf8'));
-          console.log('BOUTIQUE_KEYS', Object.keys(b));
-          console.log('BOUTIQUE_SUMMARY', JSON.stringify(b.summary || {}));
-          for (const key of Object.keys(b)) {
-            if (/orphan|undeclared|bus|event/i.test(key)) console.log(`BOUTIQUE_${key}`, JSON.stringify(b[key]));
+          const s = b.summary || {};
+          for (const key of ['orphanEmit','orphanListen','undeclared','notFoundEndpoints','ownershipRed','ownershipOrange']) {
+            if ((s[key] || 0) !== 0) throw new Error(`Boutique ${key}=${s[key]}`);
           }
+          console.log('SPECIALIZED_STRUCTURAL_ZERO', {
+            dashboardHeaderless: headerless.length,
+            dashboardUnprovenInformational: d.summary.unprovenContracts,
+            boutiqueOrphanEmit: s.orphanEmit,
+            boutiqueOrphanListen: s.orphanListen,
+            boutiqueUndeclared: s.undeclared,
+            boutiqueNotFoundEndpoints: s.notFoundEndpoints,
+            boutiqueUnprovenInformational: s.unprovenEndpoints,
+          });
           NODE
-      - name: Exact backend debt JSON
+      - name: Lower specialized ratchets to current zero
         run: |
-          node scripts/debt-audit.js --json > /tmp/debt.json
-          node - <<'NODE'
-          const d = require('/tmp/debt.json');
-          console.log('DEBT_SUMMARY', JSON.stringify({ totalDebtItems:d.totalDebtItems, openDebtsCount:d.openDebtsCount }));
-          for (const x of d.debts) {
-            if (x.count > 0) console.log('DEBT_ITEM', JSON.stringify(x));
-          }
-          NODE
-      - name: Locate inline quality disables
-        run: grep -RIn --include='*.js' 'quality-disable N2-SQL-INJECTION' capabilities core middleware public routes services utils validators || true
-      - name: NPM audit classification
+          npm run dashboards:360:save
+          npm run boutique:360:save
+          npm run dashboards:360:check
+          npm run boutique:360:check
+          git diff --check
+      - name: Commit specialized structural zero
         run: |
-          npm audit --json > /tmp/npm-audit.json || true
-          node - <<'NODE'
-          const a = require('/tmp/npm-audit.json');
-          console.log('NPM_AUDIT_META', JSON.stringify(a.metadata || {}));
-          const vs = a.vulnerabilities || {};
-          for (const [name,v] of Object.entries(vs)) {
-            if (['high','critical'].includes(v.severity)) console.log('NPM_AUDIT_HIGH', JSON.stringify({name,severity:v.severity,isDirect:v.isDirect,via:v.via,range:v.range,fixAvailable:v.fixAvailable}));
-          }
-          NODE
-      - name: Migration 147 history
-        run: |
-          echo '=== 147 files ==='
-          ls -l migrations/147_*.sql || true
-          echo '=== references ==='
-          grep -RIn '147_catalog_global_access_grants\|147_relais_visit_identity\|COLLISION.*147' migrations docs scripts .github --exclude-dir=node_modules || true
+          git config user.name "SamyrFateh"
+          git config user.email "fatehsamyr@gmail.com"
+          git add public/dashboards/admin/js/views/SettingsViewLot1aGuard.js public/boutique/js/b-bus.js public/boutique/js/b-modal-social-proof.js public/boutique/tests/unit/b-modal-social-proof.test.js docs/DASHBOARDS_360.json docs/DASHBOARDS_360.md docs/BOUTIQUE_360.json docs/BOUTIQUE_360.md scripts/.dashboards-360-baseline.json scripts/.boutique-360-baseline.json
+          git diff --cached --check
+          git commit -m "chore(governance): close dashboard and boutique structural debt"
+          git push origin HEAD:chore/debt-zero-absolute
