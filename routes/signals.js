@@ -1,265 +1,114 @@
 /**
  * @komerce-arch
- * @role          signals
+ * @role          signals-legacy-facade
  * @domain        decision-signals
  * @layer         route
  * @criticality   medium
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @inputs        authenticated_admin, legacy_signal_filters, legacy_signal_uuid
+ * @outputs       legacy_signal_http_contract
+ * @depends       middleware/auth.js, services/signal-admin-service.js, services/signal-service.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       signals
- * @db-write      signals
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
- * @version       2026-06
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      legacy_http_isomorphic, signal_lifecycle_owned_by_service
+ * @impact-areas  decision-signals, admin-dashboard
+ * @version       2026-08
  */
-
 
 'use strict';
+
 /**
- * Signals API — Komerce Control Tower
+ * Signals API — Legacy compatibility facade
  * Routes: /api/admin/signals/*
  *
- * Endpoints:
- *   GET    /              — List signals (with filters)
- *   GET    /stats         — Aggregated counts by severity/type/status
- *   POST   /generate      — Run signal generators (admin only)
- *   POST   /:id/acknowledge — Mark signal as acknowledged
- *   POST   /:id/snooze    — Snooze signal for N hours
- *   POST   /:id/resolve   — Resolve signal
- *   DELETE /:id           — Delete signal (admin only)
+ * LOT 4G extracts all list/lifecycle SQL into signal-admin-service so Legacy
+ * and Canonical share one authority. UUID parameters remain accepted here only
+ * for backward compatibility; Canonical never uses them.
  */
 
-let express = require('express');
-let router = express.Router();
-let db = require('../db');
-let { authenticate, requireAdmin } = require('../middleware/auth');
-let signalService = require('../services/signal-service');
-let log = require('../utils/logger').child({ module: 'signals' });
+const express = require('express');
+const router = express.Router();
+const { authenticate, requireAdmin } = require('../middleware/auth');
+const signalService = require('../services/signal-service');
+const signalAdminService = require('../services/signal-admin-service');
 
-/* All routes require authentication + admin role */
 router.use(authenticate, requireAdmin);
 
-/* ═══════════════════════════════════════════════════════════════
-   GET / — List signals
-   Query params: status, severity, signal_type, owner_role, limit, offset
-   ═══════════════════════════════════════════════════════════════ */
-router.get('/', async function(req, res) {
+router.get('/', async function(req, res, next) {
   try {
-    let where = [];
-    let params = [];
-    let idx = 1;
+    res.json(await signalAdminService.listSignals(req.query || {}));
+  } catch (err) {
+    next(err);
+  }
+});
 
-    if (req.query.status) {
-      where.push('s.status = $' + idx++);
-      params.push(req.query.status);
-    } else {
-      // Default: show open + acknowledged
-      where.push("s.status IN ('open','acknowledged')");
-    }
+router.get('/stats', async function(req, res, next) {
+  try {
+    res.json(await signalAdminService.getStats());
+  } catch (err) {
+    next(err);
+  }
+});
 
-    if (req.query.severity) {
-      where.push('s.severity = $' + idx++);
-      params.push(req.query.severity);
-    }
-    if (req.query.signal_type) {
-      where.push('s.signal_type = $' + idx++);
-      params.push(req.query.signal_type);
-    }
-    if (req.query.owner_role) {
-      where.push('s.owner_role = $' + idx++);
-      params.push(req.query.owner_role);
-    }
-    if (req.query.family) {
-      // Map family to signal types (from ct-platform.js SIGNAL_TYPES)
-      let familyMap = {
-        ops:      ['parcel_blocked','cash_expiring','sla_breach','hub_tension','relay_tension','loyalty_pending'],
-        eco:      ['margin_drift','pricing_outlier','category_drift','recon_anomaly'],
-        sourcing: ['sourcing_arbitrage','product_dead','product_star','stock_rupture'],
-        disputes: ['dispute_sensitive']
-      };
-      let types = familyMap[req.query.family];
-      if (types) {
-        where.push('s.signal_type = ANY($' + idx++ + ')');
-        params.push(types);
-      }
-    }
+router.post('/generate', async function(req, res, next) {
+  try {
+    const types = req.body.types || null;
+    const result = await signalService.generateSignals(types);
+    res.json({ ok: true, result });
+  } catch (err) {
+    next(err);
+  }
+});
 
-    let limit  = Math.min(parseInt(req.query.limit) || 50, 200);
-    let offset = parseInt(req.query.offset) || 0;
+router.post('/:id/acknowledge', async function(req, res, next) {
+  try {
+    const signal = await signalAdminService.acknowledgeById(req.params.id);
+    if (!signal) return res.status(404).json({ error: 'Signal not found or not open' });
+    res.json({ ok: true, signal: { id: signal.id, status: signal.status } });
+  } catch (err) {
+    next(err);
+  }
+});
 
-    let sql = `
-      SELECT s.*
-      FROM signals s
-      WHERE ${where.join(' AND ')}
-      ORDER BY
-        CASE s.severity
-          WHEN 'urgent' THEN 1
-          WHEN 'critical' THEN 2
-          WHEN 'warning' THEN 3
-          ELSE 4
-        END,
-        s.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `;
-
-    let result = await db.query(sql, params);
-
-    // Total count for pagination
-    let countSql = `SELECT COUNT(*) FROM signals s WHERE ${where.join(' AND ')}`;
-    let countResult = await db.query(countSql, params);
-
+router.post('/:id/snooze', async function(req, res, next) {
+  try {
+    const signal = await signalAdminService.snoozeById(req.params.id, req.body.hours);
+    if (!signal) return res.status(404).json({ error: 'Signal not found' });
     res.json({
-      signals: result.rows,
-      total:   parseInt(countResult.rows[0].count),
-      limit:   limit,
-      offset:  offset
+      ok: true,
+      signal: {
+        id: signal.id,
+        status: signal.status,
+        ...(signal.snoozed_until == null ? {} : { snoozed_until: signal.snoozed_until }),
+      },
     });
   } catch (err) {
     next(err);
   }
 });
 
-/* ═══════════════════════════════════════════════════════════════
-   GET /stats — Signal statistics
-   ═══════════════════════════════════════════════════════════════ */
-router.get('/stats', async function(req, res) {
+router.post('/:id/resolve', async function(req, res, next) {
   try {
-    let bySeverity = (await db.query(`
-      SELECT severity, COUNT(*) AS count
-      FROM signals WHERE status IN ('open','acknowledged')
-      GROUP BY severity
-    `)).rows;
-
-    let byType = (await db.query(`
-      SELECT signal_type, COUNT(*) AS count
-      FROM signals WHERE status IN ('open','acknowledged')
-      GROUP BY signal_type ORDER BY count DESC
-    `)).rows;
-
-    let byFamily = (await db.query(`
-      SELECT
-        CASE
-          WHEN signal_type IN ('parcel_blocked','cash_expiring','sla_breach','hub_tension','relay_tension','loyalty_pending') THEN 'ops'
-          WHEN signal_type IN ('margin_drift','pricing_outlier','category_drift','recon_anomaly') THEN 'eco'
-          WHEN signal_type IN ('sourcing_arbitrage','product_dead','product_star','stock_rupture') THEN 'sourcing'
-          WHEN signal_type = 'dispute_sensitive' THEN 'disputes'
-          ELSE 'other'
-        END AS family,
-        COUNT(*) AS count
-      FROM signals WHERE status IN ('open','acknowledged')
-      GROUP BY family ORDER BY count DESC
-    `)).rows;
-
-    let total = bySeverity.reduce(function(s, r) { return s + parseInt(r.count); }, 0);
-
+    const signal = await signalAdminService.resolveById(req.params.id, req.user.id);
+    if (!signal) return res.status(404).json({ error: 'Signal not found' });
     res.json({
-      total:      total,
-      bySeverity: bySeverity,
-      byType:     byType,
-      byFamily:   byFamily
+      ok: true,
+      signal: {
+        id: signal.id,
+        status: signal.status,
+        ...(signal.resolved_at == null ? {} : { resolved_at: signal.resolved_at }),
+      },
     });
   } catch (err) {
     next(err);
   }
 });
 
-/* ═══════════════════════════════════════════════════════════════
-   POST /generate — Run signal generators
-   Body: { types: ['parcel_blocked', ...] } (optional, runs all if omitted)
-   ═══════════════════════════════════════════════════════════════ */
-router.post('/generate', async function(req, res) {
+router.delete('/:id', async function(req, res, next) {
   try {
-    let types = req.body.types || null;
-    let result = await signalService.generateSignals(types);
-    res.json({ ok: true, result: result });
-  } catch (err) {
-    next(err);
-  }
-});
-
-/* ═══════════════════════════════════════════════════════════════
-   POST /:id/acknowledge — Acknowledge a signal
-   ═══════════════════════════════════════════════════════════════ */
-router.post('/:id/acknowledge', async function(req, res) {
-  try {
-    let result = await db.query(`
-      UPDATE signals
-      SET status = 'acknowledged', updated_at = NOW()
-      WHERE id = $1 AND status = 'open'
-      RETURNING id, status
-    `, [req.params.id]);
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Signal not found or not open' });
-    }
-    res.json({ ok: true, signal: result.rows[0] });
-  } catch (err) {
-    next(err);
-  }
-});
-
-/* ═══════════════════════════════════════════════════════════════
-   POST /:id/snooze — Snooze a signal
-   Body: { hours: 24 }
-   ═══════════════════════════════════════════════════════════════ */
-router.post('/:id/snooze', async function(req, res) {
-  try {
-    let hours = parseInt(req.body.hours) || 24;
-    let result = await db.query(`
-      UPDATE signals
-      SET status = 'snoozed',
-          snoozed_until = NOW() + ($2 || ' hours')::interval,
-          updated_at = NOW()
-      WHERE id = $1 AND status IN ('open','acknowledged')
-      RETURNING id, status, snoozed_until
-    `, [req.params.id, hours.toString()]);
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Signal not found' });
-    }
-    res.json({ ok: true, signal: result.rows[0] });
-  } catch (err) {
-    next(err);
-  }
-});
-
-/* ═══════════════════════════════════════════════════════════════
-   POST /:id/resolve — Resolve a signal
-   Body: { notes: '...' } (optional)
-   ═══════════════════════════════════════════════════════════════ */
-router.post('/:id/resolve', async function(req, res) {
-  try {
-    let result = await db.query(`
-      UPDATE signals
-      SET status = 'resolved',
-          resolved_at = NOW(),
-          resolved_by = $2,
-          updated_at = NOW()
-      WHERE id = $1 AND status IN ('open','acknowledged','snoozed')
-      RETURNING id, status, resolved_at
-    `, [req.params.id, req.user.id]);
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Signal not found' });
-    }
-    res.json({ ok: true, signal: result.rows[0] });
-  } catch (err) {
-    next(err);
-  }
-});
-
-/* ═══════════════════════════════════════════════════════════════
-   DELETE /:id — Delete a signal (hard delete, admin only)
-   ═══════════════════════════════════════════════════════════════ */
-router.delete('/:id', async function(req, res) {
-  try {
-    let result = await db.query('DELETE FROM signals WHERE id = $1 RETURNING id', [req.params.id]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Signal not found' });
-    }
+    const deleted = await signalAdminService.hardDeleteById(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Signal not found' });
     res.json({ ok: true, deleted: req.params.id });
   } catch (err) {
     next(err);
