@@ -1,0 +1,317 @@
+name: Debt Zero classification
+
+on:
+  push:
+    branches:
+      - ci/debt-zero-classification
+
+permissions:
+  contents: write
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout product branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/debt-zero-classification
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm --prefix public/boutique ci
+
+      - name: Backfill the eight missing classifications
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          blocks = {
+            'features/auth.feature.js': """  classification: {
+    axis: 'support',
+    kind: 'technical-foundation',
+    decision: 'transversal-technique',
+    signals: {
+      ownsTables: false,
+      ownsLifecycle: false,
+      activeService: true,
+      multiConsumer: true,
+      ownsMigrations: true,
+      externalSideEffect: 'none',
+      surface: 'middleware+session',
+    },
+    rationale: [
+      'porte la fondation de sécurité de session partagée : gardes JWT, rôle, révocation et politique de cookie, sans posséder les cycles métier des consommateurs',
+      'déclare ses migrations de révocation comme fondation technique ; les écritures d identité et de credentials restent respectivement à auth-identity et auth-passkey',
+    ],
+  },
+""",
+            'features/customs.feature.js': """  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables: true,
+      ownsLifecycle: true,
+      activeService: true,
+      multiConsumer: true,
+      ownsMigrations: true,
+      externalSideEffect: 'none',
+      surface: 'api+service',
+    },
+    rationale: [
+      'possède les catégories, déclarations et shipments douaniers ainsi que le workflow de déclaration ; logistics ne fait que consommer leur statut',
+      'porte ses propres migrations et invariants de classification, tandis que la génération documentaire est déléguée à documents et le coût à economic-engine',
+    ],
+  },
+""",
+            'features/economic-engine.feature.js': """  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables: true,
+      ownsLifecycle: true,
+      activeService: true,
+      multiConsumer: true,
+      ownsMigrations: true,
+      externalSideEffect: 'none',
+      surface: 'api+service',
+    },
+    rationale: [
+      'possède le moteur de pricing, les composants de coût, les stratégies versionnées, les allocations et l audit de prix ; ces décisions économiques ne sont pas des projections dashboard',
+      'porte un ensemble important de migrations et de tables propriétaires consommées par catalog, orders et dashboards sans reprendre leurs cycles de vie métier',
+    ],
+  },
+""",
+            'features/inventory.feature.js': """  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables: true,
+      ownsLifecycle: true,
+      activeService: true,
+      multiConsumer: false,
+      ownsMigrations: false,
+      externalSideEffect: 'none',
+      surface: 'api+service',
+    },
+    rationale: [
+      'possède inventory_items et l invariant de non-négativité du stock ; la publication produit reste explicitement hors périmètre',
+      'le service de stock orchestre ses mouvements avec orders et logistics sans posséder leurs commandes, colis ni décisions de publication catalogue',
+    ],
+  },
+""",
+            'features/logistics.feature.js': """  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables: true,
+      ownsLifecycle: true,
+      activeService: true,
+      multiConsumer: true,
+      ownsMigrations: true,
+      externalSideEffect: 'none',
+      surface: 'api+service',
+    },
+    rationale: [
+      'possède le cycle physique colis/scan/relais, les secrets de retrait et leurs transitions ; orders et customs restent propriétaires des décisions qui leur appartiennent',
+      'porte des migrations et plusieurs tables opérationnelles propriétaires, tout en exposant des services consommés par payments, catalog, purchasing et dashboard',
+    ],
+  },
+""",
+            'features/payments.feature.js': """  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables: true,
+      ownsLifecycle: true,
+      activeService: true,
+      multiConsumer: true,
+      ownsMigrations: true,
+      externalSideEffect: 'payment',
+      surface: 'api+webhook+service',
+    },
+    rationale: [
+      'possède la confirmation et l idempotence des encaissements Stripe, PayPal et cash ainsi que les journaux d événements traités',
+      'l effet externe de paiement est borné par des invariants explicites de webhook, montant, devise et anti-double-confirmation ; orders ne possède que la commande à payer',
+    ],
+  },
+""",
+            'features/refunds.feature.js': """  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables: true,
+      ownsLifecycle: true,
+      activeService: true,
+      multiConsumer: true,
+      ownsMigrations: false,
+      externalSideEffect: 'refund',
+      surface: 'service',
+    },
+    rationale: [
+      'possède la table refunds et l orchestration du remboursement, distinctes de la commande source, du crédit wallet et du reçu documentaire',
+      'porte un invariant d idempotence par événement source ; payments, wallet et documents sont consommés comme frontières propriétaires de leurs effets respectifs',
+    ],
+  },
+""",
+            'features/sourcing.feature.js': """  classification: {
+    axis: 'business',
+    kind: 'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables: true,
+      ownsLifecycle: true,
+      activeService: true,
+      multiConsumer: true,
+      ownsMigrations: true,
+      externalSideEffect: 'none',
+      surface: 'api+service',
+    },
+    rationale: [
+      'possède sourcing_candidates, leur journal d événements et le lifecycle raw_imported vers décision/import catalogue ; la fiche produit finale reste à catalog',
+      'porte ses migrations et ses invariants de qualification/rejouabilité, tout en consommant les connecteurs catalogue et le moteur de pricing sans reprendre leur ownership',
+    ],
+  },
+""",
+          }
+
+          for path, block in blocks.items():
+              p = Path(path)
+              src = p.read_text()
+              if 'classification:' in src:
+                  raise SystemExit(f'classification already exists in {path}')
+              matches = list(re.finditer(r'^  doctrine:\s*[^\n]+\n', src, re.M))
+              if not matches:
+                  raise SystemExit(f'doctrine anchor missing in {path}')
+              m = matches[0]
+              src = src[:m.end()] + '\n' + block + src[m.end():]
+              p.write_text(src)
+          PY
+
+      - name: Complete three short rationales and purchasing outbound invariant
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          def append_classification_rationale(path, text):
+              p = Path(path)
+              src = p.read_text()
+              start = src.find('classification: {')
+              if start < 0:
+                  raise SystemExit(f'classification missing in {path}')
+              rstart = src.find('rationale: [', start)
+              if rstart < 0:
+                  raise SystemExit(f'rationale missing in {path}')
+              close = src.find('\n    ],', rstart)
+              if close < 0:
+                  raise SystemExit(f'rationale close missing in {path}')
+              literal = json.dumps(text, ensure_ascii=False)
+              src = src[:close] + f'\n      {literal},' + src[close:]
+              p.write_text(src)
+
+          append_classification_rationale(
+              'features/auth-identity.feature.js',
+              'possède aussi les mutations de profil, révocation de session et autorisation nominative de retrait ; auth fournit les gardes techniques mais ne reprend jamais cette vérité d identité',
+          )
+          append_classification_rationale(
+              'features/auth-passkey.feature.js',
+              'porte une frontière cryptographique WebAuthn autonome avec challenges à usage unique, anti-rejeu, step-up et révocation de credentials, sans réutiliser le lifecycle OTP de auth-identity',
+          )
+          append_classification_rationale(
+              'features/catalog.feature.js',
+              'possède le contrat produit public, le lifecycle de publication et la vérité SKU/media ; pricing, routing et ranking sont consommés depuis leurs features propriétaires sans être recalculés ici',
+          )
+
+          p = Path('features/purchasing.feature.js')
+          src = p.read_text()
+          start = src.find('invariants: [')
+          if start < 0:
+              raise SystemExit('purchasing invariants missing')
+          close = src.find('\n  ],', start)
+          if close < 0:
+              raise SystemExit('purchasing invariants close missing')
+          message = "tout message WhatsApp fournisseur est déclenché depuis un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon de commande ni ne confirme son statut"
+          if message not in src:
+              src = src[:close] + '\n    ' + json.dumps(message, ensure_ascii=False) + ',' + src[close:]
+              p.write_text(src)
+
+          p = Path('features/refunds.feature.js')
+          src = p.read_text()
+          start = src.find('invariants: [')
+          if start < 0:
+              raise SystemExit('refunds invariants missing')
+          close = src.find('\n  ],', start)
+          if close < 0:
+              raise SystemExit('refunds invariants close missing')
+          message = "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement"
+          if message not in src:
+              src = src[:close] + '\n    ' + json.dumps(message, ensure_ascii=False) + ',' + src[close:]
+              p.write_text(src)
+          PY
+
+      - name: Prove classification zero warnings
+        run: |
+          node scripts/feature-classification-check.js --strict
+          node scripts/feature-classification-check.js --json > /tmp/classification.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const j = JSON.parse(fs.readFileSync('/tmp/classification.json','utf8'));
+          console.log(JSON.stringify(j.summary));
+          if ((j.errors || []).length || (j.warnings || []).length || j.summary.unclassified !== 0) {
+            console.error(JSON.stringify({errors:j.errors,warnings:j.warnings,summary:j.summary}, null, 2));
+            process.exit(1);
+          }
+          NODE
+
+      - name: Regenerate Gate Findings and prove classification findings gone
+        run: |
+          node scripts/gen-gate-findings.js
+          node - <<'NODE'
+          const g = require('./docs/GATE_FINDINGS.json');
+          const classification = (g.findings || []).filter(f => f.gate === 'gate:feature-classification-check');
+          console.log(`gate_findings_total=${(g.findings || []).length} classification_findings=${classification.length}`);
+          if (classification.length) {
+            console.error(JSON.stringify(classification, null, 2));
+            process.exit(1);
+          }
+          NODE
+
+      - name: Refresh dependent projections
+        run: |
+          npm run business-graph:gen
+          npm run feature:360:gen
+
+      - name: Standard governance gates
+        run: |
+          node scripts/feature-registry-check.js
+          node scripts/feature-guard.js --strict
+          npm run business-graph:check
+          npm run feature:360:check
+          node scripts/code-quality-gate.js --strict
+          node scripts/contract-check.js
+          npm run security:360:check
+          git diff --check
+
+      - name: Commit verified classification closure
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add features/auth.feature.js features/auth-identity.feature.js features/auth-passkey.feature.js features/catalog.feature.js
+          git add features/customs.feature.js features/economic-engine.feature.js features/inventory.feature.js features/logistics.feature.js
+          git add features/payments.feature.js features/purchasing.feature.js features/refunds.feature.js features/sourcing.feature.js
+          git add docs/GATE_FINDINGS.json docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/FEATURE_360.json docs/FEATURE_360.md
+          git status --short
+          git commit -m "chore(governance): fermer les classifications feature"
+          git push origin HEAD:chore/debt-zero-classification
