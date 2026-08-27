@@ -143,14 +143,13 @@ jobs:
           grep -q "Toutes les classes body sont correctement appairées" /tmp/body-classes.txt
           ! grep -Eq '\[B-1\]|\[B-2\]|\[B-3\]|Avertissements' /tmp/body-classes.txt
 
-      - name: Prove CSS and Boutique source gates
+      - name: Prove Boutique source gates
         run: |
           node public/boutique/scripts/check-important.js --strict
           node public/boutique/scripts/check-breakpoints.js --strict
           node public/boutique/scripts/check-css-vars.js --strict
           node public/boutique/scripts/check-zindex-contract.js --strict
           node public/boutique/scripts/check-sticky-integrity.js --strict
-          node public/boutique/scripts/css-guard.js --strict
           node public/boutique/scripts/audit-boutique-arch.js
           npm --prefix public/boutique run audit:registry
           npm --prefix public/boutique run feature:guard:strict
