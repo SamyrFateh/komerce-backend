@@ -17146,6 +17146,14 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "checkout",
+        "category": "tests",
+        "declared": "../tests/unit/checkout-responsive-css.test.js",
+        "resolvedPath": "public/boutique/tests/unit/checkout-responsive-css.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "modal-product",
         "category": "boutique",
         "declared": "../js/view-models/modal-selection-model.js",
@@ -27072,7 +27080,7 @@
         "filesObserved": 954
       },
       "boutique": {
-        "filesObserved": 172,
+        "filesObserved": 173,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {

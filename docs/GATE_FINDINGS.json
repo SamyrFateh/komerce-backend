@@ -180,7 +180,7 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 0,
-      "warningCount": 1,
+      "warningCount": 0,
       "coverageCount": 40,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
@@ -389,16 +389,6 @@
       "file": null,
       "message": "k-view-komerce               0     1     0     ·      ⚠ warning",
       "sourceFile": "public/boutique/js/b-nav.js"
-    },
-    {
-      "gate": "check:breakpoints",
-      "scope": "boutique",
-      "verdict": "warn",
-      "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "shared-cart",
-      "file": null,
-      "message": "Total : 2 violations dans 2 fichiers.",
-      "sourceFile": "public/boutique/css/shared-list-library-remove.css"
     },
     {
       "gate": "check:imports",
