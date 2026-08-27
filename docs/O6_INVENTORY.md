@@ -10,20 +10,35 @@
 |---|---|
 | PROJECTION | 0 |
 | COMPOSITION_ROOT_WIRING | 13 |
-| NON_RUNTIME_TEST | 5 |
-| TECHNICAL_PRIMITIVE | 0 |
-| BUSINESS_TRANSVERSAL_SERVICE | 0 |
+| NON_RUNTIME_TEST | 4 |
+| TECHNICAL_PRIMITIVE | 1 |
+| BUSINESS_TRANSVERSAL_SERVICE | 4 |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 |
-| BUSINESS_FEATURE_INTERFACE | 0 |
+| BUSINESS_FEATURE_INTERFACE | 20 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **18** |
+| **TOTAL** | **42** |
 
 ## The 94 pairs (from → to)
 
 | from → to | family | evidence role | consumer kind | provider kind | channels | coupling | policy | exception | top evidence |
 |---|---|---|---|---|---|---|---|---|---|
-| auth-identity → logistics | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
+| auth-identity → catalog | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| auth-identity → logistics | BUSINESS_FEATURE_INTERFACE | RUNTIME_AND_TEST | business-feature | business-feature | data-read+static-code | data | business-dependency-declare-candidate | — | `` |
+| auth-identity → loyalty | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| auth-identity → orders | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| business-rules → auth-identity | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-transversal | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| customs → catalog | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| dashboard → loyalty | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-transversal | business-feature | data-write | data | business-dependency-declare-candidate | — | `` |
+| dashboard → shared-cart | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-transversal | business-feature | data-write | data | business-dependency-declare-candidate | — | `` |
+| documents → catalog | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-transversal | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| documents → logistics | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-transversal | business-feature | data-read | data | business-dependency-declare-candidate | runtime-cycle | `` |
+| economic-engine → auth-identity | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| economic-engine → business-rules | BUSINESS_TRANSVERSAL_SERVICE | RUNTIME_ONLY | business-feature | business-transversal | data-read | data | business-dependency-declare-candidate | — | `` |
+| economic-engine → customs | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| economic-engine → platform-ops | TECHNICAL_PRIMITIVE | RUNTIME_ONLY | business-feature | technical-transversal | data-read | data | technical-dependency-policy | — | `` |
+| economic-engine → refunds | BUSINESS_TRANSVERSAL_SERVICE | RUNTIME_ONLY | business-feature | business-transversal | data-read | data | business-dependency-declare-candidate | — | `` |
+| incident-management → orders | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-transversal | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
 | infrastructure → auth-identity | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → auth-passkey | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → business-rules | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-transversal | static-code | import-mixed | application-wiring-not-consumption | — | `` |
@@ -34,11 +49,20 @@
 | infrastructure → sourcing | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → unsold-resolution | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | inventory → payments | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
+| logistics → documents | BUSINESS_TRANSVERSAL_SERVICE | RUNTIME_ONLY | business-feature | business-transversal | data-read | data | business-dependency-declare-candidate | runtime-cycle | `` |
+| loyalty → economic-engine | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| loyalty → orders | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| notifications → auth-identity | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-transversal | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| notifications → logistics | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-transversal | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| notifications → orders | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-transversal | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
+| payments → auth-identity | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
 | platform-ops → auth-passkey | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
+| platform-ops → documents | BUSINESS_TRANSVERSAL_SERVICE | RUNTIME_ONLY | technical-transversal | business-transversal | data-read | data | business-dependency-declare-candidate | — | `` |
 | platform-ops → notifications | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-transversal | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | platform-ops → payments | NON_RUNTIME_TEST | TEST_ONLY | technical-transversal | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | platform-ops → recommendations | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | platform-ops → shared-cart | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
+| purchasing → catalog | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | data-read | data | business-dependency-declare-candidate | — | `` |
 | refunds → auth | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | technical-transversal | static-code | technical-primitive | non-runtime-evidence | — | `` |
 | refunds → payments | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 
@@ -57,7 +81,7 @@ Total exceptions : **6**.
 
 ## Runtime cycles
 
-- _none_
+- `documents` ↔ `logistics`
 
 ## Ontology gap coverage (separate flux)
 

@@ -80,7 +80,7 @@ function analyzePair(pair, ctx) {
       const src = e.sourceFileId || e.consumerFileId || null;
       const role = fileEvidenceRole(src);
       roles.add(role);
-      evidenceFiles.push({ role, channel: c.channel, source: src, target: e.targetFile || null, endpoint: e.endpoint || null });
+      evidenceFiles.push({ role, channel: c.channel, source: src, target: e.targetFile || null, endpoint: e.endpoint || null, table: e.table || null });
     }
   }
 
@@ -98,13 +98,15 @@ function analyzePair(pair, ctx) {
   const shapeChannels = new Set(evForShape.map(f => f.channel));
   const hasStatic = shapeChannels.has('static-code');
   const hasIface = shapeChannels.has('interface');
+  const hasData = shapeChannels.has('data-read') || shapeChannels.has('data-write');
   const staticTargets = evForShape.filter(f => f.channel === 'static-code').map(f => f.target).filter(Boolean);
   const techTargets = staticTargets.filter(isTechnicalPrimitiveTarget).length;
   const bizTargets = staticTargets.length - techTargets;
 
   let couplingObserved;
-  if (hasStatic && hasIface) couplingObserved = 'mixed';
+  if (hasStatic && (hasIface || hasData)) couplingObserved = 'mixed';
   else if (hasIface) couplingObserved = 'interface';
+  else if (hasData) couplingObserved = 'data';
   else if (techTargets > 0 && bizTargets === 0) couplingObserved = 'technical-primitive';
   else if (bizTargets > 0 && techTargets === 0) couplingObserved = 'business-file-import';
   else couplingObserved = 'import-mixed';
@@ -126,7 +128,9 @@ function dedupeEvidence(files) {
   for (const f of files) {
     const label = f.channel === 'interface'
       ? `${f.source || '(view)'} -> ${f.endpoint}`
-      : `${f.source} -> ${f.target}`;
+      : (f.channel === 'data-read' || f.channel === 'data-write')
+        ? `${f.channel}:${f.table}`
+        : `${f.source} -> ${f.target}`;
     if (seen.has(label)) continue;
     seen.add(label);
     out.push({ role: f.role, channel: f.channel, label });
