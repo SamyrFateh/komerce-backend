@@ -33,27 +33,26 @@ jobs:
           cache: npm
           cache-dependency-path: repo/package-lock.json
       - run: npm ci
-      - name: Patch parser, freshness semantics and PR gate
-        run: python3 ../helper/ci/security360_fix.py .
+      - name: Patch Security 360 and enforcement scope
+        run: |
+          python3 ../helper/ci/security360_fix.py .
+          python3 ../helper/ci/security360_scope_fix.py .
       - name: Regenerate Security 360 derived docs
         run: npm run security:360
-      - name: Assert Canonical guard findings are resolved
+      - name: Assert Canonical guard findings and scope
         run: |
           node <<'NODE'
           const j = require('./docs/SECURITY_360.json');
+          const scope = require('./scripts/pr-enforcement-scope');
           console.log(JSON.stringify(j.summary));
           const admin = j.routes.filter(r => r.level === 'ADMIN_NO_GUARD');
           const unknown = j.routes.filter(r => r.level === 'UNKNOWN');
-          if (admin.length) {
-            console.error('ADMIN_NO_GUARD still present:', admin.map(r => r.key));
-            process.exit(1);
-          }
-          const pricingUnknown = unknown.filter(r => r.key.includes('/api/admin/pricing-matrices/'));
-          if (pricingUnknown.length) {
-            console.error('pricing-matrices still UNKNOWN:', pricingUnknown.map(r => r.key));
-            process.exit(1);
-          }
+          if (admin.length) throw new Error(`ADMIN_NO_GUARD: ${admin.map(r => r.key).join(', ')}`);
+          if (unknown.some(r => r.key.includes('/api/admin/pricing-matrices/'))) throw new Error('pricing-matrices still UNKNOWN');
           if (j.summary.total !== 549) throw new Error(`expected 549 routes, got ${j.summary.total}`);
+          for (const file of ['scripts/gen-security-360.js','scripts/run-security-360.js','scripts/.security-360-baseline.json','docs/SECURITY_360.json','docs/SECURITY_360.md']) {
+            if (!scope.isBackendFile(file)) throw new Error(`Security 360 file not backend-scoped: ${file}`);
+          }
           NODE
       - name: Security 360 check is read-only and fresh
         run: |
@@ -68,12 +67,16 @@ jobs:
           node scripts/feature-guard.js --strict
           node scripts/contract-check.js
           git diff --check
-      - name: Commit and push verified parser and docs
+      - name: Commit and push verified parser docs and scope
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git restore .github/workflows/pr-enforcement.yml
-          git add scripts/gen-security-360.js docs/SECURITY_360.json docs/SECURITY_360.md
+          git add scripts/gen-security-360.js scripts/pr-enforcement-scope.js docs/SECURITY_360.json docs/SECURITY_360.md
           git status --short
-          git commit -m "fix(security): fiabiliser Security 360 sur les gardes Canonical"
+          if git diff --cached --quiet; then
+            echo "Nothing to persist"
+            exit 0
+          fi
+          git commit -m "fix(security): réveiller le gate Security 360 sur ses sources"
           git push origin HEAD:fix/security-360-canonical-guards
