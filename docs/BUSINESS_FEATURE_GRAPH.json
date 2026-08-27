@@ -2194,6 +2194,20 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/unit/sourcing-import-dispatch.test.js",
+        "resolvedPath": "tests/unit/sourcing-import-dispatch.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/boutique-taxonomy-admin.test.js",
+        "resolvedPath": "tests/unit/boutique-taxonomy-admin.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/canonical-catalog-workspace-boundary.test.js",
         "resolvedPath": "tests/unit/canonical-catalog-workspace-boundary.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2438,6 +2452,76 @@
       },
       {
         "feature": "dashboard",
+        "category": "services",
+        "declared": "services/client-360.js",
+        "resolvedPath": "services/client-360.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/dashboard-admin-context.js",
+        "resolvedPath": "services/dashboard-admin-context.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/dashboard-commerce.js",
+        "resolvedPath": "services/dashboard-commerce.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/dashboard-finance-canonical.js",
+        "resolvedPath": "services/dashboard-finance-canonical.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/dashboard-operations.js",
+        "resolvedPath": "services/dashboard-operations.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/dashboard-pilotage-market.js",
+        "resolvedPath": "services/dashboard-pilotage-market.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/operations-workspace.js",
+        "resolvedPath": "services/operations-workspace.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/order-360.js",
+        "resolvedPath": "services/order-360.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/product-360.js",
+        "resolvedPath": "services/product-360.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/shipping-customs-workspace.js",
+        "resolvedPath": "services/shipping-customs-workspace.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
         "category": "routes",
         "declared": "routes/admin/dashboard.js",
         "resolvedPath": "routes/admin/dashboard.js",
@@ -2483,6 +2567,48 @@
         "category": "routes",
         "declared": "routes/admin-dashboard.js",
         "resolvedPath": "routes/admin-dashboard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
+        "declared": "routes/admin-client-360.js",
+        "resolvedPath": "routes/admin-client-360.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
+        "declared": "routes/admin-dashboard-market.js",
+        "resolvedPath": "routes/admin-dashboard-market.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
+        "declared": "routes/admin-operations-workspace.js",
+        "resolvedPath": "routes/admin-operations-workspace.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
+        "declared": "routes/admin-order-360.js",
+        "resolvedPath": "routes/admin-order-360.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
+        "declared": "routes/admin-product-360.js",
+        "resolvedPath": "routes/admin-product-360.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
+        "declared": "routes/admin-shipping-customs-workspace.js",
+        "resolvedPath": "routes/admin-shipping-customs-workspace.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -3379,6 +3505,125 @@
         "category": "tests",
         "declared": "tests/unit/canonical-action-center-boundary.test.js",
         "resolvedPath": "tests/unit/canonical-action-center-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/partner-admin-service.test.js",
+        "resolvedPath": "tests/unit/partner-admin-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-client-360-route.test.js",
+        "resolvedPath": "tests/unit/admin-client-360-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-dashboard-market.test.js",
+        "resolvedPath": "tests/unit/admin-dashboard-market.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-operations-workspace-route.test.js",
+        "resolvedPath": "tests/unit/admin-operations-workspace-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-order-360-route.test.js",
+        "resolvedPath": "tests/unit/admin-order-360-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-product-360-route.test.js",
+        "resolvedPath": "tests/unit/admin-product-360-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-shipping-customs-workspace-route.test.js",
+        "resolvedPath": "tests/unit/admin-shipping-customs-workspace-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/client-360-service.test.js",
+        "resolvedPath": "tests/unit/client-360-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/dashboard-admin-context.test.js",
+        "resolvedPath": "tests/unit/dashboard-admin-context.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/dashboard-commerce.test.js",
+        "resolvedPath": "tests/unit/dashboard-commerce.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/dashboard-finance-canonical.test.js",
+        "resolvedPath": "tests/unit/dashboard-finance-canonical.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/dashboard-operations.test.js",
+        "resolvedPath": "tests/unit/dashboard-operations.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/dashboard-pilotage-market.test.js",
+        "resolvedPath": "tests/unit/dashboard-pilotage-market.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/operations-workspace-service.test.js",
+        "resolvedPath": "tests/unit/operations-workspace-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/order-360-service.test.js",
+        "resolvedPath": "tests/unit/order-360-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/product-360-service.test.js",
+        "resolvedPath": "tests/unit/product-360-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/shipping-customs-workspace.test.js",
+        "resolvedPath": "tests/unit/shipping-customs-workspace.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9427,6 +9672,13 @@
         "category": "tests",
         "declared": "tests/unit/sourcing-workspace.test.js",
         "resolvedPath": "tests/unit/sourcing-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-candidate-actions.test.js",
+        "resolvedPath": "tests/unit/sourcing-candidate-actions.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19803,6 +20055,30 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/admin-client-360.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-dashboard-market.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-order-360.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-product-360.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "routes/admin-finance-accounting-workspace.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -19875,6 +20151,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/shipping-customs-workspace.js",
+                "targetFile": "services/customs-shipment-service.js"
+              },
+              {
                 "sourceFileId": "routes/admin/index.js",
                 "targetFile": "routes/admin/customs.js"
               },
@@ -19914,6 +20194,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "services/invoice-service.js"
+              },
               {
                 "sourceFileId": "routes/admin/index.js",
                 "targetFile": "routes/admin/documents.js"
@@ -20031,6 +20315,54 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/client-360.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-admin-context.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-commerce.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-finance-canonical.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-operations.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-pilotage-market.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-pilotage-market.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/order-360.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/product-360.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/shipping-customs-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/admin/dashboard.js",
                 "targetFile": "utils/logger.js"
               },
@@ -20076,6 +20408,42 @@
               },
               {
                 "sourceFileId": "routes/admin-dashboard.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "routes/admin-client-360.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "routes/admin-dashboard-market.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/admin-dashboard-market.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "routes/admin-order-360.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "routes/admin-product-360.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -20151,6 +20519,22 @@
                 "targetFile": "bootstrap/html-routes.js"
               },
               {
+                "sourceFileId": "tests/unit/client-360-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/dashboard-commerce.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/dashboard-operations.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/product-360-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/canonical-pricing-workspace-boundary.test.js",
                 "targetFile": "bootstrap/html-routes.js"
               },
@@ -20205,6 +20589,22 @@
       },
       {
         "from": "dashboard",
+        "to": "inventory",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "services/inventory-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
         "to": "logistics",
         "channels": [
           {
@@ -20213,6 +20613,26 @@
               {
                 "sourceFileId": "services/relay-dashboard-queries.js",
                 "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "services/auto-parcel.js"
+              },
+              {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "services/scan-engine.js"
+              },
+              {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "services/parcel-auto-create-service.js"
+              },
+              {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "services/shipping-customs-workspace.js",
+                "targetFile": "services/scan-engine.js"
               },
               {
                 "sourceFileId": "routes/admin/system.js",
@@ -20267,6 +20687,30 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "routes/admin-client-360.js",
+                "targetFile": "middleware/require-market-scope.js"
+              },
+              {
+                "sourceFileId": "routes/admin-dashboard-market.js",
+                "targetFile": "middleware/require-market-scope.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "middleware/require-market-scope.js"
+              },
+              {
+                "sourceFileId": "routes/admin-order-360.js",
+                "targetFile": "middleware/require-market-scope.js"
+              },
+              {
+                "sourceFileId": "routes/admin-product-360.js",
+                "targetFile": "middleware/require-market-scope.js"
+              },
+              {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
+                "targetFile": "middleware/require-market-scope.js"
+              },
+              {
                 "sourceFileId": "routes/admin-finance-accounting-workspace.js",
                 "targetFile": "middleware/require-market-scope.js"
               }
@@ -20283,6 +20727,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "services/notification-service.js"
+              },
+              {
                 "sourceFileId": "routes/admin/demo-order-flow.js",
                 "targetFile": "services/client-notification-service.js"
               }
@@ -20298,6 +20746,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/operations-workspace.js",
+                "targetFile": "services/order-status-machine.js"
+              },
               {
                 "sourceFileId": "routes/admin/index.js",
                 "targetFile": "routes/admin/orders.js"
@@ -21292,7 +21744,31 @@
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-order-360.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-client-360.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-product-360.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-operations-workspace.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-shipping-customs-workspace.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin-finance-accounting-workspace.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-dashboard-market.js"
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
@@ -26503,7 +26979,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 916
+        "filesObserved": 952
       },
       "boutique": {
         "filesObserved": 169,
@@ -28575,32 +29051,15 @@
       "resolution": "single-writer"
     }
   },
-  "orphanTechnicalNodes": [
-    "routes/admin-client-360.js",
-    "routes/admin-dashboard-market.js",
-    "routes/admin-operations-workspace.js",
-    "routes/admin-order-360.js",
-    "routes/admin-product-360.js",
-    "routes/admin-shipping-customs-workspace.js",
-    "services/client-360.js",
-    "services/dashboard-admin-context.js",
-    "services/dashboard-commerce.js",
-    "services/dashboard-finance-canonical.js",
-    "services/dashboard-operations.js",
-    "services/dashboard-pilotage-market.js",
-    "services/operations-workspace.js",
-    "services/order-360.js",
-    "services/product-360.js",
-    "services/shipping-customs-workspace.js"
-  ],
+  "orphanTechnicalNodes": [],
   "bigMap": {
     "perRepo": {
       "backend": {
         "manifestsDiscovered": 27,
         "manifestsConnected": 27,
         "technicalNodesTotal": 354,
-        "technicalNodesOwned": 338,
-        "technicalOrphans": 16
+        "technicalNodesOwned": 354,
+        "technicalOrphans": 0
       },
       "dash": {
         "manifestsDiscovered": 3,
@@ -28664,7 +29123,7 @@
           "openQuestion": "Faut-il créer une feature 'analytics' dédiée côté backend/dash (si un service de collecte équivalent existe ou est prévu côté serveur), ou rattacher ce manifeste à une feature existante par proximité fonctionnelle (ex. platform-ops) ? Décision produit non tranchée par O4."
         }
       ],
-      "technicalOrphansRemaining": 16
+      "technicalOrphansRemaining": 0
     }
   },
   "scopeTopology": {
@@ -28689,170 +29148,8 @@
   },
   "drifts": {
     "error": [],
-    "warn": [
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-client-360.js",
-        "msg": "nœud technique \"routes/admin-client-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-dashboard-market.js",
-        "msg": "nœud technique \"routes/admin-dashboard-market.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-operations-workspace.js",
-        "msg": "nœud technique \"routes/admin-operations-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-order-360.js",
-        "msg": "nœud technique \"routes/admin-order-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-product-360.js",
-        "msg": "nœud technique \"routes/admin-product-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-shipping-customs-workspace.js",
-        "msg": "nœud technique \"routes/admin-shipping-customs-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/client-360.js",
-        "msg": "nœud technique \"services/client-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/dashboard-admin-context.js",
-        "msg": "nœud technique \"services/dashboard-admin-context.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/dashboard-commerce.js",
-        "msg": "nœud technique \"services/dashboard-commerce.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/dashboard-finance-canonical.js",
-        "msg": "nœud technique \"services/dashboard-finance-canonical.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/dashboard-operations.js",
-        "msg": "nœud technique \"services/dashboard-operations.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/dashboard-pilotage-market.js",
-        "msg": "nœud technique \"services/dashboard-pilotage-market.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/operations-workspace.js",
-        "msg": "nœud technique \"services/operations-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/order-360.js",
-        "msg": "nœud technique \"services/order-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/product-360.js",
-        "msg": "nœud technique \"services/product-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/shipping-customs-workspace.js",
-        "msg": "nœud technique \"services/shipping-customs-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      }
-    ],
-    "debt": [
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-client-360.js",
-        "msg": "nœud technique \"routes/admin-client-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-dashboard-market.js",
-        "msg": "nœud technique \"routes/admin-dashboard-market.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-operations-workspace.js",
-        "msg": "nœud technique \"routes/admin-operations-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-order-360.js",
-        "msg": "nœud technique \"routes/admin-order-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-product-360.js",
-        "msg": "nœud technique \"routes/admin-product-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "routes/admin-shipping-customs-workspace.js",
-        "msg": "nœud technique \"routes/admin-shipping-customs-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/client-360.js",
-        "msg": "nœud technique \"services/client-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/dashboard-admin-context.js",
-        "msg": "nœud technique \"services/dashboard-admin-context.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/dashboard-commerce.js",
-        "msg": "nœud technique \"services/dashboard-commerce.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/dashboard-finance-canonical.js",
-        "msg": "nœud technique \"services/dashboard-finance-canonical.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/dashboard-operations.js",
-        "msg": "nœud technique \"services/dashboard-operations.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/dashboard-pilotage-market.js",
-        "msg": "nœud technique \"services/dashboard-pilotage-market.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/operations-workspace.js",
-        "msg": "nœud technique \"services/operations-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/order-360.js",
-        "msg": "nœud technique \"services/order-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/product-360.js",
-        "msg": "nœud technique \"services/product-360.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "services/shipping-customs-workspace.js",
-        "msg": "nœud technique \"services/shipping-customs-workspace.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      }
-    ],
+    "warn": [],
+    "debt": [],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -29058,11 +29355,11 @@
       }
     ],
     "summary": {
-      "signals": 16,
-      "debt": 16,
+      "signals": 0,
+      "debt": 0,
       "expectedTopology": 32,
       "generatorLimitations": 8,
-      "classifiedCandidates": 56
+      "classifiedCandidates": 40
     }
   }
 }

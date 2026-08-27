@@ -47,12 +47,12 @@
     "healthy": 16,
     "attention": 15,
     "blocked": 0,
-    "businessDependencies": 186,
+    "businessDependencies": 187,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 41,
+    "debtItemsTotal": 40,
     "gateHealthy": 15,
     "gateBlocked": 0
   },
@@ -2878,7 +2878,7 @@
             ]
           },
           "tests": {
-            "count": 46,
+            "count": 48,
             "files": [
               {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
@@ -2898,6 +2898,11 @@
               {
                 "declared": "tests/unit/api-connector-base.test.js",
                 "resolvedPath": "tests/unit/api-connector-base.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/boutique-taxonomy-admin.test.js",
+                "resolvedPath": "tests/unit/boutique-taxonomy-admin.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3106,6 +3111,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sourcing-import-dispatch.test.js",
+                "resolvedPath": "tests/unit/sourcing-import-dispatch.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/supplier-catalog-scanner.test.js",
                 "resolvedPath": "tests/unit/supplier-catalog-scanner.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3123,7 +3133,7 @@
             ]
           }
         },
-        "totalFiles": 152,
+        "totalFiles": 154,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 32,
@@ -4948,8 +4958,18 @@
             ]
           },
           "routes": {
-            "count": 18,
+            "count": 24,
             "files": [
+              {
+                "declared": "routes/admin-client-360.js",
+                "resolvedPath": "routes/admin-client-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-dashboard-market.js",
+                "resolvedPath": "routes/admin-dashboard-market.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "routes/admin-dashboard.js",
                 "resolvedPath": "routes/admin-dashboard.js",
@@ -4966,8 +4986,28 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "routes/admin-operations-workspace.js",
+                "resolvedPath": "routes/admin-operations-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-order-360.js",
+                "resolvedPath": "routes/admin-order-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-product-360.js",
+                "resolvedPath": "routes/admin-product-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "routes/admin-radar.js",
                 "resolvedPath": "routes/admin-radar.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-shipping-customs-workspace.js",
+                "resolvedPath": "routes/admin-shipping-customs-workspace.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5043,8 +5083,18 @@
             ]
           },
           "services": {
-            "count": 12,
+            "count": 22,
             "files": [
+              {
+                "declared": "services/client-360.js",
+                "resolvedPath": "services/client-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-admin-context.js",
+                "resolvedPath": "services/dashboard-admin-context.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/dashboard-cache.js",
                 "resolvedPath": "services/dashboard-cache.js",
@@ -5053,6 +5103,16 @@
               {
                 "declared": "services/dashboard-clients-queries.js",
                 "resolvedPath": "services/dashboard-clients-queries.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-commerce.js",
+                "resolvedPath": "services/dashboard-commerce.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-finance-canonical.js",
+                "resolvedPath": "services/dashboard-finance-canonical.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5081,8 +5141,18 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/dashboard-operations.js",
+                "resolvedPath": "services/dashboard-operations.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/dashboard-ops-queries.js",
                 "resolvedPath": "services/dashboard-ops-queries.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-pilotage-market.js",
+                "resolvedPath": "services/dashboard-pilotage-market.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5096,19 +5166,39 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/operations-workspace.js",
+                "resolvedPath": "services/operations-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-360.js",
+                "resolvedPath": "services/order-360.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/partner-admin-service.js",
                 "resolvedPath": "services/partner-admin-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/product-360.js",
+                "resolvedPath": "services/product-360.js",
                 "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/relay-dashboard-queries.js",
                 "resolvedPath": "services/relay-dashboard-queries.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/shipping-customs-workspace.js",
+                "resolvedPath": "services/shipping-customs-workspace.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 43,
+            "count": 60,
             "files": [
               {
                 "declared": "tests/test-dashboard.js",
@@ -5116,8 +5206,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/admin-client-360-route.test.js",
+                "resolvedPath": "tests/unit/admin-client-360-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/admin-costing-full.test.js",
                 "resolvedPath": "tests/unit/admin-costing-full.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-dashboard-market.test.js",
+                "resolvedPath": "tests/unit/admin-dashboard-market.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5151,13 +5251,33 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/admin-operations-workspace-route.test.js",
+                "resolvedPath": "tests/unit/admin-operations-workspace-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-order-360-route.test.js",
+                "resolvedPath": "tests/unit/admin-order-360-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/admin-orders-route.test.js",
                 "resolvedPath": "tests/unit/admin-orders-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/admin-product-360-route.test.js",
+                "resolvedPath": "tests/unit/admin-product-360-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/admin-radar.test.js",
                 "resolvedPath": "tests/unit/admin-radar.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-shipping-customs-workspace-route.test.js",
+                "resolvedPath": "tests/unit/admin-shipping-customs-workspace-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5211,6 +5331,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/client-360-service.test.js",
+                "resolvedPath": "tests/unit/client-360-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/dashboard-admin-context.test.js",
+                "resolvedPath": "tests/unit/dashboard-admin-context.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/dashboard-cache.test.js",
                 "resolvedPath": "tests/unit/dashboard-cache.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5226,6 +5356,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/dashboard-commerce.test.js",
+                "resolvedPath": "tests/unit/dashboard-commerce.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/dashboard-control-tower.test.js",
                 "resolvedPath": "tests/unit/dashboard-control-tower.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5233,6 +5368,11 @@
               {
                 "declared": "tests/unit/dashboard-costing.test.js",
                 "resolvedPath": "tests/unit/dashboard-costing.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/dashboard-finance-canonical.test.js",
+                "resolvedPath": "tests/unit/dashboard-finance-canonical.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5266,6 +5406,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/dashboard-operations.test.js",
+                "resolvedPath": "tests/unit/dashboard-operations.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/dashboard-ops-queries.test.js",
                 "resolvedPath": "tests/unit/dashboard-ops-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5273,6 +5418,11 @@
               {
                 "declared": "tests/unit/dashboard-ops-route.test.js",
                 "resolvedPath": "tests/unit/dashboard-ops-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/dashboard-pilotage-market.test.js",
+                "resolvedPath": "tests/unit/dashboard-pilotage-market.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5301,8 +5451,28 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/operations-workspace-service.test.js",
+                "resolvedPath": "tests/unit/operations-workspace-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-360-service.test.js",
+                "resolvedPath": "tests/unit/order-360-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/partner-admin-service.test.js",
+                "resolvedPath": "tests/unit/partner-admin-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/partners.test.js",
                 "resolvedPath": "tests/unit/partners.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/product-360-service.test.js",
+                "resolvedPath": "tests/unit/product-360-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5313,6 +5483,11 @@
               {
                 "declared": "tests/unit/relay-dashboard-route.test.js",
                 "resolvedPath": "tests/unit/relay-dashboard-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/shipping-customs-workspace.test.js",
+                "resolvedPath": "tests/unit/shipping-customs-workspace.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -5328,7 +5503,7 @@
             ]
           }
         },
-        "totalFiles": 172,
+        "totalFiles": 205,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -5770,6 +5945,13 @@
           ]
         },
         {
+          "provider": "inventory",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5856,9 +6038,8 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 3,
+        "declaredNotObserved": 2,
         "declaredNotObservedEvidence": [
-          "inventory",
           "recommendations",
           "wallet"
         ]
@@ -5881,13 +6062,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 3,
+        "debtCount": 2,
         "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"inventory\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
@@ -10730,6 +10906,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "interface"
+          ]
+        },
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -18337,7 +18520,7 @@
             ]
           },
           "tests": {
-            "count": 5,
+            "count": 6,
             "files": [
               {
                 "declared": "tests/unit/admin-sourcing-workspace-route.test.js",
@@ -18347,6 +18530,11 @@
               {
                 "declared": "tests/unit/require-sourcing-global-authority.test.js",
                 "resolvedPath": "tests/unit/require-sourcing-global-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-candidate-actions.test.js",
+                "resolvedPath": "tests/unit/sourcing-candidate-actions.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18367,7 +18555,7 @@
             ]
           }
         },
-        "totalFiles": 16,
+        "totalFiles": 17,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
