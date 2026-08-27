@@ -23,4 +23,6 @@ jobs:
       - name: Switch to product branch
         run: git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
       - name: Run data-channel probe
-        run: node /tmp/debt-zero-data-channel-probe.js
+        run: |
+          cp /tmp/debt-zero-data-channel-probe.js scripts/debt-zero-data-channel-probe.js
+          node scripts/debt-zero-data-channel-probe.js
