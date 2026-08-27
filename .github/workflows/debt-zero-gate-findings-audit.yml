@@ -1,0 +1,55 @@
+name: Debt Zero Gate Findings audit
+
+on:
+  push:
+    branches:
+      - ci/debt-zero-gate-findings
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chore/debt-zero-gate-findings
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Regenerate Gate Findings for diagnosis
+        run: |
+          set +e
+          node scripts/gen-gate-findings.js
+          code=$?
+          set -e
+          node <<'NODE'
+          const j = require('./docs/GATE_FINDINGS.json');
+          console.log('CONTRACT', JSON.stringify(j.contract));
+          for (const s of j.sources) {
+            if (s.status !== 'ok' || s.unprojectableCount || s.multiProjectedCount || (s.unattributedFindings || []).length) {
+              console.log('SOURCE', JSON.stringify({
+                gate: s.gate,
+                status: s.status,
+                exitCode: s.exitCode,
+                unprojectableFiles: s.unprojectableFiles,
+                multiProjectedFiles: s.multiProjectedFiles,
+                unattributedFindings: s.unattributedFindings,
+                error: s.error,
+              }));
+            }
+          }
+          NODE
+          echo "generator_exit=$code"
+      - name: Root registry diagnosis
+        run: |
+          set +e
+          node scripts/feature-registry-check.js --json > /tmp/root.json
+          set -e
+          node - <<'NODE'
+          const fs = require('fs');
+          const j = JSON.parse(fs.readFileSync('/tmp/root.json','utf8'));
+          console.log(JSON.stringify({ errors: j.errors, warnings: j.warnings }, null, 2));
+          NODE
