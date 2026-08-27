@@ -1,0 +1,12 @@
+name: Debt Zero imports audit
+on:
+  push:
+    branches: [ci/debt-zero-imports-audit]
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - run: node public/boutique/scripts/check-js-imports.js
