@@ -1,0 +1,36 @@
+name: Security 360 verification
+
+on:
+  push:
+    branches:
+      - audit/security-360-verify-20260827
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Regenerate Security 360 without persisting it
+        run: npm run security:360
+      - name: Print current Security 360 findings
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const j = JSON.parse(fs.readFileSync('docs/SECURITY_360.json', 'utf8'));
+          console.log('generatedAt=' + j.generatedAt);
+          console.log('summary=' + JSON.stringify(j.summary));
+          const flagged = (j.routes || []).filter(r => r.level === 'ADMIN_NO_GUARD');
+          console.log('admin_no_guard_count=' + flagged.length);
+          for (const r of flagged) console.log('ADMIN_NO_GUARD ' + r.key + ' roles=' + JSON.stringify(r.roles || []));
+          NODE
+      - name: Show derived-doc drift only
+        run: |
+          git diff -- docs/SECURITY_360.json docs/SECURITY_360.md scripts/.security-360-baseline.json || true
