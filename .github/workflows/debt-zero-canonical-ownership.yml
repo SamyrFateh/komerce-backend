@@ -108,7 +108,7 @@ jobs:
           add_after(
               'features/dashboard.feature.js',
               "      'tests/unit/canonical-action-center-boundary.test.js',",
-              sorted(set(witnesses)),
+              ['tests/unit/partner-admin-service.test.js'] + sorted(set(witnesses)),
           )
           PY
 
