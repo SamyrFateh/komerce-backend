@@ -1,0 +1,164 @@
+name: Debt Zero classification v2
+
+on:
+  push:
+    branches:
+      - ci/debt-zero-classification
+
+permissions:
+  contents: write
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout product branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/debt-zero-classification
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm --prefix public/boutique ci
+
+      - name: Apply complete classification backfill
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re
+
+          classes = {
+            'auth': ('support','technical-transversal','transversal-technique', False, False, True, True, False, 'none','middleware+session', [
+              'porte les gardes JWT, rôle, révocation et politique de session consommées transversalement, sans décider aucun cycle métier des consommateurs',
+              'reste un transversal technique conformément à la doctrine O2 ; le DDL technique de révocation appartient à infrastructure, tandis que les mutations d identité et credentials restent à auth-identity/auth-passkey',
+            ]),
+            'customs': ('business','business-feature','feature-autonome', True, True, True, True, True, 'none','api+service', [
+              'possède les catégories, déclarations et shipments douaniers ainsi que leur workflow ; logistics ne fait que consommer leur statut',
+              'porte ses migrations et invariants, tandis que documents et economic-engine restent propriétaires de leurs effets respectifs',
+            ]),
+            'economic-engine': ('business','business-feature','feature-autonome', True, True, True, True, True, 'none','api+service', [
+              'possède pricing, composants de coût, stratégies versionnées et allocations ; ces décisions économiques ne sont pas des projections dashboard',
+              'porte ses tables et migrations propriétaires consommées par catalog, orders et dashboard sans reprendre leurs cycles métier',
+            ]),
+            'inventory': ('business','business-feature','feature-autonome', True, True, True, False, False, 'none','api+service', [
+              'possède inventory_items et la non-négativité du stock ; la publication produit reste explicitement hors périmètre',
+              'orchestre les mouvements de stock avec orders et logistics sans posséder leurs commandes, colis ou décisions catalogue',
+            ]),
+            'logistics': ('business','business-feature','feature-autonome', True, True, True, True, True, 'none','api+service', [
+              'possède le cycle physique colis/scan/relais, les secrets de retrait et leurs transitions ; orders et customs gardent leurs propres décisions',
+              'porte ses tables et migrations opérationnelles tout en exposant des services consommés par payments, catalog, purchasing et dashboard',
+            ]),
+            'payments': ('business','business-feature','feature-autonome', True, True, True, True, True, 'payment','api+webhook+service', [
+              'possède confirmation et idempotence des encaissements Stripe, PayPal et cash ainsi que les journaux d événements traités',
+              'borne l effet externe de paiement par webhook, montant, devise et anti-double-confirmation ; orders ne possède que la commande à payer',
+            ]),
+            'refunds': ('business','business-transversal','feature-transverse', True, True, True, True, False, 'refund','service', [
+              'orchestre transversalement le remboursement entre paiement, wallet et documents tout en conservant la trace refunds du flux compensatoire',
+              'ne constitue pas un domaine métier isolé : il coordonne les frontières propriétaires des features sources et garantit l idempotence par événement',
+            ]),
+            'sourcing': ('business','business-feature','feature-autonome', True, True, True, True, True, 'none','api+service', [
+              'possède sourcing_candidates, leur journal et le lifecycle raw_imported vers décision/import catalogue ; la fiche produit finale reste à catalog',
+              'porte ses migrations et invariants de qualification/rejouabilité tout en consommant catalog et pricing sans reprendre leur ownership',
+            ]),
+          }
+
+          def render(c):
+            axis,kind,decision,ownsTables,ownsLifecycle,active,multi,ownsMigs,effect,surface,rationale = c
+            obj = {'axis':axis,'kind':kind,'decision':decision,'signals':{
+              'ownsTables':ownsTables,'ownsLifecycle':ownsLifecycle,'activeService':active,
+              'multiConsumer':multi,'ownsMigrations':ownsMigs,'externalSideEffect':effect,'surface':surface,
+            },'rationale':rationale}
+            raw=json.dumps(obj,ensure_ascii=False,indent=2)
+            return '  classification: '+raw.replace('\n','\n  ')+',\n'
+
+          for name,c in classes.items():
+            p=Path(f'features/{name}.feature.js'); src=p.read_text()
+            if 'classification:' in src: raise SystemExit(f'classification already exists: {name}')
+            m=re.search(r'^  doctrine:\s*[^\n]+\n',src,re.M)
+            if not m: raise SystemExit(f'doctrine anchor missing: {name}')
+            p.write_text(src[:m.end()]+'\n'+render(c)+src[m.end():])
+
+          def append_rationale(name,text):
+            p=Path(f'features/{name}.feature.js'); src=p.read_text(); start=src.find('classification: {'); r=src.find('rationale: [',start); close=src.find('\n    ],',r)
+            if min(start,r,close)<0: raise SystemExit(f'rationale anchor missing: {name}')
+            p.write_text(src[:close]+'\n      '+json.dumps(text,ensure_ascii=False)+','+src[close:])
+
+          append_rationale('auth-identity','possède les mutations de profil, révocation de session et autorisation nominative de retrait ; auth fournit les gardes techniques mais ne reprend jamais cette vérité d identité')
+          append_rationale('auth-passkey','porte une frontière cryptographique WebAuthn autonome avec challenges à usage unique, anti-rejeu, step-up et révocation de credentials, sans réutiliser le lifecycle OTP de auth-identity')
+          append_rationale('catalog','possède le contrat produit public, le lifecycle de publication et la vérité SKU/media ; pricing, routing et ranking restent consommés depuis leurs features propriétaires')
+
+          def append_invariant(name,text):
+            p=Path(f'features/{name}.feature.js'); src=p.read_text(); start=src.find('invariants: ['); close=src.find('\n  ],',start)
+            if min(start,close)<0: raise SystemExit(f'invariant anchor missing: {name}')
+            if text not in src: p.write_text(src[:close]+'\n    '+json.dumps(text,ensure_ascii=False)+','+src[close:])
+
+          append_invariant('payments','tout payment externe et tout webhook Stripe ou PayPal est idempotent ; un rejeu ne confirme jamais deux fois la même commande')
+          append_invariant('purchasing','tout message WhatsApp fournisseur part d un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon ni ne confirme son statut')
+          append_invariant('refunds','tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement')
+
+          # Doctrine O2: auth est technical-transversal. Les DDL de révocation sont
+          # techniques et relèvent donc de la technical-foundation infrastructure.
+          auth=Path('features/auth.feature.js'); src=auth.read_text()
+          for mig in ['migrations/072_jwt_revocation.sql','migrations/084_jwt_revocation.sql']:
+            src=src.replace("      '"+mig+"',\n",'')
+          auth.write_text(src)
+
+          infra=Path('features/infrastructure.feature.js'); src=infra.read_text()
+          anchor="      'migrations/069_analytical_indexes.sql',"
+          if anchor not in src: raise SystemExit('infrastructure migration anchor missing')
+          additions=[]
+          for mig in ['migrations/072_jwt_revocation.sql','migrations/084_jwt_revocation.sql']:
+            if mig not in src: additions.append("      '"+mig+"',")
+          if additions: src=src.replace(anchor,anchor+'\n'+'\n'.join(additions),1)
+          infra.write_text(src)
+          PY
+
+      - name: Prove zero classification warnings and O2 consistency
+        run: |
+          node scripts/feature-classification-check.js --strict
+          node scripts/feature-classification-check.js --json > /tmp/class.json
+          node - <<'NODE'
+          const fs=require('fs'); const j=JSON.parse(fs.readFileSync('/tmp/class.json','utf8'));
+          console.log(JSON.stringify(j.summary));
+          if ((j.errors||[]).length || (j.warnings||[]).length || j.summary.unclassified!==0) process.exit(1);
+          NODE
+          npm run business-graph:gen
+          npm run business-graph:check
+
+      - name: Regenerate Gate Findings and dependent projections
+        run: |
+          node scripts/gen-gate-findings.js
+          node - <<'NODE'
+          const g=require('./docs/GATE_FINDINGS.json');
+          const c=(g.findings||[]).filter(f=>f.gate==='gate:feature-classification-check');
+          console.log(`findings=${g.findings.length} classification=${c.length}`);
+          if(c.length) process.exit(1);
+          NODE
+          npm run feature:360:gen
+
+      - name: Standard governance gates
+        run: |
+          node scripts/feature-registry-check.js
+          node scripts/feature-guard.js --strict
+          npm run business-graph:check
+          npm run feature:360:check
+          node scripts/code-quality-gate.js --strict
+          node scripts/contract-check.js
+          npm run security:360:check
+          git diff --check
+
+      - name: Commit verified classification closure
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add features/auth.feature.js features/auth-identity.feature.js features/auth-passkey.feature.js features/catalog.feature.js
+          git add features/customs.feature.js features/economic-engine.feature.js features/infrastructure.feature.js features/inventory.feature.js features/logistics.feature.js
+          git add features/payments.feature.js features/purchasing.feature.js features/refunds.feature.js features/sourcing.feature.js
+          git add docs/GATE_FINDINGS.json docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/O6_INVENTORY.md docs/FEATURE_360.json docs/FEATURE_360.md
+          git status --short
+          git commit -m "chore(governance): fermer les classifications feature"
+          git push origin HEAD:chore/debt-zero-classification
