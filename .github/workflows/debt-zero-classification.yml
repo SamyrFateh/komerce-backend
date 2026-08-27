@@ -29,164 +29,77 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import json
           import re
 
-          blocks = {
-            'features/auth.feature.js': """  classification: {
-    axis: 'support',
-    kind: 'technical-foundation',
-    decision: 'transversal-technique',
-    signals: {
-      ownsTables: false,
-      ownsLifecycle: false,
-      activeService: true,
-      multiConsumer: true,
-      ownsMigrations: true,
-      externalSideEffect: 'none',
-      surface: 'middleware+session',
-    },
-    rationale: [
-      'porte la fondation de sécurité de session partagée : gardes JWT, rôle, révocation et politique de cookie, sans posséder les cycles métier des consommateurs',
-      'déclare ses migrations de révocation comme fondation technique ; les écritures d identité et de credentials restent respectivement à auth-identity et auth-passkey',
-    ],
-  },
-""",
-            'features/customs.feature.js': """  classification: {
-    axis: 'business',
-    kind: 'business-feature',
-    decision: 'feature-autonome',
-    signals: {
-      ownsTables: true,
-      ownsLifecycle: true,
-      activeService: true,
-      multiConsumer: true,
-      ownsMigrations: true,
-      externalSideEffect: 'none',
-      surface: 'api+service',
-    },
-    rationale: [
-      'possède les catégories, déclarations et shipments douaniers ainsi que le workflow de déclaration ; logistics ne fait que consommer leur statut',
-      'porte ses propres migrations et invariants de classification, tandis que la génération documentaire est déléguée à documents et le coût à economic-engine',
-    ],
-  },
-""",
-            'features/economic-engine.feature.js': """  classification: {
-    axis: 'business',
-    kind: 'business-feature',
-    decision: 'feature-autonome',
-    signals: {
-      ownsTables: true,
-      ownsLifecycle: true,
-      activeService: true,
-      multiConsumer: true,
-      ownsMigrations: true,
-      externalSideEffect: 'none',
-      surface: 'api+service',
-    },
-    rationale: [
-      'possède le moteur de pricing, les composants de coût, les stratégies versionnées, les allocations et l audit de prix ; ces décisions économiques ne sont pas des projections dashboard',
-      'porte un ensemble important de migrations et de tables propriétaires consommées par catalog, orders et dashboards sans reprendre leurs cycles de vie métier',
-    ],
-  },
-""",
-            'features/inventory.feature.js': """  classification: {
-    axis: 'business',
-    kind: 'business-feature',
-    decision: 'feature-autonome',
-    signals: {
-      ownsTables: true,
-      ownsLifecycle: true,
-      activeService: true,
-      multiConsumer: false,
-      ownsMigrations: false,
-      externalSideEffect: 'none',
-      surface: 'api+service',
-    },
-    rationale: [
-      'possède inventory_items et l invariant de non-négativité du stock ; la publication produit reste explicitement hors périmètre',
-      'le service de stock orchestre ses mouvements avec orders et logistics sans posséder leurs commandes, colis ni décisions de publication catalogue',
-    ],
-  },
-""",
-            'features/logistics.feature.js': """  classification: {
-    axis: 'business',
-    kind: 'business-feature',
-    decision: 'feature-autonome',
-    signals: {
-      ownsTables: true,
-      ownsLifecycle: true,
-      activeService: true,
-      multiConsumer: true,
-      ownsMigrations: true,
-      externalSideEffect: 'none',
-      surface: 'api+service',
-    },
-    rationale: [
-      'possède le cycle physique colis/scan/relais, les secrets de retrait et leurs transitions ; orders et customs restent propriétaires des décisions qui leur appartiennent',
-      'porte des migrations et plusieurs tables opérationnelles propriétaires, tout en exposant des services consommés par payments, catalog, purchasing et dashboard',
-    ],
-  },
-""",
-            'features/payments.feature.js': """  classification: {
-    axis: 'business',
-    kind: 'business-feature',
-    decision: 'feature-autonome',
-    signals: {
-      ownsTables: true,
-      ownsLifecycle: true,
-      activeService: true,
-      multiConsumer: true,
-      ownsMigrations: true,
-      externalSideEffect: 'payment',
-      surface: 'api+webhook+service',
-    },
-    rationale: [
-      'possède la confirmation et l idempotence des encaissements Stripe, PayPal et cash ainsi que les journaux d événements traités',
-      'l effet externe de paiement est borné par des invariants explicites de webhook, montant, devise et anti-double-confirmation ; orders ne possède que la commande à payer',
-    ],
-  },
-""",
-            'features/refunds.feature.js': """  classification: {
-    axis: 'business',
-    kind: 'business-feature',
-    decision: 'feature-autonome',
-    signals: {
-      ownsTables: true,
-      ownsLifecycle: true,
-      activeService: true,
-      multiConsumer: true,
-      ownsMigrations: false,
-      externalSideEffect: 'refund',
-      surface: 'service',
-    },
-    rationale: [
-      'possède la table refunds et l orchestration du remboursement, distinctes de la commande source, du crédit wallet et du reçu documentaire',
-      'porte un invariant d idempotence par événement source ; payments, wallet et documents sont consommés comme frontières propriétaires de leurs effets respectifs',
-    ],
-  },
-""",
-            'features/sourcing.feature.js': """  classification: {
-    axis: 'business',
-    kind: 'business-feature',
-    decision: 'feature-autonome',
-    signals: {
-      ownsTables: true,
-      ownsLifecycle: true,
-      activeService: true,
-      multiConsumer: true,
-      ownsMigrations: true,
-      externalSideEffect: 'none',
-      surface: 'api+service',
-    },
-    rationale: [
-      'possède sourcing_candidates, leur journal d événements et le lifecycle raw_imported vers décision/import catalogue ; la fiche produit finale reste à catalog',
-      'porte ses migrations et ses invariants de qualification/rejouabilité, tout en consommant les connecteurs catalogue et le moteur de pricing sans reprendre leur ownership',
-    ],
-  },
-""",
+          classifications = {
+              'features/auth.feature.js': {
+                  'axis': 'support', 'kind': 'technical-foundation', 'decision': 'transversal-technique',
+                  'signals': {'ownsTables': False, 'ownsLifecycle': False, 'activeService': True, 'multiConsumer': True, 'ownsMigrations': True, 'externalSideEffect': 'none', 'surface': 'middleware+session'},
+                  'rationale': [
+                      'porte la fondation de sécurité de session partagée : gardes JWT, rôle, révocation et politique de cookie, sans posséder les cycles métier des consommateurs',
+                      'déclare ses migrations de révocation comme fondation technique ; les écritures d identité et de credentials restent respectivement à auth-identity et auth-passkey',
+                  ],
+              },
+              'features/customs.feature.js': {
+                  'axis': 'business', 'kind': 'business-feature', 'decision': 'feature-autonome',
+                  'signals': {'ownsTables': True, 'ownsLifecycle': True, 'activeService': True, 'multiConsumer': True, 'ownsMigrations': True, 'externalSideEffect': 'none', 'surface': 'api+service'},
+                  'rationale': [
+                      'possède les catégories, déclarations et shipments douaniers ainsi que le workflow de déclaration ; logistics ne fait que consommer leur statut',
+                      'porte ses propres migrations et invariants de classification, tandis que la génération documentaire est déléguée à documents et le coût à economic-engine',
+                  ],
+              },
+              'features/economic-engine.feature.js': {
+                  'axis': 'business', 'kind': 'business-feature', 'decision': 'feature-autonome',
+                  'signals': {'ownsTables': True, 'ownsLifecycle': True, 'activeService': True, 'multiConsumer': True, 'ownsMigrations': True, 'externalSideEffect': 'none', 'surface': 'api+service'},
+                  'rationale': [
+                      'possède le moteur de pricing, les composants de coût, les stratégies versionnées, les allocations et l audit de prix ; ces décisions économiques ne sont pas des projections dashboard',
+                      'porte un ensemble important de migrations et de tables propriétaires consommées par catalog, orders et dashboards sans reprendre leurs cycles de vie métier',
+                  ],
+              },
+              'features/inventory.feature.js': {
+                  'axis': 'business', 'kind': 'business-feature', 'decision': 'feature-autonome',
+                  'signals': {'ownsTables': True, 'ownsLifecycle': True, 'activeService': True, 'multiConsumer': False, 'ownsMigrations': False, 'externalSideEffect': 'none', 'surface': 'api+service'},
+                  'rationale': [
+                      'possède inventory_items et l invariant de non-négativité du stock ; la publication produit reste explicitement hors périmètre',
+                      'le service de stock orchestre ses mouvements avec orders et logistics sans posséder leurs commandes, colis ni décisions de publication catalogue',
+                  ],
+              },
+              'features/logistics.feature.js': {
+                  'axis': 'business', 'kind': 'business-feature', 'decision': 'feature-autonome',
+                  'signals': {'ownsTables': True, 'ownsLifecycle': True, 'activeService': True, 'multiConsumer': True, 'ownsMigrations': True, 'externalSideEffect': 'none', 'surface': 'api+service'},
+                  'rationale': [
+                      'possède le cycle physique colis/scan/relais, les secrets de retrait et leurs transitions ; orders et customs restent propriétaires des décisions qui leur appartiennent',
+                      'porte des migrations et plusieurs tables opérationnelles propriétaires, tout en exposant des services consommés par payments, catalog, purchasing et dashboard',
+                  ],
+              },
+              'features/payments.feature.js': {
+                  'axis': 'business', 'kind': 'business-feature', 'decision': 'feature-autonome',
+                  'signals': {'ownsTables': True, 'ownsLifecycle': True, 'activeService': True, 'multiConsumer': True, 'ownsMigrations': True, 'externalSideEffect': 'payment', 'surface': 'api+webhook+service'},
+                  'rationale': [
+                      'possède la confirmation et l idempotence des encaissements Stripe, PayPal et cash ainsi que les journaux d événements traités',
+                      'l effet externe de paiement est borné par des invariants explicites de webhook, montant, devise et anti-double-confirmation ; orders ne possède que la commande à payer',
+                  ],
+              },
+              'features/refunds.feature.js': {
+                  'axis': 'business', 'kind': 'business-feature', 'decision': 'feature-autonome',
+                  'signals': {'ownsTables': True, 'ownsLifecycle': True, 'activeService': True, 'multiConsumer': True, 'ownsMigrations': False, 'externalSideEffect': 'refund', 'surface': 'service'},
+                  'rationale': [
+                      'possède la table refunds et l orchestration du remboursement, distinctes de la commande source, du crédit wallet et du reçu documentaire',
+                      'porte un invariant d idempotence par événement source ; payments, wallet et documents sont consommés comme frontières propriétaires de leurs effets respectifs',
+                  ],
+              },
+              'features/sourcing.feature.js': {
+                  'axis': 'business', 'kind': 'business-feature', 'decision': 'feature-autonome',
+                  'signals': {'ownsTables': True, 'ownsLifecycle': True, 'activeService': True, 'multiConsumer': True, 'ownsMigrations': True, 'externalSideEffect': 'none', 'surface': 'api+service'},
+                  'rationale': [
+                      'possède sourcing_candidates, leur journal d événements et le lifecycle raw_imported vers décision/import catalogue ; la fiche produit finale reste à catalog',
+                      'porte ses migrations et ses invariants de qualification/rejouabilité, tout en consommant les connecteurs catalogue et le moteur de pricing sans reprendre leur ownership',
+                  ],
+              },
           }
 
-          for path, block in blocks.items():
+          for path, classification in classifications.items():
               p = Path(path)
               src = p.read_text()
               if 'classification:' in src:
@@ -195,11 +108,13 @@ jobs:
               if not matches:
                   raise SystemExit(f'doctrine anchor missing in {path}')
               m = matches[0]
-              src = src[:m.end()] + '\n' + block + src[m.end():]
+              raw = json.dumps(classification, ensure_ascii=False, indent=2)
+              rendered = '  classification: ' + raw.replace('\n', '\n  ') + ',\n'
+              src = src[:m.end()] + '\n' + rendered + src[m.end():]
               p.write_text(src)
           PY
 
-      - name: Complete three short rationales and purchasing outbound invariant
+      - name: Complete three short rationales and two side-effect invariants
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -217,48 +132,28 @@ jobs:
               close = src.find('\n    ],', rstart)
               if close < 0:
                   raise SystemExit(f'rationale close missing in {path}')
-              literal = json.dumps(text, ensure_ascii=False)
-              src = src[:close] + f'\n      {literal},' + src[close:]
+              src = src[:close] + '\n      ' + json.dumps(text, ensure_ascii=False) + ',' + src[close:]
               p.write_text(src)
 
-          append_classification_rationale(
-              'features/auth-identity.feature.js',
-              'possède aussi les mutations de profil, révocation de session et autorisation nominative de retrait ; auth fournit les gardes techniques mais ne reprend jamais cette vérité d identité',
-          )
-          append_classification_rationale(
-              'features/auth-passkey.feature.js',
-              'porte une frontière cryptographique WebAuthn autonome avec challenges à usage unique, anti-rejeu, step-up et révocation de credentials, sans réutiliser le lifecycle OTP de auth-identity',
-          )
-          append_classification_rationale(
-              'features/catalog.feature.js',
-              'possède le contrat produit public, le lifecycle de publication et la vérité SKU/media ; pricing, routing et ranking sont consommés depuis leurs features propriétaires sans être recalculés ici',
-          )
+          append_classification_rationale('features/auth-identity.feature.js', 'possède aussi les mutations de profil, révocation de session et autorisation nominative de retrait ; auth fournit les gardes techniques mais ne reprend jamais cette vérité d identité')
+          append_classification_rationale('features/auth-passkey.feature.js', 'porte une frontière cryptographique WebAuthn autonome avec challenges à usage unique, anti-rejeu, step-up et révocation de credentials, sans réutiliser le lifecycle OTP de auth-identity')
+          append_classification_rationale('features/catalog.feature.js', 'possède le contrat produit public, le lifecycle de publication et la vérité SKU/media ; pricing, routing et ranking sont consommés depuis leurs features propriétaires sans être recalculés ici')
 
-          p = Path('features/purchasing.feature.js')
-          src = p.read_text()
-          start = src.find('invariants: [')
-          if start < 0:
-              raise SystemExit('purchasing invariants missing')
-          close = src.find('\n  ],', start)
-          if close < 0:
-              raise SystemExit('purchasing invariants close missing')
-          message = "tout message WhatsApp fournisseur est déclenché depuis un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon de commande ni ne confirme son statut"
-          if message not in src:
-              src = src[:close] + '\n    ' + json.dumps(message, ensure_ascii=False) + ',' + src[close:]
-              p.write_text(src)
+          def append_invariant(path, text):
+              p = Path(path)
+              src = p.read_text()
+              start = src.find('invariants: [')
+              if start < 0:
+                  raise SystemExit(f'invariants missing in {path}')
+              close = src.find('\n  ],', start)
+              if close < 0:
+                  raise SystemExit(f'invariants close missing in {path}')
+              if text not in src:
+                  src = src[:close] + '\n    ' + json.dumps(text, ensure_ascii=False) + ',' + src[close:]
+                  p.write_text(src)
 
-          p = Path('features/refunds.feature.js')
-          src = p.read_text()
-          start = src.find('invariants: [')
-          if start < 0:
-              raise SystemExit('refunds invariants missing')
-          close = src.find('\n  ],', start)
-          if close < 0:
-              raise SystemExit('refunds invariants close missing')
-          message = "tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement"
-          if message not in src:
-              src = src[:close] + '\n    ' + json.dumps(message, ensure_ascii=False) + ',' + src[close:]
-              p.write_text(src)
+          append_invariant('features/purchasing.feature.js', 'tout message WhatsApp fournisseur est déclenché depuis un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon de commande ni ne confirme son statut')
+          append_invariant('features/refunds.feature.js', 'tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement')
           PY
 
       - name: Prove classification zero warnings
