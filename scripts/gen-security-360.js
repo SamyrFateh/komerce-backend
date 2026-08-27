@@ -30,6 +30,7 @@ const BASELINE = path.join(__dirname, '.security-360-baseline.json');
 const PUBLIC_OK = [
   /^\/api\/health$/, /^\/api\/public\//,
   /^\/api\/auth\/(login|register|refresh|forgot|reset|verify|logout|me)/,
+  /^\/api\/auth\/passkey\/login\/(options|verify)$/,
   /\/stripe\/webhook/, /\/webhook(s)?(\/|$)/, /verify-qr/,
 ];
 const norm = p => ('/' + p.split('/').filter(Boolean).join('/'))
@@ -48,6 +49,86 @@ function tokens(s) {
   return out;
 }
 function mergeInto(t, a) { t.authn = t.authn || a.authn; t.admin = t.admin || a.admin; a.roles.forEach(r => t.roles.add(r)); }
+
+
+function cloneGuards(source) {
+  return {
+    authn: Boolean(source && source.authn),
+    roles: new Set(source && source.roles ? source.roles : []),
+    admin: Boolean(source && source.admin),
+  };
+}
+
+function mergeAliasRefs(target, source, aliases) {
+  for (const name of Object.keys(aliases)) {
+    if (new RegExp('\\b' + name + '\\b').test(source)) mergeInto(target, aliases[name]);
+  }
+}
+
+function parseGuardAliases(src) {
+  const aliases = {};
+  for (const m of src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*\[([\s\S]*?)\]\s*;/g)) {
+    const parsed = tokens(m[2]);
+    if (parsed.authn || parsed.admin || parsed.roles.size) aliases[m[1]] = parsed;
+  }
+  for (const m of src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*(requireRole\(\s*\[[\s\S]*?\]\s*\))\s*;/g)) {
+    aliases[m[1]] = tokens(m[2]);
+  }
+  return aliases;
+}
+
+function findMatchingParen(src, openIndex) {
+  let depth = 0;
+  let quote = null;
+  let escaped = false;
+  for (let i = openIndex; i < src.length; i += 1) {
+    const ch = src[i];
+    if (quote) {
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') { quote = ch; continue; }
+    if (ch === '(') depth += 1;
+    else if (ch === ')') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function collectRouterGuardUses(src, vEsc, aliases) {
+  const uses = [];
+  const re = new RegExp('\\b' + vEsc + '\\.use\\s*\\(', 'g');
+  let match;
+  while ((match = re.exec(src))) {
+    const openIndex = src.indexOf('(', match.index);
+    const closeIndex = findMatchingParen(src, openIndex);
+    if (closeIndex < 0) break;
+    const body = src.slice(openIndex + 1, closeIndex);
+    const scoped = body.match(/^\s*(['"`])([^'"`]+)\1\s*,/);
+    const scope = scoped ? norm(scoped[2]) : null;
+    const chain = scoped ? body.slice(scoped[0].length) : body;
+    const guard = tokens(chain);
+    mergeAliasRefs(guard, chain, aliases);
+    if (guard.authn || guard.admin || guard.roles.size) uses.push({ index: match.index, scope, guard });
+    re.lastIndex = closeIndex + 1;
+  }
+  return uses;
+}
+
+function applyRouterUses(inherited, uses, routePath, sourceIndex) {
+  const out = cloneGuards(inherited);
+  const route = norm(routePath);
+  for (const use of uses) {
+    if (use.index >= sourceIndex) continue;
+    if (use.scope && route !== use.scope && !route.startsWith(use.scope + '/')) continue;
+    mergeInto(out, use.guard);
+  }
+  return out;
+}
 
 // renvoie {method, route} → guards, en suivant router.use sous-routeurs
 // `varName` : nom de la variable routeur à analyser dans ce fichier (par défaut
@@ -69,22 +150,10 @@ function staticGuards(routeFile, prefix, seen, acc, inherited, varName) {
     if (!sf.endsWith('.js')) sf += '.js';
     return staticGuards(sf, prefix, seen, acc, inherited, varName);
   }
-  const alias = {};
-  for (const m of src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*\[([\s\S]*?)\]\s*;/g))
-    if (/authenticate|requireRole|requireAdmin/.test(m[2])) alias[m[1]] = tokens(m[2]);
-
-  // gardes au NIVEAU ROUTEUR : router.use(authenticate, requireAdmin) sans require → tout le fichier
-  const fileBase = { authn: inherited.authn, roles: new Set(inherited.roles), admin: inherited.admin };
-  for (const m of src.matchAll(new RegExp('\\b' + vEsc + '\\.use\\(\\s*([^\\n;]+)', 'g'))) {
-    const arg = m[1];
-    if (/require\(/.test(arg)) continue; // montage de sous-routeur, pas une garde
-    if (/authenticate|requireRole|requireAdmin/.test(arg)) {
-      mergeInto(fileBase, tokens(arg));
-      for (const sp of arg.matchAll(/\.\.\.(\w+)/g)) if (alias[sp[1]]) mergeInto(fileBase, alias[sp[1]]);
-    } else {
-      for (const name of Object.keys(alias)) if (new RegExp('\\b' + name + '\\b').test(arg)) mergeInto(fileBase, alias[name]);
-    }
-  }
+  const alias = parseGuardAliases(src);
+  const routerGuardUses = collectRouterGuardUses(src, vEsc, alias);
+  const inheritedBase = cloneGuards(inherited);
+  const guardsAt = (routePath, sourceIndex) => applyRouterUses(inheritedBase, routerGuardUses, routePath, sourceIndex);
 
   // Le groupe de gardes (entre la route et le handler) est lazy/borné à 400 car.
   // S'il ne trouve pas de handler inline sur CETTE route (ex: handler nommé,
@@ -94,9 +163,9 @@ function staticGuards(routeFile, prefix, seen, acc, inherited, varName) {
   // la fenêtre de traverser un autre `vEsc.<méthode>(`.
   const guardGap = '(?:(?!\\b' + vEsc + '\\.(?:get|post|put|delete|patch)\\b)[\\s\\S]){0,400}?';
   const seenRoutes = new Set(); // method+route déjà capturés par la passe inline, pour éviter les doublons avec la passe "handler nommé"
-  for (const m of src.matchAll(new RegExp('\\b' + vEsc + '\\.(get|post|put|delete|patch)\\s*\\(\\s*[\'"`]([^\'"`]+)[\'"`]\\s*,?(' + guardGap + ')(async\\s*\\(|\\(\\s*req|function\\s*\\()', 'g'))) {
+  for (const m of src.matchAll(new RegExp('\\b' + vEsc + '\\.(get|post|put|delete|patch)\\s*\\(\\s*[\'"`]([^\'"`]+)[\'"`]\\s*,?(' + guardGap + ')(async\\s*\\(\\s*[_A-Za-z$][\\w$]*|\\(\\s*[_A-Za-z$][\\w$]*|function\\s*\\()', 'g'))) {
     const chain = m[3] || '';
-    const t = { authn: fileBase.authn, roles: new Set(fileBase.roles), admin: fileBase.admin };
+    const t = guardsAt(m[2], m.index);
     mergeInto(t, tokens(chain));
     for (const name of Object.keys(alias)) if (new RegExp('\\b' + name + '\\b').test(chain)) mergeInto(t, alias[name]);
     const route = norm(prefix + '/' + m[2]);
@@ -113,7 +182,7 @@ function staticGuards(routeFile, prefix, seen, acc, inherited, varName) {
     if (seenRoutes.has(key)) continue; // déjà capturée par la passe inline
     seenRoutes.add(key);
     const chain = m[3] || '';
-    const t = { authn: fileBase.authn, roles: new Set(fileBase.roles), admin: fileBase.admin };
+    const t = guardsAt(m[2], m.index);
     mergeInto(t, tokens(chain));
     for (const name of Object.keys(alias)) if (new RegExp('\\b' + name + '\\b').test(chain)) mergeInto(t, alias[name]);
     acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, admin: t.admin || t.roles.has('admin'), roles: [...t.roles] });
@@ -129,7 +198,7 @@ function staticGuards(routeFile, prefix, seen, acc, inherited, varName) {
       let p = spec.replace(/^\.\//, '').replace(/^\.\.\//, '');
       let sf = /^routes\//.test(p) ? p : path.normalize(path.join(path.dirname(routeFile), spec)).replace(/\\/g, '/');
       if (!sf.endsWith('.js')) sf += '.js';
-      staticGuards(sf, norm(prefix + '/' + sub), seen, acc, fileBase, varName);
+      staticGuards(sf, norm(prefix + '/' + sub), seen, acc, guardsAt(sub || '/', m.index + 1), varName);
     }
   }
   return acc;
@@ -285,29 +354,65 @@ const summary = {
 };
 const report = { generatedAt: new Date().toISOString(), source: 'hybrid: runtime inventory + static guard analysis', summary,
   flagged: flagged.map(r => ({ key: key(r), level: r.level, severity: r.severity, roles: r.roles })) };
-if (!fs.existsSync(DOCS)) fs.mkdirSync(DOCS, { recursive: true });
-fs.writeFileSync(path.join(DOCS, 'SECURITY_360.json'), JSON.stringify({ ...report, routes: routes.map(r => ({ key: key(r), level: r.level, roles: r.roles })) }, null, 2) + '\n');
-const md = ['# Security 360 — couverture des gardes (hybride runtime + statique)', '',
-  `> ${report.generatedAt} — ${summary.total} endpoints`, '',
-  '| Niveau | Compte |', '|---|---|',
-  `| 🟢 PROTECTED | ${summary.protected} |`, `| ⚪ PUBLIC (légitime) | ${summary.public} |`,
-  `| 🟠 UNPROTECTED | ${summary.unprotected} |`, `| 🔴 ADMIN_NO_GUARD | ${summary.admin_no_guard} |`,
-  `| ❔ UNKNOWN (statique n'a pas atteint — à auditer) | ${summary.unknown} |`, '',
-  '## Flaggés', '', ...(flagged.length ? flagged.map(r => `- ${r.severity === 'high' ? '🔴' : r.severity === 'audit' ? '❔' : '🟠'} \`${key(r)}\` — ${r.level}${r.roles.length ? ' (rôles: ' + r.roles.join(',') + ')' : ''}`) : ['_Aucun._'])].join('\n');
-fs.writeFileSync(path.join(DOCS, 'SECURITY_360.md'), md + '\n');
+const projection = {
+  source: report.source,
+  summary: report.summary,
+  flagged: report.flagged,
+  routes: routes.map(r => ({ key: key(r), level: r.level, roles: r.roles })),
+};
+
+function renderMarkdown(generatedAt) {
+  return ['# Security 360 — couverture des gardes (hybride runtime + statique)', '',
+    `> ${generatedAt} — ${summary.total} endpoints`, '',
+    '| Niveau | Compte |', '|---|---|',
+    `| 🟢 PROTECTED | ${summary.protected} |`, `| ⚪ PUBLIC (légitime) | ${summary.public} |`,
+    `| 🟠 UNPROTECTED | ${summary.unprotected} |`, `| 🔴 ADMIN_NO_GUARD | ${summary.admin_no_guard} |`,
+    `| ❔ UNKNOWN (statique n'a pas atteint — à auditer) | ${summary.unknown} |`, '',
+    '## Flaggés', '', ...(flagged.length ? flagged.map(r => `- ${r.severity === 'high' ? '🔴' : r.severity === 'audit' ? '❔' : '🟠'} \`${key(r)}\` — ${r.level}${r.roles.length ? ' (rôles: ' + r.roles.join(',') + ')' : ''}`) : ['_Aucun._'])].join('\n');
+}
+
+function comparableProjection(doc) {
+  if (!doc) return null;
+  return { source: doc.source, summary: doc.summary, flagged: doc.flagged, routes: doc.routes };
+}
 
 const current = flagged.map(key).sort();
-if (MODE === 'save') {
-  fs.writeFileSync(BASELINE, JSON.stringify({ flagged: current }, null, 2) + '\n');
-  console.log(`\x1b[32m\x1b[1m✔ Baseline security-360 figée\x1b[0m (🔴 ${summary.admin_no_guard} · 🟠 ${summary.unprotected} · ❔ ${summary.unknown}).`); process.exit(0);
-}
 if (MODE === 'check') {
   let base = { flagged: [] }; try { base = JSON.parse(fs.readFileSync(BASELINE, 'utf8')); } catch (_) {}
   const known = new Set(base.flagged || []); const novel = current.filter(k => !known.has(k));
-  if (novel.length) { console.error(`\x1b[31m\x1b[1m✖ ${novel.length} nouvelle(s) anomalie(s) sécu :\x1b[0m`);
+  if (novel.length) {
+    console.error(`\x1b[31m\x1b[1m✖ ${novel.length} nouvelle(s) anomalie(s) sécu :\x1b[0m`);
     novel.forEach(k => { const r = flagged.find(f => key(f) === k); console.error(`   ↑ ${r.severity === 'high' ? '🔴' : r.severity === 'audit' ? '❔' : '🟠'} ${k} — ${r.level}`); });
-    console.error('   (ajoute une garde, ou si légitime : npm run security:360:save)'); process.exit(1); }
-  console.log(`\x1b[32m✔ Security 360 : aucune nouvelle anomalie (${current.length} connus).\x1b[0m`); process.exit(0);
+    console.error('   (ajoute une garde, ou si légitime : npm run security:360:save)');
+    process.exit(1);
+  }
+  let committedJson = null;
+  try { committedJson = JSON.parse(fs.readFileSync(path.join(DOCS, 'SECURITY_360.json'), 'utf8')); } catch (_) {}
+  if (!committedJson || JSON.stringify(comparableProjection(committedJson)) !== JSON.stringify(projection)) {
+    console.error('\x1b[31m\x1b[1m✖ SECURITY_360.json est périmé.\x1b[0m');
+    console.error('   Lance npm run security:360 puis commite docs/SECURITY_360.{json,md}.');
+    process.exit(1);
+  }
+  let committedMd = null;
+  try { committedMd = fs.readFileSync(path.join(DOCS, 'SECURITY_360.md'), 'utf8'); } catch (_) {}
+  const expectedMd = renderMarkdown(committedJson.generatedAt) + '\n';
+  if (committedMd !== expectedMd) {
+    console.error('\x1b[31m\x1b[1m✖ SECURITY_360.md est périmé ou désynchronisé du JSON.\x1b[0m');
+    console.error('   Lance npm run security:360 puis commite docs/SECURITY_360.{json,md}.');
+    process.exit(1);
+  }
+  console.log(`\x1b[32m✔ Security 360 : projection fraîche, aucune nouvelle anomalie (${current.length} connus).\x1b[0m`);
+  process.exit(0);
+}
+
+if (!fs.existsSync(DOCS)) fs.mkdirSync(DOCS, { recursive: true });
+fs.writeFileSync(path.join(DOCS, 'SECURITY_360.json'), JSON.stringify({ generatedAt: report.generatedAt, ...projection }, null, 2) + '\n');
+fs.writeFileSync(path.join(DOCS, 'SECURITY_360.md'), renderMarkdown(report.generatedAt) + '\n');
+
+if (MODE === 'save') {
+  fs.writeFileSync(BASELINE, JSON.stringify({ flagged: current }, null, 2) + '\n');
+  console.log(`\x1b[32m\x1b[1m✔ Baseline security-360 figée\x1b[0m (🔴 ${summary.admin_no_guard} · 🟠 ${summary.unprotected} · ❔ ${summary.unknown}).`);
+  process.exit(0);
 }
 console.log(`Security 360 · ${summary.total} routes · 🟢 ${summary.protected} · ⚪ ${summary.public} · 🟠 ${summary.unprotected} · 🔴 ${summary.admin_no_guard} · ❔ ${summary.unknown}`);
 process.exit(0);
