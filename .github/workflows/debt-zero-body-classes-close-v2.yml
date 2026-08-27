@@ -128,7 +128,7 @@ jobs:
 
           // ══════════════════════════════════════════════════════════════════════
           // 5. check:css-dist-only'''
-          tsrc, count = section.subn(replacement, tsrc, count=1)
+          tsrc, count = section.subn(lambda _: replacement, tsrc, count=1)
           if count != 1:
               raise SystemExit(f'body-class gate test section count={count}')
           tests.write_text(tsrc, encoding='utf-8')
