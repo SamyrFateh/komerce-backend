@@ -126,6 +126,7 @@ module.exports = {
       { fn: 'syncPurchaseOrdersOnOrderCancel', file: 'services/purchasing-cancel-service.js' },
     ],
     consumes: [
+      'catalog (dépendance data cross-feature observée et gouvernée par O5)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (lecture : order_items, orders — le besoin d\'achat et l\'intention d\'annulation naissent d\'une commande client)',
       'auth (garde admin)',

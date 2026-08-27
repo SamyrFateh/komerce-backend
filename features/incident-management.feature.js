@@ -97,6 +97,7 @@ module.exports = {
     // CURRENT RUNTIME WRITERS / PRODUCERS — écrivent réellement dans la table
     // incidents aujourd'hui, mais via SQL inline, pas via incident-service.js.
     consumes: [
+      'orders (dépendance data cross-feature observée et gouvernée par O5)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'logistics (scan-engine écrit incidents — SQL inline)',
       'payments (reconciliation-service écrit incidents — SQL inline)',

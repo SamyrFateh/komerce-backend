@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, users
- * @db-write      basket_items, baskets, order_status_history, recipients, scan_events, sms_log, wallet_transactions, wallets
+ * @db-write      order_status_history, recipients, scan_events, sms_log, wallet_transactions, wallets
  * @db-write-via:user-mutation-service users
  * @db-write-via:incident-write-service incidents
  * @db-write-via:scan-write-service scans
@@ -27,6 +27,7 @@ const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { detachUserFromScans } = require('../../services/scan-write-service');
 const { detachUserFromIncidents } = require('../../services/incident-write-service');
+const { deleteUserBasketData } = require('../../services/shared-cart-user-cleanup');
 const {
   createAdminUser,
   setUserRole,
@@ -198,8 +199,7 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
         'DELETE FROM wallets WHERE user_id = $1::uuid',
         'DELETE FROM loyalty_points WHERE user_id = $1::uuid',
         'DELETE FROM loyalty_history WHERE user_id = $1::uuid',
-        'DELETE FROM basket_items WHERE basket_id IN (SELECT id FROM baskets WHERE user_id = $1::uuid)',
-        'DELETE FROM baskets WHERE user_id = $1::uuid',
+        () => deleteUserBasketData(db, id),
         'DELETE FROM recipients WHERE user_id = $1::uuid',
         'DELETE FROM favorites WHERE user_id = $1::uuid',
         'DELETE FROM wishlists WHERE user_id = $1::uuid',

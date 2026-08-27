@@ -29,15 +29,13 @@ module.exports = {
     in: [
       'calcul et recalcul du palier de fidelite (recalculate_loyalty(), fonction DB appelee par routes/loyalty.js)',
       'compteur et notification de gros panier (big_basket_count / big_basket_last_notified_count)',
-      'creation des recompenses "pending" (loyalty_rewards) au declenchement du seuil gros panier',
+      'creation et traitement des recompenses (pending/granted/skipped), y compris les actions admin',
       'synthese de fidelite exposee (v_loyalty_summary) et grille des paliers (loyalty_tiers)',
     ],
     out: [
       'solde et mouvements wallet (feature wallet, scindee de wallet-loyalty au Lot O1)',
       'paiement carte/PayPal (feature payments)',
       'remboursement (feature refunds)',
-      'traitement admin des recompenses en attente (routes/admin-loyalty.js — actuellement @domain dashboard, ' +
-        'ecrit loyalty_rewards.status ; voir ONTOLOGY_GAP, non deplace dans ce lot)',
     ],
   },
 
@@ -48,6 +46,7 @@ module.exports = {
     ],
     routes: [
       'routes/loyalty.js',
+      'routes/admin-loyalty.js',
     ],
     migrations: [],
     tests: [
@@ -89,13 +88,18 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 6,
-    totalRoutes: 7,
-    note: "6/7 routes protégées. 1 route publique par design : GET /api/loyalty/tiers (grille des paliers de fidélité, information publique vitrine).",
+    authedRoutesDetected: 11,
+    totalRoutes: 12,
+    note: "11/12 routes protégées. 1 route publique par design : GET /api/loyalty/tiers (grille des paliers de fidélité, information publique vitrine).",
   },
   contract: {
     exposes: [
       'GET /api/loyalty/tiers',
+      'GET /api/admin/loyalty/pending',
+      'GET /api/admin/loyalty/history',
+      'POST /api/admin/loyalty/reward/:id',
+      'POST /api/admin/loyalty/skip/:id',
+      'GET /api/admin/loyalty/stats',
       'GET /api/loyalty/me',
       'GET /api/loyalty/users',
       'GET /api/loyalty/stats',
@@ -104,6 +108,8 @@ module.exports = {
       'POST /api/loyalty/recalculate-all',
     ],
     consumes: [
+      'orders (dépendance data cross-feature observée et gouvernée par O5)',
+      'economic-engine (dépendance data cross-feature observée et gouvernée par O5)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/loyalty.js -> middleware/auth.js)",
 

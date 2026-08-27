@@ -156,6 +156,7 @@ module.exports = {
       'GET /api/admin/customs-shipments/status/pending',
     ],
     consumes: [
+      'catalog (dépendance data cross-feature observée et gouvernée par O5)',
       'orders (persistence via order-mutation-service ? LOT11)','logistics (colis a classer)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'documents (facture douane generee)',

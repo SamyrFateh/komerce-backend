@@ -334,6 +334,7 @@ module.exports = {
       { fn: 'markBackorderReminderSent', file: 'services/parcel-mutation-service.js' },
     ],
     consumes: [
+      'documents (dépendance data cross-feature observée et gouvernée par O5)',
       'incident-management (incident persistence via incident-write-service)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: utils/parcels.js -> utils/rules.js ; services/parcel-operations.js -> utils/rules.js)",

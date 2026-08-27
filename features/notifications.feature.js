@@ -168,6 +168,9 @@ module.exports = {
       { fn: 'emitOrderMilestone / emitExceptional / resolveOrderMilestones', file: 'services/client-notification-service.js' },
     ],
     consumes: [
+      'orders (dépendance data cross-feature observée et gouvernée par O5)',
+      'logistics (dépendance data cross-feature observée et gouvernée par O5)',
+      'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',
       'incident-management (incident persistence via incident-write-service)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
