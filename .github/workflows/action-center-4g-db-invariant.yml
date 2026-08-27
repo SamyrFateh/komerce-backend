@@ -1,0 +1,219 @@
+name: Action Center 4G active-signal DB invariant
+
+on:
+  push:
+    branches:
+      - ci/canonical-action-center-4g-db-invariant
+
+permissions:
+  contents: write
+
+jobs:
+  prove-active-signal-invariant:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: action_center_4g
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d action_center_4g"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/action_center_4g
+      PGPASSWORD: postgres
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-action-center-4g
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Harden generator conflict target to the full active lifecycle
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def patch(path, old, new):
+              p = Path(path)
+              s = p.read_text()
+              if old not in s:
+                  if new in s:
+                      return
+                  raise SystemExit(f'anchor missing in {path}: {old[:100]!r}')
+              p.write_text(s.replace(old, new, 1))
+
+          patch(
+              'services/signal-service.js',
+              "      ON CONFLICT (signal_type, entity_type, entity_id) WHERE status = 'open'\n      DO UPDATE SET\n        severity = EXCLUDED.severity,\n        title = EXCLUDED.title,\n        summary = EXCLUDED.summary,\n        recommendation = EXCLUDED.recommendation,\n        meta = EXCLUDED.meta,\n        expires_at = EXCLUDED.expires_at,\n        updated_at = NOW()",
+              "      ON CONFLICT (signal_type, entity_type, entity_id) WHERE status IN ('open','acknowledged','snoozed')\n      DO UPDATE SET\n        severity = EXCLUDED.severity,\n        title = EXCLUDED.title,\n        summary = EXCLUDED.summary,\n        source_module = EXCLUDED.source_module,\n        target_shell = EXCLUDED.target_shell,\n        target_view = EXCLUDED.target_view,\n        target_filters = EXCLUDED.target_filters,\n        owner_role = EXCLUDED.owner_role,\n        recommendation = EXCLUDED.recommendation,\n        confidence = EXCLUDED.confidence,\n        meta = EXCLUDED.meta,\n        expires_at = EXCLUDED.expires_at,\n        status = CASE\n          WHEN signals.status = 'snoozed' AND signals.snoozed_until <= NOW() THEN 'open'\n          ELSE signals.status\n        END,\n        snoozed_until = CASE\n          WHEN signals.status = 'snoozed' AND signals.snoozed_until <= NOW() THEN NULL\n          ELSE signals.snoozed_until\n        END,\n        updated_at = NOW()"
+          )
+
+          # Make the lifecycle-wide DB predicate an explicit service unit invariant.
+          p = Path('tests/unit/signal-service.test.js')
+          s = p.read_text()
+          anchor = "    expect(sql).toMatch(/ON CONFLICT/);\n    expect(params).toHaveLength(15);"
+          replacement = "    expect(sql).toMatch(/ON CONFLICT/);\n    expect(sql).toContain(\"WHERE status IN ('open','acknowledged','snoozed')\");\n    expect(sql).toContain(\"WHEN signals.status = 'snoozed' AND signals.snoozed_until <= NOW() THEN 'open'\");\n    expect(params).toHaveLength(15);"
+          if replacement not in s:
+              if anchor not in s:
+                  raise SystemExit('signal-service unit anchor missing')
+              s = s.replace(anchor, replacement, 1)
+          p.write_text(s)
+
+          # Capability owns the migration contract witness too.
+          p = Path('capabilities/decision-signals.capability.js')
+          s = p.read_text()
+          if "'tests/unit/action-center-migration-contract.test.js'" not in s:
+              anchor = "      'tests/unit/signals-error-propagation.test.js',\n"
+              if anchor not in s:
+                  raise SystemExit('decision-signals test anchor missing')
+              s = s.replace(anchor, anchor + "      'tests/unit/action-center-migration-contract.test.js',\n", 1)
+          p.write_text(s)
+
+          # Freeze the DB-level race invariant in the 4G contract.
+          p = Path('docs/contract/ACTION_CENTER_4G.md')
+          s = p.read_text()
+          marker = '### Invariant DB — un seul fait actif'
+          if marker not in s:
+              anchor = "- `resolve` remet `snoozed_until` à `NULL`.\n"
+              block = anchor + "\n### Invariant DB — un seul fait actif\n\nLa migration résorbe les éventuels doublons historiques actifs en conservant l’intention opérateur la plus forte (`snoozed` > `acknowledged` > `open`), puis crée un index unique partiel sur `(signal_type, entity_type, entity_id)` avec `NULLS NOT DISTINCT` pour les trois états actifs. La déduplication est ainsi garantie jusque sous concurrence entre génération et action opérateur.\n"
+              if anchor not in s:
+                  raise SystemExit('4G contract lifecycle anchor missing')
+              s = s.replace(anchor, block, 1)
+          p.write_text(s)
+          PY
+
+      - name: Execute migration 153 against historical active duplicates
+        shell: bash
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE EXTENSION IF NOT EXISTS pgcrypto;
+          CREATE TABLE users (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            role text NOT NULL
+          );
+          CREATE TABLE signals (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            signal_type text NOT NULL,
+            severity text NOT NULL DEFAULT 'info',
+            title text NOT NULL DEFAULT 'test',
+            summary text,
+            source_module text DEFAULT 'signal-service',
+            target_shell text,
+            target_view text,
+            target_filters jsonb DEFAULT '{}'::jsonb,
+            owner_role text DEFAULT 'admin',
+            status text NOT NULL DEFAULT 'open',
+            entity_type text,
+            entity_id text,
+            recommendation text,
+            confidence text,
+            meta jsonb DEFAULT '{}'::jsonb,
+            snoozed_until timestamptz,
+            resolved_at timestamptz,
+            resolved_by uuid,
+            expires_at timestamptz,
+            created_at timestamptz DEFAULT now(),
+            updated_at timestamptz DEFAULT now()
+          );
+          INSERT INTO users(role) VALUES ('admin');
+
+          -- Duplicate historical parcel fact: snooze must win over regenerated open.
+          INSERT INTO signals(signal_type, entity_type, entity_id, status, snoozed_until, created_at)
+          VALUES
+            ('parcel_blocked','parcel','P-1','snoozed',now() + interval '12 hours',now() - interval '2 hours'),
+            ('parcel_blocked','parcel','P-1','open',NULL,now() - interval '1 hour');
+
+          -- Duplicate global fact (NULL dimensions): acknowledged must win over open.
+          INSERT INTO signals(signal_type, entity_type, entity_id, status, created_at)
+          VALUES
+            ('recon_anomaly',NULL,NULL,'acknowledged',now() - interval '2 hours'),
+            ('recon_anomaly',NULL,NULL,'open',now() - interval '1 hour');
+          SQL
+
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/153_action_center_signal_authority.sql
+
+          test "$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM signals WHERE signal_type='parcel_blocked' AND entity_id='P-1' AND status IN ('open','acknowledged','snoozed')")" = "1"
+          test "$(psql "$DATABASE_URL" -Atc "SELECT status FROM signals WHERE signal_type='parcel_blocked' AND entity_id='P-1' AND status IN ('open','acknowledged','snoozed')")" = "snoozed"
+          test "$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM signals WHERE signal_type='recon_anomaly' AND entity_type IS NULL AND entity_id IS NULL AND status IN ('open','acknowledged','snoozed')")" = "1"
+          test "$(psql "$DATABASE_URL" -Atc "SELECT status FROM signals WHERE signal_type='recon_anomaly' AND entity_type IS NULL AND entity_id IS NULL AND status IN ('open','acknowledged','snoozed')")" = "acknowledged"
+
+          # Prove PostgreSQL can infer the lifecycle-wide partial unique index and
+          # resolve a regeneration conflict without resetting the operator state.
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO signals(signal_type, entity_type, entity_id, status, title)
+          VALUES ('parcel_blocked','parcel','P-1','open','regenerated')
+          ON CONFLICT (signal_type, entity_type, entity_id)
+            WHERE status IN ('open','acknowledged','snoozed')
+          DO UPDATE SET
+            title = EXCLUDED.title,
+            status = CASE
+              WHEN signals.status = 'snoozed' AND signals.snoozed_until <= NOW() THEN 'open'
+              ELSE signals.status
+            END,
+            snoozed_until = CASE
+              WHEN signals.status = 'snoozed' AND signals.snoozed_until <= NOW() THEN NULL
+              ELSE signals.snoozed_until
+            END,
+            updated_at = NOW();
+          SQL
+
+          test "$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM signals WHERE signal_type='parcel_blocked' AND entity_id='P-1' AND status IN ('open','acknowledged','snoozed')")" = "1"
+          test "$(psql "$DATABASE_URL" -Atc "SELECT status FROM signals WHERE signal_type='parcel_blocked' AND entity_id='P-1' AND status IN ('open','acknowledged','snoozed')")" = "snoozed"
+
+      - name: Rebuild governance and prove 4G again
+        shell: bash
+        run: |
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+          node scripts/contract-check.js
+          npx jest --config jest.unit.config.js --runInBand --forceExit \
+            tests/unit/action-center-migration-contract.test.js \
+            tests/unit/signal-service.test.js \
+            tests/unit/signal-admin-service.test.js \
+            tests/unit/action-center-workspace.test.js \
+            tests/unit/admin-action-center-route.test.js \
+            tests/unit/canonical-action-center-boundary.test.js \
+            tests/unit/signals-error-propagation.test.js \
+            tests/unit/signals.test.js \
+            tests/unit/require-decision-signal-global-authority.test.js \
+            tests/unit/bootstrap-api-routes.test.js
+          node scripts/feature-guard.js --strict
+          node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique
+          node scripts/feature-360-check.js
+
+      - name: Persist DB-invariant hardening
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No DB invariant changes to commit"
+            exit 1
+          fi
+          git commit -m "fix(action-center): harden active signal lifecycle invariant"
+          git push origin HEAD:feat/canonical-action-center-4g
