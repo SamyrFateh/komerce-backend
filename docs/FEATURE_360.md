@@ -14,13 +14,13 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Ambiguous ownership signals : **0**
 - Ontology gaps : **0**
 - Debt items (total) : **40**
-- Gate health — healthy : **23** · blocked : **0**
+- Gate health — healthy : **31** · blocked : **0**
 
 ## Gate findings — intégrité de projection
 
 - Source : `docs/GATE_FINDINGS.json` (version GF-2.1)
 - Sources de gates : **18** (0 en échec)
-- Findings : **30** total, **30** attribué(s), **0** sans attribution exploitable
+- Findings : **0** total, **0** attribué(s), **0** sans attribution exploitable
 - Fichiers non projetables : **0**
 - Fichiers multi-projetés : **0**
 
@@ -194,10 +194,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 3
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-identity.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-komerce-nav-identity.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-phone.js — 2 export(s) non consommé(s) :
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** : _aucune_
 
@@ -254,10 +251,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 3
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-enrollment.js — 4 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-login.js — 2 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-passkey-step-up.js — 2 export(s) non consommé(s) :
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** : _aucune_
 
@@ -389,15 +383,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 8
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-desktop-product.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-pager.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-product-open-contract.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-subcat.js — 2 export(s) non consommé(s) :
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** : _aucune_
 
@@ -1183,8 +1169,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 1, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 1
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-notifications.js — 1 export(s) non consommé(s) :
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** (1) :
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement" — ne correspond à aucun nom de feature connu
@@ -1254,13 +1239,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 6
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-cart.js — 3 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-checkout-render.js — 3 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-checkout.js — 2 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-mini-cart.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-tracking.js — 1 export(s) non consommé(s) :
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "dashboard" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
@@ -1398,11 +1377,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 4
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-boutique-wow-style.js — 3 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-nav.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-scroll-owner.js — 2 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-utils.js — 2 export(s) non consommé(s) :
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** : _aucune_
 
@@ -1604,10 +1579,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 3
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-cart.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal.js — 7 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-share-cart.js — 4 export(s) non consommé(s) :
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** : _aucune_
 
@@ -1761,9 +1733,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 2
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-wallet.js — 1 export(s) non consommé(s) :
-  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ✔ Aucun import fantôme ni cycle inconnu ni module manquant.
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "payments" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)

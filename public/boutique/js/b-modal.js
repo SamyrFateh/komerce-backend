@@ -22,19 +22,6 @@
  * historique, setupModal) + les 4 sous-modules ARCH-2.
  */
 
-import {
-  openModal, closeModal, modalGoBack, setupModal,
-  setupImageZoneTouch,
-}                          from './b-modal-core.js';
-import {
-  buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
-}                          from './b-modal-product.js';
-import { renderSuggestions } from './b-modal-suggestions.js';
-import { navigateModal }     from './b-modal-nav.js';
+import { openModal, closeModal, modalGoBack, setupModal } from './b-modal-core.js';
 
-export {
-  openModal, closeModal, modalGoBack, setupModal,
-  buildCarouselSlides, goToSlide,
-  renderSuggestions, setupImageZoneTouch, navigateModal,
-  openSizeGuide, closeSizeGuide,
-};
+export { openModal, closeModal, modalGoBack, setupModal };

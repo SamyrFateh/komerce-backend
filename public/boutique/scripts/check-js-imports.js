@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * check-js-imports.js — Garde-fou imports JS Komerce boutique
- * Version : 2.0 (2026-05-19)
+ * Version : 2.1 (2026-08-27)
  *
  * Détecte les bugs d'imports qui causent des ReferenceError runtime
  * silencieux (P-2, P-3, P-4 documentés dans CARTOGRAPHY_360_BOUTIQUE.md §10).
@@ -14,7 +14,8 @@
  *        Cycles intentionnels documentés dans KNOWN_CYCLES : warning, non bloquant.
  *   I-3  Chaque fichier importé existe sur disque
  *   I-4  Exports non consommés dans l'ensemble du projet (dead exports)
- *        [warn uniquement — peut être voulu pour API externe]
+ *        Consommateurs reconnus : ESM statique, import() runtime et require() tests.
+ *        [warn uniquement — un warning doit rester actionnable]
  *   I-5  Les re-exports alias (export { X as Y }) sont résolus correctement
  *
  * Corrections v2 vs v1 :
@@ -47,8 +48,9 @@ const path = require('path');
 // CONFIG
 // ────────────────────────────────────────────────────────────────────
 
-const ROOT   = path.resolve(__dirname, '..');
-const JS_DIR = path.join(ROOT, 'js');
+const ROOT      = path.resolve(__dirname, '..');
+const JS_DIR    = path.join(ROOT, 'js');
+const TESTS_DIR = path.join(ROOT, 'tests');
 
 /**
  * Modules que l'on ne vérifie pas pour les named exports :
@@ -190,6 +192,64 @@ function extractImports(filepath) {
     imports.push({ specifiers, isStar, source: m[5], line: lineNum });
   }
 
+  return imports;
+}
+
+
+// ────────────────────────────────────────────────────────────────────
+// CONSOMMATEURS I-4 HORS IMPORTS ESM STATIQUES
+// ────────────────────────────────────────────────────────────────────
+
+function parseDestructuredNames(block) {
+  return block.split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(item => item.split(':')[0].trim())
+    .filter(Boolean);
+}
+
+function extractRequires(filepath) {
+  const src = fs.readFileSync(filepath, 'utf8');
+  const requires = [];
+  const patterns = [
+    /(?:const|let|var)\s*\{([^}]+)\}\s*=\s*require\(\s*['\"]([^'\"]+)['\"]\s*\)/gms,
+    /\(\s*\{([^}]+)\}\s*=\s*require\(\s*['\"]([^'\"]+)['\"]\s*\)\s*\)/gms,
+  ];
+  for (const re of patterns) {
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      requires.push({ specifiers: parseDestructuredNames(m[1]), source: m[2], namespace: null });
+    }
+  }
+  const namespaceRe = /(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*require\(\s*['\"]([^'\"]+)['\"]\s*\)/gm;
+  let m;
+  while ((m = namespaceRe.exec(src)) !== null) {
+    requires.push({ specifiers: [], source: m[2], namespace: m[1] });
+  }
+  const namespaceAssignmentRe = /(?:^|[;\n]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*require\(\s*['\"]([^'\"]+)['\"]\s*\)/gm;
+  while ((m = namespaceAssignmentRe.exec(src)) !== null) {
+    requires.push({ specifiers: [], source: m[2], namespace: m[1] });
+  }
+  return requires;
+}
+
+function extractDynamicImports(filepath, exportMap) {
+  const src = fs.readFileSync(filepath, 'utf8');
+  const imports = [];
+  const re = /import\(\s*['\"]([^'\"]+)['\"]\s*\)/g;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    const resolved = resolveSource(filepath, m[1]);
+    if (!resolved || !exportMap.has(resolved)) continue;
+    const exported = exportMap.get(resolved) || new Set();
+    const local = src.slice(m.index, Math.min(src.length, m.index + 1400));
+    const specifiers = [];
+    for (const name of exported) {
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (new RegExp(`(?:\\.|\\?\\.)${escaped}\\b`).test(local)) specifiers.push(name);
+    }
+    imports.push({ specifiers, source: m[1] });
+  }
   return imports;
 }
 
@@ -343,6 +403,37 @@ const KNOWN_CYCLES = [
             `Vérifiez : export function/const ${name} dans ${relPath(resolved)}`);
         } else {
           consumedExports.get(resolved)?.add(name);
+        }
+      }
+    }
+  }
+
+
+  // ── I-4 consommateurs runtime dynamiques + tests CommonJS ─────────
+  for (const importer of collectJsFiles(JS_DIR)) {
+    for (const imp of extractDynamicImports(importer, exportMap)) {
+      const resolved = resolveSource(importer, imp.source);
+      if (!resolved || !consumedExports.has(resolved)) continue;
+      for (const name of imp.specifiers) {
+        if ((exportMap.get(resolved) || new Set()).has(name)) consumedExports.get(resolved).add(name);
+      }
+    }
+  }
+
+  for (const testFile of collectJsFiles(TESTS_DIR)) {
+    const testSrc = fs.readFileSync(testFile, 'utf8');
+    for (const req of extractRequires(testFile)) {
+      const resolved = resolveSource(testFile, req.source);
+      if (!resolved || !consumedExports.has(resolved)) continue;
+      const sourceExports = exportMap.get(resolved) || new Set();
+      for (const name of req.specifiers) {
+        if (sourceExports.has(name)) consumedExports.get(resolved).add(name);
+      }
+      if (req.namespace) {
+        for (const name of sourceExports) {
+          const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const ns = req.namespace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          if (new RegExp(`\\b${ns}\\.${escaped}\\b`).test(testSrc)) consumedExports.get(resolved).add(name);
         }
       }
     }

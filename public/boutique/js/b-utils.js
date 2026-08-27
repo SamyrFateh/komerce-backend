@@ -385,7 +385,7 @@ function _assertApi() {
  * @returns {typeof K} L'instance K
  * @throws {Error} Si K n'est pas encore disponible
  */
-export function getAPI() {
+function getAPI() {
   if (typeof K === 'undefined' || !K) {
     throw new Error('[Komerce] komerce-api.js non chargé — getAPI() appelé trop tôt');
   }
@@ -442,20 +442,6 @@ export function apiDelete(path, options) {
   const retries = Number.isFinite(opts.retries) ? opts.retries : 0;
   return window.K.request(path, 'DELETE', null, retries, opts);
 }
-/**
- * PATCH via la couche centrale K.request.
- * Amendement V2 §B (PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_
- * CART_V2) : nécessaire pour PATCH /api/shared-carts/:id/items/:itemId
- * (modification unitaire de quantité). Retries: 0 par défaut, même
- * doctrine que apiPut/apiDelete — un PATCH mute un état serveur.
- */
-export function apiPatch(path, body, options) {
-  _assertApi();
-  const opts = options || {};
-  const retries = Number.isFinite(opts.retries) ? opts.retries : 0;
-  return window.K.request(path, 'PATCH', body || null, retries, opts);
-}
-
 /* ── COMPAT LEGACY window.KUtils ─────────────────────────── */
 // Conservé pendant la migration pour tout code qui consomme window.KUtils
 // À supprimer quand boutique.js sera entièrement migré en ES module (Phase 7)

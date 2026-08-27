@@ -1794,7 +1794,7 @@ Meta Graph monté : oui.
 | shared-cart | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | shared-cart | orders | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | shared-cart | platform-ops | static-code | 52 | **DECLARED_AND_OBSERVED** |
-| shared-cart | recommendations | static-code, interface | 4 | **DECLARED_AND_OBSERVED** |
+| shared-cart | recommendations | static-code, interface | 3 | **DECLARED_AND_OBSERVED** |
 | sourcing | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | sourcing | catalog | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | sourcing | dashboard | static-code | 1 | **DECLARED_AND_OBSERVED** |
