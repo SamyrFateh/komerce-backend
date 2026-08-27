@@ -18,10 +18,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
       - name: Preserve closure script
         run: cp scripts/debt-zero-close-data-dependencies.js /tmp/debt-zero-close-data-dependencies.js
       - name: Switch to product branch
         run: git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
+      - name: Install repository dependencies
+        run: npm ci --ignore-scripts
       - name: Close data dependencies at source
         run: |
           cp /tmp/debt-zero-close-data-dependencies.js scripts/debt-zero-close-data-dependencies.js
@@ -31,7 +34,7 @@ jobs:
         run: npm run arch:gen
       - name: Targeted regression tests
         run: |
-          npx jest \
+          npx --no-install jest \
             tests/unit/feature-dependency-data-channel.test.js \
             tests/unit/feature-360-internal-api-projection.test.js \
             tests/unit/loyalty-route.test.js \
