@@ -30,7 +30,7 @@ Les trois convergences mobile disposent déjà de témoins homonymes, désormais
 
 ## Preuve
 
-CI dédiée exécutée sur le `main` après PR #951 :
+CI dédiée **Debt Zero Gate Findings closure**, run `33087211034`, exécutée sur le `main` après PR #951 :
 
 - témoins directs backend/Boutique : verts
 - registry root : 0 erreur / 0 warning non attribué
@@ -46,6 +46,7 @@ CI dédiée exécutée sur le `main` après PR #951 :
 - Quality Gate vert
 - Contract Check vert
 - Security 360 freshness vert
+- arbre non muté par les gates avant commit de la projection vérifiée
 
 ## Non-changement runtime
 
