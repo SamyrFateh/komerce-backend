@@ -68,11 +68,12 @@ jobs:
           node scripts/feature-guard.js --strict
           node scripts/contract-check.js
           git diff --check
-      - name: Commit and push verified security fix
+      - name: Commit and push verified parser and docs
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/gen-security-360.js docs/SECURITY_360.json docs/SECURITY_360.md .github/workflows/pr-enforcement.yml
+          git restore .github/workflows/pr-enforcement.yml
+          git add scripts/gen-security-360.js docs/SECURITY_360.json docs/SECURITY_360.md
           git status --short
           git commit -m "fix(security): fiabiliser Security 360 sur les gardes Canonical"
           git push origin HEAD:fix/security-360-canonical-guards
