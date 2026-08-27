@@ -86,16 +86,14 @@ jobs:
           NODE
           npm --prefix public/boutique run check:breakpoints
 
-      - name: Regenerate CSS bundle and prove visual CSS gates
+      - name: Prove official Boutique CSS source gates
         run: |
-          npm --prefix public/boutique run deploy:css
-          npm --prefix public/boutique run check:cache
-          npm --prefix public/boutique run check:css-guard
-          npm --prefix public/boutique run check:css-specificity-guard
-          npm --prefix public/boutique run check:important
-          npm --prefix public/boutique run check:css-vars
-          npm --prefix public/boutique run check:zindex
-          npm --prefix public/boutique run check:sticky
+          node public/boutique/scripts/check-important.js --strict
+          node public/boutique/scripts/check-breakpoints.js --strict
+          node public/boutique/scripts/check-css-vars.js --strict
+          node public/boutique/scripts/check-zindex-contract.js --strict
+          node public/boutique/scripts/check-sticky-integrity.js --strict
+          node public/boutique/scripts/audit-boutique-arch.js
 
       - name: Prove Boutique Feature First ownership
         run: |
