@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 441
-- Files with full headers: 411
+- Scanned code files: 442
+- Files with full headers: 412
 - Files with lite headers: 28
-- Files with any headers: 439
+- Files with any headers: 440
 - Files without headers: 2
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 981
-- Edges: 5108
-- DB tables: 121
-- Doctrines: 261
-- Impact areas: 160
-- Unresolved code edges: 525
+- Graph nodes: 986
+- Edges: 5118
+- DB tables: 122
+- Doctrines: 263
+- Impact areas: 161
+- Unresolved code edges: 528
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 1
 
@@ -42,6 +42,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - incident-management: 2
 - infrastructure: 19
 - inventory: 2
+- local-stock: 1
 - logistics: 38
 - loyalty: 2
 - market: 2
@@ -80,7 +81,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 110
 - route-manifest: 1
 - schema: 1
-- service: 177
+- service: 178
 - state: 1
 - state-store: 1
 - ui-bootstrap: 4
@@ -326,6 +327,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/finance-metrics/sales-analysis.js — economic-engine-sales-analysis (economic-engine, high, full)
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/incident-write-service.js — incident-management-write-boundary (incident-management, high, full)
+- services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
 - services/notification-service.js — customer-notification-orchestrator (notification, high, full)
 - services/notifications/internals.js — notification-internals (notification, high, full)
 - services/notifications/notification-service.js — customer-notification-orchestrator (notification, high, full)
@@ -504,6 +506,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/invoices.js -> invoices
 - WRITE services/invoice-service.js -> invoices
 - WRITE services/order-payment-confirmation.js -> invoices
+- WRITE services/local-stock-service.js -> local_stock
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
@@ -544,7 +547,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/cancel.js -> orders
 - WRITE routes/orders/create.js -> orders
 - WRITE routes/orders/qr.js -> orders
-- WRITE routes/orders/status.js -> orders
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -722,12 +724,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Unresolved Code Edges
 
+- uses: (aucun — shadow -> services/local-stock-service.js ((aucun — shadow)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
+- uses: appel direct scripts/tests dans cette PR) -> services/local-stock-service.js (appel direct scripts/tests dans cette PR))
 - uses: auth routes -> utils/auth-session.js (auth routes)
 - uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
 - uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
@@ -840,8 +844,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin-finance-accounting-workspace.js -> db (db)
 - depends: routes/admin-finance-accounting-workspace.js -> middleware/auth (middleware/auth)
 - depends: routes/admin-finance-accounting-workspace.js -> middleware/require-dashboard-global-authority (middleware/require-dashboard-global-authority)
-- depends: routes/admin-finance-accounting-workspace.js -> middleware/require-market-scope (middleware/require-market-scope)
-- depends: routes/admin-finance-accounting-workspace.js -> services/finance-accounting-workspace (services/finance-accounting-workspace)
 
 ## Files Still Without Headers Or Aggregation
 

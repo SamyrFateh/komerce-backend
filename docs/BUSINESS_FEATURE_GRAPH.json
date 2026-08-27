@@ -14,6 +14,7 @@
       "features/incident-management.feature.js",
       "features/infrastructure.feature.js",
       "features/inventory.feature.js",
+      "features/local-stock.feature.js",
       "features/logistics.feature.js",
       "features/loyalty.feature.js",
       "features/market.feature.js",
@@ -40,7 +41,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 31,
+    "businessManifestsResolved": 32,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -257,6 +258,22 @@
         "service": "Réceptionner, affecter et dispatcher les articles au hub.",
         "businessKind": "business-feature",
         "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:local-stock",
+        "name": "local-stock",
+        "file": "features/local-stock.feature.js",
+        "legacyType": "feature",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-08",
+        "service": "Porter le stock physique vendable détenu par Komerce dans un marché donné, et projeter une disponibilité calculée — jamais stockée — à partir de ce stock. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun consommateur checkout/catalogue tant que l'exposition n'est pas explicitement activée.",
+        "businessKind": "business-feature",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -6662,6 +6679,20 @@
         "category": "tests",
         "declared": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
         "resolvedPath": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "local-stock",
+        "category": "services",
+        "declared": "services/local-stock-service.js",
+        "resolvedPath": "services/local-stock-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "local-stock",
+        "category": "tests",
+        "declared": "tests/unit/local-stock-service.test.js",
+        "resolvedPath": "tests/unit/local-stock-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15239,6 +15270,18 @@
         "resolved": true
       },
       {
+        "from": "local-stock",
+        "to": "catalog",
+        "raw": "catalog (produit concerné — lecture seule, jamais products.stock)",
+        "resolved": true
+      },
+      {
+        "from": "local-stock",
+        "to": "market",
+        "raw": "market (référentiel markets — lecture seule)",
+        "resolved": true
+      },
+      {
         "from": "logistics",
         "to": "incident-management",
         "raw": "incident-management (incident persistence via incident-write-service)",
@@ -21733,6 +21776,22 @@
         "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
+        "from": "local-stock",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/local-stock-service.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
         "from": "logistics",
         "to": "auth",
         "channels": [
@@ -26356,7 +26415,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 904
+        "filesObserved": 906
       },
       "boutique": {
         "filesObserved": 169,
@@ -26393,7 +26452,7 @@
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 13,
       "NON_RUNTIME_TEST": 5,
-      "TECHNICAL_PRIMITIVE": 0,
+      "TECHNICAL_PRIMITIVE": 1,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
       "BUSINESS_FEATURE_INTERFACE": 0,
@@ -26567,6 +26626,21 @@
         "exceptionReasons": []
       },
       {
+        "from": "local-stock",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-foundation",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
         "from": "platform-ops",
         "to": "auth-passkey",
         "family": "COMPOSITION_ROOT_WIRING",
@@ -26679,6 +26753,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
@@ -26973,6 +27048,7 @@
         "documents",
         "economic-engine",
         "inventory",
+        "local-stock",
         "logistics",
         "orders",
         "platform-ops",
@@ -28089,6 +28165,27 @@
       "lifecycleOwner": "inventory",
       "resolution": "single-writer"
     },
+    "local_stock": {
+      "writers": [
+        {
+          "feature": "local-stock",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "local-stock",
+      "resolution": "single-writer"
+    },
+    "markets": {
+      "writers": [],
+      "readers": [
+        "local-stock"
+      ],
+      "lifecycleOwner": null,
+      "resolution": "no-declared-writer"
+    },
     "carriers": {
       "writers": [
         {
@@ -28449,10 +28546,10 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 27,
-        "manifestsConnected": 27,
-        "technicalNodesTotal": 350,
-        "technicalNodesOwned": 334,
+        "manifestsDiscovered": 28,
+        "manifestsConnected": 28,
+        "technicalNodesTotal": 351,
+        "technicalNodesOwned": 335,
         "technicalOrphans": 16
       },
       "dash": {
@@ -28497,6 +28594,7 @@
         "infrastructure",
         "inventory",
         "legacy-control-tower",
+        "local-stock",
         "logistics",
         "loyalty",
         "market",
@@ -28543,6 +28641,11 @@
   "drifts": {
     "error": [],
     "warn": [
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "local-stock -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"local-stock\" vers \"infrastructure\""
+      },
       {
         "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
         "ref": "routes/admin-client-360.js",
@@ -28625,6 +28728,11 @@
       }
     ],
     "debt": [
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "local-stock -> infrastructure",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"local-stock\" vers \"infrastructure\""
+      },
       {
         "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
         "ref": "routes/admin-client-360.js",
@@ -28911,11 +29019,11 @@
       }
     ],
     "summary": {
-      "signals": 16,
-      "debt": 16,
+      "signals": 17,
+      "debt": 17,
       "expectedTopology": 32,
       "generatorLimitations": 8,
-      "classifiedCandidates": 56
+      "classifiedCandidates": 57
     }
   }
 }

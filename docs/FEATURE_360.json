@@ -16,6 +16,7 @@
         "features/incident-management.feature.js",
         "features/infrastructure.feature.js",
         "features/inventory.feature.js",
+        "features/local-stock.feature.js",
         "features/logistics.feature.js",
         "features/loyalty.feature.js",
         "features/market.feature.js",
@@ -43,17 +44,17 @@
     }
   },
   "summary": {
-    "features": 31,
+    "features": 32,
     "healthy": 16,
-    "attention": 15,
+    "attention": 16,
     "blocked": 0,
     "businessDependencies": 186,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 41,
-    "gateHealthy": 15,
+    "debtItemsTotal": 43,
+    "gateHealthy": 16,
     "gateBlocked": 0
   },
   "projectionIntegrity": {
@@ -11008,6 +11009,201 @@
       "architecturalDebt": {
         "debtCount": 0,
         "debtItems": []
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "local-stock",
+      "kind": "business-feature",
+      "status": "staging",
+      "manifestFile": "features/local-stock.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "local-stock",
+        "kind": "business-feature",
+        "status": "staging"
+      },
+      "service": "Porter le stock physique vendable détenu par Komerce dans un marché donné, et projeter une disponibilité calculée — jamais stockée — à partir de ce stock. Shadow uniquement (Vague 1, IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md) : aucune exposition frontend, aucun consommateur checkout/catalogue tant que l'exposition n'est pas explicitement activée.",
+      "perimeter": {
+        "in": [
+          "table local_stock (product_id, market_id, location texte, qty_physical)",
+          "projection availability calculée (AVAILABLE_NOW | UNAVAILABLE), jamais persistée",
+          "ajustement du stock local par un opérateur (mutation directe, tracée updated_by)"
+        ],
+        "out": [
+          "stock hub/transit (feature inventory — inventory_items, invariant propre)",
+          "stock import/national (feature catalog — products.stock, product_skus.stock)",
+          "réservation de stock (L4, différé — aucun consommateur checkout aujourd'hui)",
+          "référentiel de lieux multiples (un seul entrepôt KM_MAIN au lancement — location est un texte, jamais une FK, tant qu'un deuxième lieu réel n'existe pas)",
+          "granularité variant_combo (scope product_id uniquement à ce stade — limitation explicite, pas un oubli)",
+          "toute exposition Boutique/checkout (Vague 2, hors périmètre de cette feature)",
+          "ETA / délai (appartient au domaine transport rail — DOCTRINE_TRANSPORT_RAILS.md — jamais un concept produit par local-stock)"
+        ]
+      },
+      "authority": "backend-core — tout changement du calcul de disponibilité locale doit être validé par le propriétaire de local-stock-service.js",
+      "invariants": [
+        {
+          "statement": "qty_physical ne descend jamais sous zéro",
+          "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "la disponibilité n'est jamais lue depuis products.stock ou product_skus.stock — uniquement depuis local_stock",
+          "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "aucune ligne local_stock n'est visible ou consommée par un chemin Boutique/checkout tant que l'exposition n'est pas activée (Vague 1 = shadow strict)",
+          "test": "tests/unit/local-stock-service.test.js"
+        }
+      ],
+      "implementation": {
+        "byCategory": {
+          "services": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "services/local-stock-service.js",
+                "resolvedPath": "services/local-stock-service.js",
+                "status": "resolved-on-disk-no-header"
+              }
+            ]
+          },
+          "tests": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "tests/unit/local-stock-service.test.js",
+                "resolvedPath": "tests/unit/local-stock-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 2,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [
+          {
+            "table": "local_stock",
+            "resolution": "single-writer"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "local_stock",
+            "mode": "RW",
+            "lifecycleOwner": "local-stock",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "markets",
+            "lifecycleOwner": null
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          }
+        ]
+      },
+      "data": {
+        "ownsTables": [
+          {
+            "table": "local_stock",
+            "resolution": "single-writer"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "local_stock",
+            "mode": "RW",
+            "lifecycleOwner": "local-stock",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "markets",
+            "lifecycleOwner": null
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          }
+        ]
+      },
+      "interfaces": {
+        "internalApis": [],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [],
+      "consumedBy": [],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 1,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": [
+          {
+            "to": "infrastructure",
+            "family": "TECHNICAL_PRIMITIVE"
+          }
+        ]
+      },
+      "boundaryHealth": {
+        "status": "ATTENTION",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 2,
+        "declaredNotObservedEvidence": [
+          "catalog",
+          "market"
+        ]
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 2,
+        "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"catalog\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          },
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"market\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
