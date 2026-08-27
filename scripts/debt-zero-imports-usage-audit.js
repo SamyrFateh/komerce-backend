@@ -49,7 +49,37 @@ function importsOf(file) {
     const names = [];
     const block = `${m[1] || ''},${m[4] || ''}`.replace(/^,|,$/g, '');
     for (const item of block.split(',').map(x => x.trim()).filter(Boolean)) names.push(item.split(/\s+as\s+/)[0].trim());
-    out.push({ names, source: m[5] });
+    out.push({ names, source: m[5], kind: 'esm' });
+  }
+  return out;
+}
+
+function requiresOf(file) {
+  const src = fs.readFileSync(file, 'utf8');
+  const out = [];
+  let m;
+  const destructured = /(?:const|let|var)\s*\{([^}]+)\}\s*=\s*require\(\s*['"]([^'"]+)['"]\s*\)/gms;
+  while ((m = destructured.exec(src))) {
+    const names = m[1].split(',').map(x => x.trim()).filter(Boolean).map((item) => item.split(':')[0].trim()).filter(Boolean);
+    out.push({ names, source: m[2], kind: 'require' });
+  }
+  return out;
+}
+
+function dynamicImportsOf(file, exportMap) {
+  const src = fs.readFileSync(file, 'utf8');
+  const out = [];
+  let m;
+  const re = /import\(\s*['"]([^'"]+)['"]\s*\)/g;
+  while ((m = re.exec(src))) {
+    const target = resolve(file, m[1]);
+    if (!target || !exportMap.has(target)) continue;
+    const names = [];
+    for (const name of exportMap.get(target)) {
+      const propRe = new RegExp(`(?:\\.|\\?\\.)${escapeRe(name)}\\b`);
+      if (propRe.test(src)) names.push(name);
+    }
+    out.push({ names, source: m[1], kind: 'dynamic' });
   }
   return out;
 }
@@ -61,8 +91,9 @@ function resolve(importer, spec) {
   return p;
 }
 
+function escapeRe(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function wordCount(src, name) {
-  const re = new RegExp(`\\b${name.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'g');
+  const re = new RegExp(`\\b${escapeRe(name)}\\b`, 'g');
   return (src.match(re) || []).length;
 }
 
@@ -70,7 +101,15 @@ const jsFiles = walk(JS);
 const testFiles = walk(TESTS);
 const exportMap = new Map(jsFiles.map(f => [f, SKIP.has(path.basename(f)) ? new Set() : exportsOf(f)]));
 const consumed = new Map(jsFiles.map(f => [f, new Set()]));
+const sourceDynamic = new Map(jsFiles.map(f => [f, new Map()]));
 const testConsumed = new Map(jsFiles.map(f => [f, new Map()]));
+
+function record(map, target, name, importer) {
+  if (!map.has(target)) return;
+  const byName = map.get(target);
+  if (!byName.has(name)) byName.set(name, []);
+  byName.get(name).push(path.relative(ROOT, importer));
+}
 
 for (const importer of jsFiles) {
   for (const imp of importsOf(importer)) {
@@ -78,17 +117,18 @@ for (const importer of jsFiles) {
     if (!target || !consumed.has(target)) continue;
     for (const n of imp.names) consumed.get(target).add(n);
   }
+  for (const imp of dynamicImportsOf(importer, exportMap)) {
+    const target = resolve(importer, imp.source);
+    if (!target) continue;
+    for (const n of imp.names) record(sourceDynamic, target, n, importer);
+  }
 }
 
 for (const importer of testFiles) {
-  for (const imp of importsOf(importer)) {
+  for (const imp of [...importsOf(importer), ...requiresOf(importer)]) {
     const target = resolve(importer, imp.source);
     if (!target || !testConsumed.has(target)) continue;
-    for (const n of imp.names) {
-      const byName = testConsumed.get(target);
-      if (!byName.has(n)) byName.set(n, []);
-      byName.get(n).push(path.relative(ROOT, importer));
-    }
+    for (const n of imp.names) record(testConsumed, target, n, importer);
   }
 }
 
@@ -105,19 +145,14 @@ const counts = new Map();
 for (const item of unused) {
   const own = fs.readFileSync(item.file, 'utf8');
   const ownRefs = Math.max(0, wordCount(own, item.name) - 1);
-  const exactTestImports = testConsumed.get(item.file)?.get(item.name) || [];
-  const sourceRefs = [];
-  for (const f of jsFiles) {
-    if (f === item.file) continue;
-    const src = fs.readFileSync(f, 'utf8');
-    if (wordCount(src, item.name)) sourceRefs.push(path.relative(ROOT, f));
-  }
+  const testConsumers = testConsumed.get(item.file)?.get(item.name) || [];
+  const dynamicConsumers = sourceDynamic.get(item.file)?.get(item.name) || [];
   let category;
-  if (exactTestImports.length) category = 'TEST_IMPORT';
-  else if (sourceRefs.length) category = 'INDIRECT_SOURCE';
-  else if (ownRefs) category = 'INTERNAL';
-  else category = 'NONE';
+  if (dynamicConsumers.length) category = 'DYNAMIC_RUNTIME';
+  else if (testConsumers.length) category = 'TEST_REQUIRE';
+  else if (ownRefs) category = 'INTERNAL_ONLY';
+  else category = 'NO_CONSUMER';
   counts.set(category, (counts.get(category) || 0) + 1);
-  console.log(`${category}\t${path.relative(ROOT, item.file)}\t${item.name}\town=${ownRefs}\tsource=${sourceRefs.join(',') || '-'}\ttestImports=${exactTestImports.join(',') || '-'}`);
+  console.log(`${category}\t${path.relative(ROOT, item.file)}\t${item.name}\town=${ownRefs}\tdynamic=${dynamicConsumers.join(',') || '-'}\ttests=${testConsumers.join(',') || '-'}`);
 }
 console.log('category_counts=' + JSON.stringify(Object.fromEntries(counts)));
