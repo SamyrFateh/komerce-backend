@@ -1,4 +1,5 @@
 'use strict';
+// Debt Zero regression fixture: consumer detection must stay semantic, not regex-noisy.
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
