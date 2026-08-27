@@ -21,7 +21,7 @@ test('family mapping is server-owned', () => {
   expect(service.familyForType('future_signal')).toBe('other');
 });
 
-test('listSignals keeps Legacy default active-list semantics and bounded pagination', async () => {
+test('listSignals keeps Legacy default semantics and parameterizes family/pagination', async () => {
   mockQuery
     .mockResolvedValueOnce({ rows: [{ id: 'uuid-1', signal_ref: 'KSG-000001' }] })
     .mockResolvedValueOnce({ rows: [{ count: '1' }] });
@@ -33,8 +33,26 @@ test('listSignals keeps Legacy default active-list semantics and bounded paginat
   expect(result.total).toBe(1);
   const [sql, params] = mockQuery.mock.calls[0];
   expect(sql).toContain("s.status IN ('open','acknowledged')");
-  expect(sql).toContain('s.signal_type = ANY($1)');
-  expect(params[0]).toEqual(service.FAMILY_TYPES.ops);
+  expect(sql).toContain('s.signal_type = ANY($5::text[])');
+  expect(sql).toContain('LIMIT $6 OFFSET $7');
+  expect(params).toEqual([null, null, null, null, service.FAMILY_TYPES.ops, 200, 4]);
+
+  const [countSql, countParams] = mockQuery.mock.calls[1];
+  expect(countSql).toContain('s.signal_type = ANY($5::text[])');
+  expect(countParams).toEqual([null, null, null, null, service.FAMILY_TYPES.ops]);
+});
+
+test('listSignals passes arbitrary filter values only as SQL parameters', async () => {
+  mockQuery
+    .mockResolvedValueOnce({ rows: [] })
+    .mockResolvedValueOnce({ rows: [{ count: '0' }] });
+
+  const attack = "warning' OR 1=1 --";
+  await service.listSignals({ status: 'open', severity: attack, signal_type: 'parcel_blocked', owner_role: 'admin' });
+
+  const [sql, params] = mockQuery.mock.calls[0];
+  expect(sql).not.toContain(attack);
+  expect(params).toEqual(['open', attack, 'parcel_blocked', 'admin', null, 50, 0]);
 });
 
 test('acknowledgeByRef mutates by signal_ref, never browser UUID', async () => {
