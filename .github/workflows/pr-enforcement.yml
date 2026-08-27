@@ -187,7 +187,7 @@ jobs:
 
       - name: HTML balance
         if: needs.changes.outputs.boutique_html == 'true'
-        run: node scripts/check-html-balance.js
+        run: node public/boutique/scripts/check-html-balance.js
 
       - name: Body-class contract
         if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_html == 'true'
