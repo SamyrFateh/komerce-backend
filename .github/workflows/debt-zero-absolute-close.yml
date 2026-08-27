@@ -1,0 +1,129 @@
+name: Debt Zero absolute close
+
+on:
+  push:
+    branches:
+      - ci/debt-zero-absolute-close
+
+permissions:
+  contents: write
+
+jobs:
+  feature360-projection:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout product branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/debt-zero-absolute
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fix Feature 360 internal API projection
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/lib/feature-360-builder.js')
+          s = p.read_text(encoding='utf-8')
+          old = """    const declaredInternalApiRaw = (manifestOk && man.contract && man.contract.internalApi) || [];
+              const declaredInternalApi = declaredInternalApiRaw.map(a =>
+                typeof a === 'string' ? { fn: a, file: null } : { fn: a.fn, file: a.file || null }
+              );
+          """.replace('      const', '    const')
+          new = """    const declaredInternalApiRaw = (manifestOk && man.contract && man.contract.internalApi) || [];
+              // Normaliser avec exactement les mêmes formes que business-graph-gen :
+              // - signature nue -> API documentée sans fichier ;
+              // - chaîne \"path — description\" -> chemin résolvable ;
+              // - objet {fn,file} avec plusieurs fichiers séparés par virgules ->
+              //   une entrée par fichier. Feature 360 est une projection : elle ne doit
+              //   jamais recréer une autre sémantique que le Business Feature Graph.
+              const declaredInternalApi = declaredInternalApiRaw.flatMap((entry) => {
+                if (typeof entry === 'string') {
+                  const raw = entry.trim();
+                  const looksLikeBareSignature = !raw.includes('/')
+                    && /^[A-Za-z_$][\\w$]*\\([^()]*\\)$/.test(raw);
+                  if (looksLikeBareSignature) return [{ fn: raw, file: null }];
+                  const file = raw.split(' — ')[0].trim();
+                  return file ? [{ fn: null, file }] : [];
+                }
+
+                const fn = entry && entry.fn;
+                const rawFile = entry && entry.file;
+                if (!rawFile) return [{ fn: fn || null, file: null }];
+                return String(rawFile).split(',')
+                  .map(file => file.trim())
+                  .filter(Boolean)
+                  .map(file => ({ fn: fn || null, file }));
+              });
+          """.replace('      //', '    //').replace('      const', '    const').replace('        if', '      if').replace('        const', '      const').replace('        &&', '      &&').replace('        return', '      return').replace('      });', '    });')
+          if old not in s:
+              raise SystemExit('Feature 360 target block not found; refusing blind patch')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+
+          cat > tests/unit/feature-360-internal-api-projection.test.js <<'EOF'
+          'use strict';
+
+          const { build } = require('../../scripts/lib/feature-360-builder');
+
+          describe('Feature 360 internal API projection', () => {
+            test('reuses Business Feature Graph resolution for multi-file and string APIs', () => {
+              const model = build();
+              const byId = new Map(model.features.map(feature => [feature.id, feature]));
+
+              const auth = byId.get('auth');
+              const infrastructure = byId.get('infrastructure');
+
+              expect(auth.governanceHealth.unresolvedInternalApis).toBe(0);
+              expect(auth.architecturalDebt.debtItems.filter(item => item.type === 'UNRESOLVED_INTERNAL_API')).toEqual([]);
+              expect(infrastructure.governanceHealth.unresolvedInternalApis).toBe(0);
+              expect(infrastructure.architecturalDebt.debtItems.filter(item => item.type === 'UNRESOLVED_INTERNAL_API')).toEqual([]);
+            });
+          });
+          EOF
+
+      - name: Prove regression
+        run: npx jest --config jest.unit.config.js tests/unit/feature-360-internal-api-projection.test.js --runInBand --no-coverage
+
+      - name: Refresh Feature 360
+        run: npm run feature:360:gen
+
+      - name: Assert debt reduction is semantic
+        run: |
+          node - <<'NODE'
+          const model = require('./docs/FEATURE_360.json');
+          const byId = new Map(model.features.map(f => [f.id, f]));
+          const auth = byId.get('auth');
+          const infrastructure = byId.get('infrastructure');
+          console.log('FEATURE360', JSON.stringify(model.summary));
+          console.log('AUTH_DEBT', JSON.stringify(auth.architecturalDebt));
+          console.log('INFRA_DEBT', JSON.stringify(infrastructure.architecturalDebt));
+          if (model.summary.debtItemsTotal !== 27) throw new Error(`expected debtItemsTotal=27, got ${model.summary.debtItemsTotal}`);
+          if (auth.architecturalDebt.debtCount !== 1) throw new Error(`expected auth debt=1, got ${auth.architecturalDebt.debtCount}`);
+          if (infrastructure.architecturalDebt.debtCount !== 0) throw new Error(`expected infrastructure debt=0, got ${infrastructure.architecturalDebt.debtCount}`);
+          NODE
+
+      - name: Prove canonical governance
+        run: |
+          npm run business-graph:check
+          npm run feature:360:check
+          node scripts/feature-guard.js --strict
+          git diff --check
+
+      - name: Commit projection closure
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/lib/feature-360-builder.js tests/unit/feature-360-internal-api-projection.test.js docs/FEATURE_360.json docs/FEATURE_360.md
+          git diff --cached --check
+          git commit -m "fix(governance): align Feature 360 internal API projection"
+          git push origin HEAD:chore/debt-zero-absolute
