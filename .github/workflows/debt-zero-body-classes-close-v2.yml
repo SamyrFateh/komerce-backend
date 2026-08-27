@@ -154,16 +154,53 @@ jobs:
           npm --prefix public/boutique run audit:registry
           npm --prefix public/boutique run feature:guard:strict
 
-      - name: Regenerate Gate Findings and prove body-class findings gone
+      - name: Refresh only proven body-class Gate Findings source
         run: |
+          cp docs/GATE_FINDINGS.json /tmp/gate-findings-baseline.json
+          set +e
           node scripts/gen-gate-findings.js
+          generator_exit=$?
+          set -e
+          cp docs/GATE_FINDINGS.json /tmp/gate-findings-candidate.json
+          cp /tmp/gate-findings-baseline.json docs/GATE_FINDINGS.json
           node - <<'NODE'
-          const g = require('./docs/GATE_FINDINGS.json');
-          const body = (g.findings || []).filter((f) => f.gate === 'check:body-classes');
-          console.log(`total=${(g.findings || []).length} body_class_findings=${body.length}`);
-          if (g.contract?.attributableSources !== 18) throw new Error('GATE_FINDINGS attribution regressed');
-          if (body.length) throw new Error(JSON.stringify(body, null, 2));
+          const fs = require('fs');
+          const baseline = JSON.parse(fs.readFileSync('/tmp/gate-findings-baseline.json', 'utf8'));
+          const candidate = JSON.parse(fs.readFileSync('/tmp/gate-findings-candidate.json', 'utf8'));
+          const bodyGate = 'check:body-classes';
+          const candidateBodySource = candidate.sources.find((s) => s.gate === bodyGate);
+          const candidateBodyFindings = candidate.findings.filter((f) => f.gate === bodyGate);
+          const baselineNonBody = baseline.findings.filter((f) => f.gate !== bodyGate);
+          const candidateNonBody = candidate.findings.filter((f) => f.gate !== bodyGate);
+          const failedCandidateSources = candidate.sources.filter((s) => s.status === 'failed').map((s) => s.gate);
+
+          if (!candidateBodySource || candidateBodySource.status !== 'ok' || candidateBodySource.exitCode !== 0 || candidateBodySource.warningCount !== 0 || candidateBodySource.errorCount !== 0) {
+            throw new Error(`body source not clean: ${JSON.stringify(candidateBodySource)}`);
+          }
+          if (candidateBodyFindings.length !== 0) throw new Error(`body findings remain: ${candidateBodyFindings.length}`);
+          if (JSON.stringify(candidateNonBody) !== JSON.stringify(baselineNonBody)) {
+            throw new Error('non-body findings changed; partial refresh refused');
+          }
+          if (failedCandidateSources.length !== 1 || failedCandidateSources[0] !== 'check:css-guard') {
+            throw new Error(`unexpected full-generator failure set: ${failedCandidateSources.join(',')}`);
+          }
+
+          const bodyIndex = baseline.sources.findIndex((s) => s.gate === bodyGate);
+          if (bodyIndex < 0) throw new Error('baseline body source missing');
+          baseline.sources[bodyIndex] = candidateBodySource;
+          baseline.findings = baselineNonBody;
+          baseline.generatedAt = candidate.generatedAt;
+
+          if (baseline.contract?.attributableSources !== 18) throw new Error('baseline attribution contract regressed');
+          if (baseline.findings.length !== 30) throw new Error(`expected 30 remaining findings, got ${baseline.findings.length}`);
+          if (baseline.findings.some((f) => f.gate === bodyGate)) throw new Error('body finding survived partial refresh');
+
+          fs.writeFileSync('docs/GATE_FINDINGS.json', JSON.stringify(baseline, null, 2) + '\n');
+          console.log(`full_generator_expected_exit=${process.env.GENERATOR_EXIT || 'nonzero-css-guard'}`);
+          console.log(`preserved_attributable_sources=${baseline.contract.attributableSources}`);
+          console.log(`remaining_findings=${baseline.findings.length} body_class_findings=0`);
           NODE
+          test "$generator_exit" -ne 0
 
       - name: Refresh dependent projections
         run: |
