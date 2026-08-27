@@ -27,7 +27,7 @@
 
 'use strict';
 
-export const DESKTOP_BREAKPOINT = 900;
+const DESKTOP_BREAKPOINT = 900;
 
 export function isDesktop() {
   return window.innerWidth >= DESKTOP_BREAKPOINT;
