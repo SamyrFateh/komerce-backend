@@ -1,0 +1,51 @@
+name: Action Center 4G Security 360 refresh
+
+on:
+  push:
+    branches:
+      - ci/action-center-4g-security360-refresh
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Action Center branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/canonical-action-center-4g
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Regenerate Security 360
+        run: npm run security:360
+      - name: Verify Action Center security classification
+        run: |
+          node <<'NODE'
+          const j = require('./docs/SECURITY_360.json');
+          const action = j.routes.filter(r => r.key.includes('/api/admin/action-center'));
+          console.log(JSON.stringify({ summary: j.summary, actionCenter: action }, null, 2));
+          if (!action.length) throw new Error('Action Center routes absent from Security 360');
+          const bad = action.filter(r => r.level !== 'PROTECTED');
+          if (bad.length) throw new Error(`Action Center route not protected: ${bad.map(r => `${r.key}:${r.level}`).join(', ')}`);
+          NODE
+      - name: Security 360 check
+        run: npm run security:360:check
+      - name: Commit refreshed derived docs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/SECURITY_360.json docs/SECURITY_360.md
+          git status --short
+          if git diff --cached --quiet; then
+            echo "Security 360 already fresh"
+            exit 0
+          fi
+          git commit -m "docs(security): refresh Security 360 for Action Center 4G"
+          git push origin HEAD:feat/canonical-action-center-4g
