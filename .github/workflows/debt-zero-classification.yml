@@ -114,7 +114,7 @@ jobs:
               p.write_text(src)
           PY
 
-      - name: Complete three short rationales and two side-effect invariants
+      - name: Complete three short rationales and side-effect invariants
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -152,6 +152,7 @@ jobs:
                   src = src[:close] + '\n    ' + json.dumps(text, ensure_ascii=False) + ',' + src[close:]
                   p.write_text(src)
 
+          append_invariant('features/payments.feature.js', 'tout payment externe et tout webhook Stripe ou PayPal est idempotent ; un rejeu ne confirme jamais deux fois la même commande')
           append_invariant('features/purchasing.feature.js', 'tout message WhatsApp fournisseur est déclenché depuis un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon de commande ni ne confirme son statut')
           append_invariant('features/refunds.feature.js', 'tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement')
           PY
