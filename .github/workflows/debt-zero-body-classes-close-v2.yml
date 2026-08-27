@@ -81,7 +81,7 @@ jobs:
               raise SystemExit(f'legacy ck-is-me block count={count}')
           if 'body.ck-is-me' in csrc or '.k-ck-id-btns-row' in csrc:
               raise SystemExit('legacy ck-is-me selectors remain')
-          css.write_text(csrc, encoding='utf-8')
+          css.write_text(csrc.rstrip() + '\n', encoding='utf-8')
 
           tests = Path('public/boutique/tests/gates/gates-detect.test.js')
           tsrc = tests.read_text(encoding='utf-8')
