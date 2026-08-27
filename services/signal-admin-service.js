@@ -56,19 +56,10 @@ async function listSignals(filters = {}) {
     : null;
   const limit = normalizeLimit(filters.limit);
   const offset = normalizeOffset(filters.offset);
-
-  // Fixed SQL shape by design: optional filters are data parameters, never SQL
-  // fragments. This makes the route safe even if future callers pass arbitrary
-  // strings and keeps the quality gate capable of proving the invariant.
-  const filterSql = `
-    (($1::text IS NULL AND s.status IN ('open','acknowledged')) OR s.status = $1)
-    AND ($2::text IS NULL OR s.severity = $2)
-    AND ($3::text IS NULL OR s.signal_type = $3)
-    AND ($4::text IS NULL OR s.owner_role = $4)
-    AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))
-  `;
   const filterParams = [status, severity, signalType, ownerRole, familyTypes];
 
+  // Fixed SQL shape by design: optional filters, family, pagination and values
+  // are all parameters. No request-derived fragment can alter SQL structure.
   const { rows } = await db.query(
     `SELECT s.*
        FROM signals s
@@ -90,8 +81,6 @@ async function listSignals(filters = {}) {
     [...filterParams, limit, offset]
   );
 
-  // Keep a second fixed query rather than interpolating a reusable SQL fragment:
-  // the quality boundary deliberately forbids SQL composition from request data.
   const countResult = await db.query(
     `SELECT COUNT(*)
        FROM signals s
@@ -103,11 +92,6 @@ async function listSignals(filters = {}) {
         AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))`,
     filterParams
   );
-
-  // Assert the maintained fixed-shape expression remains in sync conceptually.
-  // `filterSql` is never sent to the database; retaining it would itself look
-  // like dynamic SQL to static analysis, so the truth is the two literal queries.
-  void filterSql;
 
   return {
     signals: rows,
