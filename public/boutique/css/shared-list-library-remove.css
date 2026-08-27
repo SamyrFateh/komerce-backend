@@ -10,19 +10,22 @@
  */
 
 .k-library-item-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
   gap: 8px;
   min-width: 0;
 }
 
 .k-library-item-row .k-library-item {
-  min-width: 0;
+  flex: 1 1 22rem;
+  min-width: min(100%, 22rem);
 }
 
 .k-library-item-remove {
+  flex: 0 0 auto;
   align-self: center;
+  margin-left: auto;
   min-height: 40px;
   padding: 0 10px;
   border: 1px solid var(--red-danger-border);
@@ -44,16 +47,4 @@
 .k-library-item-remove:disabled {
   cursor: wait;
   opacity: 0.65;
-}
-
-@media (max-width: 430px) {
-  .k-library-item-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
-  }
-
-  .k-library-item-remove {
-    justify-self: end;
-    min-height: 36px;
-  }
 }
