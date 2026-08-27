@@ -31,6 +31,8 @@ const cssPath = path.resolve(__dirname, '../../css/shared-list-side-cart-respons
 const css = fs.readFileSync(cssPath, 'utf8');
 const tabsCssPath = path.resolve(__dirname, '../../css/shared-list-side-cart.css');
 const tabsCss = fs.readFileSync(tabsCssPath, 'utf8');
+const libraryRemoveCssPath = path.resolve(__dirname, '../../css/shared-list-library-remove.css');
+const libraryRemoveCss = fs.readFileSync(libraryRemoveCssPath, 'utf8');
 
 function compact(value) {
   return String(value).replace(/\s+/g, ' ').trim();
@@ -115,6 +117,26 @@ describe('liste partageable — layout étroit side cart / drawer', () => {
     );
     expect(css).not.toMatch(
       /#k-side-cart \.k-cart-snapshot-item \.k-cart-item-name\s*\{/
+    );
+  });
+});
+
+describe('bibliothèque de listes — retrait intrinsèquement responsive', () => {
+  it('ne dépend plus d un breakpoint local 430px', () => {
+    expect(libraryRemoveCss).not.toMatch(/@media/);
+    expect(libraryRemoveCss).not.toMatch(/430px/);
+  });
+
+  it('laisse le conteneur décider du repli via flex-wrap', () => {
+    const normalized = compact(libraryRemoveCss);
+    expect(normalized).toMatch(
+      /\.k-library-item-row \{[^}]*display: flex;[^}]*flex-wrap: wrap;[^}]*gap: 8px;/
+    );
+    expect(normalized).toMatch(
+      /\.k-library-item-row \.k-library-item \{[^}]*flex: 1 1 22rem;[^}]*min-width: min\(100%, 22rem\);/
+    );
+    expect(normalized).toMatch(
+      /\.k-library-item-remove \{[^}]*flex: 0 0 auto;[^}]*margin-left: auto;/
     );
   });
 });
