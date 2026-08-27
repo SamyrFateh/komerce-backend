@@ -26596,10 +26596,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "public/boutique/js/b-modal.js",
-                "targetFile": "public/boutique/js/b-modal-suggestions.js"
-              },
-              {
                 "sourceFileId": "public/boutique/js/b-modal-core.js",
                 "targetFile": "public/boutique/js/b-modal-suggestions.js"
               },
