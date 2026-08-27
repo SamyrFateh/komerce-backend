@@ -8,11 +8,11 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/logger.js
  * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js
- * @db-read       cash_collections, order_items, orders, parcels, products, users
+ * @db-read       cash_collections, orders, parcels, purchase_orders
  * @db-write      signals
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
+ * @impact-areas  decision-signals, purchasing, orders, logistics
  * @version       2026-06
  */
 
@@ -199,7 +199,7 @@ GENERATORS.parcel_blocked = async function() {
       await upsertSignal({
         signal_type:   'parcel_blocked',
         severity:      severity,
-        title:         'Colis bloqué — ' + (r.tracking_number || r.id).substring(0, 12),
+        title:         r.tracking_number ? 'Colis bloqué — ' + r.tracking_number.substring(0, 12) : 'Colis bloqué',
         summary:       'Statut "' + r.status + '" depuis ' + r.days_stuck + ' jours' +
                        (r.reference ? ' (cmd ' + r.reference + ')' : ''),
         source_module: 'signal-service',
@@ -270,151 +270,263 @@ GENERATORS.cash_expiring = async function() {
   }
 };
 
-/* ── 3. stock_rupture: produits actifs sans aucune vente récente ── */
-GENERATORS.stock_rupture = async function() {
+/* ═══════════════════════════════════════════════════════════════
+   4H TRUTH CLEANUP — historical signal types whose names/predicates
+   no longer describe a canonical business fact.
+   ═══════════════════════════════════════════════════════════════ */
+const OBSOLETE_SIGNAL_TYPES = Object.freeze([
+  'stock_rupture',
+  'margin_drift',
+  'dispute_sensitive',
+]);
+
+async function retireObsoleteSignalTypes() {
   try {
-    // Products active but with 0 orders in last 30 days = potential dead stock
-    let rows = (await db.query(`
-      SELECT p.id, p.name, p.category, p.price_kmf,
-             COALESCE(recent.cnt, 0) AS recent_orders
-      FROM products p
-      LEFT JOIN (
-        SELECT oi.product_id, COUNT(*) AS cnt
-        FROM order_items oi
-        JOIN orders o ON o.id = oi.order_id
-        WHERE o.created_at > NOW() - INTERVAL '30 days'
-        GROUP BY oi.product_id
-      ) recent ON recent.product_id = p.id
-      WHERE p.is_active = TRUE
-        AND COALESCE(recent.cnt, 0) = 0
-      ORDER BY p.created_at ASC
-      LIMIT 30
+    const result = await db.query(`
+      UPDATE signals
+         SET status = 'resolved',
+             resolved_at = COALESCE(resolved_at, NOW()),
+             snoozed_until = NULL,
+             updated_at = NOW()
+       WHERE signal_type = ANY($1::text[])
+         AND status IN ('open','acknowledged','snoozed')
+    `, [OBSOLETE_SIGNAL_TYPES]);
+    return result.rowCount || 0;
+  } catch (e) {
+    log.warn({ err: e }, '[signal-service] obsolete signal retirement error:');
+    return 0;
+  }
+}
+
+/* ── 3. ordered_without_purchase_order: chaîne sourcing non démarrée ── */
+GENERATORS.ordered_without_purchase_order = async function() {
+  try {
+    const rows = (await db.query(`
+      SELECT o.id, o.reference,
+             EXTRACT(EPOCH FROM (NOW() - COALESCE(o.ordered_at, o.updated_at, o.created_at)))::int / 60 AS minutes_waiting
+        FROM orders o
+       WHERE o.status = 'ordered'
+         AND COALESCE(o.ordered_at, o.updated_at, o.created_at) < NOW() - INTERVAL '15 minutes'
+         AND NOT EXISTS (
+           SELECT 1
+             FROM purchase_orders po
+            WHERE po.order_id = o.id
+              AND po.status != 'cancelled'
+         )
+       ORDER BY COALESCE(o.ordered_at, o.updated_at, o.created_at) ASC
+       LIMIT 50
     `)).rows;
 
     let generated = 0;
-    let entityIds = [];
-    for (let r of rows) {
+    const entityIds = [];
+    for (const r of rows) {
       entityIds.push(r.id);
       await upsertSignal({
-        signal_type:   'stock_rupture',
-        severity:      'info',
-        title:         'Produit sans vente — ' + (r.name || '').substring(0, 40),
-        summary:       '0 commande en 30 jours · ' + r.category,
+        signal_type: 'ordered_without_purchase_order',
+        severity: 'critical',
+        title: r.reference ? 'Commande sans PO — ' + r.reference : 'Commande sans PO',
+        summary: 'Commande au statut ordered depuis ' + Number(r.minutes_waiting || 0) + ' min sans bon d’achat actif',
         source_module: 'signal-service',
-        target_shell:  'bo',
-        target_view:   'inventory',
-        target_filters: { category: r.category },
-        owner_role:    'sourcing',
-        entity_type:   'product',
-        entity_id:     r.id,
-        recommendation: 'Évaluer si le produit doit être mis en avant ou désactivé',
-        confidence:    'medium',
-        meta:          { category: r.category, price: r.price_kmf }
+        target_shell: 'bo',
+        target_view: 'orders',
+        target_filters: { status: 'ordered' },
+        owner_role: 'sourcing',
+        entity_type: 'order',
+        entity_id: r.id,
+        recommendation: 'Relancer le déclenchement sourcing et vérifier le mapping fournisseur',
+        confidence: 'high',
+        meta: { minutes_waiting: Number(r.minutes_waiting || 0) }
       });
       generated++;
     }
-    // Don't auto-resolve here — these should be manually reviewed
-    return { generated: generated };
+    await autoResolveSignals('ordered_without_purchase_order', entityIds);
+    return { generated };
   } catch (e) {
-    log.warn({ err: e }, '[signal-service] stock_rupture error:');
+    log.warn({ err: e }, '[signal-service] ordered_without_purchase_order error:');
     return { generated: 0, error: e.message };
   }
 };
 
-/* ── 4. margin_drift: commandes avec marge estimée faible ── */
-GENERATORS.margin_drift = async function() {
+/* ── 4. purchase_order_overreceived: intégrité quantité PO ── */
+GENERATORS.purchase_order_overreceived = async function() {
   try {
-    // Orders where the margin might be too low
-    // Simple heuristic: total_kmf / nb_items < threshold
-    let rows = (await db.query(`
-      SELECT o.id, o.reference, o.total_kmf,
-             COALESCE(o.items_total, 1) AS items,
-             o.created_at
-      FROM orders o
-      WHERE o.created_at > NOW() - INTERVAL '7 days'
-        AND o.status NOT IN ('cancelled')
-        AND o.total_kmf > 0
-        AND (o.total_kmf / GREATEST(COALESCE(o.items_total, 1), 1)) < 5000
-      ORDER BY o.created_at DESC
-      LIMIT 20
+    const rows = (await db.query(`
+      SELECT o.id, o.reference,
+             COUNT(*)::int AS po_count,
+             SUM(po.received_qty - po.qty)::int AS excess_qty
+        FROM purchase_orders po
+        JOIN orders o ON o.id = po.order_id
+       WHERE po.status != 'cancelled'
+         AND po.received_qty > po.qty
+       GROUP BY o.id, o.reference
+       ORDER BY SUM(po.received_qty - po.qty) DESC
+       LIMIT 50
     `)).rows;
 
     let generated = 0;
-    let entityIds = [];
-    for (let r of rows) {
+    const entityIds = [];
+    for (const r of rows) {
       entityIds.push(r.id);
-      let avgPerItem = Math.round(r.total_kmf / Math.max(r.items, 1));
       await upsertSignal({
-        signal_type:   'margin_drift',
-        severity:      'warning',
-        title:         'Marge faible — cmd ' + (r.reference || r.id).substring(0, 12),
-        summary:       'Panier moyen/article: ' + avgPerItem.toLocaleString('fr-FR') + ' KMF (' + r.items + ' articles)',
+        signal_type: 'purchase_order_overreceived',
+        severity: 'critical',
+        title: r.reference ? 'Réception PO incohérente — ' + r.reference : 'Réception PO incohérente',
+        summary: Number(r.po_count || 0) + ' PO avec quantité reçue supérieure à la quantité commandée · excédent ' + Number(r.excess_qty || 0),
         source_module: 'signal-service',
-        target_shell:  'ct',
-        target_view:   'dashboard',
+        target_shell: 'bo',
+        target_view: 'purchasing',
         target_filters: {},
-        owner_role:    'finance',
-        entity_type:   'order',
-        entity_id:     r.id,
-        recommendation: 'Vérifier le pricing des produits concernés',
-        confidence:    'medium',
-        meta:          { total: r.total_kmf, items: r.items, avg_per_item: avgPerItem }
+        owner_role: 'hub',
+        entity_type: 'order',
+        entity_id: r.id,
+        recommendation: 'Vérifier la réception fournisseur avant toute correction de donnée',
+        confidence: 'high',
+        meta: { po_count: Number(r.po_count || 0), excess_qty: Number(r.excess_qty || 0) }
       });
       generated++;
     }
-    await autoResolveSignals('margin_drift', entityIds);
-    return { generated: generated };
+    await autoResolveSignals('purchase_order_overreceived', entityIds);
+    return { generated };
   } catch (e) {
-    log.warn({ err: e }, '[signal-service] margin_drift error:');
+    log.warn({ err: e }, '[signal-service] purchase_order_overreceived error:');
     return { generated: 0, error: e.message };
   }
 };
 
-/* ── 5. dispute_sensitive: commandes avec statut problématique ── */
-GENERATORS.dispute_sensitive = async function() {
+/* ── 5. purchase_order_receipt_stuck: PO complètes, commande encore ordered ── */
+GENERATORS.purchase_order_receipt_stuck = async function() {
   try {
-    let rows = (await db.query(`
-      SELECT o.id, o.reference, o.status, o.total_kmf,
-             EXTRACT(DAY FROM NOW() - o.updated_at)::int AS days_in_status,
-             u.full_name AS client_name, u.phone
-      FROM orders o
-      LEFT JOIN users u ON u.id = o.user_id
-      WHERE o.status IN ('disputed','problem','refund_requested')
-        AND o.updated_at > NOW() - INTERVAL '30 days'
-      ORDER BY o.updated_at ASC
-      LIMIT 20
+    const rows = (await db.query(`
+      SELECT o.id, o.reference,
+             COUNT(*)::int AS po_count,
+             EXTRACT(EPOCH FROM (NOW() - MAX(po.hub_received_at)))::int / 60 AS minutes_stuck
+        FROM orders o
+        JOIN purchase_orders po
+          ON po.order_id = o.id
+         AND po.status != 'cancelled'
+       WHERE o.status = 'ordered'
+       GROUP BY o.id, o.reference
+      HAVING COUNT(*) > 0
+         AND BOOL_AND(po.received_qty >= po.qty AND po.hub_received_at IS NOT NULL)
+         AND MAX(po.hub_received_at) < NOW() - INTERVAL '15 minutes'
+       ORDER BY MAX(po.hub_received_at) ASC
+       LIMIT 50
     `)).rows;
 
     let generated = 0;
-    let entityIds = [];
-    for (let r of rows) {
+    const entityIds = [];
+    for (const r of rows) {
       entityIds.push(r.id);
-      let severity = r.days_in_status > 5 ? 'critical' : 'warning';
       await upsertSignal({
-        signal_type:   'dispute_sensitive',
-        severity:      severity,
-        title:         'Litige — cmd ' + (r.reference || r.id).substring(0, 12),
-        summary:       'Statut "' + r.status + '" depuis ' + r.days_in_status + ' jours' +
-                       (r.client_name ? ' · ' + r.client_name : ''),
+        signal_type: 'purchase_order_receipt_stuck',
+        severity: 'warning',
+        title: r.reference ? 'PO reçues, commande bloquée — ' + r.reference : 'PO reçues, commande bloquée',
+        summary: Number(r.po_count || 0) + ' PO complètes mais commande toujours ordered depuis ' + Number(r.minutes_stuck || 0) + ' min',
         source_module: 'signal-service',
-        target_shell:  'bo',
-        target_view:   'orders',
-        target_filters: { status: r.status },
-        owner_role:    'support',
-        entity_type:   'order',
-        entity_id:     r.id,
-        recommendation: r.days_in_status > 5
-          ? 'Escalader — le client attend depuis trop longtemps'
-          : 'Traiter le litige rapidement',
-        confidence:    'high',
-        meta:          { status: r.status, days: r.days_in_status, total: r.total_kmf, client: r.client_name }
+        target_shell: 'bo',
+        target_view: 'orders',
+        target_filters: { status: 'ordered' },
+        owner_role: 'hub',
+        entity_type: 'order',
+        entity_id: r.id,
+        recommendation: 'Vérifier la transition ordered → preparation et les scans de réception Hub',
+        confidence: 'high',
+        meta: { po_count: Number(r.po_count || 0), minutes_stuck: Number(r.minutes_stuck || 0) }
       });
       generated++;
     }
-    await autoResolveSignals('dispute_sensitive', entityIds);
-    return { generated: generated };
+    await autoResolveSignals('purchase_order_receipt_stuck', entityIds);
+    return { generated };
   } catch (e) {
-    log.warn({ err: e }, '[signal-service] dispute_sensitive error:');
+    log.warn({ err: e }, '[signal-service] purchase_order_receipt_stuck error:');
+    return { generated: 0, error: e.message };
+  }
+};
+
+/* ── 6. pickup_overdue: disponible relais > 7 jours ── */
+GENERATORS.pickup_overdue = async function() {
+  try {
+    const rows = (await db.query(`
+      SELECT o.id, o.reference,
+             EXTRACT(DAY FROM NOW() - o.available_at)::int AS days_waiting
+        FROM orders o
+       WHERE o.status = 'available'
+         AND o.available_at IS NOT NULL
+         AND o.available_at < NOW() - INTERVAL '7 days'
+       ORDER BY o.available_at ASC
+       LIMIT 50
+    `)).rows;
+
+    let generated = 0;
+    const entityIds = [];
+    for (const r of rows) {
+      entityIds.push(r.id);
+      await upsertSignal({
+        signal_type: 'pickup_overdue',
+        severity: 'warning',
+        title: r.reference ? 'Retrait en retard — ' + r.reference : 'Retrait en retard',
+        summary: 'Commande disponible au relais depuis ' + Number(r.days_waiting || 0) + ' jours',
+        source_module: 'signal-service',
+        target_shell: 'bo',
+        target_view: 'orders',
+        target_filters: { status: 'available' },
+        owner_role: 'relais',
+        entity_type: 'order',
+        entity_id: r.id,
+        recommendation: 'Contacter le relais et vérifier que le client a bien été informé',
+        confidence: 'high',
+        meta: { days_waiting: Number(r.days_waiting || 0) }
+      });
+      generated++;
+    }
+    await autoResolveSignals('pickup_overdue', entityIds);
+    return { generated };
+  } catch (e) {
+    log.warn({ err: e }, '[signal-service] pickup_overdue error:');
+    return { generated: 0, error: e.message };
+  }
+};
+
+/* ── 7. preparation_stuck: préparation > 4 jours ── */
+GENERATORS.preparation_stuck = async function() {
+  try {
+    const rows = (await db.query(`
+      SELECT o.id, o.reference,
+             EXTRACT(DAY FROM NOW() - o.preparation_at)::int AS days_stuck
+        FROM orders o
+       WHERE o.status = 'preparation'
+         AND o.preparation_at IS NOT NULL
+         AND o.preparation_at < NOW() - INTERVAL '4 days'
+       ORDER BY o.preparation_at ASC
+       LIMIT 50
+    `)).rows;
+
+    let generated = 0;
+    const entityIds = [];
+    for (const r of rows) {
+      entityIds.push(r.id);
+      await upsertSignal({
+        signal_type: 'preparation_stuck',
+        severity: 'info',
+        title: r.reference ? 'Préparation bloquée — ' + r.reference : 'Préparation bloquée',
+        summary: 'Commande en préparation depuis ' + Number(r.days_stuck || 0) + ' jours',
+        source_module: 'signal-service',
+        target_shell: 'bo',
+        target_view: 'orders',
+        target_filters: { status: 'preparation' },
+        owner_role: 'hub',
+        entity_type: 'order',
+        entity_id: r.id,
+        recommendation: 'Vérifier l’exécution Hub et les scans attendus',
+        confidence: 'high',
+        meta: { days_stuck: Number(r.days_stuck || 0) }
+      });
+      generated++;
+    }
+    await autoResolveSignals('preparation_stuck', entityIds);
+    return { generated };
+  } catch (e) {
+    log.warn({ err: e }, '[signal-service] preparation_stuck error:');
     return { generated: 0, error: e.message };
   }
 };
@@ -434,6 +546,8 @@ async function generateSignals(types) {
       results.generators[type] = { error: 'Unknown generator: ' + type };
     }
   }
+  // 4H: old misleading facts are closed after current truth has been refreshed.
+  results.retired_obsolete = await retireObsoleteSignalTypes();
   return results;
 }
 
@@ -441,6 +555,7 @@ module.exports = {
   upsertSignal: upsertSignal,
   autoResolveSignals: autoResolveSignals,
   expireOldSignals: expireOldSignals,
+  retireObsoleteSignalTypes: retireObsoleteSignalTypes,
   generateSignals: generateSignals,
   GENERATORS: GENERATORS
 };
