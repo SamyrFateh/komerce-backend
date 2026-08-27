@@ -102,7 +102,10 @@ if (!keys.includes('sourcing->catalog:data-write:products')) throw new Error('bu
 if (keys.some(k => k.startsWith('dashboard->'))) throw new Error('technical writer leaked');
 console.log('DATA_CHANNEL_UNIT', keys);
 
-cp.execFileSync(process.execPath, ['scripts/business-graph-gen.js'], { stdio: 'inherit' });
+// IMPORTANT: utiliser exactement les racines canoniques du package.json.
+// Un appel direct sans --dash-root/--boutique-root mesure un autre environnement
+// et fabrique du bruit de scope qui n'appartient pas au modèle courant.
+cp.execFileSync('npm', ['run', 'business-graph:gen'], { stdio: 'inherit' });
 const g = JSON.parse(fs.readFileSync('docs/BUSINESS_FEATURE_GRAPH.json', 'utf8'));
 const dataPairs = g.o5.pairs.filter(p => p.channels.some(c => c.channel === 'data-read' || c.channel === 'data-write'));
 const undeclared = dataPairs.filter(p => p.conformanceStatus === 'OBSERVED_UNDECLARED');
