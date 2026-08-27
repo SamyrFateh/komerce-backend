@@ -1,0 +1,193 @@
+name: Debt Zero body classes close
+
+on:
+  push:
+    branches:
+      - ci/debt-zero-body-classes
+
+permissions:
+  contents: write
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout product branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/debt-zero-body-classes
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+      - run: npm --prefix public/boutique ci
+
+      - name: Fix body-class gate semantics and remove dead CSS state
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          gate = Path('public/boutique/scripts/check-body-classes.js')
+          src = gate.read_text(encoding='utf-8')
+
+          src = src.replace(
+              "  'k-view-group',\n]);",
+              "  'k-view-group',\n  'k-view-komerce',\n]);",
+              1,
+          )
+
+          old_comment = """  // Deux formes : document.body.classList.X et (rarement) body.classList.X\n  // On cherche les deux.\n  const bodyRe = /(?:document\\.body|(?<![a-zA-Z0-9_$])body)\\.classList\\.(add|remove|toggle|contains)\\s*\\(([^)]+)\\)/g;"""
+          new_comment = """  // Uniquement les propriétaires explicites du vrai <body>.\n  // Ne jamais matcher une variable locale nommée `body` (ex. const body = dom.orderBody),\n  // sinon une mutation d'un composant est faussement classée comme état global.\n  const bodyRe = /(?:document\\.body|dom\\.body)\\.classList\\.(add|remove|toggle|contains)\\s*\\(([^)]+)\\)/g;"""
+          if old_comment not in src:
+              raise SystemExit('body regex anchor missing')
+          src = src.replace(old_comment, new_comment, 1)
+
+          marker = "  // ────────────────────────────────────────────────────────────────\n  // VÉRIFICATIONS"
+          if marker not in src:
+              raise SystemExit('verification marker missing')
+          src = src.replace(
+              marker,
+              "  const hasDynamicViewAdd = dynamicOps.some(op =>\n"
+              "    op.op === 'add' && /k-view-/.test(op.rawExpr || '')\n"
+              "  );\n\n" + marker,
+              1,
+          )
+
+          old_b2 = "if (hasRemove && !hasAdd && !hasToggle && !HTML_INIT_CLASSES.has(cls)) {"
+          new_b2 = "if (hasRemove && !hasAdd && !hasToggle && !HTML_INIT_CLASSES.has(cls) && !(isViewClass && hasDynamicViewAdd)) {"
+          if old_b2 not in src:
+              raise SystemExit('B-2 anchor missing')
+          src = src.replace(old_b2, new_b2, 1)
+
+          gate.write_text(src, encoding='utf-8')
+
+          css = Path('public/boutique/css/cart.css')
+          csrc = css.read_text(encoding='utf-8')
+          pattern = re.compile(
+              r'\n/\* « Numéro changé \? · Ce n\'est pas vous \? » — une seule ligne \*/\n'
+              r'\.k-ck-id-btns-row\s*\{.*?\n\}\n'
+              r'\.k-ck-id-sep\s*\{.*?\n\}\n\n'
+              r'/\* §3 doctrine : body\.ck-is-me posé par JS — CSS gère la visibilité \*/\n'
+              r'body\.ck-is-me \.k-ck-id-btns-row \{ display: flex; \}\n',
+              re.S,
+          )
+          csrc, count = pattern.subn('\n', csrc, count=1)
+          if count != 1:
+              raise SystemExit(f'legacy ck-is-me block count={count}')
+          if 'body.ck-is-me' in csrc or '.k-ck-id-btns-row' in csrc:
+              raise SystemExit('legacy ck-is-me selectors remain')
+          css.write_text(csrc, encoding='utf-8')
+
+          tests = Path('public/boutique/tests/gates/gates-detect.test.js')
+          tsrc = tests.read_text(encoding='utf-8')
+          section = re.compile(
+              r"describe\('gate check:body-classes', \(\) => \{.*?\n\}\);\n\n"
+              r"// ══════════════════════════════════════════════════════════════════════\n"
+              r"// 5\. check:css-dist-only",
+              re.S,
+          )
+          replacement = r'''describe('gate check:body-classes', () => {
+            const TARGET = path.join(ROOT, 'js', 'anti-fouc.js');
+
+            test('état nominal → zéro warning body-class', () => {
+              const r = runGate('check-body-classes.js');
+              const out = r.stdout + r.stderr;
+              expect(r.code).toBe(0);
+              expect(out).toMatch(/Toutes les classes body sont correctement appairées/);
+              expect(out).not.toMatch(/\[B-2\]|\[B-3\]|Avertissements/);
+            });
+
+            test('une variable locale nommée body ne devient jamais document.body', () => {
+              backup(TARGET);
+              fs.appendFileSync(TARGET, `
+          {
+            const body = document.createElement('div');
+            body.classList.remove('k-local-component-state');
+          }
+          `);
+              const r = runGate('check-body-classes.js');
+              const out = r.stdout + r.stderr;
+              expect(r.code).toBe(0);
+              expect(out).not.toMatch(/k-local-component-state/);
+            });
+
+            test('un vrai document.body add sans cleanup reste bloquant B-1', () => {
+              backup(TARGET);
+              fs.appendFileSync(TARGET, "\ndocument.body.classList.add('k-body-gate-detect');\n");
+              const r = runGate('check-body-classes.js');
+              const out = r.stdout + r.stderr;
+              expect(r.code).toBe(1);
+              expect(out).toMatch(/\[B-1\].*k-body-gate-detect|k-body-gate-detect.*B-1/s);
+            });
+          });
+
+          // ══════════════════════════════════════════════════════════════════════
+          // 5. check:css-dist-only'''
+          tsrc, count = section.subn(replacement, tsrc, count=1)
+          if count != 1:
+              raise SystemExit(f'body-class gate test section count={count}')
+          tests.write_text(tsrc, encoding='utf-8')
+          PY
+
+      - name: Prove body-class gate regression tests
+        run: npm --prefix public/boutique test -- --runInBand tests/gates/gates-detect.test.js -t "gate check:body-classes"
+
+      - name: Prove body-class debt is zero
+        run: |
+          node public/boutique/scripts/check-body-classes.js | tee /tmp/body-classes.txt
+          grep -q "Toutes les classes body sont correctement appairées" /tmp/body-classes.txt
+          ! grep -Eq '\[B-1\]|\[B-2\]|\[B-3\]|Avertissements' /tmp/body-classes.txt
+
+      - name: Prove CSS and Boutique source gates
+        run: |
+          node public/boutique/scripts/check-important.js --strict
+          node public/boutique/scripts/check-breakpoints.js --strict
+          node public/boutique/scripts/check-css-vars.js --strict
+          node public/boutique/scripts/check-zindex-contract.js --strict
+          node public/boutique/scripts/check-sticky-integrity.js --strict
+          node public/boutique/scripts/css-guard.js --strict
+          node public/boutique/scripts/audit-boutique-arch.js
+          npm --prefix public/boutique run audit:registry
+          npm --prefix public/boutique run feature:guard:strict
+
+      - name: Regenerate Gate Findings and prove body-class findings gone
+        run: |
+          node scripts/gen-gate-findings.js
+          node - <<'NODE'
+          const g = require('./docs/GATE_FINDINGS.json');
+          const body = (g.findings || []).filter((f) => f.gate === 'check:body-classes');
+          console.log(`total=${(g.findings || []).length} body_class_findings=${body.length}`);
+          if (g.contract?.attributableSources !== 18) throw new Error('GATE_FINDINGS attribution regressed');
+          if (body.length) throw new Error(JSON.stringify(body, null, 2));
+          NODE
+
+      - name: Refresh dependent projections
+        run: |
+          npm run business-graph:gen
+          npm run feature:360:gen
+
+      - name: Standard governance gates
+        run: |
+          node scripts/feature-registry-check.js
+          node scripts/feature-guard.js --strict
+          npm run business-graph:check
+          npm run feature:360:check
+          node scripts/code-quality-gate.js --strict
+          node scripts/contract-check.js
+          npm run security:360:check
+          git diff --check
+
+      - name: Commit verified body-class closure
+        run: |
+          git status --short
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(boutique): fermer la dette body classes"
+          git push origin HEAD:chore/debt-zero-body-classes
