@@ -8,5 +8,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ci/debt-zero-imports-audit
       - run: node public/boutique/scripts/check-js-imports.js
+      - run: node scripts/debt-zero-imports-usage-audit.js
