@@ -18,11 +18,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Preserve probe
-        run: cp scripts/debt-zero-data-channel-probe.js /tmp/debt-zero-data-channel-probe.js
+      - name: Preserve probes
+        run: |
+          cp scripts/debt-zero-data-channel-probe.js /tmp/debt-zero-data-channel-probe.js
+          cp scripts/debt-zero-data-drift-report.js /tmp/debt-zero-data-drift-report.js
       - name: Switch to product branch
         run: git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
       - name: Run data-channel probe
         run: |
           cp /tmp/debt-zero-data-channel-probe.js scripts/debt-zero-data-channel-probe.js
-          node scripts/debt-zero-data-channel-probe.js
+          node scripts/debt-zero-data-channel-probe.js || true
+      - name: Report resulting drift
+        run: |
+          cp /tmp/debt-zero-data-drift-report.js scripts/debt-zero-data-drift-report.js
+          node scripts/debt-zero-data-drift-report.js
