@@ -33,7 +33,7 @@ jobs:
         run: npm ci --prefix product/public/boutique
 
       - name: Patch and prove Debt Zero imports
-        run: python3 tooling/scripts/debt-zero-imports-close-v2.py product
+        run: python3 tooling/scripts/debt-zero-imports-close-v3.py product
 
       - name: Commit verified product branch
         working-directory: product
