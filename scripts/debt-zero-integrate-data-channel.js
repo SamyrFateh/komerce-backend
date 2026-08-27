@@ -49,8 +49,8 @@ replaceOnce(
 );
 replaceOnce(
   gen,
-  "    'OBSERVED_INTERFACE_DEPENDENCY'\n  ],",
-  "    'OBSERVED_INTERFACE_DEPENDENCY',\n    'OBSERVED_DATA_DEPENDENCY'\n  ],"
+  "'OBSERVED_CODE_DEPENDENCY', 'OBSERVED_INTERFACE_DEPENDENCY']",
+  "'OBSERVED_CODE_DEPENDENCY', 'OBSERVED_INTERFACE_DEPENDENCY', 'OBSERVED_DATA_DEPENDENCY']"
 );
 
 const disp = 'scripts/lib/feature-dependency-disposition.js';
