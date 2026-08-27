@@ -80,6 +80,9 @@ jobs:
       - name: Contract consumer check
         if: needs.changes.outputs.backend == 'true'
         run: node scripts/contract-check.js
+      - name: Security 360 freshness and ratchet
+        if: needs.changes.outputs.backend == 'true'
+        run: npm run security:360:check
       - name: Related unit tests
         if: needs.changes.outputs.backend == 'true'
         env:

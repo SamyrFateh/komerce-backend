@@ -47,6 +47,7 @@ function isBackendFile(file) {
   const f = norm(file);
   return /^(?:server\.js|package(?:-lock)?\.json|jest\.unit\.config\.js)$/i.test(f)
     || /^(?:routes|services|middleware|utils|validators|core|bootstrap|db)\/.+/i.test(f)
+    || /^(?:scripts\/(?:gen-security-360|run-security-360)\.js|scripts\/\.security-360-baseline\.json|docs\/SECURITY_360\.(?:json|md))$/i.test(f)
     || /^tests\/.+/i.test(f);
 }
 
