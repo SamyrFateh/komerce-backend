@@ -398,7 +398,6 @@ module.exports = {
       'auth',
       'dashboard',
       'orders',
-      'wallet',
       'loyalty (invalidation du cache de configuration finance apres modification admin — services/loyalty-service.js invalidateConfigCache, O7.3 provider loyalty)',
     ],
   },

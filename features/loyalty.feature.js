@@ -116,7 +116,6 @@ module.exports = {
       "notifications (FF-C1 2026-07-29 — émission de message ; preuve: services/loyalty-service.js -> services/notification-service.js)",
 
       'auth-identity (identification du client)',
-      'wallet (aucune écriture — v_loyalty_summary et le calcul de palier ne lisent pas les tables wallet)',
     ],
   },
 

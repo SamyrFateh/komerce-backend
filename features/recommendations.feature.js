@@ -91,7 +91,6 @@ module.exports = {
     consumes: ['catalog (lecture produit)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
-      'auth',
       'logistics',
       'orders (frontière frontend orders-client/cart-public-api.js consommée par b-modal-suggestions.js ; aucune importation directe des internes panier)',
     ],

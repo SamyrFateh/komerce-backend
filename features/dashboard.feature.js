@@ -201,7 +201,6 @@ module.exports = {
       'customs',
       'documents',
       'notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)',
-      'recommendations',
       'purchasing (repare les commandes sans purchase order — services/repair-ordered-without-purchase-orders.js, O7.3 provider purchasing)',
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, dashboard est
       // business-transversal (arbitrage 2026-07-29), consommations métier ordinaires.
