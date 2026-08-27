@@ -1,0 +1,158 @@
+name: Debt Zero canonical ownership
+
+on:
+  push:
+    branches:
+      - ci/debt-zero-canonical-ownership
+
+permissions:
+  contents: write
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout product branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/debt-zero-canonical-ownership
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+
+      - name: Claim Canonical composition nodes and direct witnesses
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def add_after(path, anchor, entries):
+              p = Path(path)
+              src = p.read_text()
+              if anchor not in src:
+                  raise SystemExit(f'anchor not found in {path}: {anchor}')
+              missing = [e for e in entries if f"'{e}'" not in src]
+              if not missing:
+                  return
+              indent = anchor[:len(anchor)-len(anchor.lstrip())]
+              block = '\n'.join(f"{indent}'{e}'," for e in missing)
+              src = src.replace(anchor, anchor + '\n' + block, 1)
+              p.write_text(src)
+
+          add_after(
+              'features/catalog.feature.js',
+              "      'tests/unit/catalog-workspace.test.js',",
+              [
+                  'tests/unit/sourcing-import-dispatch.test.js',
+                  'tests/unit/boutique-taxonomy-admin.test.js',
+              ],
+          )
+
+          add_after(
+              'features/sourcing.feature.js',
+              "      'tests/unit/sourcing-workspace.test.js',",
+              ['tests/unit/sourcing-candidate-actions.test.js'],
+          )
+
+          dashboard_services = [
+              'services/client-360.js',
+              'services/dashboard-admin-context.js',
+              'services/dashboard-commerce.js',
+              'services/dashboard-finance-canonical.js',
+              'services/dashboard-operations.js',
+              'services/dashboard-pilotage-market.js',
+              'services/operations-workspace.js',
+              'services/order-360.js',
+              'services/product-360.js',
+              'services/shipping-customs-workspace.js',
+          ]
+          dashboard_routes = [
+              'routes/admin-client-360.js',
+              'routes/admin-dashboard-market.js',
+              'routes/admin-operations-workspace.js',
+              'routes/admin-order-360.js',
+              'routes/admin-product-360.js',
+              'routes/admin-shipping-customs-workspace.js',
+          ]
+
+          add_after(
+              'features/dashboard.feature.js',
+              "      'services/partner-admin-service.js',",
+              dashboard_services,
+          )
+          add_after(
+              'features/dashboard.feature.js',
+              "      'routes/admin-dashboard.js',",
+              dashboard_routes,
+          )
+
+          def base_key(path):
+              name = Path(path).name
+              stem = name.split('.', 1)[0]
+              return stem.lstrip('_').replace('_', '-')
+
+          unit_tests = sorted(Path('tests/unit').glob('*.test.js'))
+          witnesses = []
+          for source in dashboard_services + dashboard_routes:
+              base = base_key(source)
+              matches = [str(p).replace('\\', '/') for p in unit_tests if base in base_key(p.name)]
+              if not matches:
+                  raise SystemExit(f'No direct Feature Guard witness for {source} (base={base})')
+              preferred = sorted(matches, key=lambda p: (0 if base_key(Path(p).name) == base else 1, len(p), p))[0]
+              witnesses.append(preferred)
+              print(f'{source} -> {preferred}')
+
+          add_after(
+              'features/dashboard.feature.js',
+              "      'tests/unit/canonical-action-center-boundary.test.js',",
+              sorted(set(witnesses)),
+          )
+          PY
+
+      - name: Run four new direct service witnesses
+        run: >-
+          npx jest --config jest.unit.config.js --runInBand
+          tests/unit/sourcing-import-dispatch.test.js
+          tests/unit/boutique-taxonomy-admin.test.js
+          tests/unit/partner-admin-service.test.js
+          tests/unit/sourcing-candidate-actions.test.js
+
+      - name: Regenerate business governance projections
+        run: |
+          npm run business-graph:gen
+          npm run feature:360:refresh-global
+
+      - name: Assert zero Feature Guard warnings
+        run: |
+          node scripts/feature-guard.js --strict | tee /tmp/feature-guard.txt
+          grep -q 'Avertissements  : 0' /tmp/feature-guard.txt
+
+      - name: Assert zero unowned technical nodes
+        run: |
+          npm run business-graph:check | tee /tmp/business-graph.txt
+          if grep -q 'TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP' /tmp/business-graph.txt; then
+            echo 'Unowned technical nodes remain:'
+            grep 'TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP' /tmp/business-graph.txt
+            exit 1
+          fi
+
+      - name: Feature 360 and standard gates
+        run: |
+          npm run feature:360:check
+          node scripts/code-quality-gate.js --strict
+          node scripts/contract-check.js
+          npm run security:360:check
+          git diff --check
+
+      - name: Commit verified debt closure
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add features/catalog.feature.js features/dashboard.feature.js features/sourcing.feature.js
+          git add docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/FEATURE_360.json docs/FEATURE_360.md docs/GATE_FINDINGS.json
+          git status --short
+          git commit -m "chore(governance): fermer warnings et ownership Canonical"
+          git push origin HEAD:chore/debt-zero-canonical-ownership
