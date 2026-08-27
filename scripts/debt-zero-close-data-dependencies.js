@@ -127,4 +127,12 @@ addConsume('features/dashboard.feature.js', 'shared-cart', 'suppression des pani
 removeLineContaining('features/dashboard.feature.js', "'basket_items: W'");
 removeLineContaining('features/dashboard.feature.js', "'baskets: W'");
 
-console.log('Debt Zero: 25 data dependencies closed at source');
+// O6 ledger = exceptions de dettes OBSERVED_UNDECLARED uniquement. Une fois les
+// six anciennes paires réconciliées par les contrats canoniques, les garder
+// serait lui-même une dette STALE_DEPENDENCY_EXCEPTION.
+const exceptionLedgerFile = 'governance/feature-dependency-exceptions.json';
+const exceptionLedger = JSON.parse(read(exceptionLedgerFile));
+exceptionLedger.exceptions = [];
+write(exceptionLedgerFile, JSON.stringify(exceptionLedger, null, 2) + '\n');
+
+console.log('Debt Zero: 25 data dependencies closed at source; stale O6 exceptions pruned');
