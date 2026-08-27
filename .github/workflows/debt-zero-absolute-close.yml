@@ -6,10 +6,10 @@ on:
       - ci/debt-zero-absolute-close
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  close-feature360:
+  audit-specialized-surfaces:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -19,66 +19,39 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Preserve Feature360 closure script
-        run: cp scripts/debt-zero-close-feature360-residuals.js /tmp/debt-zero-close-feature360-residuals.js
       - name: Switch to product branch
         run: git checkout -B chore/debt-zero-absolute origin/chore/debt-zero-absolute
       - name: Install repository dependencies
         run: npm ci --ignore-scripts
-      - name: Reconcile final residual contracts
+      - name: Regenerate Dashboard and Boutique 360
         run: |
-          cp /tmp/debt-zero-close-feature360-residuals.js scripts/debt-zero-close-feature360-residuals.js
-          node scripts/debt-zero-close-feature360-residuals.js
-          rm scripts/debt-zero-close-feature360-residuals.js
-      - name: Regenerate canonical governance artifacts
+          npm run dashboards:360
+          npm run boutique:360
+      - name: Print current specialized summaries
         run: |
-          npm run business-graph:gen
-          npm run feature:360:gen
-      - name: Assert absolute Feature360 zero
+          echo '=== DASHBOARD 360 SUMMARY ==='
+          sed -n '1,16p' docs/DASHBOARDS_360.md
+          echo '=== DASHBOARD RISK ROWS ==='
+          grep -E 'orpheline|morte|absente|violation|non prouv|url non résolue|🔴|🟠|🟡' docs/DASHBOARDS_360.md | head -120 || true
+          echo '=== BOUTIQUE 360 SUMMARY ==='
+          sed -n '1,16p' docs/BOUTIQUE_360.md
+          echo '=== BOUTIQUE RISK ROWS ==='
+          grep -E 'orphelin|non déclaré|non prouv|hors contrat|🔴|🟠|🟡' docs/BOUTIQUE_360.md | head -120 || true
+      - name: Specialized ratchet checks
         run: |
-          node - <<'NODE'
-          const fs = require('fs');
-          const g = JSON.parse(fs.readFileSync('docs/BUSINESS_FEATURE_GRAPH.json', 'utf8'));
-          const graphDebt = (g.drifts && g.drifts.debt) || [];
-          if (graphDebt.length) throw new Error(`Business graph debt remains: ${graphDebt.map(x => `${x.type}:${x.ref}`).join(' | ')}`);
-          if ((g.o6 && g.o6.unclassified || []).length) throw new Error('O6 unclassified dependencies remain');
-          if ((g.o6 && g.o6.missingExceptions || []).length) throw new Error(`O6 missing exceptions: ${g.o6.missingExceptions.join(', ')}`);
-
-          const f = JSON.parse(fs.readFileSync('docs/FEATURE_360.json', 'utf8'));
-          const s = f.summary;
-          if (s.debtItemsTotal !== 0) {
-            const remaining = f.features
-              .filter(x => x.architecturalDebt && x.architecturalDebt.debtCount)
-              .map(x => `${x.id}:${JSON.stringify(x.architecturalDebt.debtItems)}`);
-            throw new Error(`Feature360 debt=${s.debtItemsTotal}: ${remaining.join(' | ')}`);
-          }
-          if (s.healthy !== 31 || s.attention !== 0 || s.blocked !== 0) {
-            throw new Error(`Feature360 health expected 31/0/0, got ${s.healthy}/${s.attention}/${s.blocked}`);
-          }
-          console.log('FEATURE360_ABSOLUTE_ZERO', {
-            features: s.features,
-            healthy: s.healthy,
-            attention: s.attention,
-            blocked: s.blocked,
-            debt: s.debtItemsTotal,
-            graphDebt: graphDebt.length,
-          });
-          NODE
-      - name: Governance regression suite
+          npm run dashboards:360:check
+          npm run boutique:360:check
+      - name: Backend debt audit
         run: |
-          npx --no-install jest \
-            tests/unit/feature-dependency-data-channel.test.js \
-            tests/unit/feature-360-internal-api-projection.test.js \
-            --runInBand
-          npm run business-graph:disposition-check
-          npm run feature:360:check
-          node scripts/feature-guard.js --strict
-          git diff --check
-      - name: Commit Feature360 absolute zero
+          set +e
+          npm run backend:debt
+          code=$?
+          echo "BACKEND_DEBT_EXIT=$code"
+          exit 0
+      - name: Backend architecture audit
         run: |
-          git config user.name "SamyrFateh"
-          git config user.email "fatehsamyr@gmail.com"
-          git add -A
-          git diff --cached --check
-          git commit -m "chore(governance): close Feature360 architectural debt"
-          git push origin HEAD:chore/debt-zero-absolute
+          set +e
+          npm run backend:audit
+          code=$?
+          echo "BACKEND_AUDIT_EXIT=$code"
+          exit 0
