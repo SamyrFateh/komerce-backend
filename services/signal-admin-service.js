@@ -21,7 +21,7 @@
 const db = require('../db');
 
 const FAMILY_TYPES = Object.freeze({
-  ops: Object.freeze(['parcel_blocked', 'cash_expiring', 'sla_breach', 'hub_tension', 'relay_tension', 'loyalty_pending']),
+  ops: Object.freeze(['parcel_blocked', 'cash_expiring', 'ordered_without_purchase_order', 'purchase_order_overreceived', 'purchase_order_receipt_stuck', 'pickup_overdue', 'preparation_stuck', 'sla_breach', 'hub_tension', 'relay_tension', 'loyalty_pending']),
   eco: Object.freeze(['margin_drift', 'pricing_outlier', 'category_drift', 'recon_anomaly']),
   sourcing: Object.freeze(['sourcing_arbitrage', 'product_dead', 'product_star', 'stock_rupture']),
   disputes: Object.freeze(['dispute_sensitive']),

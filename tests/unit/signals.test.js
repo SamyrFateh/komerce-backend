@@ -116,7 +116,7 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     await request(buildApp()).get('/api/admin/signals?family=ops');
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain('s.signal_type = ANY($5::text[])');
-    expect(params[4]).toEqual(['parcel_blocked', 'cash_expiring', 'sla_breach', 'hub_tension', 'relay_tension', 'loyalty_pending']);
+    expect(params[4]).toEqual(['parcel_blocked', 'cash_expiring', 'ordered_without_purchase_order', 'purchase_order_overreceived', 'purchase_order_receipt_stuck', 'pickup_overdue', 'preparation_stuck', 'sla_breach', 'hub_tension', 'relay_tension', 'loyalty_pending']);
     expect(params.slice(0, 4)).toEqual([null, null, null, null]);
     expect(params.slice(5)).toEqual([50, 0]);
   });

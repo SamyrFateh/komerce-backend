@@ -74,7 +74,7 @@ module.exports = {
       // Lectures cross-feature necessaires au calcul du signal — jamais
       // ecrites ici. Tables possedees par d'autres features (cash_collections,
       // cash_deposits, finance_config, incidents, orders, parcels, products,
-      // users, wallets) : lecture seule, cf. radar-queries.js / signal-service.js.
+      // purchase_orders, users, wallets) : lecture seule, cf. radar-queries.js / signal-service.js.
     ],
   },
 
