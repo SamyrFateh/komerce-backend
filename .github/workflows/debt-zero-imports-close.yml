@@ -33,7 +33,7 @@ jobs:
         run: npm ci --prefix product/public/boutique
 
       - name: Patch and prove Debt Zero imports
-        run: python3 tooling/scripts/debt-zero-imports-close.py product
+        run: python3 tooling/scripts/debt-zero-imports-close-v2.py product
 
       - name: Commit verified product branch
         working-directory: product
@@ -42,7 +42,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/boutique/scripts/check-js-imports.js \
-                  public/boutique/tests/gates/gates-detect.test.js \
+                  public/boutique/tests/gates/check-js-imports-i4-consumers.test.js \
                   public/boutique/js/b-modal.js \
                   public/boutique/js/b-scroll-owner.js \
                   public/boutique/js/b-utils.js \
